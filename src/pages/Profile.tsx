@@ -4,181 +4,79 @@ import { ContestHistory } from '../components/profile/ContestHistory';
 import { AchievementCard } from '../components/profile/AchievementCard';
 import { ProfileHeader } from '../components/profile/ProfileHeader';
 import { useStore } from '../store/useStore';
-import { getAllSNSNames } from '../lib/sns';
+import { api } from '../services/api';
 
 export const Profile: React.FC = () => {
   const user = useStore(state => state.user);
-  const [snsNames, setSNSNames] = useState<string[]>([]);
-  const [selectedSNS, setSelectedSNS] = useState('');
+  const [userData, setUserData] = useState<any>(null);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.address) {
-      getAllSNSNames(user.address).then(names => {
-        setSNSNames(names);
-        setSelectedSNS(names[0] || '');
-      });
-    }
+    const loadProfileData = async () => {
+      if (!user?.address) return;
+
+      try {
+        setLoading(true);
+        const [userResponse, statsResponse, achievementsResponse] = await Promise.all([
+          api.users.getOne(user.address),
+          api.stats.getOverall(user.address),
+          api.stats.getAchievements(user.address)
+        ]);
+
+        setUserData(userResponse);
+        setUserStats(statsResponse);
+        setAchievements(achievementsResponse);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfileData();
   }, [user?.address]);
 
-  const achievements = [
-    {
-      id: '1',
-      title: 'First Victory',
-      description: 'Win your first contest',
-      icon: '🏆',
-      rarity: 'common',
-      unlockedAt: '2024-01-15',
-    },
-    {
-      id: '2',
-      title: 'High Roller',
-      description: 'Enter a contest with $100+ entry fee',
-      icon: '💎',
-      rarity: 'rare',
-      unlockedAt: '2024-01-20',
-    },
-    {
-      id: '3',
-      title: 'Diamond Hands',
-      description: 'Achieve 100% portfolio return in a single contest',
-      icon: '💪',
-      rarity: 'epic',
-      progress: 75,
-      hint: 'HODL like your life depends on it!',
-    },
-    {
-      id: '4',
-      title: 'Whale Alert',
-      description: 'Win a Whale difficulty contest',
-      icon: '🐋',
-      rarity: 'legendary',
-      progress: 30,
-      hint: 'Only the bravest traders dare to swim with whales...',
-    },
-    {
-      id: '5',
-      title: 'Meme Lord',
-      description: 'Win a contest using only meme tokens',
-      icon: '🐕',
-      rarity: 'epic',
-      hint: 'Who let the DOGE out?',
-    },
-    {
-      id: '6',
-      title: 'Perfect Week',
-      description: 'Win contests 7 days in a row',
-      icon: '📅',
-      rarity: 'legendary',
-      hint: 'Consistency is key!',
-    },
-    {
-      id: '7',
-      title: 'Social Butterfly',
-      description: 'Link your Twitter account',
-      icon: '🦋',
-      rarity: 'common',
-      hint: 'Connect with fellow degens',
-    },
-    {
-      id: '8',
-      title: 'Early Bird',
-      description: 'Join the platform during beta',
-      icon: '🐣',
-      rarity: 'rare',
-      unlockedAt: '2024-01-01',
-    },
-    {
-      id: '9',
-      title: 'Phoenix Trader',
-      description: 'Recover from -50% to win a contest',
-      icon: '🔥',
-      rarity: 'legendary',
-      hint: 'Rise from the ashes...',
-    },
-    {
-      id: '10',
-      title: 'Shark Week',
-      description: 'Win 3 Shark difficulty contests',
-      icon: '🦈',
-      rarity: 'epic',
-      progress: 33,
-    },
-    {
-      id: '11',
-      title: 'Lucky Charm',
-      description: '???',
-      icon: '🍀',
-      rarity: 'legendary',
-      hint: 'Some secrets are better left unknown...',
-    },
-    {
-      id: '12',
-      title: 'Speed Demon',
-      description: 'Fill your portfolio in under 10 seconds',
-      icon: '⚡',
-      rarity: 'rare',
-      hint: 'Gotta go fast!',
-    },
-    {
-      id: '13',
-      title: 'Diamond League',
-      description: 'Maintain 80%+ win rate for 30 days',
-      icon: '💎',
-      rarity: 'legendary',
-      hint: 'The pinnacle of trading excellence',
-    },
-    {
-      id: '14',
-      title: 'Night Owl',
-      description: '???',
-      icon: '🦉',
-      rarity: 'epic',
-      hint: 'The market never sleeps...',
-    },
-    {
-      id: '15',
-      title: 'Prophecy',
-      description: 'Predict the exact final value',
-      icon: '🔮',
-      rarity: 'legendary',
-      hint: 'What are the odds?',
-    },
-  ] as const;
-
   if (!user) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h2 className="text-2xl font-bold text-gray-100">Connect your wallet to view your profile</h2>
-      </div>
-    );
+    return <div>Connect your wallet to view your profile</div>;
   }
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!userData || !userStats) return <div>No data available</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="space-y-8">
         <ProfileHeader
-          address={user.address}
-          username={user.username}
-          snsNames={snsNames}
-          onSNSSelect={setSelectedSNS}
-          selectedSNS={selectedSNS}
+          address={userData?.wallet_address ?? user.address}
+          username={userData?.nickname ?? 'Anonymous'}
+          snsNames={[]}
+          onSNSSelect={() => {}}
+          selectedSNS=""
         />
 
         <UserStats
-          totalWinnings={user.totalWinnings}
-          contestsPlayed={user.contestsPlayed}
-          contestsWon={user.contestsWon}
-          winRate={(user.contestsWon / user.contestsPlayed) * 100}
-          averageReturn={15.7}
+          totalWinnings={userStats?.total_earnings ?? 0}
+          contestsPlayed={userStats?.total_contests ?? 0}
+          contestsWon={userStats?.total_wins ?? 0}
+          winRate={userStats?.win_rate ?? 0}
+          averageReturn={userStats?.average_return ?? 0}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
             <h2 className="text-2xl font-bold text-gray-100">Achievements</h2>
             <div className="grid grid-cols-1 gap-4">
-              {achievements.map((achievement) => (
-                <AchievementCard key={achievement.id} achievement={achievement} />
-              ))}
+              {achievements.length > 0 ? (
+                achievements.map((achievement) => (
+                  <AchievementCard key={achievement.id} achievement={achievement} />
+                ))
+              ) : (
+                <div className="text-gray-400">No achievements yet</div>
+              )}
             </div>
           </div>
           <div>

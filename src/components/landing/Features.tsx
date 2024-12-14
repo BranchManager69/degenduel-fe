@@ -29,7 +29,7 @@ const features = [
   },
   {
     title: 'Instant Rewards',
-    description: 'Automatically receive your winnings as soon as contests end.',
+    description: 'Automagically receive your winnings as soon as contests end.',
     icon: '⚡',
   },
 ];

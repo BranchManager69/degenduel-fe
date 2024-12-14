@@ -1,19 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { MovingBackground } from '../components/ui/MovingBackground';
 import { LiveContestTicker } from '../components/ui/LiveContestTicker';
 import { Features } from '../components/landing/Features';
 import { ContestSection } from '../components/landing/ContestSection';
+import { api } from '../services/api';
+import { Contest } from '../types/contests';
 
 export const LandingPage: React.FC = () => {
+  const [liveContests, setLiveContests] = useState<Contest[]>([]);
+  const [upcomingContests, setUpcomingContests] = useState<Contest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchContests = async () => {
+      try {
+        setLoading(true);
+        const contests = await api.contests.getActive();
+        
+        // Split contests into live and upcoming based on start time
+        const now = new Date();
+        const live = contests.filter((contest: Contest) => 
+          new Date(contest.startTime) <= now && new Date(contest.endTime) > now
+        );
+        const upcoming = contests.filter((contest: Contest) => 
+          new Date(contest.startTime) > now
+        );
+
+        setLiveContests(live);
+        setUpcomingContests(upcoming);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load contests');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContests();
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-dark-100 text-gray-100">
       <MovingBackground />
       
       {/* Live Contest Ticker at the top */}
       <div className="sticky top-16 z-10">
-        <LiveContestTicker />
+        <LiveContestTicker 
+          contests={liveContests} 
+          loading={loading} 
+        />
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,8 +87,26 @@ export const LandingPage: React.FC = () => {
         <Features />
 
         {/* Contest Sections */}
-        <ContestSection title="Live Contests" type="live" />
-        <ContestSection title="Upcoming Contests" type="upcoming" />
+        {error ? (
+          <div className="text-center py-8 text-red-500">
+            {error}
+          </div>
+        ) : (
+          <>
+            <ContestSection 
+              title="Live Contests" 
+              type="live" 
+              contests={liveContests}
+              loading={loading}
+            />
+            <ContestSection 
+              title="Upcoming Contests" 
+              type="upcoming" 
+              contests={upcomingContests}
+              loading={loading}
+            />
+          </>
+        )}
       </div>
     </div>
   );
