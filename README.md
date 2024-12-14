@@ -31,7 +31,17 @@
   [![PM2](https://img.shields.io/badge/PM2-5.3-green)](https://pm2.keymetrics.io/)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-blue)](https://www.postgresql.org/)
 
+
+## 📚 Developer Resources
+
+### API Reference
+  - I am providing a public DegenDuel API. Work in progress and free of charge.
+  - Please refer to the [Public DegenDuel API Docs](https://degenduel.me/api-docs) (Swagger) for the complete API reference. 
+  - Private beta testers can refer to the [Private DegenDuel API Docs](https://github.com/oyoops/degenduel/blob/main/_API_REFERENCE.md) (authorization required) for endpoints related to administration, analytics, debugging, etc.
+
+
 ## 🌟 Features
+
 ### Web3 Integration
 - Phantom Wallet connection
 - Wallet address verification
@@ -64,16 +74,6 @@
 - Real-time updates
 - Trade animations
 - Performance optimizations
-
-## 📚 API Reference
-
-  - **Developer Resources**
-  - Because of AI, we will all soon live and die by open source software. Therefore I am providing a public DegenDuel API for free. Work in progress.
-  - You can refer to the [Public DegenDuel API Docs](https://degenduel.me/api-docs) (Swagger) for the complete API reference. 
-  - Beta testers can refer to the [Private DegenDuel API Docs](https://github.com/oyoops/degenduel/blob/main/_API_REFERENCE.md) (authorization required) for endpoints related to administration, analytics, debugging, etc.
-
-
-  [![DegenDuel API](https://img.shields.io/badge/DegenDuel%20API-Reference-blue)](https://github.com/oyoops/degenduel/blob/main/_API_REFERENCE.md)
 
 
 ## 🚀 Quick Installation
