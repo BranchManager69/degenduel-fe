@@ -165,7 +165,6 @@ graph TD
         C --> I[Express API]
         I --> J[PostgreSQL Models]
     end
-
 ```
 
 ### Key Technologies
