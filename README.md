@@ -150,7 +150,7 @@ graph TD
 future:
 ```mermaid
 graph TD
-    A[Nginx Reverse Proxy] --> B[Frontend Server (Static + SPA)]
+    A[Nginx Reverse Proxy] --> B[Frontend Server, Static + SPA]
     A --> C[Backend API Server]
     C --> D[(PostgreSQL Database)]
     C --> E[Web3 Services]
