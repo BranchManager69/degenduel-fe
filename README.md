@@ -65,7 +65,18 @@
 - Trade animations
 - Performance optimizations
 
-## 🚀 Quick Start
+## 📚 API Reference
+
+  - **Developer Resources**
+  - Because of AI, we will all soon live and die by open source software. Therefore I am providing a public DegenDuel API for free. Work in progress.
+  - You can refer to the [Public DegenDuel API Docs](https://degenduel.me/api-docs) (Swagger) for the complete API reference. 
+  - Beta testers can refer to the [Private DegenDuel API Docs](https://github.com/oyoops/degenduel/blob/main/_API_REFERENCE.md) (authorization required) for endpoints related to administration, analytics, debugging, etc.
+
+
+  [![DegenDuel API](https://img.shields.io/badge/DegenDuel%20API-Reference-blue)](https://github.com/oyoops/degenduel/blob/main/_API_REFERENCE.md)
+
+
+## 🚀 Quick Installation
 
 ### Prerequisites
 
