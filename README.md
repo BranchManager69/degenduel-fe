@@ -146,6 +146,27 @@ graph TD
     end
 ```
 
+future:
+```
+graph TD
+    A[Nginx Reverse Proxy] --> B[Frontend Server (Static + SPA)]
+    A --> C[Backend API Server]
+    C --> D[(PostgreSQL Database)]
+    C --> E[Web3 Services]
+    C --> F[DexScreener API]
+    
+    subgraph "Frontend Services"
+        B --> G[React SPA]
+        G --> H[Zustand Store]
+    end
+    
+    subgraph "Backend Services"
+        C --> I[Express API]
+        I --> J[PostgreSQL Models]
+    end
+
+```
+
 ### Key Technologies
 
 - **Frontend Stack**
