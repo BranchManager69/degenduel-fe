@@ -4,7 +4,7 @@
 <h2 align="center">
   Client Frontend
 </h2>
-<p align="center"><i>Looking for the <a href="https://github.com/oyoops/degenduel">Server Backend</a> repo?</i></p>
+<p align="center"><i>Looking for the <a href="https://github.com/oyoops/degenduel">Server Backend</a> repo?</i> (auth required)</p>
 </br>
 
 <div align="center">
