@@ -126,6 +126,7 @@ npm -v   # Must be 8.x or higher
 
 ### System Overview
 
+past: 
 ```mermaid
 graph TD
     A[Nginx Reverse Proxy] --> B[Frontend Server :3002]
@@ -147,7 +148,7 @@ graph TD
 ```
 
 future:
-```
+```mermaid
 graph TD
     A[Nginx Reverse Proxy] --> B[Frontend Server (Static + SPA)]
     A --> C[Backend API Server]
