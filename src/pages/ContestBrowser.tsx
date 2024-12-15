@@ -1,99 +1,58 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ContestCard } from '../components/contests/ContestCard';
 import { ContestFilters } from '../components/contests/ContestFilters';
 import { CreateContestButton } from '../components/contests/CreateContestButton';
-import { Card } from '../components/ui/Card';
-import { Contest } from '../types';
+import { API_URL } from '../services/api';
+import type { Contest } from '../types';
 
 export const ContestBrowser: React.FC = () => {
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [activeDifficultyFilter, setActiveDifficultyFilter] = useState('');
   const [activeSort, setActiveSort] = useState('start_time');
 
-  // Demo contests with proper Contest interface
-  const demoContests: Contest[] = [
-    {
-      id: 1,
-      name: 'Weekend Retard Party',
-      description: 'Put your retarded hat on, because this is a retarded contest.',
-      start_time: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
-      end_time: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString(),
-      entry_fee: '10',
-      prize_pool: '1000',
-      status: 'in_progress',
-      settings: {
-        difficulty: 'dolphin',
-        min_trades: 5,
-        max_participants: 100
-      },
-      participant_count: 45,
-      is_participating: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      name: 'Gay Degen Contest',
-      description: 'The biggest degens often win from the gayest trades.',
-      start_time: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
-      end_time: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(),
-      entry_fee: '25',
-      prize_pool: '2500',
-      status: 'pending',
-      settings: {
-        difficulty: 'shark',
-        min_trades: 10,
-        max_participants: 150
-      },
-      participant_count: 75,
-      is_participating: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 3,
-      name: 'Scam Contest',
-      description: 'Entrants can only trade rugs and scams. Even this contest is a scam.',
-      start_time: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
-      end_time: new Date(Date.now() + 1000 * 60 * 60 * 25).toISOString(),
-      entry_fee: '5',
-      prize_pool: '500',
-      status: 'pending',
-      settings: {
-        difficulty: 'guppy',
-        min_trades: 3,
-        max_participants: 50
-      },
-      participant_count: 20,
-      is_participating: false,
-      created_at: new Date().toISOString()
-    },
-  ];
-
-  const sortedAndFilteredContests = useMemo(() => {
-    let filtered = demoContests.filter(contest => {
-      const matchesStatus = activeStatusFilter === 'all' || 
-        (activeStatusFilter === 'live' && contest.status === 'in_progress') ||
-        (activeStatusFilter === 'upcoming' && contest.status === 'pending');
-      const matchesDifficulty = !activeDifficultyFilter || 
-        contest.settings.difficulty === activeDifficultyFilter;
-      return matchesStatus && matchesDifficulty;
-    });
-
-    return filtered.sort((a, b) => {
-      switch (activeSort) {
-        case 'start_time':
-          return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-        case 'prize_pool':
-          return Number(b.prize_pool) - Number(a.prize_pool);
-        case 'entry_fee':
-          return Number(a.entry_fee) - Number(b.entry_fee);
-        case 'players':
-          return (b.participant_count / b.settings.max_participants) - 
-                 (a.participant_count / a.settings.max_participants);
-        default:
-          return 0;
+  useEffect(() => {
+    const fetchContests = async () => {
+      try {
+        const response = await fetch(`${API_URL}/contests`);
+        if (!response.ok) throw new Error('Failed to fetch contests');
+        const data = await response.json();
+        setContests(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching contests:', err);
+        setError('Failed to load contests');
+        setLoading(false);
       }
-    });
-  }, [demoContests, activeStatusFilter, activeDifficultyFilter, activeSort]);
+    };
+
+    fetchContests();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-dark-200 rounded w-1/4"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 bg-dark-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -113,22 +72,14 @@ export const ContestBrowser: React.FC = () => {
         />
       </div>
 
-      {sortedAndFilteredContests.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedAndFilteredContests.map((contest) => (
-            <ContestCard 
-              key={contest.id} 
-              contest={contest}
-            />
-          ))}
-        </div>
-      ) : (
-        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 p-8 text-center">
-          <p className="text-gray-400 text-lg">
-            No contests found matching your filters. Try adjusting your search criteria.
-          </p>
-        </Card>
-      )}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {contests.map((contest) => (
+          <ContestCard 
+            key={contest.id} 
+            contest={contest}
+          />
+        ))}
+      </div>
     </div>
   );
 };

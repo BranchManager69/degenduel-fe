@@ -1,7 +1,7 @@
 // src/services/api.ts
 import { Token } from '../types';
 
-const API_URL = 'https://degenduel.me/api';
+export const API_URL = 'https://degenduel.me/api';
 
 interface User {
   wallet_address: string;
