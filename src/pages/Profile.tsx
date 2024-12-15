@@ -7,7 +7,7 @@ import { useStore } from '../store/useStore';
 import { api } from '../services/api';
 
 export const Profile: React.FC = () => {
-  const user = useStore(state => state.user);
+  const { user, setUser } = useStore();
   const [userData, setUserData] = useState<any>(null);
   const [userStats, setUserStats] = useState<any>(null);
   const [achievements, setAchievements] = useState<any[]>([]);
@@ -39,6 +39,19 @@ export const Profile: React.FC = () => {
     loadProfileData();
   }, [user?.wallet_address]);
 
+  const handleUpdateNickname = async (newNickname: string) => {
+    if (!user?.wallet_address) return;
+
+    try {
+      await api.users.update(user.wallet_address, newNickname);
+      setUserData((prev: typeof userData) => ({ ...prev, nickname: newNickname }));
+      setUser({ ...user, nickname: newNickname });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update nickname');
+      throw err;
+    }
+  };
+
   if (!user) {
     return <div>Connect your wallet to view your profile</div>;
   }
@@ -55,6 +68,7 @@ export const Profile: React.FC = () => {
           username={userData.nickname ?? 'Anonymous'}
           rankScore={userData.rank_score}
           joinDate={new Date(userData.created_at).toLocaleDateString()}
+          onUpdateNickname={handleUpdateNickname}
         />
 
         <UserStats
