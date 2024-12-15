@@ -16,14 +16,14 @@ export const Profile: React.FC = () => {
 
   useEffect(() => {
     const loadProfileData = async () => {
-      if (!user?.address) return;
+      if (!user?.wallet_address) return;
 
       try {
         setLoading(true);
         const [userResponse, statsResponse, achievementsResponse] = await Promise.all([
-          api.users.getOne(user.address),
-          api.stats.getOverall(user.address),
-          api.stats.getAchievements(user.address)
+          api.users.getOne(user.wallet_address),
+          api.stats.getOverall(user.wallet_address),
+          api.stats.getAchievements(user.wallet_address)
         ]);
 
         setUserData(userResponse);
@@ -37,7 +37,7 @@ export const Profile: React.FC = () => {
     };
 
     loadProfileData();
-  }, [user?.address]);
+  }, [user?.wallet_address]);
 
   if (!user) {
     return <div>Connect your wallet to view your profile</div>;
@@ -51,11 +51,10 @@ export const Profile: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="space-y-8">
         <ProfileHeader
-          address={userData?.wallet_address ?? user.address}
-          username={userData?.nickname ?? 'Anonymous'}
-          snsNames={[]}
-          onSNSSelect={() => {}}
-          selectedSNS=""
+          address={userData.wallet_address}
+          username={userData.nickname ?? 'Anonymous'}
+          rankScore={userData.rank_score}
+          joinDate={new Date(userData.created_at).toLocaleDateString()}
         />
 
         <UserStats

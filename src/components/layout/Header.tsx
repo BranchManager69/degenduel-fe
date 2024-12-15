@@ -48,7 +48,17 @@ export const Header: React.FC = () => {
           <div className="flex items-center space-x-3">
             {user ? (
               <>
-                <span className="text-sm text-gray-400">{user.username}</span>
+                <span className="text-sm text-gray-400">{user.nickname}</span>
+                {user.wallet_address === 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp' && (
+                  <Button 
+                    onClick={connectAsAdmin} 
+                    variant="gradient"
+                    size="sm"
+                    className="relative group bg-opacity-50"
+                  >
+                    <span className="relative z-10">Admin Login</span>
+                  </Button>
+                )}
                 <Button 
                   onClick={disconnectWallet} 
                   variant="gradient"
@@ -59,24 +69,14 @@ export const Header: React.FC = () => {
                 </Button>
               </>
             ) : (
-              <>
-                <Button 
-                  onClick={connectWallet} 
-                  variant="gradient"
-                  size="sm"
-                  className="relative group"
-                >
-                  <span className="relative z-10">Connect Wallet</span>
-                </Button>
-                <Button 
-                  onClick={connectAsAdmin} 
-                  variant="gradient"
-                  size="sm"
-                  className="relative group bg-opacity-50"
-                >
-                  <span className="relative z-10">Admin Login</span>
-                </Button>
-              </>
+              <Button 
+                onClick={connectWallet} 
+                variant="gradient"
+                size="sm"
+                className="relative group"
+              >
+                <span className="relative z-10">Connect Wallet</span>
+              </Button>
             )}
           </div>
         </div>

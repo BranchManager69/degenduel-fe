@@ -1,10 +1,10 @@
 import React from 'react';
-import { Contest } from '../../types';
-import { Card, CardHeader, CardContent } from '../ui/Card';
+import type { Contest } from '../../types';
 import { formatCurrency } from '../../lib/utils';
 
 interface ContestCardProps {
   contest: Contest;
+  onClick?: () => void;
 }
 
 const getDifficultyColor = (difficulty: string) => {
@@ -76,72 +76,71 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
-export const ContestCard: React.FC<ContestCardProps> = ({ contest }) => {
+export const ContestCard: React.FC<ContestCardProps> = ({ contest, onClick }) => {
   const timeInfo = contest.status === 'in_progress'
     ? `Ends in ${getTimeRemaining(contest.end_time)}`
     : `Starts in ${getTimeRemaining(contest.start_time)}`;
 
   return (
-    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-dark-200 transition-colors">
-      <CardHeader>
-        <div className="flex justify-between items-start">
+    <div 
+      onClick={onClick}
+      className="cursor-pointer bg-dark-200 rounded-lg p-6 hover:bg-dark-300 transition-colors"
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-100">{contest.name}</h3>
+          <p className="text-sm text-gray-400">{timeInfo}</p>
+        </div>
+        <StatusBadge status={contest.status} />
+      </div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-100">{contest.name}</h3>
-            <p className="text-sm text-gray-400">{timeInfo}</p>
+            <p className="text-sm text-gray-400">Prize Pool</p>
+            <p className="text-lg font-semibold text-gray-100">
+              {formatCurrency(Number(contest.prize_pool))}
+            </p>
           </div>
-          <StatusBadge status={contest.status} />
+          <div>
+            <p className="text-sm text-gray-400">Entry Fee</p>
+            <p className="text-lg font-semibold text-gray-100">
+              {formatCurrency(Number(contest.entry_fee))}
+            </p>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-400">Prize Pool</p>
-              <p className="text-lg font-semibold text-gray-100">
-                {formatCurrency(Number(contest.prize_pool))}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400">Entry Fee</p>
-              <p className="text-lg font-semibold text-gray-100">
-                {formatCurrency(Number(contest.entry_fee))}
-              </p>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-400">Participants</span>
-              <span className="text-sm font-medium text-gray-200">
-                {contest.participant_count} / {contest.settings.max_participants}
-              </span>
-            </div>
-            <div className="w-full bg-dark-400 rounded-full h-1.5">
-              <div
-                className="bg-brand-500 h-1.5 rounded-full"
-                style={{
-                  width: `${(contest.participant_count / contest.settings.max_participants) * 100}%`
-                }}
-              />
-            </div>
-          </div>
-
+        
+        <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">Difficulty:</span>
-              <span className={`text-sm font-medium capitalize ${getDifficultyColor(contest.settings.difficulty)}`}>
-                {contest.settings.difficulty}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">Min Trades:</span>
-              <span className="text-sm font-medium text-gray-200">
-                {contest.settings.min_trades}
-              </span>
-            </div>
+            <span className="text-sm text-gray-400">Participants</span>
+            <span className="text-sm font-medium text-gray-200">
+              {contest.participant_count} / {contest.settings.max_participants}
+            </span>
+          </div>
+          <div className="w-full bg-dark-400 rounded-full h-1.5">
+            <div
+              className="bg-brand-500 h-1.5 rounded-full"
+              style={{
+                width: `${(contest.participant_count / contest.settings.max_participants) * 100}%`
+              }}
+            />
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-400">Difficulty:</span>
+            <span className={`text-sm font-medium capitalize ${getDifficultyColor(contest.settings.difficulty)}`}>
+              {contest.settings.difficulty}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-400">Min Trades:</span>
+            <span className="text-sm font-medium text-gray-200">
+              {contest.settings.min_trades}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

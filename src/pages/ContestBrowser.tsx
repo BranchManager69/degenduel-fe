@@ -77,6 +77,7 @@ export const ContestBrowser: React.FC = () => {
           <ContestCard 
             key={contest.id} 
             contest={contest}
+            onClick={() => window.location.href = `/contests/${contest.id}`}
           />
         ))}
       </div>

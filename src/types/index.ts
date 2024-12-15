@@ -29,13 +29,16 @@ export interface Token {
 }
 
 export interface User {
-  address: string;
-  username: string;
-  avatar_url?: string; // Changed to snake_case
-  total_winnings: number; // Changed to snake_case
-  contests_won: number; // Changed to snake_case
-  contests_played: number; // Changed to snake_case
-  is_admin?: boolean; // Changed to snake_case
+  wallet_address: string;
+  nickname: string;
+  created_at: string;
+  last_login: string | null;
+  total_contests: number;
+  total_wins: number;
+  total_earnings: number;
+  rank_score: number;
+  settings: Record<string, any>;
+  is_admin?: boolean;
 }
 
 export interface Portfolio {
