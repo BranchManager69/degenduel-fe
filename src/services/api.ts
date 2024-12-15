@@ -138,7 +138,6 @@ export const api = {
 
   contests: {
     getActive: async (): Promise<Contest[]> => {
-      // Fix: Add /api to the URL
       const response = await fetch(`${API_URL}/contests/active`);
       if (!response.ok) throw new Error('Failed to fetch active contests');
       return response.json();
