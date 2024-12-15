@@ -1,14 +1,25 @@
 import { create } from 'zustand';
 import { User, Contest, Token, WalletError } from '../types';
 import { API_URL } from '../services/api';
+import { isAdminWallet } from '../lib/auth';
+
+// Add debug configuration
+interface DebugConfig {
+  forceWalletNotFound?: boolean;
+  forceUserRejection?: boolean;
+  forceAPIError?: boolean;
+  forceUnauthorized?: boolean;
+}
 
 interface Store {
+  isConnecting: boolean;
   user: User | null;
+  error: WalletError | null;
+  debugConfig: DebugConfig;  // Add debug config to store
+  setDebugConfig: (config: Partial<DebugConfig>) => void;  // Add setter
+  clearError: () => void;
   contests: Contest[];
   tokens: Token[];
-  isConnecting: boolean;
-  error: WalletError | null;
-  clearError: () => void;
   setUser: (user: User | null) => void;
   setContests: (contests: Contest[]) => void;
   setTokens: (tokens: Token[]) => void;
@@ -18,13 +29,19 @@ interface Store {
 }
 
 export const useStore = create<Store>((set, get) => ({
-  user: null,
-  contests: [],
-  tokens: [],
   isConnecting: false,
+  user: null,
   error: null,
+  debugConfig: {},  // Initialize empty debug config
+  
+  setDebugConfig: (config) => set((state) => ({
+    debugConfig: { ...state.debugConfig, ...config }
+  })),
   
   clearError: () => set({ error: null }),
+  
+  contests: [],
+  tokens: [],
   
   setUser: (user) => set({ user }),
   setContests: (contests) => set({ contests }),
@@ -32,17 +49,39 @@ export const useStore = create<Store>((set, get) => ({
   
   connectWallet: async () => {
     if (get().isConnecting) return;
+    
     try {
-      set({ isConnecting: true });
-      // Check if Phantom is installed
+      set({ isConnecting: true, error: null });
+      
       const { solana } = window as any;
-      if (!solana?.isPhantom) {
-        throw new Error('Phantom wallet not found! Get it from https://phantom.app/');
+      const { debugConfig } = get();
+
+      // Debug: Force wallet not found
+      if (debugConfig.forceWalletNotFound || !solana?.isPhantom) {
+        throw {
+          code: 'WALLET_NOT_FOUND',
+          message: 'Phantom wallet not found! Please install it from phantom.app'
+        } as WalletError;
       }
 
-      // Connect to wallet
+      // Debug: Force user rejection
+      if (debugConfig.forceUserRejection) {
+        throw {
+          code: 'USER_REJECTED',
+          message: 'Wallet connection was rejected'
+        } as WalletError;
+      }
+
       const response = await solana.connect();
       const walletAddress = response.publicKey.toString();
+
+      // Debug: Force API error
+      if (debugConfig.forceAPIError) {
+        throw {
+          code: 'API_ERROR',
+          message: 'Failed to fetch or create user data'
+        } as WalletError;
+      }
 
       // Try to fetch existing user data
       let userResponse = await fetch(`${API_URL}/users/${walletAddress}`);
@@ -67,7 +106,11 @@ export const useStore = create<Store>((set, get) => ({
       set({ user: { ...userData, is_admin: false } });
     } catch (error) {
       console.error('Failed to connect wallet:', error);
-      // You might want to show this error to the user
+      set({ 
+        error: (error as WalletError).code 
+          ? (error as WalletError)
+          : { code: 'CONNECTION_FAILED', message: 'Failed to connect wallet' }
+      });
     } finally {
       set({ isConnecting: false });
     }
@@ -75,21 +118,38 @@ export const useStore = create<Store>((set, get) => ({
 
   connectAsAdmin: async () => {
     if (get().isConnecting) return;
+    
     try {
-      set({ isConnecting: true });
+      set({ isConnecting: true, error: null });
+      
       const currentUser = get().user;
-      if (currentUser?.wallet_address !== 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp') {
-        console.error('Unauthorized: Only Branch Manager can access admin features');
-        return;
+      const { debugConfig } = get();
+
+      if (!currentUser || debugConfig.forceUnauthorized || !isAdminWallet(currentUser.wallet_address)) {
+        throw {
+          code: 'UNAUTHORIZED',
+          message: 'Only administrators can access admin features'
+        } as WalletError;
       }
 
       const response = await fetch(`${API_URL}/users/${currentUser.wallet_address}`);
-      if (!response.ok) throw new Error('Failed to fetch admin data');
+      if (!response.ok) {
+        throw {
+          code: 'API_ERROR',
+          message: 'Failed to fetch admin data'
+        } as WalletError;
+      }
       
       const userData = await response.json();
-      set({ user: { ...userData, is_admin: true } });
+      set({ user: { ...userData, is_admin: true }, error: null });
+      
     } catch (error) {
       console.error('Failed to connect as admin:', error);
+      set({ 
+        error: (error as WalletError).code 
+          ? (error as WalletError)
+          : { code: 'CONNECTION_FAILED', message: 'Failed to connect as admin' }
+      });
     } finally {
       set({ isConnecting: false });
     }

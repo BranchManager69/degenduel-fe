@@ -13,6 +13,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { HowItWorks } from './pages/HowItWorks';
 import { FAQ } from './pages/FAQ';
 import { Contact } from './pages/Contact';
+import { DebugPanel } from './components/debug/DebugPanel';
 
 export const App: React.FC = () => {
   return (
@@ -35,6 +36,7 @@ export const App: React.FC = () => {
           </Routes>
         </main>
         <Footer />
+        <DebugPanel />
       </div>
     </Router>
   );

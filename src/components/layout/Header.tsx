@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { useStore } from '../../store/useStore';
+import { isAdminWallet } from '../../lib/auth';
 
 export const Header: React.FC = () => {
   const { user, connectWallet, connectAsAdmin, disconnectWallet, isConnecting, error, clearError } = useStore();
@@ -43,7 +44,7 @@ export const Header: React.FC = () => {
               >
                 Profile
               </Link>
-              {user?.is_admin && (
+              {user && isAdminWallet(user.wallet_address) && (
                 <Link
                   to="/admin"
                   className="inline-flex items-center px-1 pt-1 text-lg font-medium text-brand-400 hover:text-brand-300 border-b-2 border-transparent hover:border-brand-400"
