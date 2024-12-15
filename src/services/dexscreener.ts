@@ -1,7 +1,10 @@
 // src/services/dexscreener.ts
 
+// Fallback token for when no Hot Tokens are found (probably not a good idea)
+export const FALLBACK_TOKEN = 'DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t';
+
 // Define the type for a token with market data
-interface TokenWithMarketData {
+/*interface TokenWithMarketData {
     address: string;
     name: string;
     symbol: string;
@@ -13,10 +16,46 @@ interface TokenWithMarketData {
     socials?: { platform: string; handle: string; url?: string }[];
     dexUrl?: string;
     priceChange24h?: number;
+}*/
+export interface TokenWithMarketData {
+    // Basic Info
+    address: string;
+    name: string;
+    symbol: string;
+    currentPrice: number;
+    
+    // Market Data
+    priceChange24h?: number;
+    volume24h?: number;
+    marketCap?: number;
+    fdv?: number;  // Fully Diluted Valuation
+    liquidity?: number;
+    
+    // Rich Token Info
+    imageUrl?: string;
+    websites?: { 
+        url: string;
+        type?: 'official' | 'community' | 'other';
+    }[];
+    
+    // Social Media & Community
+    socials?: {
+        platform: 'twitter' | 'telegram' | 'discord' | 'medium' | 'github' | string;
+        handle: string;
+        url?: string;
+        followers?: number;
+    }[];
+    
+    // Trading Info
+    dexUrl?: string;
+    pairAddress?: string;
+    dexId?: string;  // raydium, orca, etc.
+    
+    // Additional Metadata
+    lastUpdated?: number;
+    priceSource?: string;
 }
 
-// Fallback token for when no Hot Tokens are found (probably not a good idea)
-export const FALLBACK_TOKEN = 'DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t';
 
 // Define the type for a DexScreener pair
 interface DexScreenerPair {
@@ -128,6 +167,7 @@ export async function searchTokens(query: string): Promise<Partial<TokenWithMark
 }
 
 // Fetch token info for a given token address
+/*
 export async function fetchTokenInfo(tokenAddress: string): Promise<TokenWithMarketData | null> {
   try {
     const response = await fetch(
@@ -170,6 +210,74 @@ export async function fetchTokenInfo(tokenAddress: string): Promise<TokenWithMar
     return null;
   }
 }
+*/
+export async function fetchTokenInfo(tokenAddress: string): Promise<TokenWithMarketData | null> {
+    try {
+      const response = await fetch(
+        `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
+        { headers: { 'Accept': 'application/json' } }
+      );
+  
+      if (!response.ok) {
+        throw new Error('Failed to fetch token information');
+      }
+  
+      const data: DexScreenerResponse = await response.json();
+      
+      // Filter for Solana pairs with SOL as quote token
+      const solanaPairs = data.pairs?.filter(pair => 
+        pair.chainId === 'solana' && 
+        pair.quoteToken.symbol === 'SOL'
+      );
+  
+      // Get the highest volume pair
+      const pair = solanaPairs?.sort((a, b) => 
+        (b.volume?.h24 || 0) - (a.volume?.h24 || 0)
+      )[0];
+  
+      if (!pair) {
+        throw new Error('No valid trading pairs found');
+      }
+  
+      return {
+        // Basic Info
+        address: tokenAddress,
+        name: pair.baseToken.name,
+        symbol: pair.baseToken.symbol,
+        currentPrice: parseFloat(pair.priceUsd),
+        
+        // Market Data
+        priceChange24h: pair.priceChange?.h24,
+        volume24h: pair.volume?.h24,
+        marketCap: pair.marketCap,
+        fdv: pair.fdv,
+        liquidity: pair.liquidity?.usd,
+        
+        // Rich Token Info
+        imageUrl: pair.info?.imageUrl,
+        websites: pair.info?.websites?.map(w => ({ url: w.url })),
+        
+        // Social Media & Community (expanded from pair.info.socials)
+        socials: pair.info?.socials?.map(s => ({
+          platform: s.platform,
+          handle: s.handle,
+          url: s.url
+        })),
+        
+        // Trading Info
+        dexUrl: pair.url,
+        pairAddress: pair.pairAddress,
+        dexId: pair.dexId,
+        
+        // Metadata
+        lastUpdated: Date.now(),
+        priceSource: 'dexscreener'
+      };
+    } catch (error) {
+      console.error('Failed to fetch token info:', error);
+      return null;
+    }
+  }
 
 export async function fetchHotTokens(): Promise<TokenWithMarketData[]> {
   try {
