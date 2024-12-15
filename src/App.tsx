@@ -14,30 +14,34 @@ import { HowItWorks } from './pages/HowItWorks';
 import { FAQ } from './pages/FAQ';
 import { Contact } from './pages/Contact';
 import { DebugPanel } from './components/debug/DebugPanel';
+import { ToastProvider, ToastViewport } from './components/ui/Toast';
 
 export const App: React.FC = () => {
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col bg-dark-100">
-        <Header />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/contests" element={<ContestBrowser />} />
-            <Route path="/contests/:id" element={<ContestDetails />} />
-            <Route path="/contests/:id/select-tokens" element={<TokenSelection />} />
-            <Route path="/contests/:id/live" element={<LiveContest />} />
-            <Route path="/contests/:id/results" element={<Results />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/contact" element={<Contact />} />
-          </Routes>
-        </main>
-        <Footer />
-        <DebugPanel />
-      </div>
-    </Router>
+    <ToastProvider>
+      <Router>
+        <div className="min-h-screen flex flex-col bg-dark-100">
+          <Header />
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/contests" element={<ContestBrowser />} />
+              <Route path="/contests/:id" element={<ContestDetails />} />
+              <Route path="/contests/:id/select-tokens" element={<TokenSelection />} />
+              <Route path="/contests/:id/live" element={<LiveContest />} />
+              <Route path="/contests/:id/results" element={<Results />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/contact" element={<Contact />} />
+            </Routes>
+          </main>
+          <Footer />
+          <DebugPanel />
+          <ToastViewport />
+        </div>
+      </Router>
+    </ToastProvider>
   );
 };

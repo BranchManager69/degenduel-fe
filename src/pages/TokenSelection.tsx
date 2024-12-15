@@ -6,10 +6,12 @@ import { TokenFilters } from '../components/tokens/TokenFilters';
 import { PortfolioSummary } from '../components/tokens/PortfolioSummary';
 import { Token } from '../types';
 import { api } from '../services/api';
+import { useToast } from '../components/ui/Toast';
 
 export const TokenSelection: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +50,41 @@ export const TokenSelection: React.FC = () => {
 
   const totalWeight = Array.from(selectedTokens.values()).reduce((sum, weight) => sum + weight, 0);
 
+  const handleSubmit = async () => {
+    if (totalWeight !== 100) {
+      toast({
+        title: 'Invalid Portfolio',
+        description: 'Total weight must equal 100%',
+        variant: 'error'
+      });
+      return;
+    }
+
+    try {
+      const portfolio = Array.from(selectedTokens.entries()).map(([symbol, weight]) => ({
+        symbol,
+        weight
+      }));
+
+      await api.contests.submitPortfolio(contestId!, portfolio);
+      
+      toast({
+        title: 'Success!',
+        description: 'Your portfolio has been submitted',
+        variant: 'success'
+      });
+
+      navigate(`/contests/${contestId}/live`);
+    } catch (error) {
+      console.error('Failed to submit portfolio:', error);
+      toast({
+        title: 'Submission Failed',
+        description: 'Please try again',
+        variant: 'error'
+      });
+    }
+  };
+
   if (loading) {
     return <div>Loading tokens...</div>;
   }
@@ -65,7 +102,7 @@ export const TokenSelection: React.FC = () => {
         </div>
         <Button
           size="lg"
-          onClick={() => navigate(`/contests/${contestId}/live`)}
+          onClick={handleSubmit}
           disabled={totalWeight !== 100}
           variant="gradient"
           className="relative group"

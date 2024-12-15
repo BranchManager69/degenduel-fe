@@ -149,5 +149,23 @@ export const api = {
       if (!response.ok) throw new Error('Failed to fetch contest');
       return response.json();
     },
+
+    submitPortfolio: async (contestId: string, portfolio: Array<{ symbol: string; weight: number }>) => {
+      const response = await fetch(`${API_URL}/contests/${contestId}/portfolio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ portfolio }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to submit portfolio');
+      }
+
+      return response.json();
+    },
   },
 };
