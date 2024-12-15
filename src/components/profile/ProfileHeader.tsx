@@ -36,6 +36,10 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       alert(`Nickname must be no longer than ${MAX_NICKNAME_LENGTH} characters`);
       return;
     }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedNickname)) {
+      alert('Nickname can only contain letters, numbers, and underscores');
+      return;
+    }
     if (trimmedNickname === username) {
       setIsEditing(false);
       return;
@@ -49,6 +53,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       console.error('Failed to update nickname:', error);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || /^[a-zA-Z0-9_]+$/.test(value)) {
+      setNewNickname(value);
     }
   };
 
@@ -66,11 +77,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   <input
                     type="text"
                     value={newNickname}
-                    onChange={(e) => setNewNickname(e.target.value)}
+                    onChange={handleNicknameChange}
                     maxLength={MAX_NICKNAME_LENGTH}
                     className="bg-dark-200 border border-dark-400 rounded px-2 py-1 text-white"
                     disabled={updating}
-                    placeholder="Enter nickname"
+                    placeholder="Letters, numbers, underscore"
                   />
                   <button
                     type="submit"
