@@ -66,17 +66,23 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">Price</span>
-                <span className="font-medium text-gray-200">{formatCurrency(token.price)}</span>
+                <span className="font-medium text-gray-200">
+                  {token.price ? formatCurrency(token.price) : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">24h Change</span>
-                <span className={`font-medium ${token.change_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {token.change_24h.toFixed(2)}%
+                <span className={`font-medium ${
+                  token.change_24h >= 0 ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {token.change_24h != null ? `${token.change_24h.toFixed(2)}%` : 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">Market Cap</span>
-                <span className="font-medium text-gray-200">{formatMarketCap(token.market_cap)}</span>
+                <span className="font-medium text-gray-200">
+                  {token.market_cap ? formatMarketCap(token.market_cap) : 'N/A'}
+                </span>
               </div>
               
               {/* Token Weight Slider */}

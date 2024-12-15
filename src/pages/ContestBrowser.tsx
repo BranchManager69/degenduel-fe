@@ -4,6 +4,8 @@ import { ContestFilters } from '../components/contests/ContestFilters';
 import { CreateContestButton } from '../components/contests/CreateContestButton';
 import { API_URL } from '../services/api';
 import type { Contest } from '../types';
+import { CountdownTimer } from '../components/ui/CountdownTimer';
+import { isContestLive } from '../lib/utils';
 
 export const ContestBrowser: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
@@ -74,11 +76,21 @@ export const ContestBrowser: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {contests.map((contest) => (
-          <ContestCard 
-            key={contest.id} 
-            contest={contest}
-            onClick={() => window.location.href = `/contests/${contest.id}`}
-          />
+          <div key={contest.id}>
+            <ContestCard 
+              contest={contest}
+              onClick={() => window.location.href = `/contests/${contest.id}`}
+            />
+            <p className="text-sm text-gray-400">
+              {isContestLive(contest) ? 'Ends in ' : 'Starts in '}
+              <CountdownTimer 
+                targetDate={isContestLive(contest) ? contest.end_time : contest.start_time}
+                onComplete={() => {
+                  console.log('Timer completed for contest:', contest.id);
+                }}
+              />
+            </p>
+          </div>
         ))}
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Contest } from '../types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -38,3 +39,26 @@ export function calculatePortfolioValue(holdings: any[], prices: any): number {
     return total + (holding.amount * (prices[holding.token] || 0));
   }, 0);
 }
+
+export const isContestLive = (contest: Contest): boolean => {
+  return contest.status === 'active' || 
+         contest.status === 'in_progress' || 
+         contest.status === 'in-progress';
+};
+
+export const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).format(date);
+};
+
+export const mapContestStatus = (status: Contest['status']): 'upcoming' | 'live' | 'completed' => {
+  if (status === 'pending') return 'upcoming';
+  if (status === 'active' || status === 'in_progress' || status === 'in-progress') return 'live';
+  return 'completed';
+};

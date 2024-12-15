@@ -1,5 +1,6 @@
 import React from 'react';
-import type { Contest } from '../../services/api';
+import type { Contest } from '../../types';
+import { isContestLive } from '../../lib/utils';
 
 interface Props {
   contests: Contest[];
@@ -7,6 +8,8 @@ interface Props {
 }
 
 export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
+  const liveContests = contests.filter(isContestLive);
+
   if (loading) {
     return (
       <div className="bg-dark-200 p-2">
@@ -15,21 +18,21 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
     );
   }
 
-  if (contests.length === 0) {
+  if (liveContests.length === 0) {
     return null;
   }
 
   return (
     <div className="bg-dark-200 p-2 overflow-hidden">
       <div className="animate-scroll-x flex space-x-8">
-        {contests.map((contest) => (
+        {liveContests.map((contest) => (
           <div key={contest.id} className="flex items-center space-x-2 text-sm">
             <span className="text-brand-400">LIVE:</span>
             <span className="font-medium">{contest.name}</span>
             <span className="text-gray-400">•</span>
-            <span className="text-gray-300">{contest.participants}/{contest.maxParticipants} Players</span>
+            <span className="text-gray-300">{contest.participant_count}/{contest.settings.max_participants} Players</span>
             <span className="text-gray-400">•</span>
-            <span className="text-brand-300">{contest.prizePool} SOL Prize Pool</span>
+            <span className="text-brand-300">{contest.prize_pool} SOL Prize Pool</span>
           </div>
         ))}
       </div>

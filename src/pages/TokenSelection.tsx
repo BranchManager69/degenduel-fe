@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { TokenGrid } from '../components/tokens/TokenGrid';
 import { TokenFilters } from '../components/tokens/TokenFilters';
@@ -33,10 +33,6 @@ export const TokenSelection: React.FC = () => {
     fetchTokens();
   }, []);
 
-  const totalWeight = useMemo(() => {
-    return Array.from(selectedTokens.values()).reduce((sum, weight) => sum + weight, 0);
-  }, [selectedTokens]);
-
   const handleTokenSelect = (symbol: string, weight: number) => {
     const newSelectedTokens = new Map(selectedTokens);
     
@@ -49,18 +45,14 @@ export const TokenSelection: React.FC = () => {
     setSelectedTokens(newSelectedTokens);
   };
 
-  const handleSubmit = () => {
-    if (totalWeight === 100) {
-      navigate(`/contests/${contestId}/live`);
-    }
-  };
+  const totalWeight = Array.from(selectedTokens.values()).reduce((sum, weight) => sum + weight, 0);
 
   if (loading) {
-    return <div>Loading tokens...</div>; // Consider using a proper loading component
+    return <div>Loading tokens...</div>;
   }
 
   if (error) {
-    return <div>Error: {error}</div>; // Consider using a proper error component
+    return <div>Error: {error}</div>;
   }
 
   return (
@@ -72,7 +64,7 @@ export const TokenSelection: React.FC = () => {
         </div>
         <Button
           size="lg"
-          onClick={handleSubmit}
+          onClick={() => navigate(`/contests/${contestId}/live`)}
           disabled={totalWeight !== 100}
           variant="gradient"
           className="relative group"

@@ -1,5 +1,6 @@
 // src/services/api.ts
 import { Token } from '../types';
+import { Contest } from '../types';
 
 export const API_URL = 'https://degenduel.me/api';
 
@@ -13,19 +14,6 @@ interface User {
   total_earnings?: string;
   rank_score?: number;
   settings?: Record<string, any>;
-}
-
-export interface Contest {
-  id: string;
-  name: string;
-  difficulty: 'dolphin' | 'shark' | 'whale';
-  entryFee: number;
-  prizePool: number;
-  startTime: string;
-  endTime: string;
-  participants: number;
-  maxParticipants: number;
-  status: 'open' | 'in_progress' | 'completed';
 }
 
 interface PlatformStats {

@@ -6,7 +6,8 @@ import { LiveContestTicker } from '../components/ui/LiveContestTicker';
 import { Features } from '../components/landing/Features';
 import { ContestSection } from '../components/landing/ContestSection';
 import { api } from '../services/api';
-import type { Contest } from '../services/api';
+import type { Contest } from '../types';
+import { isContestLive } from '../lib/utils';
 
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
@@ -19,8 +20,8 @@ export const LandingPage: React.FC = () => {
       try {
         const contests = await api.contests.getActive();
         
-        const active = contests.filter(contest => contest.status === 'in_progress');
-        const open = contests.filter(contest => contest.status === 'open');
+        const active = contests.filter(isContestLive);
+        const open = contests.filter(contest => contest.status === 'pending'); // upcoming (has not started)  
         
         setActiveContests(active);
         setOpenContests(open);

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Contest } from '../../types';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, isContestLive } from '../../lib/utils';
+import { CountdownTimer } from '../ui/CountdownTimer';
 
 interface ContestCardProps {
   contest: Contest;
@@ -26,7 +27,7 @@ const getDifficultyColor = (difficulty: string) => {
   }
 };
 
-const getTimeRemaining = (dateString: string) => {
+/* const getTimeRemaining = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
   const diff = date.getTime() - now.getTime();
@@ -40,7 +41,7 @@ const getTimeRemaining = (dateString: string) => {
   }
   
   return `${hours}h ${minutes}m`;
-};
+}; */
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const getStatusColor = () => {
@@ -77,19 +78,21 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 export const ContestCard: React.FC<ContestCardProps> = ({ contest, onClick }) => {
-  const timeInfo = contest.status === 'in_progress'
-    ? `Ends in ${getTimeRemaining(contest.end_time)}`
-    : `Starts in ${getTimeRemaining(contest.start_time)}`;
-
   return (
-    <div 
-      onClick={onClick}
-      className="cursor-pointer bg-dark-200 rounded-lg p-6 hover:bg-dark-300 transition-colors"
-    >
+    <div onClick={onClick} className="cursor-pointer bg-dark-200 rounded-lg p-6 hover:bg-dark-300 transition-colors">
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-lg font-semibold text-gray-100">{contest.name}</h3>
-          <p className="text-sm text-gray-400">{timeInfo}</p>
+          <p className="text-sm text-gray-400">
+            {isContestLive(contest) ? 'Ends in ' : 'Starts in '}
+            <CountdownTimer 
+              targetDate={isContestLive(contest) ? contest.end_time : contest.start_time}
+              onComplete={() => {
+                // Optionally trigger a refresh or status update
+                console.log('Timer completed');
+              }}
+            />
+          </p>
         </div>
         <StatusBadge status={contest.status} />
       </div>
@@ -120,7 +123,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({ contest, onClick }) =>
             <div
               className="bg-brand-500 h-1.5 rounded-full"
               style={{
-                width: `${(contest.participant_count / contest.settings.max_participants) * 100}%`
+                width: `${(Number(contest.participant_count) / contest.settings.max_participants) * 100}%`
               }}
             />
           </div>

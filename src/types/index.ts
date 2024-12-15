@@ -1,4 +1,13 @@
 // src/types/index.ts
+
+interface ContestSettings {
+  difficulty: 'guppy' | 'tadpole' | 'squid' | 'dolphin' | 'shark' | 'whale';
+  min_trades: number;
+  max_participants: number;
+  rules: string[];
+  token_types?: string[];
+}
+
 export interface Contest {
   id: number;
   name: string;
@@ -7,15 +16,16 @@ export interface Contest {
   end_time: string;
   entry_fee: string;
   prize_pool: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  settings: {
-    difficulty: 'guppy' | 'tadpole' | 'squid' | 'dolphin' | 'shark' | 'whale';
-    min_trades: number;
-    max_participants: number;
-  };
-  participant_count: number;
-  is_participating: boolean;
+  status: 'pending' | 'active' | 'in_progress' | 'in-progress' | 'completed';
+  settings: ContestSettings;
   created_at: string;
+  participant_count: string;
+  is_participating: boolean;
+  participants: Array<{
+    address: string;
+    username?: string;
+    score?: number;
+  }>;
 }
 
 // src/types/index.ts
@@ -54,3 +64,4 @@ export type WalletError = {
   code: 'WALLET_NOT_FOUND' | 'CONNECTION_FAILED' | 'USER_REJECTED' | 'API_ERROR' | 'UNAUTHORIZED';
   message: string;
 }
+

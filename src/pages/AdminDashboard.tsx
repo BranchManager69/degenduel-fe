@@ -52,12 +52,11 @@ export const AdminDashboard: React.FC = () => {
   const handleSaveContest = async (contestId: number, data: Partial<Contest>) => {
     try {
       await api.admin.updateContest(
-        contestId.toString(), 
-        // First convert to unknown, then to the expected type with correct status values
-        data as unknown as { 
-          id: string; 
-          status?: 'open' | 'in_progress' | 'completed'
-        } & Omit<Partial<Contest>, 'id' | 'status'>
+        contestId.toString(),
+        {
+          ...data,
+          id: parseInt(contestId.toString())
+        }
       );
       
       const updatedContests = await api.admin.getContests();
