@@ -49,3 +49,8 @@ export interface Portfolio {
   total_value: number; // Changed to snake_case
   performance_24h: number; // Changed to snake_case
 }
+
+export type WalletError = {
+  code: 'WALLET_NOT_FOUND' | 'CONNECTION_FAILED' | 'USER_REJECTED' | 'API_ERROR' | 'UNAUTHORIZED';
+  message: string;
+}

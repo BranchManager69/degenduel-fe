@@ -1,10 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { useStore } from '../../store/useStore';
 
 export const Header: React.FC = () => {
-  const { user, connectWallet, connectAsAdmin, disconnectWallet } = useStore();
+  const { user, connectWallet, connectAsAdmin, disconnectWallet, isConnecting, error, clearError } = useStore();
+
+  // Auto-clear errors after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(clearError, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
   return (
     <header className="bg-dark-200 border-b border-dark-300 sticky top-0 z-50">
@@ -55,8 +63,11 @@ export const Header: React.FC = () => {
                     variant="gradient"
                     size="sm"
                     className="relative group bg-opacity-50"
+                    disabled={isConnecting}
                   >
-                    <span className="relative z-10">Admin Login</span>
+                    <span className="relative z-10">
+                      {isConnecting ? 'Connecting...' : 'Admin Login'}
+                    </span>
                   </Button>
                 )}
                 <Button 
@@ -74,12 +85,22 @@ export const Header: React.FC = () => {
                 variant="gradient"
                 size="sm"
                 className="relative group"
+                disabled={isConnecting}
               >
-                <span className="relative z-10">Connect Wallet</span>
+                <span className="relative z-10">
+                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                </span>
               </Button>
             )}
           </div>
         </div>
+        
+        {/* Error display */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3 mb-4">
+            <p className="text-red-400 text-sm">{error.message}</p>
+          </div>
+        )}
       </div>
     </header>
   );
