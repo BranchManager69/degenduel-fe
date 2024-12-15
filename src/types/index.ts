@@ -1,5 +1,13 @@
 // src/types/index.ts
 
+export type ContestStatus = 
+  | 'pending'
+  | 'active'
+  | 'in_progress'  
+  | 'in-progress'  // clean this up someday. but definitely not today.
+  | 'completed'
+  | 'cancelled'; 
+
 export interface ContestSettings {
   difficulty: 'guppy' | 'tadpole' | 'squid' | 'dolphin' | 'shark' | 'whale';
   min_trades: number;
@@ -21,7 +29,8 @@ export interface Contest {
   end_time: string;
   entry_fee: string;
   prize_pool: string;
-  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  //status: 'pending' | 'active' | 'completed' | 'cancelled';   <---- this has been missing in_progress this entire time... WTF.
+  status: ContestStatus;
   settings: ContestSettings;
   created_at: string;
   participant_count: number;

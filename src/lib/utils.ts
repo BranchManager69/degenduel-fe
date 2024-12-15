@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Contest } from '../types';
+import { Contest, type ContestStatus } from '../types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -40,11 +40,18 @@ export function calculatePortfolioValue(holdings: any[], prices: any): number {
   }, 0);
 }
 
-export const isContestLive = (contest: Contest): boolean => {
+export function isContestLive(contest: { status: ContestStatus }): boolean {
   return contest.status === 'active' || 
-         contest.status === 'in_progress' || 
-         contest.status === 'in-progress';
-};
+         contest.status === 'in-progress' || 
+         contest.status === 'in_progress';    // Too lazy to remove 'in-progress' with hyphen from everywhere.
+}
+
+export function getStatusDisplay(status: ContestStatus): string {
+  if (status === 'active' || status === 'in_progress') return 'live';
+  if (status === 'completed') return 'ended';
+  if (status === 'cancelled') return 'cancelled';
+  return 'upcoming';
+}
 
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
