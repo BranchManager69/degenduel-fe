@@ -4,6 +4,8 @@ import { Contest } from '../types';
 
 export const API_URL = 'https://degenduel.me/api';
 
+/* Types */
+
 interface User {
   wallet_address: string;
   nickname: string;
@@ -14,6 +16,15 @@ interface User {
   total_earnings?: string;
   rank_score?: number;
   settings?: Record<string, any>;
+  // New fields
+  balance: number;
+  is_banned: boolean;
+  ban_reason?: string;
+  last_deposit_at?: string;
+  last_withdrawal_at?: string;
+  kyc_status?: string;
+  risk_level: number;
+  is_admin?: boolean;
 }
 
 interface PlatformStats {
@@ -31,6 +42,39 @@ interface Activity {
   timestamp: string;
   details: string;
 }
+
+interface Transaction {
+  id: number;
+  wallet_address: string;
+  type: 'CONTEST_ENTRY' | 'PRIZE_PAYOUT' | 'DEPOSIT' | 'WITHDRAWAL' | 'REFERRAL_BONUS' | 'PROMOTION';
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  contest_id?: number;
+  description?: string;
+  status: 'pending' | 'completed' | 'failed' | 'reversed';
+  metadata: Record<string, any>;
+  created_at: string;
+  processed_at?: string;
+}
+
+interface TokenBucket {
+  id: number;
+  name: string;
+  description?: string;
+  created_at: string;
+  tokens: Token[];
+}
+
+interface ContestPortfolio {
+  contest_id: number;
+  wallet_address: string;
+  token_id: number;
+  weight: number;
+  created_at: string;
+}
+
+/* Implemented API endpoints: */
 
 export const api = {
   // User endpoints
@@ -96,6 +140,7 @@ export const api = {
     }
   },
 
+  // Admin endpoints
   admin: {
     // Get platform stats
     getPlatformStats: async (): Promise<PlatformStats> => {
@@ -136,6 +181,7 @@ export const api = {
     },
   },
 
+  // Contest endpoints
   contests: {
     getActive: async (): Promise<Contest[]> => {
       const response = await fetch(`${API_URL}/contests/active`);
@@ -167,4 +213,56 @@ export const api = {
       return response.json();
     },
   },
+
+  // Balance endpoints
+  balance: {
+    get: async (): Promise<number> => {
+      const response = await fetch(`${API_URL}/balance`);
+      if (!response.ok) throw new Error('Failed to fetch balance');
+      return response.json();
+    },
+  },
+
+  // Transaction endpoints
+  transactions: {
+    getHistory: async (): Promise<Transaction[]> => {
+      const response = await fetch(`${API_URL}/transactions`);
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+      return response.json();
+    },
+  },
+
+  // Token bucket endpoints
+  buckets: {
+    getAll: async (): Promise<TokenBucket[]> => {
+      const response = await fetch(`${API_URL}/buckets`);
+      if (!response.ok) throw new Error('Failed to fetch buckets');
+      return response.json();
+    },
+
+    getTokens: async (bucketId: number): Promise<Token[]> => {
+      const response = await fetch(`${API_URL}/buckets/${bucketId}/tokens`);
+      if (!response.ok) throw new Error('Failed to fetch bucket tokens');
+      return response.json();
+    },
+  },
+
+  // Portfolio endpoints  
+  portfolio: {
+    get: async (contestId: number): Promise<ContestPortfolio> => {
+      const response = await fetch(`${API_URL}/contests/${contestId}/portfolio`);
+      if (!response.ok) throw new Error('Failed to fetch portfolio');
+      return response.json();
+    },
+
+    update: async (contestId: number, weights: Record<number, number>): Promise<void> => {
+      const response = await fetch(`${API_URL}/contests/${contestId}/portfolio`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weights }),
+      });
+      if (!response.ok) throw new Error('Failed to update portfolio weights');
+    },
+  },
+
 };
