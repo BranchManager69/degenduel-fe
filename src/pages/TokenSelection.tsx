@@ -21,6 +21,7 @@ export const TokenSelection: React.FC = () => {
       try {
         setLoading(true);
         const data = await api.tokens.getAll();
+        console.log('Fetched tokens:', data);
         setTokens(data);
       } catch (err) {
         console.error('Failed to fetch tokens:', err);
