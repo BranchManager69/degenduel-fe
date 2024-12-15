@@ -7,8 +7,8 @@ import { ContestDifficulty } from '../landing/contests/ContestDifficulty';
 
 interface ContestManagementProps {
   contests: Contest[];
-  onEditContest: (id: string) => void;
-  onDeleteContest: (id: string) => void;
+  onEditContest: (id: number) => void;
+  onDeleteContest: (id: number) => void;
 }
 
 export const ContestManagement: React.FC<ContestManagementProps> = ({
@@ -32,10 +32,10 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                 <div>
                   <div className="flex items-center space-x-2">
                     <div className="font-medium text-gray-100">{contest.name}</div>
-                    <ContestDifficulty difficulty={contest.difficulty} />
+                    <ContestDifficulty difficulty={contest.settings.difficulty} />
                   </div>
                   <div className="text-sm text-gray-400 mt-1">
-                    {new Date(contest.startTime).toLocaleDateString()} - {new Date(contest.endTime).toLocaleDateString()}
+                    {new Date(contest.start_time).toLocaleDateString()} - {new Date(contest.end_time).toLocaleDateString()}
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -60,11 +60,11 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <div className="text-sm text-gray-400">Entry Fee</div>
-                  <div className="font-medium text-gray-100">{formatCurrency(contest.entryFee)}</div>
+                  <div className="font-medium text-gray-100">{formatCurrency(Number(contest.entry_fee))}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-400">Prize Pool</div>
-                  <div className="font-medium text-brand-400">{formatCurrency(contest.prizePool)}</div>
+                  <div className="font-medium text-brand-400">{formatCurrency(Number(contest.prize_pool))}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-400">Participants</div>
@@ -72,11 +72,11 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                     <div className="w-24 h-1.5 bg-dark-400 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-brand-500 rounded-full" 
-                        style={{ width: `${(contest.participants / contest.maxParticipants) * 100}%` }}
+                        style={{ width: `${(contest.participant_count / contest.settings.max_participants) * 100}%` }}
                       />
                     </div>
                     <span className="font-medium text-gray-100">
-                      {contest.participants}/{contest.maxParticipants}
+                      {contest.participant_count}/{contest.settings.max_participants}
                     </span>
                   </div>
                 </div>

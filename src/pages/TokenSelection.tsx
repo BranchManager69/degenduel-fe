@@ -1,43 +1,37 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { TokenGrid } from '../components/tokens/TokenGrid';
 import { TokenFilters } from '../components/tokens/TokenFilters';
 import { PortfolioSummary } from '../components/tokens/PortfolioSummary';
+import { Token } from '../types';
+import { api } from '../services/api';
 
 export const TokenSelection: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(new Map());
   const [marketCapFilter, setMarketCapFilter] = useState('');
 
-  // Placeholder token data
-  const tokens = [
-    {
-      symbol: 'SOL',
-      name: 'Solana',
-      price: 100.50,
-      marketCap: 40_000_000_000,
-      change24h: 5.2,
-      volume24h: 1_500_000_000,
-    },
-    {
-      symbol: 'RAY',
-      name: 'Raydium',
-      price: 2.75,
-      marketCap: 500_000_000,
-      change24h: -2.1,
-      volume24h: 50_000_000,
-    },
-    {
-      symbol: 'BONK',
-      name: 'Bonk',
-      price: 0.000001,
-      marketCap: 100_000_000,
-      change24h: 15.7,
-      volume24h: 20_000_000,
-    },
-  ];
+  useEffect(() => {
+    const fetchTokens = async () => {
+      try {
+        setLoading(true);
+        const data = await api.tokens.getAll();
+        setTokens(data);
+      } catch (err) {
+        console.error('Failed to fetch tokens:', err);
+        setError('Failed to load tokens');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTokens();
+  }, []);
 
   const totalWeight = useMemo(() => {
     return Array.from(selectedTokens.values()).reduce((sum, weight) => sum + weight, 0);
@@ -60,6 +54,14 @@ export const TokenSelection: React.FC = () => {
       navigate(`/contests/${contestId}/live`);
     }
   };
+
+  if (loading) {
+    return <div>Loading tokens...</div>; // Consider using a proper loading component
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>; // Consider using a proper error component
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -96,8 +98,8 @@ export const TokenSelection: React.FC = () => {
         </div>
         <div>
           <PortfolioSummary
-            selectedTokens={selectedTokens}
             tokens={tokens}
+            selectedTokens={selectedTokens}
           />
         </div>
       </div>

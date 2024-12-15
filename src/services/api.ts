@@ -1,8 +1,8 @@
 // src/services/api.ts
+import { Token } from '../types';
 
 const API_URL = 'https://degenduel.me/api';
 
-// Type definitions based on your API responses
 interface User {
   wallet_address: string;
   nickname: string;
@@ -15,7 +15,7 @@ interface User {
   settings?: Record<string, any>;
 }
 
-interface Contest {
+export interface Contest {
   id: string;
   name: string;
   difficulty: 'dolphin' | 'shark' | 'whale';
@@ -75,6 +75,15 @@ export const api = {
         body: JSON.stringify({ settings }),
       });
       if (!response.ok) throw new Error('Failed to update settings');
+    }
+  },
+
+  // Token endpoints
+  tokens: {
+    getAll: async (): Promise<Token[]> => {
+      const response = await fetch(`${API_URL}/tokens`);
+      if (!response.ok) throw new Error('Failed to fetch tokens');
+      return response.json();
     }
   },
 
@@ -141,6 +150,7 @@ export const api = {
 
   contests: {
     getActive: async (): Promise<Contest[]> => {
+      // Fix: Add /api to the URL
       const response = await fetch(`${API_URL}/contests/active`);
       if (!response.ok) throw new Error('Failed to fetch active contests');
       return response.json();

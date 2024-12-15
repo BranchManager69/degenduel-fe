@@ -4,7 +4,8 @@ import { PlatformStats } from '../components/admin/PlatformStats';
 import { RecentActivity } from '../components/admin/RecentActivity';
 import { useStore } from '../store/useStore';
 import { api } from '../services/api';
-import { Contest, PlatformStats as IPlatformStats, Activity } from '../types/admin';
+import { Contest } from '../types';
+import { PlatformStats as IPlatformStats, Activity } from '../types/admin';
 import { EditContestModal } from '../components/admin/EditContestModal';
 
 export const AdminDashboard: React.FC = () => {
@@ -18,7 +19,7 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const loadDashboardData = async () => {
-      if (!user?.isAdmin) return;
+      if (!user?.is_admin) return;
 
       try {
         setLoading(true);
@@ -28,7 +29,7 @@ export const AdminDashboard: React.FC = () => {
           api.admin.getRecentActivities(),
         ]);
 
-        setContests(contestsData);
+        setContests(contestsData as unknown as Contest[]);
         setPlatformStats(statsData);
         setRecentActivities(activitiesData);
       } catch (err) {
@@ -39,38 +40,45 @@ export const AdminDashboard: React.FC = () => {
     };
 
     loadDashboardData();
-  }, [user?.isAdmin]);
+  }, [user?.is_admin]);
 
-  const handleEditContest = (id: string) => {
+  const handleEditContest = (id: number) => {
     const contest = contests.find(c => c.id === id);
     if (contest) {
       setEditingContest(contest);
     }
   };
 
-  const handleSaveContest = async (contestId: string, data: Partial<Contest>) => {
+  const handleSaveContest = async (contestId: number, data: Partial<Contest>) => {
     try {
-      await api.admin.updateContest(contestId, data);
+      await api.admin.updateContest(
+        contestId.toString(), 
+        // First convert to unknown, then to the expected type with correct status values
+        data as unknown as { 
+          id: string; 
+          status?: 'open' | 'in_progress' | 'completed'
+        } & Omit<Partial<Contest>, 'id' | 'status'>
+      );
+      
       const updatedContests = await api.admin.getContests();
-      setContests(updatedContests);
+      setContests(updatedContests as unknown as Contest[]);
       setEditingContest(null);
     } catch (err) {
       throw new Error('Failed to update contest');
     }
   };
 
-  const handleDeleteContest = async (id: string) => {
+  const handleDeleteContest = async (id: number) => {
     try {
-      await api.admin.deleteContest(id);
-      // Refresh contests after deletion
+      await api.admin.deleteContest(id.toString());
       const updatedContests = await api.admin.getContests();
-      setContests(updatedContests);
+      setContests(updatedContests as unknown as Contest[]);
     } catch (err) {
       console.error('Failed to delete contest:', err);
     }
   };
 
-  if (!user?.isAdmin) {
+  if (!user?.is_admin) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h2 className="text-2xl font-bold text-gray-100">
@@ -108,11 +116,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <ContestManagement
-              contests={contests.map(contest => ({
-                ...contest,
-                startTime: new Date(contest.startTime),
-                endTime: new Date(contest.endTime),
-              }))}
+              contests={contests}
               onEditContest={handleEditContest}
               onDeleteContest={handleDeleteContest}
             />

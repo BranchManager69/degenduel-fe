@@ -6,38 +6,32 @@ import { LiveContestTicker } from '../components/ui/LiveContestTicker';
 import { Features } from '../components/landing/Features';
 import { ContestSection } from '../components/landing/ContestSection';
 import { api } from '../services/api';
-import { Contest } from '../types/contests';
+import type { Contest } from '../services/api';
 
 export const LandingPage: React.FC = () => {
-  const [liveContests, setLiveContests] = useState<Contest[]>([]);
-  const [upcomingContests, setUpcomingContests] = useState<Contest[]>([]);
+  const [activeContests, setActiveContests] = useState<Contest[]>([]);
+  const [openContests, setOpenContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        setLoading(true);
         const contests = await api.contests.getActive();
         
-        // Split contests into live and upcoming based on start time
-        const now = new Date();
-        const live = contests.filter((contest: Contest) => 
-          new Date(contest.startTime) <= now && new Date(contest.endTime) > now
-        );
-        const upcoming = contests.filter((contest: Contest) => 
-          new Date(contest.startTime) > now
-        );
-
-        setLiveContests(live);
-        setUpcomingContests(upcoming);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load contests');
-      } finally {
+        const active = contests.filter(contest => contest.status === 'in_progress');
+        const open = contests.filter(contest => contest.status === 'open');
+        
+        setActiveContests(active);
+        setOpenContests(open);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching contests:', error);
+        setError('Failed to load contests');
         setLoading(false);
       }
     };
-
+  
     fetchContests();
   }, []);
 
@@ -45,25 +39,23 @@ export const LandingPage: React.FC = () => {
     <div className="relative min-h-screen bg-dark-100 text-gray-100">
       <MovingBackground />
       
-      {/* Live Contest Ticker at the top */}
       <div className="sticky top-16 z-10">
         <LiveContestTicker 
-          contests={liveContests} 
+          contests={activeContests} 
           loading={loading} 
         />
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
         <div className="relative pt-20 pb-16 text-center">
           <h1 className="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl mb-6">
-            <span className="block mb-2">Welcome to</span>
+            <span className="block mb-2">This is</span>
             <span className="block bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text pb-2">
-              DegenDuel
+              DegenDuel.
             </span>
           </h1>
           <p className="mt-3 max-w-md mx-auto text-base text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            Compete in trading contests with Solana tokens. Build your portfolio, challenge other players, and climb the leaderboard!
+            Compete in trading competitions against schizo degens and based chads. Build your stack, challenge other degens, and win some SOL.
           </p>
           <div className="mt-8 max-w-md mx-auto sm:flex sm:justify-center">
             <div className="rounded-md shadow">
@@ -83,10 +75,8 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Features Section */}
         <Features />
 
-        {/* Contest Sections */}
         {error ? (
           <div className="text-center py-8 text-red-500">
             {error}
@@ -95,14 +85,14 @@ export const LandingPage: React.FC = () => {
           <>
             <ContestSection 
               title="Live Contests" 
-              type="live" 
-              contests={liveContests}
+              type="active"
+              contests={activeContests}
               loading={loading}
             />
             <ContestSection 
               title="Upcoming Contests" 
-              type="upcoming" 
-              contests={upcomingContests}
+              type="pending"
+              contests={openContests}
               loading={loading}
             />
           </>

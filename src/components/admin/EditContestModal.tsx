@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Contest } from '../../types/admin';
+import { Contest } from '../../types';
 
 interface EditContestModalProps {
   contest: Contest | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (contestId: string, data: Partial<Contest>) => Promise<void>;
+  onSave: (contestId: number, data: Partial<Contest>) => Promise<void>;
 }
 
 interface ValidationErrors {
   name?: string;
-  entryFee?: string;
-  prizePool?: string;
-  maxParticipants?: string;
-  startTime?: string;
-  endTime?: string;
+  description?: string;
+  entry_fee?: string;
+  prize_pool?: string;
+  settings?: {
+    max_participants?: string;
+    min_trades?: string;
+    difficulty?: string;
+  };
+  start_time?: string;
+  end_time?: string;
 }
 
 export const EditContestModal: React.FC<EditContestModalProps> = ({
@@ -28,7 +33,6 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
-  // Reset form when contest changes
   useEffect(() => {
     if (contest) {
       setFormData(contest);
@@ -46,31 +50,34 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
       errors.name = 'Name is required';
     }
 
-    if (!formData.entryFee || formData.entryFee <= 0) {
-      errors.entryFee = 'Entry fee must be greater than 0';
+    if (!formData.entry_fee || Number(formData.entry_fee) <= 0) {
+      errors.entry_fee = 'Entry fee must be greater than 0';
     }
 
-    if (!formData.prizePool || formData.prizePool <= 0) {
-      errors.prizePool = 'Prize pool must be greater than 0';
+    if (!formData.prize_pool || Number(formData.prize_pool) <= 0) {
+      errors.prize_pool = 'Prize pool must be greater than 0';
     }
 
-    if (!formData.maxParticipants || formData.maxParticipants < 2) {
-      errors.maxParticipants = 'Must allow at least 2 participants';
+    if (!formData.settings?.max_participants || formData.settings.max_participants < 2) {
+      errors.settings = {
+        ...errors.settings,
+        max_participants: 'Must allow at least 2 participants'
+      };
     }
 
-    const startTime = new Date(formData.startTime || '');
-    const endTime = new Date(formData.endTime || '');
+    const startTime = new Date(formData.start_time || '');
+    const endTime = new Date(formData.end_time || '');
 
     if (isNaN(startTime.getTime())) {
-      errors.startTime = 'Valid start time is required';
+      errors.start_time = 'Valid start time is required';
     }
 
     if (isNaN(endTime.getTime())) {
-      errors.endTime = 'Valid end time is required';
+      errors.end_time = 'Valid end time is required';
     }
 
     if (startTime >= endTime) {
-      errors.endTime = 'End time must be after start time';
+      errors.end_time = 'End time must be after start time';
     }
 
     setValidationErrors(errors);
@@ -99,13 +106,29 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
   };
 
   const handleInputChange = (
-    field: keyof Contest,
-    value: string | number
+    field: keyof Contest | 'settings',
+    value: any
   ) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'settings') {
+      setFormData(prev => ({
+        ...prev,
+        settings: { ...(prev.settings || {}), ...value }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+
     // Clear validation error for this field
-    if (validationErrors && (field in validationErrors)) {
-      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
+    if (field === 'settings') {
+      setValidationErrors(prev => ({
+        ...prev,
+        settings: undefined
+      }));
+    } else if (validationErrors[field as keyof ValidationErrors]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
     }
   };
 
@@ -139,12 +162,28 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
           </div>
 
           <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              value={formData.description || ''}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              className="w-full bg-dark-300 rounded p-2"
+              rows={3}
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium mb-1">Difficulty</label>
             <select
-              value={formData.difficulty || ''}
-              onChange={(e) => handleInputChange('difficulty', e.target.value)}
+              value={formData.settings?.difficulty || ''}
+              onChange={(e) => handleInputChange('settings', {
+                ...formData.settings,
+                difficulty: e.target.value
+              })}
               className="w-full bg-dark-300 rounded p-2"
             >
+              <option value="guppy">Guppy</option>
+              <option value="tadpole">Tadpole</option>
+              <option value="squid">Squid</option>
               <option value="dolphin">Dolphin</option>
               <option value="shark">Shark</option>
               <option value="whale">Whale</option>
@@ -157,14 +196,14 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
               type="number"
               min="0"
               step="0.01"
-              value={formData.entryFee || ''}
-              onChange={(e) => handleInputChange('entryFee', Number(e.target.value))}
+              value={formData.entry_fee || ''}
+              onChange={(e) => handleInputChange('entry_fee', e.target.value)}
               className={`w-full bg-dark-300 rounded p-2 ${
-                validationErrors.entryFee ? 'border border-red-500' : ''
+                validationErrors.entry_fee ? 'border border-red-500' : ''
               }`}
             />
-            {validationErrors.entryFee && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.entryFee}</p>
+            {validationErrors.entry_fee && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.entry_fee}</p>
             )}
           </div>
 
@@ -174,14 +213,14 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
               type="number"
               min="0"
               step="0.01"
-              value={formData.prizePool || ''}
-              onChange={(e) => handleInputChange('prizePool', Number(e.target.value))}
+              value={formData.prize_pool || ''}
+              onChange={(e) => handleInputChange('prize_pool', e.target.value)}
               className={`w-full bg-dark-300 rounded p-2 ${
-                validationErrors.prizePool ? 'border border-red-500' : ''
+                validationErrors.prize_pool ? 'border border-red-500' : ''
               }`}
             />
-            {validationErrors.prizePool && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.prizePool}</p>
+            {validationErrors.prize_pool && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.prize_pool}</p>
             )}
           </div>
 
@@ -189,14 +228,14 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
             <label className="block text-sm font-medium mb-1">Start Time</label>
             <input
               type="datetime-local"
-              value={formData.startTime?.slice(0, 16) || ''}
-              onChange={(e) => handleInputChange('startTime', e.target.value)}
+              value={formData.start_time?.slice(0, 16) || ''}
+              onChange={(e) => handleInputChange('start_time', e.target.value)}
               className={`w-full bg-dark-300 rounded p-2 ${
-                validationErrors.startTime ? 'border border-red-500' : ''
+                validationErrors.start_time ? 'border border-red-500' : ''
               }`}
             />
-            {validationErrors.startTime && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.startTime}</p>
+            {validationErrors.start_time && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.start_time}</p>
             )}
           </div>
 
@@ -204,14 +243,14 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
             <label className="block text-sm font-medium mb-1">End Time</label>
             <input
               type="datetime-local"
-              value={formData.endTime?.slice(0, 16) || ''}
-              onChange={(e) => handleInputChange('endTime', e.target.value)}
+              value={formData.end_time?.slice(0, 16) || ''}
+              onChange={(e) => handleInputChange('end_time', e.target.value)}
               className={`w-full bg-dark-300 rounded p-2 ${
-                validationErrors.endTime ? 'border border-red-500' : ''
+                validationErrors.end_time ? 'border border-red-500' : ''
               }`}
             />
-            {validationErrors.endTime && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.endTime}</p>
+            {validationErrors.end_time && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.end_time}</p>
             )}
           </div>
 
@@ -220,15 +259,32 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
             <input
               type="number"
               min="2"
-              value={formData.maxParticipants || ''}
-              onChange={(e) => handleInputChange('maxParticipants', Number(e.target.value))}
+              value={formData.settings?.max_participants || ''}
+              onChange={(e) => handleInputChange('settings', {
+                ...formData.settings,
+                max_participants: Number(e.target.value)
+              })}
               className={`w-full bg-dark-300 rounded p-2 ${
-                validationErrors.maxParticipants ? 'border border-red-500' : ''
+                validationErrors.settings?.max_participants ? 'border border-red-500' : ''
               }`}
             />
-            {validationErrors.maxParticipants && (
-              <p className="text-red-500 text-xs mt-1">{validationErrors.maxParticipants}</p>
+            {validationErrors.settings?.max_participants && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.settings.max_participants}</p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Minimum Trades</label>
+            <input
+              type="number"
+              min="1"
+              value={formData.settings?.min_trades || ''}
+              onChange={(e) => handleInputChange('settings', {
+                ...formData.settings,
+                min_trades: Number(e.target.value)
+              })}
+              className="w-full bg-dark-300 rounded p-2"
+            />
           </div>
 
           {error && (

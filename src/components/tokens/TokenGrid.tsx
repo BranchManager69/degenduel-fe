@@ -21,11 +21,11 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
     
     switch (marketCapFilter) {
       case 'high-cap':
-        return token.marketCap >= 10_000_000_000; // $10B+
+        return token.market_cap >= 10_000_000_000; // $10B+
       case 'mid-cap':
-        return token.marketCap >= 1_000_000_000 && token.marketCap < 10_000_000_000; // $1B-$10B
+        return token.market_cap >= 1_000_000_000 && token.market_cap < 10_000_000_000; // $1B-$10B
       case 'low-cap':
-        return token.marketCap < 1_000_000_000; // <$1B
+        return token.market_cap < 1_000_000_000; // <$1B
       default:
         return true;
     }
@@ -70,13 +70,13 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">24h Change</span>
-                <span className={`font-medium ${token.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {token.change24h.toFixed(2)}%
+                <span className={`font-medium ${token.change_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {token.change_24h.toFixed(2)}%
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">Market Cap</span>
-                <span className="font-medium text-gray-200">{formatMarketCap(token.marketCap)}</span>
+                <span className="font-medium text-gray-200">{formatMarketCap(token.market_cap)}</span>
               </div>
               
               {/* Token Weight Slider */}

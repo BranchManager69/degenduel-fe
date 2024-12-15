@@ -3,69 +3,92 @@ import { ContestCard } from '../components/contests/ContestCard';
 import { ContestFilters } from '../components/contests/ContestFilters';
 import { CreateContestButton } from '../components/contests/CreateContestButton';
 import { Card } from '../components/ui/Card';
+import { Contest } from '../types';
 
 export const ContestBrowser: React.FC = () => {
   const [activeStatusFilter, setActiveStatusFilter] = useState('all');
   const [activeDifficultyFilter, setActiveDifficultyFilter] = useState('');
-  const [activeSort, setActiveSort] = useState('startTime');
+  const [activeSort, setActiveSort] = useState('start_time');
 
-  // Demo contests with proper typing
-  const demoContests = [
+  // Demo contests with proper Contest interface
+  const demoContests: Contest[] = [
     {
-      id: '1',
-      title: 'Daily SOL Tournament',
-      timeInfo: 'Ends in 2h 15m',
-      prizePool: 1000,
-      entryFee: 10,
-      players: 45,
-      maxPlayers: 100,
-      difficulty: 'dolphin' as const,
-      type: 'live' as const,
-      startTime: new Date(Date.now() + 1000 * 60 * 60), // 1 hour from now
+      id: 1,
+      name: 'Weekend Retard Party',
+      description: 'Put your retarded hat on, because this is a retarded contest.',
+      start_time: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+      end_time: new Date(Date.now() + 1000 * 60 * 60 * 3).toISOString(),
+      entry_fee: '10',
+      prize_pool: '1000',
+      status: 'in_progress',
+      settings: {
+        difficulty: 'dolphin',
+        min_trades: 5,
+        max_participants: 100
+      },
+      participant_count: 45,
+      is_participating: false,
+      created_at: new Date().toISOString()
     },
     {
-      id: '2',
-      title: 'Weekly Crypto Challenge',
-      timeInfo: 'Starts in 4h',
-      prizePool: 2500,
-      entryFee: 25,
-      players: 75,
-      maxPlayers: 150,
-      difficulty: 'shark' as const,
-      type: 'upcoming' as const,
-      startTime: new Date(Date.now() + 1000 * 60 * 60 * 4), // 4 hours from now
+      id: 2,
+      name: 'Gay Degen Contest',
+      description: 'The biggest degens often win from the gayest trades.',
+      start_time: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
+      end_time: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(),
+      entry_fee: '25',
+      prize_pool: '2500',
+      status: 'pending',
+      settings: {
+        difficulty: 'shark',
+        min_trades: 10,
+        max_participants: 150
+      },
+      participant_count: 75,
+      is_participating: false,
+      created_at: new Date().toISOString()
     },
     {
-      id: '3',
-      title: 'Beginner Friendly Contest',
-      timeInfo: 'Starts in 1h',
-      prizePool: 500,
-      entryFee: 5,
-      players: 20,
-      maxPlayers: 50,
-      difficulty: 'guppy' as const,
-      type: 'upcoming' as const,
-      startTime: new Date(Date.now() + 1000 * 60 * 60), // 1 hour from now
+      id: 3,
+      name: 'Scam Contest',
+      description: 'Entrants can only trade rugs and scams. Even this contest is a scam.',
+      start_time: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+      end_time: new Date(Date.now() + 1000 * 60 * 60 * 25).toISOString(),
+      entry_fee: '5',
+      prize_pool: '500',
+      status: 'pending',
+      settings: {
+        difficulty: 'guppy',
+        min_trades: 3,
+        max_participants: 50
+      },
+      participant_count: 20,
+      is_participating: false,
+      created_at: new Date().toISOString()
     },
   ];
 
   const sortedAndFilteredContests = useMemo(() => {
     let filtered = demoContests.filter(contest => {
-      const matchesStatus = activeStatusFilter === 'all' || contest.type === activeStatusFilter;
-      const matchesDifficulty = !activeDifficultyFilter || contest.difficulty === activeDifficultyFilter;
+      const matchesStatus = activeStatusFilter === 'all' || 
+        (activeStatusFilter === 'live' && contest.status === 'in_progress') ||
+        (activeStatusFilter === 'upcoming' && contest.status === 'pending');
+      const matchesDifficulty = !activeDifficultyFilter || 
+        contest.settings.difficulty === activeDifficultyFilter;
       return matchesStatus && matchesDifficulty;
     });
 
     return filtered.sort((a, b) => {
       switch (activeSort) {
-        case 'startTime':
-          return a.startTime.getTime() - b.startTime.getTime();
-        case 'prizePool':
-          return b.prizePool - a.prizePool;
-        case 'entryFee':
-          return a.entryFee - b.entryFee;
+        case 'start_time':
+          return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+        case 'prize_pool':
+          return Number(b.prize_pool) - Number(a.prize_pool);
+        case 'entry_fee':
+          return Number(a.entry_fee) - Number(b.entry_fee);
         case 'players':
-          return (b.players / b.maxPlayers) - (a.players / a.maxPlayers);
+          return (b.participant_count / b.settings.max_participants) - 
+                 (a.participant_count / a.settings.max_participants);
         default:
           return 0;
       }
@@ -93,7 +116,10 @@ export const ContestBrowser: React.FC = () => {
       {sortedAndFilteredContests.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {sortedAndFilteredContests.map((contest) => (
-            <ContestCard key={contest.id} {...contest} />
+            <ContestCard 
+              key={contest.id} 
+              contest={contest}
+            />
           ))}
         </div>
       ) : (

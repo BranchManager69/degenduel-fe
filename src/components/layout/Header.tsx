@@ -35,7 +35,7 @@ export const Header: React.FC = () => {
               >
                 Profile
               </Link>
-              {user?.isAdmin && (
+              {user?.is_admin && (
                 <Link
                   to="/admin"
                   className="inline-flex items-center px-1 pt-1 text-lg font-medium text-brand-400 hover:text-brand-300 border-b-2 border-transparent hover:border-brand-400"

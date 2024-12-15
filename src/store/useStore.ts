@@ -28,10 +28,10 @@ export const useStore = create<Store>((set) => ({
       user: {
         address: '0x1234...5678',
         username: 'degen_trader',
-        totalWinnings: 1500,
-        contestsWon: 3,
-        contestsPlayed: 10,
-        isAdmin: false,
+        total_winnings: 1500,
+        contests_won: 3,
+        contests_played: 10,
+        is_admin: false,
       },
     });
   },
@@ -41,10 +41,10 @@ export const useStore = create<Store>((set) => ({
       user: {
         address: '0xADMIN',
         username: 'Platform Admin',
-        totalWinnings: 0,
-        contestsWon: 0,
-        contestsPlayed: 0,
-        isAdmin: true,
+        total_winnings: 0,
+        contests_won: 0,
+        contests_played: 0,
+        is_admin: true,
       },
     });
   },

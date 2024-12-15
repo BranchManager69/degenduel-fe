@@ -1,33 +1,25 @@
+// src/components/landing/contests/ContestList.tsx
 import React from 'react';
-import { ContestCard } from '../ContestCard';
-//import { Contest } from '../../../types';  // Remove if unused
+import { Contest } from '../../../types';
+import { ContestCard } from '../../contests/ContestCard';
 
 interface ContestListProps {
-  contests: Array<{
-    id: string;
-    name: string;
-    entryFee: number;
-    prizePool: number;
-    startTime: Date;
-    endTime: Date;
-    participants: number;
-    maxParticipants: number;
-    status: 'open' | 'in_progress' | 'completed';
-    difficulty: 'guppy' | 'tadpole' | 'squid' | 'dolphin' | 'shark' | 'whale';
-  }>;
-  type: 'live' | 'upcoming';
+  contests: Contest[];
+  title: string;
 }
 
-export const ContestList: React.FC<ContestListProps> = ({ contests, type }) => {
+export const ContestList: React.FC<ContestListProps> = ({ contests, title }) => {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {contests.map((contest) => (
-        <ContestCard
-          key={contest.id}
-          {...contest}
-          type={type}
-        />
-      ))}
-    </div>
+    <section className="py-8">
+      <h2 className="text-2xl font-bold text-gray-100 mb-6">{title}</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {contests.map((contest) => (
+          <ContestCard 
+            key={contest.id}
+            contest={contest}
+          />
+        ))}
+      </div>
+    </section>
   );
 };
