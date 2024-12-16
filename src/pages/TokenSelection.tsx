@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Button } from '../components/ui/Button';
 import { TokenGrid } from '../components/tokens/TokenGrid';
 import { TokenFilters } from '../components/tokens/TokenFilters';
@@ -7,6 +8,15 @@ import { PortfolioSummary } from '../components/tokens/PortfolioSummary';
 import { Token } from '../types';
 import { api } from '../services/api';
 import { useToast } from '../components/ui/Toast';
+
+function ErrorFallback({error}: {error: Error}) {
+  return (
+    <div className="text-center p-4">
+      <h2>Something went wrong:</h2>
+      <pre>{error.message}</pre>
+    </div>
+  )
+}
 
 export const TokenSelection: React.FC = () => {
   const { id: contestId } = useParams();
@@ -23,8 +33,17 @@ export const TokenSelection: React.FC = () => {
       try {
         setLoading(true);
         const data = await api.tokens.getAll();
-        console.log('Fetched tokens:', data);
-        setTokens(data);
+        console.log('Raw token data:', data); // Debug log
+        
+        // Validate and transform the data
+        const validatedTokens = data.map(token => ({
+          ...token,
+          change_24h: typeof token.change_24h === 'number' 
+            ? token.change_24h 
+            : parseFloat(token.change_24h) || 0
+        }));
+        
+        setTokens(validatedTokens);
       } catch (err) {
         console.error('Failed to fetch tokens:', err);
         setError('Failed to load tokens');
@@ -94,45 +113,47 @@ export const TokenSelection: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-100">Select Your Tokens</h1>
-          <p className="text-gray-400 mt-2">Choose tokens and set their weights to build your portfolio</p>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-100">Select Your Tokens</h1>
+            <p className="text-gray-400 mt-2">Choose tokens and set their weights to build your portfolio</p>
+          </div>
+          <Button
+            size="lg"
+            onClick={handleSubmit}
+            disabled={totalWeight !== 100}
+            variant="gradient"
+            className="relative group"
+          >
+            {totalWeight === 100 ? 'Submit Portfolio' : `Total Weight: ${totalWeight}%`}
+          </Button>
         </div>
-        <Button
-          size="lg"
-          onClick={handleSubmit}
-          disabled={totalWeight !== 100}
-          variant="gradient"
-          className="relative group"
-        >
-          {totalWeight === 100 ? 'Submit Portfolio' : `Total Weight: ${totalWeight}%`}
-        </Button>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-3">
-          <div className="mb-6">
-            <TokenFilters
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3">
+            <div className="mb-6">
+              <TokenFilters
+                marketCapFilter={marketCapFilter}
+                onMarketCapFilterChange={setMarketCapFilter}
+              />
+            </div>
+            <TokenGrid
+              tokens={tokens}
+              selectedTokens={selectedTokens}
+              onTokenSelect={handleTokenSelect}
               marketCapFilter={marketCapFilter}
-              onMarketCapFilterChange={setMarketCapFilter}
             />
           </div>
-          <TokenGrid
-            tokens={tokens}
-            selectedTokens={selectedTokens}
-            onTokenSelect={handleTokenSelect}
-            marketCapFilter={marketCapFilter}
-          />
-        </div>
-        <div>
-          <PortfolioSummary
-            tokens={tokens}
-            selectedTokens={selectedTokens}
-          />
+          <div>
+            <PortfolioSummary
+              tokens={tokens}
+              selectedTokens={selectedTokens}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };

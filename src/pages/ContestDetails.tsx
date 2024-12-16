@@ -40,7 +40,23 @@ export const ContestDetails: React.FC = () => {
       try {
         setLoading(true);
         const data = await api.contests.getById(id);
-        setContest(data);
+        const sanitizedContest = {
+          ...data,
+          entry_fee: typeof data.entry_fee === 'string' ? data.entry_fee : String(data.entry_fee),
+          prize_pool: typeof data.prize_pool === 'string' ? data.prize_pool : String(data.prize_pool),
+          participant_count: Number(data.participant_count) || 0,
+          start_time: data.start_time,
+          end_time: data.end_time,
+          settings: {
+            ...data.settings,
+            max_participants: Number(data.settings?.max_participants) || 0,
+            token_types: Array.isArray(data.settings?.token_types) ? data.settings.token_types : [],
+            rules: Array.isArray(data.settings?.rules) ? data.settings.rules : [],
+            difficulty: data.settings?.difficulty || 'guppy'
+          },
+          participants: Array.isArray(data.participants) ? data.participants : []
+        };
+        setContest(sanitizedContest);
       } catch (err) {
         console.error('Error fetching contest:', err);
         setError('Failed to load contest details');
