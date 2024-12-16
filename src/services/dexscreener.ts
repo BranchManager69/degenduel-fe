@@ -23,7 +23,9 @@ export interface TokenWithMarketData {
     name: string;
     symbol: string;
     currentPrice: number;
-    
+    circulatingSupply?: number;
+    totalSupply?: number;
+
     // Market Data
     priceChange24h?: number;
     volume24h?: number;
@@ -56,6 +58,21 @@ export interface TokenWithMarketData {
     priceSource?: string;
 }
 
+// Color codes for console output
+const colors = {
+    reset: '\x1b[0m',     // RESET
+    header_blue: '\x1b[46m\x1b[1m\x1b[30m',    // Cyan bg with black text
+    header_green: '\x1b[42m\x1b[1m\x1b[30m',   // Green bg with black text
+    header_purple: '\x1b[45m\x1b[1m\x1b[30m',  // Purple bg with black text
+    header_yellow: '\x1b[43m\x1b[1m\x1b[30m',  // Yellow bg with black text
+    header_white: '\x1b[47m\x1b[1m\x1b[30m',  // White bg with black text
+    header_black: '\x1b[40m\x1b[1m\x1b[37m',  // Black bg with white text
+    header_cyan: '\x1b[46m\x1b[1m\x1b[30m',    // Cyan bg with black text
+    header_magenta: '\x1b[45m\x1b[1m\x1b[30m',  // Magenta bg with black text
+    header_red: '\x1b[41m\x1b[1m\x1b[30m',    // Red bg with black text
+    warning: '\x1b[33m',  // Yellow/Orange if single source missing
+    error: '\x1b[31m',    // Red if both sources missing
+};
 
 // Define the type for a DexScreener pair
 interface DexScreenerPair {
@@ -274,10 +291,11 @@ export async function fetchTokenInfo(tokenAddress: string): Promise<TokenWithMar
         priceSource: 'dexscreener'
       };
     } catch (error) {
-      console.error('Failed to fetch token info:', error);
-      return null;
+        ////console.log(`\n${colors.error} ⛔ Not found on DexScreener or CoinGecko!${colors.reset}\n\t${colors.header_red} ERROR ${colors.reset} ${colors.warning}${error}.${colors.reset}`);
+        console.log(`\n    ${colors.header_red} ERROR ${colors.reset} ${colors.warning}${error}.${colors.reset}`);
+        return null;
     }
-  }
+}
 
 export async function fetchHotTokens(): Promise<TokenWithMarketData[]> {
   try {

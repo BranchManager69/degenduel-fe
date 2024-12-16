@@ -1,0 +1,65 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Token Metrics Analysis</title>
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .chart { height: 600px; margin-bottom: 30px; }
+                .metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+                .metric-card { 
+                    padding: 20px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    background: #f9f9f9;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Token Metrics Analysis</h1>
+            
+            <div id="scatterPlot" class="chart"></div>
+            <div id="supplyChart" class="chart"></div>
+            <div id="metrics" class="metrics"></div>
+
+            <script>
+                const data = [{"address":"So11111111111111111111111111111111111111111","name":"Solana","symbol":"SOL","price":null,"marketCap":null,"volume24h":null,"circulatingSupply":null,"totalSupply":null,"socials":{},"metrics":{}},{"address":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","name":"USD Coin","symbol":"USDC","price":null,"marketCap":null,"volume24h":null,"circulatingSupply":null,"totalSupply":null,"socials":{},"metrics":{}},{"address":"DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263","name":"Bonk","symbol":"BONK","price":0.00003616,"marketCap":2736771474,"volume24h":2391130.97,"circulatingSupply":null,"totalSupply":null,"socials":{"twitter":{"url":"https://twitter.com/bonk_inu"},"telegram":{"url":"https://t.me/Official_Bonk_Inu"},"discord":{"url":"https://discord.gg/qaQa6M6mN2"}},"metrics":{"volumeToMcap":0.0873705018017153,"liquidityScore":0.008848794731335322}},{"address":"6ogzHhzdrQr9Pgv6hZ2MNze7UrzBMAFyBBWUYp1Fhitx","name":"RETARDIO","symbol":"RETARDIO","price":0.09504,"marketCap":95005724,"volume24h":2625395.37,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/retardiosolana?t=wzLXo-0vOrmspM-XdgkEew&s=09","telegram":{"url":"https://t.me/retardiosol"}},"metrics":{"volumeToMcap":2.7634075711059265,"liquidityScore":3.3908154207634906}},{"address":"CfgmB9iTWABdYh3CHQQDUGtWy18rMNAEEqyp4GrJpump","name":"WE LOVE ASS","symbol":"ASS","price":0.001969,"marketCap":1969312,"volume24h":122798.69,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/weloveassonsol","telegram":{"url":"https://t.me/WeLoveAsss"}},"metrics":{"volumeToMcap":6.2356137574950035,"liquidityScore":16.681759924278126}},{"address":"23CTZMjEYNNZUE4itfn3iv6kgM4xn7X7dx1kVX1Gr8Xi","name":"We Love Tits","symbol":"TITS","price":0.1267,"marketCap":126699413,"volume24h":961707.32,"circulatingSupply":null,"totalSupply":null,"socials":{"twitter":{"url":"https://twitter.com/weloveetits"},"telegram":{"url":"https://t.me/WELOVEETITS"}},"metrics":{"volumeToMcap":0.7590463895835098,"liquidityScore":2.2113373485005807}},{"address":"8x5VqbHA8D7NkD52uNuS5nnt3PwA8pLD34ymskeSo2Wn","name":"zerebro","symbol":"ZEREBRO","price":0.3757,"marketCap":375692916,"volume24h":11749578.48,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/0xzerebro","telegram":{"url":"https://t.me/zerebro0x"}},"metrics":{"volumeToMcap":3.1274421155175576,"liquidityScore":1.8664838891984856}},{"address":"CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump","name":"Goatseus Maximus","symbol":"GOAT","price":0.744,"marketCap":744011926,"volume24h":5796947.9,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/truth_terminal?s=21&t=vGsyxXKadHr8hUMHWu6Frg","telegram":{"url":"https://t.me/GoatseusMaximusSolanaPortal"}},"metrics":{"volumeToMcap":0.7791471745844032,"liquidityScore":1.463035487686524}},{"address":"HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC","name":"ai16z","symbol":"ai16z","price":0.8357,"marketCap":919294070,"volume24h":5676930.22,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/ai16zdao","telegram":{"url":"https://t.me/ai16zcommunity"},"discord":{"url":"https://discord.gg/ai16z"}},"metrics":{"volumeToMcap":0.6175314739058416,"liquidityScore":0.26113148537986325}},{"address":"8wXtPeU6557ETkp9WHFY1n1EcU6NxDvbAggHGsMYiHsB","name":"GameStop","symbol":"GME","price":0.005194,"marketCap":35746859,"volume24h":602162.41,"circulatingSupply":null,"totalSupply":null,"socials":{"twitter":{"url":"https://twitter.com/gmecoinsol"},"telegram":{"url":"https://t.me/GMEonsol"}},"metrics":{"volumeToMcap":1.68451837964281,"liquidityScore":13.591556533680343}},{"address":"DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t","name":"Bonk of America","symbol":"BONKFA","price":0.000131,"marketCap":123800,"volume24h":6395.84,"circulatingSupply":null,"totalSupply":null,"socials":{"twitter":{"url":"https://twitter.com/BonkOfA"},"telegram":{"url":"https://t.me/BonkOfA"}},"metrics":{"volumeToMcap":5.1662681744749595,"liquidityScore":43.11977382875606}},{"address":"8stssUiCFbcB2LqCS62EuU2x1K2NWbJJo1YPgskpftWK","name":"Print Protocol","symbol":"PRINT","price":0.0002589,"marketCap":2579203,"volume24h":19184.63,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/PrintProtocol","telegram":{"url":"https://t.me/printsolana"}},"metrics":{"volumeToMcap":0.7438200870579013,"liquidityScore":3.7627674130341813}},{"address":"5SVG3T9CNQsm2kEwzbRq6hASqh1oGfjqTtLXYUibpump","name":"SIGMA","symbol":"SIGMA","price":0.05324,"marketCap":47916275,"volume24h":1453648.17,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/sigmaonsol69/","telegram":{"url":"https://t.me/SIGMAonsolportal"}},"metrics":{"volumeToMcap":3.0337253261026653,"liquidityScore":5.059234508525549}},{"address":"Df6yfrKC8kZE3KNkrHERKzAetSxbrWeniQfyJY4Jpump","name":"Just a chill guy","symbol":"CHILLGUY","price":0.3386,"marketCap":338620725,"volume24h":9260464.37,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/chillguycto","telegram":{"url":"https://t.me/chillguycto"}},"metrics":{"volumeToMcap":2.734760068214962,"liquidityScore":2.8089918182060476}},{"address":"ED5nyyWEzpPPiWimP8vYm7sD7TD3LAt3Q3gRTWHzPJBY","name":"Moo Deng","symbol":"MOODENG","price":0.3693,"marketCap":365596544,"volume24h":6324068.66,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/MooDengSOL","telegram":{"url":"https://t.me/+hCTQLf149JNlZjgx"}},"metrics":{"volumeToMcap":1.729794431535983,"liquidityScore":2.3760456280461995}},{"address":"2qEHjDLDLbuBgRYvsxhc5D6uDWAivNFZGan56P1tpump","name":"Peanut the Squirrel","symbol":"Pnut","price":1.11,"marketCap":1119226277,"volume24h":4574097.69,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/pnutsolana","telegram":{"url":"https://t.me/pnutportal"}},"metrics":{"volumeToMcap":0.4086839081602442,"liquidityScore":1.563668798673139}},{"address":"CNvitvFnSM5ed6K28RUNSaAjqqz5tX1rA5HgaBN9pump","name":"First Convicted RACCON","symbol":"FRED","price":0.06096,"marketCap":60952077,"volume24h":3546385.88,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/fred_cto_sol","telegram":{"url":"https://t.me/fredportala"}},"metrics":{"volumeToMcap":5.818318348692203,"liquidityScore":6.2482122471396675}},{"address":"CBdCxKo9QavR9hfShgpEBG3zekorAeD7W1jfq2o3pump","name":"Official Mascot of the Holy Year","symbol":"LUCE","price":0.1012,"marketCap":101204167,"volume24h":5290594.86,"circulatingSupply":null,"totalSupply":null,"socials":{"website":"https://x.com/BelieveInLuce","telegram":{"url":"https://t.me/believeinluce"}},"metrics":{"volumeToMcap":5.227645280653316,"liquidityScore":4.331831059881161}}];
+                
+                const scatter = {
+                    x: data.map(t => t.volume24h),
+                    y: data.map(t => t.marketCap),
+                    text: data.map(t => t.symbol),
+                    mode: 'markers+text',
+                    type: 'scatter',
+                    textposition: 'top center'
+                };
+                
+                Plotly.newPlot('scatterPlot', [scatter], {
+                    title: 'Market Cap vs 24h Volume',
+                    xaxis: { title: '24h Volume ($)' },
+                    yaxis: { title: 'Market Cap ($)' }
+                });
+
+                const supply = {
+                    x: data.map(t => t.symbol),
+                    y: data.map(t => t.circulatingSupply),
+                    name: 'Circulating Supply',
+                    type: 'bar'
+                };
+                
+                const totalSupply = {
+                    x: data.map(t => t.symbol),
+                    y: data.map(t => t.totalSupply),
+                    name: 'Total Supply',
+                    type: 'bar'
+                };
+                
+                Plotly.newPlot('supplyChart', [supply, totalSupply], {
+                    title: 'Token Supply Comparison',
+                    barmode: 'group'
+                });
+            </script>
+        </body>
+        </html>
+    
