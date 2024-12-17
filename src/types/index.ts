@@ -95,15 +95,6 @@ export interface User {
   risk_level: number;
 }
 
-export interface Portfolio {
-  tokens: {
-    symbol: string;
-    amount: number;
-  }[];
-  total_value: number;
-  performance_24h: number;
-}
-
 export interface Transaction {
   id: number;
   wallet_address: string;
@@ -119,7 +110,15 @@ export interface Transaction {
   processed_at?: string;
 }
 
-export interface ContestPortfolio {
+export interface Portfolio {
+  tokens: {
+    symbol: string;
+    amount: number;
+  }[];
+  total_value: number;
+  performance_24h: number;
+}
+export interface ContestPortfolio { // ??  Not used anywhere, but clearly better than the Portfolio interface above.
   contest_id: number;
   wallet_address: string;
   token_id: number;

@@ -9,6 +9,9 @@ import { api } from '../services/api';
 import type { Contest } from '../types';
 import { isContestLive } from '../lib/utils';
 
+// Define contest filter functions
+const isPendingContest = (contest: Contest): boolean => contest.status === 'pending';
+
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
@@ -20,15 +23,16 @@ export const LandingPage: React.FC = () => {
       try {
         const contests = await api.contests.getActive();
         
+        // Use the predefined filter functions
         const active = contests.filter(isContestLive);
-        const open = contests.filter(contest => contest.status === 'pending'); // upcoming (has not started)  
+        const open = contests.filter(isPendingContest);
         
         setActiveContests(active);
         setOpenContests(open);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching contests:', error);
         setError('Failed to load contests');
+      } finally {
         setLoading(false);
       }
     };

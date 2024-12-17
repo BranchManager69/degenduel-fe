@@ -1,6 +1,7 @@
 // src/services/api.ts
 import { Token } from '../types';
 import { Contest } from '../types';
+import { useStore } from '../store/useStore';
 
 export const API_URL = 'https://degenduel.me/api';
 
@@ -66,12 +67,11 @@ interface TokenBucket {
   tokens: Token[];
 }
 
-interface ContestPortfolio {
-  contest_id: number;
-  wallet_address: string;
-  token_id: number;
-  weight: number;
-  created_at: string;
+interface PortfolioResponse {
+  tokens: Array<{
+    symbol: string;
+    weight: number;
+  }>;
 }
 
 /* Implemented API endpoints: */
@@ -113,8 +113,18 @@ export const api = {
   // Token endpoints
   tokens: {
     getAll: async (): Promise<Token[]> => {
-      const response = await fetch(`${API_URL}/tokens`);
-      if (!response.ok) throw new Error('Failed to fetch tokens');
+      const response = await fetch('/api/tokens', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch tokens');
+      }
+
       return response.json();
     }
   },
@@ -183,35 +193,99 @@ export const api = {
 
   // Contest endpoints
   contests: {
-    getActive: async (): Promise<Contest[]> => {
-      const response = await fetch(`${API_URL}/contests/active`);
+    getActive: async () => {
+      const response = await fetch('/api/contests/active');
       if (!response.ok) throw new Error('Failed to fetch active contests');
       return response.json();
     },
-    
-    getById: async (contestId: string): Promise<Contest> => {
-      const response = await fetch(`${API_URL}/contests/${contestId}`);
+
+    getById: async (contestId: string) => {
+      const response = await fetch(`/api/contests/${contestId}`);
       if (!response.ok) throw new Error('Failed to fetch contest');
       return response.json();
     },
 
-    submitPortfolio: async (contestId: string, portfolio: Array<{ symbol: string; weight: number }>) => {
-      const response = await fetch(`${API_URL}/contests/${contestId}/portfolio`, {
-        method: 'POST',
+    enterContest: async (contestId: string | number, portfolio: Array<{ symbol: string, weight: number }>) => {
+      const user = useStore.getState().user;
+      
+      if (!user?.wallet_address) {
+        throw new Error('Please connect your wallet first');
+      }
+
+      const payload = {
+        wallet: user.wallet_address,
+        portfolio: portfolio
+      };
+
+      console.log('API enterContest - Sending payload:', payload);
+
+      try {
+        const response = await fetch(`/api/contests/${contestId}/enter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+          credentials: 'include',
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Handle specific error cases
+          switch (data.error?.code) {
+            case 'ALREADY_REGISTERED':
+              throw new Error('You have already entered this contest');
+            case 'CONTEST_STARTED':
+              throw new Error('This contest has already started');
+            case 'INSUFFICIENT_FUNDS':
+              throw new Error('Insufficient funds for contest entry');
+            case 'CONTEST_FULL':
+              throw new Error('Contest is full');
+            default:
+              throw new Error(data.error?.message || 'Failed to enter contest');
+          }
+        }
+
+        return data;
+      } catch (error: any) {
+        console.error('API error:', error);
+        // If it's our error with a message, use it, otherwise show generic error
+        throw new Error(error.message || 'Failed to enter contest. Please try again.');
+      }
+    },
+
+    updatePortfolio: async (contestId: string | number, portfolio: Array<{ symbol: string, weight: number }>) => {
+      const user = useStore.getState().user;
+      
+      if (!user?.wallet_address) {
+        throw new Error('Wallet address is required');
+      }
+
+      // Match the swagger spec for update portfolio - only send portfolio
+      const payload = {
+        portfolio: portfolio
+      };
+
+      console.log('API updatePortfolio - Sending payload:', payload);
+
+      const response = await fetch(`/api/contests/${contestId}/portfolio`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ portfolio }),
+        body: JSON.stringify(payload), // Only send portfolio for updates
         credentials: 'include',
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to submit portfolio');
+        const errorData = await response.json();
+        console.error('API error:', errorData);
+        throw new Error(errorData?.message || 'Failed to update portfolio');
       }
 
       return response.json();
-    },
+    }
   },
 
   // Balance endpoints
@@ -249,9 +323,30 @@ export const api = {
 
   // Portfolio endpoints  
   portfolio: {
-    get: async (contestId: number): Promise<ContestPortfolio> => {
-      const response = await fetch(`${API_URL}/contests/${contestId}/portfolio`);
-      if (!response.ok) throw new Error('Failed to fetch portfolio');
+    get: async (contestId: number): Promise<PortfolioResponse> => {
+      const user = useStore.getState().user;
+      
+      if (!user?.wallet_address) {
+        throw new Error('Wallet address is required');
+      }
+
+      const response = await fetch(`/api/contests/${contestId}/portfolio`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (response.status === 404) {
+        // No existing portfolio is fine, return empty result
+        return { tokens: [] };
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch portfolio');
+      }
+
       return response.json();
     },
 
