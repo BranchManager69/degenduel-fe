@@ -1,80 +1,7 @@
 // src/types/index.ts
 
-export type ContestStatus = 
-  | 'pending'
-  | 'active'
-  | 'in_progress'  
-  | 'in-progress'  // clean this up someday. but definitely not today.
-  | 'completed'
-  | 'cancelled'; 
-
-export interface ContestSettings {
-  difficulty: 'guppy' | 'tadpole' | 'squid' | 'dolphin' | 'shark' | 'whale';
-  min_trades: number;
-  max_participants: number;
-  rules: string[];
-  token_types?: string[];
-  // New fields from schema
-  allowed_buckets?: number[];
-  min_participants: number;
-  entry_deadline?: string;
-}
-
-export interface Contest {
-  // Existing fields
-  id: number;
-  name: string;
-  description: string;
-  start_time: string;
-  end_time: string;
-  entry_fee: string;
-  prize_pool: string;
-  //status: 'pending' | 'active' | 'completed' | 'cancelled';   <---- this has been missing in_progress this entire time... WTF.
-  status: ContestStatus;
-  settings: ContestSettings;
-  created_at: string;
-  participant_count: number;
-  is_participating: boolean;
-  participants: Array<{
-    address: string;
-    username?: string;
-    score?: number;
-  }>;
-  // New fields from schema
-  current_prize_pool: string;
-  last_entry_time?: string;
-  cancelled_at?: string;
-  cancellation_reason?: string;
-  updated_at: string;
-  allowed_buckets?: number[];
-}
-
-export interface Token {
-  // Existing fields
-  symbol: string;
-  name: string;
-  price: number;
-  market_cap: number;
-  change_24h: number;
-  volume_24h: number;
-  // New fields from schema
-  id: number;
-  address: string;
-  decimals: number;
-  is_active: boolean;
-  created_at: string;
-}
-
-export interface TokenBucket {
-  id: number;
-  name: string;
-  description?: string;
-  created_at: string;
-  tokens: Token[];
-}
-
+// Core Entity Types
 export interface User {
-  // Existing fields
   wallet_address: string;
   nickname: string;
   created_at: string;
@@ -84,8 +11,6 @@ export interface User {
   total_earnings: number;
   rank_score: number;
   settings: Record<string, any>;
-  is_admin?: boolean;
-  // New fields from schema
   balance: number;
   is_banned: boolean;
   ban_reason?: string;
@@ -93,6 +18,29 @@ export interface User {
   last_withdrawal_at?: string;
   kyc_status?: string;
   risk_level: number;
+  is_admin?: boolean;
+}
+
+export interface Token {
+  id: number;
+  symbol: string;
+  name: string;
+  address: string;
+  decimals: number;
+  price: number;
+  market_cap: number;
+  change_24h: number;
+  volume_24h: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+// Activity Types
+export interface Activity {
+  id: string;
+  type: 'contest_join' | 'contest_complete' | 'user_register';
+  timestamp: string;
+  details: string;
 }
 
 export interface Transaction {
@@ -110,22 +58,90 @@ export interface Transaction {
   processed_at?: string;
 }
 
-export interface Portfolio {
-  tokens: {
-    symbol: string;
-    amount: number;
-  }[];
-  total_value: number;
-  performance_24h: number;
-}
-export interface ContestPortfolio { // ??  Not used anywhere, but clearly better than the Portfolio interface above.
-  contest_id: number;
-  wallet_address: string;
-  token_id: number;
-  weight: number;
-  created_at: string;
+// Contest Types
+export type ContestStatus = 
+  | 'pending'
+  | 'active'
+  | 'in_progress'
+  | 'in-progress'  // Marked for future cleanup
+  | 'completed'
+  | 'cancelled';
+
+export interface ContestSettings {
+  difficulty: 'guppy' | 'tadpole' | 'squid' | 'dolphin' | 'shark' | 'whale';
+  min_trades: number;
+  max_participants: number;
+  min_participants: number;
+  rules: string[];
+  token_types?: string[];
+  allowed_buckets?: number[];
+  entry_deadline?: string;
 }
 
+export interface Contest {
+  id: number;
+  name: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  entry_fee: string;
+  prize_pool: string;
+  current_prize_pool: string;
+  status: ContestStatus;
+  settings: ContestSettings;
+  created_at: string;
+  updated_at: string;
+  participant_count: number;
+  is_participating: boolean;
+  last_entry_time?: string;
+  cancelled_at?: string;
+  cancellation_reason?: string;
+  allowed_buckets?: number[];
+  participants: Array<{
+    address: string;
+    username?: string;
+    score?: number;
+  }>;
+}
+
+// Portfolio Types
+export interface Portfolio {  // (SUCKY INTERFACE) Used for displaying a user's overall portfolio value and performance
+  tokens: Array<{             // Array of tokens held by user     <--- ** Does NOT use token_id! **
+    symbol: string;
+    amount: number;           // Actual token amount held
+  }>;
+  total_value: number;        // Total portfolio value in USD     <--- Stupid attribute to have
+  performance_24h: number;    // 24-hour performance percentage   <--- Makes no sense conceptually
+}
+
+/* 
+export interface ContestPortfolio {  // Used for database representation of contest portfolio entries
+  contest_id: number;
+  wallet_address: string;
+  token_id: number;                  // References token table
+  weight: number;                    // Percentage weight in contest portfolio (0-100)
+  created_at: string;
+} 
+*/
+
+// API Response Types
+export interface PortfolioResponse {  // Used for API responses when fetching contest portfolio data
+  tokens: Array<{    // Array of tokens held by user              <--- ** Does NOT use token_id! **
+    symbol: string;
+    weight: number;  // Percentage weight in contest portfolio (0-100)
+  }>;
+}
+
+export interface PlatformStats {
+  totalUsers: number;
+  activeContests: number;
+  totalVolume: number;
+  dailyActiveUsers: number;
+  userGrowth: number;
+  volumeGrowth: number;
+}
+
+// Error Types
 export type WalletError = {
   code: 'WALLET_NOT_FOUND' | 'CONNECTION_FAILED' | 'USER_REJECTED' | 'API_ERROR' | 'UNAUTHORIZED';
   message: string;

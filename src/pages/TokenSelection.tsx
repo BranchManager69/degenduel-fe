@@ -10,7 +10,7 @@ import { api } from '../services/api';
 import { useToast } from '../components/ui/Toast';
 import { useStore } from '../store/useStore';
 
-// Add interface for portfolio data
+// New interface for portfolio data
 interface PortfolioToken {
   symbol: string;
   weight: number;
@@ -36,7 +36,7 @@ export const TokenSelection: React.FC = () => {
   const [contest, setContest] = useState<Contest | null>(null);
   const user = useStore(state => state.user);
   const [tokenListLoading, setTokenListLoading] = useState(true);
-  const [entryStatusLoading, setEntryStatusLoading] = useState(false);
+  const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -89,7 +89,7 @@ export const TokenSelection: React.FC = () => {
       if (!contestId || !user?.wallet_address) return;
       
       try {
-        setEntryStatusLoading(true);
+        setLoadingEntryStatus(true);
         const portfolioData = await api.portfolio.get(Number(contestId));
         
         // Explicitly type the portfolio data and add type checking
@@ -104,7 +104,7 @@ export const TokenSelection: React.FC = () => {
         console.error('Failed to fetch existing portfolio:', error);
         // Don't show error toast as this might be a new entry
       } finally {
-        setEntryStatusLoading(false);
+        setLoadingEntryStatus(false);
       }
     };
 
@@ -261,14 +261,14 @@ export const TokenSelection: React.FC = () => {
           <Button
             size="lg"
             onClick={handleSubmit}
-            disabled={getButtonProps().disabled || entryStatusLoading}
+            disabled={getButtonProps().disabled || loadingEntryStatus}
             variant={getButtonProps().variant as 'gradient' | 'primary' | 'secondary' | 'outline' | undefined }
             className="relative group"
           >
-            {entryStatusLoading ? (
+            {loadingEntryStatus ? (
               <span className="flex items-center">
                 <span className="mr-2">Loading...</span>
-                {/* Add your EntryStatusLoading spinner component here if you have one */}
+                {/* Add your loadingEntryStatus spinner component here if you have one */}
               </span>
             ) : (
               getButtonProps().text
