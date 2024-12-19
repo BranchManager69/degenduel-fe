@@ -116,8 +116,8 @@ export const AdminDashboard: React.FC = () => {
           <div className="lg:col-span-2">
             <ContestManagement
               contests={contests}
-              onEditContest={handleEditContest}
-              onDeleteContest={handleDeleteContest}
+              onEditContest={(id: string) => handleEditContest(parseInt(id))}
+              onDeleteContest={(id: string) => handleDeleteContest(parseInt(id))}
             />
           </div>
           <div>

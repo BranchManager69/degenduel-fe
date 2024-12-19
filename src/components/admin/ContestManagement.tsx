@@ -7,8 +7,8 @@ import { ContestDifficulty } from '../landing/contests/ContestDifficulty';
 
 interface ContestManagementProps {
   contests: Contest[];
-  onEditContest: (id: number) => void;
-  onDeleteContest: (id: number) => void;
+  onEditContest: (id: string) => void;
+  onDeleteContest: (id: string) => void;
 }
 
 export const ContestManagement: React.FC<ContestManagementProps> = ({
@@ -42,7 +42,7 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onEditContest(contest.id)}
+                    onClick={() => onEditContest(contest.id.toString())} // Bad form 
                     className="text-brand-400 border-brand-400 hover:bg-brand-400/10"
                   >
                     Edit
@@ -50,7 +50,7 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onDeleteContest(contest.id)}
+                    onClick={() => onDeleteContest(contest.id.toString())}
                     className="text-red-400 border-red-400 hover:bg-red-400/10"
                   >
                     Delete

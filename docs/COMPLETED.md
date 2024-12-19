@@ -1,0 +1,26 @@
+# ✅ COMPLETED
+
+- Developed backend using Node.js, TypeScript, and Express for API
+- Built frontend with React
+- Set up PostgreSQL database on Ubuntu VPS with Nginx reverse proxy
+- Implemented Prisma ORM for database management and Solana Web3 for authentication/login
+- Resolved 401 unauthorized errors related to cookie validation and Web3 wallet addresses
+- Refined database schema and considered migration to Prisma before launch
+- Managed private keys entirely on backend, stored in internal database to handle funds
+- Prototyped UI using AI-generated designs for review and approval
+- Sought guidance on database table structure and relationships
+- Implemented separate tables for different transaction types (entry fees, payouts)
+- Gathered creative ideas to unlock deeper thoughts and potential project directions
+- Received guidance on tracking historical contest results and managing active/inactive states
+- Scaffolded/wireframed new user interface inspired by DraftKings, focusing on simplicity
+- Diagnosed issues with Express server and missing persistent storage for features
+- Planned real-time performance visualization on live contest page for enhanced engagement
+- Designed unique avatars/icons for participants, unlockable through achievements
+- Integrated strategic elements like token trading during the game
+- Introduced AI Game Master concept for dynamic scoring and persuasion-based gameplay
+- Identified four target audiences and prepared tailored documentation for each
+- Planned token launch alongside the platform with specific utility
+- Split project into separate frontend (degenduel-fe) and backend (degenduel) repos
+- Iteratively diagnosed and fixed app's architecture and functionality
+- Explored integration of autonomous AI agents (e.g., based on Eliza framework)
+- Planned mysterious and intriguing announcement for the impending beta launch

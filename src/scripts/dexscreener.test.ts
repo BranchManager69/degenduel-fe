@@ -1,5 +1,5 @@
 // tests/dexscreener.test.ts
-import { DexScreenerService } from '../src/services/dexscreener.ts';
+import { DexScreenerService } from '../services/dexscreener.ts';
 
 function formatTokenData(data: any, indent = ''): string {
   if (!data) return 'No data available';

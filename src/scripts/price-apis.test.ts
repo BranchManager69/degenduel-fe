@@ -2,8 +2,8 @@
 // Main test file for token price and metrics analysis
 import { join } from 'path';
 import { writeFileSync } from 'fs';
-import { DexScreenerService } from '../src/services/dexscreener';
-import { formatMarketCap } from '../src/lib/utils';
+import { DexScreenerService } from '../services/dexscreener';
+import { formatMarketCap } from '../lib/utils';
 
 const SECONDS_DELAY = 3;
 const MAX_TOKENS_PROCESSED = 18;
