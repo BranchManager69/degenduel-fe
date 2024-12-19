@@ -70,6 +70,11 @@ export const TokenSelection: React.FC = () => {
       if (!contestId) return;
       try {
         const data = await api.contests.getById(contestId);
+        console.log('Contest data from API:', {
+          data,
+          isParticipating: data.is_participating,
+          id: data.id
+        });
         setContest(data);
       } catch (err) {
         console.error('Error fetching contest:', err);
@@ -110,6 +115,14 @@ export const TokenSelection: React.FC = () => {
 
     fetchExistingPortfolio();
   }, [contestId, user?.wallet_address]);
+
+  useEffect(() => {
+    console.log('Current contest state:', {
+      contestId,
+      contest,
+      isParticipating: contest?.is_participating
+    });
+  }, [contestId, contest]);
 
   const handleTokenSelect = (symbol: string, weight: number) => {
     const newSelectedTokens = new Map(selectedTokens);

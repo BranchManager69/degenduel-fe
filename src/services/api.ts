@@ -133,10 +133,27 @@ export const api = {
       return response.json();
     },
 
-    getById: async (contestId: string): Promise<Contest> => {
-      const response = await fetch(`/api/contests/${contestId}`);
-      if (!response.ok) throw new Error('Failed to fetch contest');
-      return response.json();
+    getById: async (contestId: string) => {
+      const user = useStore.getState().user;
+
+      console.log('[debug getById] contestId:', contestId);
+      const response = await fetch(`${API_URL}/contests/${contestId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Wallet-Address': user?.wallet_address || '',  
+          'Cache-Control': 'no-cache'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch contest');
+      }
+
+      const data = await response.json();
+      console.log('Contest API response:', data);
+      return data;
     },
 
     enterContest: async (contestId: string | number, portfolio: Array<{ symbol: string, weight: number }>) => {
@@ -220,12 +237,12 @@ export const api = {
       if (!user?.wallet_address) {
         throw new Error('Wallet address is required');
       }
-
+  
       const response = await fetch(`${API_URL}/contests/${contestId}/portfolio`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        credentials: 'include',
+        credentials: 'include' 
       });
 
       if (response.status === 401) {

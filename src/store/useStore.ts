@@ -69,6 +69,7 @@ export const useStore = create<StoreState>()(
           const { solana } = window as any;
           const { debugConfig } = get();
 
+          /* For Superadmin Debug Menu (part 1 of 3) */
           // Debug: Force wallet not found
           if (debugConfig.forceWalletNotFound || !solana?.isPhantom) {
             throw {
@@ -84,10 +85,56 @@ export const useStore = create<StoreState>()(
               message: 'Wallet connection was rejected'
             } as WalletError;
           }
+          /* End Superadmin Debug Menu (part 1 of 3) */
 
+
+          /* Start Actual Wallet Connection */
+          // Connect to Phantom
           const response = await solana.connect();
           const walletAddress = response.publicKey.toString();
+          console.log('Connected to wallet:', walletAddress);
 
+          // Request signature to verify wallet ownership
+          const message = `DegenDuel Authentication\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
+          console.log('Requesting signature for message:', message);
+          
+          const encodedMessage = new TextEncoder().encode(message);
+          const signedMessage = await solana.signMessage(encodedMessage, 'utf8');
+          console.log('Received signed message:', {
+            signature: Array.from(signedMessage.signature),
+            signatureLength: signedMessage.signature.length
+          });
+
+          // Send signature to backend for verification
+          const authPayload = {
+            wallet: walletAddress,
+            signature: Array.from(signedMessage.signature),
+            message: message
+          };
+          console.log('Sending auth payload:', authPayload);
+
+          const authResponse = await fetch(`${API_URL}/auth/verify-wallet`, {  // <-- Fixed endpoint
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(authPayload),
+            credentials: 'include'
+          });
+
+          const authData = await authResponse.json();
+            console.log('Auth response:', {
+              status: authResponse.status,
+              ok: authResponse.ok,
+              data: authData
+            });
+
+          if (!authResponse.ok) {
+            throw new Error(`Failed to verify wallet signature: ${authData.error || 'Unknown error'}`);
+          }
+          /* End Actual Wallet Connection */
+
+          /* Start Superadmin Debug Menu (part 2 of 3) */
           // Debug: Force API error
           if (debugConfig.forceAPIError) {
             throw {
@@ -95,7 +142,8 @@ export const useStore = create<StoreState>()(
               message: 'Failed to fetch or create user data'
             } as WalletError;
           }
-
+          /* End Superadmin Debug Menu (part 2 of 3) */
+          
           // Try to fetch existing user data
           let userResponse = await fetch(`${API_URL}/users/${walletAddress}`);
           
