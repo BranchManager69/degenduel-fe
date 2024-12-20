@@ -13,8 +13,12 @@ import { useStore } from '../store/useStore';
 
 export const API_URL = 'https://degenduel.me/api';
 
-/* Implemented API endpoints */
+
+
+/* Implemented API Endpoints */
+
 export const api = {
+  
   // User endpoints
   users: {
     getAll: async (): Promise<User[]> => {
