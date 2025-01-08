@@ -132,7 +132,17 @@ export const api = {
   // Contest endpoints
   contests: {
     getActive: async (): Promise<Contest[]> => {
-      const response = await fetch('/api/contests/active');
+      // fixedddd
+      const user = useStore.getState().user;
+
+      const response = await fetch(`${API_URL}/contests/active`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Wallet-Address': user?.wallet_address || '',  
+          'Cache-Control': 'no-cache'
+        },
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to fetch active contests');
       return response.json();
     },
