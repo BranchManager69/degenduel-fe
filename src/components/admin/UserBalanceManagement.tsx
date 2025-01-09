@@ -7,6 +7,10 @@ interface UserBalanceManagementProps {
   users: User[];
 }
 
+const formatNumber = (num: string | number) => {
+  return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
 export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
   users = [],
 }) => {
@@ -16,6 +20,7 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentBalance, setCurrentBalance] = useState<string | null>(null);
+  const [balanceLabel, setBalanceLabel] = useState<string>("");
 
   // Sort users alphabetically by nickname/address and format for display
   const sortedUsers = useMemo(() => {
@@ -27,23 +32,29 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
     });
   }, [users]);
 
-  // Fetch balance when user is selected
-  const handleUserSelect = async (walletAddress: string) => {
-    setSelectedUser(walletAddress);
-    if (walletAddress) {
-      try {
+  const formatBalance = (balance: number) => {
+    return `${Math.round(balance).toLocaleString("en-US")} Bonus Points`;
+  };
+
+  const handleUserChange = async (walletAddress: string) => {
+    try {
+      const selectedUser = users.find(
+        (u) => u.wallet_address === walletAddress
+      );
+      setSelectedUser(walletAddress);
+      if (selectedUser) {
         const balanceData = await ddApi.balance.get(walletAddress);
-        setCurrentBalance(balanceData.balance?.toString());
-      } catch (err) {
-        console.error("Failed to fetch balance:", err);
-        setCurrentBalance(null);
+        const balance = Math.round(parseFloat(balanceData.balance || "0"));
+        setCurrentBalance(balance.toString());
+        setBalanceLabel(formatBalance(balance));
       }
-    } else {
-      setCurrentBalance(null);
+    } catch (err) {
+      console.error("Failed to fetch user balance:", err);
+      setError("Failed to fetch user balance");
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAdjustBalance = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
@@ -61,13 +72,17 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
 
       await ddApi.admin.adjustUserBalance(selectedUser, numAmount);
 
-      // Refresh the balance after adjustment
-      const newBalance = await ddApi.balance.get(selectedUser);
-      setCurrentBalance(
-        newBalance.formatted_balance || newBalance.balance?.toString()
-      );
+      // After successful adjustment, fetch the new balance
+      const balanceData = await ddApi.balance.get(selectedUser);
+      const newBalance = Math.round(parseFloat(balanceData.balance || "0"));
+      setCurrentBalance(newBalance.toString());
+      setBalanceLabel(formatBalance(newBalance));
 
-      setSuccess(`Successfully adjusted balance for user`);
+      setSuccess(
+        `Successfully adjusted balance for user. Current balance: ${formatBalance(
+          newBalance
+        )}`
+      );
       setAmount("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to adjust balance");
@@ -76,24 +91,23 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
     }
   };
 
-  const formatNumber = (num: string | number) => {
-    return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  };
-
   return (
     <div className="bg-dark-200 rounded-lg p-6">
       <h2 className="text-xl font-bold text-gray-100 mb-4">
         Adjust User Balance
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={(e: React.FormEvent) => handleAdjustBalance(e)}
+        className="space-y-4"
+      >
         <div>
           <label className="block text-sm text-gray-400 mb-1">
             Select User
           </label>
           <select
             value={selectedUser}
-            onChange={(e) => handleUserSelect(e.target.value)}
+            onChange={(e) => handleUserChange(e.target.value)}
             className="w-full bg-dark-300 border border-dark-400 rounded px-3 py-2 text-gray-100"
             required
           >
@@ -111,9 +125,7 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
         {currentBalance && (
           <div className="text-sm text-gray-400">
             Current Balance:{" "}
-            <span className="text-gray-200">
-              {formatNumber(currentBalance)} Bonus Points
-            </span>
+            <span className="text-gray-200">{balanceLabel}</span>
           </div>
         )}
 

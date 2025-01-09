@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { CreateContestButton } from "../components/admin/CreateContestButton";
 import { ContestCard } from "../components/contests/ContestCard";
 import { ContestSort } from "../components/contests/ContestSort";
-import { CreateContestButton } from "../components/contests/CreateContestButton";
 import { ddApi } from "../services/dd-api";
 import type { Contest, ContestSettings } from "../types";
 import type { SortDirection, SortField } from "../types/sort";

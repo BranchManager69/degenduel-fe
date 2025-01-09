@@ -187,6 +187,7 @@ export interface Contest {
     username?: string;
     score?: number;
   }>;
+  contest_code: string;
 }
 
 // Portfolio Types

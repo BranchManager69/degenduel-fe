@@ -665,14 +665,34 @@ export const ddApi = {
           body: JSON.stringify(contestData),
         });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to create contest");
+        // Get the response text first
+        const responseText = await response.text();
+        console.log("Create contest raw response:", responseText);
+
+        let errorData;
+        try {
+          errorData = responseText ? JSON.parse(responseText) : {};
+        } catch (e) {
+          console.error("Failed to parse response:", responseText);
         }
 
-        return response.json();
+        if (!response.ok) {
+          throw new Error(
+            errorData?.message ||
+              errorData?.error ||
+              `Failed to create contest: ${response.status} ${response.statusText}`
+          );
+        }
+
+        return errorData;
       } catch (error) {
-        console.error("Failed to create contest:", error);
+        console.error("Failed to create contest:", {
+          error,
+          data: contestData,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          errorStack: error instanceof Error ? error.stack : undefined,
+        });
         throw error;
       }
     },

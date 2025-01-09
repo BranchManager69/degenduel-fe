@@ -4,17 +4,20 @@ import { Contest } from "../../types";
 import { ContestDifficulty } from "../landing/contests/ContestDifficulty";
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader } from "../ui/Card";
+import { CreateContestButton } from "./CreateContestButton";
 
 interface ContestManagementProps {
   contests: Contest[];
   onEditContest: (id: string) => void;
   onDeleteContest: (id: string) => void;
+  onContestCreated: () => void;
 }
 
 export const ContestManagement: React.FC<ContestManagementProps> = ({
   contests,
   onEditContest,
   onDeleteContest,
+  onContestCreated,
 }) => {
   return (
     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
@@ -23,7 +26,7 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
           <h3 className="text-lg font-semibold text-gray-100">
             Contest Management
           </h3>
-          <Button variant="gradient">Create New Contest</Button>
+          <CreateContestButton onContestCreated={onContestCreated} />
         </div>
       </CardHeader>
       <CardContent>

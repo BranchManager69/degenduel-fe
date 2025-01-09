@@ -4,7 +4,6 @@ import { EditContestModal } from "../components/admin/EditContestModal";
 import { PlatformStats } from "../components/admin/PlatformStats";
 import { RecentActivity } from "../components/admin/RecentActivity";
 import { UserBalanceManagement } from "../components/admin/UserBalanceManagement";
-import { CreateContestButton } from "../components/contests/CreateContestButton";
 import { ddApi } from "../services/dd-api";
 import { useStore } from "../store/useStore";
 import { Contest, User } from "../types";
@@ -238,14 +237,11 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-100">Admin Dashboard</h1>
-          <p className="text-gray-400">
-            Manage contests and monitor platform activity
-          </p>
-        </div>
-        <CreateContestButton onContestCreated={handleContestCreated} />
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-100">Admin Dashboard</h1>
+        <p className="text-gray-400">
+          Manage contests and monitor platform activity
+        </p>
       </div>
 
       <div className="space-y-8">
@@ -270,6 +266,7 @@ export const AdminDashboard: React.FC = () => {
               onDeleteContest={(id: string) =>
                 handleDeleteContest(parseInt(id))
               }
+              onContestCreated={handleContestCreated}
             />
           </div>
           <div className="space-y-8">
@@ -285,12 +282,14 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      <EditContestModal
-        contest={editingContest}
-        isOpen={!!editingContest}
-        onClose={() => setEditingContest(null)}
-        onSave={handleSaveContest}
-      />
+      {editingContest && (
+        <EditContestModal
+          contest={editingContest}
+          isOpen={!!editingContest}
+          onClose={() => setEditingContest(null)}
+          onSave={handleSaveContest}
+        />
+      )}
     </div>
   );
 };
