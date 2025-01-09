@@ -6,18 +6,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, precision: number = 0): string {
-  if (amount >= 1_000_000_000) {
-    return `$${(amount / 1_000_000_000).toFixed(precision)}B`;
-  }
-  if (amount >= 1_000_000) {
-    return `$${(amount / 1_000_000).toFixed(precision)}M`;
-  }
-  if (amount >= 1_000) {
-    return `$${(amount / 1_000).toFixed(precision)}K`;
-  }
-  return `$${amount.toFixed(precision)}`;
-}
+export const formatCurrency = (amount: number | string): string => {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  return `${num.toFixed(2)} SOL`;
+};
 
 export function formatMarketCap(marketCap: number): string {
   if (marketCap >= 1_000_000_000) {

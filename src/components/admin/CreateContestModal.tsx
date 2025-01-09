@@ -1,5 +1,6 @@
 import React from "react";
 import { createPortal } from "react-dom";
+import { toast } from "react-hot-toast";
 import { ddApi } from "../../services/dd-api";
 import { Contest, ContestSettings } from "../../types";
 import { Button } from "../ui/Button";
@@ -38,7 +39,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   const formatSolAmount = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
-    return `${num} SOL`;
+    return `${num.toFixed(2)} SOL`;
   };
 
   const calculateMaxPrizePool = (entryFee: string, maxParticipants: number) => {
@@ -63,9 +64,10 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   };
 
   const [formData, setFormData] = React.useState({
-    name: "",
-    description: "",
-    entry_fee: "0.1", // Default 0.1 SOL
+    name: "New Contest",
+    description:
+      "One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.",
+    entry_fee: "0.25", // Default 0.25 SOL
     prize_pool: "0",
     start_time: getNextHourDateTime(),
     end_time: new Date(
@@ -75,12 +77,12 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       .slice(0, 16),
     entry_deadline: getNextHourDateTime(),
     min_participants: 2,
-    max_participants: 100, // Default 100
+    max_participants: 50, // Default 50
     allowed_buckets: [1, 2, 3, 4, 5],
     settings: {
       difficulty: "guppy" as ContestDifficulty,
       min_trades: 1,
-      max_participants: 100,
+      max_participants: 50,
       min_participants: 2,
       token_types: [],
       rules: [],
@@ -93,7 +95,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     setLoading(true);
 
     let attempt = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 5;
 
     while (attempt < maxAttempts) {
       try {
@@ -122,17 +124,28 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           } as ContestSettings,
         };
 
+        console.log("Form entry_fee value:", formData.entry_fee);
         console.log(
-          `Attempt ${attempt + 1}: Creating contest with code ${
-            contestData.contest_code
-          }`
+          "Contest data being sent:",
+          JSON.stringify(contestData, null, 2)
         );
 
         const response = await ddApi.contests.create(contestData);
-        console.log("Create contest response:", response);
+        console.log("API Response:", response);
+
+        toast.success("Contest created successfully!", {
+          duration: 4000,
+          position: "bottom-right",
+          style: {
+            background: "#1a1a1a",
+            color: "#fff",
+            border: "1px solid #262626",
+          },
+        });
+
         onSuccess?.();
         onClose();
-        break; // Success! Exit the loop
+        break;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error";
@@ -196,7 +209,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             </Button>
           </div>
 
-          <div className="overflow-y-auto p-6 space-y-6 flex-1">
+          <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
@@ -264,19 +277,20 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Entry Fee
                   </label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      name="entry_fee"
-                      value={formData.entry_fee}
-                      onChange={handleInputChange}
-                      className="w-full text-gray-100 bg-dark-300"
-                      required
-                    />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                      SOL
-                    </div>
-                  </div>
+                  <Input
+                    type="text"
+                    name="entry_fee"
+                    value={formatSolAmount(formData.entry_fee)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9.]/g, "");
+                      setFormData((prev) => ({
+                        ...prev,
+                        entry_fee: value,
+                      }));
+                    }}
+                    className="w-full text-gray-100 bg-dark-300"
+                    required
+                  />
                 </div>
 
                 <div>
@@ -351,7 +365,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                             { value: "whale", label: "Whale" },
                           ] as const
                         }
-                        className="w-full"
+                        className="w-full text-gray-100"
                       />
                     </div>
 
@@ -371,7 +385,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                             },
                           }))
                         }
-                        className="w-full"
+                        className="w-full text-gray-100"
                         min={1}
                       />
                     </div>

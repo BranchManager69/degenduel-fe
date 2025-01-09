@@ -61,7 +61,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
 
   const calculateMaxPrizePool = (entryFee: string, maxParticipants: number) => {
     const fee = parseFloat(entryFee) || 0;
-    return Math.floor(fee * maxParticipants * 0.9);
+    return fee * maxParticipants * 0.9;
   };
 
   const [formData, setFormData] = React.useState<FormData>({
@@ -131,13 +131,12 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
       const apiData: Partial<Contest> = {
         name: formData.name,
         description: formData.description,
-        entry_fee: String(formData.entry_fee).replace(/,/g, ""),
+        entry_fee: String(parseFloat(formData.entry_fee)),
         prize_pool: String(
           calculateMaxPrizePool(formData.entry_fee, formData.max_participants)
         ),
-        current_prize_pool: String(formData.current_prize_pool || "0").replace(
-          /,/g,
-          ""
+        current_prize_pool: String(
+          parseFloat(formData.current_prize_pool || "0")
         ),
         start_time: formData.start_time,
         end_time: formData.end_time,

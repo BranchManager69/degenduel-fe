@@ -648,26 +648,21 @@ export const ddApi = {
     },
 
     create: async (contestData: Partial<Contest>): Promise<Contest> => {
-      const user = useStore.getState().user;
-
-      if (!user?.wallet_address) {
-        throw new Error("Please connect your wallet first");
-      }
+      console.log("API Service - Contest data before send:", contestData);
 
       try {
         const response = await fetch(`${API_URL}/contests`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Wallet-Address": user.wallet_address,
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
           },
           credentials: "include",
           body: JSON.stringify(contestData),
         });
 
-        // Get the response text first
         const responseText = await response.text();
-        console.log("Create contest raw response:", responseText);
+        console.log("API Raw Response:", responseText);
 
         let errorData;
         try {

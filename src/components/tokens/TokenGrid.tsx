@@ -22,12 +22,12 @@ interface TokenGridProps {
 const formatTokenPrice = (price: string | number): string => {
   const numPrice = Number(price);
   if (numPrice >= 1) {
-    return formatCurrency(numPrice, 2); // Show cents for prices >= $1
+    return `${numPrice.toFixed(2)} SOL`; // Show cents for prices >= 1
   } else if (numPrice >= 0.01) {
-    return formatCurrency(numPrice, 3); // Show 3 decimals for prices >= $0.01
+    return `${numPrice.toFixed(3)} SOL`; // Show 3 decimals for prices >= 0.01
   } else {
     // For very small prices, show significant digits
-    return `$${numPrice.toPrecision(2)}`;
+    return `${numPrice.toPrecision(2)} SOL`;
   }
 };
 
