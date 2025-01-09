@@ -151,49 +151,37 @@ export interface Transaction {
 }
 
 // Contest Types
-export type ContestStatus =
-  | "pending"
-  | "active"
-  | "in_progress"
-  | "in-progress" // Marked for future cleanup
-  | "completed"
-  | "cancelled";
+export type ContestStatus = "pending" | "active" | "completed" | "cancelled";
 
 export interface ContestSettings {
   difficulty: "guppy" | "tadpole" | "squid" | "dolphin" | "shark" | "whale";
   min_trades: number;
   max_participants: number;
   min_participants: number;
+  token_types: string[];
   rules: string[];
-  token_types?: string[];
-  allowed_buckets?: number[];
-  entry_deadline?: string;
 }
 
 export interface Contest {
   id: number;
   name: string;
   description: string;
-  start_time: string;
-  end_time: string;
   entry_fee: string;
   prize_pool: string;
-  current_prize_pool: string;
+  current_prize_pool?: string;
+  start_time: string;
+  end_time: string;
+  entry_deadline?: string;
+  allowed_buckets: number[];
+  participant_count: number;
+  last_entry_time?: string;
   status: ContestStatus;
+  cancelled_at?: string;
+  cancellation_reason?: string;
   settings: ContestSettings;
   created_at: string;
   updated_at: string;
-  participant_count: number;
-  is_participating: boolean;
-  last_entry_time?: string;
-  cancelled_at?: string;
-  cancellation_reason?: string;
-  allowed_buckets?: number[];
-  participants: Array<{
-    address: string;
-    username?: string;
-    score?: number;
-  }>;
+  is_participating?: boolean;
 }
 
 // Portfolio Types

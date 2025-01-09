@@ -104,7 +104,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
     if (hasEnded) {
       displayStatus = "completed";
     } else if (hasStarted) {
-      displayStatus = "in_progress";
+      displayStatus = "active";
     } else {
       displayStatus = "pending";
     }
