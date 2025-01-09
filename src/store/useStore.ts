@@ -42,6 +42,31 @@ const persistConfig: StorePersist = {
   }),
 };
 
+const retryFetch = async (
+  url: string,
+  options?: RequestInit,
+  retries = 3,
+  delay = 1000
+) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status === 404) {
+        // 404 is handled separately
+        return response;
+      }
+      console.warn(`Attempt ${i + 1}/${retries} failed for ${url}`);
+    } catch (e) {
+      console.error(`Fetch attempt ${i + 1}/${retries} failed:`, e);
+    }
+    if (i < retries - 1) {
+      // Don't delay on last attempt
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error(`Failed after ${retries} attempts`);
+};
+
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
@@ -156,27 +181,82 @@ export const useStore = create<StoreState>()(
           }
           /* End Superadmin Debug Menu (part 2 of 3) */
 
-          // Try to fetch existing user data
-          let userResponse = await fetch(`${API_URL}/users/${walletAddress}`);
+          // Try to fetch existing user data with retries
+          let userResponse;
+          try {
+            userResponse = await retryFetch(
+              `${API_URL}/users/${walletAddress}`
+            );
+
+            console.log("User fetch response:", {
+              status: userResponse.status,
+              ok: userResponse.ok,
+            });
+          } catch (e) {
+            console.error("Failed to fetch user after retries:", e);
+            throw {
+              code: "API_ERROR",
+              message: "Unable to connect to server. Please try again later.",
+            } as WalletError;
+          }
 
           // If user doesn't exist, create a new one
           if (userResponse.status === 404) {
-            userResponse = await fetch(`${API_URL}/users`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                wallet_address: walletAddress,
-                nickname: `degen_${walletAddress.slice(0, 8)}`, // Default nickname
-              }),
-            });
+            console.log("User not found, creating new user...");
+            try {
+              userResponse = await retryFetch(`${API_URL}/users`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  wallet_address: walletAddress,
+                  nickname: `degen_${walletAddress.slice(0, 8)}`,
+                }),
+              });
+
+              console.log("Create user response:", {
+                status: userResponse.status,
+                ok: userResponse.ok,
+              });
+            } catch (e) {
+              console.error("Failed to create user after retries:", e);
+              throw {
+                code: "API_ERROR",
+                message:
+                  "Failed to create user account. Please try again later.",
+              } as WalletError;
+            }
           }
 
-          if (!userResponse.ok)
-            throw new Error("Failed to fetch/create user data");
+          let userData;
+          try {
+            const responseText = await userResponse.text();
+            try {
+              userData = JSON.parse(responseText);
+            } catch (e) {
+              console.error("Invalid JSON response:", responseText);
+              throw {
+                code: "API_ERROR",
+                message: "Received invalid data from server",
+              } as WalletError;
+            }
+          } catch (e) {
+            console.error("Failed to read response:", e);
+            throw {
+              code: "API_ERROR",
+              message: "Failed to process server response",
+            } as WalletError;
+          }
 
-          const userData = await userResponse.json();
+          if (!userData) {
+            throw {
+              code: "API_ERROR",
+              message: "No user data received from server",
+            } as WalletError;
+          }
+
+          console.log("Successfully retrieved user data:", userData);
           set({ user: { ...userData, is_admin: false } });
         } catch (error) {
           console.error("Failed to connect wallet:", error);
