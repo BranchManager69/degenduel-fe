@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ContestCard } from "../components/contests/ContestCard";
 import { ContestFilters } from "../components/contests/ContestFilters";
 import { CreateContestButton } from "../components/contests/CreateContestButton";
-import { CountdownTimer } from "../components/ui/CountdownTimer";
 import { isContestLive } from "../lib/utils";
 import { ddApi } from "../services/dd-api";
 import type { Contest, ContestSettings } from "../types";
@@ -164,17 +163,6 @@ export const ContestBrowser: React.FC = () => {
               contest={contest}
               onClick={() => (window.location.href = `/contests/${contest.id}`)}
             />
-            <p className="text-sm text-gray-400">
-              {isContestLive(contest) ? "Ends in " : "Starts in "}
-              <CountdownTimer
-                targetDate={
-                  isContestLive(contest) ? contest.end_time : contest.start_time
-                }
-                onComplete={() => {
-                  console.log("Timer completed for contest:", contest.id);
-                }}
-              />
-            </p>
           </div>
         ))}
       </div>
