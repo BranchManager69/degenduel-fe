@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { persist, PersistOptions } from 'zustand/middleware';
-import { User, Contest, Token, WalletError } from '../types';
-import { API_URL } from '../services/api';
-import { isAdminWallet } from '../lib/auth';
+import { create } from "zustand";
+import { persist, PersistOptions } from "zustand/middleware";
+import { API_URL } from "../config/config";
+import { isAdminWallet } from "../lib/auth";
+import { Contest, Token, User, WalletError } from "../types";
 
 // Add debug configuration
 interface DebugConfig {
@@ -29,13 +29,16 @@ type StoreState = {
   disconnectWallet: () => void;
 };
 
-type StorePersist = PersistOptions<StoreState, Pick<StoreState, 'user' | 'debugConfig'>>;
+type StorePersist = PersistOptions<
+  StoreState,
+  Pick<StoreState, "user" | "debugConfig">
+>;
 
 const persistConfig: StorePersist = {
-  name: 'degen-duel-storage',
+  name: "degen-duel-storage",
   partialize: (state) => ({
     user: state.user,
-    debugConfig: state.debugConfig
+    debugConfig: state.debugConfig,
   }),
 };
 
@@ -46,26 +49,27 @@ export const useStore = create<StoreState>()(
       user: null,
       error: null,
       debugConfig: {},
-      
-      setDebugConfig: (config) => set((state) => ({
-        debugConfig: { ...state.debugConfig, ...config }
-      })),
-      
+
+      setDebugConfig: (config) =>
+        set((state) => ({
+          debugConfig: { ...state.debugConfig, ...config },
+        })),
+
       clearError: () => set({ error: null }),
-      
+
       contests: [],
       tokens: [],
-      
+
       setUser: (user) => set({ user }),
       setContests: (contests) => set({ contests }),
       setTokens: (tokens) => set({ tokens }),
-      
+
       connectWallet: async () => {
         if (get().isConnecting) return;
-        
+
         try {
           set({ isConnecting: true, error: null });
-          
+
           const { solana } = window as any;
           const { debugConfig } = get();
 
@@ -73,64 +77,72 @@ export const useStore = create<StoreState>()(
           // Debug: Force wallet not found
           if (debugConfig.forceWalletNotFound || !solana?.isPhantom) {
             throw {
-              code: 'WALLET_NOT_FOUND',
-              message: 'Phantom wallet not found! Please install it from phantom.app'
+              code: "WALLET_NOT_FOUND",
+              message:
+                "Phantom wallet not found! Please install it from phantom.app",
             } as WalletError;
           }
 
           // Debug: Force user rejection
           if (debugConfig.forceUserRejection) {
             throw {
-              code: 'USER_REJECTED',
-              message: 'Wallet connection was rejected'
+              code: "USER_REJECTED",
+              message: "Wallet connection was rejected",
             } as WalletError;
           }
           /* End Superadmin Debug Menu (part 1 of 3) */
-
 
           /* Start Actual Wallet Connection */
           // Connect to Phantom
           const response = await solana.connect();
           const walletAddress = response.publicKey.toString();
-          console.log('Connected to wallet:', walletAddress);
+          console.log("Connected to wallet:", walletAddress);
 
           // Request signature to verify wallet ownership
           const message = `DegenDuel Authentication\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
-          console.log('Requesting signature for message:', message);
-          
+          console.log("Requesting signature for message:", message);
+
           const encodedMessage = new TextEncoder().encode(message);
-          const signedMessage = await solana.signMessage(encodedMessage, 'utf8');
-          console.log('Received signed message:', {
+          const signedMessage = await solana.signMessage(
+            encodedMessage,
+            "utf8"
+          );
+          console.log("Received signed message:", {
             signature: Array.from(signedMessage.signature),
-            signatureLength: signedMessage.signature.length
+            signatureLength: signedMessage.signature.length,
           });
 
           // Send signature to backend for verification
           const authPayload = {
             wallet: walletAddress,
             signature: Array.from(signedMessage.signature),
-            message: message
+            message: message,
           };
-          console.log('Sending auth payload:', authPayload);
+          console.log("Sending auth payload:", authPayload);
 
-          const authResponse = await fetch(`${API_URL}/auth/verify-wallet`, {  // <-- Fixed endpoint
-            method: 'POST',
+          const authResponse = await fetch(`${API_URL}/auth/verify-wallet`, {
+            // <-- Fixed endpoint
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify(authPayload),
-            credentials: 'include'
+            credentials: "include",
           });
 
           const authData = await authResponse.json();
-            console.log('Auth response:', {
-              status: authResponse.status,
-              ok: authResponse.ok,
-              data: authData
-            });
+          console.log("Auth response:", {
+            status: authResponse.status,
+            ok: authResponse.ok,
+            data: authData,
+          });
 
           if (!authResponse.ok) {
-            throw new Error(`Failed to verify wallet signature: ${authData.error || 'Unknown error'}`);
+            throw new Error(
+              `Failed to verify wallet signature: ${
+                authData.error || "Unknown error"
+              }`
+            );
           }
           /* End Actual Wallet Connection */
 
@@ -138,21 +150,21 @@ export const useStore = create<StoreState>()(
           // Debug: Force API error
           if (debugConfig.forceAPIError) {
             throw {
-              code: 'API_ERROR',
-              message: 'Failed to fetch or create user data'
+              code: "API_ERROR",
+              message: "Failed to fetch or create user data",
             } as WalletError;
           }
           /* End Superadmin Debug Menu (part 2 of 3) */
-          
+
           // Try to fetch existing user data
           let userResponse = await fetch(`${API_URL}/users/${walletAddress}`);
-          
+
           // If user doesn't exist, create a new one
           if (userResponse.status === 404) {
             userResponse = await fetch(`${API_URL}/users`, {
-              method: 'POST',
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
               },
               body: JSON.stringify({
                 wallet_address: walletAddress,
@@ -161,16 +173,20 @@ export const useStore = create<StoreState>()(
             });
           }
 
-          if (!userResponse.ok) throw new Error('Failed to fetch/create user data');
-          
+          if (!userResponse.ok)
+            throw new Error("Failed to fetch/create user data");
+
           const userData = await userResponse.json();
           set({ user: { ...userData, is_admin: false } });
         } catch (error) {
-          console.error('Failed to connect wallet:', error);
-          set({ 
-            error: (error as WalletError).code 
+          console.error("Failed to connect wallet:", error);
+          set({
+            error: (error as WalletError).code
               ? (error as WalletError)
-              : { code: 'CONNECTION_FAILED', message: 'Failed to connect wallet' }
+              : {
+                  code: "CONNECTION_FAILED",
+                  message: "Failed to connect wallet",
+                },
           });
         } finally {
           set({ isConnecting: false });
@@ -179,43 +195,51 @@ export const useStore = create<StoreState>()(
 
       connectAsAdmin: async () => {
         if (get().isConnecting) return;
-        
+
         try {
           set({ isConnecting: true, error: null });
-          
+
           const currentUser = get().user;
           const { debugConfig } = get();
 
-          if (!currentUser || debugConfig.forceUnauthorized || !isAdminWallet(currentUser.wallet_address)) {
+          if (
+            !currentUser ||
+            debugConfig.forceUnauthorized ||
+            !isAdminWallet(currentUser.wallet_address)
+          ) {
             throw {
-              code: 'UNAUTHORIZED',
-              message: 'Only administrators can access admin features'
+              code: "UNAUTHORIZED",
+              message: "Only administrators can access admin features",
             } as WalletError;
           }
 
-          const response = await fetch(`${API_URL}/users/${currentUser.wallet_address}`);
+          const response = await fetch(
+            `${API_URL}/users/${currentUser.wallet_address}`
+          );
           if (!response.ok) {
             throw {
-              code: 'API_ERROR',
-              message: 'Failed to fetch admin data'
+              code: "API_ERROR",
+              message: "Failed to fetch admin data",
             } as WalletError;
           }
-          
+
           const userData = await response.json();
           set({ user: { ...userData, is_admin: true }, error: null });
-          
         } catch (error) {
-          console.error('Failed to connect as admin:', error);
-          set({ 
-            error: (error as WalletError).code 
+          console.error("Failed to connect as admin:", error);
+          set({
+            error: (error as WalletError).code
               ? (error as WalletError)
-              : { code: 'CONNECTION_FAILED', message: 'Failed to connect as admin' }
+              : {
+                  code: "CONNECTION_FAILED",
+                  message: "Failed to connect as admin",
+                },
           });
         } finally {
           set({ isConnecting: false });
         }
       },
-      
+
       disconnectWallet: () => {
         const { solana } = window as any;
         if (solana?.isPhantom) {

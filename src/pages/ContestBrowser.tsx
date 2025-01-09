@@ -1,31 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { ContestCard } from '../components/contests/ContestCard';
-import { ContestFilters } from '../components/contests/ContestFilters';
-import { CreateContestButton } from '../components/contests/CreateContestButton';
-import { API_URL } from '../services/api';
-import type { Contest } from '../types';
-import { CountdownTimer } from '../components/ui/CountdownTimer';
-import { isContestLive } from '../lib/utils';
+import React, { useEffect, useState } from "react";
+import { ContestCard } from "../components/contests/ContestCard";
+import { ContestFilters } from "../components/contests/ContestFilters";
+import { CreateContestButton } from "../components/contests/CreateContestButton";
+import { CountdownTimer } from "../components/ui/CountdownTimer";
+import { isContestLive } from "../lib/utils";
+import { ddApi } from "../services/dd-api";
+import type { Contest } from "../types";
+
+// ?
+interface ContestResponse {
+  contests: Contest[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+}
 
 export const ContestBrowser: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeStatusFilter, setActiveStatusFilter] = useState('all');
-  const [activeDifficultyFilter, setActiveDifficultyFilter] = useState('');
-  const [activeSort, setActiveSort] = useState('start_time');
+  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [activeDifficultyFilter, setActiveDifficultyFilter] = useState("");
+  const [activeSort, setActiveSort] = useState("start_time");
 
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        const response = await fetch(`${API_URL}/contests`);
-        if (!response.ok) throw new Error('Failed to fetch contests');
-        const data = await response.json();
-        setContests(data);
+        const response = await ddApi.contests.getAll();
+        console.log("contests full response:", response);
+
+        // Type guard with explicit type checking
+        const isContestResponse = (
+          value: unknown
+        ): value is ContestResponse => {
+          const obj = value as { contests?: unknown };
+          return (
+            value !== null &&
+            typeof value === "object" &&
+            "contests" in obj &&
+            Array.isArray(obj.contests)
+          );
+        };
+
+        // Extract contests array with explicit typing
+        let contestsArray: Contest[] = [];
+        if (Array.isArray(response)) {
+          contestsArray = response as Contest[];
+        } else if (isContestResponse(response)) {
+          contestsArray = (response as ContestResponse).contests;
+        }
+
+        setContests(contestsArray);
         setLoading(false);
-      } catch (err) {
-        console.error('Error fetching contests:', err);
-        setError('Failed to load contests');
+      } catch (error) {
+        console.error("Error fetching contests:", error);
+        setError("Failed to load contests (CB)");
         setLoading(false);
       }
     };
@@ -62,7 +93,7 @@ export const ContestBrowser: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-100">Available Contests</h1>
         <CreateContestButton />
       </div>
-      
+
       <div className="mb-8">
         <ContestFilters
           activeStatusFilter={activeStatusFilter}
@@ -77,16 +108,18 @@ export const ContestBrowser: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {contests.map((contest) => (
           <div key={contest.id}>
-            <ContestCard 
+            <ContestCard
               contest={contest}
-              onClick={() => window.location.href = `/contests/${contest.id}`}
+              onClick={() => (window.location.href = `/contests/${contest.id}`)}
             />
             <p className="text-sm text-gray-400">
-              {isContestLive(contest) ? 'Ends in ' : 'Starts in '}
-              <CountdownTimer 
-                targetDate={isContestLive(contest) ? contest.end_time : contest.start_time}
+              {isContestLive(contest) ? "Ends in " : "Starts in "}
+              <CountdownTimer
+                targetDate={
+                  isContestLive(contest) ? contest.end_time : contest.start_time
+                }
                 onComplete={() => {
-                  console.log('Timer completed for contest:', contest.id);
+                  console.log("Timer completed for contest:", contest.id);
                 }}
               />
             </p>

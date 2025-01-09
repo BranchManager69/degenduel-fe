@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
-import { MovingBackground } from '../components/ui/MovingBackground';
-import { LiveContestTicker } from '../components/ui/LiveContestTicker';
-import { Features } from '../components/landing/Features';
-import { ContestSection } from '../components/landing/ContestSection';
-import { api } from '../services/api';
-import type { Contest } from '../types';
-import { isContestLive } from '../lib/utils';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ContestSection } from "../components/landing/ContestSection";
+import { Features } from "../components/landing/Features";
+import { Button } from "../components/ui/Button";
+import { LiveContestTicker } from "../components/ui/LiveContestTicker";
+import { MovingBackground } from "../components/ui/MovingBackground";
+import { isContestLive } from "../lib/utils";
+import { ddApi } from "../services/dd-api";
+import type { Contest } from "../types";
 
 // Define contest filter functions
-const isPendingContest = (contest: Contest): boolean => contest.status === 'pending';
+const isPendingContest = (contest: Contest): boolean =>
+  contest.status === "pending";
+
+// Update the interface to match the actual API response structure
+interface ContestResponse {
+  contests: Contest[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+}
 
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
@@ -21,36 +32,63 @@ export const LandingPage: React.FC = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        const contests = await api.contests.getActive();
-        
-        // Use the predefined filter functions
-        const active = contests.filter(isContestLive);
-        const open = contests.filter(isPendingContest);
-        
+        const response = await ddApi.contests.getAll();
+        console.log(
+          "contests type:",
+          Array.isArray(response) ? "Array" : typeof response
+        );
+        console.log("contests full response:", response);
+
+        // Type guard with explicit type checking
+        const isContestResponse = (
+          value: unknown
+        ): value is ContestResponse => {
+          const obj = value as { contests?: unknown };
+          return (
+            value !== null &&
+            typeof value === "object" &&
+            "contests" in obj &&
+            Array.isArray(obj.contests)
+          );
+        };
+
+        // Extract contests array with explicit typing
+        let contestsArray: Contest[] = [];
+        if (Array.isArray(response)) {
+          contestsArray = response as Contest[];
+        } else if (isContestResponse(response)) {
+          contestsArray = (response as ContestResponse).contests;
+        }
+
+        console.log("contestsArray:", contestsArray);
+
+        // Use the predefined filter functions on the guaranteed array
+        const active = contestsArray.filter(isContestLive);
+        console.log("active", active);
+        const open = contestsArray.filter(isPendingContest);
+        console.log("open", open);
+
         setActiveContests(active);
         setOpenContests(open);
       } catch (error) {
-        console.error('Error fetching contests:', error);
-        setError('Failed to load contests');
+        console.error("Error fetching contests:", error);
+        setError("Failed to load contests (LP)");
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchContests();
   }, []);
 
   return (
     <div className="relative min-h-screen bg-dark-100 text-gray-100">
       <MovingBackground />
-      
+
       <div className="sticky top-16 z-10">
-        <LiveContestTicker 
-          contests={activeContests} 
-          loading={loading} 
-        />
+        <LiveContestTicker contests={activeContests} loading={loading} />
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative pt-20 pb-16 text-center">
           <h1 className="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl mb-6">
@@ -60,7 +98,8 @@ export const LandingPage: React.FC = () => {
             </span>
           </h1>
           <p className="mt-3 max-w-md mx-auto text-base text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            Compete in trading competitions against schizo degens and based chads. Build your stack, challenge other degens, and win some SOL.
+            Compete in trading competitions against schizo degens and based
+            chads. Build your stack, challenge other degens, and win some SOL.
           </p>
           <div className="mt-8 max-w-md mx-auto sm:flex sm:justify-center">
             <div className="rounded-md shadow">
@@ -72,7 +111,11 @@ export const LandingPage: React.FC = () => {
             </div>
             <div className="mt-3 sm:mt-0 sm:ml-3">
               <Link to="/how-it-works">
-                <Button variant="outline" size="lg" className="text-gray-300 border-gray-700 hover:bg-dark-200">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="text-gray-300 border-gray-700 hover:bg-dark-200"
+                >
                   How It Works
                 </Button>
               </Link>
@@ -83,19 +126,17 @@ export const LandingPage: React.FC = () => {
         <Features />
 
         {error ? (
-          <div className="text-center py-8 text-red-500">
-            {error}
-          </div>
+          <div className="text-center py-8 text-red-500">{error}</div>
         ) : (
           <>
-            <ContestSection 
-              title="Live Contests" 
+            <ContestSection
+              title="Live Contests"
               type="active"
               contests={activeContests}
               loading={loading}
             />
-            <ContestSection 
-              title="Upcoming Contests" 
+            <ContestSection
+              title="Upcoming Contests"
               type="pending"
               contests={openContests}
               loading={loading}

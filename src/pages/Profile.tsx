@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { UserStats } from '../components/profile/UserStats';
-import { ContestHistory } from '../components/profile/ContestHistory';
-import { AchievementCard } from '../components/profile/AchievementCard';
-import { ProfileHeader } from '../components/profile/ProfileHeader';
-import { useStore } from '../store/useStore';
-import { api } from '../services/api';
+import React, { useEffect, useState } from "react";
+import { AchievementCard } from "../components/profile/AchievementCard";
+import { ContestHistory } from "../components/profile/ContestHistory";
+import { ProfileHeader } from "../components/profile/ProfileHeader";
+import { UserStats } from "../components/profile/UserStats";
+import { ddApi } from "../services/dd-api";
+import { useStore } from "../store/useStore";
 
 export const Profile: React.FC = () => {
   const { user, setUser } = useStore();
@@ -20,17 +20,20 @@ export const Profile: React.FC = () => {
 
       try {
         setLoading(true);
-        const [userResponse, statsResponse, achievementsResponse] = await Promise.all([
-          api.users.getOne(user.wallet_address),
-          api.stats.getOverall(user.wallet_address),
-          api.stats.getAchievements(user.wallet_address)
-        ]);
+        const [userResponse, statsResponse, achievementsResponse] =
+          await Promise.all([
+            ddApi.users.getOne(user.wallet_address),
+            ddApi.stats.getOverall(user.wallet_address),
+            ddApi.stats.getAchievements(user.wallet_address),
+          ]);
 
         setUserData(userResponse);
         setUserStats(statsResponse);
         setAchievements(achievementsResponse);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load profile data');
+        setError(
+          err instanceof Error ? err.message : "Failed to load profile data"
+        );
       } finally {
         setLoading(false);
       }
@@ -43,11 +46,16 @@ export const Profile: React.FC = () => {
     if (!user?.wallet_address) return;
 
     try {
-      await api.users.update(user.wallet_address, newNickname);
-      setUserData((prev: typeof userData) => ({ ...prev, nickname: newNickname }));
+      await ddApi.users.update(user.wallet_address, newNickname);
+      setUserData((prev: typeof userData) => ({
+        ...prev,
+        nickname: newNickname,
+      }));
       setUser({ ...user, nickname: newNickname });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update nickname');
+      setError(
+        err instanceof Error ? err.message : "Failed to update nickname"
+      );
       throw err;
     }
   };
@@ -65,7 +73,7 @@ export const Profile: React.FC = () => {
       <div className="space-y-8">
         <ProfileHeader
           address={userData.wallet_address}
-          username={userData.nickname ?? 'Anonymous'}
+          username={userData.nickname ?? "Anonymous"}
           rankScore={userData.rank_score}
           joinDate={new Date(userData.created_at).toLocaleDateString()}
           onUpdateNickname={handleUpdateNickname}
@@ -85,7 +93,10 @@ export const Profile: React.FC = () => {
             <div className="grid grid-cols-1 gap-4">
               {achievements.length > 0 ? (
                 achievements.map((achievement) => (
-                  <AchievementCard key={achievement.id} achievement={achievement} />
+                  <AchievementCard
+                    key={achievement.id}
+                    achievement={achievement}
+                  />
                 ))
               ) : (
                 <div className="text-gray-400">No achievements yet</div>

@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { ContestManagement } from '../components/admin/ContestManagement';
-import { PlatformStats } from '../components/admin/PlatformStats';
-import { RecentActivity } from '../components/admin/RecentActivity';
-import { useStore } from '../store/useStore';
-import { api } from '../services/api';
-import { Contest } from '../types';
-import { PlatformStats as IPlatformStats, Activity } from '../types/admin';
-import { EditContestModal } from '../components/admin/EditContestModal';
+import React, { useEffect, useState } from "react";
+import { ContestManagement } from "../components/admin/ContestManagement";
+import { EditContestModal } from "../components/admin/EditContestModal";
+import { PlatformStats } from "../components/admin/PlatformStats";
+import { RecentActivity } from "../components/admin/RecentActivity";
+import { ddApi } from "../services/dd-api";
+import { useStore } from "../store/useStore";
+import { Contest } from "../types";
+import { Activity, PlatformStats as IPlatformStats } from "../types/admin";
 
 export const AdminDashboard: React.FC = () => {
-  const user = useStore(state => state.user);
+  const user = useStore((state) => state.user);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [contests, setContests] = useState<Contest[]>([]);
-  const [platformStats, setPlatformStats] = useState<IPlatformStats | null>(null);
+  const [platformStats, setPlatformStats] = useState<IPlatformStats | null>(
+    null
+  );
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [editingContest, setEditingContest] = useState<Contest | null>(null);
 
@@ -24,16 +26,18 @@ export const AdminDashboard: React.FC = () => {
       try {
         setLoading(true);
         const [contestsData, statsData, activitiesData] = await Promise.all([
-          api.admin.getContests(),
-          api.admin.getPlatformStats(),
-          api.admin.getRecentActivities(),
+          ddApi.admin.getContests(),
+          ddApi.admin.getPlatformStats(),
+          ddApi.admin.getRecentActivities(),
         ]);
 
         setContests(contestsData as unknown as Contest[]);
         setPlatformStats(statsData);
         setRecentActivities(activitiesData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+        setError(
+          err instanceof Error ? err.message : "Failed to load dashboard data"
+        );
       } finally {
         setLoading(false);
       }
@@ -43,37 +47,37 @@ export const AdminDashboard: React.FC = () => {
   }, [user?.is_admin]);
 
   const handleEditContest = (id: number) => {
-    const contest = contests.find(c => c.id === id);
+    const contest = contests.find((c) => c.id === id);
     if (contest) {
       setEditingContest(contest);
     }
   };
 
-  const handleSaveContest = async (contestId: number, data: Partial<Contest>) => {
+  const handleSaveContest = async (
+    contestId: number,
+    data: Partial<Contest>
+  ) => {
     try {
-      await api.admin.updateContest(
-        contestId.toString(),
-        {
-          ...data,
-          id: parseInt(contestId.toString())
-        }
-      );
-      
-      const updatedContests = await api.admin.getContests();
+      await ddApi.admin.updateContest(contestId.toString(), {
+        ...data,
+        id: parseInt(contestId.toString()),
+      });
+
+      const updatedContests = await ddApi.admin.getContests();
       setContests(updatedContests as unknown as Contest[]);
       setEditingContest(null);
     } catch (err) {
-      throw new Error('Failed to update contest');
+      throw new Error("Failed to update contest");
     }
   };
 
   const handleDeleteContest = async (id: number) => {
     try {
-      await api.admin.deleteContest(id.toString());
-      const updatedContests = await api.admin.getContests();
+      await ddApi.admin.deleteContest(id.toString());
+      const updatedContests = await ddApi.admin.getContests();
       setContests(updatedContests as unknown as Contest[]);
     } catch (err) {
-      console.error('Failed to delete contest:', err);
+      console.error("Failed to delete contest:", err);
     }
   };
 
@@ -90,7 +94,9 @@ export const AdminDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h2 className="text-2xl font-bold text-gray-100">Loading dashboard...</h2>
+        <h2 className="text-2xl font-bold text-gray-100">
+          Loading dashboard...
+        </h2>
       </div>
     );
   }
@@ -107,7 +113,9 @@ export const AdminDashboard: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-100">Admin Dashboard</h1>
-        <p className="text-gray-400">Manage contests and monitor platform activity</p>
+        <p className="text-gray-400">
+          Manage contests and monitor platform activity
+        </p>
       </div>
 
       <div className="space-y-8">
@@ -117,7 +125,9 @@ export const AdminDashboard: React.FC = () => {
             <ContestManagement
               contests={contests}
               onEditContest={(id: string) => handleEditContest(parseInt(id))}
-              onDeleteContest={(id: string) => handleDeleteContest(parseInt(id))}
+              onDeleteContest={(id: string) =>
+                handleDeleteContest(parseInt(id))
+              }
             />
           </div>
           <div>
