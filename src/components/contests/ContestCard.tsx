@@ -1,4 +1,5 @@
 import React from "react";
+import { FaCheckCircle } from "react-icons/fa";
 import { formatCurrency } from "../../lib/utils";
 import type { Contest } from "../../types";
 import { CountdownTimer } from "../ui/CountdownTimer";
@@ -197,6 +198,12 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           </div>
         </div>
       </div>
+      {contest.is_participating && (
+        <div className="absolute top-3 right-3 flex items-center gap-1 bg-brand-500/20 text-brand-400 px-2 py-1 rounded-full">
+          <FaCheckCircle className="w-4 h-4" />
+          <span className="text-sm font-medium">Entered</span>
+        </div>
+      )}
     </div>
   );
 };

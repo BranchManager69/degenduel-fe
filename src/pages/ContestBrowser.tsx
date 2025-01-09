@@ -25,6 +25,9 @@ export const ContestBrowser: React.FC = () => {
     ContestSettings["difficulty"] | ""
   >("");
   const [activeSort, setActiveSort] = useState("start_time");
+  const [showParticipating, setShowParticipating] = useState<boolean | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchContests = async () => {
@@ -68,6 +71,13 @@ export const ContestBrowser: React.FC = () => {
   // Filter and sort contests
   const filteredAndSortedContests = useMemo(() => {
     let filtered = [...contests];
+
+    // Apply participation filter
+    if (showParticipating !== null) {
+      filtered = filtered.filter(
+        (contest) => contest.is_participating === showParticipating
+      );
+    }
 
     // Apply status filter
     if (activeStatusFilter !== "all") {
@@ -113,7 +123,13 @@ export const ContestBrowser: React.FC = () => {
           return 0;
       }
     });
-  }, [contests, activeStatusFilter, activeDifficultyFilter, activeSort]);
+  }, [
+    contests,
+    activeStatusFilter,
+    activeDifficultyFilter,
+    activeSort,
+    showParticipating,
+  ]);
 
   if (loading) {
     return (
@@ -154,6 +170,29 @@ export const ContestBrowser: React.FC = () => {
           onDifficultyFilterChange={setActiveDifficultyFilter}
           onSortChange={setActiveSort}
         />
+      </div>
+
+      <div className="flex gap-4 mb-4">
+        <button
+          onClick={() => setShowParticipating(null)}
+          className={`px-4 py-2 rounded-full ${
+            showParticipating === null
+              ? "bg-brand-500 text-white"
+              : "bg-dark-300 text-gray-400"
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setShowParticipating(true)}
+          className={`px-4 py-2 rounded-full ${
+            showParticipating === true
+              ? "bg-brand-500 text-white"
+              : "bg-dark-300 text-gray-400"
+          }`}
+        >
+          My Contests
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

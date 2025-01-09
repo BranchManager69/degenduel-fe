@@ -27,6 +27,51 @@ const logError = (
   });
 };
 
+const addParticipationFlag = (
+  contest: Contest,
+  userWallet?: string
+): Contest => {
+  if (!userWallet) return { ...contest, is_participating: false };
+
+  return {
+    ...contest,
+    is_participating:
+      contest.participants?.some(
+        (p) => p.address?.toLowerCase() === userWallet.toLowerCase()
+      ) || false,
+  };
+};
+
+const checkContestParticipation = async (
+  contestId: number | string,
+  userWallet?: string
+): Promise<boolean> => {
+  if (!userWallet) return false;
+
+  try {
+    const response = await fetch(
+      `${API_URL}/contests/${contestId}/portfolio/${userWallet}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      }
+    );
+
+    // If we get a 404, user is not participating
+    if (response.status === 404) return false;
+
+    // If we get a 200, user is participating
+    if (response.ok) return true;
+
+    return false;
+  } catch (error) {
+    console.error("Error checking participation:", error);
+    return false;
+  }
+};
+
 /* DegenDuel API Endpoints (client-side) */
 
 export const ddApi = {
@@ -240,43 +285,9 @@ export const ddApi = {
   // Contest endpoints
   contests: {
     getActive: async (): Promise<Contest[]> => {
-      // ??
-      const user = useStore.getState().user;
-
-      ////const response = await fetch(`${API_URL}/contests/active`, {
-      const response = await fetch(`${API_URL}/contests`, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Wallet-Address": user?.wallet_address || "",
-          "Cache-Control": "no-cache",
-        },
-        credentials: "include", // ??
-      });
-      if (!response.ok) throw new Error("Failed to fetch active contests");
-      return response.json();
-    },
-
-    getAll: async (): Promise<Contest[]> => {
-      // ??
       const user = useStore.getState().user;
 
       const response = await fetch(`${API_URL}/contests`, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Wallet-Address": user?.wallet_address || "",
-          "Cache-Control": "no-cache",
-        },
-        credentials: "include", // ??
-      });
-      if (!response.ok) throw new Error("Failed to fetch any contests");
-      return response.json();
-    },
-
-    getById: async (contestId: string) => {
-      const user = useStore.getState().user;
-
-      console.log("[debug getById] contestId:", contestId);
-      const response = await fetch(`${API_URL}/contests/${contestId}`, {
         headers: {
           "Content-Type": "application/json",
           "X-Wallet-Address": user?.wallet_address || "",
@@ -285,14 +296,100 @@ export const ddApi = {
         credentials: "include",
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to fetch contest");
-      }
+      if (!response.ok) throw new Error("Failed to fetch active contests");
 
       const data = await response.json();
-      console.log("Contest API response:", data);
-      return data;
+      const contests: Contest[] = Array.isArray(data)
+        ? data
+        : data.contests || [];
+
+      return contests.map((contest: Contest) =>
+        addParticipationFlag(contest, user?.wallet_address)
+      );
+    },
+
+    getAll: async (): Promise<Contest[]> => {
+      const user = useStore.getState().user;
+
+      try {
+        const response = await fetch(`${API_URL}/contests`, {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": user?.wallet_address || "",
+            "Cache-Control": "no-cache",
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to fetch contests");
+        }
+
+        const data = await response.json();
+        const contests: Contest[] = Array.isArray(data)
+          ? data
+          : data.contests || [];
+
+        // Check participation for each contest
+        const processedContests = await Promise.all(
+          contests.map(async (contest: Contest) => ({
+            ...contest,
+            is_participating: await checkContestParticipation(
+              contest.id,
+              user?.wallet_address
+            ),
+          }))
+        );
+
+        console.log(
+          "[debug] Processed contests:",
+          processedContests.filter((c) => c.is_participating)
+        );
+
+        return processedContests;
+      } catch (error: any) {
+        logError("contests.getAll", error, {
+          userWallet: user?.wallet_address,
+        });
+        throw error;
+      }
+    },
+
+    getById: async (contestId: string) => {
+      const user = useStore.getState().user;
+
+      try {
+        const response = await fetch(`${API_URL}/contests/${contestId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": user?.wallet_address || "",
+            "Cache-Control": "no-cache",
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to fetch contest");
+        }
+
+        const contest = await response.json();
+
+        return {
+          ...contest,
+          is_participating: await checkContestParticipation(
+            contestId,
+            user?.wallet_address
+          ),
+        };
+      } catch (error: any) {
+        logError("contests.getById", error, {
+          contestId,
+          userWallet: user?.wallet_address,
+        });
+        throw error;
+      }
     },
 
     enterContest: async (

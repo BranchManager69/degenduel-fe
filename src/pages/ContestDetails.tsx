@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { FaCheckCircle } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContestRules } from "../components/contests/ContestRules";
 import { ParticipantsList } from "../components/contests/ParticipantsList";
@@ -232,12 +233,20 @@ export const ContestDetails: React.FC = () => {
       </div>
 
       {/* Action Button */}
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center gap-4">
+        {contest.is_participating && (
+          <div className="flex items-center gap-2 text-brand-400 mb-2">
+            <FaCheckCircle className="w-5 h-5" />
+            <span className="font-medium">You're entered in this contest</span>
+          </div>
+        )}
         <Button
           size="lg"
           variant="gradient"
           onClick={handleJoinContest}
-          className="relative group overflow-hidden"
+          className={`relative group overflow-hidden ${
+            contest.is_participating ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           disabled={
             contest.is_participating ||
             Number(contest.participant_count) >=
