@@ -16,6 +16,7 @@ export const ContestBrowser: React.FC = () => {
   >("");
   const [sortField, setSortField] = useState<SortField>("participant_count");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
   const fetchContests = async () => {
     try {
@@ -104,91 +105,168 @@ export const ContestBrowser: React.FC = () => {
     sortDirection,
   ]);
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-dark-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 bg-dark-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-red-500">{error}</div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-100">Available Contests</h1>
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-100">
+          Available Contests
+        </h1>
         <CreateContestButton />
       </div>
 
-      <div className="mb-8 space-y-6">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4">
-          <select
-            className="bg-dark-200 text-gray-100 rounded px-3 py-2"
-            value={activeStatusFilter}
-            onChange={(e) => setActiveStatusFilter(e.target.value)}
+      {/* Filter Toggle Button (Mobile) */}
+      <button
+        onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+        className="md:hidden w-full mb-4 px-4 py-2 bg-dark-200 rounded-lg text-gray-100 flex items-center justify-between"
+      >
+        <span className="flex items-center space-x-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
           >
-            <option value="all">All Status</option>
-            <option value="live">Live</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+            <path
+              fillRule="evenodd"
+              d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>Filters & Sort</span>
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-5 w-5 transform transition-transform ${
+            isFilterMenuOpen ? "rotate-180" : ""
+          }`}
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
 
-          <select
-            className="bg-dark-200 text-gray-100 rounded px-3 py-2"
-            value={activeDifficultyFilter}
-            onChange={(e) =>
-              setActiveDifficultyFilter(
-                e.target.value as ContestSettings["difficulty"] | ""
-              )
-            }
-          >
-            <option value="">All Difficulties</option>
-            <option value="guppy">Guppy</option>
-            <option value="tadpole">Tadpole</option>
-            <option value="squid">Squid</option>
-            <option value="dolphin">Dolphin</option>
-            <option value="shark">Shark</option>
-            <option value="whale">Whale</option>
-          </select>
+      {/* Filters Section */}
+      <div
+        className={`${
+          isFilterMenuOpen ? "block" : "hidden"
+        } md:block mb-8 space-y-4 bg-dark-200/50 p-4 rounded-lg`}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Status Filter */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400">Status</label>
+            <select
+              className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              value={activeStatusFilter}
+              onChange={(e) => setActiveStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="live">Live</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          {/* Difficulty Filter */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400">Difficulty</label>
+            <select
+              className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              value={activeDifficultyFilter}
+              onChange={(e) =>
+                setActiveDifficultyFilter(
+                  e.target.value as ContestSettings["difficulty"] | ""
+                )
+              }
+            >
+              <option value="">All Difficulties</option>
+              <option value="guppy">Guppy</option>
+              <option value="tadpole">Tadpole</option>
+              <option value="squid">Squid</option>
+              <option value="dolphin">Dolphin</option>
+              <option value="shark">Shark</option>
+              <option value="whale">Whale</option>
+            </select>
+          </div>
         </div>
 
         {/* Sort Controls */}
-        <ContestSort
-          currentField={sortField}
-          direction={sortDirection}
-          onSort={(field: SortField, direction: SortDirection) => {
-            setSortField(field);
-            setSortDirection(direction);
-            fetchContests();
-          }}
-        />
+        <div className="pt-4 border-t border-dark-400">
+          <ContestSort
+            currentField={sortField}
+            direction={sortDirection}
+            onSort={(field: SortField, direction: SortDirection) => {
+              setSortField(field);
+              setSortDirection(direction);
+              fetchContests();
+            }}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredAndSortedContests.map((contest) => (
-          <div key={contest.id}>
-            <ContestCard
-              contest={contest}
-              onClick={() => (window.location.href = `/contests/${contest.id}`)}
-            />
+      {/* Active Filters Display */}
+      {(activeStatusFilter !== "all" || activeDifficultyFilter !== "") && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {activeStatusFilter !== "all" && (
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm">
+              <span>{activeStatusFilter}</span>
+              <button
+                onClick={() => setActiveStatusFilter("all")}
+                className="ml-2 hover:text-brand-200"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          {activeDifficultyFilter && (
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm">
+              <span>{activeDifficultyFilter}</span>
+              <button
+                onClick={() => setActiveDifficultyFilter("")}
+                className="ml-2 hover:text-brand-200"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Contest Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {loading ? (
+          // Loading skeletons
+          [...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse bg-dark-200 rounded-lg h-64"
+            ></div>
+          ))
+        ) : error ? (
+          <div className="col-span-full text-center text-red-500">{error}</div>
+        ) : filteredAndSortedContests.length === 0 ? (
+          <div className="col-span-full text-center text-gray-400 py-12">
+            No contests found matching your filters
           </div>
-        ))}
+        ) : (
+          filteredAndSortedContests.map((contest) => (
+            <div key={contest.id}>
+              <ContestCard
+                contest={contest}
+                onClick={() =>
+                  (window.location.href = `/contests/${contest.id}`)
+                }
+              />
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

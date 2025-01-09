@@ -80,6 +80,12 @@ const checkContestParticipation = async (
   }
 };
 
+// Add this helper function to dd-api.ts or a separate utils file
+export const formatBonusPoints = (points: string | number): string => {
+  const amount = typeof points === "string" ? parseInt(points) : points;
+  return `${amount.toLocaleString()} pts`;
+};
+
 /* DegenDuel API Endpoints (client-side) */
 
 export const ddApi = {
@@ -94,7 +100,9 @@ export const ddApi = {
             errorData.message || `Failed to fetch users: ${response.statusText}`
           );
         }
-        return response.json();
+        const data = await response.json();
+        // Ensure we return an array
+        return Array.isArray(data) ? data : data.users || [];
       } catch (error: any) {
         logError("users.getAll", error);
         throw error;
@@ -287,6 +295,28 @@ export const ddApi = {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete contest");
+    },
+
+    adjustUserBalance: async (
+      walletAddress: string,
+      amount: number
+    ): Promise<void> => {
+      const response = await fetch(
+        `${API_URL}/admin/users/${walletAddress}/balance`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ amount }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to adjust user balance");
+      }
     },
   },
 
@@ -616,6 +646,36 @@ export const ddApi = {
         throw error;
       }
     },
+
+    create: async (contestData: Partial<Contest>): Promise<Contest> => {
+      const user = useStore.getState().user;
+
+      if (!user?.wallet_address) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/contests`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": user.wallet_address,
+          },
+          credentials: "include",
+          body: JSON.stringify(contestData),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to create contest");
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error("Failed to create contest:", error);
+        throw error;
+      }
+    },
   },
 
   // Portfolio endpoints
@@ -657,9 +717,11 @@ export const ddApi = {
 
   // Balance endpoints
   balance: {
-    get: async (): Promise<number> => {
-      const response = await fetch(`${API_URL}/balance`);
-      if (!response.ok) throw new Error("Failed to fetch balance");
+    get: async (walletAddress: string) => {
+      const response = await fetch(`${API_URL}/balance/${walletAddress}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch balance");
+      }
       return response.json();
     },
   },
