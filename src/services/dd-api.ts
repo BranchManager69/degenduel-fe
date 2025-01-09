@@ -27,6 +27,7 @@ const logError = (
   });
 };
 
+// doesnt work
 const addParticipationFlag = (
   contest: Contest,
   userWallet?: string
@@ -42,6 +43,7 @@ const addParticipationFlag = (
   };
 };
 
+// doesnt work
 const checkContestParticipation = async (
   contestId: number | string,
   userWallet?: string
