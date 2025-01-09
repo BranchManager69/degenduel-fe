@@ -145,21 +145,33 @@ export const TokenSelection: React.FC = () => {
   );
 
   const handleSubmit = async () => {
-    if (!user || !user.wallet_address) {
+    console.log("[handleSubmit] Starting submission with:", {
+      user,
+      contestId,
+      contest,
+      totalWeight,
+      selectedTokens: Array.from(selectedTokens.entries()),
+    });
+
+    if (!contestId) {
       toast({
-        title: "Connect Wallet",
-        description: "Connect your Phantom wallet to enter a contest",
+        title: "Error",
+        description: "Contest ID is missing",
         variant: "error",
       });
       return;
     }
 
-    console.log("Submitting portfolio for wallet:", user.wallet_address);
-    console.log("Submit button clicked");
-    console.log("Current total portfolio weight:", totalWeight);
+    if (!user || !user.wallet_address) {
+      toast({
+        title: "Authentication Required",
+        description: "Please connect your wallet to enter the contest",
+        variant: "error",
+      });
+      return;
+    }
 
     if (totalWeight !== 100) {
-      console.log("Weight validation failed");
       toast({
         title: "Invalid Portfolio",
         description: "Total weight must equal 100%",
@@ -175,11 +187,17 @@ export const TokenSelection: React.FC = () => {
         weight,
       })
     );
-    console.log("Portfolio to submit:", portfolio);
-    console.log("Contest ID:", contestId);
-    console.log("Is participating?:", contest?.is_participating);
 
     // Validate portfolio requirements
+    if (portfolio.length === 0) {
+      toast({
+        title: "Empty Portfolio",
+        description: "Please select at least one token",
+        variant: "error",
+      });
+      return;
+    }
+
     if (portfolio.length > 5) {
       toast({
         title: "Too Many Tokens",
@@ -189,43 +207,36 @@ export const TokenSelection: React.FC = () => {
       return;
     }
 
-    if (portfolio.some((entry) => entry.weight < 0 || entry.weight > 100)) {
-      toast({
-        title: "Invalid Weights",
-        description: "Individual weights must be between 0% and 100%",
-        variant: "error",
-      });
-      return;
-    }
-
     try {
+      setLoadingEntryStatus(true);
+
       if (contest?.is_participating) {
-        console.log("Attempting to update portfolio...");
-        await ddApi.contests.updatePortfolio(contestId!, portfolio);
+        await ddApi.contests.updatePortfolio(contestId, portfolio);
+        toast({
+          title: "Success",
+          description: "Your portfolio has been updated",
+          variant: "success",
+        });
       } else {
-        console.log("Attempting to enter contest...");
-        await ddApi.contests.enterContest(contestId!, portfolio);
+        await ddApi.contests.enterContest(contestId, portfolio);
+        toast({
+          title: "Success",
+          description: "You have successfully entered the contest",
+          variant: "success",
+        });
       }
 
-      console.log("API call successful");
-
-      toast({
-        title: "Success!",
-        description: contest?.is_participating
-          ? "Your portfolio has been updated"
-          : "Your portfolio has been submitted",
-        variant: "success",
-      });
-
-      console.log("Attempting navigation to:", `/contests/${contestId}/live`);
+      // Navigate to the contest live view
       navigate(`/contests/${contestId}/live`);
     } catch (error: any) {
       console.error("Failed to submit portfolio:", error);
       toast({
-        title: "Submission Failed",
-        description: error.message || "Please try again",
+        title: "Error",
+        description: error.message || "Failed to submit portfolio",
         variant: "error",
       });
+    } finally {
+      setLoadingEntryStatus(false);
     }
   };
 

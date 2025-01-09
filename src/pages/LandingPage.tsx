@@ -1,3 +1,4 @@
+// src/pages/LandingPage.tsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ContestSection } from "../components/landing/ContestSection";
@@ -32,7 +33,9 @@ export const LandingPage: React.FC = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
+        console.log("Initiating contest fetch...");
         const response = await ddApi.contests.getAll();
+        console.log("Raw response:", response);
         console.log(
           "contests type:",
           Array.isArray(response) ? "Array" : typeof response
@@ -70,9 +73,18 @@ export const LandingPage: React.FC = () => {
 
         setActiveContests(active);
         setOpenContests(open);
-      } catch (error) {
-        console.error("Error fetching contests:", error);
-        setError("Failed to load contests (LP)");
+      } catch (err) {
+        const error = err as {
+          message: string;
+          response?: { status: number; statusText: string; data: any };
+        };
+        console.error("Detailed error:", {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+        });
+        setError(`Failed to load contests: ${error.message}`);
       } finally {
         setLoading(false);
       }

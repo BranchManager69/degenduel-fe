@@ -1,4 +1,4 @@
-// src/services/api.ts
+// src/services/dd-api.ts
 import { API_URL } from "../config/config";
 import { useStore } from "../store/useStore";
 import {
@@ -145,7 +145,7 @@ export const ddApi = {
           "X-Wallet-Address": user?.wallet_address || "",
           "Cache-Control": "no-cache",
         },
-        credentials: "include",
+        credentials: "include", // ??
       });
       if (!response.ok) throw new Error("Failed to fetch active contests");
       return response.json();
@@ -161,7 +161,7 @@ export const ddApi = {
           "X-Wallet-Address": user?.wallet_address || "",
           "Cache-Control": "no-cache",
         },
-        credentials: "include",
+        credentials: "include", // ??
       });
       if (!response.ok) throw new Error("Failed to fetch any contests");
       return response.json();
@@ -195,6 +195,11 @@ export const ddApi = {
       portfolio: Array<{ symbol: string; weight: number }>
     ) => {
       const user = useStore.getState().user;
+      console.log("[enterContest] Starting with:", {
+        contestId,
+        portfolio,
+        user,
+      });
 
       if (!user?.wallet_address) {
         throw new Error("Please connect your wallet first");
@@ -206,16 +211,29 @@ export const ddApi = {
       };
 
       try {
-        const response = await fetch(`/api/contests/${contestId}/enter`, {
+        console.log(
+          "[enterContest] Sending request to:",
+          `${API_URL}/contests/${contestId}/enter`
+        );
+        console.log("[enterContest] With payload:", payload);
+
+        const response = await fetch(`${API_URL}/contests/${contestId}/enter`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-Wallet-Address": user.wallet_address,
           },
           body: JSON.stringify(payload),
           credentials: "include",
         });
 
+        console.log("[enterContest] Response status:", response.status);
         const data = await response.json();
+        console.log("[enterContest] Response data:", data);
+
+        if (response.status === 401) {
+          throw new Error("Please connect your wallet and try again");
+        }
 
         if (!response.ok) {
           switch (data.error?.code) {
@@ -234,10 +252,8 @@ export const ddApi = {
 
         return data;
       } catch (error: any) {
-        console.error("API error:", error);
-        throw new Error(
-          error.message || "Failed to enter contest. Please try again."
-        );
+        console.error("[enterContest] Error:", error);
+        throw error;
       }
     },
 
@@ -246,28 +262,55 @@ export const ddApi = {
       portfolio: Array<{ symbol: string; weight: number }>
     ) => {
       const user = useStore.getState().user;
+      console.log("[updatePortfolio] Starting with:", {
+        contestId,
+        portfolio,
+        user,
+      });
 
       if (!user?.wallet_address) {
-        throw new Error("Wallet address is required");
+        throw new Error("Please connect your wallet first");
       }
 
       const payload = { portfolio };
 
-      const response = await fetch(`/api/contests/${contestId}/portfolio`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
+      try {
+        console.log(
+          "[updatePortfolio] Sending request to:",
+          `${API_URL}/contests/${contestId}/portfolio`
+        );
+        console.log("[updatePortfolio] With payload:", payload);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.message || "Failed to update portfolio");
+        const response = await fetch(
+          `${API_URL}/contests/${contestId}/portfolio`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Wallet-Address": user.wallet_address,
+            },
+            body: JSON.stringify(payload),
+            credentials: "include",
+          }
+        );
+
+        console.log("[updatePortfolio] Response status:", response.status);
+        const data = await response.json();
+        console.log("[updatePortfolio] Response data:", data);
+
+        if (response.status === 401) {
+          throw new Error("Please connect your wallet and try again");
+        }
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to update portfolio");
+        }
+
+        return data;
+      } catch (error: any) {
+        console.error("[updatePortfolio] Error:", error);
+        throw error;
       }
-
-      return response.json();
     },
   },
 
