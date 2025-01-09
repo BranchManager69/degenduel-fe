@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button } from '../ui/Button';
+import React from "react";
+import { Button } from "../ui/Button";
 
 interface TokenFiltersProps {
   marketCapFilter: string;
@@ -11,13 +11,13 @@ export const TokenFilters: React.FC<TokenFiltersProps> = ({
   onMarketCapFilterChange,
 }) => {
   const filters = [
-    { id: 'high-cap', label: 'High Cap ($10B+)' },
-    { id: 'mid-cap', label: 'Mid Cap ($1B-$10B)' },
-    { id: 'low-cap', label: 'Low Cap (<$1B)' },
+    { id: "high-cap", label: "High Cap ($100M+)" },
+    { id: "mid-cap", label: "Mid Cap ($25M-$100M)" },
+    { id: "low-cap", label: "Low Cap (<$25M)" },
   ];
 
   const handleFilterClick = (id: string) => {
-    onMarketCapFilterChange(marketCapFilter === id ? '' : id);
+    onMarketCapFilterChange(marketCapFilter === id ? "" : id);
   };
 
   return (
@@ -27,7 +27,7 @@ export const TokenFilters: React.FC<TokenFiltersProps> = ({
         {filters.map((filter) => (
           <Button
             key={filter.id}
-            variant={marketCapFilter === filter.id ? 'gradient' : 'outline'}
+            variant={marketCapFilter === filter.id ? "gradient" : "outline"}
             size="sm"
             onClick={() => handleFilterClick(filter.id)}
             className="w-40"

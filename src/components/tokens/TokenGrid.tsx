@@ -1,7 +1,7 @@
-import React from 'react';
-import { Token } from '../../types';
-import { Card, CardHeader, CardContent } from '../ui/Card';
-import { formatCurrency, formatMarketCap } from '../../lib/utils';
+import React from "react";
+import { formatCurrency, formatMarketCap } from "../../lib/utils";
+import { Token } from "../../types";
+import { Card, CardContent, CardHeader } from "../ui/Card";
 
 interface TokenGridProps {
   tokens: Token[];
@@ -16,16 +16,20 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
   onTokenSelect,
   marketCapFilter,
 }) => {
-  const filteredTokens = tokens.filter(token => {
+  const filteredTokens = tokens.filter((token) => {
     if (!marketCapFilter) return true;
-    
+
+    const marketCap = Number(token.marketCap);
+
     switch (marketCapFilter) {
-      case 'high-cap':
-        return token.market_cap >= 10_000_000_000; // $10B+
-      case 'mid-cap':
-        return token.market_cap >= 1_000_000_000 && token.market_cap < 10_000_000_000; // $1B-$10B
-      case 'low-cap':
-        return token.market_cap < 1_000_000_000; // <$1B
+      case "high-cap":
+        return marketCap ? marketCap >= 100_000_000 : false;
+      case "mid-cap":
+        return marketCap
+          ? marketCap >= 25_000_000 && marketCap < 100_000_000
+          : false;
+      case "low-cap":
+        return marketCap < 25_000_000;
       default:
         return true;
     }
@@ -39,7 +43,10 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
     }
   };
 
-  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>, symbol: string) => {
+  const handleWeightChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    symbol: string
+  ) => {
     e.stopPropagation();
     onTokenSelect(symbol, Number(e.target.value));
   };
@@ -52,13 +59,15 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
           onClick={() => handleCardClick(token.symbol)}
           className={`cursor-pointer transition-colors bg-dark-200/50 backdrop-blur-sm border-dark-300 ${
             selectedTokens.has(token.symbol)
-              ? 'ring-2 ring-brand-500'
-              : 'hover:bg-dark-300/50'
+              ? "ring-2 ring-brand-500"
+              : "hover:bg-dark-300/50"
           }`}
         >
           <CardHeader>
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-100">{token.symbol}</h3>
+              <h3 className="text-lg font-semibold text-gray-100">
+                {token.symbol}
+              </h3>
               <span className="text-sm text-gray-400">{token.name}</span>
             </div>
           </CardHeader>
@@ -67,28 +76,38 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">Price</span>
                 <span className="font-medium text-gray-200">
-                  {token.price ? formatCurrency(token.price) : 'N/A'}
+                  {token.price ? formatCurrency(Number(token.price)) : "N/A"}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">24h Change</span>
-                <span className={`font-medium ${
-                  token.change_24h >= 0 ? 'text-green-400' : 'text-red-400'
-                }`}>
-                  {token.change_24h != null ? `${token.change_24h.toFixed(2)}%` : 'N/A'}
+                <span
+                  className={`font-medium ${
+                    (token.change_24h || 0) >= 0
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  {token.change_24h != null
+                    ? `${Number(token.change_24h).toFixed(2)}%`
+                    : "N/A"}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-400">Market Cap</span>
                 <span className="font-medium text-gray-200">
-                  {token.market_cap ? formatMarketCap(token.market_cap) : 'N/A'}
+                  {token.marketCap
+                    ? formatMarketCap(Number(token.marketCap))
+                    : "N/A"}
                 </span>
               </div>
-              
+
               {/* Token Weight Slider */}
               {selectedTokens.has(token.symbol) && (
                 <div className="mt-4" onClick={(e) => e.stopPropagation()}>
-                  <label className="block text-sm text-gray-400 mb-1">Portfolio Weight</label>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    Portfolio Weight
+                  </label>
                   <div className="flex items-center space-x-2">
                     <input
                       type="range"

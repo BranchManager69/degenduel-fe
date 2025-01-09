@@ -8,7 +8,7 @@ import { Button } from "../components/ui/Button";
 import { useToast } from "../components/ui/Toast";
 import { ddApi } from "../services/dd-api";
 import { useStore } from "../store/useStore";
-import { Contest, Token } from "../types";
+import { Contest, Token, TokensResponse } from "../types";
 
 // New interface for portfolio data
 interface PortfolioToken {
@@ -46,17 +46,43 @@ export const TokenSelection: React.FC = () => {
         console.log("Fetching tokens A...");
         setTokenListLoading(true);
         console.log("Fetching tokens B...");
-        const data = await ddApi.tokens.getAll();
-        console.log("Raw token data:", data);
+        const response = await ddApi.tokens.getAll();
+        const tokenData = Array.isArray(response)
+          ? response
+          : (response as TokensResponse).data;
+        console.log("Raw token data:", tokenData);
 
-        // Validate and transform the data
-        const validatedTokens = data.map((token: Token) => ({
+        // Enhanced validation and transformation
+        const validatedTokens = tokenData.map((token: Token) => ({
           ...token,
+          // Use changesJson for price changes
           change_24h: token.changesJson?.h24 ?? 0,
-          // Keep original string values as defined in Token interface
+
+          // Market data with proper formatting
           price: token.price,
           volume24h: token.volume24h,
           marketCap: token.marketCap,
+
+          // Additional market metrics
+          liquidity: {
+            usd: token.liquidity?.usd ?? 0,
+            base: token.liquidity?.base ?? 0,
+            quote: token.liquidity?.quote ?? 0,
+          },
+
+          // Transaction metrics for the last 24h
+          transactions24h: token.transactionsJson?.h24 ?? {
+            buys: 0,
+            sells: 0,
+          },
+
+          // Base and quote token info
+          baseToken: token.baseToken ?? {
+            name: token.name,
+            symbol: token.symbol,
+            address: token.contractAddress,
+          },
+          quoteToken: token.quoteToken,
         }));
 
         setTokens(validatedTokens);

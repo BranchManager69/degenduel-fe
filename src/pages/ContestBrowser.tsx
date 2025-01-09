@@ -90,9 +90,7 @@ export const ContestBrowser: React.FC = () => {
 
     // Apply difficulty filter
     if (activeDifficultyFilter) {
-      filtered = filtered.filter(
-        (contest) => contest.settings.difficulty === activeDifficultyFilter
-      );
+      filtered = filtered;
     }
 
     // Apply sorting

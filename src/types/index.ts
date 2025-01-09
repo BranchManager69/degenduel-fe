@@ -45,6 +45,11 @@ export interface PriceChange {
   percentage: string;
 }
 
+export interface TokensResponse {
+  timestamp: string;
+  data: Token[];
+}
+
 export interface Token {
   id: number;
   symbol: string;

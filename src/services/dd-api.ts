@@ -54,7 +54,7 @@ export const ddApi = {
   // Token endpoints
   tokens: {
     getAll: async (): Promise<Token[]> => {
-      const response = await fetch(`${API_URL}/tokens`, {
+      const response = await fetch(`${API_URL}/dd-serv/tokens`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
