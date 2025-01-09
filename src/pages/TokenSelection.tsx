@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import { PortfolioSummary } from "../components/tokens/PortfolioSummary";
 import { TokenFilters } from "../components/tokens/TokenFilters";
 import { TokenGrid } from "../components/tokens/TokenGrid";
 import { Button } from "../components/ui/Button";
-import { useToast } from "../components/ui/Toast";
 import { ddApi } from "../services/dd-api";
 import { useStore } from "../store/useStore";
 import { Contest, Token, TokensResponse } from "../types";
@@ -28,7 +28,6 @@ function ErrorFallback({ error }: { error: Error }) {
 export const TokenSelection: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
@@ -110,10 +109,13 @@ export const TokenSelection: React.FC = () => {
         setContest(data);
       } catch (err) {
         console.error("Error fetching contest:", err);
-        toast({
-          title: "Error",
-          description: "Failed to load contest details",
-          variant: "error",
+        toast.error("Failed to load contest details", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
         });
       }
     };
@@ -173,43 +175,9 @@ export const TokenSelection: React.FC = () => {
     0
   );
 
-  const handleSubmit = async () => {
-    console.log("[handleSubmit] Starting submission with:", {
-      user,
-      contestId,
-      contest,
-      totalWeight,
-      selectedTokens: Array.from(selectedTokens.entries()),
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (!contestId) {
-      toast({
-        title: "Error",
-        description: "Contest ID is missing",
-        variant: "error",
-      });
-      return;
-    }
-
-    if (!user || !user.wallet_address) {
-      toast({
-        title: "Authentication Required",
-        description: "Please connect your wallet to enter the contest",
-        variant: "error",
-      });
-      return;
-    }
-
-    if (totalWeight !== 100) {
-      toast({
-        title: "Invalid Portfolio",
-        description: "Total weight must equal 100%",
-        variant: "error",
-      });
-      return;
-    }
-
-    // Convert selected tokens to the required format
     const portfolio = Array.from(selectedTokens.entries()).map(
       ([symbol, weight]) => ({
         symbol,
@@ -217,95 +185,43 @@ export const TokenSelection: React.FC = () => {
       })
     );
 
-    // Validate portfolio requirements
-    if (portfolio.length === 0) {
-      toast({
-        title: "Empty Portfolio",
-        description: "Please select at least one token",
-        variant: "error",
-      });
-      return;
-    }
-
-    if (portfolio.length > 5) {
-      toast({
-        title: "Too Many Tokens",
-        description: "Maximum 5 tokens allowed per portfolio",
-        variant: "error",
-      });
-      return;
-    }
-
     try {
-      setLoadingEntryStatus(true);
+      await ddApi.contests.enterContest(contestId || "", portfolio);
 
-      if (contest?.is_participating) {
-        // Was already in the contest, so update the portfolio
-        console.log("Updating portfolio for contest:", contestId);
-        try {
-          await ddApi.contests.updatePortfolio(contestId, portfolio);
-          toast({
-            title: "Success",
-            description: "Your portfolio has been updated",
-            variant: "success",
-          });
-        } catch (error) {
-          console.error("Failed to update portfolio:", error);
-          try {
-            await ddApi.contests.enterContest(contestId, portfolio);
-            toast({
-              title: "Success",
-              description: "Your portfolio has been updated",
-              variant: "success",
-            });
-          } catch (error) {
-            console.error("Failed to enter contest:", error);
-            toast({
-              title: "Error",
-              description: "Failed to update portfolio",
-              variant: "error",
-            });
-          }
-        }
-      } else {
-        // Was not previously entered in the contest, so enter it and create a new portfolio
-        try {
-          await ddApi.contests.enterContest(contestId, portfolio);
-          toast({
-            title: "Success",
-            description: "You have successfully entered the contest",
-            variant: "success",
-          });
-        } catch (error) {
-          console.error("Failed to enter contest:", error);
-          toast({
-            title: "Error",
-            description: "Failed to enter contest",
-            variant: "error",
-          });
-        }
-      }
-
-      // Navigate to the contest live view
-      try {
-        navigate(`/contests/${contestId}/live`);
-      } catch (error) {
-        console.error("Failed to navigate to contest live view:", error);
-        toast({
-          title: "Error",
-          description: "Failed to navigate to contest live view",
-          variant: "error",
-        });
-      }
-    } catch (error: any) {
-      console.error("Failed to submit portfolio:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit portfolio",
-        variant: "error",
+      toast.success("Successfully entered contest!", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
-    } finally {
-      setLoadingEntryStatus(false);
+
+      navigate(`/contests/${contestId}`);
+    } catch (error: any) {
+      // Show error toast with the detailed error message
+      toast.error(error.message, {
+        position: "top-right",
+        autoClose: 10000, // Longer display time for error messages
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: {
+          maxWidth: "500px", // Wider toast for multi-line errors
+          whiteSpace: "pre-line", // Preserve line breaks in the message
+        },
+      });
+
+      // Optional: Update UI based on specific error types
+      if (
+        error.status === 409 &&
+        error.responseData?.error === "CONTEST_FULL"
+      ) {
+        // Maybe show alternative contests
+      } else if (error.status === 401) {
+        // Maybe show wallet connection dialog
+      }
     }
   };
 

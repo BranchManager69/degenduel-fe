@@ -97,6 +97,7 @@ export const useStore = create<StoreState>()(
 
           const { solana } = window as any;
           const { debugConfig } = get();
+          let userData: any = null;
 
           /* For Superadmin Debug Menu (part 1 of 3) */
           // Debug: Force wallet not found
@@ -184,85 +185,148 @@ export const useStore = create<StoreState>()(
           // Try to fetch existing user data with retries
           let userResponse;
           try {
+            // Add auth headers to the initial user fetch
             userResponse = await retryFetch(
-              `${API_URL}/users/${walletAddress}`
+              `${API_URL}/users/${walletAddress}`,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-Wallet-Address": walletAddress,
+                  ...(authData?.token && {
+                    Authorization: `Bearer ${authData.token}`,
+                  }),
+                },
+                credentials: "include",
+              }
             );
 
             console.log("User fetch response:", {
               status: userResponse.status,
               ok: userResponse.ok,
             });
+
+            // If user doesn't exist, create a new one
+            if (userResponse.status === 404) {
+              console.log("User not found, creating new user...");
+              try {
+                const createUserPayload = {
+                  wallet_address: walletAddress,
+                  nickname: `degen_${walletAddress.slice(0, 8)}`,
+                };
+                console.log("Creating user with payload:", createUserPayload);
+
+                const createResponse = await fetch(`${API_URL}/users`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-Wallet-Address": walletAddress,
+                    ...(authData?.token && {
+                      Authorization: `Bearer ${authData.token}`,
+                    }),
+                  },
+                  body: JSON.stringify(createUserPayload),
+                  credentials: "include",
+                });
+
+                console.log(
+                  "Create user response status:",
+                  createResponse.status
+                );
+                console.log(
+                  "Create user response headers:",
+                  Object.fromEntries(createResponse.headers.entries())
+                );
+
+                const responseText = await createResponse.text();
+                console.log("Create user raw response:", responseText);
+
+                if (responseText) {
+                  try {
+                    userData = JSON.parse(responseText);
+                  } catch (parseError) {
+                    console.error("Failed to parse user creation response:", {
+                      text: responseText,
+                      error: parseError,
+                    });
+                  }
+                }
+
+                if (!createResponse.ok) {
+                  throw new Error(
+                    userData?.error ||
+                      `Failed to create user: ${responseText} (Status: ${createResponse.status})`
+                  );
+                }
+
+                if (!userData || !userData.wallet_address) {
+                  throw new Error("Invalid user data received from server");
+                }
+
+                console.log("Successfully created user:", userData);
+                userResponse = createResponse;
+              } catch (error) {
+                const e = error as Error;
+                console.error("User creation failed:", {
+                  error: e,
+                  message: e.message,
+                  stack: e.stack,
+                });
+                throw {
+                  code: "API_ERROR",
+                  message: `Failed to create user account: ${e.message}`,
+                } as WalletError;
+              }
+            } else {
+              // Handle existing user response
+              try {
+                const responseText = await userResponse.text();
+                try {
+                  userData = JSON.parse(responseText);
+                } catch (parseError) {
+                  console.error("Invalid JSON response:", responseText);
+                  throw {
+                    code: "API_ERROR",
+                    message: "Received invalid data from server",
+                  } as WalletError;
+                }
+              } catch (error) {
+                const e = error as Error;
+                console.error("Failed to read response:", e);
+                throw {
+                  code: "API_ERROR",
+                  message: "Failed to process server response",
+                } as WalletError;
+              }
+            }
+
+            if (!userData) {
+              throw {
+                code: "API_ERROR",
+                message: "No user data received from server",
+              } as WalletError;
+            }
+
+            console.log("Successfully retrieved user data:", userData);
+            set({
+              user: {
+                ...userData,
+                is_admin: isAdminWallet(userData.wallet_address),
+              },
+            });
           } catch (e) {
             console.error("Failed to fetch user after retries:", e);
+            // Try to get more error details
+            if (e instanceof Error) {
+              throw {
+                code: "API_ERROR",
+                message: `Unable to connect to server: ${e.message}`,
+              } as WalletError;
+            }
             throw {
               code: "API_ERROR",
               message: "Unable to connect to server. Please try again later.",
             } as WalletError;
           }
-
-          // If user doesn't exist, create a new one
-          if (userResponse.status === 404) {
-            console.log("User not found, creating new user...");
-            try {
-              userResponse = await retryFetch(`${API_URL}/users`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  wallet_address: walletAddress,
-                  nickname: `degen_${walletAddress.slice(0, 8)}`,
-                }),
-              });
-
-              console.log("Create user response:", {
-                status: userResponse.status,
-                ok: userResponse.ok,
-              });
-            } catch (e) {
-              console.error("Failed to create user after retries:", e);
-              throw {
-                code: "API_ERROR",
-                message:
-                  "Failed to create user account. Please try again later.",
-              } as WalletError;
-            }
-          }
-
-          let userData;
-          try {
-            const responseText = await userResponse.text();
-            try {
-              userData = JSON.parse(responseText);
-            } catch (e) {
-              console.error("Invalid JSON response:", responseText);
-              throw {
-                code: "API_ERROR",
-                message: "Received invalid data from server",
-              } as WalletError;
-            }
-          } catch (e) {
-            console.error("Failed to read response:", e);
-            throw {
-              code: "API_ERROR",
-              message: "Failed to process server response",
-            } as WalletError;
-          }
-
-          if (!userData) {
-            throw {
-              code: "API_ERROR",
-              message: "No user data received from server",
-            } as WalletError;
-          }
-
-          console.log("Successfully retrieved user data:", userData);
-          set({
-            user: {
-              ...userData,
-              is_admin: isAdminWallet(userData.wallet_address),
-            },
-          });
         } catch (error) {
           console.error("Failed to connect wallet:", error);
           set({

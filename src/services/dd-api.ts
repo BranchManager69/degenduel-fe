@@ -250,17 +250,35 @@ export const ddApi = {
           throw new Error("Please connect your wallet first");
         }
 
-        // Validate portfolio before sending
+        if (!contestId) {
+          throw new Error("Contest ID is required");
+        }
+
+        // Portfolio validation
+        if (!Array.isArray(portfolio) || portfolio.length === 0) {
+          throw new Error(
+            "Please select at least one token for your portfolio"
+          );
+        }
+
         const totalWeight = portfolio.reduce(
           (sum, item) => sum + item.weight,
           0
         );
         if (Math.abs(totalWeight - 100) > 0.01) {
-          throw new Error("Portfolio weights must sum to 100%");
+          throw new Error(
+            `Total portfolio weight must be 100% (currently ${totalWeight}%)`
+          );
+        }
+
+        if (portfolio.some((token) => !token.symbol || !token.weight)) {
+          throw new Error(
+            "Invalid portfolio data: Each token must have a symbol and weight"
+          );
         }
 
         const payload = {
-          wallet: user.wallet_address,
+          wallet_address: user.wallet_address,
           portfolio: portfolio,
         };
 
@@ -275,12 +293,14 @@ export const ddApi = {
           headers: {
             "Content-Type": "application/json",
             "X-Wallet-Address": user.wallet_address,
+            ...(user.wallet_address && {
+              Authorization: `Bearer ${user.wallet_address}`,
+            }),
           },
           body: JSON.stringify(payload),
           credentials: "include",
         });
 
-        // Always try to get the response data, even if the request failed
         let data;
         try {
           data = await response.json();
@@ -293,7 +313,7 @@ export const ddApi = {
             status: response.status,
             headers: Object.fromEntries(response.headers.entries()),
           });
-          data = null;
+          throw new Error("Failed to parse server response");
         }
 
         if (!response.ok) {
@@ -307,28 +327,46 @@ export const ddApi = {
             userWallet: user.wallet_address,
             portfolioSize: portfolio.length,
             timestamp: new Date().toISOString(),
-            headers: Object.fromEntries(response.headers.entries()),
           };
 
           console.error("[enterContest] Request failed:", errorDetails);
 
-          // Handle specific error cases
-          if (response.status === 500) {
-            throw new Error(
-              "Server encountered an error. Please verify your portfolio meets all requirements:" +
-                "\n- All weights must be between 0 and 100" +
-                "\n- Total weight must equal 100%" +
-                "\n- All tokens must be from the allowed list" +
-                "\n\nIf the issue persists, please contact support."
-            );
+          // Enhanced error messages based on the actual error details
+          let errorMessage = "Failed to enter contest: ";
+
+          if (data?.details === "wallet_address is required") {
+            errorMessage = "Please reconnect your wallet and try again";
+          } else if (data?.error === "Invalid request") {
+            // Build a more detailed error message
+            errorMessage = "Unable to submit portfolio:\n";
+            if (data?.details) {
+              errorMessage += `• ${data.details}\n`;
+            }
+            if (portfolio.length === 0) {
+              errorMessage += "• No tokens selected\n";
+            }
+            if (totalWeight !== 100) {
+              errorMessage += `• Total weight is ${totalWeight}% (should be 100%)\n`;
+            }
+            if (portfolio.some((token) => token.weight <= 0)) {
+              errorMessage += "• All token weights must be greater than 0\n";
+            }
+          } else if (data?.error === "CONTEST_FULL") {
+            errorMessage =
+              "This contest is already full. Please try another contest.";
+          } else if (data?.error === "CONTEST_STARTED") {
+            errorMessage = "This contest has already started.";
+          } else if (data?.error === "ALREADY_REGISTERED") {
+            errorMessage = "You have already entered this contest.";
+          } else {
+            // Include as much context as possible for unknown errors
+            errorMessage =
+              `${data?.error || "Unknown error"}: ${data?.details || ""}\n` +
+              `Portfolio size: ${portfolio.length} tokens\n` +
+              `Total weight: ${totalWeight}%`;
           }
 
-          const error = new Error(
-            data?.error?.message ||
-              data?.message ||
-              `Failed to enter contest (${response.status}: ${response.statusText})`
-          );
-
+          const error = new Error(errorMessage);
           Object.assign(error, errorDetails);
           throw error;
         }
@@ -341,7 +379,7 @@ export const ddApi = {
 
         return data;
       } catch (error: any) {
-        // Enhanced error logging with more context
+        // Enhanced error logging
         logError("contests.enterContest", error, {
           contestId,
           portfolio,
@@ -369,7 +407,7 @@ export const ddApi = {
           },
         });
 
-        // Rethrow with more specific error message
+        // Rethrow with the enhanced error message
         throw error;
       }
     },
