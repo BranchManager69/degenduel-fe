@@ -147,7 +147,6 @@ export const useStore = create<StoreState>()(
           console.log("Sending auth payload:", authPayload);
 
           const authResponse = await fetch(`${API_URL}/auth/verify-wallet`, {
-            // <-- Fixed endpoint
             method: "POST",
             headers: {
               "Content-Type": "application/json",
