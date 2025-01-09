@@ -213,11 +213,9 @@ export interface ContestPortfolio {  // Used for database representation of cont
 
 // API Response Types
 export interface PortfolioResponse {
-  // Used for API responses when fetching contest portfolio data
   tokens: Array<{
-    // Array of tokens held by user              <--- ** Does NOT use token_id! **
     symbol: string;
-    weight: number; // Percentage weight in contest portfolio (0-100)
+    weight: number;
   }>;
 }
 

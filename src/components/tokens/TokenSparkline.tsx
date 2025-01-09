@@ -20,8 +20,6 @@ export const TokenSparkline: React.FC<TokenSparklineProps> = ({
 }) => {
   const [priceData, setPriceData] = useState<PricePoint[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 3;
 
   useEffect(() => {
     const fetchPriceHistory = async () => {
@@ -30,27 +28,23 @@ export const TokenSparkline: React.FC<TokenSparklineProps> = ({
         const response = await fetch(
           `${API_URL}/dd-serv/tokens/${tokenAddress}/price-history`,
           {
+            method: "GET",
             headers: {
-              "Cache-Control": "no-cache",
-              Pragma: "no-cache",
+              "Content-Type": "application/json",
             },
           }
         );
 
-        if (!response.ok) {
-          // If we get a 502, wait and retry
-          if (response.status === 502 && retryCount < MAX_RETRIES) {
-            setRetryCount((prev) => prev + 1);
-            throw new Error("Temporary server error, retrying...");
-          }
-          throw new Error(`Server error: ${response.status}`);
+        if (response.status === 502) {
+          setError("unavailable");
+          return;
         }
 
         const text = await response.text();
         let data;
         try {
           const parsed = JSON.parse(text);
-          data = parsed.data || parsed; // Handle both {data: [...]} and direct array response
+          data = parsed.data || parsed;
         } catch (e) {
           console.error("Failed to parse price history:", text.slice(0, 100));
           throw new Error("Invalid server response");
@@ -61,34 +55,26 @@ export const TokenSparkline: React.FC<TokenSparklineProps> = ({
           throw new Error("Invalid data format");
         }
 
-        // Take last 24 hours of data points, sampling every hour
-        const sampledData = [...data] // Create a copy before sorting
+        const sampledData = [...data]
           .sort((a: PricePoint, b: PricePoint) => a.timestamp - b.timestamp)
-          .filter((_: PricePoint, i: number) => i % 60 === 0) // Assuming one point per minute
+          .filter((_: PricePoint, i: number) => i % 60 === 0)
           .slice(-24);
 
         setPriceData(sampledData);
-        setRetryCount(0); // Reset retry count on success
       } catch (err) {
-        console.warn(`Sparkline error for ${tokenAddress}:`, err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load price data"
-        );
+        setError("unavailable");
       }
     };
 
-    if (retryCount > 0) {
-      const timeout = setTimeout(fetchPriceHistory, 1000 * retryCount);
-      return () => clearTimeout(timeout);
-    } else {
-      fetchPriceHistory();
-    }
-  }, [tokenAddress, retryCount]);
+    fetchPriceHistory();
+  }, [tokenAddress]);
 
-  if (error) {
+  if (error === "unavailable") {
     return (
-      <div className={`text-xs text-gray-400 ${className}`}>
-        {/* Show a minimal placeholder instead of error message */}― ― ―
+      <div
+        className={`h-12 w-full flex items-center justify-center ${className}`}
+      >
+        <div className="w-full h-[2px] bg-dark-300" />
       </div>
     );
   }

@@ -8,7 +8,7 @@ import { TokenGrid } from "../components/tokens/TokenGrid";
 import { Button } from "../components/ui/Button";
 import { ddApi } from "../services/dd-api";
 import { useStore } from "../store/useStore";
-import { Contest, Token, TokensResponse } from "../types";
+import { Contest, PortfolioResponse, Token, TokensResponse } from "../types";
 
 // New interface for portfolio data
 interface PortfolioToken {
@@ -175,18 +175,19 @@ export const TokenSelection: React.FC = () => {
     0
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const portfolio = Array.from(selectedTokens.entries()).map(
-      ([symbol, weight]) => ({
-        symbol,
-        weight,
-      })
-    );
-
+  const handleSubmit = async () => {
     try {
-      await ddApi.contests.enterContest(contestId || "", portfolio);
+      // Transform the portfolio array into the expected format
+      const portfolioData: PortfolioResponse = {
+        tokens: Array.from(selectedTokens.entries()).map(
+          ([symbol, weight]) => ({
+            symbol,
+            weight,
+          })
+        ),
+      };
+
+      await ddApi.contests.enterContest(contestId || "", portfolioData);
 
       toast.success("Successfully entered contest!", {
         position: "top-right",
@@ -255,11 +256,11 @@ export const TokenSelection: React.FC = () => {
     return <div>Error: {error}</div>;
   }
 
-  console.log("Render state:", {
+  /* console.log("Render state:", {
     totalWeight,
     isButtonDisabled: totalWeight !== 100,
     selectedTokensCount: selectedTokens.size,
-  });
+  }); */
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
