@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ContestCard } from "../components/contests/ContestCard";
 import { ContestFilters } from "../components/contests/ContestFilters";
 import { CreateContestButton } from "../components/contests/CreateContestButton";
 import { CountdownTimer } from "../components/ui/CountdownTimer";
 import { isContestLive } from "../lib/utils";
 import { ddApi } from "../services/dd-api";
-import type { Contest } from "../types";
+import type { Contest, ContestSettings } from "../types";
 
 // ?
 interface ContestResponse {
@@ -22,7 +22,9 @@ export const ContestBrowser: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeStatusFilter, setActiveStatusFilter] = useState("all");
-  const [activeDifficultyFilter, setActiveDifficultyFilter] = useState("");
+  const [activeDifficultyFilter, setActiveDifficultyFilter] = useState<
+    ContestSettings["difficulty"] | ""
+  >("");
   const [activeSort, setActiveSort] = useState("start_time");
 
   useEffect(() => {
@@ -63,6 +65,58 @@ export const ContestBrowser: React.FC = () => {
 
     fetchContests();
   }, []);
+
+  // Filter and sort contests
+  const filteredAndSortedContests = useMemo(() => {
+    let filtered = [...contests];
+
+    // Apply status filter
+    if (activeStatusFilter !== "all") {
+      filtered = filtered.filter((contest) => {
+        switch (activeStatusFilter) {
+          case "live":
+            return isContestLive(contest);
+          case "upcoming":
+            return contest.status === "pending";
+          case "completed":
+            return contest.status === "completed";
+          case "cancelled":
+            return contest.status === "cancelled";
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Apply difficulty filter
+    if (activeDifficultyFilter) {
+      filtered = filtered.filter(
+        (contest) => contest.settings.difficulty === activeDifficultyFilter
+      );
+    }
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      switch (activeSort) {
+        case "start_time":
+          return (
+            new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+          );
+        case "end_time":
+          return (
+            new Date(a.end_time).getTime() - new Date(b.end_time).getTime()
+          );
+        case "prize_pool":
+          return Number(b.prize_pool) - Number(a.prize_pool);
+        case "entry_fee":
+          return Number(b.entry_fee) - Number(a.entry_fee);
+        case "participant_count":
+          return b.participant_count - a.participant_count;
+        default:
+          return 0;
+      }
+    });
+  }, [contests, activeStatusFilter, activeDifficultyFilter, activeSort]);
 
   if (loading) {
     return (
@@ -106,7 +160,7 @@ export const ContestBrowser: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {contests.map((contest) => (
+        {filteredAndSortedContests.map((contest) => (
           <div key={contest.id}>
             <ContestCard
               contest={contest}

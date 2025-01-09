@@ -1,12 +1,14 @@
-import React from 'react';
-import { Button } from '../ui/Button';
+import React from "react";
+import type { ContestSettings } from "../../types";
 
 interface ContestFiltersProps {
   activeStatusFilter: string;
   activeDifficultyFilter: string;
   activeSort: string;
-  onStatusFilterChange: (filter: string) => void;
-  onDifficultyFilterChange: (filter: string) => void;
+  onStatusFilterChange: (status: string) => void;
+  onDifficultyFilterChange: (
+    difficulty: ContestSettings["difficulty"] | ""
+  ) => void;
   onSortChange: (sort: string) => void;
 }
 
@@ -18,95 +20,49 @@ export const ContestFilters: React.FC<ContestFiltersProps> = ({
   onDifficultyFilterChange,
   onSortChange,
 }) => {
-  const statusFilters = [
-    { id: 'all', label: 'All' },
-    { id: 'live', label: 'Live' },
-    { id: 'upcoming', label: 'Upcoming' },
-  ];
-
-  const difficultyFilters = [
-    { id: 'guppy', label: 'Guppy' },
-    { id: 'tadpole', label: 'Tadpole' },
-    { id: 'squid', label: 'Squid' },
-    { id: 'dolphin', label: 'Dolphin' },
-    { id: 'shark', label: 'Shark' },
-    { id: 'whale', label: 'Whale' },
-  ];
-
-  const sortOptions = [
-    { id: 'startTime', label: 'Starts Soon' },
-    { id: 'prizePool', label: 'Biggest Prize Pool' },
-    { id: 'entryFee', label: 'Cheap Entry' },
-    { id: 'players', label: 'Most Players' },
-  ];
-
-  const handleStatusClick = (id: string) => {
-    onStatusFilterChange(activeStatusFilter === id ? 'all' : id);
-  };
-
-  const handleDifficultyClick = (id: string) => {
-    onDifficultyFilterChange(activeDifficultyFilter === id ? '' : id);
-  };
-
-  const handleSortClick = (id: string) => {
-    onSortChange(id);
-  };
-
   return (
-    <div className="space-y-8">
-      {/* Status Filters */}
-      <div>
-        <h3 className="text-sm font-medium text-gray-400 mb-3">Status</h3>
-        <div className="flex flex-wrap gap-2">
-          {statusFilters.map((filter) => (
-            <Button
-              key={filter.id}
-              variant={activeStatusFilter === filter.id ? 'gradient' : 'outline'}
-              size="sm"
-              onClick={() => handleStatusClick(filter.id)}
-              className="w-24"
-            >
-              {filter.label}
-            </Button>
-          ))}
-        </div>
-      </div>
+    <div className="flex flex-wrap gap-4">
+      <select
+        className="bg-dark-200 text-gray-100 rounded px-3 py-2"
+        value={activeStatusFilter}
+        onChange={(e) => onStatusFilterChange(e.target.value)}
+      >
+        <option value="all">All Status</option>
+        <option value="live">Live</option>
+        <option value="upcoming">Upcoming</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
 
-      {/* Difficulty Filters */}
-      <div>
-        <h3 className="text-sm font-medium text-gray-400 mb-3">Difficulty</h3>
-        <div className="flex flex-wrap gap-2">
-          {difficultyFilters.map((filter) => (
-            <Button
-              key={filter.id}
-              variant={activeDifficultyFilter === filter.id ? 'gradient' : 'outline'}
-              size="sm"
-              onClick={() => handleDifficultyClick(filter.id)}
-              className="w-24"
-            >
-              {filter.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Sort Options */}
-      <div className="flex items-center space-x-4">
-        <span className="text-sm text-gray-400">Sort by:</span>
-        <div className="flex gap-2">
-          {sortOptions.map((option) => (
-            <Button
-              key={option.id}
-              variant={activeSort === option.id ? 'gradient' : 'outline'}
-              size="sm"
-              onClick={() => handleSortClick(option.id)}
-              className="w-36"
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <select
+        className="bg-dark-200 text-gray-100 rounded px-3 py-2"
+        value={activeDifficultyFilter}
+        onChange={(e) =>
+          onDifficultyFilterChange(
+            e.target.value as ContestSettings["difficulty"] | ""
+          )
+        }
+      >
+        <option value="">All Difficulties</option>
+        <option value="guppy">Guppy</option>
+        <option value="tadpole">Tadpole</option>
+        <option value="squid">Squid</option>
+        <option value="dolphin">Dolphin</option>
+        <option value="shark">Shark</option>
+        <option value="whale">Whale</option>
+      </select>
+
+      <select
+        className="bg-dark-200 text-gray-100 rounded px-3 py-2"
+        value={activeSort}
+        onChange={(e) => onSortChange(e.target.value)}
+      >
+        <option value="start_time">Sort by Start Time</option>
+        <option value="end_time">Sort by End Time</option>
+        <option value="prize_pool">Sort by Prize Pool</option>
+        <option value="entry_fee">Sort by Entry Fee</option>
+        <option value="participant_count">Sort by Participants</option>
+      </select>
     </div>
   );
 };
