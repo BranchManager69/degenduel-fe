@@ -164,27 +164,69 @@ export const ddApi = {
       contestId: string,
       data: Partial<Contest>
     ): Promise<Contest> => {
-      const response = await fetch(`${API_URL}/contests/${contestId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
-        },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
+      try {
+        const requestData = {
+          url: `${API_URL}/contests/${contestId}`,
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+          },
+          data,
+        };
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Contest update failed:", {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
+        console.log("Making update request:", requestData);
+
+        // Add timeout to the fetch
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+        try {
+          const response = await fetch(`${API_URL}/contests/${contestId}`, {
+            method: "PUT",
+            headers: requestData.headers,
+            credentials: "include",
+            body: JSON.stringify(data),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeout);
+
+          const responseText = await response.text();
+          console.log("Raw response text:", responseText);
+
+          let parsedResponse;
+          try {
+            parsedResponse = responseText ? JSON.parse(responseText) : {};
+          } catch (e) {
+            console.error("Failed to parse response:", responseText);
+            throw new Error("Invalid JSON response from server");
+          }
+
+          if (!response.ok) {
+            throw new Error(
+              parsedResponse.error ||
+                parsedResponse.message ||
+                `Server error: ${response.status} ${response.statusText}`
+            );
+          }
+
+          return parsedResponse;
+        } catch (fetchError: unknown) {
+          if (fetchError instanceof Error && fetchError.name === "AbortError") {
+            throw new Error("Request timed out");
+          }
+          throw fetchError;
+        }
+      } catch (error) {
+        console.error("Contest update error:", {
+          error,
+          contestId,
+          data,
+          stack: error instanceof Error ? error.stack : undefined,
         });
-        throw new Error(errorData.error || "Failed to update contest");
+        throw error;
       }
-
-      return response.json();
     },
 
     deleteContest: async (contestId: string): Promise<void> => {

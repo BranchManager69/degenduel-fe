@@ -143,25 +143,34 @@ export const AdminDashboard: React.FC = () => {
     data: Partial<Contest>
   ) => {
     try {
-      console.log(
-        "Updating contest:",
+      console.log("Updating contest:", {
         contestId,
-        JSON.stringify(data, null, 2)
-      );
+        data: JSON.stringify(data, null, 2),
+      });
+
       const response = await ddApi.admin.updateContest(
         contestId.toString(),
         data
       );
-      console.log("Update response:", response);
+      console.log("Update successful:", response);
 
       // Refresh contests after update
       await loadDashboardData();
+      setEditingContest(null); // Close modal on success
     } catch (err) {
       console.error("Failed to update contest:", {
         contestId,
         data,
-        error: err instanceof Error ? err.message : err,
+        error:
+          err instanceof Error
+            ? {
+                message: err.message,
+                stack: err.stack,
+              }
+            : err,
       });
+
+      // You might want to show an error message to the user here
       throw err;
     }
   };
