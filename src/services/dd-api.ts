@@ -160,25 +160,28 @@ export const ddApi = {
       return response.json();
     },
 
-    updateContest: async (contestId: string, data: Partial<Contest>): Promise<Contest> => {
+    updateContest: async (
+      contestId: string,
+      data: Partial<Contest>
+    ): Promise<Contest> => {
       const response = await fetch(`${API_URL}/contests/${contestId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'X-Wallet-Address': useStore.getState().user?.wallet_address || '',
+          "Content-Type": "application/json",
+          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
         },
-        credentials: 'include',
-        body: JSON.stringify(data)
+        credentials: "include",
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Contest update failed:', {
+        console.error("Contest update failed:", {
           status: response.status,
           statusText: response.statusText,
-          error: errorData
+          error: errorData,
         });
-        throw new Error(errorData.error || 'Failed to update contest');
+        throw new Error(errorData.error || "Failed to update contest");
       }
 
       return response.json();

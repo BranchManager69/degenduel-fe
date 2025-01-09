@@ -182,6 +182,11 @@ export interface Contest {
   created_at: string;
   updated_at: string;
   is_participating?: boolean;
+  participants?: Array<{
+    address: string;
+    username?: string;
+    score?: number;
+  }>;
 }
 
 // Portfolio Types
