@@ -11,6 +11,7 @@ import {
   Transaction,
   User,
 } from "../types";
+import type { SortOptions } from "../types/sort";
 
 const logError = (
   endpoint: string,
@@ -56,6 +57,7 @@ const checkContestParticipation = async (
       {
         headers: {
           "Content-Type": "application/json",
+          "X-Wallet-Address": userWallet,
         },
         credentials: "include",
       }
@@ -65,7 +67,11 @@ const checkContestParticipation = async (
     if (response.status === 404) return false;
 
     // If we get a 200, user is participating
-    if (response.ok) return true;
+    if (response.ok) {
+      const data = await response.json();
+      // Check if the portfolio exists and has tokens
+      return !!(data && data.tokens && data.tokens.length > 0);
+    }
 
     return false;
   } catch (error) {
@@ -310,7 +316,7 @@ export const ddApi = {
       );
     },
 
-    getAll: async (): Promise<Contest[]> => {
+    getAll: async (sortOptions?: SortOptions): Promise<Contest[]> => {
       const user = useStore.getState().user;
 
       try {
@@ -329,24 +335,55 @@ export const ddApi = {
         }
 
         const data = await response.json();
-        const contests: Contest[] = Array.isArray(data)
+        let contests: Contest[] = Array.isArray(data)
           ? data
           : data.contests || [];
 
-        // Check participation for each contest
-        const processedContests = await Promise.all(
-          contests.map(async (contest: Contest) => ({
-            ...contest,
-            is_participating: await checkContestParticipation(
-              contest.id,
-              user?.wallet_address
-            ),
-          }))
-        );
+        // Apply sorting if options are provided
+        if (sortOptions) {
+          contests.sort((a, b) => {
+            let aValue = a[sortOptions.field];
+            let bValue = b[sortOptions.field];
 
-        console.log(
-          "[debug] Processed contests:",
-          processedContests.filter((c) => c.is_participating)
+            // Convert string numbers to actual numbers for comparison
+            if (typeof aValue === "string" && !isNaN(Number(aValue))) {
+              aValue = Number(aValue);
+              bValue = Number(bValue);
+            }
+
+            if (sortOptions.direction === "asc") {
+              return aValue > bValue ? 1 : -1;
+            } else {
+              return aValue < bValue ? 1 : -1;
+            }
+          });
+        } else {
+          // Default sort: most participants first
+          contests.sort(
+            (a, b) => Number(b.participant_count) - Number(a.participant_count)
+          );
+        }
+
+        // Only check participation if user is logged in
+        if (!user?.wallet_address) {
+          return contests.map((contest) => ({
+            ...contest,
+            is_participating: false,
+          }));
+        }
+
+        const processedContests = await Promise.all(
+          contests.map(async (contest: Contest) => {
+            const isParticipating = await checkContestParticipation(
+              contest.id,
+              user.wallet_address
+            );
+
+            return {
+              ...contest,
+              is_participating: isParticipating,
+            };
+          })
         );
 
         return processedContests;
@@ -378,12 +415,19 @@ export const ddApi = {
 
         const contest = await response.json();
 
+        // Only check participation if user is logged in
+        const isParticipating = user?.wallet_address
+          ? await checkContestParticipation(contestId, user.wallet_address)
+          : false;
+
+        console.log(`[debug] Contest ${contestId} participation:`, {
+          wallet: user?.wallet_address,
+          isParticipating,
+        });
+
         return {
           ...contest,
-          is_participating: await checkContestParticipation(
-            contestId,
-            user?.wallet_address
-          ),
+          is_participating: isParticipating,
         };
       } catch (error: any) {
         logError("contests.getById", error, {

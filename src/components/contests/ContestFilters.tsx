@@ -1,27 +1,31 @@
 import React from "react";
 import type { ContestSettings } from "../../types";
+import type { SortDirection, SortField } from "../../types/sort";
+import { ContestSort } from "./ContestSort";
 
 interface ContestFiltersProps {
   activeStatusFilter: string;
-  activeDifficultyFilter: string;
-  activeSort: string;
+  activeDifficultyFilter: ContestSettings["difficulty"] | "";
+  activeSortField: SortField;
+  sortDirection: SortDirection;
   onStatusFilterChange: (status: string) => void;
   onDifficultyFilterChange: (
     difficulty: ContestSettings["difficulty"] | ""
   ) => void;
-  onSortChange: (sort: string) => void;
+  onSortChange: (field: SortField, direction: SortDirection) => void;
 }
 
 export const ContestFilters: React.FC<ContestFiltersProps> = ({
   activeStatusFilter,
   activeDifficultyFilter,
-  activeSort,
+  activeSortField,
+  sortDirection,
   onStatusFilterChange,
   onDifficultyFilterChange,
   onSortChange,
 }) => {
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className="flex flex-wrap gap-4 items-center">
       <select
         className="bg-dark-200 text-gray-100 rounded px-3 py-2"
         value={activeStatusFilter}
@@ -52,17 +56,11 @@ export const ContestFilters: React.FC<ContestFiltersProps> = ({
         <option value="whale">Whale</option>
       </select>
 
-      <select
-        className="bg-dark-200 text-gray-100 rounded px-3 py-2"
-        value={activeSort}
-        onChange={(e) => onSortChange(e.target.value)}
-      >
-        <option value="start_time">Sort by Start Time</option>
-        <option value="end_time">Sort by End Time</option>
-        <option value="prize_pool">Sort by Prize Pool</option>
-        <option value="entry_fee">Sort by Entry Fee</option>
-        <option value="participant_count">Sort by Participants</option>
-      </select>
+      <ContestSort
+        currentField={activeSortField}
+        direction={sortDirection}
+        onSort={onSortChange}
+      />
     </div>
   );
 };

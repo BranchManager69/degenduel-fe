@@ -1,20 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ContestCard } from "../components/contests/ContestCard";
-import { ContestFilters } from "../components/contests/ContestFilters";
+import { ContestSort } from "../components/contests/ContestSort";
 import { CreateContestButton } from "../components/contests/CreateContestButton";
-import { isContestLive } from "../lib/utils";
 import { ddApi } from "../services/dd-api";
 import type { Contest, ContestSettings } from "../types";
-
-// ?
-interface ContestResponse {
-  contests: Contest[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-  };
-}
+import type { SortDirection, SortField } from "../types/sort";
 
 export const ContestBrowser: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
@@ -24,71 +14,51 @@ export const ContestBrowser: React.FC = () => {
   const [activeDifficultyFilter, setActiveDifficultyFilter] = useState<
     ContestSettings["difficulty"] | ""
   >("");
-  const [activeSort, setActiveSort] = useState("start_time");
-  const [showParticipating, setShowParticipating] = useState<boolean | null>(
-    null
-  );
+  const [sortField, setSortField] = useState<SortField>("participant_count");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const fetchContests = async () => {
+    try {
+      setLoading(true);
+      const data = await ddApi.contests.getAll({
+        field: sortField,
+        direction: sortDirection,
+      });
+      setContests(data);
+    } catch (error) {
+      console.error("Failed to fetch contests:", error);
+      setError("Failed to load contests");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchContests = async () => {
-      try {
-        const response = await ddApi.contests.getAll();
-        console.log("contests full response:", response);
-
-        // Type guard with explicit type checking
-        const isContestResponse = (
-          value: unknown
-        ): value is ContestResponse => {
-          const obj = value as { contests?: unknown };
-          return (
-            value !== null &&
-            typeof value === "object" &&
-            "contests" in obj &&
-            Array.isArray(obj.contests)
-          );
-        };
-
-        // Extract contests array with explicit typing
-        let contestsArray: Contest[] = [];
-        if (Array.isArray(response)) {
-          contestsArray = response as Contest[];
-        } else if (isContestResponse(response)) {
-          contestsArray = (response as ContestResponse).contests;
-        }
-
-        setContests(contestsArray);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching contests:", error);
-        setError("Failed to load contests (CB)");
-        setLoading(false);
-      }
-    };
-
     fetchContests();
-  }, []);
+  }, [sortField, sortDirection]);
 
   // Filter and sort contests
   const filteredAndSortedContests = useMemo(() => {
     let filtered = [...contests];
 
-    // Apply participation filter
-    if (showParticipating !== null) {
-      filtered = filtered.filter(
-        (contest) => contest.is_participating === showParticipating
-      );
-    }
-
     // Apply status filter
     if (activeStatusFilter !== "all") {
       filtered = filtered.filter((contest) => {
+        const now = new Date();
+        const startTime = new Date(contest.start_time);
+        const endTime = new Date(contest.end_time);
+
         switch (activeStatusFilter) {
           case "live":
-            return isContestLive(contest);
+            return (
+              now >= startTime &&
+              now < endTime &&
+              contest.status !== "cancelled"
+            );
           case "upcoming":
-            return contest.status === "pending";
+            return now < startTime && contest.status !== "cancelled";
           case "completed":
-            return contest.status === "completed";
+            return now >= endTime || contest.status === "completed";
           case "cancelled":
             return contest.status === "cancelled";
           default:
@@ -99,36 +69,39 @@ export const ContestBrowser: React.FC = () => {
 
     // Apply difficulty filter
     if (activeDifficultyFilter) {
-      filtered = filtered;
+      filtered = filtered.filter(
+        (contest) => contest.settings.difficulty === activeDifficultyFilter
+      );
     }
 
     // Apply sorting
     return filtered.sort((a, b) => {
-      switch (activeSort) {
-        case "start_time":
-          return (
-            new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-          );
-        case "end_time":
-          return (
-            new Date(a.end_time).getTime() - new Date(b.end_time).getTime()
-          );
-        case "prize_pool":
-          return Number(b.prize_pool) - Number(a.prize_pool);
-        case "entry_fee":
-          return Number(b.entry_fee) - Number(a.entry_fee);
-        case "participant_count":
-          return b.participant_count - a.participant_count;
-        default:
-          return 0;
-      }
+      const getValue = (contest: Contest) => {
+        switch (sortField) {
+          case "start_time":
+            return new Date(contest.start_time).getTime();
+          case "prize_pool":
+            return Number(contest.prize_pool);
+          case "entry_fee":
+            return Number(contest.entry_fee);
+          case "participant_count":
+            return contest.participant_count;
+          default:
+            return 0;
+        }
+      };
+
+      const aValue = getValue(a);
+      const bValue = getValue(b);
+
+      return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
     });
   }, [
     contests,
     activeStatusFilter,
     activeDifficultyFilter,
-    activeSort,
-    showParticipating,
+    sortField,
+    sortDirection,
   ]);
 
   if (loading) {
@@ -161,38 +134,50 @@ export const ContestBrowser: React.FC = () => {
         <CreateContestButton />
       </div>
 
-      <div className="mb-8">
-        <ContestFilters
-          activeStatusFilter={activeStatusFilter}
-          activeDifficultyFilter={activeDifficultyFilter}
-          activeSort={activeSort}
-          onStatusFilterChange={setActiveStatusFilter}
-          onDifficultyFilterChange={setActiveDifficultyFilter}
-          onSortChange={setActiveSort}
-        />
-      </div>
+      <div className="mb-8 space-y-6">
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4">
+          <select
+            className="bg-dark-200 text-gray-100 rounded px-3 py-2"
+            value={activeStatusFilter}
+            onChange={(e) => setActiveStatusFilter(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="live">Live</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
 
-      <div className="flex gap-4 mb-4">
-        <button
-          onClick={() => setShowParticipating(null)}
-          className={`px-4 py-2 rounded-full ${
-            showParticipating === null
-              ? "bg-brand-500 text-white"
-              : "bg-dark-300 text-gray-400"
-          }`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => setShowParticipating(true)}
-          className={`px-4 py-2 rounded-full ${
-            showParticipating === true
-              ? "bg-brand-500 text-white"
-              : "bg-dark-300 text-gray-400"
-          }`}
-        >
-          My Contests
-        </button>
+          <select
+            className="bg-dark-200 text-gray-100 rounded px-3 py-2"
+            value={activeDifficultyFilter}
+            onChange={(e) =>
+              setActiveDifficultyFilter(
+                e.target.value as ContestSettings["difficulty"] | ""
+              )
+            }
+          >
+            <option value="">All Difficulties</option>
+            <option value="guppy">Guppy</option>
+            <option value="tadpole">Tadpole</option>
+            <option value="squid">Squid</option>
+            <option value="dolphin">Dolphin</option>
+            <option value="shark">Shark</option>
+            <option value="whale">Whale</option>
+          </select>
+        </div>
+
+        {/* Sort Controls */}
+        <ContestSort
+          currentField={sortField}
+          direction={sortDirection}
+          onSort={(field: SortField, direction: SortDirection) => {
+            setSortField(field);
+            setSortDirection(direction);
+            fetchContests();
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

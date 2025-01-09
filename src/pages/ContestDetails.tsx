@@ -12,6 +12,14 @@ import { formatCurrency, isContestLive, mapContestStatus } from "../lib/utils";
 import { ddApi } from "../services/dd-api";
 import type { Contest } from "../types";
 
+interface ContestParticipant {
+  wallet_address?: string;
+  address?: string;
+  nickname?: string;
+  username?: string;
+  score?: number;
+}
+
 const StatsSkeleton: React.FC = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     {[...Array(4)].map((_, i) => (
@@ -40,6 +48,13 @@ export const ContestDetails: React.FC = () => {
     try {
       setLoading(true);
       const data = await ddApi.contests.getById(id);
+      console.log("Contest data (detailed):", {
+        participant_count: data.participant_count,
+        contest_participants: data.contest_participants,
+        raw_data: data,
+      });
+
+      // Ensure settings are properly initialized
       const sanitizedContest = {
         ...data,
         entry_fee:
@@ -62,8 +77,19 @@ export const ContestDetails: React.FC = () => {
           rules: Array.isArray(data.settings?.rules) ? data.settings.rules : [],
           difficulty: data.settings?.difficulty || "guppy",
         },
-        participants: Array.isArray(data.participants) ? data.participants : [],
+        participants: Array.isArray(data.contest_participants)
+          ? data.contest_participants.map((p: ContestParticipant) => ({
+              address: p.wallet_address || p.address,
+              username: p.nickname || p.username,
+              score: p.score,
+            }))
+          : [],
       };
+
+      console.log(
+        "Sanitized contest participants:",
+        sanitizedContest.participants
+      );
       setContest(sanitizedContest);
     } catch (err) {
       console.error("Error fetching contest:", err);
@@ -105,10 +131,6 @@ export const ContestDetails: React.FC = () => {
       </div>
     );
   }
-
-  const tokenTypes = contest.settings?.token_types || [];
-  const rules = contest.settings?.rules || [];
-  const participants = contest.participants || [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -201,7 +223,20 @@ export const ContestDetails: React.FC = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div className="lg:col-span-2 space-y-8">
-          <ContestRules rules={rules} />
+          {contest?.settings?.rules && contest.settings.rules.length > 0 ? (
+            <ContestRules rules={contest.settings.rules} />
+          ) : (
+            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-gray-100 mb-4">
+                  Contest Rules
+                </h3>
+                <p className="text-gray-400">
+                  No rules specified for this contest.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Available Tokens */}
           <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
@@ -209,26 +244,75 @@ export const ContestDetails: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-100 mb-4">
                 Available Tokens
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {tokenTypes.map((token: string) => (
-                  <span
-                    key={token}
-                    className="px-3 py-1 bg-dark-300 rounded-full text-sm text-gray-300"
-                  >
-                    {token}
-                  </span>
-                ))}
-              </div>
+              {contest?.settings?.token_types &&
+              contest.settings.token_types.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {contest.settings.token_types.map((token: string) => (
+                    <span
+                      key={token}
+                      className="px-3 py-1 bg-dark-300 rounded-full text-sm text-gray-300"
+                    >
+                      {token}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400">
+                  No tokens specified for this contest.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
 
         <div className="space-y-8">
-          <PrizeStructure prizePool={Number(contest.prize_pool)} />
-          <ParticipantsList
-            participants={participants}
-            contestStatus={mapContestStatus(contest.status)}
-          />
+          <PrizeStructure prizePool={Number(contest?.prize_pool || 0)} />
+          {Number(contest.participant_count) > 0 ? (
+            Array.isArray(contest.participants) ? (
+              contest.participants.length > 0 ? (
+                <ParticipantsList
+                  participants={contest.participants}
+                  contestStatus={mapContestStatus(contest.status)}
+                />
+              ) : (
+                <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-100 mb-4">
+                      Participants ({contest.participant_count}/
+                      {contest.settings.max_participants})
+                    </h3>
+                    <p className="text-gray-400">
+                      Participant count is {contest.participant_count} but array
+                      is empty
+                    </p>
+                  </CardContent>
+                </Card>
+              )
+            ) : (
+              <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-100 mb-4">
+                    Participants ({contest.participant_count}/
+                    {contest.settings.max_participants})
+                  </h3>
+                  <p className="text-gray-400">
+                    Participant count is {contest.participant_count} but
+                    participants is not an array
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          ) : (
+            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-gray-100 mb-4">
+                  Participants ({contest.participant_count}/
+                  {contest.settings.max_participants})
+                </h3>
+                <p className="text-gray-400">No participants yet.</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
