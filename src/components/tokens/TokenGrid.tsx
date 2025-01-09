@@ -1,8 +1,15 @@
 import React from "react";
-import { FaDiscord, FaGlobe, FaTelegram, FaTwitter } from "react-icons/fa";
+import {
+  FaCoins,
+  FaDiscord,
+  FaGlobe,
+  FaTelegram,
+  FaTwitter,
+} from "react-icons/fa";
 import { formatCurrency, formatMarketCap } from "../../lib/utils";
 import { Token } from "../../types";
 import { Card, CardContent, CardHeader } from "../ui/Card";
+import { TokenSparkline } from "./TokenSparkline";
 
 interface TokenGridProps {
   tokens: Token[];
@@ -71,145 +78,227 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
         <Card
           key={token.symbol}
           onClick={() => handleCardClick(token.symbol)}
-          className={`cursor-pointer transition-colors bg-dark-200/50 backdrop-blur-sm border-dark-300 ${
-            selectedTokens.has(token.symbol)
-              ? "ring-2 ring-brand-500"
-              : "hover:bg-dark-300/50"
-          }`}
+          className={`cursor-pointer transition-all relative overflow-hidden backdrop-blur-sm border-dark-300 
+            ${
+              selectedTokens.has(token.symbol)
+                ? "ring-2 ring-brand-500 bg-dark-200/80"
+                : "hover:bg-dark-300/80 bg-dark-200/50"
+            }
+            hover:shadow-xl hover:shadow-brand-500/10 hover:-translate-y-0.5
+            `}
         >
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2">
-                  {token.imageUrl && (
+          {/* Background Pattern + Animated Logo */}
+          <div className="absolute inset-0 bg-gradient-to-br from-dark-400/20 via-transparent to-transparent" />
+          {token.imageUrl && (
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute inset-[-10%] flex items-center justify-center">
+                <div className="relative w-64 h-64 opacity-[0.06] hover:opacity-[0.09] transition-opacity duration-700">
+                  {/* Blur gradient behind the logo */}
+                  <div className="absolute inset-[-20%] blur-3xl bg-gradient-to-br from-dark-300/40 via-transparent to-dark-300/40" />
+
+                  {/* Animated logo */}
+                  <div className="animate-float">
                     <img
                       src={token.imageUrl}
-                      alt={token.symbol}
-                      className="w-6 h-6 rounded-full"
+                      alt=""
+                      className="w-full h-full object-contain"
                     />
-                  )}
-                  <h3 className="text-lg font-semibold text-gray-100">
+                  </div>
+
+                  {/* Overlay gradient for smoother edges */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-dark-200/80 via-transparent to-dark-200/80" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="relative z-10">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between">
+                {/* Token Info */}
+                <div className="flex-1 min-w-0 pr-4">
+                  <h3 className="text-2xl font-bold text-gray-100 tracking-tight">
                     {token.symbol}
                   </h3>
-                </div>
-                <span className="text-sm text-gray-400">{token.name}</span>
-              </div>
-              <div className="flex gap-1">
-                {token.websites && token.websites.length > 0 && (
-                  <a
-                    href={token.websites[0].url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-gray-400 hover:text-gray-200"
-                    title={token.websites[0].label}
-                  >
-                    <FaGlobe size={16} />
-                  </a>
-                )}
-                {token.socials?.map((social) => {
-                  const Icon = {
-                    discord: FaDiscord,
-                    twitter: FaTwitter,
-                    telegram: FaTelegram,
-                  }[social.platform];
-                  return Icon ? (
-                    <a
-                      key={social.platform}
-                      href={social.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-gray-400 hover:text-gray-200"
-                    >
-                      <Icon size={16} />
-                    </a>
-                  ) : null;
-                })}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-400">Price</span>
-                <div className="font-medium text-gray-200">
-                  {token.price ? formatTokenPrice(token.price) : "N/A"}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-400">24h</span>
-                <div
-                  className={`font-medium ${
-                    (token.change_24h || 0) >= 0
-                      ? "text-green-400"
-                      : "text-red-400"
-                  }`}
-                >
-                  {token.change_24h != null
-                    ? `${(token.change_24h * 100).toFixed(1)}%`
-                    : "N/A"}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-400">Market Cap</span>
-                <div className="font-medium text-gray-200">
-                  {token.marketCap
-                    ? formatMarketCap(Number(token.marketCap))
-                    : "N/A"}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-400">Liquidity</span>
-                <div className="font-medium text-gray-200">
-                  {token.liquidity?.usd
-                    ? formatCurrency(token.liquidity.usd)
-                    : "N/A"}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-400">24h Volume</span>
-                <div className="font-medium text-gray-200">
-                  {token.volume24h
-                    ? formatCurrency(Number(token.volume24h))
-                    : "N/A"}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-400">24h Trades</span>
-                <div className="font-medium text-gray-200">
-                  {token.transactionsJson?.h24
-                    ? `${(
-                        token.transactionsJson.h24.buys +
-                        token.transactionsJson.h24.sells
-                      ).toLocaleString()}`
-                    : "N/A"}
-                </div>
-              </div>
-            </div>
-
-            {/* Token Weight Slider */}
-            {selectedTokens.has(token.symbol) && (
-              <div className="mt-4" onClick={(e) => e.stopPropagation()}>
-                <label className="block text-sm text-gray-400 mb-1">
-                  Portfolio Weight
-                </label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={selectedTokens.get(token.symbol) || 0}
-                    onChange={(e) => handleWeightChange(e, token.symbol)}
-                    className="w-full h-2 bg-dark-300 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <span className="text-sm font-medium text-gray-200 w-12">
-                    {selectedTokens.get(token.symbol)}%
+                  <span className="text-sm text-gray-400 block truncate max-w-[320px] font-medium">
+                    {token.name}
                   </span>
                 </div>
+
+                {/* Social Links - Moved to right side */}
+                {(token.websites?.length || token.socials?.length) && (
+                  <div className="flex gap-2 flex-shrink-0">
+                    {token.websites?.[0] && (
+                      <a
+                        href={token.websites[0].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-gray-400 hover:text-brand-400 transition-colors"
+                        title={token.websites[0].label}
+                      >
+                        <FaGlobe size={14} />
+                      </a>
+                    )}
+                    {token.socials?.map((social) => {
+                      const Icon = {
+                        discord: FaDiscord,
+                        twitter: FaTwitter,
+                        telegram: FaTelegram,
+                      }[social.platform];
+                      return Icon ? (
+                        <a
+                          key={social.platform}
+                          href={social.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-gray-400 hover:text-brand-400 transition-colors"
+                        >
+                          <Icon size={14} />
+                        </a>
+                      ) : null;
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </CardContent>
+
+              {/* 24h Change - Moved below name */}
+              <div className="mt-2">
+                <TokenSparkline
+                  tokenAddress={token.contractAddress}
+                  change24h={token.change_24h ?? null}
+                />
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-2">
+              {/* Stats Grid with Gradient Borders */}
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-400">Price</span>
+                  <div className="font-medium text-gray-200">
+                    {token.price ? formatTokenPrice(token.price) : "N/A"}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">24h</span>
+                  <div
+                    className={`font-medium ${
+                      (token.change_24h || 0) >= 0
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {token.change_24h != null
+                      ? `${(token.change_24h * 100).toFixed(1)}%`
+                      : "N/A"}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Market Cap</span>
+                  <div className="font-medium text-gray-200">
+                    {token.marketCap
+                      ? formatMarketCap(Number(token.marketCap))
+                      : "N/A"}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Liquidity</span>
+                  <div className="font-medium text-gray-200">
+                    {token.liquidity?.usd
+                      ? formatCurrency(token.liquidity.usd)
+                      : "N/A"}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">24h Volume</span>
+                  <div className="font-medium text-gray-200">
+                    {token.volume24h
+                      ? formatCurrency(Number(token.volume24h))
+                      : "N/A"}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">24h Trades</span>
+                  <div className="font-medium text-gray-200">
+                    {token.transactionsJson?.h24
+                      ? `${(
+                          token.transactionsJson.h24.buys +
+                          token.transactionsJson.h24.sells
+                        ).toLocaleString()}`
+                      : "N/A"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Sword Slider */}
+              <div
+                className={`transform transition-all duration-200 ease-out overflow-hidden ${
+                  selectedTokens.has(token.symbol)
+                    ? "h-[72px] opacity-100 mt-4 scale-100"
+                    : "h-0 opacity-0 mt-0 scale-95"
+                }`}
+              >
+                <div
+                  className="bg-gradient-to-r from-dark-300/50 via-dark-300/30 to-dark-300/50 rounded-lg p-3 border border-dark-300/50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm font-medium text-gray-400 flex items-center gap-1">
+                      <FaCoins size={12} className="text-brand-400" />
+                      Portfolio Weight
+                    </label>
+                    <span className="text-sm font-bold text-brand-400 tabular-nums">
+                      {selectedTokens.get(token.symbol)}%
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={selectedTokens.get(token.symbol) || 0}
+                      onChange={(e) => handleWeightChange(e, token.symbol)}
+                      className="w-full h-1.5 bg-gradient-to-r from-dark-300 via-brand-500/20 to-dark-300 rounded-full appearance-none cursor-pointer
+                        focus:outline-none focus:ring-2 focus:ring-brand-500/50
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-4
+                        [&::-webkit-slider-thumb]:h-4
+                        [&::-webkit-slider-thumb]:rounded-sm
+                        [&::-webkit-slider-thumb]:rotate-45
+                        [&::-webkit-slider-thumb]:bg-brand-400
+                        [&::-webkit-slider-thumb]:hover:bg-brand-300
+                        [&::-webkit-slider-thumb]:transition-colors
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:border-2
+                        [&::-webkit-slider-thumb]:border-dark-200
+                        [&::-webkit-slider-thumb]:shadow-lg
+                        [&::-moz-range-thumb]:w-4
+                        [&::-moz-range-thumb]:h-4
+                        [&::-moz-range-thumb]:rotate-45
+                        [&::-moz-range-thumb]:rounded-sm
+                        [&::-moz-range-thumb]:bg-brand-400
+                        [&::-moz-range-thumb]:hover:bg-brand-300
+                        [&::-moz-range-thumb]:transition-colors
+                        [&::-moz-range-thumb]:cursor-pointer
+                        [&::-moz-range-thumb]:border-2
+                        [&::-moz-range-thumb]:border-dark-200
+                        [&::-moz-range-thumb]:shadow-lg"
+                    />
+                    {/* Glowing progress bar */}
+                    <div
+                      className="absolute top-[7px] left-0 h-1.5 bg-gradient-to-r from-brand-500 to-brand-400 rounded-full pointer-events-none shadow-[0_0_8px_rgba(var(--brand-500-rgb),0.5)]"
+                      style={{
+                        width: `${selectedTokens.get(token.symbol) || 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </div>
         </Card>
       ))}
     </div>
