@@ -54,7 +54,7 @@ export const ddApi = {
   // Token endpoints
   tokens: {
     getAll: async (): Promise<Token[]> => {
-      const response = await fetch("/api/tokens", {
+      const response = await fetch(`${API_URL}/tokens`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -66,7 +66,8 @@ export const ddApi = {
         throw new Error(error.message || "Failed to fetch tokens");
       }
 
-      return response.json();
+      const responseData = await response.json();
+      return responseData.data || responseData;
     },
   },
 
@@ -324,7 +325,7 @@ export const ddApi = {
       }
 
       const response = await fetch(
-        `${API_URL}/contests/${contestId}/portfolio`,
+        `${API_URL}/contests/${contestId}/portfolio/${user.wallet_address}`,
         {
           headers: {
             "Content-Type": "application/json",

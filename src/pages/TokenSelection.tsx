@@ -43,17 +43,20 @@ export const TokenSelection: React.FC = () => {
   useEffect(() => {
     const fetchTokens = async () => {
       try {
+        console.log("Fetching tokens A...");
         setTokenListLoading(true);
+        console.log("Fetching tokens B...");
         const data = await ddApi.tokens.getAll();
         console.log("Raw token data:", data);
 
         // Validate and transform the data
         const validatedTokens = data.map((token: Token) => ({
           ...token,
-          change_24h:
-            typeof token.change_24h === "number"
-              ? token.change_24h
-              : parseFloat(token.change_24h) || 0,
+          change_24h: token.changesJson?.h24 ?? 0,
+          // Keep original string values as defined in Token interface
+          price: token.price,
+          volume24h: token.volume24h,
+          marketCap: token.marketCap,
         }));
 
         setTokens(validatedTokens);
