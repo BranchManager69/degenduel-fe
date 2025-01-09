@@ -103,7 +103,8 @@ export const ddApi = {
     },
 
     getContests: async (): Promise<Contest[]> => {
-      const response = await fetch(`${API_URL}/contests/active`);
+      ////const response = await fetch(`${API_URL}/contests/active`);
+      const response = await fetch(`${API_URL}/contests`);
       if (!response.ok) throw new Error("Failed to fetch contests");
       return response.json();
     },
@@ -140,7 +141,8 @@ export const ddApi = {
       // ??
       const user = useStore.getState().user;
 
-      const response = await fetch(`${API_URL}/contests/active`, {
+      ////const response = await fetch(`${API_URL}/contests/active`, {
+      const response = await fetch(`${API_URL}/contests`, {
         headers: {
           "Content-Type": "application/json",
           "X-Wallet-Address": user?.wallet_address || "",

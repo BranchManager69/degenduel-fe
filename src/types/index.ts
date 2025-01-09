@@ -50,6 +50,11 @@ export interface TokensResponse {
   data: Token[];
 }
 
+interface Website {
+  url: string;
+  label: string;
+}
+
 export interface Token {
   id: number;
   symbol: string;
@@ -78,7 +83,7 @@ export interface Token {
   headerImage: string | null;
   openGraphImage: string | null;
   coingeckoId: string | null;
-  websites: string[] | null;
+  websites: Website[] | null;
 
   // Liquidity information
   liquidity: TokenLiquidity;
