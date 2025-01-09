@@ -41,18 +41,21 @@ export function calculatePortfolioValue(holdings: any[], prices: any): number {
 }
 
 export function isContestLive(contest: { status: ContestStatus }): boolean {
-  return (
-    contest.status === "active" ||
-    contest.status === "in-progress" ||
-    contest.status === "in_progress"
-  ); // Too lazy to remove 'in-progress' with hyphen from everywhere.
+  return contest.status === "active";
 }
 
 export function getStatusDisplay(status: ContestStatus): string {
-  if (status === "active" || status === "in_progress") return "live";
-  if (status === "completed") return "ended";
-  if (status === "cancelled") return "cancelled";
-  return "upcoming";
+  switch (status) {
+    case "active":
+      return "live";
+    case "completed":
+      return "ended";
+    case "cancelled":
+      return "cancelled";
+    case "pending":
+    default:
+      return "upcoming";
+  }
 }
 
 export const formatDate = (dateString: string): string => {
@@ -69,12 +72,14 @@ export const formatDate = (dateString: string): string => {
 export const mapContestStatus = (
   status: Contest["status"]
 ): "upcoming" | "live" | "completed" => {
-  if (status === "pending") return "upcoming";
-  if (
-    status === "active" ||
-    status === "in_progress" ||
-    status === "in-progress"
-  )
-    return "live";
-  return "completed";
+  switch (status) {
+    case "pending":
+      return "upcoming";
+    case "active":
+      return "live";
+    case "completed":
+    case "cancelled":
+    default:
+      return "completed";
+  }
 };
