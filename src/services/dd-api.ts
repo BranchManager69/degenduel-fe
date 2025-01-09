@@ -213,11 +213,11 @@ export const ddApi = {
       try {
         console.log(
           "[enterContest] Sending request to:",
-          `${API_URL}/contests/${contestId}/enter`
+          `${API_URL}/contests/${contestId}/join`
         );
         console.log("[enterContest] With payload:", payload);
 
-        const response = await fetch(`${API_URL}/contests/${contestId}/enter`, {
+        const response = await fetch(`${API_URL}/contests/${contestId}/join`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

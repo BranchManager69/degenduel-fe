@@ -257,7 +257,12 @@ export const useStore = create<StoreState>()(
           }
 
           console.log("Successfully retrieved user data:", userData);
-          set({ user: { ...userData, is_admin: false } });
+          set({
+            user: {
+              ...userData,
+              is_admin: isAdminWallet(userData.wallet_address),
+            },
+          });
         } catch (error) {
           console.error("Failed to connect wallet:", error);
           set({
