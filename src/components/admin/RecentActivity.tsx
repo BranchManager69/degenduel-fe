@@ -1,29 +1,41 @@
-import React from 'react';
-import { Card, CardHeader, CardContent } from '../ui/Card';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from "date-fns";
+import React from "react";
+import { Card, CardContent, CardHeader } from "../ui/Card";
 
-interface ActivityItem {
+interface ActivityWithDate {
   id: string;
-  type: 'contest_join' | 'contest_complete' | 'user_register';
+  type: "contest_join" | "contest_complete" | "user_register";
   timestamp: string;
   details: string;
+  created_at: Date;
 }
 
 interface RecentActivityProps {
-  activities: ActivityItem[];
+  activities: ActivityWithDate[];
 }
 
-export const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) => {
-  const getActivityIcon = (type: ActivityItem['type']) => {
+export const RecentActivity: React.FC<RecentActivityProps> = ({
+  activities,
+}) => {
+  const formatActivityTime = (date: Date) => {
+    try {
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (err) {
+      console.error("Failed to format date:", date, err);
+      return "Invalid date";
+    }
+  };
+
+  const getActivityLabel = (type: string) => {
     switch (type) {
-      case 'contest_join':
-        return <span className="text-green-400">🎮</span>;
-      case 'contest_complete':
-        return <span className="text-brand-400">🏆</span>;
-      case 'user_register':
-        return <span className="text-blue-400">👤</span>;
+      case "contest_join":
+        return "Joined Contest";
+      case "contest_complete":
+        return "Contest Completed";
+      case "user_register":
+        return "New User";
       default:
-        return <span className="text-gray-400">📝</span>;
+        return "Activity";
     }
   };
 
@@ -35,16 +47,28 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) =>
       <CardContent>
         <div className="space-y-4">
           {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-dark-300/50">
-              <div className="text-xl mt-1">{getActivityIcon(activity.type)}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-100 line-clamp-2">{activity.details}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
-                </p>
+            <div
+              key={activity.id}
+              className="flex items-start space-x-3 p-3 bg-dark-300/50 rounded-lg"
+            >
+              <div className="flex-1">
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-100">
+                    {getActivityLabel(activity.type)}
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    {formatActivityTime(activity.created_at)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-400 mt-1">{activity.details}</p>
               </div>
             </div>
           ))}
+          {activities.length === 0 && (
+            <div className="text-center text-gray-400 py-4">
+              No recent activity
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

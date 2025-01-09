@@ -2,7 +2,7 @@
 import { API_URL } from "../config/config";
 import { useStore } from "../store/useStore";
 import {
-  Activity,
+  BaseActivity as Activity,
   Contest,
   PlatformStats,
   //Portfolio,
@@ -148,14 +148,13 @@ export const ddApi = {
       return response.json();
     },
 
-    getContests: async (): Promise<Contest[]> => {
-      ////const response = await fetch(`${API_URL}/contests/active`);
+    getContests: async (): Promise<{ contests: Contest[] }> => {
       const response = await fetch(`${API_URL}/contests`);
       if (!response.ok) throw new Error("Failed to fetch contests");
       return response.json();
     },
 
-    getRecentActivities: async (): Promise<Activity[]> => {
+    getRecentActivities: async (): Promise<{ activities: Activity[] }> => {
       const response = await fetch(`${API_URL}/admin/activities`);
       if (!response.ok) throw new Error("Failed to fetch activities");
       return response.json();

@@ -6,7 +6,16 @@ import { RecentActivity } from "../components/admin/RecentActivity";
 import { ddApi } from "../services/dd-api";
 import { useStore } from "../store/useStore";
 import { Contest } from "../types";
-import { Activity, PlatformStats as IPlatformStats } from "../types/admin";
+import {
+  ActivitiesResponse,
+  Activity,
+  ContestsResponse,
+  PlatformStats as IPlatformStats,
+} from "../types/admin";
+
+interface ActivityWithDate extends Omit<Activity, "created_at"> {
+  created_at: Date;
+}
 
 export const AdminDashboard: React.FC = () => {
   const user = useStore((state) => state.user);
@@ -16,7 +25,9 @@ export const AdminDashboard: React.FC = () => {
   const [platformStats, setPlatformStats] = useState<IPlatformStats | null>(
     null
   );
-  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const [recentActivities, setRecentActivities] = useState<ActivityWithDate[]>(
+    []
+  );
   const [editingContest, setEditingContest] = useState<Contest | null>(null);
 
   useEffect(() => {
@@ -25,16 +36,90 @@ export const AdminDashboard: React.FC = () => {
 
       try {
         setLoading(true);
-        const [contestsData, statsData, activitiesData] = await Promise.all([
-          ddApi.admin.getContests(),
-          ddApi.admin.getPlatformStats(),
-          ddApi.admin.getRecentActivities(),
-        ]);
+        setError(null);
 
-        setContests(contestsData as unknown as Contest[]);
-        setPlatformStats(statsData);
-        setRecentActivities(activitiesData);
+        console.log("Fetching admin dashboard data...");
+
+        try {
+          const response = await ddApi.admin.getContests();
+          const contestsResponse = {
+            contests: response.contests || [],
+            pagination: {
+              total: response.contests?.length || 0,
+              limit: 10,
+              offset: 0,
+            },
+          } as ContestsResponse;
+
+          console.log("Contests loaded:", contestsResponse);
+          setContests(contestsResponse.contests);
+        } catch (err) {
+          console.error("Failed to load contests:", err);
+          throw new Error("Failed to load contests");
+        }
+
+        try {
+          const statsResponse = await ddApi.admin.getPlatformStats();
+          console.log("Platform stats loaded:", statsResponse);
+          const statsData = {
+            ...statsResponse,
+            totalUsers: Number(statsResponse.totalUsers),
+            activeContests: Number(statsResponse.activeContests),
+            totalVolume: Number(statsResponse.totalVolume),
+            totalPrizesPaid: Number(statsResponse.totalPrizesPaid),
+            dailyActiveUsers: Number(statsResponse.dailyActiveUsers),
+            userGrowth: Number(statsResponse.userGrowth),
+            volumeGrowth: Number(statsResponse.volumeGrowth),
+          } as IPlatformStats;
+          setPlatformStats(statsData);
+        } catch (err) {
+          console.error("Failed to load platform stats:", err);
+          throw new Error("Failed to load platform statistics");
+        }
+
+        try {
+          const response = await ddApi.admin.getRecentActivities();
+          const activitiesResponse = {
+            activities: response.activities || [],
+            pagination: {
+              total: response.activities?.length || 0,
+              limit: 50,
+              offset: 0,
+            },
+          } as ActivitiesResponse;
+
+          console.log("Activities loaded:", activitiesResponse);
+
+          const processedActivities = activitiesResponse.activities.map(
+            (activity: Activity) => {
+              // Use timestamp if created_at is not available
+              const dateStr = activity.created_at || activity.timestamp;
+              let date: Date;
+              try {
+                date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                  throw new Error("Invalid date");
+                }
+              } catch (err) {
+                console.warn(
+                  `Invalid date for activity ${activity.id}:`,
+                  dateStr
+                );
+                date = new Date(); // Fallback to current time
+              }
+              return {
+                ...activity,
+                created_at: date,
+              };
+            }
+          );
+          setRecentActivities(processedActivities);
+        } catch (err) {
+          console.error("Failed to load activities:", err);
+          throw new Error("Failed to load recent activities");
+        }
       } catch (err) {
+        console.error("Dashboard loading error:", err);
         setError(
           err instanceof Error ? err.message : "Failed to load dashboard data"
         );
@@ -63,8 +148,8 @@ export const AdminDashboard: React.FC = () => {
         id: parseInt(contestId.toString()),
       });
 
-      const updatedContests = await ddApi.admin.getContests();
-      setContests(updatedContests as unknown as Contest[]);
+      const response = await ddApi.admin.getContests();
+      setContests(response.contests || []);
       setEditingContest(null);
     } catch (err) {
       throw new Error("Failed to update contest");
@@ -74,8 +159,8 @@ export const AdminDashboard: React.FC = () => {
   const handleDeleteContest = async (id: number) => {
     try {
       await ddApi.admin.deleteContest(id.toString());
-      const updatedContests = await ddApi.admin.getContests();
-      setContests(updatedContests as unknown as Contest[]);
+      const response = await ddApi.admin.getContests();
+      setContests(response.contests || []);
     } catch (err) {
       console.error("Failed to delete contest:", err);
     }
@@ -119,7 +204,19 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="space-y-8">
-        {platformStats && <PlatformStats {...platformStats} />}
+        {platformStats &&
+          typeof platformStats.totalVolume === "number" &&
+          typeof platformStats.totalPrizesPaid === "number" && (
+            <PlatformStats
+              totalUsers={Number(platformStats.totalUsers)}
+              activeContests={Number(platformStats.activeContests)}
+              totalVolume={Number(platformStats.totalVolume)}
+              totalPrizesPaid={Number(platformStats.totalPrizesPaid)}
+              dailyActiveUsers={Number(platformStats.dailyActiveUsers)}
+              userGrowth={Number(platformStats.userGrowth)}
+              volumeGrowth={Number(platformStats.volumeGrowth)}
+            />
+          )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <ContestManagement
@@ -131,7 +228,13 @@ export const AdminDashboard: React.FC = () => {
             />
           </div>
           <div>
-            <RecentActivity activities={recentActivities} />
+            <RecentActivity
+              activities={recentActivities.filter(
+                (activity) =>
+                  activity.created_at instanceof Date &&
+                  !isNaN(activity.created_at.getTime())
+              )}
+            />
           </div>
         </div>
       </div>

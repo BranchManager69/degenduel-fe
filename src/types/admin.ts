@@ -1,16 +1,17 @@
+import {
+  BaseActivity,
+  PlatformStats as BasePlatformStats,
+  Contest,
+  PaginatedResponse,
+} from ".";
 
-export interface PlatformStats {
-  totalUsers: number;
-  activeContests: number;
-  totalVolume: number;
-  dailyActiveUsers: number;
-  userGrowth: number;
-  volumeGrowth: number;
+export type PlatformStats = BasePlatformStats;
+export type Activity = BaseActivity;
+
+export interface ContestsResponse extends PaginatedResponse<Contest> {
+  contests: Contest[];
 }
 
-export interface Activity {
-  id: string;
-  type: 'contest_join' | 'contest_complete' | 'user_register';
-  timestamp: string;
-  details: string;
+export interface ActivitiesResponse extends PaginatedResponse<Activity> {
+  activities: Activity[];
 }

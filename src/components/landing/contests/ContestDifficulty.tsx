@@ -1,25 +1,41 @@
-import React from 'react';
+import React from "react";
 
-export type DifficultyLevel = 'guppy' | 'tadpole' | 'squid' | 'dolphin' | 'shark' | 'whale';
-
-export const DIFFICULTY_CONFIG = {
-  guppy: { label: 'Guppy', color: 'bg-green-500/20 text-green-300' },
-  tadpole: { label: 'Tadpole', color: 'bg-emerald-500/20 text-emerald-300' },
-  squid: { label: 'Squid', color: 'bg-yellow-500/20 text-yellow-300' },
-  dolphin: { label: 'Dolphin', color: 'bg-orange-500/20 text-orange-300' },
-  shark: { label: 'Shark', color: 'bg-red-500/20 text-red-300' },
-  whale: { label: 'Whale', color: 'bg-purple-500/20 text-purple-300' },
-} as const;
+type DifficultyLevel =
+  | "guppy"
+  | "tadpole"
+  | "squid"
+  | "dolphin"
+  | "shark"
+  | "whale";
 
 interface ContestDifficultyProps {
   difficulty: DifficultyLevel;
 }
 
-export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({ difficulty }) => {
-  const config = DIFFICULTY_CONFIG[difficulty];
-  
+const difficultyConfig: Record<
+  DifficultyLevel,
+  { label: string; color: string }
+> = {
+  guppy: { label: "Guppy", color: "text-green-400" },
+  tadpole: { label: "Tadpole", color: "text-blue-400" },
+  squid: { label: "Squid", color: "text-purple-400" },
+  dolphin: { label: "Dolphin", color: "text-pink-400" },
+  shark: { label: "Shark", color: "text-orange-400" },
+  whale: { label: "Whale", color: "text-red-400" },
+};
+
+export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
+  difficulty,
+}) => {
+  const config = difficultyConfig[difficulty] || {
+    label: "Unknown",
+    color: "text-gray-400",
+  };
+
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${config.color}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}
+    >
       {config.label}
     </span>
   );

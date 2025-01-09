@@ -121,11 +121,12 @@ export interface Token {
 }
 
 // Activity Types
-export interface Activity {
+export interface BaseActivity {
   id: string;
   type: "contest_join" | "contest_complete" | "user_register";
   timestamp: string;
   details: string;
+  created_at: string;
 }
 
 export interface Transaction {
@@ -230,7 +231,8 @@ export interface PortfolioResponse {
 export interface PlatformStats {
   totalUsers: number;
   activeContests: number;
-  totalVolume: number;
+  totalVolume: number | string;
+  totalPrizesPaid: number | string;
   dailyActiveUsers: number;
   userGrowth: number;
   volumeGrowth: number;
@@ -246,3 +248,13 @@ export type WalletError = {
     | "UNAUTHORIZED";
   message: string;
 };
+
+// Response Types
+export interface PaginatedResponse<T> {
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+  data?: T[];
+}
