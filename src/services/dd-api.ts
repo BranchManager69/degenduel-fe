@@ -12,21 +12,56 @@ import {
   User,
 } from "../types";
 
+const logError = (
+  endpoint: string,
+  error: any,
+  context?: Record<string, any>
+) => {
+  console.error(`[DD-API Error] ${endpoint}:`, {
+    message: error.message,
+    status: error.status,
+    statusText: error.statusText,
+    context,
+    stack: error.stack,
+    timestamp: new Date().toISOString(),
+  });
+};
+
 /* DegenDuel API Endpoints (client-side) */
 
 export const ddApi = {
   // User endpoints
   users: {
     getAll: async (): Promise<User[]> => {
-      const response = await fetch(`${API_URL}/users`);
-      if (!response.ok) throw new Error("Failed to fetch users");
-      return response.json();
+      try {
+        const response = await fetch(`${API_URL}/users`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || `Failed to fetch users: ${response.statusText}`
+          );
+        }
+        return response.json();
+      } catch (error: any) {
+        logError("users.getAll", error);
+        throw error;
+      }
     },
 
     getOne: async (wallet: string): Promise<User> => {
-      const response = await fetch(`${API_URL}/users/${wallet}`);
-      if (!response.ok) throw new Error("User not found");
-      return response.json();
+      try {
+        const response = await fetch(`${API_URL}/users/${wallet}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || `User not found: ${response.statusText}`
+          );
+        }
+        return response.json();
+      } catch (error: any) {
+        logError("users.getOne", error, { wallet });
+        throw error;
+      }
     },
 
     update: async (wallet: string, nickname: string): Promise<void> => {
@@ -42,12 +77,23 @@ export const ddApi = {
       wallet: string,
       settings: Record<string, any>
     ): Promise<void> => {
-      const response = await fetch(`${API_URL}/users/${wallet}/settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settings }),
-      });
-      if (!response.ok) throw new Error("Failed to update settings");
+      try {
+        const response = await fetch(`${API_URL}/users/${wallet}/settings`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ settings }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message ||
+              `Failed to update settings: ${response.statusText}`
+          );
+        }
+      } catch (error: any) {
+        logError("users.updateSettings", error, { wallet, settings });
+        throw error;
+      }
     },
   },
 
@@ -198,27 +244,31 @@ export const ddApi = {
       portfolio: Array<{ symbol: string; weight: number }>
     ) => {
       const user = useStore.getState().user;
-      console.log("[enterContest] Starting with:", {
-        contestId,
-        portfolio,
-        user,
-      });
-
-      if (!user?.wallet_address) {
-        throw new Error("Please connect your wallet first");
-      }
-
-      const payload = {
-        wallet: user.wallet_address,
-        portfolio: portfolio,
-      };
 
       try {
-        console.log(
-          "[enterContest] Sending request to:",
-          `${API_URL}/contests/${contestId}/join`
+        if (!user?.wallet_address) {
+          throw new Error("Please connect your wallet first");
+        }
+
+        // Validate portfolio before sending
+        const totalWeight = portfolio.reduce(
+          (sum, item) => sum + item.weight,
+          0
         );
-        console.log("[enterContest] With payload:", payload);
+        if (Math.abs(totalWeight - 100) > 0.01) {
+          throw new Error("Portfolio weights must sum to 100%");
+        }
+
+        const payload = {
+          wallet: user.wallet_address,
+          portfolio: portfolio,
+        };
+
+        console.log("[enterContest] Sending request:", {
+          url: `${API_URL}/contests/${contestId}/join`,
+          payload,
+          timestamp: new Date().toISOString(),
+        });
 
         const response = await fetch(`${API_URL}/contests/${contestId}/join`, {
           method: "POST",
@@ -230,32 +280,96 @@ export const ddApi = {
           credentials: "include",
         });
 
-        console.log("[enterContest] Response status:", response.status);
-        const data = await response.json();
-        console.log("[enterContest] Response data:", data);
-
-        if (response.status === 401) {
-          throw new Error("Please connect your wallet and try again");
+        // Always try to get the response data, even if the request failed
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          console.error("[enterContest] Failed to parse response:", {
+            parseError,
+            responseText: await response
+              .text()
+              .catch(() => "Unable to get response text"),
+            status: response.status,
+            headers: Object.fromEntries(response.headers.entries()),
+          });
+          data = null;
         }
 
         if (!response.ok) {
-          switch (data.error?.code) {
-            case "ALREADY_REGISTERED":
-              throw new Error("You have already entered this contest");
-            case "CONTEST_STARTED":
-              throw new Error("This contest has already started");
-            case "INSUFFICIENT_FUNDS":
-              throw new Error("Insufficient funds for contest entry");
-            case "CONTEST_FULL":
-              throw new Error("Contest is full");
-            default:
-              throw new Error(data.error?.message || "Failed to enter contest");
+          const errorDetails = {
+            endpoint: "enterContest",
+            status: response.status,
+            statusText: response.statusText,
+            responseData: data,
+            requestPayload: payload,
+            contestId,
+            userWallet: user.wallet_address,
+            portfolioSize: portfolio.length,
+            timestamp: new Date().toISOString(),
+            headers: Object.fromEntries(response.headers.entries()),
+          };
+
+          console.error("[enterContest] Request failed:", errorDetails);
+
+          // Handle specific error cases
+          if (response.status === 500) {
+            throw new Error(
+              "Server encountered an error. Please verify your portfolio meets all requirements:" +
+                "\n- All weights must be between 0 and 100" +
+                "\n- Total weight must equal 100%" +
+                "\n- All tokens must be from the allowed list" +
+                "\n\nIf the issue persists, please contact support."
+            );
           }
+
+          const error = new Error(
+            data?.error?.message ||
+              data?.message ||
+              `Failed to enter contest (${response.status}: ${response.statusText})`
+          );
+
+          Object.assign(error, errorDetails);
+          throw error;
         }
+
+        console.log("[enterContest] Success:", {
+          contestId,
+          response: data,
+          timestamp: new Date().toISOString(),
+        });
 
         return data;
       } catch (error: any) {
-        console.error("[enterContest] Error:", error);
+        // Enhanced error logging with more context
+        logError("contests.enterContest", error, {
+          contestId,
+          portfolio,
+          userWallet: user?.wallet_address,
+          timestamp: new Date().toISOString(),
+          requestInfo: {
+            url: `${API_URL}/contests/${contestId}/join`,
+            method: "POST",
+          },
+          errorDetails: {
+            name: error.name,
+            code: error.code,
+            status: error.status,
+            statusText: error.statusText,
+            responseData: error.responseData,
+            portfolioValidation: {
+              totalWeight: portfolio.reduce(
+                (sum, item) => sum + item.weight,
+                0
+              ),
+              tokenCount: portfolio.length,
+              hasZeroWeights: portfolio.some((item) => item.weight === 0),
+              hasNegativeWeights: portfolio.some((item) => item.weight < 0),
+            },
+          },
+        });
+
+        // Rethrow with more specific error message
         throw error;
       }
     },
@@ -265,24 +379,20 @@ export const ddApi = {
       portfolio: Array<{ symbol: string; weight: number }>
     ) => {
       const user = useStore.getState().user;
-      console.log("[updatePortfolio] Starting with:", {
-        contestId,
-        portfolio,
-        user,
-      });
-
-      if (!user?.wallet_address) {
-        throw new Error("Please connect your wallet first");
-      }
-
-      const payload = { portfolio };
 
       try {
-        console.log(
-          "[updatePortfolio] Sending request to:",
-          `${API_URL}/contests/${contestId}/portfolio`
-        );
-        console.log("[updatePortfolio] With payload:", payload);
+        if (!user?.wallet_address) {
+          throw new Error("Please connect your wallet first");
+        }
+
+        const payload = { portfolio };
+
+        console.log("[updatePortfolio] Initiating request:", {
+          contestId,
+          portfolio,
+          userWallet: user.wallet_address,
+          timestamp: new Date().toISOString(),
+        });
 
         const response = await fetch(
           `${API_URL}/contests/${contestId}/portfolio`,
@@ -297,21 +407,31 @@ export const ddApi = {
           }
         );
 
-        console.log("[updatePortfolio] Response status:", response.status);
         const data = await response.json();
-        console.log("[updatePortfolio] Response data:", data);
-
-        if (response.status === 401) {
-          throw new Error("Please connect your wallet and try again");
-        }
 
         if (!response.ok) {
-          throw new Error(data.message || "Failed to update portfolio");
+          const error = new Error(data.message || "Failed to update portfolio");
+          Object.assign(error, {
+            status: response.status,
+            responseData: data,
+          });
+          throw error;
         }
+
+        console.log("[updatePortfolio] Success:", {
+          contestId,
+          response: data,
+          timestamp: new Date().toISOString(),
+        });
 
         return data;
       } catch (error: any) {
-        console.error("[updatePortfolio] Error:", error);
+        logError("contests.updatePortfolio", error, {
+          contestId,
+          portfolio,
+          userWallet: user?.wallet_address,
+          timestamp: new Date().toISOString(),
+        });
         throw error;
       }
     },

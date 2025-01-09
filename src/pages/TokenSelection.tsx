@@ -240,23 +240,63 @@ export const TokenSelection: React.FC = () => {
       setLoadingEntryStatus(true);
 
       if (contest?.is_participating) {
-        await ddApi.contests.updatePortfolio(contestId, portfolio);
-        toast({
-          title: "Success",
-          description: "Your portfolio has been updated",
-          variant: "success",
-        });
+        // Was already in the contest, so update the portfolio
+        console.log("Updating portfolio for contest:", contestId);
+        try {
+          await ddApi.contests.updatePortfolio(contestId, portfolio);
+          toast({
+            title: "Success",
+            description: "Your portfolio has been updated",
+            variant: "success",
+          });
+        } catch (error) {
+          console.error("Failed to update portfolio:", error);
+          try {
+            await ddApi.contests.enterContest(contestId, portfolio);
+            toast({
+              title: "Success",
+              description: "Your portfolio has been updated",
+              variant: "success",
+            });
+          } catch (error) {
+            console.error("Failed to enter contest:", error);
+            toast({
+              title: "Error",
+              description: "Failed to update portfolio",
+              variant: "error",
+            });
+          }
+        }
       } else {
-        await ddApi.contests.enterContest(contestId, portfolio);
-        toast({
-          title: "Success",
-          description: "You have successfully entered the contest",
-          variant: "success",
-        });
+        // Was not previously entered in the contest, so enter it and create a new portfolio
+        try {
+          await ddApi.contests.enterContest(contestId, portfolio);
+          toast({
+            title: "Success",
+            description: "You have successfully entered the contest",
+            variant: "success",
+          });
+        } catch (error) {
+          console.error("Failed to enter contest:", error);
+          toast({
+            title: "Error",
+            description: "Failed to enter contest",
+            variant: "error",
+          });
+        }
       }
 
       // Navigate to the contest live view
-      navigate(`/contests/${contestId}/live`);
+      try {
+        navigate(`/contests/${contestId}/live`);
+      } catch (error) {
+        console.error("Failed to navigate to contest live view:", error);
+        toast({
+          title: "Error",
+          description: "Failed to navigate to contest live view",
+          variant: "error",
+        });
+      }
     } catch (error: any) {
       console.error("Failed to submit portfolio:", error);
       toast({
