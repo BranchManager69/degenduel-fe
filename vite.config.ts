@@ -4,13 +4,13 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3004,
+    port: 3003,
     host: "0.0.0.0",
     strictPort: true,
     hmr: {
       overlay: true,
       timeout: 30000,
-      clientPort: 3004,
+      clientPort: 3003,
       protocol: "ws",
       host: "localhost",
     },
