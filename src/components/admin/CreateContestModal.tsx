@@ -188,6 +188,11 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     { value: 3, label: "Bucket 3" },
     { value: 4, label: "Bucket 4" },
     { value: 5, label: "Bucket 5" },
+    { value: 6, label: "Bucket 6" },
+    { value: 7, label: "Bucket 7" },
+    { value: 8, label: "Bucket 8" },
+    { value: 9, label: "Bucket 9" },
+    //{ value: 10, label: "Bucket 10" },
   ];
 
   if (!isOpen) return null;

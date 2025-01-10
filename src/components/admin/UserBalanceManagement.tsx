@@ -7,10 +7,6 @@ interface UserBalanceManagementProps {
   users: User[];
 }
 
-const formatNumber = (num: string | number) => {
-  return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-};
-
 export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
   users = [],
 }) => {
@@ -91,6 +87,10 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
     }
   };
 
+  // Add this right after the component declaration to see what we're getting
+  console.log("UserBalanceManagement received users:", users);
+  console.log("Sorted users:", sortedUsers);
+
   return (
     <div className="bg-dark-200 rounded-lg p-6">
       <h2 className="text-xl font-bold text-gray-100 mb-4">
@@ -111,14 +111,18 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
             className="w-full bg-dark-300 border border-dark-400 rounded px-3 py-2 text-gray-100"
             required
           >
-            <option value="">Select a user...</option>
-            {sortedUsers.map((user) => (
-              <option key={user.wallet_address} value={user.wallet_address}>
-                {user.nickname || user.wallet_address}
-                {user.balance !== undefined &&
-                  ` (${formatNumber(user.balance)} Bonus Points)`}
-              </option>
-            ))}
+            <option value="">
+              Select a user... ({users.length} users available)
+            </option>
+            {users.map((user) => {
+              console.log("Rendering user:", user);
+              return (
+                <option key={user.wallet_address} value={user.wallet_address}>
+                  {user.nickname} ({user.wallet_address.slice(0, 4)}...
+                  {user.wallet_address.slice(-4)})
+                </option>
+              );
+            })}
           </select>
         </div>
 

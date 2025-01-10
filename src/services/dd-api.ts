@@ -93,18 +93,22 @@ export const ddApi = {
   users: {
     getAll: async (): Promise<User[]> => {
       try {
-        const response = await fetch(`${API_URL}/users`);
+        const response = await fetch(`${API_URL}/api/users`);
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.message || `Failed to fetch users: ${response.statusText}`
-          );
+          throw new Error("Failed to fetch users");
         }
+
         const data = await response.json();
-        // Ensure we return an array
-        return Array.isArray(data) ? data : data.users || [];
-      } catch (error: any) {
-        logError("users.getAll", error);
+        console.log("Raw users API response:", data);
+        const users = data.users || [];
+        console.log("Processed users array:", users);
+
+        return users.sort((a: User, b: User) =>
+          a.wallet_address.localeCompare(b.wallet_address)
+        );
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
         throw error;
       }
     },
@@ -198,6 +202,40 @@ export const ddApi = {
       const response = await fetch(`${API_URL}/stats/${wallet}/achievements`);
       if (!response.ok) throw new Error("Failed to fetch achievements");
       return response.json();
+    },
+
+    getPlatformStats: async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/stats/platform`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch platform stats");
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error("Failed to fetch platform stats:", error);
+        throw error;
+      }
+    },
+
+    getRecentActivity: async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/stats/activity`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch recent activity");
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error("Failed to fetch recent activity:", error);
+        throw error;
+      }
     },
   },
 
@@ -301,21 +339,25 @@ export const ddApi = {
       walletAddress: string,
       amount: number
     ): Promise<void> => {
-      const response = await fetch(
-        `${API_URL}/admin/users/${walletAddress}/balance`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ amount }),
-        }
-      );
+      try {
+        const response = await fetch(
+          `${API_URL}/users/${walletAddress}/balance`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount }),
+            credentials: "include",
+          }
+        );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to adjust user balance");
+        if (!response.ok) {
+          throw new Error("Failed to adjust user balance");
+        }
+      } catch (error) {
+        console.error("Failed to adjust user balance:", error);
+        throw error;
       }
     },
   },
@@ -732,12 +774,36 @@ export const ddApi = {
 
   // Balance endpoints
   balance: {
-    get: async (walletAddress: string) => {
-      const response = await fetch(`${API_URL}/balance/${walletAddress}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch balance");
+    get: async (walletAddress: string): Promise<{ balance: string }> => {
+      console.log("Fetching balance for wallet:", walletAddress);
+      try {
+        const url = `${API_URL}/users/${walletAddress}/balance`;
+        console.log("Balance fetch URL:", url);
+
+        const response = await fetch(url);
+        console.log("Balance response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Balance fetch failed:", {
+            status: response.status,
+            statusText: response.statusText,
+            errorText,
+          });
+          throw new Error("Failed to fetch user balance");
+        }
+
+        const data = await response.json();
+        console.log("Balance fetch successful:", data);
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch user balance:", {
+          error,
+          walletAddress,
+          timestamp: new Date().toISOString(),
+        });
+        throw error;
       }
-      return response.json();
     },
   },
 
