@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ChangeEvent, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
 import { ddApi } from "../../services/dd-api";
@@ -28,8 +28,10 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [hasChanges, setHasChanges] = React.useState(false);
 
   const getNextHourDateTime = () => {
     const now = new Date();
@@ -89,10 +91,84 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     } satisfies ContestSettings,
   });
 
+  const validateForm = (data: typeof formData) => {
+    const errors: Record<string, string> = {};
+
+    // Time validations
+    const now = new Date();
+    const start = new Date(data.start_time);
+    const end = new Date(data.end_time);
+    const deadline = data.entry_deadline ? new Date(data.entry_deadline) : null;
+
+    if (start <= now) {
+      errors.start_time = "Start time must be in the future";
+    }
+    if (end <= start) {
+      errors.end_time = "End time must be after start time";
+    }
+    if (deadline && deadline >= start) {
+      errors.entry_deadline = "Entry deadline must be before start time";
+    }
+
+    // Required fields
+    if (!data.name?.trim()) {
+      errors.name = "Contest name is required";
+    }
+
+    // Entry fee validations
+    const entryFee = Number(data.entry_fee);
+    if (isNaN(entryFee) || entryFee <= 0) {
+      errors.entry_fee = "Entry fee must be greater than 0";
+    }
+
+    // Participant validations
+    if (
+      !data.settings.max_participants ||
+      data.settings.max_participants <= 0
+    ) {
+      errors.max_participants =
+        "Maximum participants must be set and greater than 0";
+    }
+    if (
+      !data.settings.min_participants ||
+      data.settings.min_participants <= 0
+    ) {
+      errors.min_participants =
+        "Minimum participants must be set and greater than 0";
+    }
+    if (data.settings.min_participants >= data.settings.max_participants) {
+      errors.min_participants =
+        "Minimum participants must be less than maximum";
+    }
+
+    // Prize pool validation
+    const minPrizePool = entryFee * data.settings.min_participants * 0.9;
+    if (Number(data.prize_pool) < minPrizePool) {
+      errors.prize_pool = `Prize pool must be at least ${minPrizePool} SOL`;
+    }
+
+    // Bucket validations
+    if (!data.allowed_buckets?.length) {
+      errors.allowed_buckets = "At least one bucket must be selected";
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    const errors = validateForm(formData);
+    if (Object.keys(errors).length > 0) {
+      const errorMessages = Object.entries(errors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join("\n");
+      setError(errorMessages);
+      setLoading(false);
+      return;
+    }
 
     let attempt = 0;
     const maxAttempts = 5;
@@ -100,38 +176,52 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     while (attempt < maxAttempts) {
       try {
         const contestData: Partial<Contest> = {
-          name: formData.name,
-          description: formData.description,
+          name: formData.name.trim(),
+          description: formData.description.trim(),
           contest_code: generateContestCode(formData.name, attempt),
           entry_fee: formData.entry_fee,
           prize_pool: String(
-            calculateMaxPrizePool(formData.entry_fee, formData.max_participants)
+            calculateMaxPrizePool(
+              formData.entry_fee,
+              formData.settings.max_participants
+            )
           ),
           current_prize_pool: "0",
-          start_time: formData.start_time,
-          end_time: formData.end_time,
-          entry_deadline: formData.entry_deadline,
+          start_time: new Date(formData.start_time).toISOString(),
+          end_time: new Date(formData.end_time).toISOString(),
+          entry_deadline: formData.entry_deadline
+            ? new Date(formData.entry_deadline).toISOString()
+            : undefined,
           allowed_buckets: formData.allowed_buckets,
           participant_count: 0,
           status: "pending" as const,
           settings: {
             difficulty: formData.settings.difficulty,
-            min_trades: formData.settings.min_trades,
-            max_participants: formData.max_participants,
-            min_participants: formData.min_participants,
+            min_trades: Number(formData.settings.min_trades),
+            max_participants: Number(formData.settings.max_participants),
+            min_participants: Number(formData.settings.min_participants),
             token_types: [],
             rules: [],
-          } as ContestSettings,
+          },
         };
 
-        console.log("Form entry_fee value:", formData.entry_fee);
-        console.log(
-          "Contest data being sent:",
-          JSON.stringify(contestData, null, 2)
-        );
+        // Final validation before sending
+        if (
+          !contestData.settings?.max_participants ||
+          contestData.settings.max_participants <= 0
+        ) {
+          throw new Error(
+            "Maximum participants must be set and greater than 0"
+          );
+        }
 
-        const response = await ddApi.contests.create(contestData);
-        console.log("API Response:", response);
+        console.log("[CreateContestModal] Creating contest:", {
+          data: contestData,
+          attempt: attempt + 1,
+          timestamp: new Date().toISOString(),
+        });
+
+        await ddApi.contests.create(contestData);
 
         toast.success("Contest created successfully!", {
           duration: 4000,
@@ -149,21 +239,26 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error";
+        console.error("[CreateContestModal] Creation failed:", {
+          error:
+            err instanceof Error
+              ? {
+                  message: err.message,
+                  stack: err.stack,
+                }
+              : err,
+          attempt: attempt + 1,
+          timestamp: new Date().toISOString(),
+        });
 
-        // If it's a duplicate code error, try again
         if (
           errorMessage.includes("contest_code") &&
           attempt < maxAttempts - 1
         ) {
-          console.log(
-            `Contest code already exists, trying again (attempt ${attempt + 1})`
-          );
           attempt++;
           continue;
         }
 
-        // If it's another error or we've run out of attempts, throw it
-        console.error("Create contest error:", err);
         setError(errorMessage);
         break;
       }
@@ -173,13 +268,47 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "number" ? Number(value) : value,
-    }));
+    setHasChanges(true);
+    const { name, value } = e.target;
+
+    setFormData((prev) => {
+      const updates = { ...prev };
+
+      if (name === "start_time") {
+        const start = new Date(value);
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        updates.end_time = end.toISOString().slice(0, 16);
+        updates.entry_deadline = value;
+      }
+
+      if (name === "entry_fee" || name === "max_participants") {
+        updates.prize_pool = String(
+          calculateMaxPrizePool(
+            name === "entry_fee" ? value : prev.entry_fee,
+            name === "max_participants"
+              ? Number(value)
+              : prev.settings.max_participants
+          )
+        );
+      }
+
+      return {
+        ...updates,
+        [name]: value,
+        settings: {
+          ...prev.settings,
+          // Keep settings in sync with top-level values
+          ...(name === "max_participants" && {
+            max_participants: Number(value),
+          }),
+          ...(name === "min_participants" && {
+            min_participants: Number(value),
+          }),
+        },
+      };
+    });
   };
 
   const bucketOptions = [
@@ -195,13 +324,56 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     //{ value: 10, label: "Bucket 10" },
   ];
 
+  // Add unsaved changes warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
+
+  // Add click-outside handler
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        if (hasChanges) {
+          if (
+            window.confirm(
+              "You have unsaved changes. Are you sure you want to close?"
+            )
+          ) {
+            onClose();
+          }
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose, hasChanges]);
+
   if (!isOpen) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/50" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <div className="bg-dark-200 rounded-lg w-full max-w-2xl flex flex-col max-h-[90vh]">
+        <div
+          ref={modalRef}
+          className="bg-dark-200 rounded-lg w-full max-w-2xl flex flex-col max-h-[90vh]"
+        >
           <div className="flex justify-between items-center p-6 border-b border-dark-300">
             <h2 className="text-xl font-bold text-gray-100">Create Contest</h2>
             <Button

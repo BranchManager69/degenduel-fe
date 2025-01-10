@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { ContestManagement } from "../components/admin/ContestManagement";
 import { EditContestModal } from "../components/admin/EditContestModal";
+import OtherStuff from "../components/admin/OtherStuff";
 import { PlatformStats } from "../components/admin/PlatformStats";
 import { RecentActivity } from "../components/admin/RecentActivity";
 import { UserBalanceManagement } from "../components/admin/UserBalanceManagement";
+import UserManagement from "../components/admin/UserManagement";
+import UserPortfolioManagement from "../components/admin/UserPortfolioManagement";
 import { Card } from "../components/ui/Card";
 import { ddApi } from "../services/dd-api";
 import type {
@@ -244,11 +247,16 @@ export const AdminDashboard: React.FC = () => {
         await ddApi.admin.deleteContest(id);
         await fetchDashboardData();
       } catch (error) {
-        console.error("Failed to delete contest:", error);
+        console.log(
+          "Hey retard! Failed to delete contest (ddApi.admin.deleteContest doesn't exist).",
+          error
+        );
+        //console.error("Failed to delete contest:", error);
       }
     }
   };
 
+  // TODO: Implement this
   const handleSaveContest = async (
     contestId: number,
     data: Partial<Contest>
@@ -321,6 +329,26 @@ export const AdminDashboard: React.FC = () => {
           <div className="space-y-8">
             <RecentActivity activities={activities} />
             <UserBalanceManagement users={users} />
+          </div>
+
+          {/* User Management */}
+          <div className="space-y-8">
+            <UserManagement users={users} />
+          </div>
+
+          {/* User Balance Management */}
+          <div className="space-y-8">
+            <UserBalanceManagement users={users} />
+          </div>
+
+          {/* User Portfolio Management */}
+          <div className="space-y-8">
+            <UserPortfolioManagement users={users} />
+          </div>
+
+          {/* Other stuff */}
+          <div className="space-y-8">
+            <OtherStuff />
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { formatInTimeZone } from "date-fns-tz";
 import React, { useEffect, useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
@@ -48,13 +49,36 @@ export const ContestDetails: React.FC = () => {
     try {
       setLoading(true);
       const data = await ddApi.contests.getById(id);
-      console.log("Contest data (detailed):", {
-        participant_count: data.participant_count,
-        contest_participants: data.contest_participants,
-        raw_data: data,
-      });
 
-      // Ensure settings are properly initialized
+      // Convert UTC times to local timezone for display
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const localStartTime = new Date(
+        formatInTimeZone(
+          new Date(data.start_time),
+          userTimeZone,
+          "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
+        )
+      );
+
+      const localEndTime = new Date(
+        formatInTimeZone(
+          new Date(data.end_time),
+          userTimeZone,
+          "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
+        )
+      );
+
+      const localEntryDeadline = data.entry_deadline
+        ? new Date(
+            formatInTimeZone(
+              new Date(data.entry_deadline),
+              userTimeZone,
+              "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
+            )
+          )
+        : undefined;
+
       const sanitizedContest = {
         ...data,
         entry_fee:
@@ -66,8 +90,9 @@ export const ContestDetails: React.FC = () => {
             ? data.prize_pool
             : String(data.prize_pool),
         participant_count: Number(data.participant_count) || 0,
-        start_time: data.start_time,
-        end_time: data.end_time,
+        start_time: localStartTime.toISOString(),
+        end_time: localEndTime.toISOString(),
+        entry_deadline: localEntryDeadline?.toISOString(),
         settings: {
           ...data.settings,
           max_participants: Number(data.settings?.max_participants) || 0,

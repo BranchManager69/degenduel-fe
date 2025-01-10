@@ -47,6 +47,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
 }) => {
   const modalRef = React.useRef<HTMLDivElement>(null);
   const [loading, setLoading] = React.useState(false);
+  const [hasChanges, setHasChanges] = React.useState(false);
 
   const getNextHourDateTime = () => {
     const now = new Date();
@@ -62,6 +63,16 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
   const calculateMaxPrizePool = (entryFee: string, maxParticipants: number) => {
     const fee = parseFloat(entryFee) || 0;
     return fee * maxParticipants * 0.9;
+  };
+
+  const suggestEndTime = (startTime: string, duration = 60) => {
+    const start = new Date(startTime);
+    const end = new Date(start.getTime() + duration * 60000);
+    return end.toISOString().slice(0, 16);
+  };
+
+  const calculateMinPrizePool = (fee: string, minParticipants: number) => {
+    return Number(fee) * minParticipants * 0.9;
   };
 
   const [formData, setFormData] = React.useState<FormData>({
@@ -126,57 +137,88 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
     e.preventDefault();
     if (!contest) return;
 
+    const errors = validateForm(formData);
+    if (Object.keys(errors).length > 0) {
+      const errorMessages = Object.entries(errors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join("\n");
+      alert(`Please fix the following errors:\n${errorMessages}`);
+      return;
+    }
+
     try {
       setLoading(true);
+
+      // Convert to UTC before sending to server
+      const utcStartTime = new Date(formData.start_time);
+      const utcEndTime = new Date(formData.end_time);
+      const utcEntryDeadline = formData.entry_deadline
+        ? new Date(formData.entry_deadline)
+        : undefined;
+
       const apiData: Partial<Contest> = {
-        name: formData.name,
-        description: formData.description,
-        entry_fee: String(parseFloat(formData.entry_fee)),
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        entry_fee: formData.entry_fee,
         prize_pool: String(
           calculateMaxPrizePool(formData.entry_fee, formData.max_participants)
         ),
-        current_prize_pool: String(
-          parseFloat(formData.current_prize_pool || "0")
-        ),
-        start_time: formData.start_time,
-        end_time: formData.end_time,
-        entry_deadline: formData.entry_deadline || undefined,
+        current_prize_pool: formData.current_prize_pool,
+        start_time: utcStartTime.toISOString(),
+        end_time: utcEndTime.toISOString(),
+        entry_deadline: utcEntryDeadline?.toISOString(),
         allowed_buckets: formData.allowed_buckets,
-        participant_count: formData.participant_count,
-        last_entry_time: formData.last_entry_time || undefined,
+        participant_count: Number(formData.participant_count),
         status: formData.status,
-        cancelled_at: formData.cancelled_at || undefined,
-        cancellation_reason: formData.cancellation_reason || undefined,
         settings: {
           difficulty: formData.settings.difficulty,
-          min_trades: formData.settings.min_trades,
-          max_participants: formData.max_participants,
-          min_participants: formData.min_participants,
+          min_trades: Number(formData.settings.min_trades),
+          max_participants: Number(formData.max_participants) || 100,
+          min_participants: Number(formData.min_participants) || 2,
           token_types: formData.settings.token_types,
           rules: formData.settings.rules,
         },
+        // Only include these if status is cancelled
+        ...(formData.status === "cancelled" && {
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: formData.cancellation_reason.trim(),
+        }),
       };
 
-      console.log("Sending data to API:", JSON.stringify(apiData, null, 2));
-
-      try {
-        await onSave(contest.id, apiData);
-        onClose();
-      } catch (err) {
-        if (err instanceof Error) {
-          console.error("API Error:", {
-            message: err.message,
-            stack: err.stack,
-            data: apiData,
-          });
-        } else {
-          console.error("Unknown API Error:", err);
-        }
-        throw err;
+      // Add validation for participant limits
+      if (
+        !apiData.settings?.max_participants ||
+        apiData.settings.max_participants <= 0
+      ) {
+        throw new Error("Maximum participants must be set and greater than 0");
       }
+
+      console.log("[EditContestModal] Submitting update:", {
+        contestId: contest.id,
+        data: apiData,
+        timestamp: new Date().toISOString(),
+      });
+
+      await onSave(contest.id, apiData);
+      onClose();
     } catch (err) {
-      console.error("Failed to save contest:", err);
-      // You might want to show an error message to the user here
+      console.error("[EditContestModal] Update failed:", {
+        error:
+          err instanceof Error
+            ? {
+                message: err.message,
+                stack: err.stack,
+              }
+            : err,
+        contestId: contest.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      alert(
+        `Failed to update contest: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setLoading(false);
     }
@@ -185,11 +227,36 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    setHasChanges(true);
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "number" ? Number(value) : value,
     }));
+
+    if (name === "start_time") {
+      // Auto-adjust end time when start time changes
+      setFormData((prev) => ({
+        ...prev,
+        start_time: value,
+        end_time: suggestEndTime(value),
+        entry_deadline: value, // Or some time before start
+      }));
+    }
+
+    if (name === "entry_fee" || name === "min_participants") {
+      // Auto-adjust prize pool
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        prize_pool: String(
+          calculateMinPrizePool(
+            name === "entry_fee" ? value : prev.entry_fee,
+            name === "min_participants" ? Number(value) : prev.min_participants
+          )
+        ),
+      }));
+    }
   };
 
   const bucketOptions = [
@@ -217,6 +284,122 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
     };
   }, [isOpen, onClose]);
 
+  // Add validation helpers
+  const validateForm = (data: typeof formData) => {
+    const errors: Record<string, string> = {};
+
+    // Time validations
+    const now = new Date();
+    const start = new Date(data.start_time);
+    const end = new Date(data.end_time);
+    const deadline = data.entry_deadline ? new Date(data.entry_deadline) : null;
+
+    if (start <= now && data.status === "pending") {
+      errors.start_time =
+        "Start time must be in the future for pending contests";
+    }
+    if (end <= start) {
+      errors.end_time = "End time must be after start time";
+    }
+    if (deadline && deadline >= start) {
+      errors.entry_deadline = "Entry deadline must be before start time";
+    }
+
+    // Participant validations
+    if (data.min_participants >= data.max_participants) {
+      errors.min_participants = "Min participants must be less than max";
+    }
+    if (data.participant_count > data.max_participants) {
+      errors.max_participants =
+        "Max participants cannot be less than current participants";
+    }
+
+    // Prize pool validation
+    const minPrizePool = Number(data.entry_fee) * data.min_participants * 0.9;
+    if (Number(data.prize_pool) < minPrizePool) {
+      errors.prize_pool = `Prize pool must be at least ${minPrizePool} SOL`;
+    }
+
+    // Participant limit validations
+    if (!data.max_participants || data.max_participants <= 0) {
+      errors.max_participants =
+        "Maximum participants must be set and greater than 0";
+    }
+
+    if (!data.min_participants || data.min_participants <= 0) {
+      errors.min_participants =
+        "Minimum participants must be set and greater than 0";
+    }
+
+    if (data.min_participants >= data.max_participants) {
+      errors.min_participants =
+        "Minimum participants must be less than maximum";
+    }
+
+    // Ensure current participant count is valid
+    if (data.participant_count > data.max_participants) {
+      errors.participant_count = "Current participants cannot exceed maximum";
+    }
+
+    return errors;
+  };
+
+  // Add status transition validation
+  const allowedStatusTransitions: Record<
+    Contest["status"],
+    Contest["status"][]
+  > = {
+    pending: ["active", "cancelled"],
+    active: ["completed", "cancelled"],
+    completed: [],
+    cancelled: [],
+  };
+
+  React.useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
+
+  const handleClose = () => {
+    if (hasChanges) {
+      if (
+        window.confirm(
+          "You have unsaved changes. Are you sure you want to close?"
+        )
+      ) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
+
+  const handleStatusChange = (value: ContestStatus) => {
+    if (!contest) return;
+
+    if (!allowedStatusTransitions[contest.status].includes(value)) {
+      alert(`Cannot change status from ${contest.status} to ${value}`);
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      status: value,
+      // Auto-set cancellation fields if needed
+      ...(value === "cancelled" && {
+        cancelled_at: new Date().toISOString(),
+        cancellation_reason: "",
+      }),
+    }));
+  };
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -229,7 +412,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
             <Button
               type="button"
               variant="outline"
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-200"
             >
               ✕
@@ -522,17 +705,34 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Difficulty
                 </label>
-                <Select<ContestStatus>
+                <Select
                   value={formData.status}
-                  onChange={(value) =>
-                    setFormData((prev) => ({ ...prev, status: value }))
-                  }
+                  onChange={handleStatusChange}
                   options={[
-                    { value: "pending", label: "Pending" },
-                    { value: "active", label: "Active" },
-                    { value: "completed", label: "Completed" },
-                    { value: "cancelled", label: "Cancelled" },
-                  ]}
+                    {
+                      value: "pending" as ContestStatus,
+                      label: "🟡 Pending",
+                    },
+                    {
+                      value: "active" as ContestStatus,
+                      label: "🟢 Active",
+                    },
+                    {
+                      value: "completed" as ContestStatus,
+                      label: "🔵 Completed",
+                    },
+                    {
+                      value: "cancelled" as ContestStatus,
+                      label: "🔴 Cancelled",
+                    },
+                  ].map((option) => ({
+                    ...option,
+                    disabled: contest
+                      ? !allowedStatusTransitions[contest.status].includes(
+                          option.value
+                        )
+                      : false,
+                  }))}
                   className="w-full text-gray-100 bg-dark-300"
                 />
               </div>
@@ -542,7 +742,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="text-gray-300 border-gray-600 hover:bg-dark-300"
                   >
                     Cancel

@@ -19,10 +19,12 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:3003",
+        target: "https://degenduel.me",
         changeOrigin: true,
         secure: false,
-        ws: true,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
       },
     },
   },
