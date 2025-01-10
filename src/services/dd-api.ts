@@ -53,7 +53,7 @@ const checkContestParticipation = async (
 
   try {
     const response = await fetch(
-      `${API_URL}/contests/${contestId}/portfolio/${userWallet}`,
+      `${API_URL}/admin/contests/${contestId}/portfolio/${userWallet}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +93,13 @@ export const ddApi = {
   users: {
     getAll: async (): Promise<User[]> => {
       try {
-        const response = await fetch(`${API_URL}/api/users`);
+        const response = await fetch(`${API_URL}/users`, {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+          },
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch users");
@@ -206,8 +212,12 @@ export const ddApi = {
 
     getPlatformStats: async () => {
       try {
-        const response = await fetch(`${API_URL}/api/stats/platform`, {
+        const response = await fetch(`${API_URL}/admin/stats/platform`, {
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+          },
         });
 
         if (!response.ok) {
@@ -223,8 +233,12 @@ export const ddApi = {
 
     getRecentActivity: async () => {
       try {
-        const response = await fetch(`${API_URL}/api/stats/activity`, {
+        const response = await fetch(`${API_URL}/admin/stats/activity`, {
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+          },
         });
 
         if (!response.ok) {
@@ -242,95 +256,105 @@ export const ddApi = {
   // Admin endpoints
   admin: {
     getPlatformStats: async (): Promise<PlatformStats> => {
-      const response = await fetch(`${API_URL}/stats/platform`);
+      const response = await fetch(`${API_URL}/admin/stats/platform`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+        },
+      });
       if (!response.ok) throw new Error("Failed to fetch platform stats");
       return response.json();
     },
 
     getContests: async (): Promise<{ contests: Contest[] }> => {
-      const response = await fetch(`${API_URL}/contests`);
+      const response = await fetch(`${API_URL}/admin/contests`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+        },
+      });
       if (!response.ok) throw new Error("Failed to fetch contests");
       return response.json();
     },
 
     getRecentActivities: async (): Promise<{ activities: Activity[] }> => {
-      const response = await fetch(`${API_URL}/admin/activities`);
+      const response = await fetch(`${API_URL}/admin/activities`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+        },
+      });
       if (!response.ok) throw new Error("Failed to fetch activities");
       return response.json();
     },
 
-    updateContest: async (
-      contestId: string,
-      data: Partial<Contest>
-    ): Promise<Contest> => {
-      try {
-        const requestData = {
-          url: `${API_URL}/contests/${contestId}`,
-          method: "PUT",
+    updateContest: async (contestId: string, updates: Partial<Contest>) => {
+      const response = await fetch(`${API_URL}/admin/contests/${contestId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+        },
+        credentials: "include",
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) throw new Error("Failed to update contest");
+    },
+
+    startContest: async (contestId: string) => {
+      const response = await fetch(
+        `${API_URL}/admin/contests/${contestId}/start`,
+        {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
           },
-          data,
-        };
-
-        console.log("Making update request:", requestData);
-
-        // Add timeout to the fetch
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-        try {
-          const response = await fetch(`${API_URL}/contests/${contestId}`, {
-            method: "PUT",
-            headers: requestData.headers,
-            credentials: "include",
-            body: JSON.stringify(data),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeout);
-
-          const responseText = await response.text();
-          console.log("Raw response text:", responseText);
-
-          let parsedResponse;
-          try {
-            parsedResponse = responseText ? JSON.parse(responseText) : {};
-          } catch (e) {
-            console.error("Failed to parse response:", responseText);
-            throw new Error("Invalid JSON response from server");
-          }
-
-          if (!response.ok) {
-            throw new Error(
-              parsedResponse.error ||
-                parsedResponse.message ||
-                `Server error: ${response.status} ${response.statusText}`
-            );
-          }
-
-          return parsedResponse;
-        } catch (fetchError: unknown) {
-          if (fetchError instanceof Error && fetchError.name === "AbortError") {
-            throw new Error("Request timed out");
-          }
-          throw fetchError;
+          credentials: "include",
         }
-      } catch (error) {
-        console.error("Contest update error:", {
-          error,
-          contestId,
-          data,
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-        throw error;
-      }
+      );
+      if (!response.ok) throw new Error("Failed to start contest");
+    },
+
+    endContest: async (contestId: string) => {
+      const response = await fetch(
+        `${API_URL}/admin/contests/${contestId}/end`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+          },
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to end contest");
+    },
+
+    awardBonusPoints: async (walletAddress: string, amount: number) => {
+      const response = await fetch(`${API_URL}/admin/bonus-points`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+        },
+        credentials: "include",
+        body: JSON.stringify({ walletAddress, amount }),
+      });
+      if (!response.ok) throw new Error("Failed to award bonus points");
     },
 
     deleteContest: async (contestId: string): Promise<void> => {
-      const response = await fetch(`${API_URL}/contests/${contestId}`, {
+      const response = await fetch(`${API_URL}/admin/contests/${contestId}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+        },
+        credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to delete contest");
     },
@@ -339,25 +363,22 @@ export const ddApi = {
       walletAddress: string,
       amount: number
     ): Promise<void> => {
-      try {
-        const response = await fetch(
-          `${API_URL}/users/${walletAddress}/balance`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ amount }),
-            credentials: "include",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to adjust user balance");
+      const response = await fetch(
+        `${API_URL}/admin/users/${walletAddress}/balance`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+          },
+          credentials: "include",
+          body: JSON.stringify({ amount }),
         }
-      } catch (error) {
-        console.error("Failed to adjust user balance:", error);
-        throw error;
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || "Failed to adjust user balance");
       }
     },
   },
@@ -367,11 +388,10 @@ export const ddApi = {
     getActive: async (): Promise<Contest[]> => {
       const user = useStore.getState().user;
 
-      const response = await fetch(`${API_URL}/contests`, {
+      const response = await fetch(`${API_URL}/contests/active`, {
         headers: {
           "Content-Type": "application/json",
           "X-Wallet-Address": user?.wallet_address || "",
-          "Cache-Control": "no-cache",
         },
         credentials: "include",
       });
@@ -392,11 +412,10 @@ export const ddApi = {
       const user = useStore.getState().user;
 
       try {
-        const response = await fetch(`${API_URL}/contests`, {
+        const response = await fetch(`${API_URL}/contests/all`, {
           headers: {
             "Content-Type": "application/json",
             "X-Wallet-Address": user?.wallet_address || "",
-            "Cache-Control": "no-cache",
           },
           credentials: "include",
         });
@@ -693,7 +712,7 @@ export const ddApi = {
       console.log("API Service - Contest data before send:", contestData);
 
       try {
-        const response = await fetch(`${API_URL}/contests`, {
+        const response = await fetch(`${API_URL}/admin/contests`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -733,6 +752,63 @@ export const ddApi = {
         throw error;
       }
     },
+
+    getPortfolio: async (contestId: string, wallet: string) => {
+      const response = await fetch(
+        `${API_URL}/contests/${contestId}/portfolio/${wallet}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
+          },
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to fetch portfolio");
+      return response.json();
+    },
+
+    // Balance endpoints
+    balance: {
+      adjust: async (walletAddress: string, amount: number): Promise<void> => {
+        try {
+          const response = await fetch(
+            `${API_URL}/admin/users/${walletAddress}/balance`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ amount }),
+              credentials: "include",
+            }
+          );
+          if (!response.ok) throw new Error("Failed to adjust balance");
+        } catch (error) {
+          console.error("Failed to adjust balance:", error);
+          throw error;
+        }
+      },
+
+      reset: async (walletAddress: string): Promise<void> => {
+        try {
+          const response = await fetch(
+            `${API_URL}/admin/users/${walletAddress}/reset-balance`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            }
+          );
+          if (!response.ok) throw new Error("Failed to reset balance");
+        } catch (error) {
+          console.error("Failed to reset balance:", error);
+          throw error;
+        }
+      },
+    },
   },
 
   // Portfolio endpoints
@@ -745,7 +821,7 @@ export const ddApi = {
       }
 
       const response = await fetch(
-        `${API_URL}/contests/${contestId}/portfolio/${user.wallet_address}`,
+        `${API_URL}/admin/contests/${contestId}/portfolio/${user.wallet_address}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -774,34 +850,35 @@ export const ddApi = {
 
   // Balance endpoints
   balance: {
-    get: async (walletAddress: string): Promise<{ balance: string }> => {
+    get: async (
+      walletAddress: string
+    ): Promise<{
+      balance: string;
+      exact_usdc: string;
+      formatted_balance: string;
+      decimals: number;
+    }> => {
       console.log("Fetching balance for wallet:", walletAddress);
       try {
-        const url = `${API_URL}/users/${walletAddress}/balance`;
-        console.log("Balance fetch URL:", url);
-
-        const response = await fetch(url);
-        console.log("Balance response status:", response.status);
+        const response = await fetch(
+          `${API_URL}/admin/users/${walletAddress}/balance`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Wallet-Address":
+                useStore.getState().user?.wallet_address || "",
+            },
+            credentials: "include",
+          }
+        );
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Balance fetch failed:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorText,
-          });
-          throw new Error("Failed to fetch user balance");
+          throw new Error("Failed to fetch balance");
         }
 
-        const data = await response.json();
-        console.log("Balance fetch successful:", data);
-        return data;
+        return response.json();
       } catch (error) {
-        console.error("Failed to fetch user balance:", {
-          error,
-          walletAddress,
-          timestamp: new Date().toISOString(),
-        });
+        console.error("Failed to fetch balance:", error);
         throw error;
       }
     },
