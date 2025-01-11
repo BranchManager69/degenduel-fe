@@ -1,3 +1,4 @@
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import React, { useEffect, useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
@@ -41,6 +42,8 @@ export const ContestDetails: React.FC = () => {
   const [contest, setContest] = useState<Contest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { account } = useWallet();
+  const [isParticipating, setIsParticipating] = useState<boolean>(false);
 
   const fetchContest = async () => {
     if (!id) return;
@@ -90,6 +93,17 @@ export const ContestDetails: React.FC = () => {
         "Sanitized contest participants:",
         sanitizedContest.participants
       );
+
+      // Check if current user is already participating
+      if (account?.address && Array.isArray(data.contest_participants)) {
+        const userIsParticipating = data.contest_participants.some(
+          (p: ContestParticipant) =>
+            (p.wallet_address || p.address)?.toLowerCase() ===
+            account.address.toLowerCase()
+        );
+        setIsParticipating(userIsParticipating);
+      }
+
       setContest(sanitizedContest);
     } catch (err) {
       console.error("Error fetching contest:", err);
@@ -101,7 +115,7 @@ export const ContestDetails: React.FC = () => {
 
   useEffect(() => {
     fetchContest();
-  }, [id]);
+  }, [id, account?.address]);
 
   const handleCountdownComplete = () => {
     if (!contest) return;
@@ -116,9 +130,19 @@ export const ContestDetails: React.FC = () => {
   };
 
   const handleJoinContest = () => {
-    if (contest) {
-      navigate(`/contests/${contest.id}/select-tokens`);
+    if (!contest) return;
+
+    if (isParticipating) {
+      setError("You are already entered in this contest.");
+      return;
     }
+
+    if (!account) {
+      setError("Please connect your wallet to enter the contest.");
+      return;
+    }
+
+    navigate(`/contests/${contest.id}/select-tokens`);
   };
 
   if (loading) return <StatsSkeleton />;
@@ -318,21 +342,28 @@ export const ContestDetails: React.FC = () => {
 
       {/* Action Button */}
       <div className="flex flex-col items-center gap-4">
-        {contest.is_participating && (
+        {isParticipating && (
           <div className="flex items-center gap-2 text-brand-400 mb-2">
             <FaCheckCircle className="w-5 h-5" />
-            <span className="font-medium">You're entered in this contest</span>
+            <span className="font-medium">
+              You're entered in this contest
+              {contest.status === "pending" &&
+                " - You can update your tokens before the contest begins"}
+            </span>
           </div>
         )}
+        {error && <div className="text-center text-red-500 mb-2">{error}</div>}
         <Button
           size="lg"
           variant="gradient"
           onClick={handleJoinContest}
           className={`relative group overflow-hidden ${
-            contest.is_participating ? "opacity-50 cursor-not-allowed" : ""
+            isParticipating && contest.status !== "pending"
+              ? "opacity-50 cursor-not-allowed"
+              : ""
           }`}
           disabled={
-            contest.is_participating ||
+            (isParticipating && contest.status !== "pending") ||
             Number(contest.participant_count) >=
               contest.settings.max_participants
           }
@@ -341,8 +372,10 @@ export const ContestDetails: React.FC = () => {
             <div className="w-64 h-32 bg-white/10 rotate-45 transform translate-x-32 group-hover:translate-x-48 transition-transform duration-500" />
           </div>
           <span className="relative flex items-center justify-center font-medium">
-            {contest.is_participating
-              ? "Already Joined"
+            {isParticipating
+              ? contest.status === "pending"
+                ? "Update Tokens"
+                : "Already Joined"
               : Number(contest.participant_count) >=
                 contest.settings.max_participants
               ? "Contest Full"

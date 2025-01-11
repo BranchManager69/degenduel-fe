@@ -1,5 +1,6 @@
 // src/components/LogViewer/index.tsx
-import React, { useEffect, useRef, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as config from "../../config/config";
 
 declare global {
@@ -26,6 +27,11 @@ interface WinstonLogEntry {
   [key: string]: any;
 }
 
+interface RefreshConfig {
+  isAutoRefresh: boolean;
+  intervalSeconds: number;
+}
+
 const LOG_LEVELS: LogLevel[] = ["error", "warning", "info", "debug"];
 
 const LOG_FILES = [
@@ -33,6 +39,13 @@ const LOG_FILES = [
   "/home/branchmanager/websites/degenduel/logs/api-out-0.log",
   "/home/branchmanager/websites/degenduel/error.log",
   "/home/branchmanager/websites/degenduel/combined.log",
+] as const;
+
+const REFRESH_INTERVALS = [
+  { label: "5s", value: 5 },
+  { label: "10s", value: 10 },
+  { label: "30s", value: 30 },
+  { label: "1m", value: 60 },
 ] as const;
 
 const LogViewer: React.FC = () => {
@@ -45,6 +58,11 @@ const LogViewer: React.FC = () => {
   );
   const [groupByTime, setGroupByTime] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [refreshConfig, setRefreshConfig] = useState<RefreshConfig>({
+    isAutoRefresh: false,
+    intervalSeconds: 10,
+  });
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const detectLogLevel = (line: string): LogLevel => {
     const lowercase = line.toLowerCase();
@@ -127,6 +145,17 @@ const LogViewer: React.FC = () => {
     }
   }, [logContent, autoScroll]);
 
+  useEffect(() => {
+    if (!refreshConfig.isAutoRefresh) return;
+
+    const interval = setInterval(() => {
+      fetchLogs(selectedFile);
+      setLastRefresh(new Date());
+    }, refreshConfig.intervalSeconds * 1000);
+
+    return () => clearInterval(interval);
+  }, [refreshConfig, selectedFile]);
+
   const getLevelColor = (level: LogLevel): string => {
     switch (level) {
       case "error":
@@ -168,6 +197,33 @@ const LogViewer: React.FC = () => {
         }, {})
       )
     : null;
+
+  const handleRefresh = useCallback(() => {
+    fetchLogs(selectedFile);
+    setLastRefresh(new Date());
+  }, [selectedFile]);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+    }
+  };
+
+  const handleIntervalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRefreshConfig((prev: RefreshConfig) => ({
+      ...prev,
+      intervalSeconds: Number(e.target.value),
+    }));
+  };
+
+  const toggleAutoRefresh = () => {
+    setRefreshConfig((prev: RefreshConfig) => ({
+      ...prev,
+      isAutoRefresh: !prev.isAutoRefresh,
+    }));
+  };
 
   return (
     <div>
@@ -214,6 +270,47 @@ const LogViewer: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* Refresh Controls */}
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-2 rounded-md bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700"
+            title={`Last refreshed: ${lastRefresh.toLocaleTimeString()}`}
+          >
+            Refresh
+          </button>
+
+          <select
+            value={refreshConfig.intervalSeconds}
+            onChange={handleIntervalChange}
+            className="px-2 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-400"
+          >
+            {REFRESH_INTERVALS.map((interval) => (
+              <option key={interval.value} value={interval.value}>
+                {interval.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={toggleAutoRefresh}
+            className={`px-3 py-2 rounded-md ${
+              refreshConfig.isAutoRefresh
+                ? "bg-indigo-900 text-indigo-100"
+                : "bg-gray-800 text-gray-400"
+            } border border-gray-700`}
+          >
+            Auto-refresh
+          </button>
+
+          {filter && (
+            <button
+              onClick={() => setFilter("")}
+              className="px-3 py-2 rounded-md bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700"
+            >
+              Clear Filter
+            </button>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -288,17 +385,44 @@ const LogViewer: React.FC = () => {
                 </div>
               ))
             : filteredLogs.map((log) => (
-                <div key={log.id} className="font-mono text-sm">
-                  <span className="text-gray-500">
-                    {new Date(log.timestamp).toLocaleString()}
+                <div
+                  key={log.id}
+                  className="font-mono text-sm group hover:bg-gray-700/30 p-1 rounded"
+                >
+                  <span
+                    className="text-gray-500"
+                    title={new Date(log.timestamp).toLocaleString()}
+                  >
+                    {formatDistanceToNow(new Date(log.timestamp), {
+                      addSuffix: true,
+                    })}
                   </span>{" "}
                   <span className={getLevelColor(log.level)}>
                     [{log.level.toUpperCase()}]
                   </span>{" "}
                   <span className="text-gray-100">{log.content}</span>
+                  <button
+                    onClick={() =>
+                      copyToClipboard(
+                        `${new Date(
+                          log.timestamp
+                        ).toLocaleString()} [${log.level.toUpperCase()}] ${
+                          log.content
+                        }`
+                      )
+                    }
+                    className="invisible group-hover:visible ml-2 text-gray-400 hover:text-gray-200"
+                    title="Copy log entry"
+                  >
+                    📋
+                  </button>
                 </div>
               ))}
         </div>
+      </div>
+
+      <div className="mt-2 text-gray-400 text-sm">
+        Showing {filteredLogs.length} of {logContent.length} logs
       </div>
 
       {filteredLogs.length === 0 && (
