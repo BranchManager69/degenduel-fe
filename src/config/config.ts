@@ -11,3 +11,6 @@ export const API_URL =
   import.meta.env.VITE_NODE_ENV === "production"
     ? `${PROD_URL}/api`
     : `http://localhost:${PORT}/api`;
+
+/* Superadmin Secret */
+export const SUPERADMIN_SECRET = import.meta.env.VITE_SUPERADMIN_SECRET;

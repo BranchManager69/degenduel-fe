@@ -1,13 +1,11 @@
 // src/components/LogViewer/index.tsx
 import React, { useEffect, useRef, useState } from "react";
+import * as config from "../../config/config";
 
 declare global {
   interface Window {
-    fs: {
-      readFile(
-        path: string,
-        options?: { encoding?: string }
-      ): Promise<string | Uint8Array>;
+    electron: {
+      readLogFile(path: string): Promise<string>;
     };
   }
 }
@@ -80,16 +78,33 @@ const LogViewer: React.FC = () => {
 
   const fetchLogs = async (filename: string) => {
     try {
-      const response = await window.fs.readFile(filename, { encoding: "utf8" });
-      // If response is Uint8Array, convert to string
-      const textContent =
-        typeof response === "string"
-          ? response
-          : new TextDecoder().decode(response);
+      // Get the superadmin token from wherever I store it
+      const superadminToken = config.SUPERADMIN_SECRET; ////localStorage.getItem("superadminToken");
 
-      const lines = textContent
+      // Handle case where token doesn't exist
+      if (!superadminToken) {
+        throw new Error("No superadmin token found");
+      }
+
+      const headers = new Headers({
+        "x-superadmin-token": superadminToken,
+      });
+
+      const response = await fetch(
+        `https://degenduel.me/api/superadmin/logs?file=${encodeURIComponent(
+          filename
+        )}`,
+        { headers }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const { content } = (await response.json()) as { content: string };
+      const lines = content
         .split("\n")
-        .filter((line) => line.trim())
+        .filter((line: string) => line.trim())
         .slice(-1000);
 
       const parsedLines = lines.map(parseLogEntry);
