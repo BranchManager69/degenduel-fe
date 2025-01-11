@@ -110,7 +110,7 @@ export const ContestBrowser: React.FC = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-100">
-          Available Contests
+          Find Contests
         </h1>
         <CreateContestButton />
       </div>
@@ -160,15 +160,15 @@ export const ContestBrowser: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Status Filter */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Status</label>
+            <label className="text-sm text-gray-400">Contest Status</label>
             <select
               className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
               value={activeStatusFilter}
               onChange={(e) => setActiveStatusFilter(e.target.value)}
             >
-              <option value="all">All Status</option>
-              <option value="live">Live</option>
-              <option value="upcoming">Upcoming</option>
+              <option value="all">All Contests</option>
+              <option value="live">Live Now (Spectate)</option>
+              <option value="upcoming">Pre-Registration</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
@@ -176,7 +176,7 @@ export const ContestBrowser: React.FC = () => {
 
           {/* Difficulty Filter */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400">Difficulty</label>
+            <label className="text-sm text-gray-400">Risk Level*</label>
             <select
               className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
               value={activeDifficultyFilter}
@@ -186,13 +186,25 @@ export const ContestBrowser: React.FC = () => {
                 )
               }
             >
-              <option value="">All Difficulties</option>
-              <option value="guppy">Guppy</option>
-              <option value="tadpole">Tadpole</option>
-              <option value="squid">Squid</option>
-              <option value="dolphin">Dolphin</option>
-              <option value="shark">Shark</option>
-              <option value="whale">Whale</option>
+              <option value="">All Risk Levels</option>
+              <option value="guppy">
+                Guppy (Most winners; lowest individual payouts)
+              </option>
+              <option value="tadpole">
+                Tadpole (More winners; lower payouts)
+              </option>
+              <option value="squid">
+                Squid (Many winners; below-average payouts)
+              </option>
+              <option value="dolphin">
+                Dolphin (Few winners; above-average payouts)
+              </option>
+              <option value="shark">
+                Shark (Fewer winners; higher payouts)
+              </option>
+              <option value="whale">
+                Whale (Fewest winner(s); highest individual payout(s))
+              </option>
             </select>
           </div>
         </div>

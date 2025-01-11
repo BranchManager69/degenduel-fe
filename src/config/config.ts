@@ -1,9 +1,13 @@
-export const NODE_ENV = "production"; // "production" || "development";
+// src/config/config.ts
+/* Environment */
+export const NODE_ENV = import.meta.env.VITE_NODE_ENV; // "production" || "development";
 
-export const PORT = 3004;
-export const PROD_URL = "https://degenduel.me";
+/* Server */
+export const PORT = import.meta.env.VITE_PORT || 3003;
+export const PROD_URL = import.meta.env.VITE_PROD_URL || "https://degenduel.me";
 
+/* API_URL */
 export const API_URL =
-  NODE_ENV === "production"
+  import.meta.env.VITE_NODE_ENV === "production"
     ? `${PROD_URL}/api`
     : `http://localhost:${PORT}/api`;

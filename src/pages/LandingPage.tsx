@@ -1,6 +1,6 @@
 // src/pages/LandingPage.tsx
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import { ContestSection } from "../components/landing/ContestSection";
 import { Features } from "../components/landing/Features";
 import { Button } from "../components/ui/Button";
@@ -33,14 +33,14 @@ export const LandingPage: React.FC = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        console.log("Initiating contest fetch...");
+        //console.log("Retrieving contests...");
         const response = await ddApi.contests.getAll();
-        console.log("Raw response:", response);
-        console.log(
-          "contests type:",
-          Array.isArray(response) ? "Array" : typeof response
-        );
-        console.log("contests full response:", response);
+        //console.log("Raw response:", response);
+        //console.log(
+        //  "contests type:",
+        //  Array.isArray(response) ? "Array" : typeof response
+        //);
+        //console.log("contests full response:", response);
 
         // Type guard with explicit type checking
         const isContestResponse = (
@@ -63,13 +63,13 @@ export const LandingPage: React.FC = () => {
           contestsArray = (response as ContestResponse).contests;
         }
 
-        console.log("contestsArray:", contestsArray);
+        //console.log("contestsArray:", contestsArray);
 
         // Use the predefined filter functions on the guaranteed array
         const active = contestsArray.filter(isContestLive);
-        console.log("active", active);
+        //console.log("active", active);
         const open = contestsArray.filter(isPendingContest);
-        console.log("open", open);
+        //console.log("open", open);
 
         setActiveContests(active);
         setOpenContests(open);
@@ -115,14 +115,14 @@ export const LandingPage: React.FC = () => {
           </p>
           <div className="mt-8 max-w-md mx-auto sm:flex sm:justify-center">
             <div className="rounded-md shadow">
-              <Link to="/contests">
+              <RouterLink to="/contests">
                 <Button size="lg" className="bg-brand-600 hover:bg-brand-700">
                   Browse Contests
                 </Button>
-              </Link>
+              </RouterLink>
             </div>
             <div className="mt-3 sm:mt-0 sm:ml-3">
-              <Link to="/how-it-works">
+              <RouterLink to="/how-it-works">
                 <Button
                   variant="outline"
                   size="lg"
@@ -130,7 +130,7 @@ export const LandingPage: React.FC = () => {
                 >
                   How It Works
                 </Button>
-              </Link>
+              </RouterLink>
             </div>
           </div>
         </div>
@@ -142,13 +142,13 @@ export const LandingPage: React.FC = () => {
         ) : (
           <>
             <ContestSection
-              title="Live Contests"
+              title="Spectate Live Matches"
               type="active"
               contests={activeContests}
               loading={loading}
             />
             <ContestSection
-              title="Upcoming Contests"
+              title="Joinable Matches"
               type="pending"
               contests={openContests}
               loading={loading}

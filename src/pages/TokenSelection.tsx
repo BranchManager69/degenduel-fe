@@ -13,6 +13,7 @@ import { Contest, PortfolioResponse, Token, TokensResponse } from "../types";
 // New interface for portfolio data
 interface PortfolioToken {
   symbol: string;
+  contractAddress: string;
   weight: number;
 }
 
@@ -42,14 +43,14 @@ export const TokenSelection: React.FC = () => {
   useEffect(() => {
     const fetchTokens = async () => {
       try {
-        console.log("Fetching tokens A...");
+        ////console.log("Fetching tokens A...");
         setTokenListLoading(true);
-        console.log("Fetching tokens B...");
+        ////console.log("Fetching tokens B...");
         const response = await ddApi.tokens.getAll();
         const tokenData = Array.isArray(response)
           ? response
           : (response as TokensResponse).data;
-        console.log("Raw token data:", tokenData);
+        ////console.log("Raw token data:", tokenData);
 
         // Enhanced validation and transformation
         const validatedTokens = tokenData.map((token: Token) => ({
@@ -131,17 +132,16 @@ export const TokenSelection: React.FC = () => {
         setLoadingEntryStatus(true);
         const portfolioData = await ddApi.portfolio.get(Number(contestId));
 
-        // Explicitly type the portfolio data and add type checking
+        // Create map using contract addresses instead of symbols
         const existingPortfolio = new Map<string, number>(
           (portfolioData.tokens as PortfolioToken[])?.map(
-            (token: PortfolioToken) => [token.symbol, token.weight]
+            (token: PortfolioToken) => [token.contractAddress, token.weight]
           ) || []
         );
 
         setSelectedTokens(existingPortfolio);
       } catch (error) {
         console.error("Failed to fetch existing portfolio:", error);
-        // Don't show error toast as this might be a new entry
       } finally {
         setLoadingEntryStatus(false);
       }
@@ -158,14 +158,45 @@ export const TokenSelection: React.FC = () => {
     });
   }, [contestId, contest]);
 
-  const handleTokenSelect = (symbol: string, weight: number) => {
+  const handleTokenSelect = (contractAddress: string, weight: number) => {
+    console.log("handleTokenSelect called with:", { contractAddress, weight });
+
+    // Verify we're getting a contract address, not a symbol
+    if (!contractAddress.includes("pump") && !contractAddress.includes("111")) {
+      console.warn(
+        "Received possible symbol instead of contract address:",
+        contractAddress
+      );
+      // Try to find the token by symbol and use its contract address
+      const token = tokens.find((t) => t.symbol === contractAddress);
+      if (token) {
+        contractAddress = token.contractAddress;
+        console.log(
+          "Found matching token, using contract address:",
+          contractAddress
+        );
+      }
+    }
+
+    const token = tokens.find((t) => t.contractAddress === contractAddress);
+    console.log("Token being selected:", token);
+
     const newSelectedTokens = new Map(selectedTokens);
 
     if (weight === 0) {
-      newSelectedTokens.delete(symbol);
+      newSelectedTokens.delete(contractAddress);
     } else {
-      newSelectedTokens.set(symbol, weight);
+      newSelectedTokens.set(contractAddress, weight);
     }
+
+    console.log(
+      "Updated selectedTokens:",
+      Array.from(newSelectedTokens.entries()).map(([ca, w]) => ({
+        contractAddress: ca,
+        symbol: tokens.find((t) => t.contractAddress === ca)?.symbol,
+        weight: w,
+      }))
+    );
 
     setSelectedTokens(newSelectedTokens);
   };
@@ -177,15 +208,81 @@ export const TokenSelection: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      // Transform the portfolio array into the expected format
+      // First, verify our tokens array is populated
+      console.log("Current tokens array:", {
+        length: tokens.length,
+        sample: tokens.slice(0, 3).map((t) => ({
+          symbol: t.symbol,
+          contractAddress: t.contractAddress,
+        })),
+      });
+
+      // Log the selected tokens Map
+      console.log("Raw selectedTokens Map:", {
+        size: selectedTokens.size,
+        entries: Array.from(selectedTokens.entries()),
+      });
+
+      // Check each selected token individually
+      Array.from(selectedTokens.entries()).forEach(([ca, weight]) => {
+        const found = tokens.find((t) => t.contractAddress === ca);
+        console.log("Checking token:", {
+          contractAddress: ca,
+          weight,
+          foundInTokens: !!found,
+          matchDetails: found
+            ? {
+                symbol: found.symbol,
+                exactMatch: found.contractAddress === ca,
+                lowerCaseMatch:
+                  found.contractAddress.toLowerCase() === ca.toLowerCase(),
+              }
+            : null,
+        });
+      });
+
       const portfolioData: PortfolioResponse = {
         tokens: Array.from(selectedTokens.entries()).map(
-          ([symbol, weight]) => ({
-            symbol,
-            weight,
-          })
+          ([contractAddress, weight]) => {
+            const token =
+              tokens.find(
+                (t) => t.contractAddress === contractAddress // Try exact match first
+              ) ||
+              tokens.find(
+                (t) =>
+                  t.contractAddress.toLowerCase() ===
+                  contractAddress.toLowerCase()
+              );
+
+            if (!token) {
+              console.error("Token lookup failed:", {
+                searchingFor: contractAddress,
+                availableTokens: tokens.map((t) => ({
+                  contractAddress: t.contractAddress,
+                  symbol: t.symbol,
+                  matches: {
+                    exact: t.contractAddress === contractAddress,
+                    lowercase:
+                      t.contractAddress.toLowerCase() ===
+                      contractAddress.toLowerCase(),
+                  },
+                })),
+              });
+              throw new Error(
+                `Token not found: ${contractAddress} (please try refreshing)`
+              );
+            }
+
+            return {
+              symbol: token.symbol,
+              contractAddress: token.contractAddress,
+              weight,
+            };
+          }
         ),
       };
+
+      console.log("Final portfolio data:", portfolioData);
 
       await ddApi.contests.enterContest(contestId || "", portfolioData);
 

@@ -150,6 +150,14 @@ export interface Transaction {
   processed_at?: string;
 }
 
+export interface Activity {
+  id: string;
+  type: "contest_join" | "contest_complete" | "user_register";
+  timestamp: string;
+  details: string;
+  created_at: Date;
+}
+
 // Contest Types
 export type ContestStatus = "pending" | "active" | "completed" | "cancelled";
 
@@ -216,6 +224,7 @@ export interface ContestPortfolio {  // Used for database representation of cont
 export interface PortfolioResponse {
   tokens: Array<{
     symbol: string;
+    contractAddress: string;
     weight: number;
   }>;
 }

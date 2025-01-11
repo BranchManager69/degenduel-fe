@@ -1,3 +1,4 @@
+// src/pages/AdminDashboard.tsx
 import React, { useEffect, useState } from "react";
 import { ContestList } from "../components/admin/ContestList";
 import { CreateContestButton } from "../components/admin/CreateContestButton";
@@ -5,6 +6,7 @@ import { EditContestModal } from "../components/admin/EditContestModal";
 import { PlatformStats } from "../components/admin/PlatformStats";
 import { RecentActivity } from "../components/admin/RecentActivity";
 import { UserBalanceManagement } from "../components/admin/UserBalanceManagement";
+import LogViewer from "../components/LogViewer";
 import { ddApi } from "../services/dd-api";
 import type {
   Contest,
@@ -19,6 +21,7 @@ export const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [contests, setContests] = useState<Contest[]>([]);
   const [editingContest, setEditingContest] = useState<Contest | null>(null);
+  const [showLogs, setShowLogs] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,7 +43,7 @@ export const AdminDashboard: React.FC = () => {
             created_at: new Date(activity.timestamp),
           }))
         );
-        setUsers(Array.isArray(usersResponse) ? usersResponse : []);
+        setUsers(usersResponse || []);
         setContests(contestsData);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -77,8 +80,28 @@ export const AdminDashboard: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-100">Admin Dashboard</h1>
-        <CreateContestButton />
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowLogs(!showLogs)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {showLogs ? "Hide Logs" : "Show Logs"}
+          </button>
+          <CreateContestButton />
+        </div>
       </div>
+
+      {/* Log Viewer Section */}
+      {showLogs && (
+        <div className="mb-8 bg-gray-800 rounded-lg shadow-lg">
+          <div className="p-4">
+            <h2 className="text-xl font-bold text-gray-100 mb-4">
+              System Logs
+            </h2>
+            <LogViewer />
+          </div>
+        </div>
+      )}
 
       {/* Platform Stats */}
       {!loading && stats && (

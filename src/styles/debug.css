@@ -1,0 +1,17 @@
+/* Debug layout bounds */
+.debug-layout * {
+  outline: 1px solid rgba(255, 0, 0, 0.2) !important;
+}
+
+/* Debug animation speed */
+:root {
+  --debug-animation-speed: 1;
+}
+
+.debug-layout [class*="animate-"] {
+  animation-duration: calc(var(--debug-animation-speed) * 1s) !important;
+}
+
+.debug-layout [style*="transition"] {
+  transition-duration: calc(var(--debug-animation-speed) * 300ms) !important;
+}

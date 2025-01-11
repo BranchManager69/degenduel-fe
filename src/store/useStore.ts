@@ -10,6 +10,11 @@ interface DebugConfig {
   forceUserRejection?: boolean;
   forceAPIError?: boolean;
   forceUnauthorized?: boolean;
+  simulateHighLatency?: boolean;
+  forceOffline?: boolean;
+  showLayoutBounds?: boolean;
+  slowAnimations?: boolean;
+  forceLoadingStates?: boolean;
 }
 
 type StoreState = {

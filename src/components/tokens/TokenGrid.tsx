@@ -14,7 +14,7 @@ import { TokenSparkline } from "./TokenSparkline";
 interface TokenGridProps {
   tokens: Token[];
   selectedTokens: Map<string, number>;
-  onTokenSelect: (symbol: string, weight: number) => void;
+  onTokenSelect: (contractAddress: string, weight: number) => void;
   marketCapFilter: string;
 }
 
@@ -56,31 +56,31 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
     }
   });
 
-  const handleCardClick = (symbol: string) => {
-    if (selectedTokens.has(symbol)) {
-      onTokenSelect(symbol, 0); // Remove token
+  const handleCardClick = (token: Token) => {
+    if (selectedTokens.has(token.contractAddress)) {
+      onTokenSelect(token.contractAddress, 0); // Remove token
     } else {
-      onTokenSelect(symbol, 20); // Add token with default weight
+      onTokenSelect(token.contractAddress, 20); // Add token with default weight
     }
   };
 
   const handleWeightChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    symbol: string
+    token: Token
   ) => {
     e.stopPropagation();
-    onTokenSelect(symbol, Number(e.target.value));
+    onTokenSelect(token.contractAddress, Number(e.target.value));
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {filteredTokens.map((token) => (
         <Card
-          key={token.symbol}
-          onClick={() => handleCardClick(token.symbol)}
+          key={token.contractAddress}
+          onClick={() => handleCardClick(token)}
           className={`cursor-pointer transition-all relative overflow-hidden backdrop-blur-sm border-dark-300 
             ${
-              selectedTokens.has(token.symbol)
+              selectedTokens.has(token.contractAddress)
                 ? "ring-2 ring-brand-500 bg-dark-200/80"
                 : "hover:bg-dark-300/80 bg-dark-200/50"
             }
@@ -236,7 +236,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
               {/* Enhanced Sword Slider */}
               <div
                 className={`transform transition-all duration-200 ease-out overflow-hidden ${
-                  selectedTokens.has(token.symbol)
+                  selectedTokens.has(token.contractAddress)
                     ? "h-[72px] opacity-100 mt-4 scale-100"
                     : "h-0 opacity-0 mt-0 scale-95"
                 }`}
@@ -251,7 +251,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       Portfolio Weight
                     </label>
                     <span className="text-sm font-bold text-brand-400 tabular-nums">
-                      {selectedTokens.get(token.symbol)}%
+                      {selectedTokens.get(token.contractAddress)}%
                     </span>
                   </div>
                   <div className="relative">
@@ -259,8 +259,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       type="range"
                       min="0"
                       max="100"
-                      value={selectedTokens.get(token.symbol) || 0}
-                      onChange={(e) => handleWeightChange(e, token.symbol)}
+                      value={selectedTokens.get(token.contractAddress) || 0}
+                      onChange={(e) => handleWeightChange(e, token)}
                       className="w-full h-1.5 bg-gradient-to-r from-dark-300 via-brand-500/20 to-dark-300 rounded-full appearance-none cursor-pointer
                         focus:outline-none focus:ring-2 focus:ring-brand-500/50
                         [&::-webkit-slider-thumb]:appearance-none
@@ -291,7 +291,9 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                     <div
                       className="absolute top-[7px] left-0 h-1.5 bg-gradient-to-r from-brand-500 to-brand-400 rounded-full pointer-events-none shadow-[0_0_8px_rgba(var(--brand-500-rgb),0.5)]"
                       style={{
-                        width: `${selectedTokens.get(token.symbol) || 0}%`,
+                        width: `${
+                          selectedTokens.get(token.contractAddress) || 0
+                        }%`,
                       }}
                     />
                   </div>

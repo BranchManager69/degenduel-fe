@@ -88,13 +88,20 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
   };
 
   // Add this right after the component declaration to see what we're getting
+  console.log("Raw props in UserBalanceManagement:", {
+    users,
+    usersLength: users?.length,
+    firstUser: users?.[0],
+  });
+
+  // Let's modify the dropdown to make sure we're editing the right thing
   console.log("UserBalanceManagement received users:", users);
   console.log("Sorted users:", sortedUsers);
 
   return (
     <div className="bg-dark-200 rounded-lg p-6">
       <h2 className="text-xl font-bold text-gray-100 mb-4">
-        Adjust User Balance
+        Manually Adjust User Points
       </h2>
 
       <form
@@ -103,7 +110,7 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
       >
         <div>
           <label className="block text-sm text-gray-400 mb-1">
-            Select User
+            DegenDuel Username
           </label>
           <select
             value={selectedUser}
@@ -111,18 +118,14 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
             className="w-full bg-dark-300 border border-dark-400 rounded px-3 py-2 text-gray-100"
             required
           >
-            <option value="">
-              Select a user... ({users.length} users available)
-            </option>
-            {users.map((user) => {
-              console.log("Rendering user:", user);
-              return (
-                <option key={user.wallet_address} value={user.wallet_address}>
-                  {user.nickname} ({user.wallet_address.slice(0, 4)}...
-                  {user.wallet_address.slice(-4)})
-                </option>
-              );
-            })}
+            <option value="">Select a user ({users?.length || 0} total)</option>
+            {users?.map((user) => (
+              <option key={user.wallet_address} value={user.wallet_address}>
+                {user.nickname || "NoNameDegen"} (
+                {user.wallet_address.slice(0, 4)}...
+                {user.wallet_address.slice(-4)})
+              </option>
+            ))}
           </select>
         </div>
 
@@ -135,14 +138,14 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
 
         <div>
           <label className="block text-sm text-gray-400 mb-1">
-            ± Balance Adjustment
+            ± Points Adjustment
           </label>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="w-full bg-dark-300 border border-dark-400 rounded px-3 py-2 text-gray-100"
-            placeholder="Enter amount..."
+            placeholder="Enter amount (negative to deduct)"
             required
           />
         </div>
@@ -165,7 +168,7 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
           disabled={isSubmitting}
           className="w-full"
         >
-          {isSubmitting ? "Processing..." : "Adjust Balance"}
+          {isSubmitting ? "Processing..." : "Adjust Points"}
         </Button>
       </form>
     </div>

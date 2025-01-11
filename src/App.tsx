@@ -18,6 +18,7 @@ import { Profile } from "./pages/Profile";
 import { Results } from "./pages/Results";
 import { TestPage } from "./pages/TestPage";
 import { TokenSelection } from "./pages/TokenSelection";
+import "./styles/debug.css";
 
 export const App: React.FC = () => {
   return (
