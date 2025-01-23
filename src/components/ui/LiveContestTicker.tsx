@@ -1,6 +1,6 @@
-import React from 'react';
-import type { Contest } from '../../types';
-import { isContestLive } from '../../lib/utils';
+import React from "react";
+import { isContestLive } from "../../lib/utils";
+import type { Contest } from "../../types";
 
 interface Props {
   contests: Contest[];
@@ -19,7 +19,12 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   }
 
   if (liveContests.length === 0) {
-    return null;
+    return (
+      <div className="bg-dark-200 p-2 overflow-hidden">
+        No live contests. Check back later.
+      </div>
+    );
+    ////return null;
   }
 
   return (
@@ -30,9 +35,13 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
             <span className="text-brand-400">LIVE:</span>
             <span className="font-medium">{contest.name}</span>
             <span className="text-gray-400">•</span>
-            <span className="text-gray-300">{contest.participant_count}/{contest.settings.max_participants} Players</span>
+            <span className="text-gray-300">
+              {contest.participant_count}/{contest.max_participants} Duelers
+            </span>
             <span className="text-gray-400">•</span>
-            <span className="text-brand-300">{contest.prize_pool} SOL Prize Pool</span>
+            <span className="text-brand-300">
+              Max Prize Pool: {contest.prize_pool} SOL
+            </span>
           </div>
         ))}
       </div>

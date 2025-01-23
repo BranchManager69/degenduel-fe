@@ -162,7 +162,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-400">Participants</span>
             <span className="text-sm font-medium text-gray-200">
-              {contest.participant_count} / {contest.settings.max_participants}
+              {contest.participant_count} / {contest.max_participants}
             </span>
           </div>
           <div className="w-full bg-dark-400 rounded-full h-1.5">
@@ -171,7 +171,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               style={{
                 width: `${
                   (Number(contest.participant_count) /
-                    contest.settings.max_participants) *
+                    contest.max_participants) *
                   100
                 }%`,
               }}

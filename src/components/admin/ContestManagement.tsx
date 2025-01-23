@@ -89,7 +89,7 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                         style={{
                           width: `${
                             (Number(contest.participant_count) /
-                              contest.settings.max_participants) *
+                              contest.max_participants) *
                             100
                           }%`,
                         }}
@@ -97,7 +97,7 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                     </div>
                     <span className="font-medium text-gray-100">
                       {Number(contest.participant_count)}/
-                      {contest.settings.max_participants}
+                      {contest.max_participants}
                     </span>
                   </div>
                 </div>

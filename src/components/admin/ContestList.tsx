@@ -59,8 +59,7 @@ export const ContestList: React.FC<ContestListProps> = ({
                 <div>
                   <span className="text-gray-400">Participants: </span>
                   <span className="text-gray-100">
-                    {contest.participant_count}/
-                    {contest.settings.max_participants}
+                    {contest.participant_count}/{contest.max_participants}
                   </span>
                 </div>
               </div>

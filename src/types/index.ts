@@ -164,8 +164,8 @@ export type ContestStatus = "pending" | "active" | "completed" | "cancelled";
 export interface ContestSettings {
   difficulty: "guppy" | "tadpole" | "squid" | "dolphin" | "shark" | "whale";
   min_trades: number;
-  max_participants: number;
-  min_participants: number;
+  ////max_participants: number;
+  ////min_participants: number;
   token_types: string[];
   rules: string[];
 }
@@ -189,6 +189,8 @@ export interface Contest {
   settings: ContestSettings;
   created_at: string;
   updated_at: string;
+  min_participants: number;
+  max_participants: number;
   is_participating?: boolean;
   participants?: Array<{
     address: string;

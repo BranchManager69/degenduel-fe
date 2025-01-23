@@ -9,6 +9,8 @@ import { MultiSelect } from "../ui/MultiSelect";
 import { Select } from "../ui/Select";
 import { Textarea } from "../ui/Textarea";
 
+const DD_CONTEST_VIG = 0.1; // 10% cut
+
 type ContestDifficulty =
   | "guppy"
   | "tadpole"
@@ -44,7 +46,15 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   const calculateMaxPrizePool = (entryFee: string, maxParticipants: number) => {
     const fee = parseFloat(entryFee) || 0;
-    return Math.floor(fee * maxParticipants * 0.9);
+    return Math.floor(fee * maxParticipants * (1 - DD_CONTEST_VIG));
+  };
+
+  const calculateCurrentPrizePool = (
+    entryFee: string,
+    currentParticipants: number
+  ) => {
+    const fee = parseFloat(entryFee) || 0;
+    return Math.floor(fee * currentParticipants * (1 - DD_CONTEST_VIG));
   };
 
   const generateContestCode = (name: string, attempt = 0) => {
@@ -64,11 +74,11 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   };
 
   const [formData, setFormData] = React.useState({
-    name: "New Contest",
-    description:
-      "One hundred degens. One hundred SOL. One hour of unadulterated PvP for all the glory.",
+    name: `Degen Dustup ${Math.floor(Math.random() * 100)}`,
+    description: `Degen for all the glory.`,
     entry_fee: "0.25", // Default 0.25 SOL
-    prize_pool: "0",
+    prize_pool: "5.00",
+    current_prize_pool: "0.00", // = entry_fee * min_participants
     start_time: getNextHourDateTime(),
     end_time: new Date(
       new Date(getNextHourDateTime()).getTime() + 60 * 60 * 1000
@@ -76,16 +86,19 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       .toISOString()
       .slice(0, 16),
     entry_deadline: getNextHourDateTime(),
-    min_participants: 2,
-    max_participants: 50, // Default 50
-    allowed_buckets: [1, 2, 3, 4, 5],
+    participant_count: 0, // brand new contest
+    min_participants: 2, // Default 2
+    max_participants: 20, // Default 20
+    allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default All Buckets
     settings: {
-      difficulty: "guppy" as ContestDifficulty,
+      difficulty: "shark" as ContestDifficulty,
       min_trades: 1,
-      max_participants: 50,
-      min_participants: 2,
+      ////max_participants: 50,
+      ////min_participants: 2,
       token_types: [],
-      rules: [],
+      rules: [
+        `Democrats are strictly forbidden from playing DegenDuel at all times.`,
+      ],
     } satisfies ContestSettings,
   });
 
@@ -104,48 +117,77 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           description: formData.description,
           contest_code: generateContestCode(formData.name, attempt),
           entry_fee: formData.entry_fee,
+          status: "pending" as const,
           prize_pool: String(
             calculateMaxPrizePool(formData.entry_fee, formData.max_participants)
           ),
-          current_prize_pool: "0",
-          start_time: formData.start_time,
-          end_time: formData.end_time,
-          entry_deadline: formData.entry_deadline,
-          allowed_buckets: formData.allowed_buckets,
-          participant_count: 0,
-          status: "pending" as const,
+          current_prize_pool: String(
+            calculateCurrentPrizePool(
+              formData.entry_fee,
+              formData.min_participants
+            )
+          ),
+          start_time: formData.start_time, // UTC
+          end_time: formData.end_time, // UTC
+          entry_deadline: formData.entry_deadline, // UTC
+          allowed_buckets: formData.allowed_buckets, // Default All 9 Buckets
+          participant_count: 0, // brand new contest
+          min_participants: formData.min_participants, // Default 2
+          max_participants: formData.max_participants, // Default 20
+          ////min_trades: formData.settings.min_trades, // Default 1
+          ////token_types: [],
+          ////rules: [],
           settings: {
             difficulty: formData.settings.difficulty,
             min_trades: formData.settings.min_trades,
-            max_participants: formData.max_participants,
-            min_participants: formData.min_participants,
+            ////max_participants: formData.max_participants,
+            ////min_participants: formData.min_participants,
             token_types: [],
-            rules: [],
+            rules: [
+              `Democrats are STRICTLY FORBIDDEN from playing DegenDuel at all times.`,
+            ],
           } as ContestSettings,
         };
 
-        console.log("Form entry_fee value:", formData.entry_fee);
+        // Create the contest
         console.log(
-          "Contest data being sent:",
+          `Creating contest...`,
           JSON.stringify(contestData, null, 2)
         );
-
         const response = await ddApi.contests.create(contestData);
+
+        // Log the response
         console.log("API Response:", response);
+        if (response.contest_code === contestData.contest_code) {
+          toast.success(`Contest ${contestData.contest_code} was created!`, {
+            duration: 4000, // 4 seconds
+            position: "bottom-right",
+            style: {
+              background: "#1a1a1a", // dark-200
+              color: "#fff", // white
+              border: "1px solid #262626", // dark-300
+            },
+          });
 
-        toast.success("Contest created successfully!", {
-          duration: 4000,
-          position: "bottom-right",
-          style: {
-            background: "#1a1a1a",
-            color: "#fff",
-            border: "1px solid #262626",
-          },
-        });
-
-        onSuccess?.();
-        onClose();
-        break;
+          onSuccess?.();
+          onClose();
+          break;
+        } else {
+          toast.error(
+            `Failed to create contest ${
+              contestData.contest_code
+            }. Try again later (${attempt + 1}/${maxAttempts})`,
+            {
+              duration: 4000, // 4
+              position: "bottom-right",
+              style: {
+                background: "#1a1a1a", // dark-200
+                color: "#fff", // white
+                border: "1px solid #262626", // dark-300
+              },
+            }
+          );
+        }
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error";
@@ -156,7 +198,10 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           attempt < maxAttempts - 1
         ) {
           console.log(
-            `Contest code already exists, trying again (attempt ${attempt + 1})`
+            `Whoops! Contest code ${generateContestCode(
+              formData.name,
+              attempt
+            )} already exists. Trying again... (${attempt + 1}/${maxAttempts})`
           );
           attempt++;
           continue;
@@ -182,6 +227,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     }));
   };
 
+  // (Meaningless for now)
   const bucketOptions = [
     { value: 1, label: "Bucket 1" },
     { value: 2, label: "Bucket 2" },
@@ -197,6 +243,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Create the modal
   return createPortal(
     <div className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/50" />
@@ -249,7 +296,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Min Participants
+                    Min Entries
                   </label>
                   <Input
                     type="number"
@@ -264,7 +311,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Max Participants
+                    Max. Entries
                   </label>
                   <Input
                     type="number"
@@ -280,7 +327,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Entry Fee
+                    Duel Ticket
                   </label>
                   <Input
                     type="text"
@@ -300,7 +347,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Max Prize Pool
+                    Max. Prize Pool
                   </label>
                   <Input
                     type="text"
@@ -317,7 +364,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Start Time
+                    Duel Starts
                   </label>
                   <Input
                     type="datetime-local"
@@ -331,7 +378,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    End Time
+                    Duel Ends
                   </label>
                   <Input
                     type="datetime-local"
@@ -350,7 +397,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   <div className="grid grid-cols-2 gap-4 p-4 bg-dark-300 rounded-md">
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">
-                        Difficulty
+                        Class
                       </label>
                       <Select
                         value={formData.settings.difficulty}
@@ -376,7 +423,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">
-                        Min Trades
+                        Min. Level
                       </label>
                       <Input
                         type="number"

@@ -228,15 +228,14 @@ export const ContestDetails: React.FC = () => {
                     style={{
                       width: `${
                         (Number(contest.participant_count) /
-                          contest.settings.max_participants) *
+                          contest.max_participants) *
                         100
                       }%`,
                     }}
                   />
                 </div>
                 <span className="text-lg font-medium text-gray-100">
-                  {contest.participant_count}/
-                  {contest.settings.max_participants}
+                  {contest.participant_count}/{contest.max_participants}
                 </span>
               </div>
             </div>
@@ -303,7 +302,7 @@ export const ContestDetails: React.FC = () => {
                   <CardContent className="p-6">
                     <h3 className="text-lg font-semibold text-gray-100 mb-4">
                       Participants ({contest.participant_count}/
-                      {contest.settings.max_participants})
+                      {contest.max_participants})
                     </h3>
                     <p className="text-gray-400">
                       Participant count is {contest.participant_count} but array
@@ -317,7 +316,7 @@ export const ContestDetails: React.FC = () => {
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-gray-100 mb-4">
                     Participants ({contest.participant_count}/
-                    {contest.settings.max_participants})
+                    {contest.max_participants})
                   </h3>
                   <p className="text-gray-400">
                     Participant count is {contest.participant_count} but
@@ -331,7 +330,7 @@ export const ContestDetails: React.FC = () => {
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-gray-100 mb-4">
                   Participants ({contest.participant_count}/
-                  {contest.settings.max_participants})
+                  {contest.max_participants})
                 </h3>
                 <p className="text-gray-400">No participants yet.</p>
               </CardContent>
@@ -364,8 +363,7 @@ export const ContestDetails: React.FC = () => {
           }`}
           disabled={
             (isParticipating && contest.status !== "pending") ||
-            Number(contest.participant_count) >=
-              contest.settings.max_participants
+            Number(contest.participant_count) >= contest.max_participants
           }
         >
           <div className="absolute inset-0 flex items-center justify-center">
@@ -376,8 +374,7 @@ export const ContestDetails: React.FC = () => {
               ? contest.status === "pending"
                 ? "Update Tokens"
                 : "Already Joined"
-              : Number(contest.participant_count) >=
-                contest.settings.max_participants
+              : Number(contest.participant_count) >= contest.max_participants
               ? "Contest Full"
               : `Enter Contest (${formatCurrency(
                   parseInt(contest.entry_fee)
