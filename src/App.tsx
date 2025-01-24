@@ -19,6 +19,11 @@ import { Results } from "./pages/Results";
 import { TestPage } from "./pages/TestPage";
 import { TokenSelection } from "./pages/TokenSelection";
 import "./styles/debug.css";
+/* Extra Pages */
+// API Playground
+import ApiPlayground from "./pages/ApiPlayground";
+// AMM Simulation
+import AmmSim from "./pages/AmmSim";
 
 export const App: React.FC = () => {
   return (
@@ -27,7 +32,9 @@ export const App: React.FC = () => {
         <Header />
         <main className="flex-grow">
           <Routes>
+            {/* Landing Page */}
             <Route path="/" element={<LandingPage />} />
+            {/* Contests */}
             <Route path="/contests" element={<ContestBrowser />} />
             <Route path="/contests/:id" element={<ContestDetails />} />
             <Route
@@ -36,12 +43,24 @@ export const App: React.FC = () => {
             />
             <Route path="/contests/:id/live" element={<LiveContest />} />
             <Route path="/contests/:id/results" element={<Results />} />
+            {/* Profile */}
             <Route path="/profile" element={<Profile />} />
+            {/* Admin */}
             <Route path="/admin" element={<AdminDashboard />} />
+            {/* How It Works */}
             <Route path="/how-it-works" element={<HowItWorks />} />
+            {/* FAQ */}
             <Route path="/faq" element={<FAQ />} />
+            {/* Contact */}
             <Route path="/contact" element={<Contact />} />
+            {/* Test */}
             <Route path="/test" element={<TestPage />} />
+
+            {/* AMM Simulation */}
+            <Route path="/amm-sim" element={<AmmSim />} />
+
+            {/* API Playground */}
+            <Route path="/api-playground" element={<ApiPlayground />} />
           </Routes>
         </main>
         <Footer />
