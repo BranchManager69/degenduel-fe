@@ -21,15 +21,18 @@ interface SessionInfo {
 export const DebugPanel: React.FC = () => {
   const { user, debugConfig, setDebugConfig } = useStore();
   const [sectionsOpen, setSectionsOpen] = useState({
-    wallet: false,
-    network: false,
-    ui: false,
-    system: false,
-    session: false,
-    tools: false,
+    wallet: true,
+    network: true,
+    ui: true,
+    system: true,
+    session: true,
+    tools: true,
   });
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({
+    x: window.innerWidth > 1024 ? window.innerWidth - 384 : 0,
+    y: 0,
+  });
   const [systemStats, setSystemStats] = useState<SystemStats>({
     fps: 0,
     memory: { used: 0, total: 0 },
@@ -195,7 +198,7 @@ export const DebugPanel: React.FC = () => {
       ref={panelRef}
       className="fixed bg-dark-200/90 backdrop-blur-sm rounded-lg border border-dark-300 z-50 max-w-sm shadow-lg cursor-move transition-colors duration-300 hover:bg-dark-200"
       style={{
-        bottom: position.y === 0 ? "1rem" : undefined,
+        top: position.y === 0 ? "1rem" : undefined,
         right: position.x === 0 ? "1rem" : undefined,
         transform: `translate(${position.x}px, ${position.y}px)`,
       }}
