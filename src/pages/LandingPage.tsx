@@ -98,7 +98,10 @@ export const LandingPage: React.FC = () => {
       <MovingBackground />
 
       <div className="sticky top-16 z-10">
-        <LiveContestTicker contests={activeContests} loading={loading} />
+        <LiveContestTicker
+          contests={[...activeContests, ...openContests]}
+          loading={loading}
+        />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -39,15 +39,78 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   const progress = (participantCount / maxParticipants) * 100;
 
   const timeRemaining = useMemo(() => {
-    const targetTime = new Date(isLive ? endTime : startTime).getTime();
-    const now = new Date().getTime();
-    const diff = Math.max(0, targetTime - now);
+    try {
+      const targetDate = new Date(isLive ? endTime : startTime);
+      // Check if date is invalid
+      if (isNaN(targetDate.getTime())) {
+        console.error(
+          `Invalid date string received: ${isLive ? endTime : startTime}`
+        );
+        return "Time unavailable";
+      }
 
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const targetTime = targetDate.getTime();
+      const now = new Date().getTime();
+      const diff = targetTime - now;
 
-    return { hours, minutes };
-  }, [isLive, startTime, endTime]);
+      // Log suspicious time differences
+      if (Math.abs(diff) > 365 * 24 * 60 * 60 * 1000) {
+        // More than a year difference
+        console.warn(
+          `Suspicious time difference detected:\n` +
+            `Target time: ${new Date(targetTime).toISOString()}\n` +
+            `Current time: ${new Date(now).toISOString()}\n` +
+            `Difference: ${diff}ms\n` +
+            `Contest ID: ${id}\n` +
+            `Status: ${status}`
+        );
+      }
+
+      // If the time has passed or is now
+      if (diff <= 0) {
+        if (Math.abs(diff) > 7 * 24 * 60 * 60 * 1000) {
+          // More than a week in the past
+          console.warn(
+            `Contest time is far in the past:\n` +
+              `${isLive ? "End" : "Start"} time: ${
+                isLive ? endTime : startTime
+              }\n` +
+              `Contest ID: ${id}\n` +
+              `Status: ${status}`
+          );
+        }
+        return isLive ? "Ending soon" : "Starting soon";
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        return `${days}d ${hours}h`;
+      } else if (hours > 0) {
+        return `${hours}h ${minutes > 0 ? `${minutes}m` : ""}`;
+      } else if (minutes > 0) {
+        return `${minutes}m`;
+      } else {
+        return isLive ? "Ending soon" : "Starting soon";
+      }
+    } catch (error) {
+      console.error(
+        `Error calculating time for contest ${id}:`,
+        error,
+        "\nStart time:",
+        startTime,
+        "\nEnd time:",
+        endTime,
+        "\nStatus:",
+        status
+      );
+      return "Time unavailable";
+    }
+  }, [isLive, startTime, endTime, id, status]);
 
   return (
     <Card className="group relative bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10">
@@ -64,18 +127,22 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               {name}
             </h3>
             <p className="text-sm font-medium text-brand-400/80">
-              {isLive ? "Ends" : "Starts"} in {timeRemaining.hours}h{" "}
-              {timeRemaining.minutes}m
+              {timeRemaining.startsWith("Late to start")
+                ? timeRemaining
+                : timeRemaining === "Ending soon" ||
+                  timeRemaining === "Starting soon"
+                ? timeRemaining
+                : `${isLive ? "Ends" : "Starts"} in ${timeRemaining}`}
             </p>
             {/* Contest Description */}
             <p
-              className="text-sm text-gray-400 line-clamp-2"
+              className="text-sm text-gray-400 min-h-[2.5rem] line-clamp-2"
               title={description}
             >
-              {description}
+              {description || "No description available"}
             </p>
             {/* Contest Code */}
-            <p className="text-xs text-gray-500">Ref: {contestCode}</p>
+            <p className="text-xs text-gray-500 mt-1">Ref: {contestCode}</p>
           </div>
           <ContestDifficulty difficulty={difficulty} />
         </div>

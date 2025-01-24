@@ -33,7 +33,57 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
   if (!contests.length) {
     return (
       <div className="py-12">
-        <h2 className="text-2xl font-bold text-gray-100 mb-8">{title}</h2>
+        {/* Section Header */}
+        <div className="relative mb-8">
+          {/* Decorative line */}
+          <div className="absolute left-0 top-1/2 w-full h-px bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-transparent" />
+
+          <h2 className="relative inline-block text-2xl font-bold">
+            <span
+              className={`bg-gradient-to-r ${
+                type === "active" && contests.length > 0
+                  ? "from-red-400 to-brand-600"
+                  : "from-brand-400 to-brand-600"
+              } text-transparent bg-clip-text`}
+            >
+              {title}
+            </span>
+
+            {/* Decorative dot */}
+            <span
+              className={`absolute -right-3 top-0 w-2 h-2 ${
+                type === "active" && contests.length > 0
+                  ? "bg-red-500"
+                  : "bg-brand-500"
+              } rounded-full ${
+                type === "active" && contests.length > 0
+                  ? "animate-ping"
+                  : "animate-pulse"
+              }`}
+            />
+
+            {/* Live indicator for active contests */}
+            {type === "active" && (
+              <span className="ml-3 inline-flex items-center">
+                {contests.length > 0 ? (
+                  <>
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span className="ml-2 text-sm font-medium text-red-400">
+                      LIVE
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm font-medium text-gray-500">
+                    No Live Matches
+                  </span>
+                )}
+              </span>
+            )}
+          </h2>
+        </div>
         <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-8 text-center">
           <p className="text-gray-400">
             No {type} contests available at the moment.
@@ -50,10 +100,50 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
         {/* Decorative line */}
         <div className="absolute left-0 top-1/2 w-full h-px bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-transparent" />
 
-        <h2 className="relative inline-block text-2xl font-bold bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text">
-          {title}
+        <h2 className="relative inline-block text-2xl font-bold">
+          <span
+            className={`bg-gradient-to-r ${
+              type === "active" && contests.length > 0
+                ? "from-red-400 to-brand-600"
+                : "from-brand-400 to-brand-600"
+            } text-transparent bg-clip-text`}
+          >
+            {title}
+          </span>
+
           {/* Decorative dot */}
-          <span className="absolute -right-3 top-0 w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
+          <span
+            className={`absolute -right-3 top-0 w-2 h-2 ${
+              type === "active" && contests.length > 0
+                ? "bg-red-500"
+                : "bg-brand-500"
+            } rounded-full ${
+              type === "active" && contests.length > 0
+                ? "animate-ping"
+                : "animate-pulse"
+            }`}
+          />
+
+          {/* Live indicator for active contests */}
+          {type === "active" && (
+            <span className="ml-3 inline-flex items-center">
+              {contests.length > 0 ? (
+                <>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                  <span className="ml-2 text-sm font-medium text-red-400">
+                    LIVE
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm font-medium text-gray-500">
+                  No Live Matches
+                </span>
+              )}
+            </span>
+          )}
         </h2>
       </div>
 

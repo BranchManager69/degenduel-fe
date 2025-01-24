@@ -6,37 +6,36 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: "#faf5ff",
-          100: "#f3e8ff",
-          200: "#e9d5ff",
-          300: "#d8b4fe",
-          400: "#c084fc",
-          500: "#a855f7",
-          600: "#9333ea",
-          700: "#7e22ce",
-          800: "#6b21a8",
-          900: "#581c87",
+          50: "#f3e6ff",
+          100: "#e5ccff",
+          200: "#cc99ff",
+          300: "#b266ff",
+          400: "#9933ff",
+          500: "#7f00ff",
+          600: "#6600cc",
+          700: "#4c0099",
+          800: "#330066",
+          900: "#190033",
         },
         dark: {
-          100: "#0f0f0f",
-          200: "#1a1a1a",
-          300: "#262626",
-          400: "#333333",
-          500: "#404040",
+          100: "#1a1625",
+          200: "#211d2f",
+          300: "#2d2844",
         },
       },
       animation: {
-        shine: "shine 3s linear infinite",
-        "fade-in": "fadeIn 0.2s ease-out forwards",
+        shine: "shine 2s linear infinite",
+        "fade-in": "fade-in 0.5s ease-out",
         ticker: "ticker 30s linear infinite",
-        float: "float 8s ease-in-out infinite",
+        float: "float 3s ease-in-out infinite",
       },
       keyframes: {
         shine: {
-          "100%": { transform: "translateX(100%)" },
+          from: { backgroundPosition: "200% 0" },
+          to: { backgroundPosition: "-200% 0" },
         },
-        fadeIn: {
-          "0%": { opacity: "0", transform: "translateY(-10px)" },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         ticker: {
@@ -44,18 +43,8 @@ export default {
           "100%": { transform: "translateX(-50%)" },
         },
         float: {
-          "0%, 100%": {
-            transform: "translate(0, 0) rotate(0deg) scale(1)",
-          },
-          "25%": {
-            transform: "translate(4px, 4px) rotate(1deg) scale(1.01)",
-          },
-          "50%": {
-            transform: "translate(-2px, 6px) rotate(-1deg) scale(1.02)",
-          },
-          "75%": {
-            transform: "translate(-4px, 2px) rotate(0.5deg) scale(1.01)",
-          },
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
         },
       },
     },
