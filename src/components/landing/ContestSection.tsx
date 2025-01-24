@@ -1,16 +1,15 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { isContestLive } from "../../lib/utils";
 import type { Contest } from "../../types";
+import { ContestCard } from "./ContestCard";
 
-interface Props {
+interface ContestSectionProps {
   title: string;
-  type: "active" | "pending"; // Updated to match actual status types
+  type: "active" | "pending";
   contests: Contest[];
   loading: boolean;
 }
 
-export const ContestSection: React.FC<Props> = ({
+export const ContestSection: React.FC<ContestSectionProps> = ({
   title,
   type,
   contests,
@@ -18,89 +17,74 @@ export const ContestSection: React.FC<Props> = ({
 }) => {
   if (loading) {
     return (
-      <section className="py-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="animate-pulse bg-dark-200 rounded-lg p-6 h-48"
-            ></div>
-          ))}
+      <div className="py-12">
+        <div className="animate-pulse space-y-8">
+          <div className="h-8 w-48 bg-dark-300 rounded" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-dark-300 h-[300px] rounded-lg" />
+            ))}
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
-  if (contests.length === 0) {
+  if (!contests.length) {
     return (
-      <section className="py-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
-        <div className="text-center text-gray-400 py-12">
-          No {type} contests available at the moment.
+      <div className="py-12">
+        <h2 className="text-2xl font-bold text-gray-100 mb-8">{title}</h2>
+        <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-8 text-center">
+          <p className="text-gray-400">
+            No {type} contests available at the moment.
+          </p>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="py-12">
-      <h2 className="text-2xl font-bold mb-6">{title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {contests
-          .filter((contest) =>
-            type === "active" ? isContestLive(contest) : !isContestLive(contest)
-          )
-          .map((contest) => (
-            <Link
-              key={contest.id}
-              to={`/contests/${contest.id}`}
-              className="block bg-dark-200 rounded-lg p-6 hover:bg-dark-300 transition-colors"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold">{contest.name}</h3>
-                <span
-                  className={`px-2 py-1 rounded text-sm ${
-                    contest.settings.difficulty === "whale"
-                      ? "bg-purple-900 text-purple-100"
-                      : contest.settings.difficulty === "shark"
-                      ? "bg-red-900 text-red-100"
-                      : "bg-blue-900 text-blue-100"
-                  }`}
-                >
-                  {contest.settings.difficulty}
-                </span>
-              </div>
+    <div className="py-12">
+      {/* Section Header */}
+      <div className="relative mb-8">
+        {/* Decorative line */}
+        <div className="absolute left-0 top-1/2 w-full h-px bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-transparent" />
 
-              <div className="space-y-2 text-sm text-gray-300">
-                <div className="flex justify-between">
-                  <span>Entry Fee:</span>
-                  <span className="font-medium">{contest.entry_fee} SOL</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Prize Pool:</span>
-                  <span className="font-medium text-brand-400">
-                    {contest.prize_pool} SOL
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Players:</span>
-                  <span>
-                    {contest.participant_count}/{contest.max_participants}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>{type === "active" ? "Ends" : "Starts"}:</span>
-                  <span>
-                    {new Date(
-                      type === "active" ? contest.end_time : contest.start_time
-                    ).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
+        <h2 className="relative inline-block text-2xl font-bold bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text">
+          {title}
+          {/* Decorative dot */}
+          <span className="absolute -right-3 top-0 w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
+        </h2>
       </div>
-    </section>
+
+      {/* Contest Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {contests.map((contest, index) => (
+          <div
+            key={contest.id}
+            className="opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <ContestCard
+              id={String(contest.id)}
+              name={contest.name}
+              description={contest.description}
+              entryFee={Number(contest.entry_fee)}
+              prizePool={Number(contest.prize_pool)}
+              startTime={contest.start_time}
+              endTime={contest.end_time}
+              participantCount={contest.participant_count}
+              maxParticipants={contest.max_participants}
+              status={contest.status}
+              difficulty={contest.settings.difficulty}
+              contestCode={contest.contest_code}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom gradient line */}
+      <div className="mt-12 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent" />
+    </div>
   );
 };

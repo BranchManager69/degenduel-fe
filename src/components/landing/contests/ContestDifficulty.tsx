@@ -14,14 +14,56 @@ interface ContestDifficultyProps {
 
 const difficultyConfig: Record<
   DifficultyLevel,
-  { label: string; color: string }
+  { label: string; colors: { from: string; to: string; border: string } }
 > = {
-  guppy: { label: "Guppy", color: "text-green-400" },
-  tadpole: { label: "Tadpole", color: "text-blue-400" },
-  squid: { label: "Squid", color: "text-purple-400" },
-  dolphin: { label: "Dolphin", color: "text-pink-400" },
-  shark: { label: "Shark", color: "text-orange-400" },
-  whale: { label: "Whale", color: "text-red-400" },
+  guppy: {
+    label: "Guppy",
+    colors: {
+      from: "from-emerald-400/20",
+      to: "to-emerald-600/20",
+      border: "border-emerald-500/30",
+    },
+  },
+  tadpole: {
+    label: "Tadpole",
+    colors: {
+      from: "from-blue-400/20",
+      to: "to-blue-600/20",
+      border: "border-blue-500/30",
+    },
+  },
+  squid: {
+    label: "Squid",
+    colors: {
+      from: "from-purple-400/20",
+      to: "to-purple-600/20",
+      border: "border-purple-500/30",
+    },
+  },
+  dolphin: {
+    label: "Dolphin",
+    colors: {
+      from: "from-pink-400/20",
+      to: "to-pink-600/20",
+      border: "border-pink-500/30",
+    },
+  },
+  shark: {
+    label: "Shark",
+    colors: {
+      from: "from-orange-400/20",
+      to: "to-orange-600/20",
+      border: "border-orange-500/30",
+    },
+  },
+  whale: {
+    label: "Whale",
+    colors: {
+      from: "from-red-400/20",
+      to: "to-red-600/20",
+      border: "border-red-500/30",
+    },
+  },
 };
 
 export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
@@ -29,14 +71,37 @@ export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
 }) => {
   const config = difficultyConfig[difficulty] || {
     label: "Unknown",
-    color: "text-gray-400",
+    colors: {
+      from: "from-gray-400/20",
+      to: "to-gray-600/20",
+      border: "border-gray-500/30",
+    },
   };
 
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}
-    >
-      {config.label}
-    </span>
+    <div className="relative group">
+      {/* Glow effect */}
+      <div
+        className={`absolute -inset-[1px] bg-gradient-to-r ${config.colors.from} ${config.colors.to} rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+      />
+
+      <div
+        className={`
+          relative
+          inline-flex items-center px-3 py-1
+          rounded-full text-xs font-semibold
+          bg-gradient-to-r ${config.colors.from} ${config.colors.to}
+          border ${config.colors.border}
+          transition-all duration-300
+          hover:scale-105
+        `}
+      >
+        {/* Shine effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+
+        {/* Label */}
+        <span className="relative">{config.label}</span>
+      </div>
+    </div>
   );
 };

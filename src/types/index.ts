@@ -162,8 +162,16 @@ export interface Activity {
 // Contest Types
 export type ContestStatus = "pending" | "active" | "completed" | "cancelled";
 
+export type DifficultyLevel =
+  | "guppy"
+  | "tadpole"
+  | "squid"
+  | "dolphin"
+  | "shark"
+  | "whale";
+
 export interface ContestSettings {
-  difficulty: "guppy" | "tadpole" | "squid" | "dolphin" | "shark" | "whale";
+  difficulty: DifficultyLevel;
   min_trades: number;
   ////max_participants: number;
   ////min_participants: number;
