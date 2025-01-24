@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import { isAdminWallet } from "../../lib/auth";
 import { useStore } from "../../store/useStore";
 import { Button } from "../ui/Button";
@@ -15,6 +16,7 @@ export const Header: React.FC = () => {
     clearError,
   } = useStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isSuperAdmin } = useAuth();
 
   // Auto-clear errors after 5 seconds
   React.useEffect(() => {
@@ -69,6 +71,24 @@ export const Header: React.FC = () => {
               </Link>
             )}
           </nav>
+
+          {/* Admin Tools - Only shown to superadmins */}
+          {isSuperAdmin() && (
+            <div className="hidden md:flex items-center space-x-4">
+              <Link
+                to="/amm-sim"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                AMM Simulator
+              </Link>
+              <Link
+                to="/api-playground"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                API Playground
+              </Link>
+            </div>
+          )}
 
           {/* Desktop Wallet Connection */}
           <div className="hidden md:flex md:items-center md:space-x-3">

@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { DebugPanel } from "./components/debug/DebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
+import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { Contact } from "./pages/Contact";
 import { ContestBrowser } from "./pages/ContestBrowser";
@@ -46,8 +47,15 @@ export const App: React.FC = () => {
             {/* Profile */}
             <Route path="/profile" element={<Profile />} />
 
-            {/* Admin Dashboard (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
-            <Route path="/admin" element={<AdminDashboard />} />
+            {/* Admin Dashboard (Protected) */}
+            <Route
+              path="/admin"
+              element={
+                <SuperAdminRoute>
+                  <AdminDashboard />
+                </SuperAdminRoute>
+              }
+            />
 
             {/* How It Works */}
             <Route path="/how-it-works" element={<HowItWorks />} />
@@ -56,14 +64,35 @@ export const App: React.FC = () => {
             {/* Contact */}
             <Route path="/contact" element={<Contact />} />
 
-            {/* Test Page (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
-            <Route path="/test" element={<TestPage />} />
+            {/* Test Page (Protected) */}
+            <Route
+              path="/test"
+              element={
+                <SuperAdminRoute>
+                  <TestPage />
+                </SuperAdminRoute>
+              }
+            />
 
-            {/* AMM Simulation (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
-            <Route path="/amm-sim" element={<AmmSim />} />
+            {/* AMM Simulation (Protected) */}
+            <Route
+              path="/amm-sim"
+              element={
+                <SuperAdminRoute>
+                  <AmmSim />
+                </SuperAdminRoute>
+              }
+            />
 
-            {/* API Playground (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
-            <Route path="/api-playground" element={<ApiPlayground />} />
+            {/* API Playground (Protected) */}
+            <Route
+              path="/api-playground"
+              element={
+                <SuperAdminRoute>
+                  <ApiPlayground />
+                </SuperAdminRoute>
+              }
+            />
           </Routes>
         </main>
         <Footer />
