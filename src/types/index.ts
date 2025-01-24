@@ -6,6 +6,7 @@ export interface User {
   nickname: string;
   created_at: string;
   last_login: string | null;
+  role: string;
   total_contests: number;
   total_wins: number;
   total_earnings: number;

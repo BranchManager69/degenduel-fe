@@ -45,21 +45,24 @@ export const App: React.FC = () => {
             <Route path="/contests/:id/results" element={<Results />} />
             {/* Profile */}
             <Route path="/profile" element={<Profile />} />
-            {/* Admin */}
+
+            {/* Admin Dashboard (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
             <Route path="/admin" element={<AdminDashboard />} />
+
             {/* How It Works */}
             <Route path="/how-it-works" element={<HowItWorks />} />
             {/* FAQ */}
             <Route path="/faq" element={<FAQ />} />
             {/* Contact */}
             <Route path="/contact" element={<Contact />} />
-            {/* Test */}
+
+            {/* Test Page (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
             <Route path="/test" element={<TestPage />} />
 
-            {/* AMM Simulation */}
+            {/* AMM Simulation (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
             <Route path="/amm-sim" element={<AmmSim />} />
 
-            {/* API Playground */}
+            {/* API Playground (TODO: NEEDS SUPERADMIN AUTH CHECK) */}
             <Route path="/api-playground" element={<ApiPlayground />} />
           </Routes>
         </main>

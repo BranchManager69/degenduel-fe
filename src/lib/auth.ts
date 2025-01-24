@@ -1,3 +1,4 @@
+// src/lib/auth.ts
 export const isAdminWallet = (walletAddress?: string | null): boolean => {
   if (!walletAddress) return false;
 
