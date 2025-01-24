@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { isAdminWallet } from "../../lib/auth";
 import { useStore } from "../../store/useStore";
 
 export const DebugPanel: React.FC = () => {
@@ -82,7 +81,8 @@ export const DebugPanel: React.FC = () => {
     setSectionsOpen((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  if (!isAdminWallet(user?.wallet_address)) return null;
+  // Check if user is superadmin from the store
+  if (user?.role !== "superadmin") return null;
 
   return (
     <div

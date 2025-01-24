@@ -1,63 +1,28 @@
 import { useEffect, useState } from "react";
-
-interface User {
-  id: string;
-  walletAddress: string;
-  role: "user" | "admin" | "superadmin";
-}
+import { useStore } from "../store/useStore";
 
 interface AuthState {
-  user: User | null;
+  user: any | null; // Using any temporarily since we're getting user from store
   loading: boolean;
   error: Error | null;
 }
 
 export function useAuth() {
+  const store = useStore();
   const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    loading: true,
+    user: store.user,
+    loading: false,
     error: null,
   });
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch("/api/auth/session", {
-          credentials: "include", // Important for cookies
-        });
-
-        if (!response.ok) {
-          if (response.status === 401 || response.status === 403) {
-            setAuthState({
-              user: null,
-              loading: false,
-              error: new Error("Not authenticated"),
-            });
-            return;
-          }
-          throw new Error("Authentication check failed");
-        }
-
-        const data = await response.json();
-        setAuthState({
-          user: data.user,
-          loading: false,
-          error: null,
-        });
-      } catch (error) {
-        setAuthState({
-          user: null,
-          loading: false,
-          error:
-            error instanceof Error
-              ? error
-              : new Error("Authentication check failed"),
-        });
-      }
-    };
-
-    checkAuth();
-  }, []);
+    // Update auth state when store user changes
+    setAuthState((state) => ({
+      ...state,
+      user: store.user,
+      loading: false,
+    }));
+  }, [store.user]);
 
   const isSuperAdmin = (): boolean => {
     return authState.user?.role === "superadmin";

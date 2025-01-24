@@ -8,7 +8,6 @@ export const Header: React.FC = () => {
   const {
     user,
     connectWallet,
-    connectAsAdmin,
     disconnectWallet,
     isConnecting,
     error,
@@ -102,20 +101,6 @@ export const Header: React.FC = () => {
             {user ? (
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-400">{user.nickname}</span>
-                {user.wallet_address ===
-                  "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" && (
-                  <Button
-                    onClick={connectAsAdmin}
-                    variant="gradient"
-                    size="sm"
-                    className="relative group bg-opacity-50"
-                    disabled={isConnecting}
-                  >
-                    <span className="relative z-10">
-                      {isConnecting ? "Connecting..." : "Admin Login"}
-                    </span>
-                  </Button>
-                )}
                 <Button
                   onClick={disconnectWallet}
                   variant="gradient"
@@ -251,23 +236,6 @@ export const Header: React.FC = () => {
             {user ? (
               <div className="space-y-3 px-3">
                 <div className="text-sm text-gray-400">{user.nickname}</div>
-                {user.wallet_address ===
-                  "BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp" && (
-                  <Button
-                    onClick={() => {
-                      connectAsAdmin();
-                      setIsMenuOpen(false);
-                    }}
-                    variant="gradient"
-                    size="sm"
-                    className="w-full"
-                    disabled={isConnecting}
-                  >
-                    <span className="relative z-10">
-                      {isConnecting ? "Connecting..." : "Admin Login"}
-                    </span>
-                  </Button>
-                )}
                 <Button
                   onClick={() => {
                     disconnectWallet();
