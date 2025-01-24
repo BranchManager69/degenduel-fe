@@ -6,6 +6,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { DebugPanel } from "./components/debug/DebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
+import { AdminRoute } from "./components/routes/AdminRoute";
+import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { Contact } from "./pages/Contact";
@@ -17,6 +19,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { LiveContest } from "./pages/LiveContest";
 import { Profile } from "./pages/Profile";
 import { Results } from "./pages/Results";
+import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
 import { TestPage } from "./pages/TestPage";
 import { TokenSelection } from "./pages/TokenSelection";
 import "./styles/debug.css";
@@ -33,38 +36,67 @@ export const App: React.FC = () => {
         <Header />
         <main className="flex-grow">
           <Routes>
-            {/* Landing Page */}
+            {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
-            {/* Contests */}
             <Route path="/contests" element={<ContestBrowser />} />
             <Route path="/contests/:id" element={<ContestDetails />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/contact" element={<Contact />} />
+
+            {/* Authenticated Routes */}
+            <Route
+              path="/profile"
+              element={
+                <AuthenticatedRoute>
+                  <Profile />
+                </AuthenticatedRoute>
+              }
+            />
             <Route
               path="/contests/:id/select-tokens"
-              element={<TokenSelection />}
-            />
-            <Route path="/contests/:id/live" element={<LiveContest />} />
-            <Route path="/contests/:id/results" element={<Results />} />
-            {/* Profile */}
-            <Route path="/profile" element={<Profile />} />
-
-            {/* Admin Dashboard (Protected) */}
-            <Route
-              path="/admin"
               element={
-                <SuperAdminRoute>
-                  <AdminDashboard />
-                </SuperAdminRoute>
+                <AuthenticatedRoute>
+                  <TokenSelection />
+                </AuthenticatedRoute>
+              }
+            />
+            <Route
+              path="/contests/:id/live"
+              element={
+                <AuthenticatedRoute>
+                  <LiveContest />
+                </AuthenticatedRoute>
+              }
+            />
+            <Route
+              path="/contests/:id/results"
+              element={
+                <AuthenticatedRoute>
+                  <Results />
+                </AuthenticatedRoute>
               }
             />
 
-            {/* How It Works */}
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            {/* FAQ */}
-            <Route path="/faq" element={<FAQ />} />
-            {/* Contact */}
-            <Route path="/contact" element={<Contact />} />
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
 
-            {/* Test Page (Protected) */}
+            {/* SuperAdmin Routes */}
+            <Route
+              path="/superadmin"
+              element={
+                <SuperAdminRoute>
+                  <SuperAdminDashboard />
+                </SuperAdminRoute>
+              }
+            />
             <Route
               path="/test"
               element={
@@ -73,8 +105,6 @@ export const App: React.FC = () => {
                 </SuperAdminRoute>
               }
             />
-
-            {/* AMM Simulation (Protected) */}
             <Route
               path="/amm-sim"
               element={
@@ -83,8 +113,6 @@ export const App: React.FC = () => {
                 </SuperAdminRoute>
               }
             />
-
-            {/* API Playground (Protected) */}
             <Route
               path="/api-playground"
               element={

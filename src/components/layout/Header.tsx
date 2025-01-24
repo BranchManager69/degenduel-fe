@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { isAdminWallet } from "../../lib/auth";
 import { useStore } from "../../store/useStore";
 import { Button } from "../ui/Button";
 
@@ -16,7 +15,7 @@ export const Header: React.FC = () => {
     clearError,
   } = useStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, isAdmin } = useAuth();
 
   // Auto-clear errors after 5 seconds
   React.useEffect(() => {
@@ -56,13 +55,15 @@ export const Header: React.FC = () => {
             >
               Tokens
             </Link>
-            <Link
-              to="/profile"
-              className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors"
-            >
-              Profile
-            </Link>
-            {user && isAdminWallet(user.wallet_address) && (
+            {user && (
+              <Link
+                to="/profile"
+                className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors"
+              >
+                Profile
+              </Link>
+            )}
+            {isAdmin() && (
               <Link
                 to="/admin"
                 className="text-lg font-medium text-brand-400 hover:text-brand-300 transition-colors"
@@ -72,9 +73,15 @@ export const Header: React.FC = () => {
             )}
           </nav>
 
-          {/* Admin Tools - Only shown to superadmins */}
+          {/* SuperAdmin Tools */}
           {isSuperAdmin() && (
             <div className="hidden md:flex items-center space-x-4">
+              <Link
+                to="/superadmin"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                SuperAdmin
+              </Link>
               <Link
                 to="/amm-sim"
                 className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
@@ -194,14 +201,16 @@ export const Header: React.FC = () => {
             >
               Tokens
             </Link>
-            <Link
-              to="/profile"
-              className="block px-3 py-2 text-base font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Profile
-            </Link>
-            {user && isAdminWallet(user.wallet_address) && (
+            {user && (
+              <Link
+                to="/profile"
+                className="block px-3 py-2 text-base font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Profile
+              </Link>
+            )}
+            {isAdmin() && (
               <Link
                 to="/admin"
                 className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
@@ -209,6 +218,31 @@ export const Header: React.FC = () => {
               >
                 Admin
               </Link>
+            )}
+            {isSuperAdmin() && (
+              <>
+                <Link
+                  to="/superadmin"
+                  className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  SuperAdmin
+                </Link>
+                <Link
+                  to="/amm-sim"
+                  className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  AMM Simulator
+                </Link>
+                <Link
+                  to="/api-playground"
+                  className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  API Playground
+                </Link>
+              </>
             )}
           </div>
 
