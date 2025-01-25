@@ -1,10 +1,9 @@
-import { API_URL, NODE_ENV, PORT } from "../../config/config";
+import { API_URL, NODE_ENV } from "../../config/config";
 
 // Log API configuration
 console.log("API_URL configuration in use:", {
   environment: NODE_ENV,
   apiUrl: API_URL,
-  port: PORT,
 });
 
 // Import all API modules

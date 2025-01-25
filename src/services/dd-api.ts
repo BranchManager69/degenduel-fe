@@ -208,8 +208,10 @@ export const ddApi = {
   stats: {
     getOverall: async (wallet: string) => {
       try {
-        const api = createApiClient();
-        const response = await api.fetch(`/stats/${wallet}`);
+        const response = await fetch(`${API_URL}/stats/${wallet}`, {
+          credentials: "include",
+        });
+        if (!response.ok) throw new Error("Failed to fetch stats");
         return response.json();
       } catch (error: any) {
         logError("stats.getOverall", error, { wallet });
@@ -219,10 +221,11 @@ export const ddApi = {
 
     getHistory: async (wallet: string, limit = 10, offset = 0) => {
       try {
-        const api = createApiClient();
-        const response = await api.fetch(
-          `/stats/${wallet}/history?limit=${limit}&offset=${offset}`
+        const response = await fetch(
+          `${API_URL}/stats/${wallet}/history?limit=${limit}&offset=${offset}`,
+          { credentials: "include" }
         );
+        if (!response.ok) throw new Error("Failed to fetch history");
         return response.json();
       } catch (error: any) {
         logError("stats.getHistory", error, { wallet, limit, offset });
@@ -232,8 +235,13 @@ export const ddApi = {
 
     getAchievements: async (wallet: string) => {
       try {
-        const api = createApiClient();
-        const response = await api.fetch(`/stats/${wallet}/achievements`);
+        const response = await fetch(
+          `${API_URL}/stats/${wallet}/achievements`,
+          {
+            credentials: "include",
+          }
+        );
+        if (!response.ok) throw new Error("Failed to fetch achievements");
         return response.json();
       } catch (error: any) {
         logError("stats.getAchievements", error, { wallet });
