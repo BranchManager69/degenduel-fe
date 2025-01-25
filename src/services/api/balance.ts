@@ -4,7 +4,7 @@ export const balance = {
   get: async (walletAddress: string): Promise<{ balance: string }> => {
     console.log("Fetching balance for wallet:", walletAddress);
     try {
-      const url = `${API_URL}/users/${walletAddress}/balance`;
+      const url = `${API_URL}/users/${walletAddress}`;
       console.log("Balance fetch URL:", url);
 
       const response = await fetch(url);
@@ -21,8 +21,8 @@ export const balance = {
       }
 
       const data = await response.json();
-      console.log("Balance fetch successful:", data);
-      return data;
+      console.log("User data:", data);
+      return { balance: data.balance || "0" };
     } catch (error) {
       console.error("Failed to fetch user balance:", {
         error,

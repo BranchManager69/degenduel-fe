@@ -36,13 +36,14 @@ export default defineConfig(({ command, mode }) => {
       hmr: {
         clientPort: hasCerts ? 443 : 3004,
         host: hasCerts ? "dev.degenduel.me" : "localhost",
-        protocol: hasCerts ? "wss" : "ws",
+        protocol: "ws",
       },
       proxy: {
         "/api": {
           target: "http://localhost:3003",
           changeOrigin: true,
           secure: false,
+          rewrite: (path) => path.replace(/^\/api/, "/api"),
         },
       },
       watch: {
@@ -50,11 +51,7 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     define: {
-      "import.meta.env.VITE_NODE_ENV": JSON.stringify("development"),
-      "import.meta.env.MODE": JSON.stringify("development"),
-      "import.meta.env.VITE_API_URL": JSON.stringify(
-        "http://localhost:3003/api"
-      ),
+      // Remove environment overrides since we determine this in config.ts
     },
     plugins: [
       react({

@@ -1,5 +1,5 @@
 // src/services/dd-api.ts
-import { API_URL, NODE_ENV, PORT } from "../config/config";
+import { API_URL } from "../config/config";
 import { useStore } from "../store/useStore";
 import {
   BaseActivity as Activity,
@@ -11,12 +11,6 @@ import {
   User,
 } from "../types";
 import type { SortOptions } from "../types/sort";
-
-console.log("API_URL configuration in use:", {
-  environment: NODE_ENV,
-  apiUrl: API_URL,
-  port: PORT,
-});
 
 // Create a consistent API client
 const createApiClient = () => {
@@ -213,23 +207,38 @@ export const ddApi = {
   // Stats endpoints
   stats: {
     getOverall: async (wallet: string) => {
-      const response = await fetch(`${API_URL}/stats/${wallet}`);
-      if (!response.ok) throw new Error("Failed to fetch stats");
-      return response.json();
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/stats/${wallet}`);
+        return response.json();
+      } catch (error: any) {
+        logError("stats.getOverall", error, { wallet });
+        throw error;
+      }
     },
 
     getHistory: async (wallet: string, limit = 10, offset = 0) => {
-      const response = await fetch(
-        `${API_URL}/stats/${wallet}/history?limit=${limit}&offset=${offset}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch history");
-      return response.json();
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(
+          `/stats/${wallet}/history?limit=${limit}&offset=${offset}`
+        );
+        return response.json();
+      } catch (error: any) {
+        logError("stats.getHistory", error, { wallet, limit, offset });
+        throw error;
+      }
     },
 
     getAchievements: async (wallet: string) => {
-      const response = await fetch(`${API_URL}/stats/${wallet}/achievements`);
-      if (!response.ok) throw new Error("Failed to fetch achievements");
-      return response.json();
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/stats/${wallet}/achievements`);
+        return response.json();
+      } catch (error: any) {
+        logError("stats.getAchievements", error, { wallet });
+        throw error;
+      }
     },
 
     getPlatformStats: async () => {
@@ -772,25 +781,11 @@ export const ddApi = {
     get: async (walletAddress: string): Promise<{ balance: string }> => {
       console.log("Fetching balance for wallet:", walletAddress);
       try {
-        const url = `${API_URL}/users/${walletAddress}/balance`;
-        console.log("Balance fetch URL:", url);
-
-        const response = await fetch(url);
-        console.log("Balance response status:", response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Balance fetch failed:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorText,
-          });
-          throw new Error("Failed to fetch user balance");
-        }
-
+        const api = createApiClient();
+        const response = await api.fetch(`/users/${walletAddress}`);
         const data = await response.json();
-        console.log("Balance fetch successful:", data);
-        return data;
+        console.log("User data:", data);
+        return { balance: data.balance || "0" };
       } catch (error) {
         console.error("Failed to fetch user balance:", {
           error,

@@ -29,7 +29,9 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
   }, [users]);
 
   const formatBalance = (balance: number) => {
-    return `${Math.round(balance).toLocaleString("en-US")} Bonus Points`;
+    return `${Math.round(balance).toLocaleString(
+      "en-US"
+    )} Bonus Points (Updated)`;
   };
 
   const handleUserChange = async (walletAddress: string) => {

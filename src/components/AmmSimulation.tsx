@@ -296,174 +296,192 @@ const AmmSimulation: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-6 bg-dark-900 text-white min-h-screen">
-      <h1 className="text-3xl font-bold text-primary">AMM Simulation</h1>
+    <div className="min-h-screen bg-dark-100 text-white">
+      <div className="max-w-7xl mx-auto p-8 space-y-8">
+        <div className="animate-fade-in">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-400 to-cyber-400 bg-clip-text text-transparent mb-4">
+            AMM Simulation
+          </h1>
+          <p className="text-neon-300">
+            Simulate Automated Market Maker behavior with customizable
+            parameters
+          </p>
+        </div>
 
-      {Object.entries(parameterGroups).map(([groupName, groupParams]) => (
-        <div key={groupName} className="bg-dark-800 p-4 rounded-lg">
-          <h2 className="text-xl font-semibold mb-3 text-primary capitalize">
-            {groupName} Parameters
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {groupParams.map((paramKey) => {
-              const config =
-                parameterConfig[paramKey as keyof SimulationParams];
-              const value = params[paramKey as keyof SimulationParams];
-              return (
-                <div key={paramKey} className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-300 mb-1">
-                    {config.label}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-400">
-                      {config.formatter(value)}
-                    </span>
-                    <input
-                      type="number"
-                      value={value}
-                      step={config.step}
-                      min={config.min}
-                      max={config.max}
-                      onChange={(e) =>
-                        handleParamChange(
-                          paramKey as keyof SimulationParams,
-                          e.target.value
-                        )
-                      }
-                      className="flex-1 p-2 border border-dark-600 rounded bg-dark-950 text-gray-100 focus:outline-none focus:border-primary transition-colors"
-                    />
+        {Object.entries(parameterGroups).map(([groupName, groupParams]) => (
+          <div
+            key={groupName}
+            className="bg-dark-200 p-6 rounded-lg border border-dark-300 shadow-lg animate-fade-in"
+          >
+            <h2 className="text-2xl font-semibold text-cyber-400 mb-4 capitalize">
+              {groupName} Parameters
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {groupParams.map((paramKey) => {
+                const config =
+                  parameterConfig[paramKey as keyof SimulationParams];
+                const value = params[paramKey as keyof SimulationParams];
+                return (
+                  <div key={paramKey} className="flex flex-col">
+                    <label className="text-sm font-medium text-neon-300 mb-2">
+                      {config.label}
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-brand-300 font-mono">
+                        {config.formatter(value)}
+                      </span>
+                      <input
+                        type="number"
+                        value={value}
+                        step={config.step}
+                        min={config.min}
+                        max={config.max}
+                        onChange={(e) =>
+                          handleParamChange(
+                            paramKey as keyof SimulationParams,
+                            e.target.value
+                          )
+                        }
+                        className="flex-1 p-2 border border-dark-300 rounded bg-dark-300/50 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                      />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        <div className="bg-dark-200 p-6 rounded-lg border border-dark-300 shadow-lg animate-fade-in">
+          <div className="h-[600px] w-full">
+            <ResponsiveContainer>
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis
+                  dataKey="hour"
+                  tickFormatter={(hour) => `Day ${Math.floor(hour / 24) + 1}`}
+                  label={{
+                    value: "Time",
+                    position: "insideBottom",
+                    offset: -5,
+                    fill: "#9CA3AF",
+                  }}
+                  stroke="#9CA3AF"
+                />
+                <YAxis
+                  yAxisId="left"
+                  tickFormatter={(value) => formatters.price.format(value)}
+                  label={{
+                    value: "Token Price (USD)",
+                    angle: -90,
+                    position: "insideLeft",
+                    fill: "#9CA3AF",
+                  }}
+                  stroke="#9CA3AF"
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickFormatter={(value) => formatters.marketCap(value)}
+                  label={{
+                    value: "Market Cap",
+                    angle: 90,
+                    position: "insideRight",
+                    fill: "#9CA3AF",
+                  }}
+                  stroke="#9CA3AF"
+                />
+                <YAxis
+                  yAxisId="impact"
+                  orientation="right"
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  domain={[0, 25]}
+                  label={{
+                    value: "Price Impact",
+                    angle: 90,
+                    position: "insideRight",
+                    offset: 50,
+                    fill: "#9CA3AF",
+                  }}
+                  stroke="#9CA3AF"
+                />
+                <Tooltip
+                  formatter={(value: number, name: string, props: any) => {
+                    if (!props?.payload?.length) return ["-", name];
+                    const dataPoint = props.payload[0].payload;
+
+                    if (name === "Price Impact (%)") {
+                      return dataPoint.priceImpact
+                        ? [
+                            `${dataPoint.priceImpact.toFixed(1)}%`,
+                            "Price Impact",
+                          ]
+                        : ["-", "Price Impact"];
+                    }
+                    if (name === "Token Price (USD)") {
+                      return [formatters.price.format(value), name];
+                    }
+                    if (name === "Liquidity") {
+                      return [
+                        formatters.currency.format(dataPoint.liquidityUsd || 0),
+                        name,
+                      ];
+                    }
+                    return [formatters.marketCap(value), name];
+                  }}
+                  labelFormatter={(hour) => `Day ${Math.floor(hour / 24) + 1}`}
+                  contentStyle={{
+                    backgroundColor: "#1F2937",
+                    border: "1px solid #374151",
+                    borderRadius: "0.375rem",
+                    color: "#fff",
+                  }}
+                />
+                <Legend wrapperStyle={{ color: "#9CA3AF" }} />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="tokenPriceUsd"
+                  stroke="#7f00ff"
+                  name="Token Price (USD)"
+                  dot={false}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="marketCapUsd"
+                  stroke="#00e1ff"
+                  name="Market Cap"
+                  dot={false}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="targetMarketCap"
+                  stroke="#00afff"
+                  name="Target Market Cap"
+                  strokeDasharray="5 5"
+                  dot={false}
+                />
+                <Bar
+                  yAxisId="impact"
+                  dataKey="priceImpact"
+                  fill="#ff0000"
+                  name="Price Impact (%)"
+                  opacity={0.75}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="liquidityUsd"
+                  stroke="#00b4cc"
+                  name="Liquidity"
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      ))}
-
-      <div className="h-[600px] w-full bg-dark-800 p-4 rounded-lg">
-        <ResponsiveContainer>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis
-              dataKey="hour"
-              tickFormatter={(hour) => `Day ${Math.floor(hour / 24) + 1}`}
-              label={{
-                value: "Time",
-                position: "insideBottom",
-                offset: -5,
-                fill: "#9CA3AF",
-              }}
-              stroke="#9CA3AF"
-            />
-            <YAxis
-              yAxisId="left"
-              tickFormatter={(value) => formatters.price.format(value)}
-              label={{
-                value: "Token Price (USD)",
-                angle: -90,
-                position: "insideLeft",
-                fill: "#9CA3AF",
-              }}
-              stroke="#9CA3AF"
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              tickFormatter={(value) => formatters.marketCap(value)}
-              label={{
-                value: "Market Cap",
-                angle: 90,
-                position: "insideRight",
-                fill: "#9CA3AF",
-              }}
-              stroke="#9CA3AF"
-            />
-            <YAxis
-              yAxisId="impact"
-              orientation="right"
-              tickFormatter={(value) => `${value.toFixed(1)}%`}
-              domain={[0, 25]}
-              label={{
-                value: "Price Impact",
-                angle: 90,
-                position: "insideRight",
-                offset: 50,
-                fill: "#9CA3AF",
-              }}
-              stroke="#9CA3AF"
-            />
-            <Tooltip
-              formatter={(value: number, name: string, props: any) => {
-                if (!props?.payload?.length) return ["-", name];
-                const dataPoint = props.payload[0].payload;
-
-                if (name === "Price Impact (%)") {
-                  return dataPoint.priceImpact
-                    ? [`${dataPoint.priceImpact.toFixed(1)}%`, "Price Impact"]
-                    : ["-", "Price Impact"];
-                }
-                if (name === "Token Price (USD)") {
-                  return [formatters.price.format(value), name];
-                }
-                if (name === "Liquidity") {
-                  return [
-                    formatters.currency.format(dataPoint.liquidityUsd || 0),
-                    name,
-                  ];
-                }
-                return [formatters.marketCap(value), name];
-              }}
-              labelFormatter={(hour) => `Day ${Math.floor(hour / 24) + 1}`}
-              contentStyle={{
-                backgroundColor: "#1F2937",
-                border: "1px solid #374151",
-                borderRadius: "0.375rem",
-                color: "#fff",
-              }}
-            />
-            <Legend wrapperStyle={{ color: "#9CA3AF" }} />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="tokenPriceUsd"
-              stroke="#8B5CF6"
-              name="Token Price (USD)"
-              dot={false}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="marketCapUsd"
-              stroke="#10B981"
-              name="Market Cap"
-              dot={false}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="targetMarketCap"
-              stroke="#F59E0B"
-              name="Target Market Cap"
-              strokeDasharray="5 5"
-              dot={false}
-            />
-            <Bar
-              yAxisId="impact"
-              dataKey="priceImpact"
-              fill="#EF4444"
-              name="Price Impact (%)"
-              opacity={0.75}
-            />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="liquidityUsd"
-              stroke="#60A5FA"
-              name="Liquidity"
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );
