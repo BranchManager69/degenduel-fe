@@ -59,15 +59,15 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 className="inline-flex items-center space-x-2 text-sm"
               >
                 {isLive ? (
-                  <span className="inline-flex items-center text-red-400 space-x-1.5">
+                  <span className="inline-flex items-center text-cyber-400 space-x-1.5">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyber-500" />
                     </span>
                     <span>LIVE</span>
                   </span>
                 ) : (
-                  <span className="text-brand-400">NEW</span>
+                  <span className="text-neon-400">NEW</span>
                 )}
                 <span className="font-medium text-gray-200">
                   {contest.name}
@@ -75,7 +75,9 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 <span className="text-gray-400">
                   {contest.participant_count}/{contest.max_participants}
                 </span>
-                <span className="text-brand-300">{contest.prize_pool}◎</span>
+                <span className="bg-gradient-to-r from-cyber-400 to-neon-400 text-transparent bg-clip-text">
+                  {contest.prize_pool}◎
+                </span>
               </div>
             );
           })}

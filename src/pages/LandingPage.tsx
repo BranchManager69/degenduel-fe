@@ -108,7 +108,7 @@ export const LandingPage: React.FC = () => {
         <div className="relative pt-20 pb-16 text-center">
           <h1 className="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl mb-6">
             <span className="block mb-2">This is</span>
-            <span className="block bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text pb-2">
+            <span className="block bg-gradient-to-r from-brand-400 via-cyber-400 to-neon-400 text-transparent bg-clip-text pb-2">
               DegenDuel.
             </span>
           </h1>
@@ -119,7 +119,11 @@ export const LandingPage: React.FC = () => {
           <div className="mt-8 max-w-md mx-auto sm:flex sm:justify-center">
             <div className="rounded-md shadow">
               <RouterLink to="/contests">
-                <Button size="lg" className="bg-brand-600 hover:bg-brand-700">
+                <Button
+                  size="lg"
+                  className="bg-brand-600 hover:bg-brand-700 group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyber-400/0 via-cyber-400/20 to-cyber-400/0 group-hover:translate-x-full duration-500 ease-in-out transition-transform" />
                   Browse Contests
                 </Button>
               </RouterLink>
@@ -129,7 +133,7 @@ export const LandingPage: React.FC = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="text-gray-300 border-gray-700 hover:bg-dark-200"
+                  className="text-cyber-400 border-cyber-400/20 hover:bg-cyber-400/10 hover:border-cyber-400/40 transition-colors duration-300"
                 >
                   How It Works
                 </Button>

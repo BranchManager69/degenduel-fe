@@ -17,164 +17,75 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="py-12">
-        <div className="animate-pulse space-y-8">
-          <div className="h-8 w-48 bg-dark-300 rounded" />
+      <section className="py-12">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-dark-300/50 w-64 rounded" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-dark-300 h-[300px] rounded-lg" />
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 bg-dark-300/50 rounded" />
             ))}
           </div>
         </div>
-      </div>
+      </section>
     );
   }
 
-  if (!contests.length) {
+  if (contests.length === 0) {
     return (
-      <div className="py-12">
-        {/* Section Header */}
-        <div className="relative mb-8">
-          {/* Decorative line */}
-          <div className="absolute left-0 top-1/2 w-full h-px bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-transparent" />
-
-          <h2 className="relative inline-block text-2xl font-bold">
-            <span
-              className={`bg-gradient-to-r ${
-                type === "active" && contests.length > 0
-                  ? "from-red-400 to-brand-600"
-                  : "from-brand-400 to-brand-600"
-              } text-transparent bg-clip-text`}
-            >
-              {title}
-            </span>
-
-            {/* Decorative dot */}
-            <span
-              className={`absolute -right-3 top-0 w-2 h-2 ${
-                type === "active" && contests.length > 0
-                  ? "bg-red-500"
-                  : "bg-brand-500"
-              } rounded-full ${
-                type === "active" && contests.length > 0
-                  ? "animate-ping"
-                  : "animate-pulse"
-              }`}
-            />
-
-            {/* Live indicator for active contests */}
-            {type === "active" && (
-              <span className="ml-3 inline-flex items-center">
-                {contests.length > 0 ? (
-                  <>
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                    </span>
-                    <span className="ml-2 text-sm font-medium text-red-400">
-                      LIVE
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-sm font-medium text-gray-500">
-                    No Live Matches
-                  </span>
-                )}
-              </span>
-            )}
-          </h2>
+      <section className="py-12">
+        <h2 className="text-2xl font-bold mb-8 bg-gradient-to-r from-brand-400 via-cyber-400 to-neon-400 text-transparent bg-clip-text">
+          {title}
+        </h2>
+        <div className="text-center py-12 text-gray-400">
+          No {type === "active" ? "live" : "joinable"} contests available at the
+          moment.
         </div>
-        <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-8 text-center">
-          <p className="text-gray-400">
-            No {type} contests available at the moment.
-          </p>
-        </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="py-12">
+    <section className="py-12">
       {/* Section Header */}
-      <div className="relative mb-8">
-        {/* Decorative line */}
-        <div className="absolute left-0 top-1/2 w-full h-px bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-transparent" />
-
-        <h2 className="relative inline-block text-2xl font-bold">
-          <span
-            className={`bg-gradient-to-r ${
-              type === "active" && contests.length > 0
-                ? "from-red-400 to-brand-600"
-                : "from-brand-400 to-brand-600"
-            } text-transparent bg-clip-text`}
-          >
+      <div className="flex items-center justify-between mb-8">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-cyber-400 to-neon-400 text-transparent bg-clip-text">
             {title}
-          </span>
-
-          {/* Decorative dot */}
-          <span
-            className={`absolute -right-3 top-0 w-2 h-2 ${
-              type === "active" && contests.length > 0
-                ? "bg-red-500"
-                : "bg-brand-500"
-            } rounded-full ${
-              type === "active" && contests.length > 0
-                ? "animate-ping"
-                : "animate-pulse"
-            }`}
-          />
-
-          {/* Live indicator for active contests */}
-          {type === "active" && (
-            <span className="ml-3 inline-flex items-center">
-              {contests.length > 0 ? (
-                <>
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                  </span>
-                  <span className="ml-2 text-sm font-medium text-red-400">
-                    LIVE
-                  </span>
-                </>
-              ) : (
-                <span className="text-sm font-medium text-gray-500">
-                  No Live Matches
-                </span>
-              )}
-            </span>
+          </h2>
+          {type === "active" && contests.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyber-500" />
+              </span>
+              <span className="text-sm text-cyber-400">
+                {contests.length} Live Match{contests.length !== 1 && "es"}
+              </span>
+            </div>
           )}
-        </h2>
+        </div>
       </div>
 
       {/* Contest Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {contests.map((contest, index) => (
-          <div
+        {contests.map((contest) => (
+          <ContestCard
             key={contest.id}
-            className="opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <ContestCard
-              id={String(contest.id)}
-              name={contest.name}
-              description={contest.description}
-              entryFee={Number(contest.entry_fee)}
-              prizePool={Number(contest.prize_pool)}
-              startTime={contest.start_time}
-              endTime={contest.end_time}
-              participantCount={contest.participant_count}
-              maxParticipants={contest.max_participants}
-              status={contest.status}
-              difficulty={contest.settings.difficulty}
-              contestCode={contest.contest_code}
-            />
-          </div>
+            id={String(contest.id)}
+            name={contest.name}
+            description={contest.description}
+            entryFee={Number(contest.entry_fee)}
+            prizePool={Number(contest.prize_pool)}
+            startTime={contest.start_time}
+            endTime={contest.end_time}
+            participantCount={contest.participant_count}
+            maxParticipants={contest.max_participants}
+            status={contest.status}
+            difficulty={contest.settings.difficulty}
+            contestCode={contest.contest_code}
+          />
         ))}
       </div>
-
-      {/* Bottom gradient line */}
-      <div className="mt-12 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent" />
-    </div>
+    </section>
   );
 };

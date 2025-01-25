@@ -182,10 +182,10 @@ export const Features: React.FC = () => {
   return (
     <div className="py-16">
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text mb-2">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-brand-400 via-cyber-400 to-brand-500 text-transparent bg-clip-text mb-2">
           Platform Features
         </h2>
-        <div className="h-1 w-24 mx-auto bg-gradient-to-r from-brand-400 to-brand-600 rounded-full mb-4" />
+        <div className="h-1 w-24 mx-auto bg-gradient-to-r from-brand-400 via-cyber-400 to-brand-500 rounded-full mb-4" />
         <p className="mt-4 text-gray-400 max-w-2xl mx-auto text-lg">
           Experience the future of competitive token trading with our innovative
           platform
@@ -196,7 +196,7 @@ export const Features: React.FC = () => {
         {features.map((feature) => (
           <Card
             key={feature.title}
-            className="group relative bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 overflow-hidden"
+            className="group relative bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-cyber-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-cyber-500/10 overflow-hidden"
           >
             {/* Animated gradient overlay */}
             <div
@@ -204,15 +204,15 @@ export const Features: React.FC = () => {
             />
 
             {/* Glow effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-cyber-400/10 via-brand-500/10 to-neon-400/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
             <CardContent className="relative p-6">
               <div className="flex items-start space-x-4">
-                <div className="text-brand-400 group-hover:text-brand-500 transition-colors duration-300">
+                <div className="text-cyber-400 group-hover:text-neon-400 transition-colors duration-300">
                   {feature.icon}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-100 mb-2 group-hover:text-brand-400 transition-colors duration-300">
+                  <h3 className="text-lg font-bold text-gray-100 mb-2 group-hover:text-cyber-400 transition-colors duration-300">
                     {feature.title}
                   </h3>
                   <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">

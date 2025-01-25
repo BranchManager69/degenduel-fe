@@ -50,7 +50,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     setTimeLeft(initialTime);
 
     // Only set up interval if contest hasn't ended
-    let timer: NodeJS.Timeout | null = null;
+    let timer: number | null = null;
     if (initialTime !== "Ended") {
       timer = setInterval(
         () => {
