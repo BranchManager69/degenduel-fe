@@ -90,6 +90,43 @@ export function StartContest() {
     return null;
   };
 
+  const getStartTimeStatus = (contest: Contest) => {
+    const startTime = new Date(contest.start_time);
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (startTime.getTime() - now.getTime()) / (1000 * 60)
+    );
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMinutes < 0) {
+      // Overdue
+      const absMinutes = Math.abs(diffInMinutes);
+      const absHours = Math.floor(absMinutes / 60);
+      const absDays = Math.floor(absHours / 24);
+      const remainingHours = absHours % 24;
+      const remainingMinutes = absMinutes % 60;
+
+      if (absDays > 0) {
+        return `${absDays}d ${remainingHours}h overdue`;
+      } else if (absHours > 0) {
+        return `${absHours}h ${remainingMinutes}m overdue`;
+      }
+      return `${absMinutes}m overdue`;
+    }
+
+    // Future
+    const remainingHours = diffInHours % 24;
+    const remainingMinutes = diffInMinutes % 60;
+
+    if (diffInDays > 0) {
+      return `starts in ${diffInDays}d ${remainingHours}h`;
+    } else if (diffInHours > 0) {
+      return `starts in ${diffInHours}h ${remainingMinutes}m`;
+    }
+    return `starts in ${diffInMinutes}m`;
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -99,24 +136,52 @@ export function StartContest() {
         <select
           value={selectedContest?.id || ""}
           onChange={(e) => handleContestSelect(e.target.value)}
-          className="w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded text-gray-100 focus:outline-none focus:border-cyber-500 transition-colors"
+          className="w-full px-4 py-2 bg-dark-200 border border-dark-300 rounded text-gray-100 focus:outline-none focus:border-cyber-500 transition-colors"
         >
-          <option value="">Select a contest...</option>
-          {contests.map((contest) => (
-            <option
-              key={contest.id}
-              value={contest.id}
-              className={
-                contest.participant_count < contest.min_participants
-                  ? "text-red-400"
-                  : ""
-              }
-            >
-              {contest.name} ({contest.contest_code}) -{" "}
-              {contest.participant_count}/{contest.min_participants}{" "}
-              participants
+          {contests.length === 0 ? (
+            <option value="" className="bg-dark-200 text-gray-400">
+              No pending contests available
             </option>
-          ))}
+          ) : (
+            <>
+              <option value="" className="bg-dark-200 text-gray-400">
+                Select a contest...
+              </option>
+              {contests.map((contest) => {
+                const startTime = new Date(contest.start_time);
+                const now = new Date();
+                const isOverdue = startTime < now;
+                return (
+                  <option
+                    key={contest.id}
+                    value={contest.id}
+                    className="bg-dark-200 text-gray-100"
+                  >
+                    {contest.name} ({contest.contest_code}) -{" "}
+                    {contest.participant_count < contest.min_participants ? (
+                      <span className="text-red-400">
+                        {contest.participant_count}/{contest.min_participants}{" "}
+                        participants
+                      </span>
+                    ) : (
+                      <span>
+                        {contest.participant_count}/{contest.min_participants}{" "}
+                        participants
+                      </span>
+                    )}{" "}
+                    -{" "}
+                    {isOverdue ? (
+                      <span className="text-yellow-400">
+                        {getStartTimeStatus(contest)}
+                      </span>
+                    ) : (
+                      <span>{getStartTimeStatus(contest)}</span>
+                    )}
+                  </option>
+                );
+              })}
+            </>
+          )}
         </select>
       </div>
 

@@ -1,4 +1,4 @@
-import { differenceInHours, format } from "date-fns";
+import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { API_URL } from "../../config/config";
 
@@ -74,38 +74,41 @@ export function EndContest() {
     setSuccess(null);
   };
 
-  const getEndTimeWarning = (contest: Contest) => {
+  const getTimeStatus = (contest: Contest) => {
     const endTime = new Date(contest.end_time);
     const now = new Date();
-    const hoursUntilEnd = differenceInHours(endTime, now);
+    const diffInMinutes = Math.floor(
+      (endTime.getTime() - now.getTime()) / (1000 * 60)
+    );
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
 
-    if (hoursUntilEnd > 24) {
-      return {
-        message: `Warning: Contest is scheduled to end in ${Math.floor(
-          hoursUntilEnd / 24
-        )} days and ${hoursUntilEnd % 24} hours`,
-        type: "warning",
-      };
-    } else if (hoursUntilEnd > 0) {
-      return {
-        message: `Warning: Contest is scheduled to end in ${hoursUntilEnd} hours`,
-        type: "warning",
-      };
-    } else if (hoursUntilEnd < -24) {
-      return {
-        message: `Contest has exceeded scheduled end time by ${Math.floor(
-          Math.abs(hoursUntilEnd) / 24
-        )} days and ${Math.abs(hoursUntilEnd) % 24} hours`,
-        type: "error",
-      };
-    } else {
-      return {
-        message: `Contest has exceeded scheduled end time by ${Math.abs(
-          hoursUntilEnd
-        )} hours`,
-        type: "error",
-      };
+    if (diffInMinutes < 0) {
+      // Overdue
+      const absMinutes = Math.abs(diffInMinutes);
+      const absHours = Math.floor(absMinutes / 60);
+      const absDays = Math.floor(absHours / 24);
+      const remainingHours = absHours % 24;
+      const remainingMinutes = absMinutes % 60;
+
+      if (absDays > 0) {
+        return `${absDays}d ${remainingHours}h overdue`;
+      } else if (absHours > 0) {
+        return `${absHours}h ${remainingMinutes}m overdue`;
+      }
+      return `${absMinutes}m overdue`;
     }
+
+    // Remaining time
+    const remainingHours = diffInHours % 24;
+    const remainingMinutes = diffInMinutes % 60;
+
+    if (diffInDays > 0) {
+      return `${diffInDays}d ${remainingHours}h remaining`;
+    } else if (diffInHours > 0) {
+      return `${diffInHours}h ${remainingMinutes}m remaining`;
+    }
+    return `${diffInMinutes}m remaining`;
   };
 
   return (
@@ -117,29 +120,40 @@ export function EndContest() {
         <select
           value={selectedContest?.id || ""}
           onChange={(e) => handleContestSelect(e.target.value)}
-          className="w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded text-gray-100 focus:outline-none focus:border-cyber-500 transition-colors"
+          className="w-full px-4 py-2 bg-dark-200 border border-dark-300 rounded text-gray-100 focus:outline-none focus:border-cyber-500 transition-colors"
         >
-          <option value="">Select a contest...</option>
-          {contests.map((contest) => {
-            const hoursUntilEnd = differenceInHours(
-              new Date(contest.end_time),
-              new Date()
-            );
-            const className =
-              hoursUntilEnd < 0
-                ? "text-red-400"
-                : hoursUntilEnd < 24
-                ? "text-yellow-400"
-                : "";
-            return (
-              <option key={contest.id} value={contest.id} className={className}>
-                {contest.name} ({contest.contest_code}) -{" "}
-                {hoursUntilEnd < 0
-                  ? `${Math.abs(hoursUntilEnd)}h overdue`
-                  : `${hoursUntilEnd}h remaining`}
+          {contests.length === 0 ? (
+            <option value="" className="bg-dark-200 text-gray-400">
+              No active contests available
+            </option>
+          ) : (
+            <>
+              <option value="" className="bg-dark-200 text-gray-400">
+                Select a contest...
               </option>
-            );
-          })}
+              {contests.map((contest) => {
+                const endTime = new Date(contest.end_time);
+                const now = new Date();
+                const isOverdue = endTime < now;
+                return (
+                  <option
+                    key={contest.id}
+                    value={contest.id}
+                    className="bg-dark-200 text-gray-100"
+                  >
+                    {contest.name} ({contest.contest_code}) -{" "}
+                    {isOverdue ? (
+                      <span className="text-red-400">
+                        {getTimeStatus(contest)}
+                      </span>
+                    ) : (
+                      <span>{getTimeStatus(contest)}</span>
+                    )}
+                  </option>
+                );
+              })}
+            </>
+          )}
         </select>
       </div>
 
@@ -171,15 +185,6 @@ export function EndContest() {
                 {selectedContest.participant_count}
               </span>
             </p>
-            {getEndTimeWarning(selectedContest).type === "warning" ? (
-              <p className="text-yellow-400">
-                {getEndTimeWarning(selectedContest).message}
-              </p>
-            ) : (
-              <p className="text-red-400">
-                {getEndTimeWarning(selectedContest).message}
-              </p>
-            )}
           </div>
           <button
             onClick={() => setShowConfirmation(true)}
@@ -196,15 +201,6 @@ export function EndContest() {
           <p className="text-gray-400">
             Are you sure you want to end "{selectedContest.name}"?
           </p>
-          {getEndTimeWarning(selectedContest).type === "warning" ? (
-            <p className="text-yellow-400">
-              {getEndTimeWarning(selectedContest).message}
-            </p>
-          ) : (
-            <p className="text-red-400">
-              {getEndTimeWarning(selectedContest).message}
-            </p>
-          )}
           <div className="flex gap-3">
             <button
               onClick={handleEndContest}
