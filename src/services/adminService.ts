@@ -42,14 +42,17 @@ class AdminService {
     wallet_address: string,
     amount: number
   ): Promise<BalanceAdjustmentResponse> {
-    const response = await fetch(`${API_URL}/admin/balance/adjust`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify({ wallet_address, amount }),
-    });
+    const response = await fetch(
+      `${API_URL}/balance/${wallet_address}/balance`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ amount }),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();

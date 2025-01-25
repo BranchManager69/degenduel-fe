@@ -6,13 +6,11 @@ import { checkContestParticipation, logError } from "./utils";
 
 export const contests = {
   getActive: async (): Promise<Contest[]> => {
-    const user = useStore.getState().user;
+    ////const user = useStore.getState().user;
 
     const response = await fetch(`${API_URL}/contests`, {
       headers: {
         "Content-Type": "application/json",
-        "X-Wallet-Address": user?.wallet_address || "",
-        "Cache-Control": "no-cache",
       },
       credentials: "include",
     });
@@ -37,8 +35,6 @@ export const contests = {
       const response = await fetch(`${API_URL}/contests`, {
         headers: {
           "Content-Type": "application/json",
-          "X-Wallet-Address": user?.wallet_address || "",
-          "Cache-Control": "no-cache",
         },
         credentials: "include",
       });
@@ -114,8 +110,6 @@ export const contests = {
       const response = await fetch(`${API_URL}/contests/${contestId}`, {
         headers: {
           "Content-Type": "application/json",
-          "X-Wallet-Address": user?.wallet_address || "",
-          "Cache-Control": "no-cache",
         },
         credentials: "include",
       });
@@ -183,7 +177,6 @@ export const contests = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Wallet-Address": user.wallet_address,
         },
         credentials: "include",
         body: JSON.stringify(payload),
@@ -222,7 +215,6 @@ export const contests = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
         },
         credentials: "include",
         body: JSON.stringify(contestData),

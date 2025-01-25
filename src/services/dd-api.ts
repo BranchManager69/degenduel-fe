@@ -14,23 +14,18 @@ import type { SortOptions } from "../types/sort";
 
 // Create a consistent API client
 const createApiClient = () => {
-  const user = useStore.getState().user;
+  ////const user = useStore.getState().user;
 
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
-      const headers = new Headers(options.headers || {});
-      headers.set("Content-Type", "application/json");
-      headers.set("Cache-Control", "no-cache");
-
-      if (user?.wallet_address) {
-        headers.set("X-Wallet-Address", user.wallet_address);
-      }
+      const headers = new Headers({
+        "Content-Type": "application/json",
+      });
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers,
         credentials: "include",
-        mode: "cors",
       });
 
       if (!response.ok) {
@@ -325,7 +320,6 @@ export const ddApi = {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
           },
           data,
         };
@@ -426,7 +420,6 @@ export const ddApi = {
       const response = await fetch(`${API_URL}/contests`, {
         headers: {
           "Content-Type": "application/json",
-          "X-Wallet-Address": user?.wallet_address || "",
           "Cache-Control": "no-cache",
         },
         credentials: "include",
@@ -523,7 +516,6 @@ export const ddApi = {
         const response = await fetch(`${API_URL}/contests/${contestId}`, {
           headers: {
             "Content-Type": "application/json",
-            "X-Wallet-Address": user?.wallet_address || "",
             "Cache-Control": "no-cache",
           },
           credentials: "include",
@@ -594,7 +586,6 @@ export const ddApi = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Wallet-Address": user.wallet_address,
           },
           credentials: "include",
           body: JSON.stringify(payload),
@@ -665,7 +656,6 @@ export const ddApi = {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
-              "X-Wallet-Address": user.wallet_address,
             },
             body: JSON.stringify(payload),
             credentials: "include",
@@ -709,7 +699,6 @@ export const ddApi = {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
           },
           credentials: "include",
           body: JSON.stringify(contestData),
@@ -813,4 +802,72 @@ export const ddApi = {
       return response.json();
     },
   },
+
+  fetch: async (endpoint: string, options: RequestInit = {}) => {
+    const defaultOptions = {
+      credentials: "include" as const,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[API Error] ${endpoint}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        cookies: document.cookie,
+      });
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `API Error: ${response.statusText}`);
+    }
+
+    return response;
+  },
+};
+
+export const createDDApi = () => {
+  return {
+    fetch: async (endpoint: string, options: RequestInit = {}) => {
+      const defaultOptions = {
+        credentials: "include" as const,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...options.headers,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`[API Error] ${endpoint}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          cookies: document.cookie,
+        });
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `API Error: ${response.statusText}`
+        );
+      }
+
+      return response;
+    },
+  };
 };

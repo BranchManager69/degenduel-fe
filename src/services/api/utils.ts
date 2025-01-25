@@ -54,7 +54,6 @@ export const checkContestParticipation = async (
       {
         headers: {
           "Content-Type": "application/json",
-          "X-Wallet-Address": userWallet,
         },
         credentials: "include",
         signal: controller.signal,
@@ -84,4 +83,41 @@ export const checkContestParticipation = async (
     participationCache.set(cacheKey, { result: false, timestamp: now });
     return false;
   }
+};
+
+export const createApiClient = () => {
+  return {
+    fetch: async (endpoint: string, options: RequestInit = {}) => {
+      const defaultOptions = {
+        credentials: "include" as const,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...options.headers,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`[API Error] ${endpoint}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          cookies: document.cookie,
+        });
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `API Error: ${response.statusText}`
+        );
+      }
+
+      return response;
+    },
+  };
 };

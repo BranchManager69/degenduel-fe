@@ -122,7 +122,6 @@ export const useStore = create<StoreState>()(
               credentials: "include",
               headers: {
                 "Content-Type": "application/json",
-                "X-Wallet-Address": walletAddress,
               },
             }
           );

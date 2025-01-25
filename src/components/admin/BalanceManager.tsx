@@ -59,13 +59,13 @@ export const BalanceManager: React.FC = () => {
   };
 
   return (
-    <div className="bg-dark-200 border border-dark-300 rounded-lg overflow-hidden">
+    <div className="bg-dark-200 border border-dark-300 rounded-lg relative">
       <div className="p-4 border-b border-dark-300">
         <h3 className="text-lg font-medium text-cyber-300">Balance Manager</h3>
       </div>
 
       <div className="p-4 space-y-4">
-        <div>
+        <div className="relative z-50">
           <label className="block text-sm font-medium text-cyber-300 mb-1">
             Search User
           </label>
@@ -80,7 +80,7 @@ export const BalanceManager: React.FC = () => {
             <div>
               <label
                 htmlFor="amount"
-                className="block text-sm font-medium text-cyber-300 mb-1"
+                className="block text-sm font-medium text-gray-400 mb-1"
               >
                 Adjustment Amount
               </label>
@@ -91,43 +91,41 @@ export const BalanceManager: React.FC = () => {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Enter amount (use negative for deductions)"
-                  className="w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded text-cyber-300 placeholder-cyber-300/50 focus:outline-none focus:border-cyber-500 transition-colors"
+                  className="w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyber-500 transition-colors"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="p-3 bg-brand-900/20 rounded">
-                <p className="text-brand-500">{error}</p>
+              <div className="p-3 bg-dark-300/20 rounded">
+                <p className="text-red-400">{error}</p>
               </div>
             )}
 
             {success && (
               <div className="p-3 bg-dark-300/50 rounded space-y-2">
-                <p className="text-cyber-300">Balance adjusted successfully:</p>
+                <p className="text-gray-100">Balance adjusted successfully:</p>
                 <div className="font-mono text-sm space-y-1">
-                  <p className="text-cyber-300">
+                  <p className="text-gray-400">
                     Previous Balance:{" "}
-                    <span className="text-cyber-400">
+                    <span className="text-gray-100">
                       {success.previous_balance.toLocaleString()}
                     </span>
                   </p>
-                  <p className="text-cyber-300">
+                  <p className="text-gray-400">
                     Adjustment:{" "}
                     <span
                       className={
-                        success.amount >= 0
-                          ? "text-green-400"
-                          : "text-brand-500"
+                        success.amount >= 0 ? "text-green-400" : "text-red-400"
                       }
                     >
                       {success.amount >= 0 ? "+" : ""}
                       {success.amount.toLocaleString()}
                     </span>
                   </p>
-                  <p className="text-cyber-300">
+                  <p className="text-gray-400">
                     New Balance:{" "}
-                    <span className="text-cyber-400">
+                    <span className="text-gray-100">
                       {success.new_balance.toLocaleString()}
                     </span>
                   </p>

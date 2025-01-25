@@ -15,11 +15,13 @@ export const SuperAdminDashboard: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Activity Monitor Section */}
+      {/* Activity Monitor Section */}
+      <div className="mb-6">
         <ActivityMonitor limit={5} />
+      </div>
 
-        {/* Balance Manager Section */}
+      {/* Balance Manager Section */}
+      <div className="mb-8">
         <BalanceManager />
       </div>
 

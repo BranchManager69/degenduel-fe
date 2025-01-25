@@ -85,34 +85,40 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
         </button>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="w-full">
         <table className="w-full">
           <thead className="bg-dark-300/50">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
+              <th className="w-44 px-4 py-2 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                 Time
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
+              <th className="w-36 px-4 py-2 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                 Admin
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
+              <th className="w-32 px-4 py-2 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                 Action
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                 Details
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
+              <th className="w-32 px-4 py-2 text-left text-sm font-medium text-gray-400 whitespace-nowrap">
                 IP
               </th>
             </tr>
           </thead>
           <tbody>
             {activities.map((activity) => (
-              <tr key={activity.id} className="border-t border-dark-300">
-                <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+              <tr
+                key={activity.id}
+                className="border-t border-dark-300 hover:bg-dark-300/50"
+              >
+                <td className="px-4 py-2 text-gray-300 text-sm whitespace-nowrap">
                   {new Date(activity.created_at).toLocaleString()}
                 </td>
-                <td className="px-4 py-3 text-gray-300 font-mono">
+                <td
+                  className="px-4 py-2 text-gray-300 text-sm font-mono whitespace-nowrap"
+                  title={activity.admin_address || "System"}
+                >
                   {activity.admin_address
                     ? `${activity.admin_address.slice(
                         0,
@@ -120,13 +126,30 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                       )}...${activity.admin_address.slice(-4)}`
                     : "System"}
                 </td>
-                <td className="px-4 py-3 text-gray-300">{activity.action}</td>
-                <td className="px-4 py-3 text-gray-300 max-w-md break-words">
-                  {typeof activity.details === "string"
-                    ? activity.details
-                    : JSON.stringify(activity.details)}
+                <td
+                  className="px-4 py-2 text-gray-300 text-sm whitespace-nowrap"
+                  title={activity.action}
+                >
+                  {activity.action}
                 </td>
-                <td className="px-4 py-3 text-gray-300 font-mono">
+                <td className="px-4 py-2 text-gray-300 text-sm">
+                  <div
+                    className="truncate"
+                    title={
+                      typeof activity.details === "string"
+                        ? activity.details
+                        : JSON.stringify(activity.details)
+                    }
+                  >
+                    {typeof activity.details === "string"
+                      ? activity.details
+                      : JSON.stringify(activity.details)}
+                  </div>
+                </td>
+                <td
+                  className="px-4 py-2 text-gray-300 text-sm font-mono whitespace-nowrap"
+                  title={activity.ip_address}
+                >
                   {activity.ip_address}
                 </td>
               </tr>

@@ -1,5 +1,4 @@
 import { API_URL } from "../../config/config";
-import { useStore } from "../../store/useStore";
 import { Activity, Contest, PlatformStats } from "../../types";
 
 export const admin = {
@@ -42,7 +41,6 @@ export const admin = {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "X-Wallet-Address": useStore.getState().user?.wallet_address || "",
         },
         data,
       };
@@ -132,5 +130,19 @@ export const admin = {
       console.error("Failed to adjust user balance:", error);
       throw error;
     }
+  },
+
+  getActivities: async (limit: number = 10, offset: number = 0) => {
+    const response = await fetch(
+      `${API_URL}/admin/activities?limit=${limit}&offset=${offset}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      }
+    );
+    if (!response.ok) throw new Error("Failed to fetch activities");
+    return response.json();
   },
 };
