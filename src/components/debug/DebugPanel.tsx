@@ -21,17 +21,17 @@ interface SessionInfo {
 export const DebugPanel: React.FC = () => {
   const { user, debugConfig, setDebugConfig } = useStore();
   const [sectionsOpen, setSectionsOpen] = useState({
-    wallet: true,
-    network: true,
-    ui: true,
-    system: true,
-    session: true,
-    tools: true,
+    wallet: false,
+    network: false,
+    ui: false,
+    system: false,
+    session: false,
+    tools: false,
   });
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const [position, setPosition] = useState({
-    x: window.innerWidth > 1024 ? window.innerWidth - 384 : 0,
-    y: 0,
+    x: 16, // 1rem from left
+    y: 64, // 4rem from top to account for ticker
   });
   const [systemStats, setSystemStats] = useState<SystemStats>({
     fps: 0,
@@ -99,6 +99,33 @@ export const DebugPanel: React.FC = () => {
     };
 
     const interval = setInterval(updateMemory, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // API Latency Tracking
+  useEffect(() => {
+    const checkLatency = async () => {
+      const start = performance.now();
+      try {
+        await fetch("/api/health"); // Assuming you have a health endpoint
+        const end = performance.now();
+        setSystemStats((prev) => ({
+          ...prev,
+          apiLatency: Math.round(end - start),
+          lastApiCall: new Date(),
+          activeRequests: prev.activeRequests,
+        }));
+      } catch (error) {
+        setSystemStats((prev) => ({
+          ...prev,
+          apiLatency: -1,
+          lastApiCall: new Date(),
+          activeRequests: prev.activeRequests,
+        }));
+      }
+    };
+
+    const interval = setInterval(checkLatency, 5000); // Check every 5 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -198,9 +225,9 @@ export const DebugPanel: React.FC = () => {
       ref={panelRef}
       className="fixed bg-dark-200/90 backdrop-blur-sm rounded-lg border border-dark-300 z-50 max-w-sm shadow-lg cursor-move transition-colors duration-300 hover:bg-dark-200"
       style={{
-        top: position.y === 0 ? "1rem" : undefined,
-        right: position.x === 0 ? "1rem" : undefined,
-        transform: `translate(${position.x}px, ${position.y}px)`,
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        transform: `translate(0, 0)`,
       }}
       onMouseDown={handleMouseDown}
     >
@@ -212,7 +239,20 @@ export const DebugPanel: React.FC = () => {
         </h3>
         <button
           className="text-brand-400 hover:text-brand-300 transition-colors"
-          onClick={() => setIsMinimized(!isMinimized)}
+          onClick={() => {
+            setIsMinimized(!isMinimized);
+            // When opening, expand all sections
+            if (isMinimized) {
+              setSectionsOpen({
+                wallet: true,
+                network: true,
+                ui: true,
+                system: true,
+                session: true,
+                tools: true,
+              });
+            }
+          }}
         >
           {isMinimized ? "□" : "−"}
         </button>
@@ -476,7 +516,26 @@ export const DebugPanel: React.FC = () => {
                 >
                   Force Refresh
                 </button>
-                {/* Add more tool buttons */}
+                <button
+                  onClick={() => {
+                    const state = {
+                      localStorage: { ...localStorage },
+                      sessionStorage: { ...sessionStorage },
+                      debugConfig,
+                      user,
+                      systemStats,
+                      sessionInfo,
+                    };
+                    console.log("Debug State Dump:", state);
+                    // Also copy to clipboard
+                    navigator.clipboard.writeText(
+                      JSON.stringify(state, null, 2)
+                    );
+                  }}
+                  className="w-full px-3 py-1 text-sm text-brand-400 border border-brand-400/20 rounded hover:bg-brand-400/10 transition-colors"
+                >
+                  Dump Debug State
+                </button>
               </div>
             )}
           </div>
