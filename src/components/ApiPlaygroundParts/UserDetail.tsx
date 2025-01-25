@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { ResponseDisplay } from "./ResponseDisplay";
-import { WalletInput } from "./WalletInput";
+import { UserSearch } from "../admin/UserSearch";
 
 export function UserDetail() {
   const [walletAddress, setWalletAddress] = useState("");
@@ -9,7 +8,7 @@ export function UserDetail() {
 
   const handleGetUserDetail = async () => {
     if (!walletAddress) {
-      alert("Please enter a wallet address");
+      setError("Please select a user");
       return;
     }
 
@@ -19,6 +18,7 @@ export function UserDetail() {
         `https://degenduel.me/api/users/${walletAddress}`,
         {
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         }
       );
       const data = await response.json();
@@ -30,28 +30,63 @@ export function UserDetail() {
     }
   };
 
-  return (
-    <section className="bg-gray-800 rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Get User Detail</h2>
+  const handleSearch = (wallet: string) => {
+    setWalletAddress(wallet);
+    setError(null);
+    setResponse(null);
+  };
 
-      <div className="mb-4">
-        <label className="text-gray-400 mb-1 block">Wallet Address</label>
-        <WalletInput
-          value={walletAddress}
-          onChange={setWalletAddress}
-          placeholder="Enter wallet address"
+  return (
+    <section className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-400 mb-1">
+          Search User
+        </label>
+        <UserSearch
+          onSearch={handleSearch}
+          placeholder="Search by wallet address or nickname..."
         />
       </div>
 
       <button
         onClick={handleGetUserDetail}
         disabled={!walletAddress}
-        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-4 py-2 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         Get User Detail
       </button>
 
-      <ResponseDisplay response={response} error={error} />
+      {error && (
+        <div className="p-3 bg-dark-300/20 rounded">
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
+
+      {response && (
+        <div className="p-3 bg-dark-300/50 rounded space-y-2">
+          <div className="font-mono text-sm space-y-1">
+            <p className="text-gray-400">
+              Wallet Address:{" "}
+              <span className="text-gray-100">{response.wallet_address}</span>
+            </p>
+            <p className="text-gray-400">
+              Nickname:{" "}
+              <span className="text-gray-100">
+                {response.nickname || "Anonymous"}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Balance:{" "}
+              <span className="text-gray-100">
+                {parseFloat(response.balance).toLocaleString()}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Role: <span className="text-gray-100">{response.role}</span>
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
