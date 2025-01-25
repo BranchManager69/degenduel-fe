@@ -1,16 +1,9 @@
 {
-  "name": "degenduel-fe",
-  "private": true,
-  "version": "0.1.1",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "build:quick": "vite build --mode quick",
-    "build:analyze": "node scripts/analyze-build.js",
-    "preview": "vite preview",
-    "type-check": "tsc --noEmit"
-  },
+  "date": "2025-01-25T00:20:54.065Z",
+  "typescript": 58399,
+  "vite": 131899,
+  "total": 190300,
+  "nodeVersion": "v23.5.0",
   "dependencies": {
     "@aptos-labs/wallet-adapter-react": "^3.7.9",
     "@headlessui/react": "^2.2.0",
@@ -41,8 +34,6 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
-    "@babel/preset-react": "^7.26.3",
-    "@babel/preset-typescript": "^7.26.0",
     "@types/canvas-confetti": "^1.6.4",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
@@ -63,6 +54,5 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^5.0.8"
-  },
-  "main": "dist-electron/main.js"
+  }
 }
