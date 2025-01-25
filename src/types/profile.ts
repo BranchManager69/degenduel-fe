@@ -15,11 +15,7 @@ export interface UserStats {
 }
 
 export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  earned_at: string;
-  image_url?: string;
-  icon: string;
-  rarity: "common" | "rare" | "epic" | "legendary";
+  achievement: string;
+  achieved_at: string;
+  display_name: string;
 }

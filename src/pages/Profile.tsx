@@ -30,6 +30,15 @@ interface ErrorState {
   history: string | null;
 }
 
+const mapHistoryResponse = (entry: any) => ({
+  contest_id: entry.contest_id,
+  contest_name: entry.contest_name,
+  start_time: entry.start_time,
+  end_time: entry.end_time,
+  portfolio_return: entry.portfolio_return,
+  rank: entry.rank,
+});
+
 export const Profile: React.FC = () => {
   const { user, setUser } = useStore();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -119,17 +128,7 @@ export const Profile: React.FC = () => {
           10,
           0
         );
-        setContestHistory(
-          historyResponse.map((entry: any) => ({
-            id: entry.contest_id,
-            name: entry.contest_name,
-            date: new Date(entry.end_date).toLocaleDateString(),
-            rank: entry.rank,
-            totalParticipants: entry.total_participants,
-            portfolioReturn: entry.portfolio_return,
-            winnings: entry.winnings,
-          }))
-        );
+        setContestHistory(historyResponse.map(mapHistoryResponse));
       } catch (err) {
         setError((prev) => ({
           ...prev,
@@ -247,7 +246,7 @@ export const Profile: React.FC = () => {
                 {achievements.length > 0 ? (
                   achievements.map((achievement) => (
                     <AchievementCard
-                      key={achievement.id}
+                      key={achievement.achievement}
                       achievement={achievement}
                     />
                   ))
