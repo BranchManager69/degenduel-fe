@@ -162,7 +162,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               </span>
             </div>
             <span className="text-xs text-gray-500">
-              Ref: {contest.contest_code}
+              Contest Code: {contest.contest_code}
             </span>
           </div>
         </div>
