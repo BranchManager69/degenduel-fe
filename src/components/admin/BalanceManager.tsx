@@ -61,17 +61,17 @@ export const BalanceManager: React.FC = () => {
   return (
     <div className="bg-dark-200 border border-dark-300 rounded-lg relative">
       <div className="p-4 border-b border-dark-300">
-        <h3 className="text-lg font-medium text-cyber-300">Balance Manager</h3>
+        <h3 className="text-lg font-medium text-gray-100">Balance Manager</h3>
       </div>
 
       <div className="p-4 space-y-4">
         <div className="relative z-50">
-          <label className="block text-sm font-medium text-cyber-300 mb-1">
+          <label className="block text-sm font-medium text-gray-100 mb-1">
             Search User
           </label>
           <UserSearch
             onSearch={handleSearch}
-            placeholder="Enter wallet address or nickname..."
+            placeholder="Type a username or address..."
           />
         </div>
 

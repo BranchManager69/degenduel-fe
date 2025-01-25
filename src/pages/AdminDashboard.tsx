@@ -1,42 +1,70 @@
 // src/pages/AdminDashboard.tsx
 import React from "react";
+import { Link } from "react-router-dom";
+import { ActivityMonitor } from "../components/admin/ActivityMonitor";
+import { BalanceManager } from "../components/admin/BalanceManager";
 
 export const AdminDashboard: React.FC = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-4">Admin Dashboard</h1>
-        <p className="text-gray-400">Manage contests and user data.</p>
+        <h1 className="text-3xl font-bold text-gray-100 mb-4">
+          Admin Dashboard
+        </h1>
+        <p className="text-gray-400">
+          Manage user balances and monitor system activities.
+        </p>
+      </div>
+
+      {/* Activity Monitor Section */}
+      <div className="mb-6">
+        <ActivityMonitor limit={5} />
+      </div>
+
+      {/* Balance Manager Section */}
+      <div className="mb-8">
+        <BalanceManager />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Contest Management Card */}
-        <div className="bg-dark-800 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold text-primary mb-2">
-            Contest Management
+        {/* AMM Simulator Card */}
+        <Link
+          to="/amm-sim"
+          className="bg-dark-200 p-6 rounded-lg hover:bg-dark-300/70 transition-colors border border-dark-300"
+        >
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">
+            AMM Simulator
           </h2>
           <p className="text-gray-400">
-            View and manage active contests, participants, and results.
+            Test and simulate AMM behavior with various parameters.
           </p>
-        </div>
+        </Link>
 
-        {/* User Management Card */}
-        <div className="bg-dark-800 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold text-primary mb-2">
-            User Management
+        {/* API Playground Card */}
+        <Link
+          to="/api-playground"
+          className="bg-dark-200 p-6 rounded-lg hover:bg-dark-300/70 transition-colors border border-dark-300"
+        >
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">
+            API Playground
           </h2>
           <p className="text-gray-400">
-            Monitor user activity and manage user accounts.
+            Test API endpoints and manage system integrations.
           </p>
-        </div>
+        </Link>
 
-        {/* Analytics Card */}
-        <div className="bg-dark-800 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold text-primary mb-2">Analytics</h2>
+        {/* Test Environment Card */}
+        <Link
+          to="/test"
+          className="bg-dark-200 p-6 rounded-lg hover:bg-dark-300/70 transition-colors border border-dark-300"
+        >
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">
+            Test Environment
+          </h2>
           <p className="text-gray-400">
-            View platform statistics and performance metrics.
+            Access the testing environment for development.
           </p>
-        </div>
+        </Link>
       </div>
     </div>
   );

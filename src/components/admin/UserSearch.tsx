@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useDebounce } from "../../hooks/useDebounce";
-import { userService } from "../../services/userService";
+import { useDebounce } from "../../hooks/useDebounce.ts";
+import { userService } from "../../services/userService.ts";
 
 interface SearchUser {
   wallet_address: string;
