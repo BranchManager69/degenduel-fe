@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { AchievementCard } from "../components/profile/AchievementCard";
-import { ContestHistory } from "../components/profile/ContestHistory";
+import {
+  ContestEntry,
+  ContestHistory,
+} from "../components/profile/ContestHistory";
 import { ProfileHeader } from "../components/profile/ProfileHeader";
 import { UserStats } from "../components/profile/UserStats";
 import { ddApi, formatBonusPoints } from "../services/dd-api";
@@ -17,12 +20,14 @@ interface LoadingState {
   user: boolean;
   stats: boolean;
   achievements: boolean;
+  history: boolean;
 }
 
 interface ErrorState {
   user: string | null;
   stats: string | null;
   achievements: string | null;
+  history: string | null;
 }
 
 export const Profile: React.FC = () => {
@@ -30,15 +35,18 @@ export const Profile: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userStats, setUserStats] = useState<UserStatsType | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [contestHistory, setContestHistory] = useState<ContestEntry[]>([]);
   const [loading, setLoading] = useState<LoadingState>({
     user: true,
     stats: true,
     achievements: true,
+    history: true,
   });
   const [error, setError] = useState<ErrorState>({
     user: null,
     stats: null,
     achievements: null,
+    history: null,
   });
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false);
 
@@ -47,8 +55,13 @@ export const Profile: React.FC = () => {
       if (!user?.wallet_address) return;
 
       // Reset states
-      setLoading({ user: true, stats: true, achievements: true });
-      setError({ user: null, stats: null, achievements: null });
+      setLoading({
+        user: true,
+        stats: true,
+        achievements: true,
+        history: true,
+      });
+      setError({ user: null, stats: null, achievements: null, history: null });
 
       // Load user data and balance in parallel
       try {
@@ -97,6 +110,36 @@ export const Profile: React.FC = () => {
         }));
       } finally {
         setLoading((prev) => ({ ...prev, achievements: false }));
+      }
+
+      // Load contest history
+      try {
+        const historyResponse = await ddApi.stats.getHistory(
+          user.wallet_address,
+          10,
+          0
+        );
+        setContestHistory(
+          historyResponse.map((entry: any) => ({
+            id: entry.contest_id,
+            name: entry.contest_name,
+            date: new Date(entry.end_date).toLocaleDateString(),
+            rank: entry.rank,
+            totalParticipants: entry.total_participants,
+            portfolioReturn: entry.portfolio_return,
+            winnings: entry.winnings,
+          }))
+        );
+      } catch (err) {
+        setError((prev) => ({
+          ...prev,
+          history:
+            err instanceof Error
+              ? err.message
+              : "Failed to load contest history",
+        }));
+      } finally {
+        setLoading((prev) => ({ ...prev, history: false }));
       }
     };
 
@@ -219,7 +262,17 @@ export const Profile: React.FC = () => {
             )}
           </div>
           <div>
-            <ContestHistory contests={[]} />
+            {loading.history ? (
+              <div className="h-32 flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : error.history ? (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-400 text-center">{error.history}</p>
+              </div>
+            ) : (
+              <ContestHistory contests={contestHistory} />
+            )}
           </div>
         </div>
       </div>

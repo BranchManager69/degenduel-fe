@@ -9,8 +9,23 @@ export default defineConfig(({ command, mode }) => {
   return {
     server: {
       port: 3004,
+      host: "0.0.0.0",
+      strictPort: true,
       hmr: {
         overlay: true,
+        clientPort: 443,
+        protocol: "wss",
+        host: "dev.degenduel.me",
+      },
+      proxy: {
+        "/api": {
+          target: "http://localhost:3003",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+      watch: {
+        usePolling: true,
       },
     },
     plugins: [

@@ -1,9 +1,9 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardContent } from '../ui/Card';
-import { formatCurrency } from '../../lib/utils';
+import React from "react";
+import { Link } from "react-router-dom";
+import { formatCurrency } from "../../lib/utils";
+import { Card, CardContent, CardHeader } from "../ui/Card";
 
-interface ContestEntry {
+export interface ContestEntry {
   id: string;
   name: string;
   date: string;
@@ -35,8 +35,12 @@ export const ContestHistory: React.FC<ContestHistoryProps> = ({ contests }) => {
                 <div className="p-4 rounded-lg border border-dark-300">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <div className="font-medium text-gray-100">{contest.name}</div>
-                      <div className="text-sm text-gray-400">{contest.date}</div>
+                      <div className="font-medium text-gray-100">
+                        {contest.name}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {contest.date}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="font-medium text-gray-100">
@@ -50,10 +54,15 @@ export const ContestHistory: React.FC<ContestHistoryProps> = ({ contests }) => {
                     </div>
                   </div>
                   <div className="text-sm">
-                    <span className={`font-medium ${
-                      contest.portfolioReturn >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {contest.portfolioReturn >= 0 ? '+' : ''}{contest.portfolioReturn}%
+                    <span
+                      className={`font-medium ${
+                        contest.portfolioReturn >= 0
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {contest.portfolioReturn >= 0 ? "+" : ""}
+                      {contest.portfolioReturn}%
                     </span>
                     <span className="text-gray-400"> portfolio return</span>
                   </div>
@@ -63,7 +72,8 @@ export const ContestHistory: React.FC<ContestHistoryProps> = ({ contests }) => {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-400">
-            No contests played yet. Join a contest to start building your history!
+            No contests played yet. Join a contest to start building your
+            history!
           </div>
         )}
       </CardContent>
