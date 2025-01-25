@@ -9,7 +9,7 @@ export default defineConfig(({ command, mode }) => {
   const isDev = command === "serve" || mode === "development";
   console.log("Running in", isDev ? "development" : "production", "mode");
 
-  // Try to load SSL certificates if they exist
+  // Try to load SSL certs if they exist
   const certPath = "/etc/letsencrypt/live/dev.degenduel.me";
   let hasCerts = false;
   let httpsConfig = undefined;
