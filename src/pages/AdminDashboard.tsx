@@ -33,15 +33,30 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Contest Management Section */}
         <div className="mb-8">
-          <div className="bg-dark-200 p-6 rounded-lg border border-dark-300">
-            <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-              <span className="text-xl">🏆</span>
-              Contest Management
-            </h2>
-            <div className="space-y-6">
+          <div className="bg-dark-200 border border-dark-300 rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-dark-300">
+              <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+                <span className="text-xl">🏆</span>
+                Contest Management
+              </h2>
+            </div>
+
+            {/* Contest Actions - Side by Side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+              <div className="bg-dark-300/30 rounded-lg p-4">
+                <StartContest />
+              </div>
+              <div className="bg-dark-300/30 rounded-lg p-4">
+                <EndContest />
+              </div>
+            </div>
+
+            {/* Contest List - Below */}
+            <div className="border-t border-dark-300 p-6">
+              <h3 className="text-lg font-medium text-gray-100 mb-4">
+                Contest Overview
+              </h3>
               <ContestsList />
-              <StartContest />
-              <EndContest />
             </div>
           </div>
         </div>
@@ -58,7 +73,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Reports & Analytics Card (Placeholder) */}
+          {/* Reports & Analytics Card */}
           <div className="bg-dark-200 p-6 rounded-lg border border-dark-300">
             <h2 className="text-xl font-semibold text-gray-100 mb-2 flex items-center gap-2">
               <span className="text-xl">📊</span>
