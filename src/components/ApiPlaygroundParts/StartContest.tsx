@@ -1,58 +1,222 @@
-import { useState } from "react";
-import { ContestSelect } from "./ContestContext";
-import { ResponseDisplay } from "./ResponseDisplay";
+import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { API_URL } from "../../config/config";
+
+interface Contest {
+  id: number;
+  name: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  participant_count: number;
+  min_participants: number;
+  contest_code: string;
+}
 
 export function StartContest() {
-  const [selectedContestId, setSelectedContestId] = useState<number | "">("");
-  const [response, setResponse] = useState<any>(null);
-  const [error, setError] = useState<any>(null);
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleStartContest = async () => {
-    if (!selectedContestId) {
-      alert("Please select a contest first");
-      return;
-    }
+  useEffect(() => {
+    fetchContests();
+  }, []);
 
+  const fetchContests = async () => {
     try {
-      setError(null);
-      const response = await fetch(
-        `https://degenduel.me/api/contests/${selectedContestId}/start`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      const response = await fetch(`${API_URL}/contests?status=pending`, {
+        credentials: "include",
+      });
       const data = await response.json();
-      if (!response.ok) throw data;
-      setResponse(data);
+      setContests(data.contests);
     } catch (err) {
-      setError(err);
-      console.error("Start Contest Error:", err);
+      console.error("Error fetching contests:", err);
+      setError("Failed to fetch contests");
     }
   };
 
-  return (
-    <section className="bg-gray-800 rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">Start Contest</h2>
+  const handleStartContest = async () => {
+    if (!selectedContest) return;
 
-      <div className="mb-4">
-        <label className="text-gray-400 mb-1 block">Select Contest</label>
-        <ContestSelect
-          value={selectedContestId}
-          onChange={setSelectedContestId}
-          className="w-full bg-gray-900 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700"
-        />
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(
+        `${API_URL}/contests/${selectedContest.id}/start`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) throw data;
+
+      setSuccess(`Contest "${selectedContest.name}" started successfully`);
+      setSelectedContest(null);
+      setShowConfirmation(false);
+      fetchContests(); // Refresh the list
+    } catch (err: any) {
+      setError(err.message || "Failed to start contest");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleContestSelect = (contestId: string) => {
+    const contest = contests.find((c) => c.id === parseInt(contestId));
+    setSelectedContest(contest || null);
+    setShowConfirmation(false);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const getParticipantWarning = (contest: Contest) => {
+    if (contest.participant_count === 0) {
+      return {
+        message: "Warning: No participants have joined this contest",
+        type: "error",
+      };
+    } else if (contest.participant_count < contest.min_participants) {
+      return {
+        message: `Warning: Only ${contest.participant_count} of ${contest.min_participants} minimum participants have joined`,
+        type: "warning",
+      };
+    }
+    return null;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-400 mb-1">
+          Select Contest to Start
+        </label>
+        <select
+          value={selectedContest?.id || ""}
+          onChange={(e) => handleContestSelect(e.target.value)}
+          className="w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded text-gray-100 focus:outline-none focus:border-cyber-500 transition-colors"
+        >
+          <option value="">Select a contest...</option>
+          {contests.map((contest) => (
+            <option
+              key={contest.id}
+              value={contest.id}
+              className={
+                contest.participant_count < contest.min_participants
+                  ? "text-red-400"
+                  : ""
+              }
+            >
+              {contest.name} ({contest.contest_code}) -{" "}
+              {contest.participant_count}/{contest.min_participants}{" "}
+              participants
+            </option>
+          ))}
+        </select>
       </div>
 
-      <button
-        onClick={handleStartContest}
-        disabled={!selectedContestId}
-        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Start Contest
-      </button>
+      {selectedContest && !showConfirmation && (
+        <div className="p-4 bg-dark-300/50 rounded space-y-3">
+          <h3 className="text-gray-100 font-medium">{selectedContest.name}</h3>
+          <div className="space-y-1 text-sm">
+            <p className="text-gray-400">
+              Code:{" "}
+              <span className="text-gray-100">
+                {selectedContest.contest_code}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Scheduled Start:{" "}
+              <span className="text-gray-100">
+                {format(new Date(selectedContest.start_time), "PPp")}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Scheduled End:{" "}
+              <span className="text-gray-100">
+                {format(new Date(selectedContest.end_time), "PPp")}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Participants:{" "}
+              <span className="text-gray-100">
+                {selectedContest.participant_count} /{" "}
+                {selectedContest.min_participants} minimum
+              </span>
+            </p>
+            {getParticipantWarning(selectedContest) && (
+              <p
+                className={
+                  getParticipantWarning(selectedContest)?.type === "warning"
+                    ? "text-yellow-400"
+                    : "text-red-400"
+                }
+              >
+                {getParticipantWarning(selectedContest)?.message}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => setShowConfirmation(true)}
+            className="w-full px-4 py-2 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 transition-colors"
+          >
+            Start Contest
+          </button>
+        </div>
+      )}
 
-      <ResponseDisplay response={response} error={error} />
-    </section>
+      {showConfirmation && selectedContest && (
+        <div className="p-4 bg-dark-300/50 rounded space-y-3">
+          <h3 className="text-gray-100 font-medium">Confirm Start Contest</h3>
+          <p className="text-gray-400">
+            Are you sure you want to start "{selectedContest.name}"?
+          </p>
+          {getParticipantWarning(selectedContest) && (
+            <p
+              className={
+                getParticipantWarning(selectedContest)?.type === "warning"
+                  ? "text-yellow-400"
+                  : "text-red-400"
+              }
+            >
+              {getParticipantWarning(selectedContest)?.message}
+            </p>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={handleStartContest}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Starting..." : "Confirm Start"}
+            </button>
+            <button
+              onClick={() => setShowConfirmation(false)}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 disabled:opacity-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-dark-300/20 rounded">
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 bg-dark-300/20 rounded">
+          <p className="text-green-400">{success}</p>
+        </div>
+      )}
+    </div>
   );
 }

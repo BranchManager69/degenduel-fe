@@ -1,58 +1,240 @@
-import { useState } from "react";
-import { ContestSelect } from "./ContestContext";
-import { ResponseDisplay } from "./ResponseDisplay";
+import { differenceInHours, format } from "date-fns";
+import { useEffect, useState } from "react";
+import { API_URL } from "../../config/config";
+
+interface Contest {
+  id: number;
+  name: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  participant_count: number;
+  contest_code: string;
+}
 
 export function EndContest() {
-  const [selectedContestId, setSelectedContestId] = useState<number | "">("");
-  const [response, setResponse] = useState<any>(null);
-  const [error, setError] = useState<any>(null);
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchContests();
+  }, []);
+
+  const fetchContests = async () => {
+    try {
+      const response = await fetch(`${API_URL}/contests?status=active`, {
+        credentials: "include",
+      });
+      const data = await response.json();
+      setContests(data.contests);
+    } catch (err) {
+      console.error("Error fetching contests:", err);
+      setError("Failed to fetch contests");
+    }
+  };
 
   const handleEndContest = async () => {
-    if (!selectedContestId) {
-      alert("Please select a contest first");
-      return;
-    }
+    if (!selectedContest) return;
 
     try {
+      setLoading(true);
       setError(null);
       const response = await fetch(
-        `https://degenduel.me/api/contests/${selectedContestId}/end`,
+        `${API_URL}/contests/${selectedContest.id}/end`,
         {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
         }
       );
+
       const data = await response.json();
       if (!response.ok) throw data;
-      setResponse(data);
-    } catch (err) {
-      setError(err);
-      console.error("End Contest Error:", err);
+
+      setSuccess(`Contest "${selectedContest.name}" ended successfully`);
+      setSelectedContest(null);
+      setShowConfirmation(false);
+      fetchContests(); // Refresh the list
+    } catch (err: any) {
+      setError(err.message || "Failed to end contest");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleContestSelect = (contestId: string) => {
+    const contest = contests.find((c) => c.id.toString() === contestId);
+    setSelectedContest(contest || null);
+    setShowConfirmation(false);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const getEndTimeWarning = (contest: Contest) => {
+    const endTime = new Date(contest.end_time);
+    const now = new Date();
+    const hoursUntilEnd = differenceInHours(endTime, now);
+
+    if (hoursUntilEnd > 24) {
+      return {
+        message: `Warning: Contest is scheduled to end in ${Math.floor(
+          hoursUntilEnd / 24
+        )} days and ${hoursUntilEnd % 24} hours`,
+        type: "warning",
+      };
+    } else if (hoursUntilEnd > 0) {
+      return {
+        message: `Warning: Contest is scheduled to end in ${hoursUntilEnd} hours`,
+        type: "warning",
+      };
+    } else if (hoursUntilEnd < -24) {
+      return {
+        message: `Contest has exceeded scheduled end time by ${Math.floor(
+          Math.abs(hoursUntilEnd) / 24
+        )} days and ${Math.abs(hoursUntilEnd) % 24} hours`,
+        type: "error",
+      };
+    } else {
+      return {
+        message: `Contest has exceeded scheduled end time by ${Math.abs(
+          hoursUntilEnd
+        )} hours`,
+        type: "error",
+      };
     }
   };
 
   return (
-    <section className="bg-gray-800 rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">End Contest</h2>
-
-      <div className="mb-4">
-        <label className="text-gray-400 mb-1 block">Select Contest</label>
-        <ContestSelect
-          value={selectedContestId}
-          onChange={setSelectedContestId}
-          className="w-full bg-gray-900 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700"
-        />
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-400 mb-1">
+          Select Contest to End
+        </label>
+        <select
+          value={selectedContest?.id || ""}
+          onChange={(e) => handleContestSelect(e.target.value)}
+          className="w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded text-gray-100 focus:outline-none focus:border-cyber-500 transition-colors"
+        >
+          <option value="">Select a contest...</option>
+          {contests.map((contest) => {
+            const hoursUntilEnd = differenceInHours(
+              new Date(contest.end_time),
+              new Date()
+            );
+            const className =
+              hoursUntilEnd < 0
+                ? "text-red-400"
+                : hoursUntilEnd < 24
+                ? "text-yellow-400"
+                : "";
+            return (
+              <option key={contest.id} value={contest.id} className={className}>
+                {contest.name} ({contest.contest_code}) -{" "}
+                {hoursUntilEnd < 0
+                  ? `${Math.abs(hoursUntilEnd)}h overdue`
+                  : `${hoursUntilEnd}h remaining`}
+              </option>
+            );
+          })}
+        </select>
       </div>
 
-      <button
-        onClick={handleEndContest}
-        disabled={!selectedContestId}
-        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        End Contest
-      </button>
+      {selectedContest && !showConfirmation && (
+        <div className="p-4 bg-dark-300/50 rounded space-y-3">
+          <h3 className="text-gray-100 font-medium">{selectedContest.name}</h3>
+          <div className="space-y-1 text-sm">
+            <p className="text-gray-400">
+              Code:{" "}
+              <span className="text-gray-100">
+                {selectedContest.contest_code}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Started:{" "}
+              <span className="text-gray-100">
+                {format(new Date(selectedContest.start_time), "PPp")}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Scheduled End:{" "}
+              <span className="text-gray-100">
+                {format(new Date(selectedContest.end_time), "PPp")}
+              </span>
+            </p>
+            <p className="text-gray-400">
+              Participants:{" "}
+              <span className="text-gray-100">
+                {selectedContest.participant_count}
+              </span>
+            </p>
+            {getEndTimeWarning(selectedContest).type === "warning" ? (
+              <p className="text-yellow-400">
+                {getEndTimeWarning(selectedContest).message}
+              </p>
+            ) : (
+              <p className="text-red-400">
+                {getEndTimeWarning(selectedContest).message}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => setShowConfirmation(true)}
+            className="w-full px-4 py-2 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 transition-colors"
+          >
+            End Contest
+          </button>
+        </div>
+      )}
 
-      <ResponseDisplay response={response} error={error} />
-    </section>
+      {showConfirmation && selectedContest && (
+        <div className="p-4 bg-dark-300/50 rounded space-y-3">
+          <h3 className="text-gray-100 font-medium">Confirm End Contest</h3>
+          <p className="text-gray-400">
+            Are you sure you want to end "{selectedContest.name}"?
+          </p>
+          {getEndTimeWarning(selectedContest).type === "warning" ? (
+            <p className="text-yellow-400">
+              {getEndTimeWarning(selectedContest).message}
+            </p>
+          ) : (
+            <p className="text-red-400">
+              {getEndTimeWarning(selectedContest).message}
+            </p>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={handleEndContest}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Ending..." : "Confirm End"}
+            </button>
+            <button
+              onClick={() => setShowConfirmation(false)}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 disabled:opacity-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-dark-300/20 rounded">
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 bg-dark-300/20 rounded">
+          <p className="text-green-400">{success}</p>
+        </div>
+      )}
+    </div>
   );
 }
