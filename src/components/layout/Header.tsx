@@ -54,6 +54,27 @@ export const Header: React.FC = () => {
             >
               Tokens
             </Link>
+            <div className="relative group">
+              <span className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors cursor-pointer">
+                Rankings
+              </span>
+              <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <div className="py-1">
+                  <Link
+                    to="/rankings/global"
+                    className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                  >
+                    Global Rankings
+                  </Link>
+                  <Link
+                    to="/rankings/performance"
+                    className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                  >
+                    Contest Performance
+                  </Link>
+                </div>
+              </div>
+            </div>
             {user && (
               <Link
                 to="/profile"
@@ -62,39 +83,48 @@ export const Header: React.FC = () => {
                 Profile
               </Link>
             )}
-            {isAdmin() && (
-              <Link
-                to="/admin"
-                className="text-lg font-medium text-brand-400 hover:text-brand-300 transition-colors"
-              >
-                Admin
-              </Link>
+            {(isAdmin() || isSuperAdmin()) && (
+              <div className="relative group">
+                <span className="text-lg font-medium text-brand-400 hover:text-brand-300 transition-colors cursor-pointer">
+                  Admin
+                </span>
+                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <div className="py-1">
+                    {isAdmin() && (
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                      >
+                        Contest Admin
+                      </Link>
+                    )}
+                    {isSuperAdmin() && (
+                      <>
+                        <Link
+                          to="/superadmin"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                        >
+                          SuperAdmin Tools
+                        </Link>
+                        <Link
+                          to="/amm-sim"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                        >
+                          AMM Simulator
+                        </Link>
+                        <Link
+                          to="/api-playground"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                        >
+                          API Playground
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </nav>
-
-          {/* SuperAdmin Tools */}
-          {isSuperAdmin() && (
-            <div className="hidden md:flex items-center space-x-4">
-              <Link
-                to="/superadmin"
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-              >
-                SuperAdmin
-              </Link>
-              <Link
-                to="/amm-sim"
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-              >
-                AMM Simulator
-              </Link>
-              <Link
-                to="/api-playground"
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-              >
-                API Playground
-              </Link>
-            </div>
-          )}
 
           {/* Desktop Wallet Connection */}
           <div className="hidden md:flex md:items-center md:space-x-3">
@@ -186,6 +216,25 @@ export const Header: React.FC = () => {
             >
               Tokens
             </Link>
+            <div className="px-3 py-2">
+              <span className="block text-base font-medium text-gray-400">
+                Rankings
+              </span>
+              <Link
+                to="/rankings/global"
+                className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Global Rankings
+              </Link>
+              <Link
+                to="/rankings/performance"
+                className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contest Performance
+              </Link>
+            </div>
             {user && (
               <Link
                 to="/profile"
@@ -195,77 +244,76 @@ export const Header: React.FC = () => {
                 Profile
               </Link>
             )}
-            {isAdmin() && (
-              <Link
-                to="/admin"
-                className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Admin
-              </Link>
-            )}
-            {isSuperAdmin() && (
-              <>
-                <Link
-                  to="/superadmin"
-                  className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  SuperAdmin
-                </Link>
-                <Link
-                  to="/amm-sim"
-                  className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  AMM Simulator
-                </Link>
-                <Link
-                  to="/api-playground"
-                  className="block px-3 py-2 text-base font-medium text-brand-400 hover:bg-dark-300 rounded-md"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  API Playground
-                </Link>
-              </>
+            {(isAdmin() || isSuperAdmin()) && (
+              <div className="px-3 py-2">
+                <span className="block text-base font-medium text-brand-400">
+                  Admin
+                </span>
+                {isAdmin() && (
+                  <Link
+                    to="/admin"
+                    className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Contest Admin
+                  </Link>
+                )}
+                {isSuperAdmin() && (
+                  <>
+                    <Link
+                      to="/superadmin"
+                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      SuperAdmin Tools
+                    </Link>
+                    <Link
+                      to="/amm-sim"
+                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      AMM Simulator
+                    </Link>
+                    <Link
+                      to="/api-playground"
+                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      API Playground
+                    </Link>
+                  </>
+                )}
+              </div>
             )}
           </div>
 
           {/* Mobile Wallet Connection */}
-          <div className="border-t border-dark-300 pt-4 pb-3">
-            {user ? (
-              <div className="space-y-3 px-3">
-                <div className="text-sm text-gray-400">{user.nickname}</div>
+          <div className="pt-4 pb-3 border-t border-dark-300">
+            <div className="px-3 space-y-3">
+              {user ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-400">{user.nickname}</div>
+                  <Button
+                    onClick={disconnectWallet}
+                    variant="gradient"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
                 <Button
-                  onClick={() => {
-                    disconnectWallet();
-                    setIsMenuOpen(false);
-                  }}
-                  variant="gradient"
-                  size="sm"
-                  className="w-full"
-                >
-                  <span className="relative z-10">Disconnect</span>
-                </Button>
-              </div>
-            ) : (
-              <div className="px-3">
-                <Button
-                  onClick={() => {
-                    connectWallet();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={connectWallet}
                   variant="gradient"
                   size="sm"
                   className="w-full"
                   disabled={isConnecting}
                 >
-                  <span className="relative z-10">
-                    {isConnecting ? "Connecting..." : "Connect Wallet"}
-                  </span>
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 

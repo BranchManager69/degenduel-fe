@@ -13,7 +13,9 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { Contact } from "./pages/Contact";
 import { ContestBrowser } from "./pages/ContestBrowser";
 import { ContestDetails } from "./pages/ContestDetails";
+import { ContestPerformance } from "./pages/ContestPerformance";
 import { FAQ } from "./pages/FAQ";
+import { GlobalRankings } from "./pages/GlobalRankings";
 import { HowItWorks } from "./pages/HowItWorks";
 import { LandingPage } from "./pages/LandingPage";
 import { LiveContest } from "./pages/LiveContest";
@@ -43,6 +45,11 @@ export const App: React.FC = () => {
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/rankings/global" element={<GlobalRankings />} />
+            <Route
+              path="/rankings/performance"
+              element={<ContestPerformance />}
+            />
 
             {/* Authenticated Routes */}
             <Route
