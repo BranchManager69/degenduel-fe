@@ -31,6 +31,9 @@ import ApiPlayground from "./pages/ApiPlayground";
 // AMM Simulation
 import AmmSim from "./pages/AmmSim";
 
+// Test HMR
+console.log("Testing HMR again - " + new Date().toISOString());
+
 export const App: React.FC = () => {
   return (
     <Router>

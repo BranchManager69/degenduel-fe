@@ -1,21 +1,42 @@
 import react from "@vitejs/plugin-react";
+import fs from "fs";
+import path from "path";
 import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
-  const isDev = command === "serve";
-  const isQuickBuild = mode === "quick";
+  // Force development mode when running dev server
+  const isDev = command === "serve" || mode === "development";
+  console.log("Running in", isDev ? "development" : "production", "mode");
 
-  return {
+  // Try to load SSL certificates if they exist
+  const certPath = "/etc/letsencrypt/live/dev.degenduel.me";
+  let hasCerts = false;
+  let httpsConfig = undefined;
+
+  try {
+    if (fs.existsSync(certPath)) {
+      const key = fs.readFileSync(path.join(certPath, "privkey.pem"));
+      const cert = fs.readFileSync(path.join(certPath, "fullchain.pem"));
+      if (key && cert) {
+        hasCerts = true;
+        httpsConfig = { key, cert };
+      }
+    }
+  } catch (error) {
+    console.warn("SSL certificates not accessible, falling back to HTTP only");
+  }
+
+  const config = {
     server: {
       port: 3004,
-      host: "0.0.0.0",
+      host: true,
       strictPort: true,
+      https: httpsConfig,
       hmr: {
-        overlay: true,
-        clientPort: 443,
-        protocol: "wss",
-        host: "dev.degenduel.me",
+        clientPort: hasCerts ? 443 : 3004,
+        host: hasCerts ? "dev.degenduel.me" : "localhost",
+        protocol: hasCerts ? "wss" : "ws",
       },
       proxy: {
         "/api": {
@@ -28,10 +49,16 @@ export default defineConfig(({ command, mode }) => {
         usePolling: true,
       },
     },
+    define: {
+      "import.meta.env.VITE_NODE_ENV": JSON.stringify("development"),
+      "import.meta.env.MODE": JSON.stringify("development"),
+      "import.meta.env.VITE_API_URL": JSON.stringify(
+        "http://localhost:3003/api"
+      ),
+    },
     plugins: [
       react({
         babel: {
-          // Ensure JSX is handled properly
           presets: [
             [
               "@babel/preset-react",
@@ -49,31 +76,10 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     build: {
-      // Production build settings (default)
-      ...(!isDev &&
-        !isQuickBuild && {
-          typescript: {
-            checker: true,
-          },
-          rollupOptions: {
-            output: {
-              manualChunks: {
-                react: ["react", "react-dom"],
-                router: ["react-router-dom"],
-              },
-            },
-          },
-          minify: true,
-          sourcemap: true,
-        }),
-      // Quick build settings
-      ...(isQuickBuild && {
-        typescript: {
-          checker: false,
-        },
-        minify: false,
-        sourcemap: "inline",
-      }),
+      sourcemap: true,
+      minify: false,
     },
   };
+
+  return config;
 });
