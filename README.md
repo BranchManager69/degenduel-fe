@@ -23,39 +23,126 @@
 
 </br>
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
-  [![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
-  [![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
-  [![Express](https://img.shields.io/badge/Express-4.x-lightgrey)](https://expressjs.com/)
-  [![PM2](https://img.shields.io/badge/PM2-5.3-green)](https://pm2.keymetrics.io/)
-  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-blue)](https://www.postgresql.org/)
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.x-lightgrey)](https://expressjs.com/)
+[![PM2](https://img.shields.io/badge/PM2-5.3-green)](https://pm2.keymetrics.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-blue)](https://www.postgresql.org/)
 
 ## 📚 Developer Resources
 
 ### API Reference
-  - I am providing a public DegenDuel API. Work in progress and free of charge.
-  - Please refer to the [Public DegenDuel API Docs](https://degenduel.me/api-docs) (Swagger) for the complete API reference. 
-  - Private beta testers can refer to the [Private DegenDuel API Docs](https://github.com/oyoops/degenduel/blob/main/_API_REFERENCE.md) (authorization required) for endpoints related to administration, analytics, debugging, etc.
 
+- I am providing a public DegenDuel API. Work in progress and free of charge.
+- Please refer to the [Public DegenDuel API Docs](https://degenduel.me/api-docs) (Swagger) for the complete API reference.
+- Private beta testers can refer to the [Private DegenDuel API Docs](https://github.com/oyoops/degenduel/blob/main/_API_REFERENCE.md) (authorization required) for endpoints related to administration, analytics, debugging, etc.
 
 ## 🌟 Features
 
 ### Web3 Integration
+
 - Phantom Wallet connection
 - Wallet address verification
 - Secure authentication flow
 - Session management
 - Network detection (mainnet/devnet)
 
+### Authentication System
+
+#### Client-Side Authentication Flow
+
+1. **Initial Wallet Connection**
+
+   - User connects Phantom wallet
+   - Frontend retrieves wallet public key
+   - Stores wallet address in Zustand store
+
+2. **Challenge Request**
+
+   - Frontend requests challenge nonce from `/api/auth/challenge?wallet={address}`
+   - Server generates unique nonce and stores it with expiration
+   - Nonce returned to client
+
+3. **Message Signing**
+
+   - Client constructs message:
+     ```
+     DegenDuel Authentication
+     Wallet: {wallet_address}
+     Nonce: {nonce}
+     Timestamp: {timestamp}
+     ```
+   - Message signed using Phantom wallet
+   - Signature returned as 64-byte array
+
+4. **Wallet Verification**
+
+   - Client sends to `/api/auth/verify-wallet`:
+     ```json
+     {
+       "wallet": "address",
+       "signature": "[64-byte array]",
+       "message": "signed message"
+     }
+     ```
+   - Server verifies:
+     - Nonce exists and hasn't expired
+     - Message contains correct nonce
+     - Signature is valid for wallet
+
+5. **Session Management**
+   - Server creates/updates user in database
+   - Generates JWT token with user data
+   - Sets HTTP-only session cookie
+   - Cookie configuration:
+     ```javascript
+     {
+       httpOnly: true,
+       secure: true in production,
+       sameSite: 'lax',
+       maxAge: 24 * 60 * 60 * 1000  // 24 hours
+       domain: '.degenduel.me' in production
+     }
+     ```
+
+#### Server-Side Implementation
+
+1. **Environment Detection**
+
+   - Development: localhost/127.0.0.1
+   - Production: degenduel.me domain
+   - Environment-specific cookie settings
+
+2. **Protected Routes**
+
+   - Middleware chain:
+     - `requireAuth`: Verifies session cookie and JWT
+     - `requireAdmin`: Checks admin role
+     - `requireSuperAdmin`: Checks superadmin role
+
+3. **Security Features**
+
+   - HTTP-only cookies prevent XSS
+   - JWT with role-based access control
+   - Nonce expiration prevents replay attacks
+   - Environment-aware security settings
+
+4. **Error Handling**
+   - Development: Detailed error messages
+   - Production: Limited error information
+   - Proper status codes (401, 403, etc.)
+
 ### Real-Time Trading Simulation
+
 - Live token prices from DexScreener API
 - Real-time portfolio updates
 - Accurate price tracking
 - Historical price charts
 
 ### Portfolio Management
+
 - Position tracking
 - Trade history
 - Performance metrics
@@ -63,18 +150,19 @@
 - Win streak tracking
 
 ### Advanced Trading Features
+
 - Hot tokens feed
 - Token search
 - Price alerts
 - Market statistics
 
 ### User Experience
+
 - Dark/Light mode
 - Responsive design
 - Real-time updates
 - Trade animations
 - Performance optimizations
-
 
 ## 🚀 Quick Installation
 
@@ -88,6 +176,7 @@ npm -v   # Must be 8.x or higher
 ### Development Setup
 
 1. Clone and install:
+
    ```bash
    git clone https://github.com/yourusername/branchbet.git
    cd branchbet
@@ -95,11 +184,13 @@ npm -v   # Must be 8.x or higher
    ```
 
 2. Initialize the database:
+
    ```bash
    npm run init-db
    ```
 
 3. Start development servers:
+
    ```bash
    npm run dev  # Starts both frontend and API servers
    ```
@@ -111,6 +202,7 @@ npm -v   # Must be 8.x or higher
 ### Production Deployment
 
 1. Build and start:
+
    ```bash
    npm run build  # Build frontend
    npm start      # Start PM2 processes
@@ -126,20 +218,21 @@ npm -v   # Must be 8.x or higher
 
 ### System Overview
 
-past: 
+past:
+
 ```mermaid
 graph TD
     A[Nginx Reverse Proxy] --> B[Frontend Server :3002]
     A --> C[API Server :3003]
     B --> D[DexScreener API]
     C --> E[(PostgreSQL Database)]
-    
+
     subgraph "Frontend Services"
         B --> F[Static Assets]
         B --> G[React SPA]
         G --> H[Zustand Store]
     end
-    
+
     subgraph "Backend Services"
         C --> I[Express API]
         I --> J[PostgreSQL Models]
@@ -148,6 +241,7 @@ graph TD
 ```
 
 future:
+
 ```mermaid
 graph TD
     A[Nginx Reverse Proxy] --> B[Frontend Server, Static + SPA]
@@ -155,12 +249,12 @@ graph TD
     C --> D[(PostgreSQL Database)]
     C --> E[Web3 Services]
     C --> F[DexScreener API]
-    
+
     subgraph "Frontend Services"
         B --> G[React SPA]
         G --> H[Zustand Store]
     end
-    
+
     subgraph "Backend Services"
         C --> I[Express API]
         I --> J[PostgreSQL Models]
@@ -170,6 +264,7 @@ graph TD
 ### Key Technologies
 
 - **Frontend Stack**
+
   - React 18.3 with TypeScript
   - Zustand for state management
   - Tailwind CSS for styling
@@ -226,19 +321,22 @@ DB_URL=postgresql://username:password@localhost:5432/dbname
 ```javascript
 // ecosystem.config.js
 module.exports = {
-  apps: [{
-    name: 'frontend',
-    script: 'server/frontend.js',
-    env: {
-      PORT: 3002
-    }
-  }, {
-    name: 'api',
-    script: 'server/server.js',
-    env: {
-      PORT: 3003
-    }
-  }]
+  apps: [
+    {
+      name: "frontend",
+      script: "server/frontend.js",
+      env: {
+        PORT: 3002,
+      },
+    },
+    {
+      name: "api",
+      script: "server/server.js",
+      env: {
+        PORT: 3003,
+      },
+    },
+  ],
 };
 ```
 
@@ -262,18 +360,21 @@ npm run restart   # Restart services
 ### Implemented Measures
 
 1. **API Security**
+
    - Rate limiting
    - Input validation
    - CORS policies
    - Error sanitization
 
 2. **Frontend Security**
+
    - XSS prevention
    - Content Security Policy
    - Secure dependencies
    - Regular updates
 
 3. **Infrastructure**
+
    - HTTPS enforcement
    - Secure headers
    - Database security

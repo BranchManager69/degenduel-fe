@@ -18,6 +18,45 @@ console.log("API_URL configuration in use:", {
   port: PORT,
 });
 
+// Create a consistent API client
+const createApiClient = () => {
+  const user = useStore.getState().user;
+
+  return {
+    fetch: async (endpoint: string, options: RequestInit = {}) => {
+      const headers = new Headers(options.headers || {});
+      headers.set("Content-Type", "application/json");
+      headers.set("Cache-Control", "no-cache");
+
+      if (user?.wallet_address) {
+        headers.set("X-Wallet-Address", user.wallet_address);
+      }
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers,
+        credentials: "include",
+        mode: "cors",
+      });
+
+      if (!response.ok) {
+        console.error(`[API Error] ${endpoint}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          cookies: document.cookie,
+        });
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `API Error: ${response.statusText}`
+        );
+      }
+
+      return response;
+    },
+  };
+};
+
 const logError = (
   endpoint: string,
   error: any,
@@ -78,37 +117,24 @@ const checkContestParticipation = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-    const response = await fetch(
-      `${API_URL}/contests/${contestId}/portfolio/${userWallet}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Wallet-Address": userWallet,
-        },
-        credentials: "include",
+    const api = createApiClient();
+    const response = await api
+      .fetch(`/contests/${contestId}/portfolio/${userWallet}`, {
         signal: controller.signal,
-      }
-    ).finally(() => clearTimeout(timeoutId));
+      })
+      .finally(() => clearTimeout(timeoutId));
 
-    // If we get a 404 or any error status, user is not participating
-    if (!response.ok) {
-      participationCache.set(cacheKey, { result: false, timestamp: now });
-      return false;
-    }
-
-    try {
-      const data = await response.json();
-      const result = !!(data?.tokens?.length > 0);
-      participationCache.set(cacheKey, { result, timestamp: now });
-      return result;
-    } catch (e) {
-      participationCache.set(cacheKey, { result: false, timestamp: now });
-      return false;
-    }
+    const data = await response.json();
+    const result = !!(data?.tokens?.length > 0);
+    participationCache.set(cacheKey, { result, timestamp: now });
+    return result;
   } catch (error: unknown) {
     // Don't log timeout errors
     if (error instanceof Error && error.name !== "AbortError") {
-      console.error("Error checking participation:", error);
+      console.error(
+        `[Contest ${contestId}] Error checking participation:`,
+        error
+      );
     }
     participationCache.set(cacheKey, { result: false, timestamp: now });
     return false;
@@ -128,17 +154,8 @@ export const ddApi = {
   users: {
     getAll: async (): Promise<User[]> => {
       try {
-        const response = await fetch(`${API_URL}/users`, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch users");
-        }
-
+        const api = createApiClient();
+        const response = await api.fetch("/users");
         const data = await response.json();
         return data.users;
       } catch (error) {
@@ -149,13 +166,8 @@ export const ddApi = {
 
     getOne: async (wallet: string): Promise<User> => {
       try {
-        const response = await fetch(`${API_URL}/users/${wallet}`);
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.message || `User not found: ${response.statusText}`
-          );
-        }
+        const api = createApiClient();
+        const response = await api.fetch(`/users/${wallet}`);
         return response.json();
       } catch (error: any) {
         logError("users.getOne", error, { wallet });
@@ -164,12 +176,11 @@ export const ddApi = {
     },
 
     update: async (wallet: string, nickname: string): Promise<void> => {
-      const response = await fetch(`${API_URL}/users/${wallet}`, {
+      const api = createApiClient();
+      await api.fetch(`/users/${wallet}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nickname }),
       });
-      if (!response.ok) throw new Error("Failed to update user");
     },
 
     updateSettings: async (
@@ -177,18 +188,11 @@ export const ddApi = {
       settings: Record<string, any>
     ): Promise<void> => {
       try {
-        const response = await fetch(`${API_URL}/users/${wallet}/settings`, {
+        const api = createApiClient();
+        await api.fetch(`/users/${wallet}/settings`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ settings }),
         });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.message ||
-              `Failed to update settings: ${response.statusText}`
-          );
-        }
       } catch (error: any) {
         logError("users.updateSettings", error, { wallet, settings });
         throw error;
@@ -199,18 +203,8 @@ export const ddApi = {
   // Token endpoints
   tokens: {
     getAll: async (): Promise<Token[]> => {
-      const response = await fetch(`${API_URL}/dd-serv/tokens`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to fetch tokens");
-      }
-
+      const api = createApiClient();
+      const response = await api.fetch("/dd-serv/tokens");
       const responseData = await response.json();
       return responseData.data || responseData;
     },
@@ -438,20 +432,8 @@ export const ddApi = {
       const user = useStore.getState().user;
 
       try {
-        const response = await fetch(`${API_URL}/contests`, {
-          headers: {
-            "Content-Type": "application/json",
-            "X-Wallet-Address": user?.wallet_address || "",
-            "Cache-Control": "no-cache",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to fetch contests");
-        }
-
+        const api = createApiClient();
+        const response = await api.fetch("/contests");
         const data = await response.json();
         let contests: Contest[] = Array.isArray(data)
           ? data
@@ -463,7 +445,6 @@ export const ddApi = {
             let aValue = a[sortOptions.field];
             let bValue = b[sortOptions.field];
 
-            // Convert string numbers to actual numbers for comparison
             if (typeof aValue === "string" && !isNaN(Number(aValue))) {
               aValue = Number(aValue);
               bValue = Number(bValue);
@@ -482,29 +463,34 @@ export const ddApi = {
           );
         }
 
-        // Only check participation if user is logged in
-        if (!user?.wallet_address) {
-          return contests.map((contest) => ({
+        // Check participation in batches if user is logged in
+        if (user?.wallet_address) {
+          const BATCH_SIZE = 5;
+          for (let i = 0; i < contests.length; i += BATCH_SIZE) {
+            const batch = contests.slice(i, i + BATCH_SIZE);
+            const batchPromises = batch.map((contest) =>
+              checkContestParticipation(contest.id, user.wallet_address).catch(
+                () => false
+              )
+            );
+            const batchResults = await Promise.all(batchPromises);
+
+            // Update contests with participation results
+            batchResults.forEach((result, index) => {
+              contests[i + index] = {
+                ...contests[i + index],
+                is_participating: result,
+              };
+            });
+          }
+        } else {
+          contests = contests.map((contest) => ({
             ...contest,
             is_participating: false,
           }));
         }
 
-        const processedContests = await Promise.all(
-          contests.map(async (contest: Contest) => {
-            const isParticipating = await checkContestParticipation(
-              contest.id,
-              user.wallet_address
-            );
-
-            return {
-              ...contest,
-              is_participating: isParticipating,
-            };
-          })
-        );
-
-        return processedContests;
+        return contests;
       } catch (error: any) {
         logError("contests.getAll", error, {
           userWallet: user?.wallet_address,

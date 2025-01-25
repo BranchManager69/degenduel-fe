@@ -117,7 +117,14 @@ export const useStore = create<StoreState>()(
 
           // 2) GET nonce
           const nonceRes = await fetch(
-            `${API_URL}/auth/challenge?wallet=${walletAddress}`
+            `${API_URL}/auth/challenge?wallet=${walletAddress}`,
+            {
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Wallet-Address": walletAddress,
+              },
+            }
           );
           if (!nonceRes.ok) throw new Error("Failed to get nonce");
           const { nonce } = await nonceRes.json();
@@ -138,13 +145,15 @@ export const useStore = create<StoreState>()(
           };
           const authResponse = await fetch(`${API_URL}/auth/verify-wallet`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+            },
             body: JSON.stringify(authPayload),
             credentials: "include",
           });
+
           if (!authResponse.ok) throw new Error("Failed to verify wallet");
 
-          // After a successful authResponse:
           const authData = await authResponse.json();
 
           // 5) Set user in state
