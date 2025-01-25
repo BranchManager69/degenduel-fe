@@ -7,10 +7,10 @@ export const SuperAdminDashboard: React.FC = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-cyber-400 mb-4">
+        <h1 className="text-3xl font-bold text-gray-100 mb-4">
           SuperAdmin Dashboard
         </h1>
-        <p className="text-neon-400">
+        <p className="text-gray-400">
           Manage system-wide settings and access advanced tools.
         </p>
       </div>
@@ -29,10 +29,10 @@ export const SuperAdminDashboard: React.FC = () => {
           to="/amm-sim"
           className="bg-dark-200 p-6 rounded-lg hover:bg-dark-300/70 transition-colors border border-dark-300"
         >
-          <h2 className="text-xl font-semibold text-cyber-400 mb-2">
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">
             AMM Simulator
           </h2>
-          <p className="text-neon-400">
+          <p className="text-gray-400">
             Test and simulate AMM behavior with various parameters.
           </p>
         </Link>
@@ -42,10 +42,10 @@ export const SuperAdminDashboard: React.FC = () => {
           to="/api-playground"
           className="bg-dark-200 p-6 rounded-lg hover:bg-dark-300/70 transition-colors border border-dark-300"
         >
-          <h2 className="text-xl font-semibold text-cyber-400 mb-2">
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">
             API Playground
           </h2>
-          <p className="text-neon-400">
+          <p className="text-gray-400">
             Test API endpoints and manage system integrations.
           </p>
         </Link>
@@ -55,10 +55,10 @@ export const SuperAdminDashboard: React.FC = () => {
           to="/test"
           className="bg-dark-200 p-6 rounded-lg hover:bg-dark-300/70 transition-colors border border-dark-300"
         >
-          <h2 className="text-xl font-semibold text-cyber-400 mb-2">
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">
             Test Environment
           </h2>
-          <p className="text-neon-400">
+          <p className="text-gray-400">
             Access the testing environment for development.
           </p>
         </Link>

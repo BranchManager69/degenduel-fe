@@ -60,15 +60,15 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-cyber-500 border-t-transparent" />
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-400 border-t-transparent" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-brand-900/20 rounded">
-        <p className="text-brand-500">{error}</p>
+      <div className="p-4 bg-dark-300/20 rounded">
+        <p className="text-red-400">{error}</p>
       </div>
     );
   }
@@ -76,12 +76,10 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
   return (
     <div className="bg-dark-200 border border-dark-300 rounded-lg overflow-hidden">
       <div className="p-4 flex justify-between items-center border-b border-dark-300">
-        <h3 className="text-lg font-medium text-cyber-300">
-          Recent Activities
-        </h3>
+        <h3 className="text-lg font-medium text-gray-100">Recent Activities</h3>
         <button
           onClick={fetchActivities}
-          className="px-3 py-1 bg-dark-300 text-cyber-300 rounded hover:bg-dark-400 transition-colors"
+          className="px-3 py-1 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 transition-colors"
         >
           Refresh
         </button>
@@ -91,19 +89,19 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
         <table className="w-full">
           <thead className="bg-dark-300/50">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium text-cyber-300">
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
                 Time
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-cyber-300">
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
                 Admin
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-cyber-300">
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
                 Action
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-cyber-300">
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
                 Details
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-cyber-300">
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-400">
                 IP
               </th>
             </tr>
@@ -111,10 +109,10 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
           <tbody>
             {activities.map((activity) => (
               <tr key={activity.id} className="border-t border-dark-300">
-                <td className="px-4 py-3 text-cyber-300 whitespace-nowrap">
+                <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
                   {new Date(activity.created_at).toLocaleString()}
                 </td>
-                <td className="px-4 py-3 text-cyber-300 font-mono">
+                <td className="px-4 py-3 text-gray-300 font-mono">
                   {activity.admin_address
                     ? `${activity.admin_address.slice(
                         0,
@@ -122,13 +120,13 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                       )}...${activity.admin_address.slice(-4)}`
                     : "System"}
                 </td>
-                <td className="px-4 py-3 text-cyber-300">{activity.action}</td>
-                <td className="px-4 py-3 text-cyber-300 max-w-md break-words">
+                <td className="px-4 py-3 text-gray-300">{activity.action}</td>
+                <td className="px-4 py-3 text-gray-300 max-w-md break-words">
                   {typeof activity.details === "string"
                     ? activity.details
                     : JSON.stringify(activity.details)}
                 </td>
-                <td className="px-4 py-3 text-cyber-300 font-mono">
+                <td className="px-4 py-3 text-gray-300 font-mono">
                   {activity.ip_address}
                 </td>
               </tr>
@@ -142,17 +140,17 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
           <button
             onClick={handlePrevPage}
             disabled={offset === 0}
-            className="px-3 py-1 bg-dark-300 text-cyber-300 rounded hover:bg-dark-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
-          <span className="text-cyber-300">
+          <span className="text-gray-400">
             {offset + 1}-{Math.min(offset + limit, total)} of {total}
           </span>
           <button
             onClick={handleNextPage}
             disabled={offset + limit >= total}
-            className="px-3 py-1 bg-dark-300 text-cyber-300 rounded hover:bg-dark-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1 bg-dark-300 text-gray-100 rounded hover:bg-dark-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>

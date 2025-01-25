@@ -10,7 +10,7 @@ class UserService {
     if (!query || query.length < 2) return [];
 
     const response = await fetch(
-      `${API_URL}/users?search=${encodeURIComponent(query)}&limit=5`,
+      `${API_URL}/users/search?search=${encodeURIComponent(query)}&limit=5`,
       {
         credentials: "include",
       }
