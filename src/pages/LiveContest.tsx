@@ -1,12 +1,12 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import { Leaderboard } from '../components/contests/Leaderboard';
-import { PortfolioPerformance } from '../components/contests/PortfolioPerformance';
-import { ContestTimer } from '../components/contests/ContestTimer';
-import { TokenPerformance } from '../components/contests/TokenPerformance';
-import { ContestDifficulty } from '../components/landing/contests/ContestDifficulty';
-import { TestSkipButton } from '../components/contests/TestSkipButton';
-import { formatCurrency } from '../lib/utils';
+import React from "react";
+import { useParams } from "react-router-dom";
+import { ContestTimer } from "../components/contests/ContestTimer";
+import { Leaderboard } from "../components/contests/Leaderboard";
+import { PortfolioPerformance } from "../components/contests/PortfolioPerformance";
+import { TestSkipButton } from "../components/contests/TestSkipButton";
+import { TokenPerformance } from "../components/contests/TokenPerformance";
+import { ContestDifficulty } from "../components/landing/contests/ContestDifficulty";
+import { formatCurrency } from "../lib/utils";
 
 export const LiveContest: React.FC = () => {
   const { id } = useParams();
@@ -14,8 +14,8 @@ export const LiveContest: React.FC = () => {
   // Placeholder contest data
   const contest = {
     id,
-    title: 'Daily SOL Tournament',
-    difficulty: 'dolphin' as const,
+    title: "Daily SOL Tournament",
+    difficulty: "dolphin" as const,
     prizePool: 5000,
     endTime: new Date(Date.now() + 3600000), // 1 hour from now
   };
@@ -25,18 +25,18 @@ export const LiveContest: React.FC = () => {
     tokens: [
       {
         token: {
-          name: 'Solana',
-          symbol: 'SOL',
+          name: "Solana",
+          symbol: "SOL",
           price: 105.25,
         },
         amount: 10,
         initialValue: 1000,
-        currentValue: 1052.50,
+        currentValue: 1052.5,
       },
       {
         token: {
-          name: 'Bonk of America',
-          symbol: 'BONKFA',
+          name: "Bonk of America",
+          symbol: "BONKFA",
           price: 0.0075,
         },
         amount: 420.69,
@@ -44,53 +44,100 @@ export const LiveContest: React.FC = () => {
         currentValue: 5000,
       },
     ],
-    totalValue: 1367.50,
+    totalValue: 1367.5,
     totalChange: 7.2,
   };
 
   // Placeholder leaderboard data
   const leaderboardEntries = [
-    { rank: 1, username: 'BranchManager69', portfolioValue: 69420, change24h: 420.7 },
-    { rank: 2, username: 'realDonaldTrump', portfolioValue: 15100, change24h: 12.3 },
-    { rank: 3, username: 'iEatAss_sn1p3z', portfolioValue: 12300, change24h: 8.7 },
-    { rank: 4, username: 'YoWhoFknJ33T3D', portfolioValue: 6900, change24h: -5.2 },
-    { rank: 5, username: 'sol_survivor', portfolioValue: 4200, change24h: -8.1 },
+    {
+      rank: 1,
+      username: "BranchManager69",
+      portfolioValue: 69420,
+      change24h: 420.7,
+    },
+    {
+      rank: 2,
+      username: "realDonaldTrump",
+      portfolioValue: 15100,
+      change24h: 12.3,
+    },
+    {
+      rank: 3,
+      username: "iEatAss_sn1p3z",
+      portfolioValue: 12300,
+      change24h: 8.7,
+    },
+    {
+      rank: 4,
+      username: "YoWhoFknJ33T3D",
+      portfolioValue: 6900,
+      change24h: -5.2,
+    },
+    {
+      rank: 5,
+      username: "sol_survivor",
+      portfolioValue: 4200,
+      change24h: -8.1,
+    },
   ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      <div className="mb-8">
+      {/* Enhanced Header Section */}
+      <div className="mb-8 relative group">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-100 mb-2">{contest.title}</h1>
+            <h1 className="text-3xl font-bold text-gray-100 mb-2 relative group-hover:animate-glitch">
+              {contest.title}
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            </h1>
             <div className="flex items-center space-x-4">
               <ContestDifficulty difficulty={contest.difficulty} />
-              <span className="text-gray-400">Prize Pool: {formatCurrency(contest.prizePool)}</span>
+              <span className="text-gray-400 group-hover:text-brand-400 transition-colors">
+                Prize Pool:{" "}
+                <span className="text-brand-400 group-hover:animate-neon-flicker">
+                  {formatCurrency(contest.prizePool)}
+                </span>
+              </span>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <ContestTimer endTime={contest.endTime} />
+            <div className="relative group">
+              <ContestTimer endTime={contest.endTime} />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
             <TestSkipButton contestId={id!} />
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
+      {/* Enhanced Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <PortfolioPerformance {...portfolioData} />
-          <Leaderboard
-            entries={leaderboardEntries}
-            currentUserRank={2}
-          />
+          {/* Portfolio Performance with enhanced animations */}
+          <div className="relative group overflow-hidden rounded-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <PortfolioPerformance {...portfolioData} />
+          </div>
+
+          {/* Leaderboard with enhanced animations */}
+          <div className="relative group overflow-hidden rounded-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Leaderboard entries={leaderboardEntries} currentUserRank={2} />
+          </div>
         </div>
+
+        {/* Token Performance Cards with enhanced animations */}
         <div className="space-y-8">
           {portfolioData.tokens.map((tokenData) => (
-            <TokenPerformance
+            <div
               key={tokenData.token.symbol}
-              {...tokenData}
-            />
+              className="relative group overflow-hidden rounded-lg"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+              <TokenPerformance {...tokenData} />
+            </div>
           ))}
         </div>
       </div>

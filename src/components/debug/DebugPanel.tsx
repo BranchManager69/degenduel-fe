@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import type { ColorScheme } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 
 interface SystemStats {
@@ -18,6 +19,16 @@ interface SessionInfo {
   wsStatus: "connected" | "disconnected" | "connecting";
 }
 
+const COLOR_SCHEMES = {
+  "Cyber Blue": "default",
+  "Neon Green (Matrix)": "matrix",
+  "Neon Red (Cyberpunk)": "cyberpunk",
+  "Synthwave (80s Retro)": "synthwave",
+  "Gold Rush": "gold",
+  "Electric Teal": "teal",
+  "Plasma Purple": "plasma",
+} as const;
+
 export const DebugPanel: React.FC = () => {
   const { user, debugConfig, setDebugConfig } = useStore();
   const [sectionsOpen, setSectionsOpen] = useState({
@@ -27,6 +38,7 @@ export const DebugPanel: React.FC = () => {
     system: false,
     session: false,
     tools: false,
+    theme: false,
   });
   const [isMinimized, setIsMinimized] = useState(true);
   const [position, setPosition] = useState({
@@ -210,6 +222,37 @@ export const DebugPanel: React.FC = () => {
     setSectionsOpen((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Function to apply color scheme
+  const applyColorScheme = (scheme: string) => {
+    // Remove any existing scheme classes
+    document.documentElement.classList.remove(
+      "scheme-default",
+      "scheme-matrix",
+      "scheme-cyberpunk",
+      "scheme-synthwave",
+      "scheme-gold",
+      "scheme-teal",
+      "scheme-plasma"
+    );
+
+    // Add the new scheme class
+    if (scheme !== "default") {
+      document.documentElement.classList.add(`scheme-${scheme}`);
+    }
+
+    // Save to localStorage
+    localStorage.setItem("color-scheme", scheme);
+
+    // Update debug config
+    setDebugConfig({ colorScheme: scheme as ColorScheme });
+  };
+
+  // Initialize color scheme from localStorage
+  useEffect(() => {
+    const savedScheme = localStorage.getItem("color-scheme") || "default";
+    applyColorScheme(savedScheme);
+  }, []);
+
   // Check if user is superadmin from the store
   if (user?.role !== "superadmin") return null;
 
@@ -250,6 +293,7 @@ export const DebugPanel: React.FC = () => {
                 system: true,
                 session: true,
                 tools: true,
+                theme: true,
               });
             }
           }}
@@ -261,6 +305,37 @@ export const DebugPanel: React.FC = () => {
       {/* Panel Content */}
       {!isMinimized && (
         <div className="p-4 space-y-4">
+          {/* Theme Section */}
+          <div className="mb-3">
+            <button
+              className="flex items-center justify-between w-full text-sm font-mono text-brand-400 mb-2"
+              onClick={() => toggleSection("theme")}
+            >
+              <span className="flex items-center">
+                <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
+                Theme Switcher
+              </span>
+              <span>{sectionsOpen.theme ? "−" : "+"}</span>
+            </button>
+            {sectionsOpen.theme && (
+              <div className="space-y-2 ml-2">
+                {Object.entries(COLOR_SCHEMES).map(([name, value]) => (
+                  <button
+                    key={value}
+                    onClick={() => applyColorScheme(value)}
+                    className={`w-full px-3 py-2 text-sm rounded-md transition-all duration-300 ${
+                      debugConfig.colorScheme === value
+                        ? "bg-brand-500/20 text-brand-400 border border-brand-500/30"
+                        : "text-gray-400 hover:bg-brand-500/10 hover:text-brand-300"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* System Stats Section */}
           <div className="mb-3">
             <button

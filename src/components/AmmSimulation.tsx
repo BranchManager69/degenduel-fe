@@ -201,6 +201,8 @@ const parameterConfig: Record<
 const AmmSimulation: React.FC = () => {
   const [params, setParams] = useState<SimulationParams>(defaultParams);
   const [data, setData] = useState<DataPoint[]>([]);
+  const [activeTab, setActiveTab] =
+    useState<keyof typeof parameterGroups>("time");
 
   useEffect(() => {
     const simulateAmm = () => {
@@ -296,190 +298,238 @@ const AmmSimulation: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-100 text-white">
-      <div className="max-w-7xl mx-auto p-8 space-y-8">
-        <div className="animate-fade-in">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-400 to-cyber-400 bg-clip-text text-transparent mb-4">
-            AMM Simulation
-          </h1>
-          <p className="text-neon-300">
-            Simulate Automated Market Maker behavior with customizable
-            parameters
-          </p>
-        </div>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center relative group">
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+        <h1 className="text-3xl font-bold text-gray-100 mb-2 group-hover:animate-glitch">
+          AMM Simulator
+        </h1>
+        <p className="text-gray-400 max-w-2xl mx-auto group-hover:animate-cyber-pulse">
+          Simulate automated market maker behavior with various parameters
+        </p>
+      </div>
 
-        {Object.entries(parameterGroups).map(([groupName, groupParams]) => (
-          <div
-            key={groupName}
-            className="bg-dark-200 p-6 rounded-lg border border-dark-300 shadow-lg animate-fade-in"
-          >
-            <h2 className="text-2xl font-semibold text-cyber-400 mb-4 capitalize">
-              {groupName} Parameters
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {groupParams.map((paramKey) => {
-                const config =
-                  parameterConfig[paramKey as keyof SimulationParams];
-                const value = params[paramKey as keyof SimulationParams];
-                return (
-                  <div key={paramKey} className="flex flex-col">
-                    <label className="text-sm font-medium text-neon-300 mb-2">
-                      {config.label}
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-brand-300 font-mono">
-                        {config.formatter(value)}
-                      </span>
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Parameters Panel */}
+        <div className="lg:col-span-1">
+          <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg hover:border-brand-400/20 transition-colors group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+            <div className="p-6 relative">
+              <h2 className="text-xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
+                Simulation Parameters
+              </h2>
+
+              {/* Parameter Tabs */}
+              <div className="flex space-x-2 mb-6 overflow-x-auto">
+                {Object.entries(parameterGroups).map(([group]) => (
+                  <button
+                    key={group}
+                    onClick={() =>
+                      setActiveTab(group as keyof typeof parameterGroups)
+                    }
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors relative group overflow-hidden
+                      ${
+                        activeTab === group
+                          ? "bg-brand-400/20 text-brand-400 border border-brand-400/40"
+                          : "text-gray-400 hover:text-gray-200 hover:bg-dark-300/50"
+                      }`}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                    <span className="relative group-hover:animate-glitch capitalize">
+                      {group}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Parameter Inputs */}
+              <div className="space-y-4">
+                {Object.entries(parameterConfig)
+                  .filter(([_, config]) => config.group === activeTab)
+                  .map(([key, config]) => (
+                    <div key={key} className="group">
+                      <label className="block text-sm font-medium text-gray-300 mb-1 group-hover:animate-glitch">
+                        {config.label}
+                      </label>
                       <input
                         type="number"
-                        value={value}
-                        step={config.step}
-                        min={config.min}
-                        max={config.max}
+                        value={params[key as keyof SimulationParams]}
                         onChange={(e) =>
                           handleParamChange(
-                            paramKey as keyof SimulationParams,
+                            key as keyof SimulationParams,
                             e.target.value
                           )
                         }
-                        className="flex-1 p-2 border border-dark-300 rounded bg-dark-300/50 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                        step={config.step}
+                        min={config.min}
+                        max={config.max}
+                        className="w-full bg-dark-300/50 border border-dark-400 rounded-lg px-4 py-2 text-gray-100 
+                          placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent 
+                          transition-colors group-hover:border-brand-400/20"
                       />
+                      <p className="mt-1 text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                        Current:{" "}
+                        {config.formatter(
+                          params[key as keyof SimulationParams]
+                        )}
+                      </p>
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+              </div>
             </div>
           </div>
-        ))}
+        </div>
 
-        <div className="bg-dark-200 p-6 rounded-lg border border-dark-300 shadow-lg animate-fade-in">
-          <div className="h-[600px] w-full">
-            <ResponsiveContainer>
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis
-                  dataKey="hour"
-                  tickFormatter={(hour) => `Day ${Math.floor(hour / 24) + 1}`}
-                  label={{
-                    value: "Time",
-                    position: "insideBottom",
-                    offset: -5,
-                    fill: "#9CA3AF",
-                  }}
-                  stroke="#9CA3AF"
-                />
-                <YAxis
-                  yAxisId="left"
-                  tickFormatter={(value) => formatters.price.format(value)}
-                  label={{
-                    value: "Token Price (USD)",
-                    angle: -90,
-                    position: "insideLeft",
-                    fill: "#9CA3AF",
-                  }}
-                  stroke="#9CA3AF"
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tickFormatter={(value) => formatters.marketCap(value)}
-                  label={{
-                    value: "Market Cap",
-                    angle: 90,
-                    position: "insideRight",
-                    fill: "#9CA3AF",
-                  }}
-                  stroke="#9CA3AF"
-                />
-                <YAxis
-                  yAxisId="impact"
-                  orientation="right"
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  domain={[0, 25]}
-                  label={{
-                    value: "Price Impact",
-                    angle: 90,
-                    position: "insideRight",
-                    offset: 50,
-                    fill: "#9CA3AF",
-                  }}
-                  stroke="#9CA3AF"
-                />
-                <Tooltip
-                  formatter={(value: number, name: string, props: any) => {
-                    if (!props?.payload?.length) return ["-", name];
-                    const dataPoint = props.payload[0].payload;
-
-                    if (name === "Price Impact (%)") {
-                      return dataPoint.priceImpact
-                        ? [
-                            `${dataPoint.priceImpact.toFixed(1)}%`,
-                            "Price Impact",
-                          ]
-                        : ["-", "Price Impact"];
-                    }
-                    if (name === "Token Price (USD)") {
-                      return [formatters.price.format(value), name];
-                    }
-                    if (name === "Liquidity") {
-                      return [
-                        formatters.currency.format(dataPoint.liquidityUsd || 0),
+        {/* Charts Panel */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Market Cap Chart */}
+          <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-6 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+            <div className="relative">
+              <h3 className="text-lg font-bold text-gray-100 mb-4 group-hover:animate-glitch">
+                Market Cap & Price
+              </h3>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                    <XAxis
+                      dataKey="hour"
+                      tickFormatter={formatters.day}
+                      stroke="#A0AEC0"
+                    />
+                    <YAxis
+                      yAxisId="marketCap"
+                      tickFormatter={formatters.marketCap}
+                      stroke="#A0AEC0"
+                    />
+                    <YAxis
+                      yAxisId="price"
+                      orientation="right"
+                      tickFormatter={formatters.currency.format}
+                      stroke="#A0AEC0"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(26, 32, 44, 0.9)",
+                        border: "1px solid #2D3748",
+                        borderRadius: "0.5rem",
+                      }}
+                      formatter={(value: number, name: string) => [
+                        name === "Market Cap"
+                          ? formatters.marketCap(value)
+                          : formatters.currency.format(value),
                         name,
-                      ];
-                    }
-                    return [formatters.marketCap(value), name];
-                  }}
-                  labelFormatter={(hour) => `Day ${Math.floor(hour / 24) + 1}`}
-                  contentStyle={{
-                    backgroundColor: "#1F2937",
-                    border: "1px solid #374151",
-                    borderRadius: "0.375rem",
-                    color: "#fff",
-                  }}
-                />
-                <Legend wrapperStyle={{ color: "#9CA3AF" }} />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="tokenPriceUsd"
-                  stroke="#7f00ff"
-                  name="Token Price (USD)"
-                  dot={false}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="marketCapUsd"
-                  stroke="#00e1ff"
-                  name="Market Cap"
-                  dot={false}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="targetMarketCap"
-                  stroke="#00afff"
-                  name="Target Market Cap"
-                  strokeDasharray="5 5"
-                  dot={false}
-                />
-                <Bar
-                  yAxisId="impact"
-                  dataKey="priceImpact"
-                  fill="#ff0000"
-                  name="Price Impact (%)"
-                  opacity={0.75}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="liquidityUsd"
-                  stroke="#00b4cc"
-                  name="Liquidity"
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                      ]}
+                      labelFormatter={formatters.day}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="marketCap"
+                      type="monotone"
+                      dataKey="marketCapUsd"
+                      name="Market Cap"
+                      stroke="#7F00FF"
+                      dot={false}
+                    />
+                    <Line
+                      yAxisId="marketCap"
+                      type="monotone"
+                      dataKey="targetMarketCap"
+                      name="Target"
+                      stroke="#7F00FF40"
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      yAxisId="price"
+                      type="monotone"
+                      dataKey="tokenPriceUsd"
+                      name="Price"
+                      stroke="#00E5FF"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Liquidity Chart */}
+          <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-6 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+            <div className="relative">
+              <h3 className="text-lg font-bold text-gray-100 mb-4 group-hover:animate-glitch">
+                Liquidity & Sales
+              </h3>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                    <XAxis
+                      dataKey="hour"
+                      tickFormatter={formatters.day}
+                      stroke="#A0AEC0"
+                    />
+                    <YAxis
+                      yAxisId="liquidity"
+                      tickFormatter={formatters.marketCap}
+                      stroke="#A0AEC0"
+                    />
+                    <YAxis
+                      yAxisId="impact"
+                      orientation="right"
+                      tickFormatter={formatters.percent.format}
+                      stroke="#A0AEC0"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(26, 32, 44, 0.9)",
+                        border: "1px solid #2D3748",
+                        borderRadius: "0.5rem",
+                      }}
+                      formatter={(value: number, name: string) => [
+                        name === "Liquidity"
+                          ? formatters.marketCap(value)
+                          : name === "Sale Amount"
+                          ? formatters.currency.format(value)
+                          : formatters.percent.format(value),
+                        name,
+                      ]}
+                      labelFormatter={formatters.day}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="liquidity"
+                      type="monotone"
+                      dataKey="liquidityUsd"
+                      name="Liquidity"
+                      stroke="#7F00FF"
+                      dot={false}
+                    />
+                    <Line
+                      yAxisId="impact"
+                      type="monotone"
+                      dataKey="priceImpact"
+                      name="Price Impact"
+                      stroke="#FF0080"
+                      dot={false}
+                    />
+                    <Bar
+                      yAxisId="liquidity"
+                      dataKey="saleAmountUsd"
+                      name="Sale Amount"
+                      fill="#00E5FF40"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </div>
       </div>

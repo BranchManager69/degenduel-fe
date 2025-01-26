@@ -17,15 +17,17 @@ export function JsonInput({ value, onChange, placeholder }: JsonInputProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative group">
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-cyber-500 rounded-lg blur opacity-0 group-hover:opacity-20 group-focus-within:opacity-100 transition duration-300" />
       <textarea
-        className={`w-full h-32 bg-gray-900 text-white font-mono text-sm rounded px-3 py-2 
-          focus:outline-none focus:ring-2 ${
+        className={`w-full h-32 bg-dark-400/50 text-white font-mono text-sm rounded-lg px-4 py-3 
+          focus:outline-none focus:ring-2 transition-all duration-300
+          ${
             error
-              ? "focus:ring-red-500 border-red-500"
-              : "focus:ring-purple-500 border-gray-700"
+              ? "focus:ring-red-500 border-red-500/50 hover:border-red-500"
+              : "focus:ring-brand-500 border-dark-300/50 hover:border-brand-500/50"
           }
-          border resize-y`}
+          border backdrop-blur-sm resize-y placeholder-gray-500`}
         value={
           typeof value === "string" ? value : JSON.stringify(value, null, 2)
         }
@@ -34,9 +36,10 @@ export function JsonInput({ value, onChange, placeholder }: JsonInputProps) {
         spellCheck={false}
       />
       {error && (
-        <span className="absolute right-2 bottom-2 text-xs text-red-500">
-          {error}
-        </span>
+        <div className="absolute right-2 bottom-2 flex items-center gap-2 bg-dark-400/80 px-2 py-1 rounded backdrop-blur-sm border border-red-500/50 group-hover:animate-glitch">
+          <span className="text-lg">⚠️</span>
+          <span className="text-xs text-red-400">{error}</span>
+        </div>
       )}
     </div>
   );

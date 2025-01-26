@@ -107,20 +107,23 @@ export const ContestBrowser: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-100">
-          Find Contests
+      {/* Enhanced Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative group">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
+          <span className="relative z-10 group-hover:animate-glitch">
+            Find Contests
+          </span>
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
         </h1>
         <CreateContestButton />
       </div>
 
-      {/* Filter Toggle Button (Mobile) */}
+      {/* Enhanced Filter Toggle Button (Mobile) */}
       <button
         onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
-        className="md:hidden w-full mb-4 px-4 py-2 bg-dark-200 rounded-lg text-gray-100 flex items-center justify-between"
+        className="md:hidden w-full mb-4 px-4 py-2 bg-dark-200 rounded-lg text-gray-100 flex items-center justify-between relative group hover:bg-dark-300/50 transition-colors"
       >
-        <span className="flex items-center space-x-2">
+        <span className="flex items-center space-x-2 group-hover:animate-cyber-pulse">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5"
@@ -137,7 +140,7 @@ export const ContestBrowser: React.FC = () => {
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`h-5 w-5 transform transition-transform ${
+          className={`h-5 w-5 transform transition-transform duration-300 ${
             isFilterMenuOpen ? "rotate-180" : ""
           }`}
           viewBox="0 0 20 20"
@@ -145,104 +148,115 @@ export const ContestBrowser: React.FC = () => {
         >
           <path
             fillRule="evenodd"
-            d="M5.293 7.293a1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
             clipRule="evenodd"
           />
         </svg>
       </button>
 
-      {/* Filters Section */}
+      {/* Enhanced Filters Section */}
       <div
         className={`${
           isFilterMenuOpen ? "block" : "hidden"
-        } md:block mb-8 space-y-4 bg-dark-200/50 p-4 rounded-lg`}
+        } md:block mb-8 space-y-4 bg-dark-200/50 backdrop-blur-sm p-4 rounded-lg border border-dark-300 relative group animate-fade-in`}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Status Filter */}
-          <div className="space-y-2">
-            <label className="text-sm text-gray-400">Contest Status</label>
-            <select
-              className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              value={activeStatusFilter}
-              onChange={(e) => setActiveStatusFilter(e.target.value)}
-            >
-              <option value="all">All Contests</option>
-              <option value="live">Live Now (Spectate)</option>
-              <option value="upcoming">Pre-Registration</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream rounded-lg" />
+        <div className="relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Status Filter */}
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                Contest Status
+              </label>
+              <select
+                className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors"
+                value={activeStatusFilter}
+                onChange={(e) => setActiveStatusFilter(e.target.value)}
+              >
+                <option value="all">All Contests</option>
+                <option value="live">Live Now (Spectate)</option>
+                <option value="upcoming">Pre-Registration</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            {/* Difficulty Filter */}
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                Risk Level*
+              </label>
+              <select
+                className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors"
+                value={activeDifficultyFilter}
+                onChange={(e) =>
+                  setActiveDifficultyFilter(
+                    e.target.value as ContestSettings["difficulty"] | ""
+                  )
+                }
+              >
+                <option value="">All Risk Levels</option>
+                <option value="guppy">
+                  Guppy (Most winners; lowest individual payouts)
+                </option>
+                <option value="tadpole">
+                  Tadpole (More winners; lower payouts)
+                </option>
+                <option value="squid">
+                  Squid (Many winners; below-average payouts)
+                </option>
+                <option value="dolphin">
+                  Dolphin (Few winners; above-average payouts)
+                </option>
+                <option value="shark">
+                  Shark (Fewer winners; higher payouts)
+                </option>
+                <option value="whale">
+                  Whale (Fewest winner(s); highest individual payout(s))
+                </option>
+              </select>
+            </div>
           </div>
 
-          {/* Difficulty Filter */}
-          <div className="space-y-2">
-            <label className="text-sm text-gray-400">Risk Level*</label>
-            <select
-              className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              value={activeDifficultyFilter}
-              onChange={(e) =>
-                setActiveDifficultyFilter(
-                  e.target.value as ContestSettings["difficulty"] | ""
-                )
-              }
-            >
-              <option value="">All Risk Levels</option>
-              <option value="guppy">
-                Guppy (Most winners; lowest individual payouts)
-              </option>
-              <option value="tadpole">
-                Tadpole (More winners; lower payouts)
-              </option>
-              <option value="squid">
-                Squid (Many winners; below-average payouts)
-              </option>
-              <option value="dolphin">
-                Dolphin (Few winners; above-average payouts)
-              </option>
-              <option value="shark">
-                Shark (Fewer winners; higher payouts)
-              </option>
-              <option value="whale">
-                Whale (Fewest winner(s); highest individual payout(s))
-              </option>
-            </select>
+          {/* Sort Controls */}
+          <div className="pt-4 border-t border-dark-400 mt-4">
+            <ContestSort
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={(field: SortField, direction: SortDirection) => {
+                setSortField(field);
+                setSortDirection(direction);
+                fetchContests();
+              }}
+            />
           </div>
-        </div>
-
-        {/* Sort Controls */}
-        <div className="pt-4 border-t border-dark-400">
-          <ContestSort
-            currentField={sortField}
-            direction={sortDirection}
-            onSort={(field: SortField, direction: SortDirection) => {
-              setSortField(field);
-              setSortDirection(direction);
-              fetchContests();
-            }}
-          />
         </div>
       </div>
 
-      {/* Active Filters Display */}
+      {/* Enhanced Active Filters Display */}
       {(activeStatusFilter !== "all" || activeDifficultyFilter !== "") && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4 animate-fade-in">
           {activeStatusFilter !== "all" && (
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm">
-              <span>{activeStatusFilter}</span>
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
+              <span className="group-hover:animate-glitch">
+                {activeStatusFilter}
+              </span>
               <button
                 onClick={() => setActiveStatusFilter("all")}
-                className="ml-2 hover:text-brand-200"
+                className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
               >
                 ×
               </button>
             </div>
           )}
           {activeDifficultyFilter && (
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm">
-              <span>{activeDifficultyFilter}</span>
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
+              <span className="group-hover:animate-glitch">
+                {activeDifficultyFilter}
+              </span>
               <button
                 onClick={() => setActiveDifficultyFilter("")}
-                className="ml-2 hover:text-brand-200"
+                className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
               >
                 ×
               </button>
@@ -251,25 +265,32 @@ export const ContestBrowser: React.FC = () => {
         </div>
       )}
 
-      {/* Contest Grid */}
+      {/* Enhanced Contest Grid */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
-          // Loading skeletons
+          // Enhanced Loading skeletons
           [...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="animate-pulse bg-dark-200 rounded-lg h-64"
-            ></div>
+              className="animate-pulse bg-dark-200 rounded-lg h-64 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+            </div>
           ))
         ) : error ? (
-          <div className="col-span-full text-center text-red-500">{error}</div>
+          <div className="col-span-full text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
+            {error}
+          </div>
         ) : filteredAndSortedContests.length === 0 ? (
-          <div className="col-span-full text-center text-gray-400 py-12">
+          <div className="col-span-full text-center text-gray-400 py-12 bg-dark-200/50 rounded-lg animate-fade-in">
             No contests found matching your filters
           </div>
         ) : (
           filteredAndSortedContests.map((contest) => (
-            <div key={contest.id}>
+            <div
+              key={contest.id}
+              className="transform hover:scale-102 transition-transform duration-300"
+            >
               <ContestCard
                 contest={contest}
                 onClick={() =>

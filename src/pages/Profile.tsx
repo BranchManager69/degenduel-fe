@@ -193,11 +193,12 @@ export const Profile: React.FC = () => {
   if (!user) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-200">
+        <div className="text-center relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <h2 className="text-xl font-semibold text-gray-200 group-hover:animate-glitch">
             Connect Your Wallet
           </h2>
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-gray-400 group-hover:animate-cyber-pulse">
             Connect your wallet to view your profile
           </p>
         </div>
@@ -210,68 +211,91 @@ export const Profile: React.FC = () => {
       <div className="space-y-8">
         {loading.user ? (
           <div className="h-32 flex items-center justify-center">
-            <LoadingSpinner size="lg" />
+            <LoadingSpinner size="lg" className="animate-cyber-pulse" />
           </div>
         ) : error.user ? (
-          <ErrorMessage
-            message={error.user}
-            onRetry={() => window.location.reload()}
-          />
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <ErrorMessage
+              message={error.user}
+              onRetry={() => window.location.reload()}
+              className="animate-glitch"
+            />
+          </div>
         ) : userData ? (
-          <ProfileHeader
-            address={userData.wallet_address}
-            username={userData.nickname || userData.wallet_address}
-            rankScore={userData.rank_score}
-            joinDate={new Date(userData.created_at).toLocaleDateString()}
-            bonusBalance={userData.bonusBalance}
-            onUpdateNickname={handleUpdateNickname}
-            isUpdating={isUpdatingNickname}
-            isBanned={userData.is_banned ?? false}
-            banReason={userData.ban_reason ?? null}
-          />
+          <div className="relative group overflow-hidden rounded-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <ProfileHeader
+              address={userData.wallet_address}
+              username={userData.nickname || userData.wallet_address}
+              rankScore={userData.rank_score}
+              joinDate={new Date(userData.created_at).toLocaleDateString()}
+              bonusBalance={userData.bonusBalance}
+              onUpdateNickname={handleUpdateNickname}
+              isUpdating={isUpdatingNickname}
+              isBanned={userData.is_banned ?? false}
+              banReason={userData.ban_reason ?? null}
+            />
+          </div>
         ) : null}
 
         {loading.stats ? (
           <div className="h-32 flex items-center justify-center">
-            <LoadingSpinner size="lg" />
+            <LoadingSpinner size="lg" className="animate-cyber-pulse" />
           </div>
         ) : error.stats ? (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-            <p className="text-red-400 text-center">{error.stats}</p>
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <p className="text-red-400 text-center animate-glitch">
+              {error.stats}
+            </p>
           </div>
         ) : userStats ? (
-          <UserStats
-            totalWinnings={userStats.total_earnings}
-            contestsPlayed={userStats.total_contests}
-            contestsWon={userStats.total_wins}
-            winRate={userStats.win_rate}
-            averageReturn={userStats.average_return}
-          />
+          <div className="relative group overflow-hidden rounded-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <UserStats
+              totalWinnings={userStats.total_earnings}
+              contestsPlayed={userStats.total_contests}
+              contestsWon={userStats.total_wins}
+              winRate={userStats.win_rate}
+              averageReturn={userStats.average_return}
+            />
+          </div>
         ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
-            <h2 className="text-2xl font-bold text-gray-100">Achievements</h2>
+            <h2 className="text-2xl font-bold text-gray-100 group-hover:animate-glitch relative group">
+              Achievements
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            </h2>
             {loading.achievements ? (
               <div className="h-32 flex items-center justify-center">
-                <LoadingSpinner size="lg" />
+                <LoadingSpinner size="lg" className="animate-cyber-pulse" />
               </div>
             ) : error.achievements ? (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                <p className="text-red-400 text-center">{error.achievements}</p>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+                <p className="text-red-400 text-center animate-glitch">
+                  {error.achievements}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {achievements.length > 0 ? (
                   achievements.map((achievement) => (
-                    <AchievementCard
+                    <div
                       key={achievement.achievement}
-                      achievement={achievement}
-                    />
+                      className="relative group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <AchievementCard achievement={achievement} />
+                    </div>
                   ))
                 ) : (
-                  <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50">
-                    <p className="text-gray-400 text-center">
+                  <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50 relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <p className="text-gray-400 text-center group-hover:animate-cyber-pulse">
                       No achievements yet. Keep playing!
                     </p>
                   </div>
@@ -282,14 +306,20 @@ export const Profile: React.FC = () => {
           <div>
             {loading.history ? (
               <div className="h-32 flex items-center justify-center">
-                <LoadingSpinner size="lg" />
+                <LoadingSpinner size="lg" className="animate-cyber-pulse" />
               </div>
             ) : error.history ? (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                <p className="text-red-400 text-center">{error.history}</p>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+                <p className="text-red-400 text-center animate-glitch">
+                  {error.history}
+                </p>
               </div>
             ) : (
-              <ContestHistory contests={contestHistory} />
+              <div className="relative group overflow-hidden rounded-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <ContestHistory contests={contestHistory} />
+              </div>
             )}
           </div>
         </div>

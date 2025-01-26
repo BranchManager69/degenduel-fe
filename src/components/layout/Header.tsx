@@ -212,126 +212,171 @@ export const Header: React.FC = () => {
 
         {/* Mobile Menu */}
         <div
-          className={`${
-            isMenuOpen ? "block" : "hidden"
-          } md:hidden border-t border-dark-300 py-2`}
+          className={`fixed inset-x-0 top-[64px] transform ${
+            isMenuOpen
+              ? "translate-y-0 opacity-100"
+              : "-translate-y-full opacity-0"
+          } transition-all duration-300 ease-in-out md:hidden bg-dark-200/95 backdrop-blur-sm border-t border-dark-300 shadow-lg`}
         >
-          <div className="space-y-1 pb-3 pt-2">
-            <Link
-              to="/contests"
-              className="block px-3 py-2 text-base font-medium text-gray-100 hover:bg-dark-300 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contests
-            </Link>
-            <Link
-              to="/tokens"
-              className="block px-3 py-2 text-base font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Tokens
-            </Link>
-            <div className="px-3 py-2">
-              <span className="block text-base font-medium text-gray-400">
-                Rankings
-              </span>
+          <div className="max-h-[calc(100vh-64px)] overflow-y-auto">
+            <div className="space-y-1 pb-3 pt-2">
               <Link
-                to="/rankings/global"
-                className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
+                to="/contests"
+                className="block px-3 py-2 text-base font-medium text-gray-100 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Global Rankings
-              </Link>
-              <Link
-                to="/rankings/performance"
-                className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Contest Performance
-              </Link>
-            </div>
-            {(isAdmin() || isSuperAdmin()) && (
-              <div className="px-3 py-2">
-                <span className="block text-base font-medium text-brand-400">
-                  Admin
+                <span className="relative z-10 group-hover:animate-glitch">
+                  Contests
                 </span>
-                {isAdmin() && (
-                  <Link
-                    to="/admin"
-                    className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Contest Admin
-                  </Link>
-                )}
-                {isSuperAdmin() && (
-                  <>
-                    <Link
-                      to="/superadmin"
-                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      SuperAdmin Tools
-                    </Link>
-                    <Link
-                      to="/amm-sim"
-                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      AMM Simulator
-                    </Link>
-                    <Link
-                      to="/api-playground"
-                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      API Playground
-                    </Link>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Link>
+              <Link
+                to="/tokens"
+                className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <span className="relative z-10 group-hover:animate-glitch">
+                  Tokens
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Link>
 
-          {/* Mobile Wallet Connection */}
-          <div className="pt-4 pb-3 border-t border-dark-300">
-            <div className="px-3 space-y-3">
-              {user ? (
-                <div className="space-y-3">
-                  <Link
-                    to="/profile"
-                    className="text-sm text-gray-400 hover:text-brand-400 transition-colors flex items-center"
-                  >
-                    <span>{user.nickname}</span>
-                    {user.is_banned && (
-                      <span
-                        className="ml-1.5 text-red-500"
-                        title={user.ban_reason || "Account banned"}
-                      >
-                        🚫
+              {/* Rankings Section */}
+              <div className="px-3 py-2 space-y-1">
+                <span className="block text-base font-medium text-brand-400 animate-cyber-pulse">
+                  Rankings
+                </span>
+                <Link
+                  to="/rankings/global"
+                  className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <span className="relative z-10 group-hover:animate-glitch">
+                    Global Rankings
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </Link>
+                <Link
+                  to="/rankings/performance"
+                  className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <span className="relative z-10 group-hover:animate-glitch">
+                    Contest Performance
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </Link>
+              </div>
+
+              {/* Admin Section */}
+              {(isAdmin() || isSuperAdmin()) && (
+                <div className="px-3 py-2 space-y-1">
+                  <span className="block text-base font-medium text-brand-400 animate-cyber-pulse">
+                    Admin
+                  </span>
+                  {isAdmin() && (
+                    <Link
+                      to="/admin"
+                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="relative z-10 group-hover:animate-glitch">
+                        Contest Admin
                       </span>
-                    )}
-                  </Link>
+                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </Link>
+                  )}
+                  {isSuperAdmin() && (
+                    <>
+                      <Link
+                        to="/superadmin"
+                        className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <span className="relative z-10 group-hover:animate-glitch">
+                          SuperAdmin Tools
+                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </Link>
+                      <Link
+                        to="/amm-sim"
+                        className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <span className="relative z-10 group-hover:animate-glitch">
+                          AMM Simulator
+                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </Link>
+                      <Link
+                        to="/api-playground"
+                        className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <span className="relative z-10 group-hover:animate-glitch">
+                          API Playground
+                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Wallet Connection */}
+            <div className="pt-4 pb-3 border-t border-dark-300">
+              <div className="px-3 space-y-3">
+                {user ? (
+                  <div className="space-y-3">
+                    <Link
+                      to="/profile"
+                      className="text-sm text-gray-400 hover:text-brand-400 transition-colors flex items-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="group-hover:animate-glitch">
+                        {user.nickname}
+                      </span>
+                      {user.is_banned && (
+                        <span
+                          className="ml-1.5 text-red-500 animate-pulse"
+                          title={user.ban_reason || "Account banned"}
+                        >
+                          🚫
+                        </span>
+                      )}
+                    </Link>
+                    <Button
+                      onClick={() => {
+                        disconnectWallet();
+                        setIsMenuOpen(false);
+                      }}
+                      variant="gradient"
+                      size="sm"
+                      className="w-full group"
+                    >
+                      <span className="relative z-10 group-hover:animate-glitch">
+                        Disconnect
+                      </span>
+                    </Button>
+                  </div>
+                ) : (
                   <Button
-                    onClick={disconnectWallet}
+                    onClick={() => {
+                      connectWallet();
+                      setIsMenuOpen(false);
+                    }}
                     variant="gradient"
                     size="sm"
-                    className="w-full"
+                    className="w-full group"
+                    disabled={isConnecting}
                   >
-                    Disconnect
+                    <span className="relative z-10 group-hover:animate-glitch">
+                      {isConnecting ? "Connecting..." : "Connect Wallet"}
+                    </span>
                   </Button>
-                </div>
-              ) : (
-                <Button
-                  onClick={connectWallet}
-                  variant="gradient"
-                  size="sm"
-                  className="w-full"
-                  disabled={isConnecting}
-                >
-                  {isConnecting ? "Connecting..." : "Connect Wallet"}
-                </Button>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

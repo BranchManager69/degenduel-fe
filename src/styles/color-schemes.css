@@ -1,0 +1,217 @@
+/* Default scheme is already in Tailwind config */
+
+/* Matrix (Neon Green) */
+.scheme-matrix {
+  --color-brand-50: #f3fff6;
+  --color-brand-100: #e6ffee;
+  --color-brand-200: #ccffdd;
+  --color-brand-300: #b3ffcc;
+  --color-brand-400: #99ffbb;
+  --color-brand-500: #80ffaa;
+  --color-brand-600: #66cc88;
+  --color-brand-700: #4d9966;
+  --color-brand-800: #336644;
+  --color-brand-900: #1a3322;
+
+  --color-cyber-50: #f0fff0;
+  --color-cyber-100: #e0ffe0;
+  --color-cyber-200: #c2ffc2;
+  --color-cyber-300: #a3ffa3;
+  --color-cyber-400: #85ff85;
+  --color-cyber-500: #66ff66;
+  --color-cyber-600: #52cc52;
+  --color-cyber-700: #3d993d;
+  --color-cyber-800: #296629;
+  --color-cyber-900: #143314;
+
+  --color-neon-50: #ebffeb;
+  --color-neon-100: #d6ffd6;
+  --color-neon-200: #adffad;
+  --color-neon-300: #85ff85;
+  --color-neon-400: #5cff5c;
+  --color-neon-500: #33ff33;
+  --color-neon-600: #29cc29;
+  --color-neon-700: #1f991f;
+  --color-neon-800: #146614;
+  --color-neon-900: #0a330a;
+}
+
+/* Cyberpunk (Neon Red) */
+.scheme-cyberpunk {
+  --color-brand-50: #ffe6e6;
+  --color-brand-100: #ffcccc;
+  --color-brand-200: #ff9999;
+  --color-brand-300: #ff6666;
+  --color-brand-400: #ff3333;
+  --color-brand-500: #ff0000;
+  --color-brand-600: #cc0000;
+  --color-brand-700: #990000;
+  --color-brand-800: #660000;
+  --color-brand-900: #330000;
+
+  --color-cyber-50: #fff0f0;
+  --color-cyber-100: #ffe0e0;
+  --color-cyber-200: #ffc2c2;
+  --color-cyber-300: #ffa3a3;
+  --color-cyber-400: #ff8585;
+  --color-cyber-500: #ff6666;
+  --color-cyber-600: #cc5252;
+  --color-cyber-700: #993d3d;
+  --color-cyber-800: #662929;
+  --color-cyber-900: #331414;
+
+  --color-neon-50: #ffebeb;
+  --color-neon-100: #ffd6d6;
+  --color-neon-200: #ffadad;
+  --color-neon-300: #ff8585;
+  --color-neon-400: #ff5c5c;
+  --color-neon-500: #ff3333;
+  --color-neon-600: #cc2929;
+  --color-neon-700: #991f1f;
+  --color-neon-800: #661414;
+  --color-neon-900: #330a0a;
+}
+
+/* Synthwave */
+.scheme-synthwave {
+  --color-brand-50: #fce6ff;
+  --color-brand-100: #f9ccff;
+  --color-brand-200: #f399ff;
+  --color-brand-300: #ed66ff;
+  --color-brand-400: #e733ff;
+  --color-brand-500: #e100ff;
+  --color-brand-600: #b400cc;
+  --color-brand-700: #870099;
+  --color-brand-800: #5a0066;
+  --color-brand-900: #2d0033;
+
+  --color-cyber-50: #fff0fb;
+  --color-cyber-100: #ffe0f7;
+  --color-cyber-200: #ffc2ef;
+  --color-cyber-300: #ffa3e7;
+  --color-cyber-400: #ff85df;
+  --color-cyber-500: #ff66d7;
+  --color-cyber-600: #cc52ac;
+  --color-cyber-700: #993d81;
+  --color-cyber-800: #662956;
+  --color-cyber-900: #33142b;
+
+  --color-neon-50: #f9ebff;
+  --color-neon-100: #f3d6ff;
+  --color-neon-200: #e7adff;
+  --color-neon-300: #db85ff;
+  --color-neon-400: #cf5cff;
+  --color-neon-500: #c333ff;
+  --color-neon-600: #9c29cc;
+  --color-neon-700: #751f99;
+  --color-neon-800: #4e1466;
+  --color-neon-900: #270a33;
+}
+
+/* Gold Rush */
+.scheme-gold {
+  --color-brand-50: #fff8e6;
+  --color-brand-100: #fff1cc;
+  --color-brand-200: #ffe499;
+  --color-brand-300: #ffd666;
+  --color-brand-400: #ffc933;
+  --color-brand-500: #ffbb00;
+  --color-brand-600: #cc9600;
+  --color-brand-700: #997000;
+  --color-brand-800: #664b00;
+  --color-brand-900: #332500;
+
+  --color-cyber-50: #fffbf0;
+  --color-cyber-100: #fff7e0;
+  --color-cyber-200: #fff0c2;
+  --color-cyber-300: #ffe8a3;
+  --color-cyber-400: #ffe185;
+  --color-cyber-500: #ffd966;
+  --color-cyber-600: #ccad52;
+  --color-cyber-700: #99823d;
+  --color-cyber-800: #665629;
+  --color-cyber-900: #332b14;
+
+  --color-neon-50: #fff6eb;
+  --color-neon-100: #ffedd6;
+  --color-neon-200: #ffdbad;
+  --color-neon-300: #ffc985;
+  --color-neon-400: #ffb75c;
+  --color-neon-500: #ffa533;
+  --color-neon-600: #cc8429;
+  --color-neon-700: #99631f;
+  --color-neon-800: #664214;
+  --color-neon-900: #33210a;
+}
+
+/* Electric Teal */
+.scheme-teal {
+  --color-brand-50: #e6fff9;
+  --color-brand-100: #ccfff4;
+  --color-brand-200: #99ffe8;
+  --color-brand-300: #66ffdd;
+  --color-brand-400: #33ffd1;
+  --color-brand-500: #00ffc6;
+  --color-brand-600: #00cc9e;
+  --color-brand-700: #009977;
+  --color-brand-800: #00664f;
+  --color-brand-900: #003328;
+
+  --color-cyber-50: #e6fffa;
+  --color-cyber-100: #ccfff5;
+  --color-cyber-200: #99ffeb;
+  --color-cyber-300: #66ffe0;
+  --color-cyber-400: #33ffd6;
+  --color-cyber-500: #00ffcc;
+  --color-cyber-600: #00cca3;
+  --color-cyber-700: #00997a;
+  --color-cyber-800: #006652;
+  --color-cyber-900: #003329;
+
+  --color-neon-50: #e6fff7;
+  --color-neon-100: #ccfff0;
+  --color-neon-200: #99ffe0;
+  --color-neon-300: #66ffd1;
+  --color-neon-400: #33ffc1;
+  --color-neon-500: #00ffb2;
+  --color-neon-600: #00cc8e;
+  --color-neon-700: #00996b;
+  --color-neon-800: #006647;
+  --color-neon-900: #003324;
+}
+
+/* Plasma Purple */
+.scheme-plasma {
+  --color-brand-50: #f9e6ff;
+  --color-brand-100: #f3ccff;
+  --color-brand-200: #e799ff;
+  --color-brand-300: #db66ff;
+  --color-brand-400: #cf33ff;
+  --color-brand-500: #c300ff;
+  --color-brand-600: #9c00cc;
+  --color-brand-700: #750099;
+  --color-brand-800: #4e0066;
+  --color-brand-900: #270033;
+
+  --color-cyber-50: #ffe6fc;
+  --color-cyber-100: #ffccf9;
+  --color-cyber-200: #ff99f3;
+  --color-cyber-300: #ff66ed;
+  --color-cyber-400: #ff33e7;
+  --color-cyber-500: #ff00e1;
+  --color-cyber-600: #cc00b4;
+  --color-cyber-700: #990087;
+  --color-cyber-800: #66005a;
+  --color-cyber-900: #33002d;
+
+  --color-neon-50: #ffe6ff;
+  --color-neon-100: #ffccff;
+  --color-neon-200: #ff99ff;
+  --color-neon-300: #ff66ff;
+  --color-neon-400: #ff33ff;
+  --color-neon-500: #ff00ff;
+  --color-neon-600: #cc00cc;
+  --color-neon-700: #990099;
+  --color-neon-800: #660066;
+  --color-neon-900: #330033;
+}

@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ActivityMonitor } from "../components/admin/ActivityMonitor";
 import { BalanceManager } from "../components/admin/BalanceManager";
+import { LogViewer } from "../components/admin/LogViewer";
 
 export const SuperAdminDashboard: React.FC = () => {
   return (
@@ -23,6 +24,17 @@ export const SuperAdminDashboard: React.FC = () => {
       {/* Balance Manager Section */}
       <div className="mb-8">
         <BalanceManager />
+      </div>
+
+      {/* System Logs Section */}
+      <div className="mb-8 bg-dark-200 border border-dark-300 rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
+          <span className="text-xl">📋</span>
+          System Logs
+        </h2>
+        <div className="bg-dark-300/30 rounded-lg">
+          <LogViewer />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -66,10 +66,10 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className="group relative bg-dark-200/80 backdrop-blur-sm border border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 rounded-lg p-6 cursor-pointer"
+      className="group relative bg-dark-200/80 backdrop-blur-sm border border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 rounded-lg p-6 cursor-pointer animate-cyber-scan"
     >
       {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-white/0 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg" />
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-white/0 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg animate-data-stream" />
 
       {/* Glow effect */}
       <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -77,7 +77,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       <div className="relative">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-lg font-semibold text-gray-100 mb-1">
+            <h3 className="text-lg font-semibold text-gray-100 mb-1 group-hover:animate-glitch">
               {contest.name}
             </h3>
             <p className="text-sm text-gray-400 mb-2">
@@ -104,7 +104,9 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           </div>
           <div className="flex flex-col items-end space-y-2">
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor()}`}
+              className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor()} ${
+                displayStatus === "active" ? "animate-cyber-pulse" : ""
+              }`}
             >
               {getStatusText()}
             </span>
@@ -116,7 +118,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-400">Prize Pool</p>
-              <p className="text-xl font-bold bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text">
+              <p className="text-xl font-bold bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text group-hover:animate-neon-flicker">
                 {formatCurrency(Number(contest.prize_pool))}
               </p>
             </div>
@@ -137,7 +139,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             </div>
             <div className="relative h-2 bg-dark-300 rounded-full overflow-hidden">
               <div
-                className="absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-600 transform transition-transform duration-500 ease-out rounded-full"
+                className="absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-600 transform transition-transform duration-500 ease-out rounded-full group-hover:animate-data-stream"
                 style={{
                   width: `${
                     (Number(contest.participant_count) /

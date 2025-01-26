@@ -29,18 +29,42 @@ const checkAndUpdateBanStatus = (response: Response) => {
 
 // Create a consistent API client
 const createApiClient = () => {
-  ////const user = useStore.getState().user;
-
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
       const headers = new Headers({
         "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-Debug": "true"
+      });
+
+      // Merge provided headers with defaults
+      if (options.headers) {
+        Object.entries(options.headers).forEach(([key, value]) => {
+          headers.append(key, value);
+        });
+      }
+
+      console.log('[DD-API Debug] Request:', {
+        url: `${API_URL}${endpoint}`,
+        method: options.method || 'GET',
+        headers: Object.fromEntries([...headers]),
+        cookies: document.cookie,
+        timestamp: new Date().toISOString()
       });
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers,
         credentials: "include",
+        mode: "cors"
+      });
+
+      console.log('[DD-API Debug] Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries([...response.headers]),
+        url: response.url,
+        timestamp: new Date().toISOString()
       });
 
       // Check for ban status
@@ -50,17 +74,15 @@ const createApiClient = () => {
         console.error(`[API Error] ${endpoint}:`, {
           status: response.status,
           statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          cookies: document.cookie,
+          headers: Object.fromEntries([...response.headers]),
+          url: response.url,
+          cookies: document.cookie
         });
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `API Error: ${response.statusText}`
-        );
+        throw new Error(`API Error: ${response.statusText}`);
       }
 
       return response;
-    },
+    }
   };
 };
 
@@ -428,6 +450,24 @@ export const ddApi = {
         throw error;
       }
     },
+
+    // Get list of available log files
+    getLogs: async () => {
+      const response = await fetch(`${API_URL}/superadmin/logs/available`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch log files');
+      return response.json();
+    },
+
+    // Get content of a specific log file
+    getLogContent: async (filename: string) => {
+      const response = await fetch(`${API_URL}/superadmin/logs/${filename}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch log content');
+      return response.json();
+    }
   },
 
   // Contest endpoints

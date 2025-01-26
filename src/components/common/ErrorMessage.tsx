@@ -1,16 +1,26 @@
-import React from 'react';
+import React from "react";
 
 interface ErrorMessageProps {
   message: string;
   onRetry?: () => void;
+  className?: string;
 }
 
-export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) => {
+export const ErrorMessage: React.FC<ErrorMessageProps> = ({
+  message,
+  onRetry,
+  className = "",
+}) => {
   return (
-    <div className="flex h-[50vh] items-center justify-center">
+    <div className={`flex h-[50vh] items-center justify-center ${className}`}>
       <div className="text-center">
         <div className="text-red-500 mb-4">
-          <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            className="w-12 h-12 mx-auto"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -19,7 +29,9 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) 
             />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-200 mb-2">Error Loading Profile</h3>
+        <h3 className="text-lg font-medium text-gray-200 mb-2">
+          Error Loading Profile
+        </h3>
         <p className="text-gray-400 mb-4">{message}</p>
         {onRetry && (
           <button
@@ -32,4 +44,4 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) 
       </div>
     </div>
   );
-}; 
+};

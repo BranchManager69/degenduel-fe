@@ -21,21 +21,6 @@ interface ContestParticipant {
   score?: number;
 }
 
-const StatsSkeleton: React.FC = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    {[...Array(4)].map((_, i) => (
-      <Card key={i} className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-        <CardContent className="p-6">
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-dark-300 rounded w-1/2"></div>
-            <div className="h-6 bg-dark-300 rounded w-3/4"></div>
-          </div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-);
-
 export const ContestDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -145,12 +130,34 @@ export const ContestDetails: React.FC = () => {
     navigate(`/contests/${contest.id}/select-tokens`);
   };
 
-  if (loading) return <StatsSkeleton />;
+  if (loading)
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <Card
+              key={i}
+              className="bg-dark-200/50 backdrop-blur-sm border-dark-300 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+              <CardContent className="p-6 relative">
+                <div className="animate-pulse space-y-2">
+                  <div className="h-4 bg-dark-300 rounded w-1/2"></div>
+                  <div className="h-6 bg-dark-300 rounded w-3/4"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+
   if (error || !contest) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-red-500">
-          {error || "Contest not found"}
+        <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <span className="relative z-10">{error || "Contest not found"}</span>
         </div>
       </div>
     );
@@ -158,14 +165,17 @@ export const ContestDetails: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      <div className="mb-8">
+      {/* Enhanced Header Section */}
+      <div className="mb-8 relative group">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-100 mb-2">
+          <div className="relative">
+            <h1 className="text-3xl font-bold text-gray-100 mb-2 group-hover:animate-glitch">
               {contest.name}
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             </h1>
-            <p className="text-gray-400">{contest.description}</p>
+            <p className="text-gray-400 group-hover:animate-cyber-pulse">
+              {contest.description}
+            </p>
           </div>
           <ContestDifficulty
             difficulty={contest.settings.difficulty || "guppy"}
@@ -173,37 +183,47 @@ export const ContestDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Enhanced Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-gray-400">Entry Fee</div>
-              <div className="text-xl font-bold text-brand-400">
+        {/* Entry Fee Card */}
+        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group">
+          <CardContent className="p-6 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="flex items-center justify-between relative">
+              <div className="text-gray-400 group-hover:text-brand-400 transition-colors">
+                Entry Fee
+              </div>
+              <div className="text-xl font-bold text-brand-400 group-hover:animate-neon-flicker">
                 {formatCurrency(Number(contest.entry_fee))}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-gray-400">Prize Pool</div>
-              <div className="text-xl font-bold text-brand-400">
+        {/* Prize Pool Card */}
+        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group">
+          <CardContent className="p-6 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="flex items-center justify-between relative">
+              <div className="text-gray-400 group-hover:text-brand-400 transition-colors">
+                Prize Pool
+              </div>
+              <div className="text-xl font-bold text-brand-400 group-hover:animate-neon-flicker">
                 {formatCurrency(Number(contest.prize_pool))}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-gray-400">
+        {/* Timer Card */}
+        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group">
+          <CardContent className="p-6 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="flex items-center justify-between relative">
+              <div className="text-gray-400 group-hover:text-brand-400 transition-colors">
                 {isContestLive(contest) ? "Ends In" : "Starts In"}
               </div>
-              <div className="text-lg font-medium text-gray-100">
+              <div className="text-lg font-medium text-gray-100 group-hover:animate-cyber-pulse">
                 <CountdownTimer
                   targetDate={
                     isContestLive(contest)
@@ -217,14 +237,18 @@ export const ContestDetails: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-gray-400">Players</div>
+        {/* Players Card */}
+        <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group">
+          <CardContent className="p-6 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="flex items-center justify-between relative">
+              <div className="text-gray-400 group-hover:text-brand-400 transition-colors">
+                Players
+              </div>
               <div className="flex items-center space-x-2">
                 <div className="w-24 h-1.5 bg-dark-300 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-brand-500 rounded-full"
+                    className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full group-hover:animate-data-stream"
                     style={{
                       width: `${
                         (Number(contest.participant_count) /
@@ -243,15 +267,17 @@ export const ContestDetails: React.FC = () => {
         </Card>
       </div>
 
-      {/* Main Content Grid */}
+      {/* Enhanced Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div className="lg:col-span-2 space-y-8">
+          {/* Rules Section */}
           {contest?.settings?.rules && contest.settings.rules.length > 0 ? (
             <ContestRules rules={contest.settings.rules} />
           ) : (
-            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-100 mb-4">
+            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group">
+              <CardContent className="p-6 relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <h3 className="text-lg font-semibold text-gray-100 mb-4 group-hover:animate-glitch">
                   Contest Rules
                 </h3>
                 <p className="text-gray-400">
@@ -261,10 +287,11 @@ export const ContestDetails: React.FC = () => {
             </Card>
           )}
 
-          {/* Available Tokens */}
-          <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-100 mb-4">
+          {/* Available Tokens Section */}
+          <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group">
+            <CardContent className="p-6 relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <h3 className="text-lg font-semibold text-gray-100 mb-4 group-hover:animate-glitch">
                 Available Tokens
               </h3>
               {contest?.settings?.token_types &&
@@ -273,7 +300,7 @@ export const ContestDetails: React.FC = () => {
                   {contest.settings.token_types.map((token: string) => (
                     <span
                       key={token}
-                      className="px-3 py-1 bg-dark-300 rounded-full text-sm text-gray-300"
+                      className="px-3 py-1 bg-dark-300 rounded-full text-sm text-gray-300 hover:bg-brand-400/20 hover:text-brand-400 transition-colors group-hover:animate-cyber-pulse"
                     >
                       {token}
                     </span>
@@ -289,8 +316,16 @@ export const ContestDetails: React.FC = () => {
         </div>
 
         <div className="space-y-8">
-          <PrizeStructure prizePool={Number(contest?.prize_pool || 0)} />
-          {Number(contest.participant_count) > 0 ? (
+          {/* Prize Structure */}
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <PrizeStructure prizePool={Number(contest?.prize_pool || 0)} />
+          </div>
+
+          {/* Participants List */}
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            {Number(contest.participant_count) > 0 &&
             Array.isArray(contest.participants) ? (
               contest.participants.length > 0 ? (
                 <ParticipantsList
@@ -298,51 +333,35 @@ export const ContestDetails: React.FC = () => {
                   contestStatus={mapContestStatus(contest.status)}
                 />
               ) : (
-                <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
+                <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
                   <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-100 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-100 mb-4 group-hover:animate-glitch">
                       Participants ({contest.participant_count}/
                       {contest.max_participants})
                     </h3>
-                    <p className="text-gray-400">
-                      Participant count is {contest.participant_count} but array
-                      is empty
-                    </p>
+                    <p className="text-gray-400">Participant list is empty</p>
                   </CardContent>
                 </Card>
               )
             ) : (
-              <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
+              <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-100 mb-4">
+                  <h3 className="text-lg font-semibold text-gray-100 mb-4 group-hover:animate-glitch">
                     Participants ({contest.participant_count}/
                     {contest.max_participants})
                   </h3>
-                  <p className="text-gray-400">
-                    Participant count is {contest.participant_count} but
-                    participants is not an array
-                  </p>
+                  <p className="text-gray-400">No participants yet.</p>
                 </CardContent>
               </Card>
-            )
-          ) : (
-            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-100 mb-4">
-                  Participants ({contest.participant_count}/
-                  {contest.max_participants})
-                </h3>
-                <p className="text-gray-400">No participants yet.</p>
-              </CardContent>
-            </Card>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Action Button */}
+      {/* Enhanced Action Button Section */}
       <div className="flex flex-col items-center gap-4">
         {isParticipating && (
-          <div className="flex items-center gap-2 text-brand-400 mb-2">
+          <div className="flex items-center gap-2 text-brand-400 mb-2 animate-cyber-pulse">
             <FaCheckCircle className="w-5 h-5" />
             <span className="font-medium">
               You're entered in this contest
@@ -351,10 +370,13 @@ export const ContestDetails: React.FC = () => {
             </span>
           </div>
         )}
-        {error && <div className="text-center text-red-500 mb-2">{error}</div>}
+        {error && (
+          <div className="text-center text-red-500 mb-2 animate-glitch">
+            {error}
+          </div>
+        )}
         <Button
           size="lg"
-          variant="gradient"
           onClick={handleJoinContest}
           className={`relative group overflow-hidden ${
             isParticipating && contest.status !== "pending"
@@ -366,10 +388,8 @@ export const ContestDetails: React.FC = () => {
             Number(contest.participant_count) >= contest.max_participants
           }
         >
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-64 h-32 bg-white/10 rotate-45 transform translate-x-32 group-hover:translate-x-48 transition-transform duration-500" />
-          </div>
-          <span className="relative flex items-center justify-center font-medium">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+          <span className="relative flex items-center justify-center font-medium group-hover:animate-glitch">
             {isParticipating
               ? contest.status === "pending"
                 ? "Update Tokens"
@@ -389,7 +409,7 @@ export const ContestDetails: React.FC = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
               />
             </svg>
           </span>

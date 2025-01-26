@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -6,6 +6,7 @@ import { PortfolioSummary } from "../components/tokens/PortfolioSummary";
 import { TokenFilters } from "../components/tokens/TokenFilters";
 import { TokenGrid } from "../components/tokens/TokenGrid";
 import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
 import { ddApi } from "../services/dd-api";
 import { useStore } from "../store/useStore";
 import { Contest, PortfolioResponse, Token, TokensResponse } from "../types";
@@ -19,9 +20,14 @@ interface PortfolioToken {
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
-    <div className="text-center p-4">
-      <h2>Something went wrong:</h2>
-      <pre>{error.message}</pre>
+    <div className="text-center p-4 relative group">
+      <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-red-500/5 to-red-500/10 animate-data-stream opacity-0 group-hover:opacity-100" />
+      <h2 className="text-xl font-bold text-red-400 mb-2 group-hover:animate-glitch">
+        Something went wrong:
+      </h2>
+      <pre className="text-gray-400 bg-dark-300/50 p-4 rounded-lg border border-red-500/20 group-hover:border-red-500/40 transition-colors">
+        {error.message}
+      </pre>
     </div>
   );
 }
@@ -158,53 +164,93 @@ export const TokenSelection: React.FC = () => {
     });
   }, [contestId, contest]);
 
-  const handleTokenSelect = (contractAddress: string, weight: number) => {
-    console.log("handleTokenSelect called with:", { contractAddress, weight });
+  // Memoize the transformed tokens
+  const memoizedTokens = useMemo(
+    () =>
+      tokens.map((token: Token) => ({
+        ...token,
+        change_24h: token.changesJson?.h24 ?? 0,
+        price: token.price,
+        volume24h: token.volume24h,
+        marketCap: token.marketCap,
+        liquidity: {
+          usd: token.liquidity?.usd ?? 0,
+          base: token.liquidity?.base ?? 0,
+          quote: token.liquidity?.quote ?? 0,
+        },
+        transactions24h: token.transactionsJson?.h24 ?? {
+          buys: 0,
+          sells: 0,
+        },
+        baseToken: token.baseToken ?? {
+          name: token.name,
+          symbol: token.symbol,
+          address: token.contractAddress,
+        },
+        quoteToken: token.quoteToken,
+      })),
+    [tokens]
+  );
 
-    // Verify we're getting a contract address, not a symbol
-    if (!contractAddress.includes("pump") && !contractAddress.includes("111")) {
-      console.warn(
-        "Received possible symbol instead of contract address:",
-        contractAddress
-      );
-      // Try to find the token by symbol and use its contract address
-      const token = tokens.find((t) => t.symbol === contractAddress);
-      if (token) {
-        contractAddress = token.contractAddress;
-        console.log(
-          "Found matching token, using contract address:",
+  // Memoize the token selection handler
+  const handleTokenSelect = useCallback(
+    (contractAddress: string, weight: number) => {
+      console.log("handleTokenSelect called with:", {
+        contractAddress,
+        weight,
+      });
+
+      if (
+        !contractAddress.includes("pump") &&
+        !contractAddress.includes("111")
+      ) {
+        console.warn(
+          "Received possible symbol instead of contract address:",
           contractAddress
         );
+        const token = memoizedTokens.find((t) => t.symbol === contractAddress);
+        if (token) {
+          contractAddress = token.contractAddress;
+          console.log(
+            "Found matching token, using contract address:",
+            contractAddress
+          );
+        }
       }
-    }
 
-    const token = tokens.find((t) => t.contractAddress === contractAddress);
-    console.log("Token being selected:", token);
+      const token = memoizedTokens.find(
+        (t) => t.contractAddress === contractAddress
+      );
+      console.log("Token being selected:", token);
 
-    const newSelectedTokens = new Map(selectedTokens);
-
-    if (weight === 0) {
-      newSelectedTokens.delete(contractAddress);
-    } else {
-      newSelectedTokens.set(contractAddress, weight);
-    }
-
-    console.log(
-      "Updated selectedTokens:",
-      Array.from(newSelectedTokens.entries()).map(([ca, w]) => ({
-        contractAddress: ca,
-        symbol: tokens.find((t) => t.contractAddress === ca)?.symbol,
-        weight: w,
-      }))
-    );
-
-    setSelectedTokens(newSelectedTokens);
-  };
+      setSelectedTokens((prev) => {
+        const newSelectedTokens = new Map(prev);
+        if (weight === 0) {
+          newSelectedTokens.delete(contractAddress);
+        } else {
+          newSelectedTokens.set(contractAddress, weight);
+        }
+        return newSelectedTokens;
+      });
+    },
+    [memoizedTokens]
+  );
 
   const totalWeight = Array.from(selectedTokens.values()).reduce(
     (sum, weight) => sum + weight,
     0
   );
+
+  // Portfolio validation
+  const portfolioValidation = useMemo(() => {
+    if (totalWeight !== 100) {
+      return "Total weight must equal 100%";
+    }
+    if (selectedTokens.size < 2) {
+      return "Select at least 2 tokens";
+    }
+    return null;
+  }, [totalWeight, selectedTokens.size]);
 
   const handleSubmit = async () => {
     try {
@@ -323,34 +369,37 @@ export const TokenSelection: React.FC = () => {
     }
   };
 
-  const getButtonProps = () => {
-    if (totalWeight !== 100) {
-      return {
-        text: `Total Weight: ${totalWeight}%`,
-        variant: "default",
-        disabled: true,
-      };
-    }
-
-    return contest?.is_participating
-      ? {
-          text: "Submit Changes",
-          variant: "warning" as const,
-          disabled: false,
-        }
-      : {
-          text: "Submit Portfolio",
-          variant: "gradient" as const,
-          disabled: false,
-        };
-  };
-
   if (tokenListLoading) {
-    return <div>Loading tokens...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="relative inline-block">
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-brand-400 border-t-transparent" />
+            <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border-2 border-brand-400 opacity-20" />
+          </div>
+          <p className="mt-4 text-brand-400 animate-pulse">Loading tokens...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="p-6 bg-dark-300/20 rounded-lg border border-red-500/30 backdrop-blur-sm max-w-2xl mx-auto mt-8">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">⚠️</span>
+          <div>
+            <p className="text-red-400 animate-glitch">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 px-4 py-2 bg-dark-400/50 hover:bg-dark-400 rounded text-brand-400 text-sm transition-all duration-300 hover:scale-105"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   /* console.log("Render state:", {
@@ -361,62 +410,99 @@ export const TokenSelection: React.FC = () => {
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-100">
-              {contest?.is_participating
-                ? "Update Your Portfolio"
-                : "Select Your Tokens"}
-            </h1>
-            <p className="text-gray-400 mt-2">
-              {contest?.is_participating
-                ? "Modify your allocations before the contest starts"
-                : "Choose tokens and allocate your budget to build the best portfolio"}
-            </p>
-          </div>
-          <Button
-            size="lg"
-            onClick={handleSubmit}
-            disabled={getButtonProps().disabled || loadingEntryStatus}
-            variant={
-              getButtonProps().variant as
-                | "gradient"
-                | "primary"
-                | "secondary"
-                | "outline"
-                | undefined
-            }
-            className="relative group"
-          >
-            {loadingEntryStatus ? (
-              <span className="flex items-center">
-                <span className="mr-2">Loading...</span>
-                {/* Add your loadingEntryStatus spinner component here if you have one */}
-              </span>
-            ) : (
-              getButtonProps().text
-            )}
-          </Button>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="mb-8 text-center relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <h1 className="text-3xl font-bold text-gray-100 mb-2 group-hover:animate-glitch">
+            Select Your Portfolio
+          </h1>
+          <p className="text-gray-400 max-w-2xl mx-auto group-hover:animate-cyber-pulse">
+            Choose tokens and allocate weights to build your winning strategy
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            <div className="mb-6">
-              <TokenFilters
-                marketCapFilter={marketCapFilter}
-                onMarketCapFilterChange={setMarketCapFilter}
-              />
-            </div>
-            <TokenGrid
-              tokens={tokens}
-              selectedTokens={selectedTokens}
-              onTokenSelect={handleTokenSelect}
-              marketCapFilter={marketCapFilter}
-            />
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Token Selection Area */}
+          <div className="lg:col-span-2">
+            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+              <div className="p-6 relative">
+                {/* Filters */}
+                <div className="mb-6">
+                  <TokenFilters
+                    marketCapFilter={marketCapFilter}
+                    onMarketCapFilterChange={setMarketCapFilter}
+                  />
+                </div>
+
+                {/* Token Grid */}
+                <div className="relative">
+                  {tokenListLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-cyber-pulse text-brand-400">
+                        Loading tokens...
+                      </div>
+                    </div>
+                  ) : error ? (
+                    <div className="text-red-400 text-center animate-glitch">
+                      {error}
+                    </div>
+                  ) : (
+                    <TokenGrid
+                      tokens={tokens}
+                      selectedTokens={selectedTokens}
+                      onTokenSelect={handleTokenSelect}
+                      marketCapFilter={marketCapFilter}
+                    />
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
-          <div>
-            <PortfolioSummary tokens={tokens} selectedTokens={selectedTokens} />
+
+          {/* Portfolio Summary */}
+          <div className="lg:col-span-1">
+            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden sticky top-4">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+              <div className="p-6 relative">
+                <h2 className="text-xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
+                  Portfolio Summary
+                </h2>
+                <PortfolioSummary
+                  selectedTokens={selectedTokens}
+                  tokens={tokens}
+                />
+
+                <div className="mt-6">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={
+                      loadingEntryStatus || portfolioValidation !== null
+                    }
+                    className="w-full relative group overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                    <span className="relative flex items-center justify-center font-medium group-hover:animate-glitch">
+                      {loadingEntryStatus ? (
+                        <div className="animate-cyber-pulse">Submitting...</div>
+                      ) : (
+                        "Submit Portfolio"
+                      )}
+                    </span>
+                  </Button>
+
+                  {portfolioValidation && (
+                    <p className="mt-2 text-red-400 text-sm text-center animate-glitch">
+                      {portfolioValidation}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </div>

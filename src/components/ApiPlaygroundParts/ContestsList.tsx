@@ -1,4 +1,4 @@
-import { format, formatDuration, intervalToDuration } from "date-fns";
+import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { API_URL } from "../../config/config";
 
@@ -64,14 +64,6 @@ export function ContestsList() {
     const total = fee * maxParticipants;
     // Assuming 10% platform fee
     return (total * 0.9).toFixed(2);
-  };
-
-  const getDuration = (start: string, end: string) => {
-    const duration = intervalToDuration({
-      start: new Date(start),
-      end: new Date(end),
-    });
-    return formatDuration(duration, { format: ["days", "hours", "minutes"] });
   };
 
   const getTimeStatus = (dateStr: string, type: "start" | "end") => {
@@ -182,204 +174,191 @@ export function ContestsList() {
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-cyber-500 border-t-transparent" />
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyber-500 border-t-transparent" />
+          <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border-2 border-cyber-500 opacity-20" />
+        </div>
+        <p className="ml-4 text-cyber-400 animate-pulse">Loading contests...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-dark-300/20 rounded">
-        <p className="text-red-400">{error}</p>
+      <div className="p-6 bg-dark-300/20 rounded-lg border border-red-500/30 backdrop-blur-sm group hover:bg-dark-300/30 transition-all duration-300">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl group-hover:animate-bounce">⚠️</span>
+          <div>
+            <p className="text-red-400 group-hover:animate-glitch">{error}</p>
+            <button
+              onClick={fetchContests}
+              className="mt-2 px-4 py-2 bg-dark-400/50 hover:bg-dark-400 rounded text-neon-400 text-sm transition-all duration-300 hover:scale-105 group-hover:animate-cyber-pulse"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Sort Controls */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3 p-4 bg-dark-300/20 rounded-lg backdrop-blur-sm border border-dark-300/50">
         <button
           onClick={() => handleSort("start_time")}
-          className={`px-3 py-1 rounded text-sm ${
+          className={`px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 group ${
             sortField === "start_time"
-              ? "bg-cyber-500 text-white"
-              : "bg-dark-300 text-gray-400"
+              ? "bg-gradient-to-r from-brand-500 to-cyber-500 text-white shadow-lg shadow-brand-500/20 animate-cyber-pulse"
+              : "bg-dark-300/80 text-gray-400 hover:bg-dark-400 hover:text-white"
           }`}
         >
-          Sort by Start Time{" "}
-          {sortField === "start_time" && (sortDirection === "asc" ? "↑" : "↓")}
+          <span className="group-hover:animate-glitch">Start Time</span>
+          {sortField === "start_time" && (
+            <span className="group-hover:animate-bounce">
+              {sortDirection === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </button>
         <button
           onClick={() => handleSort("end_time")}
-          className={`px-3 py-1 rounded text-sm ${
+          className={`px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 group ${
             sortField === "end_time"
-              ? "bg-cyber-500 text-white"
-              : "bg-dark-300 text-gray-400"
+              ? "bg-gradient-to-r from-brand-500 to-cyber-500 text-white shadow-lg shadow-brand-500/20 animate-cyber-pulse"
+              : "bg-dark-300/80 text-gray-400 hover:bg-dark-400 hover:text-white"
           }`}
         >
-          Sort by End Time{" "}
-          {sortField === "end_time" && (sortDirection === "asc" ? "↑" : "↓")}
+          <span className="group-hover:animate-glitch">End Time</span>
+          {sortField === "end_time" && (
+            <span className="group-hover:animate-bounce">
+              {sortDirection === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </button>
         <button
           onClick={() => handleSort("prize_pool")}
-          className={`px-3 py-1 rounded text-sm ${
+          className={`px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 group ${
             sortField === "prize_pool"
-              ? "bg-cyber-500 text-white"
-              : "bg-dark-300 text-gray-400"
+              ? "bg-gradient-to-r from-brand-500 to-cyber-500 text-white shadow-lg shadow-brand-500/20 animate-cyber-pulse"
+              : "bg-dark-300/80 text-gray-400 hover:bg-dark-400 hover:text-white"
           }`}
         >
-          Sort by Prize Pool{" "}
-          {sortField === "prize_pool" && (sortDirection === "asc" ? "↑" : "↓")}
+          <span className="group-hover:animate-glitch">Prize Pool</span>
+          {sortField === "prize_pool" && (
+            <span className="group-hover:animate-bounce">
+              {sortDirection === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </button>
         <button
           onClick={() => handleSort("participant_count")}
-          className={`px-3 py-1 rounded text-sm ${
+          className={`px-4 py-2 rounded text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 group ${
             sortField === "participant_count"
-              ? "bg-cyber-500 text-white"
-              : "bg-dark-300 text-gray-400"
+              ? "bg-gradient-to-r from-brand-500 to-cyber-500 text-white shadow-lg shadow-brand-500/20 animate-cyber-pulse"
+              : "bg-dark-300/80 text-gray-400 hover:bg-dark-400 hover:text-white"
           }`}
         >
-          Sort by Participants{" "}
-          {sortField === "participant_count" &&
-            (sortDirection === "asc" ? "↑" : "↓")}
+          <span className="group-hover:animate-glitch">Participants</span>
+          {sortField === "participant_count" && (
+            <span className="group-hover:animate-bounce">
+              {sortDirection === "asc" ? "↑" : "↓"}
+            </span>
+          )}
         </button>
       </div>
 
-      {sortedContests.map((contest) => (
-        <div
-          key={contest.id}
-          className="bg-dark-300/30 rounded-lg p-4 sm:p-6 border border-dark-300 hover:border-cyber-500 transition-colors"
-        >
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4 mb-4">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-100 break-words">
-                {contest.name}
-              </h3>
-              <p className="text-sm text-gray-400">
-                Code: {contest.contest_code}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div
-                className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                style={{
-                  backgroundColor:
-                    contest.status === "active"
-                      ? "rgba(16, 185, 129, 0.1)"
-                      : contest.status === "pending"
-                      ? "rgba(245, 158, 11, 0.1)"
-                      : "rgba(239, 68, 68, 0.1)",
-                  color:
-                    contest.status === "active"
-                      ? "rgb(16, 185, 129)"
-                      : contest.status === "pending"
-                      ? "rgb(245, 158, 11)"
-                      : "rgb(239, 68, 68)",
-                }}
-              >
-                {contest.status.toUpperCase()}
-              </div>
-              <div className="flex items-center gap-1.5">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((bucket) => (
-                  <div
-                    key={bucket}
-                    title={
-                      contest.bucket_contents && contest.bucket_contents[bucket]
-                        ? `Bucket ${bucket}: ${contest.bucket_contents[
-                            bucket
-                          ].join(", ")}`
-                        : `Bucket ${bucket} (Empty)`
-                    }
-                    className={`w-5 h-5 rounded flex items-center justify-center text-xs ${
-                      contest.allowed_buckets.includes(bucket)
-                        ? "bg-cyber-500/20 text-cyber-400 border border-cyber-500"
-                        : "bg-dark-300 text-gray-500 border border-dark-300"
-                    }`}
-                  >
-                    {bucket}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+      {/* Contest List */}
+      <div className="grid gap-4">
+        {sortedContests.map((contest) => (
+          <div
+            key={contest.id}
+            className="p-6 bg-dark-300/20 rounded-lg backdrop-blur-sm border border-dark-300/50 hover:bg-dark-300/30 transition-all duration-300 group relative overflow-hidden"
+          >
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-500/5 to-cyber-500/5 group-hover:opacity-100 opacity-0 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] opacity-20" />
 
-          {/* Time & Prize Info */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-400">Start Time:</p>
-                  <p className="text-sm text-gray-100">
-                    {format(new Date(contest.start_time), "PPp")}
+            <div className="relative">
+              {/* Contest Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-cyber-400 group-hover:animate-glitch mb-2">
+                    {contest.name}
+                  </h3>
+                  <p className="text-neon-300 text-sm group-hover:animate-cyber-pulse">
+                    {contest.description}
                   </p>
                 </div>
-                <div className="text-sm">
-                  {getTimeStatus(contest.start_time, "start")}
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-400">End Time:</p>
-                  <p className="text-sm text-gray-100">
-                    {format(new Date(contest.end_time), "PPp")}
+                <div className="text-right">
+                  <p className="text-sm text-gray-400">
+                    Code: {contest.contest_code}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Status: {contest.status}
                   </p>
                 </div>
-                <div className="text-sm">
-                  {getTimeStatus(contest.end_time, "end")}
-                </div>
               </div>
-              <p className="text-sm text-gray-400">
-                Duration:{" "}
-                <span className="text-gray-100">
-                  {getDuration(contest.start_time, contest.end_time)}
-                </span>
-              </p>
-            </div>
 
-            <div className="space-y-2">
-              <p className="text-sm text-gray-400 flex justify-between">
-                <span>Entry Fee:</span>
-                <span className="text-gray-100">
-                  {formatSolAmount(contest.entry_fee)} SOL
-                </span>
-              </p>
-              <p className="text-sm text-gray-400 flex justify-between">
-                <span>Current Prize Pool:</span>
-                <span className="text-gray-100">
-                  {formatSolAmount(contest.current_prize_pool)} SOL
-                </span>
-              </p>
-              <p className="text-sm text-gray-400 flex justify-between">
-                <span>Potential Prize Pool:</span>
-                <span className="text-gray-100">
-                  {formatSolAmount(calculatePotentialPrizePool(contest))} SOL
-                </span>
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Participants:</span>
-                <span
-                  className={`text-sm ${
-                    contest.participant_count < contest.min_participants
-                      ? "text-red-400"
-                      : "text-gray-100"
-                  }`}
-                >
-                  {contest.participant_count} / {contest.max_participants}
-                  {contest.participant_count < contest.min_participants && (
-                    <span className="ml-2">
-                      (need{" "}
-                      {contest.min_participants - contest.participant_count}{" "}
-                      more)
+              {/* Contest Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Start Time</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-neon-400">
+                      {format(new Date(contest.start_time), "PPp")}
                     </span>
-                  )}
-                </span>
+                    <span className="text-sm">
+                      {getTimeStatus(contest.start_time, "start")}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">End Time</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-neon-400">
+                      {format(new Date(contest.end_time), "PPp")}
+                    </span>
+                    <span className="text-sm">
+                      {getTimeStatus(contest.end_time, "end")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contest Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Entry Fee</p>
+                  <p className="text-lg font-medium text-white group-hover:animate-cyber-pulse">
+                    ◎ {formatSolAmount(contest.entry_fee)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">
+                    Current Prize Pool
+                  </p>
+                  <p className="text-lg font-medium text-white group-hover:animate-cyber-pulse">
+                    ◎ {formatSolAmount(contest.current_prize_pool)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Max Prize Pool</p>
+                  <p className="text-lg font-medium text-white group-hover:animate-cyber-pulse">
+                    ◎ {calculatePotentialPrizePool(contest)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Participants</p>
+                  <p className="text-lg font-medium text-white group-hover:animate-cyber-pulse">
+                    {contest.participant_count} / {contest.max_participants}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

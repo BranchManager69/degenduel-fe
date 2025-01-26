@@ -126,9 +126,10 @@ export const TokensPage: React.FC = () => {
           {[...Array(6)].map((_, i) => (
             <Card
               key={i}
-              className="bg-dark-200/50 backdrop-blur-sm animate-pulse"
+              className="bg-dark-200/50 backdrop-blur-sm relative overflow-hidden group"
             >
-              <CardContent className="p-6 h-24" />
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+              <CardContent className="p-6 h-24 animate-pulse" />
             </Card>
           ))}
         </div>
@@ -138,36 +139,46 @@ export const TokensPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-red-500">
-        {error}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
+          {error}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-100">Available Tokens</h1>
-        <p className="text-gray-400 mt-2">
+      {/* Enhanced Header */}
+      <div className="mb-8 relative group">
+        <h1 className="text-3xl font-bold text-gray-100 mb-4 relative">
+          <span className="relative z-10 group-hover:animate-glitch">
+            Available Tokens
+          </span>
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+        </h1>
+        <p className="text-gray-400 group-hover:animate-cyber-pulse">
           Explore all tokens available for trading in DegenDuel contests
         </p>
       </div>
 
-      {/* Search and Sort Controls */}
+      {/* Enhanced Search and Sort Controls */}
       <div className="mb-6 flex flex-col sm:flex-row justify-between gap-4">
-        <input
-          type="text"
-          placeholder="Search tokens..."
-          className="w-full sm:max-w-md px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="relative group w-full sm:max-w-md">
+          <input
+            type="text"
+            placeholder="Search tokens..."
+            className="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 group-hover:border-brand-400/50 transition-colors"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg pointer-events-none" />
+        </div>
         <div className="flex items-center space-x-4">
           <select
             value={sortField}
             onChange={(e) => setSortField(e.target.value as keyof Token)}
-            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400/50 transition-colors"
           >
             <option value="marketCap">Market Cap</option>
             <option value="volume24h">Volume</option>
@@ -178,11 +189,14 @@ export const TokensPage: React.FC = () => {
             onClick={() =>
               setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
             }
-            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 hover:bg-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 flex items-center space-x-2"
+            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 hover:bg-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 flex items-center space-x-2 relative group overflow-hidden"
           >
-            <span>{sortDirection === "asc" ? "Ascending" : "Descending"}</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+            <span className="relative z-10 group-hover:animate-glitch">
+              {sortDirection === "asc" ? "Ascending" : "Descending"}
+            </span>
             <svg
-              className={`w-4 h-4 transform transition-transform ${
+              className={`w-4 h-4 transform transition-transform relative z-10 ${
                 sortDirection === "asc" ? "rotate-180" : ""
               }`}
               fill="none"
@@ -200,16 +214,17 @@ export const TokensPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Token Grid */}
+      {/* Enhanced Token Grid */}
       <div className="grid grid-cols-1 gap-4">
         {filteredAndSortedTokens.map((token) => (
           <Card
             key={token.contractAddress}
-            className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-500/50 transition-colors"
+            className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors relative group overflow-hidden"
           >
-            <CardContent className="p-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <CardContent className="p-6 relative">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 group-hover:animate-cyber-scan">
                   {token.images?.imageUrl && (
                     <img
                       src={token.images.imageUrl}
@@ -218,23 +233,29 @@ export const TokensPage: React.FC = () => {
                     />
                   )}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-100 group-hover:animate-glitch">
                       {token.name}
                     </h3>
-                    <p className="text-gray-400">{token.symbol}</p>
+                    <p className="text-gray-400 group-hover:text-brand-400 transition-colors">
+                      {token.symbol}
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 sm:space-x-8">
                   <div className="text-right">
-                    <p className="text-sm text-gray-400">Price</p>
-                    <p className="text-lg font-medium text-gray-100">
+                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                      Price
+                    </p>
+                    <p className="text-lg font-medium text-gray-100 group-hover:animate-neon-flicker">
                       ${formatNumber(token.price)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-400">24h Change</p>
+                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                      24h Change
+                    </p>
                     <p
-                      className={`text-lg font-medium ${
+                      className={`text-lg font-medium group-hover:animate-neon-flicker ${
                         Number(token.change24h) >= 0
                           ? "text-green-400"
                           : "text-red-400"
@@ -244,21 +265,25 @@ export const TokensPage: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-400">Market Cap</p>
-                    <p className="text-lg font-medium text-gray-100">
+                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                      Market Cap
+                    </p>
+                    <p className="text-lg font-medium text-gray-100 group-hover:animate-neon-flicker">
                       ${formatNumber(token.marketCap)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-400">Volume (24h)</p>
-                    <p className="text-lg font-medium text-gray-100">
+                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                      Volume (24h)
+                    </p>
+                    <p className="text-lg font-medium text-gray-100 group-hover:animate-neon-flicker">
                       ${formatNumber(token.volume24h)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Social Links */}
+              {/* Enhanced Social Links */}
               {token.socials && (
                 <div className="mt-4 flex items-center space-x-4">
                   {token.socials.twitter?.url && (
@@ -266,7 +291,7 @@ export const TokensPage: React.FC = () => {
                       href={token.socials.twitter.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 transition-colors group-hover:animate-cyber-pulse"
                     >
                       Twitter
                     </a>
@@ -276,7 +301,7 @@ export const TokensPage: React.FC = () => {
                       href={token.socials.telegram.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 transition-colors group-hover:animate-cyber-pulse"
                     >
                       Telegram
                     </a>
@@ -286,7 +311,7 @@ export const TokensPage: React.FC = () => {
                       href={token.socials.discord.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 transition-colors group-hover:animate-cyber-pulse"
                     >
                       Discord
                     </a>

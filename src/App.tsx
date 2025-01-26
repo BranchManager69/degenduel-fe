@@ -30,6 +30,7 @@ import { TokensPage } from "./pages/TokensPage";
 import ApiPlayground from "./pages/ApiPlayground";
 // AMM Simulation
 import AmmSim from "./pages/AmmSim";
+import "./styles/color-schemes.css";
 
 // Test HMR
 console.log("Testing HMR again - " + new Date().toISOString());
@@ -39,7 +40,7 @@ export const App: React.FC = () => {
     <Router>
       <div className="min-h-screen flex flex-col bg-dark-100">
         <Header />
-        <main className="flex-grow">
+        <main className="flex-1">
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
@@ -109,14 +110,6 @@ export const App: React.FC = () => {
               }
             />
             <Route
-              path="/test"
-              element={
-                <SuperAdminRoute>
-                  <TestPage />
-                </SuperAdminRoute>
-              }
-            />
-            <Route
               path="/amm-sim"
               element={
                 <SuperAdminRoute>
@@ -129,6 +122,14 @@ export const App: React.FC = () => {
               element={
                 <SuperAdminRoute>
                   <ApiPlayground />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/test"
+              element={
+                <SuperAdminRoute>
+                  <TestPage />
                 </SuperAdminRoute>
               }
             />
