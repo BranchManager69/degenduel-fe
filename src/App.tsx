@@ -24,7 +24,7 @@ import { Results } from "./pages/Results";
 import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
 import { TestPage } from "./pages/TestPage";
 import { TokenSelection } from "./pages/TokenSelection";
-import "./styles/debug.css";
+import { TokensPage } from "./pages/TokensPage";
 /* Extra Pages */
 // API Playground
 import ApiPlayground from "./pages/ApiPlayground";
@@ -49,6 +49,7 @@ export const App: React.FC = () => {
             <Route path="/faq" element={<FAQ />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/rankings/global" element={<GlobalRankings />} />
+            <Route path="/tokens" element={<TokensPage />} />
             <Route
               path="/rankings/performance"
               element={<ContestPerformance />}
