@@ -54,14 +54,34 @@ export function StartContest() {
       );
 
       const data = await response.json();
-      if (!response.ok) throw data;
+      if (!response.ok) {
+        // Check for specific error messages about participants
+        if (data.error?.toLowerCase().includes("minimum participants")) {
+          throw new Error(`Cannot start contest: ${data.error}`);
+        } else if (
+          selectedContest.participant_count < selectedContest.min_participants
+        ) {
+          throw new Error(
+            `Cannot start contest: Needs ${
+              selectedContest.min_participants -
+              selectedContest.participant_count
+            } more participants (minimum ${
+              selectedContest.min_participants
+            } required)`
+          );
+        } else {
+          throw new Error(data.error || "Failed to start contest");
+        }
+      }
 
       setSuccess(`Contest "${selectedContest.name}" started successfully`);
       setSelectedContest(null);
       setShowConfirmation(false);
       fetchContests(); // Refresh the list
     } catch (err: any) {
+      console.error("Start contest error:", err);
       setError(err.message || "Failed to start contest");
+      setShowConfirmation(false); // Hide confirmation on error
     } finally {
       setLoading(false);
     }

@@ -53,14 +53,23 @@ export function EndContest() {
       );
 
       const data = await response.json();
-      if (!response.ok) throw data;
+      if (!response.ok) {
+        // Check for specific error messages
+        if (data.error) {
+          throw new Error(`Cannot end contest: ${data.error}`);
+        } else {
+          throw new Error("Failed to end contest");
+        }
+      }
 
       setSuccess(`Contest "${selectedContest.name}" ended successfully`);
       setSelectedContest(null);
       setShowConfirmation(false);
       fetchContests(); // Refresh the list
     } catch (err: any) {
+      console.error("End contest error:", err);
       setError(err.message || "Failed to end contest");
+      setShowConfirmation(false); // Hide confirmation on error
     } finally {
       setLoading(false);
     }

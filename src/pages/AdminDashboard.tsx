@@ -21,16 +21,6 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Activity Monitor Section */}
-        <div className="mb-6">
-          <ActivityMonitor limit={5} />
-        </div>
-
-        {/* Balance Manager Section */}
-        <div className="mb-8">
-          <BalanceManager />
-        </div>
-
         {/* Contest Management Section */}
         <div className="mb-8">
           <div className="bg-dark-200 border border-dark-300 rounded-lg overflow-hidden">
@@ -61,9 +51,9 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* User Management Card */}
-          <div className="bg-dark-200 p-6 rounded-lg border border-dark-300">
+        {/* User Management Section - Full Width */}
+        <div className="mb-8">
+          <div className="bg-dark-200 border border-dark-300 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
               <span className="text-xl">👥</span>
               User Management
@@ -72,9 +62,21 @@ export const AdminDashboard: React.FC = () => {
               <UserDetail />
             </div>
           </div>
+        </div>
 
-          {/* Reports & Analytics Card */}
-          <div className="bg-dark-200 p-6 rounded-lg border border-dark-300">
+        {/* Balance Manager Section */}
+        <div className="mb-8">
+          <BalanceManager />
+        </div>
+
+        {/* Activity Monitor Section */}
+        <div className="mb-8">
+          <ActivityMonitor limit={5} />
+        </div>
+
+        {/* Reports & Analytics Section */}
+        <div className="mb-8">
+          <div className="bg-dark-200 border border-dark-300 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-100 mb-2 flex items-center gap-2">
               <span className="text-xl">📊</span>
               Reports & Analytics
