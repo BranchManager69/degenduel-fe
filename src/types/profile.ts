@@ -4,6 +4,8 @@ export interface UserData {
   rank_score: number;
   created_at: string;
   bonusBalance: string;
+  is_banned?: boolean;
+  ban_reason?: string | null;
 }
 
 export interface UserStats {

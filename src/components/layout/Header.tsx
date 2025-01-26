@@ -30,6 +30,16 @@ export const Header: React.FC = () => {
 
   return (
     <header className="bg-dark-200 border-b border-dark-300 sticky top-0 z-50">
+      {user?.is_banned && (
+        <div className="bg-red-500/10 border-b border-red-500/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <p className="text-red-400 text-sm text-center">
+              Your account has been banned
+              {user.ban_reason ? `: ${user.ban_reason}` : ""}
+            </p>
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main header row */}
         <div className="flex items-center justify-between h-16">
@@ -75,14 +85,6 @@ export const Header: React.FC = () => {
                 </div>
               </div>
             </div>
-            {user && (
-              <Link
-                to="/profile"
-                className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors"
-              >
-                Profile
-              </Link>
-            )}
             {(isAdmin() || isSuperAdmin()) && (
               <div className="relative group">
                 <span className="text-lg font-medium text-brand-400 hover:text-brand-300 transition-colors cursor-pointer">
@@ -130,7 +132,20 @@ export const Header: React.FC = () => {
           <div className="hidden md:flex md:items-center md:space-x-3">
             {user ? (
               <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-400">{user.nickname}</span>
+                <Link
+                  to="/profile"
+                  className="text-sm text-gray-400 hover:text-brand-400 transition-colors flex items-center"
+                >
+                  <span>{user.nickname}</span>
+                  {user.is_banned && (
+                    <span
+                      className="ml-1.5 text-red-500"
+                      title={user.ban_reason || "Account banned"}
+                    >
+                      🚫
+                    </span>
+                  )}
+                </Link>
                 <Button
                   onClick={disconnectWallet}
                   variant="gradient"
@@ -235,15 +250,6 @@ export const Header: React.FC = () => {
                 Contest Performance
               </Link>
             </div>
-            {user && (
-              <Link
-                to="/profile"
-                className="block px-3 py-2 text-base font-medium text-gray-400 hover:bg-dark-300 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Profile
-              </Link>
-            )}
             {(isAdmin() || isSuperAdmin()) && (
               <div className="px-3 py-2">
                 <span className="block text-base font-medium text-brand-400">
@@ -292,7 +298,20 @@ export const Header: React.FC = () => {
             <div className="px-3 space-y-3">
               {user ? (
                 <div className="space-y-3">
-                  <div className="text-sm text-gray-400">{user.nickname}</div>
+                  <Link
+                    to="/profile"
+                    className="text-sm text-gray-400 hover:text-brand-400 transition-colors flex items-center"
+                  >
+                    <span>{user.nickname}</span>
+                    {user.is_banned && (
+                      <span
+                        className="ml-1.5 text-red-500"
+                        title={user.ban_reason || "Account banned"}
+                      >
+                        🚫
+                      </span>
+                    )}
+                  </Link>
                   <Button
                     onClick={disconnectWallet}
                     variant="gradient"

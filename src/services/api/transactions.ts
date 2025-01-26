@@ -1,10 +1,10 @@
-import { API_URL } from "../../config/config";
 import { Transaction } from "../../types";
+import { createApiClient } from "./utils";
 
 export const transactions = {
   getHistory: async (): Promise<Transaction[]> => {
-    const response = await fetch(`${API_URL}/transactions`);
-    if (!response.ok) throw new Error("Failed to fetch transactions");
+    const api = createApiClient();
+    const response = await api.fetch("/transactions");
     return response.json();
   },
 };

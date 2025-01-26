@@ -1,6 +1,6 @@
-import { API_URL } from "../../config/config";
 import { useStore } from "../../store/useStore";
 import { PortfolioResponse } from "../../types";
+import { createApiClient } from "./utils";
 
 export const portfolio = {
   get: async (contestId: number): Promise<PortfolioResponse> => {
@@ -10,14 +10,9 @@ export const portfolio = {
       throw new Error("Wallet address is required");
     }
 
-    const response = await fetch(
-      `${API_URL}/contests/${contestId}/portfolio/${user.wallet_address}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      }
+    const api = createApiClient();
+    const response = await api.fetch(
+      `/contests/${contestId}/portfolio/${user.wallet_address}`
     );
 
     if (response.status === 401) {
@@ -27,11 +22,6 @@ export const portfolio = {
 
     if (response.status === 404) {
       return { tokens: [] };
-    }
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch portfolio");
     }
 
     return response.json();

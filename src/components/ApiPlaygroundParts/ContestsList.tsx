@@ -22,6 +22,7 @@ interface Contest {
   status: string;
   current_prize_pool: string;
   allowed_buckets: number[];
+  bucket_contents: { [key: number]: string[] };
   participant_count: number;
   min_participants: number;
   max_participants: number;
@@ -284,7 +285,13 @@ export function ContestsList() {
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((bucket) => (
                   <div
                     key={bucket}
-                    title={`Bucket ${bucket}`} // Basic tooltip
+                    title={
+                      contest.bucket_contents && contest.bucket_contents[bucket]
+                        ? `Bucket ${bucket}: ${contest.bucket_contents[
+                            bucket
+                          ].join(", ")}`
+                        : `Bucket ${bucket} (Empty)`
+                    }
                     className={`w-5 h-5 rounded flex items-center justify-center text-xs ${
                       contest.allowed_buckets.includes(bucket)
                         ? "bg-cyber-500/20 text-cyber-400 border border-cyber-500"

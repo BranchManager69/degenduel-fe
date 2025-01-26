@@ -1,17 +1,11 @@
-import { API_URL } from "../../config/config";
 import { Activity, Contest, PlatformStats } from "../../types";
+import { createApiClient } from "./utils";
 
 export const admin = {
   getPlatformStats: async (): Promise<PlatformStats> => {
     try {
-      const response = await fetch(`${API_URL}/admin/stats/platform`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch platform stats");
-      }
-
+      const api = createApiClient();
+      const response = await api.fetch("/admin/stats/platform");
       return response.json();
     } catch (error) {
       console.error("Failed to fetch platform stats:", error);
@@ -20,14 +14,14 @@ export const admin = {
   },
 
   getContests: async (): Promise<{ contests: Contest[] }> => {
-    const response = await fetch(`${API_URL}/contests`);
-    if (!response.ok) throw new Error("Failed to fetch contests");
+    const api = createApiClient();
+    const response = await api.fetch("/contests");
     return response.json();
   },
 
   getRecentActivities: async (): Promise<{ activities: Activity[] }> => {
-    const response = await fetch(`${API_URL}/admin/activities`);
-    if (!response.ok) throw new Error("Failed to fetch activities");
+    const api = createApiClient();
+    const response = await api.fetch("/admin/activities");
     return response.json();
   },
 
@@ -36,58 +30,12 @@ export const admin = {
     data: Partial<Contest>
   ): Promise<Contest> => {
     try {
-      const requestData = {
-        url: `${API_URL}/contests/${contestId}`,
+      const api = createApiClient();
+      const response = await api.fetch(`/contests/${contestId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data,
-      };
-
-      console.log("Making update request:", requestData);
-
-      // Add timeout to the fetch
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-      try {
-        const response = await fetch(`${API_URL}/contests/${contestId}`, {
-          method: "PUT",
-          headers: requestData.headers,
-          credentials: "include",
-          body: JSON.stringify(data),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeout);
-
-        const responseText = await response.text();
-        console.log("Raw response text:", responseText);
-
-        let parsedResponse;
-        try {
-          parsedResponse = responseText ? JSON.parse(responseText) : {};
-        } catch (e) {
-          console.error("Failed to parse response:", responseText);
-          throw new Error("Invalid JSON response from server");
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            parsedResponse.error ||
-              parsedResponse.message ||
-              `Server error: ${response.status} ${response.statusText}`
-          );
-        }
-
-        return parsedResponse;
-      } catch (fetchError: unknown) {
-        if (fetchError instanceof Error && fetchError.name === "AbortError") {
-          throw new Error("Request timed out");
-        }
-        throw fetchError;
-      }
+        body: JSON.stringify(data),
+      });
+      return response.json();
     } catch (error) {
       console.error("Contest update error:", {
         error,
@@ -100,10 +48,10 @@ export const admin = {
   },
 
   deleteContest: async (contestId: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/contests/${contestId}`, {
+    const api = createApiClient();
+    await api.fetch(`/contests/${contestId}`, {
       method: "DELETE",
     });
-    if (!response.ok) throw new Error("Failed to delete contest");
   },
 
   adjustUserBalance: async (
@@ -111,21 +59,11 @@ export const admin = {
     amount: number
   ): Promise<void> => {
     try {
-      const response = await fetch(
-        `${API_URL}/users/${walletAddress}/balance`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ amount }),
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to adjust user balance");
-      }
+      const api = createApiClient();
+      await api.fetch(`/users/${walletAddress}/balance`, {
+        method: "POST",
+        body: JSON.stringify({ amount }),
+      });
     } catch (error) {
       console.error("Failed to adjust user balance:", error);
       throw error;
@@ -133,16 +71,10 @@ export const admin = {
   },
 
   getActivities: async (limit: number = 10, offset: number = 0) => {
-    const response = await fetch(
-      `${API_URL}/admin/activities?limit=${limit}&offset=${offset}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      }
+    const api = createApiClient();
+    const response = await api.fetch(
+      `/admin/activities?limit=${limit}&offset=${offset}`
     );
-    if (!response.ok) throw new Error("Failed to fetch activities");
     return response.json();
   },
 };

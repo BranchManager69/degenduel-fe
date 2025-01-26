@@ -3,22 +3,22 @@
 // Core Entity Types
 export interface User {
   wallet_address: string;
-  nickname: string;
+  nickname: string | null;
   created_at: string;
-  last_login: string | null;
+  last_login: string;
   role: string;
   total_contests: number;
   total_wins: number;
-  total_earnings: number;
+  total_earnings: string;
   rank_score: number;
   settings: Record<string, any>;
-  balance: number;
+  balance: string;
   is_banned: boolean;
-  ban_reason?: string;
+  ban_reason: string | null;
   last_deposit_at?: string;
   last_withdrawal_at?: string;
   kyc_status?: string;
-  risk_level: number;
+  risk_level: string;
   is_admin?: boolean;
 }
 

@@ -1,25 +1,11 @@
-import { API_URL } from "../../config/config";
+import { createApiClient } from "./utils";
 
 export const balance = {
   get: async (walletAddress: string): Promise<{ balance: string }> => {
     console.log("Fetching balance for wallet:", walletAddress);
     try {
-      const url = `${API_URL}/users/${walletAddress}`;
-      console.log("Balance fetch URL:", url);
-
-      const response = await fetch(url);
-      console.log("Balance response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Balance fetch failed:", {
-          status: response.status,
-          statusText: response.statusText,
-          errorText,
-        });
-        throw new Error("Failed to fetch user balance");
-      }
-
+      const api = createApiClient();
+      const response = await api.fetch(`/users/${walletAddress}`);
       const data = await response.json();
       console.log("User data:", data);
       return { balance: data.balance || "0" };

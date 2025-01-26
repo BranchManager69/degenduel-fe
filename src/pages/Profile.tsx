@@ -79,9 +79,26 @@ export const Profile: React.FC = () => {
           ddApi.balance.get(user.wallet_address),
         ]);
 
+        console.log("User Response:", userResponse); // Debug log
+
         setUserData({
-          ...userResponse,
+          wallet_address: userResponse.wallet_address,
+          nickname: userResponse.nickname,
+          rank_score: userResponse.rank_score,
+          created_at: userResponse.created_at,
           bonusBalance: formatBonusPoints(balanceResponse.balance),
+          is_banned: userResponse.is_banned ?? false,
+          ban_reason: userResponse.ban_reason ?? null,
+        });
+
+        console.log("Set User Data:", {
+          wallet_address: userResponse.wallet_address,
+          nickname: userResponse.nickname,
+          rank_score: userResponse.rank_score,
+          created_at: userResponse.created_at,
+          bonusBalance: formatBonusPoints(balanceResponse.balance),
+          is_banned: userResponse.is_banned ?? false,
+          ban_reason: userResponse.ban_reason ?? null,
         });
       } catch (err) {
         setError((prev) => ({
@@ -203,12 +220,14 @@ export const Profile: React.FC = () => {
         ) : userData ? (
           <ProfileHeader
             address={userData.wallet_address}
-            username={userData.nickname ?? "Anonymous"}
+            username={userData.nickname || userData.wallet_address}
             rankScore={userData.rank_score}
             joinDate={new Date(userData.created_at).toLocaleDateString()}
-            bonusBalance={userData.bonusBalance ?? "0 pts"}
+            bonusBalance={userData.bonusBalance}
             onUpdateNickname={handleUpdateNickname}
             isUpdating={isUpdatingNickname}
+            isBanned={userData.is_banned ?? false}
+            banReason={userData.ban_reason ?? null}
           />
         ) : null}
 

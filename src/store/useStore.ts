@@ -170,6 +170,7 @@ export const useStore = create<StoreState>()(
               settings: authData.user.settings,
               balance: authData.user.balance,
               is_banned: authData.user.is_banned,
+              ban_reason: authData.user.ban_reason,
               risk_level: authData.user.risk_level,
             },
           });

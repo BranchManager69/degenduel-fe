@@ -12,6 +12,21 @@ import {
 } from "../types";
 import type { SortOptions } from "../types/sort";
 
+// Helper function to check and update ban status
+const checkAndUpdateBanStatus = (response: Response) => {
+  const store = useStore.getState();
+  const banStatus = response.headers.get("X-User-Banned");
+  const banReason = response.headers.get("X-Ban-Reason");
+
+  if (banStatus === "true" && store.user) {
+    store.setUser({
+      ...store.user,
+      is_banned: true,
+      ban_reason: banReason || "Account has been banned",
+    });
+  }
+};
+
 // Create a consistent API client
 const createApiClient = () => {
   ////const user = useStore.getState().user;
@@ -27,6 +42,9 @@ const createApiClient = () => {
         headers,
         credentials: "include",
       });
+
+      // Check for ban status
+      checkAndUpdateBanStatus(response);
 
       if (!response.ok) {
         console.error(`[API Error] ${endpoint}:`, {

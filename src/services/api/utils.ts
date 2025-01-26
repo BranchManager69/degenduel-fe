@@ -1,4 +1,5 @@
 import { API_URL } from "../../config/config";
+import { useStore } from "../../store/useStore";
 
 export const logError = (
   endpoint: string,
@@ -103,6 +104,19 @@ export const createApiClient = () => {
           ...options.headers,
         },
       });
+
+      // Check for ban status
+      const store = useStore.getState();
+      const banStatus = response.headers.get("X-User-Banned");
+      const banReason = response.headers.get("X-Ban-Reason");
+
+      if (banStatus === "true" && store.user) {
+        store.setUser({
+          ...store.user,
+          is_banned: true,
+          ban_reason: banReason || "Account has been banned",
+        });
+      }
 
       if (!response.ok) {
         console.error(`[API Error] ${endpoint}:`, {
