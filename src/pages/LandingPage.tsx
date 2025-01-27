@@ -6,7 +6,7 @@ import { Features } from "../components/landing/Features";
 import { LiveContestTicker } from "../components/ui/LiveContestTicker";
 import { isContestLive } from "../lib/utils";
 import { ddApi } from "../services/dd-api";
-import type { Contest } from "../types";
+import { Contest } from "../types/index";
 
 // Update the interface to match the actual API response structure
 interface ContestResponse {
@@ -60,30 +60,22 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Hero Section */}
-      <section className="relative flex-1">
-        {/* Main hero content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative pt-20 pb-16 text-center">
-            {/* Floating Elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {/* Floating SOL symbols */}
-              <div className="absolute top-1/4 left-1/4 text-4xl font-bold text-brand-400/20 animate-float">
-                ◎
-              </div>
-              <div className="absolute top-1/3 right-1/4 text-6xl font-bold text-brand-500/20 animate-float [animation-delay:2s]">
-                ◎
-              </div>
-              <div className="absolute bottom-1/4 left-1/3 text-5xl font-bold text-brand-600/20 animate-float [animation-delay:4s]">
-                ◎
-              </div>
-
-              {/* Cyber elements */}
-              <div className="absolute top-10 right-20 w-32 h-32 border border-brand-400/20 rotate-45 animate-float">
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 to-transparent" />
-              </div>
-              <div className="absolute bottom-20 left-20 w-40 h-40 border border-brand-500/20 -rotate-12 animate-float [animation-delay:3s]">
-                <div className="absolute inset-0 bg-gradient-to-tl from-brand-500/5 to-transparent" />
-              </div>
+      <section className="relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center space-y-4">
+            {/* Title Section */}
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <h2 className="text-brand-300 text-xl tracking-wider font-medium">
+                UNLEASH THE POWER OF
+              </h2>
+              <h1 className="text-6xl font-bold tracking-tight">
+                <span className="bg-gradient-to-r from-brand-400 to-brand-500 text-transparent bg-clip-text">
+                  DEGEN
+                </span>
+                <span className="text-gray-400 mx-2">×</span>
+                <span className="text-gray-400">DUEL</span>
+              </h1>
+              <p className="text-white text-lg mt-2">Trading Championship</p>
             </div>
 
             {/* Main content with enhanced animations */}
@@ -98,47 +90,36 @@ export const LandingPage: React.FC = () => {
               <div className="relative inline-block mb-6">
                 <span className="text-2xl sm:text-3xl font-light tracking-widest text-brand-300 opacity-90 hover:opacity-100 transition-opacity uppercase group">
                   <span className="group-hover:animate-glitch relative">
-                    Unleash the Power of
                     <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent animate-scan-line" />
                   </span>
                 </span>
               </div>
 
-              {/* Main title with clean two-color scheme */}
-              <h1 className="text-6xl sm:text-7xl font-bold tracking-wide mb-6 flex items-center justify-center gap-4">
-                <span className="text-brand-300">DEGEN</span>
-                <span className="text-gray-400 opacity-90">×</span>
-                <span className="text-gray-400">DUEL</span>
-              </h1>
-
-              {/* Subtitle */}
-              <h2 className="text-xl text-brand-300/90 tracking-widest uppercase mb-12">
-                Trading Championship
-              </h2>
-
-              {/* Animated separator */}
-              <div className="relative h-1 w-60 mx-auto my-12 overflow-hidden rounded-full bg-dark-300/50">
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x" />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine" />
-              </div>
-
               {/* Epic tagline with enhanced effects */}
-              <div className="mt-8 max-w-4xl mx-auto space-y-6">
-                <p className="text-3xl sm:text-4xl font-medium bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 text-transparent bg-clip-text animate-gradient-x transform hover:scale-105 transition-transform duration-500">
+              <div className="mt-4 max-w-4xl mx-auto space-y-3">
+                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 text-transparent bg-clip-text animate-gradient-x tracking-tight leading-none">
                   Where Diamond Hands Meet AI Supremacy
-                </p>
-                <p className="text-xl sm:text-2xl text-gray-400 leading-relaxed font-light">
+                </h2>
+                <p className="text-lg sm:text-xl text-gray-400 leading-snug font-medium tracking-wide">
                   Challenge the elite in
-                  <span className="text-brand-400 mx-2 group-hover:animate-pulse">
+                  <span className="text-brand-400 font-bold mx-1.5">
                     high-stakes
                   </span>
-                  competitions.
-                  <br />
-                  Trade against both
-                  <span className="text-brand-400 mx-2">human degens</span>
+                  competitions. Trade against both
+                  <span className="text-brand-400 font-bold mx-1.5">
+                    human degens
+                  </span>
                   and
-                  <span className="text-brand-400 mx-2">neural networks</span>.
+                  <span className="text-brand-400 font-bold mx-1.5">
+                    neural networks
+                  </span>
                 </p>
+              </div>
+
+              {/* Animated separator - made thinner */}
+              <div className="relative h-px w-40 mx-auto my-8 overflow-hidden rounded-full bg-dark-300/50">
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine" />
               </div>
 
               {/* Stats section with cleaner styling */}
@@ -167,25 +148,19 @@ export const LandingPage: React.FC = () => {
                 ].map((stat, i) => (
                   <div
                     key={i}
-                    className="group relative p-6 rounded-xl bg-dark-200/30 border border-brand-400/10 hover:border-brand-400/30 transition-all duration-300"
+                    className="group relative p-6 rounded-xl bg-dark-200/20 backdrop-blur-sm hover:bg-dark-200/40 transition-all duration-300"
                   >
-                    {/* Clean, minimal stat display */}
-                    <div className="relative">
-                      {/* Value with clean styling */}
+                    <div className="relative z-10">
                       <div
-                        className={`text-4xl font-bold ${stat.valueColor} font-mono tracking-wider`}
+                        className={`text-4xl font-bold ${stat.valueColor} font-mono tracking-wider group-hover:scale-110 transition-transform duration-300`}
                       >
                         {stat.value}
                       </div>
-
-                      {/* Label with subtle underline effect */}
                       <div className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mt-2">
-                        <span className="relative">
-                          {stat.label}
-                          <div className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[1px] bg-brand-400/30 transition-all duration-300" />
-                        </span>
+                        {stat.label}
                       </div>
                     </div>
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-brand-400/5 via-transparent to-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                 ))}
               </div>

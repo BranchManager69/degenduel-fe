@@ -238,6 +238,7 @@ export interface PortfolioResponse {
     contractAddress: string;
     weight: number;
   }>;
+  transaction_signature?: string;
 }
 
 export interface PlatformStats {

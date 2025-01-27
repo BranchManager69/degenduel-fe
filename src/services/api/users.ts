@@ -1,5 +1,5 @@
 import { API_URL } from "../../config/config";
-import { User } from "../../types";
+import { User } from "../../types/index";
 import { logError } from "./utils";
 
 export const users = {

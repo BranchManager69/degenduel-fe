@@ -1,5 +1,5 @@
 import React from "react";
-import type { Contest } from "../../types";
+import type { Contest } from "../../types/index";
 import { ContestCard } from "./ContestCard";
 
 interface ContestSectionProps {
@@ -83,6 +83,7 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
             status={contest.status}
             difficulty={contest.settings.difficulty}
             contestCode={contest.contest_code}
+            isParticipating={contest.is_participating ?? false}
           />
         ))}
       </div>

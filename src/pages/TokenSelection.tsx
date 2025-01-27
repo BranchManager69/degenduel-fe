@@ -1,3 +1,10 @@
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
+import { Buffer } from "buffer";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,7 +16,24 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ddApi } from "../services/dd-api";
 import { useStore } from "../store/useStore";
-import { Contest, PortfolioResponse, Token, TokensResponse } from "../types";
+import {
+  Contest,
+  PortfolioResponse,
+  Token,
+  TokensResponse,
+} from "../types/index";
+
+// Declare Buffer on window type
+declare global {
+  interface Window {
+    Buffer: typeof Buffer;
+  }
+}
+
+// Add Buffer to window object
+if (typeof window !== "undefined") {
+  window.Buffer = window.Buffer || Buffer;
+}
 
 // New interface for portfolio data
 interface PortfolioToken {
@@ -253,118 +277,215 @@ export const TokenSelection: React.FC = () => {
   }, [totalWeight, selectedTokens.size]);
 
   const handleSubmit = async () => {
+    if (!contest || !contestId) {
+      console.error("Submit failed: Missing contest data:", {
+        contest,
+        contestId,
+      });
+      toast.error("Contest information not available");
+      return;
+    }
+
+    if (!user?.wallet_address) {
+      console.error("Submit failed: No wallet address");
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
     try {
-      // First, verify our tokens array is populated
-      console.log("Current tokens array:", {
-        length: tokens.length,
-        sample: tokens.slice(0, 3).map((t) => ({
-          symbol: t.symbol,
-          contractAddress: t.contractAddress,
-        })),
-      });
-
-      // Log the selected tokens Map
-      console.log("Raw selectedTokens Map:", {
-        size: selectedTokens.size,
-        entries: Array.from(selectedTokens.entries()),
-      });
-
-      // Check each selected token individually
-      Array.from(selectedTokens.entries()).forEach(([ca, weight]) => {
-        const found = tokens.find((t) => t.contractAddress === ca);
-        console.log("Checking token:", {
-          contractAddress: ca,
-          weight,
-          foundInTokens: !!found,
-          matchDetails: found
-            ? {
-                symbol: found.symbol,
-                exactMatch: found.contractAddress === ca,
-                lowerCaseMatch:
-                  found.contractAddress.toLowerCase() === ca.toLowerCase(),
-              }
-            : null,
-        });
+      // 1. Prepare portfolio data
+      console.log("Preparing portfolio submission:", {
+        selectedTokensCount: selectedTokens.size,
+        totalWeight,
+        userWallet: user.wallet_address,
+        contestId,
       });
 
       const portfolioData: PortfolioResponse = {
         tokens: Array.from(selectedTokens.entries()).map(
           ([contractAddress, weight]) => {
-            const token =
-              tokens.find(
-                (t) => t.contractAddress === contractAddress // Try exact match first
-              ) ||
-              tokens.find(
-                (t) =>
-                  t.contractAddress.toLowerCase() ===
-                  contractAddress.toLowerCase()
-              );
-
-            if (!token) {
-              console.error("Token lookup failed:", {
-                searchingFor: contractAddress,
-                availableTokens: tokens.map((t) => ({
-                  contractAddress: t.contractAddress,
-                  symbol: t.symbol,
-                  matches: {
-                    exact: t.contractAddress === contractAddress,
-                    lowercase:
-                      t.contractAddress.toLowerCase() ===
-                      contractAddress.toLowerCase(),
-                  },
-                })),
-              });
-              throw new Error(
-                `Token not found: ${contractAddress} (please try refreshing)`
-              );
-            }
-
+            const token = memoizedTokens.find(
+              (t) => t.contractAddress === contractAddress
+            );
             return {
-              symbol: token.symbol,
-              contractAddress: token.contractAddress,
+              contractAddress,
+              symbol: token?.symbol || "",
               weight,
             };
           }
         ),
       };
 
-      console.log("Final portfolio data:", portfolioData);
-
-      await ddApi.contests.enterContest(contestId || "", portfolioData);
-
-      toast.success("Successfully entered contest!", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
+      // 2. Get contest wallet address from API
+      console.log("Fetching contest details for wallet address...");
+      const contestDetails = await ddApi.contests.getById(contestId);
+      console.log("Contest details received:", {
+        id: contestDetails.id,
+        entryFee: contestDetails.entry_fee,
+        wallet_address: contestDetails.wallet_address,
       });
 
-      navigate(`/contests/${contestId}`);
+      if (!contestDetails.wallet_address) {
+        console.error(
+          "Contest wallet address missing from API response:",
+          contestDetails
+        );
+        throw new Error("Contest wallet address not found");
+      }
+
+      // Block entries if contest is active or completed
+      if (
+        contestDetails.status === "active" ||
+        contestDetails.status === "completed"
+      ) {
+        console.error("Submit failed: Contest is not accepting entries", {
+          status: contestDetails.status,
+          contestId,
+        });
+
+        const errorMessage =
+          contestDetails.status === "completed"
+            ? "This contest has already ended and is not accepting new entries"
+            : "This contest is already in progress and not accepting new entries";
+
+        toast.error(errorMessage);
+        return;
+      }
+
+      // 3. Create and send Solana transaction
+      console.log("Initializing Solana transaction...");
+      const { solana } = window as any;
+      if (!solana?.isPhantom) {
+        console.error("Phantom wallet not found in window.solana");
+        throw new Error("Phantom wallet not found");
+      }
+
+      console.log("Creating Solana connection...");
+      const connection = new Connection(
+        import.meta.env.VITE_SOLANA_RPC_MAINNET,
+        "confirmed"
+      );
+
+      const lamports = Math.floor(parseFloat(contest.entry_fee) * 1e9);
+      console.log("Transaction details:", {
+        from: user.wallet_address,
+        to: contestDetails.wallet_address,
+        amount: contest.entry_fee,
+        lamports,
+        timestamp: new Date().toISOString(),
+      });
+
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: new PublicKey(user.wallet_address),
+          toPubkey: new PublicKey(contestDetails.wallet_address),
+          lamports,
+        })
+      );
+
+      console.log("Getting recent blockhash...");
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = new PublicKey(user.wallet_address);
+
+      console.log("Transaction created:", {
+        blockhash,
+        feePayer: user.wallet_address,
+      });
+
+      // Sign and send transaction
+      let signature: string;
+      try {
+        console.log("Requesting transaction signature from Phantom...");
+        const signed = await solana.signTransaction(transaction);
+        console.log("Transaction signed, sending to network...");
+
+        signature = await connection.sendRawTransaction(signed.serialize());
+        console.log("Transaction sent, signature:", signature);
+
+        console.log("Waiting for transaction confirmation...");
+        await connection.confirmTransaction(signature);
+        console.log("Transaction confirmed! Details:", {
+          signature,
+          blockTime: new Date().toISOString(),
+          status: "confirmed",
+        });
+
+        // 4. Submit portfolio to API with transaction signature
+        console.log(
+          "Submitting portfolio to API with transaction signature..."
+        );
+        await ddApi.contests.enterContest(contestId, {
+          ...portfolioData,
+          transaction_signature: signature,
+        });
+        console.log("Portfolio submission successful!");
+
+        toast.success("Successfully entered contest!", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+
+        navigate(`/contests/${contestId}`);
+      } catch (txError: any) {
+        console.error("Transaction failed:", {
+          error: txError,
+          errorMessage:
+            txError instanceof Error ? txError.message : "Unknown error",
+          errorStack: txError instanceof Error ? txError.stack : undefined,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Check for specific errors
+        if (txError.message?.includes("Non-base58")) {
+          throw new Error(
+            "Contest treasury was not initiated properly. Admins have been notified."
+          );
+        } else if (txError.message?.includes("Buffer is not defined")) {
+          throw new Error(
+            "Browser compatibility issue detected. Please try using a different browser or updating your current one."
+          );
+        }
+
+        throw new Error(
+          "Failed to process entry fee payment. Please try again."
+        );
+      }
     } catch (error: any) {
+      console.error("Contest entry failed:", {
+        error,
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        errorStack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
+
       // Show error toast with the detailed error message
       toast.error(error.message, {
         position: "top-right",
-        autoClose: 10000, // Longer display time for error messages
+        autoClose: 10000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
         style: {
-          maxWidth: "500px", // Wider toast for multi-line errors
-          whiteSpace: "pre-line", // Preserve line breaks in the message
+          maxWidth: "500px",
+          whiteSpace: "pre-line",
         },
       });
 
-      // Optional: Update UI based on specific error types
       if (
         error.status === 409 &&
         error.responseData?.error === "CONTEST_FULL"
       ) {
-        // Maybe show alternative contests
+        console.log("Contest is full, could show alternatives here");
       } else if (error.status === 401) {
-        // Maybe show wallet connection dialog
+        console.log(
+          "Authentication error, could show wallet connection dialog"
+        );
       }
     }
   };

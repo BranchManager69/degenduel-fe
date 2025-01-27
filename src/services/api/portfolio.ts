@@ -1,5 +1,5 @@
 import { useStore } from "../../store/useStore";
-import { PortfolioResponse } from "../../types";
+import { PortfolioResponse } from "../../types/index";
 import { createApiClient } from "./utils";
 
 export const portfolio = {

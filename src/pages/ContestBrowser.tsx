@@ -3,7 +3,7 @@ import { CreateContestButton } from "../components/admin/CreateContestButton";
 import { ContestCard } from "../components/contests/ContestCard";
 import { ContestSort } from "../components/contests/ContestSort";
 import { ddApi } from "../services/dd-api";
-import type { Contest, ContestSettings } from "../types";
+import { Contest, ContestSettings } from "../types/index";
 import type { SortDirection, SortField } from "../types/sort";
 
 export const ContestBrowser: React.FC = () => {

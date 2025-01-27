@@ -1,4 +1,4 @@
-import { Transaction } from "../../types";
+import { Transaction } from "../../types/index";
 import { createApiClient } from "./utils";
 
 export const transactions = {

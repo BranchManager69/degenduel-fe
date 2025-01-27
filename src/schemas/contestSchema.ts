@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ContestSettings, ContestStatus } from "../types";
+import type { ContestSettings, ContestStatus } from "../types/index";
 
 // Use the existing ContestStatus type
 const contestStatusSchema = z.enum([

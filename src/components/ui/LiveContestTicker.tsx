@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import type { Contest } from "../../types";
+import type { Contest } from "../../types/index";
 
 interface Props {
   contests: Contest[];

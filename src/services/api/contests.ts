@@ -1,6 +1,6 @@
 import { API_URL } from "../../config/config";
 import { useStore } from "../../store/useStore";
-import { Contest, PortfolioResponse } from "../../types";
+import { Contest, PortfolioResponse } from "../../types/index";
 import type { SortOptions } from "../../types/sort";
 import { checkContestParticipation, logError } from "./utils";
 

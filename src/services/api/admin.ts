@@ -1,4 +1,4 @@
-import { Activity, Contest, PlatformStats } from "../../types";
+import { Activity, Contest, PlatformStats } from "../../types/index";
 import { createApiClient } from "./utils";
 
 export const admin = {

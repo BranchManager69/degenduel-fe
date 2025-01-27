@@ -1,4 +1,4 @@
-import { Token } from "../../types";
+import { Token } from "../../types/index";
 import { createApiClient } from "./utils";
 
 export const tokens = {

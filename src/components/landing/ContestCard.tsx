@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
+import { FaCheckCircle } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import { formatCurrency } from "../../lib/utils";
-import { ContestStatus, DifficultyLevel } from "../../types";
+import { ContestStatus, DifficultyLevel } from "../../types/index";
 import { Card, CardHeader } from "../ui/Card";
 import { ContestButton } from "./contests/ContestButton";
 import { ContestDifficulty } from "./contests/ContestDifficulty";
@@ -18,6 +20,7 @@ interface ContestCardProps {
   status: ContestStatus;
   difficulty: DifficultyLevel;
   contestCode: string;
+  isParticipating: boolean;
 }
 
 export const ContestCard: React.FC<ContestCardProps> = ({
@@ -33,6 +36,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   status,
   difficulty,
   contestCode,
+  isParticipating,
 }) => {
   const isLive = status === "active";
   const progress = (participantCount / maxParticipants) * 100;
@@ -111,6 +115,36 @@ export const ContestCard: React.FC<ContestCardProps> = ({
     }
   }, [isLive, startTime, endTime, id, status]);
 
+  const getStatusColor = () => {
+    switch (status) {
+      case "active":
+        return "bg-green-500/10 text-green-400 border-green-500/20";
+      case "pending":
+        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case "completed":
+        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+      case "cancelled":
+        return "bg-red-500/10 text-red-400 border-red-500/20";
+      default:
+        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+    }
+  };
+
+  const getStatusText = () => {
+    switch (status) {
+      case "active":
+        return "Live";
+      case "pending":
+        return "Upcoming";
+      case "completed":
+        return "Ended";
+      case "cancelled":
+        return "Cancelled";
+      default:
+        return status;
+    }
+  };
+
   return (
     <Card className="group relative bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10">
       {/* Animated gradient overlay */}
@@ -131,9 +165,11 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           <div className="relative p-6 space-y-4">
             <div className="flex justify-between items-start">
               <div className="space-y-1.5 flex-1 min-w-0">
-                <h3 className="text-2xl font-bold text-gray-100 truncate pr-2 group-hover:text-brand-300 transition-colors">
-                  {name}
-                </h3>
+                <Link to={`/contests/${id}`}>
+                  <h3 className="text-2xl font-bold text-gray-100 truncate pr-2 group-hover:text-brand-300 transition-colors hover:text-brand-400">
+                    {name}
+                  </h3>
+                </Link>
                 <p className="text-sm font-medium text-brand-300">
                   {timeRemaining.startsWith("Late to start")
                     ? timeRemaining
@@ -143,7 +179,24 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                     : `${isLive ? "Ends" : "Starts"} in ${timeRemaining}`}
                 </p>
               </div>
-              <ContestDifficulty difficulty={difficulty} />
+              <div className="flex flex-col items-end gap-2">
+                {/* Status Badge */}
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor()} ${
+                    status === "active" ? "animate-cyber-pulse" : ""
+                  }`}
+                >
+                  {getStatusText()}
+                </span>
+
+                {/* Entered Badge */}
+                {isParticipating && (
+                  <div className="flex items-center gap-1 bg-brand-500/20 text-brand-400 px-2 py-1 rounded-full border border-brand-400/20">
+                    <FaCheckCircle className="w-3 h-3" />
+                    <span className="text-xs font-medium">Entered</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Contest Description - no border */}
@@ -154,7 +207,6 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               >
                 {description || "No description available"}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Ref: {contestCode}</p>
             </div>
 
             {/* Prize Pool and Entry Fee side by side */}
@@ -196,6 +248,16 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               id={parseInt(id)}
               type={isLive ? "live" : "upcoming"}
             />
+
+            {/* Reference code in bottom right corner */}
+            <div className="absolute bottom-1.5 right-2">
+              <p className="text-[10px] text-gray-500">{contestCode}</p>
+            </div>
+
+            {/* Difficulty Badge in bottom left corner */}
+            <div className="absolute bottom-1.5 left-2">
+              <ContestDifficulty difficulty={difficulty} />
+            </div>
           </div>
         </div>
       </CardHeader>

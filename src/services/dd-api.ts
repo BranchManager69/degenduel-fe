@@ -9,7 +9,7 @@ import {
   Token,
   Transaction,
   User,
-} from "../types";
+} from "../types/index";
 import type { SortOptions } from "../types/sort";
 
 // Helper function to check and update ban status
@@ -101,7 +101,7 @@ const logError = (
   });
 };
 
-// doesnt work
+// Add type for participant in addParticipationFlag
 const addParticipationFlag = (
   contest: Contest,
   userWallet?: string
@@ -112,7 +112,8 @@ const addParticipationFlag = (
     ...contest,
     is_participating:
       contest.participants?.some(
-        (p) => p.address?.toLowerCase() === userWallet.toLowerCase()
+        (p: { address?: string }) =>
+          p.address?.toLowerCase() === userWallet.toLowerCase()
       ) || false,
   };
 };
@@ -624,21 +625,33 @@ export const ddApi = {
       try {
         // Keep the original portfolio structure
         const portfolioData: PortfolioResponse = {
-          tokens: portfolio.tokens.map((token) => ({
-            contractAddress: token.contractAddress,
-            symbol: token.symbol,
-            weight: Number(token.weight),
-          })),
+          tokens: portfolio.tokens.map(
+            (token: {
+              contractAddress: string;
+              symbol: string;
+              weight: number;
+            }) => ({
+              contractAddress: token.contractAddress,
+              symbol: token.symbol,
+              weight: Number(token.weight),
+            })
+          ),
         };
 
         // Send exactly what the server expects
         const payload = {
           wallet_address: user.wallet_address,
-          tokens: portfolioData.tokens.map((token) => ({
-            contractAddress: token.contractAddress,
-            symbol: token.symbol,
-            weight: Number(token.weight),
-          })),
+          tokens: portfolioData.tokens.map(
+            (token: {
+              contractAddress: string;
+              symbol: string;
+              weight: number;
+            }) => ({
+              contractAddress: token.contractAddress,
+              symbol: token.symbol,
+              weight: Number(token.weight),
+            })
+          ),
         };
 
         const response = await fetch(`${API_URL}/contests/${contestId}/join`, {
@@ -695,11 +708,17 @@ export const ddApi = {
 
         const payload = {
           wallet_address: user.wallet_address,
-          tokens: portfolio.tokens.map((token) => ({
-            contractAddress: token.contractAddress,
-            symbol: token.symbol,
-            weight: Number(token.weight),
-          })),
+          tokens: portfolio.tokens.map(
+            (token: {
+              contractAddress: string;
+              symbol: string;
+              weight: number;
+            }) => ({
+              contractAddress: token.contractAddress,
+              symbol: token.symbol,
+              weight: Number(token.weight),
+            })
+          ),
         };
 
         console.log("[updatePortfolio] Initiating request:", {

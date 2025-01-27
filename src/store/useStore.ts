@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 import { API_URL } from "../config/config";
-import { Contest, Token, User, WalletError } from "../types";
+import { Contest, Token, User, WalletError } from "../types/index";
 
 export type ColorScheme =
   | "default"
@@ -229,7 +229,11 @@ export const useStore = create<StoreState>()(
             message,
           };
           console.log("Sending verification request to server");
-          const authResponse = await verifyWallet(walletAddress, authPayload.signature, authPayload.message);
+          const authResponse = await verifyWallet(
+            walletAddress,
+            authPayload.signature,
+            authPayload.message
+          );
 
           // 5) Set user in state
           set({
@@ -278,64 +282,68 @@ export const useStore = create<StoreState>()(
   )
 );
 
-const verifyWallet = async (wallet: string, signature: any, message: string) => {
-  console.log('[Auth Debug] Sending verification request');
-  
+const verifyWallet = async (
+  wallet: string,
+  signature: any,
+  message: string
+) => {
+  console.log("[Auth Debug] Sending verification request");
+
   // Use retryFetch to ensure consistent behavior
   const response = await retryFetch(`${API_URL}/auth/verify-wallet`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-Debug': 'true',
-      'Origin': window.location.origin
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Debug": "true",
+      Origin: window.location.origin,
     },
-    credentials: 'include',
-    body: JSON.stringify({ wallet, signature, message })
+    credentials: "include",
+    body: JSON.stringify({ wallet, signature, message }),
   });
 
-  console.log('[Auth Debug] Verification response:', {
+  console.log("[Auth Debug] Verification response:", {
     status: response.status,
     statusText: response.statusText,
     headers: Object.fromEntries([...response.headers]),
     url: response.url,
     cookies: document.cookie,
-    setCookie: response.headers.get('set-cookie'),
+    setCookie: response.headers.get("set-cookie"),
     allHeaders: [...response.headers.entries()].reduce((acc, [key, value]) => {
       acc[key.toLowerCase()] = value;
       return acc;
-    }, {} as Record<string, string>)
+    }, {} as Record<string, string>),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Failed to verify wallet');
+    throw new Error(error.message || "Failed to verify wallet");
   }
 
   const data = await response.json();
-  console.log('[Auth Debug] Verification successful:', {
+  console.log("[Auth Debug] Verification successful:", {
     data,
     cookies: document.cookie,
-    parsedCookies: document.cookie.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.split('=').map(c => c.trim());
+    parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
+      const [key, value] = cookie.split("=").map((c) => c.trim());
       return { ...acc, [key]: value };
     }, {}),
     documentCookie: document.cookie,
     cookieEnabled: navigator.cookieEnabled,
     protocol: window.location.protocol,
     host: window.location.host,
-    origin: window.location.origin
+    origin: window.location.origin,
   });
 
   // Add a small delay to ensure cookie is set
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
-  console.log('[Auth Debug] Post-delay cookie check:', {
+  console.log("[Auth Debug] Post-delay cookie check:", {
     cookies: document.cookie,
-    parsedCookies: document.cookie.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.split('=').map(c => c.trim());
+    parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
+      const [key, value] = cookie.split("=").map((c) => c.trim());
       return { ...acc, [key]: value };
-    }, {})
+    }, {}),
   });
 
   return data;

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ddApi } from "../../services/dd-api";
-import { User } from "../../types";
+import { User } from "../../types/index";
 import { Button } from "../ui/Button";
 
 interface UserBalanceManagementProps {

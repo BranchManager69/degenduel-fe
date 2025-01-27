@@ -2,7 +2,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
 import { ddApi } from "../../services/dd-api";
-import { Contest, ContestSettings } from "../../types";
+import { Contest, ContestSettings } from "../../types/index";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { MultiSelect } from "../ui/MultiSelect";

@@ -7,7 +7,7 @@ import {
   FaTwitter,
 } from "react-icons/fa";
 import { formatCurrency, formatMarketCap } from "../../lib/utils";
-import { Token } from "../../types";
+import { Token } from "../../types/index";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 import { TokenSparkline } from "./TokenSparkline";
 
