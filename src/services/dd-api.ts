@@ -33,8 +33,8 @@ const createApiClient = () => {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
       const headers = new Headers({
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-Debug": "true"
+        Accept: "application/json",
+        "X-Debug": "true",
       });
 
       // Merge provided headers with defaults
@@ -44,27 +44,27 @@ const createApiClient = () => {
         });
       }
 
-      console.log('[DD-API Debug] Request:', {
+      console.log("[DD-API Debug] Request:", {
         url: `${API_URL}${endpoint}`,
-        method: options.method || 'GET',
+        method: options.method || "GET",
         headers: Object.fromEntries([...headers]),
         cookies: document.cookie,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers,
         credentials: "include",
-        mode: "cors"
+        mode: "cors",
       });
 
-      console.log('[DD-API Debug] Response:', {
+      console.log("[DD-API Debug] Response:", {
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries([...response.headers]),
         url: response.url,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Check for ban status
@@ -76,13 +76,13 @@ const createApiClient = () => {
           statusText: response.statusText,
           headers: Object.fromEntries([...response.headers]),
           url: response.url,
-          cookies: document.cookie
+          cookies: document.cookie,
         });
         throw new Error(`API Error: ${response.statusText}`);
       }
 
       return response;
-    }
+    },
   };
 };
 
@@ -154,7 +154,8 @@ const checkContestParticipation = async (
       .finally(() => clearTimeout(timeoutId));
 
     const data = await response.json();
-    const result = !!(data?.tokens?.length > 0);
+    // Check if the portfolio entries array has any entries
+    const result = !!(data?.length > 0);
     participationCache.set(cacheKey, { result, timestamp: now });
     return result;
   } catch (error: unknown) {
@@ -454,20 +455,20 @@ export const ddApi = {
     // Get list of available log files
     getLogs: async () => {
       const response = await fetch(`${API_URL}/superadmin/logs/available`, {
-        credentials: 'include'
+        credentials: "include",
       });
-      if (!response.ok) throw new Error('Failed to fetch log files');
+      if (!response.ok) throw new Error("Failed to fetch log files");
       return response.json();
     },
 
     // Get content of a specific log file
     getLogContent: async (filename: string) => {
       const response = await fetch(`${API_URL}/superadmin/logs/${filename}`, {
-        credentials: 'include'
+        credentials: "include",
       });
-      if (!response.ok) throw new Error('Failed to fetch log content');
+      if (!response.ok) throw new Error("Failed to fetch log content");
       return response.json();
-    }
+    },
   },
 
   // Contest endpoints
