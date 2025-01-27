@@ -73,9 +73,7 @@ export const TokenSelection: React.FC = () => {
   useEffect(() => {
     const fetchTokens = async () => {
       try {
-        ////console.log("Fetching tokens A...");
         setTokenListLoading(true);
-        ////console.log("Fetching tokens B...");
         const response = await ddApi.tokens.getAll();
         const tokenData = Array.isArray(response)
           ? response
@@ -294,7 +292,7 @@ export const TokenSelection: React.FC = () => {
 
     try {
       // 1. Prepare portfolio data
-      console.log("Preparing portfolio submission:", {
+      console.log("Preparing contest entry and portfolio submission:", {
         selectedTokensCount: selectedTokens.size,
         totalWeight,
         userWallet: user.wallet_address,
@@ -333,21 +331,27 @@ export const TokenSelection: React.FC = () => {
         throw new Error("Contest wallet address not found");
       }
 
-      // Block entries if contest is active or completed
+      // Block entries if contest is active, completed, or cancelled
       if (
         contestDetails.status === "active" ||
-        contestDetails.status === "completed"
+        contestDetails.status === "completed" ||
+        contestDetails.status === "cancelled"
       ) {
         console.error("Submit failed: Contest is not accepting entries", {
           status: contestDetails.status,
           contestId,
         });
 
-        const errorMessage =
-          contestDetails.status === "completed"
-            ? "This contest has already ended and is not accepting new entries"
-            : "This contest is already in progress and not accepting new entries";
-
+        // handle all 3 cases uniquely
+        let errorMessage = "";
+        if (contestDetails.status === "active") {
+          errorMessage =
+            "This contest is already in progress and not accepting new entries";
+        } else if (contestDetails.status === "completed") {
+          errorMessage = "This contest has already ended.";
+        } else if (contestDetails.status === "cancelled") {
+          errorMessage = "This contest has been cancelled.";
+        }
         toast.error(errorMessage);
         return;
       }
@@ -442,8 +446,9 @@ export const TokenSelection: React.FC = () => {
 
         // Check for specific errors
         if (txError.message?.includes("Non-base58")) {
+          // This is a very specific error that occurs when a contest doesn't have a valid treasury wallet address
           throw new Error(
-            "Contest treasury was not initiated properly. Admins have been notified."
+            "This contest was not created properly. Entries are not being accepted."
           );
         } else if (txError.message?.includes("Buffer is not defined")) {
           throw new Error(
@@ -451,6 +456,13 @@ export const TokenSelection: React.FC = () => {
           );
         }
 
+        console.error("⚠️ Failed to process entry fee payment:", {
+          error: txError,
+          errorMessage:
+            txError instanceof Error ? txError.message : "Unknown error",
+          errorStack: txError instanceof Error ? txError.stack : undefined,
+          timestamp: new Date().toISOString(),
+        });
         throw new Error(
           "Failed to process entry fee payment. Please try again."
         );
@@ -539,7 +551,7 @@ export const TokenSelection: React.FC = () => {
             Select Your Portfolio
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto group-hover:animate-cyber-pulse">
-            Choose tokens and allocate weights to build your winning strategy
+            Choose tokens and allocate weights to build your initial portfolio.
           </p>
         </div>
 
@@ -591,7 +603,7 @@ export const TokenSelection: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
               <div className="p-6 relative">
                 <h2 className="text-xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
-                  Portfolio Summary
+                  Confirm Entry
                 </h2>
                 <PortfolioSummary
                   selectedTokens={selectedTokens}
@@ -609,9 +621,9 @@ export const TokenSelection: React.FC = () => {
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
                     <span className="relative flex items-center justify-center font-medium group-hover:animate-glitch">
                       {loadingEntryStatus ? (
-                        <div className="animate-cyber-pulse">Submitting...</div>
+                        <div className="animate-cyber-pulse">Entering...</div>
                       ) : (
-                        "Submit Portfolio"
+                        "Enter Contest"
                       )}
                     </span>
                   </Button>

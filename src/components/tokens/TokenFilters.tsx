@@ -11,9 +11,9 @@ export const TokenFilters: React.FC<TokenFiltersProps> = ({
   onMarketCapFilterChange,
 }) => {
   const filters = [
-    { id: "high-cap", label: "High Cap ($100M+)" },
-    { id: "mid-cap", label: "Mid Cap ($25M-$100M)" },
-    { id: "low-cap", label: "Low Cap (<$25M)" },
+    { id: "high-cap", label: "High Cap ($50M+)" },
+    { id: "mid-cap", label: "Mid Cap ($10-50M)" },
+    { id: "low-cap", label: "Low Cap ($1-10M)" },
   ];
 
   const handleFilterClick = (id: string) => {

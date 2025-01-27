@@ -22,12 +22,15 @@ interface TokenGridProps {
 const formatTokenPrice = (price: string | number): string => {
   const numPrice = Number(price);
   if (numPrice >= 1) {
-    return `${numPrice.toFixed(2)} SOL`; // Show cents for prices >= 1
+    ////return `${numPrice.toFixed(2)} SOL`; // Show cents for prices >= 1
+    return `$${numPrice.toFixed(2)}`; // Show cents for prices >= 1
   } else if (numPrice >= 0.01) {
-    return `${numPrice.toFixed(3)} SOL`; // Show 3 decimals for prices >= 0.01
+    ////return `${numPrice.toFixed(3)} SOL`; // Show 3 decimals for prices >= 0.01
+    return `$${numPrice.toFixed(3)}`; // Show 3 decimals for prices >= 0.01
   } else {
     // For very small prices, show significant digits
-    return `${numPrice.toPrecision(2)} SOL`;
+    ////return `${numPrice.toPrecision(2)} SOL`;
+    return `$${numPrice.toPrecision(3)}`;
   }
 };
 
@@ -44,26 +47,28 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
 
     switch (marketCapFilter) {
       case "high-cap":
-        return marketCap ? marketCap >= 100_000_000 : false;
+        return marketCap ? marketCap >= 50_000_000 : false;
       case "mid-cap":
         return marketCap
-          ? marketCap >= 25_000_000 && marketCap < 100_000_000
+          ? marketCap >= 10_000_000 && marketCap < 50_000_000
           : false;
       case "low-cap":
-        return marketCap < 25_000_000;
+        return marketCap < 10_000_000;
       default:
         return true;
     }
   });
 
+  // Handle card click
   const handleCardClick = (token: Token) => {
     if (selectedTokens.has(token.contractAddress)) {
       onTokenSelect(token.contractAddress, 0); // Remove token
     } else {
-      onTokenSelect(token.contractAddress, 20); // Add token with default weight
+      onTokenSelect(token.contractAddress, 50); // Add token with default weight
     }
   };
 
+  // Handle weight change
   const handleWeightChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     token: Token
@@ -176,12 +181,15 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
             <CardContent className="pt-2">
               {/* Stats Grid with Gradient Borders */}
               <div className="grid grid-cols-2 gap-2 text-sm">
+                {/* Price */}
                 <div>
                   <span className="text-gray-400">Price</span>
                   <div className="font-medium text-gray-200">
                     {token.price ? formatTokenPrice(token.price) : "N/A"}
                   </div>
                 </div>
+
+                {/* 24h Change */}
                 <div>
                   <span className="text-gray-400">24h</span>
                   <div
@@ -196,6 +204,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       : "N/A"}
                   </div>
                 </div>
+
+                {/* Market Cap */}
                 <div>
                   <span className="text-gray-400">Market Cap</span>
                   <div className="font-medium text-gray-200">
@@ -204,6 +214,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       : "N/A"}
                   </div>
                 </div>
+
+                {/* Liquidity */}
                 <div>
                   <span className="text-gray-400">Liquidity</span>
                   <div className="font-medium text-gray-200">
@@ -212,6 +224,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       : "N/A"}
                   </div>
                 </div>
+
+                {/* 24h Volume */}
                 <div>
                   <span className="text-gray-400">24h Volume</span>
                   <div className="font-medium text-gray-200">
@@ -220,6 +234,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       : "N/A"}
                   </div>
                 </div>
+
+                {/* 24h Trades */}
                 <div>
                   <span className="text-gray-400">24h Trades</span>
                   <div className="font-medium text-gray-200">
@@ -246,6 +262,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex justify-between items-center mb-2">
+                    {/* Portfolio Weight */}
                     <label className="text-sm font-medium text-gray-400 flex items-center gap-1">
                       <FaCoins size={12} className="text-brand-400" />
                       Portfolio Weight
@@ -254,6 +271,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       {selectedTokens.get(token.contractAddress)}%
                     </span>
                   </div>
+
+                  {/* Slider */}
                   <div className="relative">
                     <input
                       type="range"

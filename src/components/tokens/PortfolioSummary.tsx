@@ -21,9 +21,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
       <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
         <CardHeader>
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-100">
-              Portfolio Summary
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-100">Portfolio</h3>
             <span
               className={`text-sm font-medium ${
                 totalWeight === 100 ? "text-green-400" : "text-gray-400"

@@ -52,12 +52,14 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
           className="inline-flex items-center space-x-8 px-4"
         >
           {sortedContests.map((contest) => {
+            // Check if the contest is live
             const isLive = contest.status === "active";
             return (
               <div
                 key={contest.id}
                 className="inline-flex items-center space-x-2 text-sm"
               >
+                {/* Check if the contest is live */}
                 {isLive ? (
                   <span className="inline-flex items-center text-cyber-400 space-x-1.5">
                     <span className="relative flex h-2 w-2">
@@ -67,14 +69,21 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                     <span>LIVE</span>
                   </span>
                 ) : (
+                  // Check if the contest is new
                   <span className="text-neon-400">NEW</span>
                 )}
+
+                {/* Contest Name */}
                 <span className="font-medium text-gray-200">
                   {contest.name}
                 </span>
+
+                {/* Contest Participants */}
                 <span className="text-gray-400">
                   {contest.participant_count}/{contest.max_participants}
                 </span>
+
+                {/* Contest Prize Pool */}
                 <span className="bg-gradient-to-r from-cyber-400 to-neon-400 text-transparent bg-clip-text">
                   {contest.prize_pool}◎
                 </span>
