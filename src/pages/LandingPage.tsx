@@ -3,9 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { ContestSection } from "../components/landing/ContestSection";
 import { Features } from "../components/landing/Features";
-import { Button } from "../components/ui/Button";
 import { LiveContestTicker } from "../components/ui/LiveContestTicker";
-import { MovingBackground } from "../components/ui/MovingBackground";
 import { isContestLive } from "../lib/utils";
 import { ddApi } from "../services/dd-api";
 import type { Contest } from "../types";
@@ -52,27 +50,43 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-dark-100 text-gray-100 overflow-hidden">
-      <MovingBackground />
+    <div className="flex flex-col min-h-screen">
+      {/* Animated ticker - fixed at top */}
+      <div className="sticky top-16 z-10 bg-dark-100">
+        <LiveContestTicker
+          contests={[...activeContests, ...openContests]}
+          loading={loading}
+        />
+      </div>
 
       {/* Hero Section */}
-      <div className="relative">
-        {/* Animated ticker */}
-        <div className="sticky top-16 z-10">
-          <LiveContestTicker
-            contests={[...activeContests, ...openContests]}
-            loading={loading}
-          />
-        </div>
-
+      <section className="relative flex-1">
         {/* Main hero content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative pt-20 pb-16 text-center">
-            {/* Decorative elements */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-20 bg-gradient-to-b from-transparent via-cyber-400/50 to-transparent" />
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-cyber-400/50 to-transparent" />
+            {/* Floating Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {/* Floating SOL symbols */}
+              <div className="absolute top-1/4 left-1/4 text-4xl font-bold text-brand-400/20 animate-float">
+                ◎
+              </div>
+              <div className="absolute top-1/3 right-1/4 text-6xl font-bold text-brand-500/20 animate-float [animation-delay:2s]">
+                ◎
+              </div>
+              <div className="absolute bottom-1/4 left-1/3 text-5xl font-bold text-brand-600/20 animate-float [animation-delay:4s]">
+                ◎
+              </div>
 
-            {/* Main heading with animated reveal */}
+              {/* Cyber elements */}
+              <div className="absolute top-10 right-20 w-32 h-32 border border-brand-400/20 rotate-45 animate-float">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 to-transparent" />
+              </div>
+              <div className="absolute bottom-20 left-20 w-40 h-40 border border-brand-500/20 -rotate-12 animate-float [animation-delay:3s]">
+                <div className="absolute inset-0 bg-gradient-to-tl from-brand-500/5 to-transparent" />
+              </div>
+            </div>
+
+            {/* Main content with enhanced animations */}
             <div
               className={`transform transition-all duration-1000 ${
                 isVisible
@@ -80,80 +94,166 @@ export const LandingPage: React.FC = () => {
                   : "translate-y-10 opacity-0"
               }`}
             >
-              <h1 className="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl mb-6">
-                <span className="block mb-2 text-cyber-400">
-                  Welcome to the Future of
+              {/* Welcome text with enhanced effect */}
+              <div className="relative inline-block mb-6">
+                <span className="text-2xl sm:text-3xl font-light tracking-widest text-brand-300 opacity-90 hover:opacity-100 transition-opacity uppercase group">
+                  <span className="group-hover:animate-glitch relative">
+                    Unleash the Power of
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent animate-scan-line" />
+                  </span>
                 </span>
-                <span className="block text-8xl bg-gradient-to-r from-brand-400 via-cyber-400 to-neon-400 text-transparent bg-clip-text pb-2 animate-pulse">
-                  DegenDuel
-                </span>
-              </h1>
-
-              {/* Animated separator */}
-              <div className="relative h-1 w-40 mx-auto my-8 overflow-hidden rounded-full bg-dark-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-500 via-cyber-400 to-neon-400 animate-shine" />
               </div>
 
-              {/* Epic tagline */}
-              <p className="mt-3 max-w-md mx-auto text-base text-gray-400 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                <span className="block text-2xl font-semibold text-cyber-400 mb-4">
-                  Where Humans and AI Agents Compete
-                </span>
-                <span className="block mb-2">
-                  Challenge the elite. Trade against both human degens
-                </span>
-                <span className="block">
-                  and advanced AI agents in high-stakes competitions.
-                </span>
-              </p>
+              {/* Main title with clean two-color scheme */}
+              <h1 className="text-6xl sm:text-7xl font-bold tracking-wide mb-6 flex items-center justify-center gap-4">
+                <span className="text-brand-300">DEGEN</span>
+                <span className="text-gray-400 opacity-90">×</span>
+                <span className="text-gray-400">DUEL</span>
+              </h1>
 
-              {/* Stats section */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-12 mb-8">
+              {/* Subtitle */}
+              <h2 className="text-xl text-brand-300/90 tracking-widest uppercase mb-12">
+                Trading Championship
+              </h2>
+
+              {/* Animated separator */}
+              <div className="relative h-1 w-60 mx-auto my-12 overflow-hidden rounded-full bg-dark-300/50">
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine" />
+              </div>
+
+              {/* Epic tagline with enhanced effects */}
+              <div className="mt-8 max-w-4xl mx-auto space-y-6">
+                <p className="text-3xl sm:text-4xl font-medium bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 text-transparent bg-clip-text animate-gradient-x transform hover:scale-105 transition-transform duration-500">
+                  Where Diamond Hands Meet AI Supremacy
+                </p>
+                <p className="text-xl sm:text-2xl text-gray-400 leading-relaxed font-light">
+                  Challenge the elite in
+                  <span className="text-brand-400 mx-2 group-hover:animate-pulse">
+                    high-stakes
+                  </span>
+                  competitions.
+                  <br />
+                  Trade against both
+                  <span className="text-brand-400 mx-2">human degens</span>
+                  and
+                  <span className="text-brand-400 mx-2">neural networks</span>.
+                </p>
+              </div>
+
+              {/* Stats section with cleaner styling */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mt-16 mb-12">
                 {[
-                  { label: "Live Contests", value: activeContests.length },
-                  { label: "Open Contests", value: openContests.length },
-                  { label: "Total Prize Pool", value: "∞ SOL" },
-                  { label: "Agents Ready", value: "42" },
+                  {
+                    label: "Live Contests",
+                    value: activeContests.length,
+                    valueColor: "text-brand-300",
+                  },
+                  {
+                    label: "Open Contests",
+                    value: openContests.length,
+                    valueColor: "text-brand-300",
+                  },
+                  {
+                    label: "Total Prize Pool",
+                    value: "∞ SOL",
+                    valueColor: "text-brand-300",
+                  },
+                  {
+                    label: "Agents Ready",
+                    value: "42",
+                    valueColor: "text-brand-300",
+                  },
                 ].map((stat, i) => (
                   <div
                     key={i}
-                    className="p-4 rounded-lg bg-dark-200/50 backdrop-blur-sm border border-dark-300 transform hover:scale-105 transition-transform"
+                    className="group relative p-6 rounded-xl bg-dark-200/30 border border-brand-400/10 hover:border-brand-400/30 transition-all duration-300"
                   >
-                    <div className="text-2xl font-bold bg-gradient-to-r from-brand-400 to-cyber-400 text-transparent bg-clip-text">
-                      {stat.value}
+                    {/* Clean, minimal stat display */}
+                    <div className="relative">
+                      {/* Value with clean styling */}
+                      <div
+                        className={`text-4xl font-bold ${stat.valueColor} font-mono tracking-wider`}
+                      >
+                        {stat.value}
+                      </div>
+
+                      {/* Label with subtle underline effect */}
+                      <div className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mt-2">
+                        <span className="relative">
+                          {stat.label}
+                          <div className="absolute bottom-0 left-0 w-0 group-hover:w-full h-[1px] bg-brand-400/30 transition-all duration-300" />
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-400">{stat.label}</div>
                   </div>
                 ))}
               </div>
 
-              {/* CTA Buttons */}
-              <div className="mt-8 max-w-md mx-auto sm:flex sm:justify-center gap-6">
-                <RouterLink to="/contests">
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-brand-500 to-cyber-500 hover:from-brand-600 hover:to-cyber-600 text-white font-bold rounded-lg transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-brand-500/25 group relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyber-400/0 via-cyber-400/30 to-cyber-400/0 group-hover:translate-x-full duration-500 ease-in-out transition-transform" />
-                    <span className="relative z-10">Enter the Arena</span>
-                  </Button>
+              {/* Interactive particle effect container */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_var(--mouse-x,50%)_var(--mouse-y,50%),rgba(127,0,255,0.1)_0%,transparent_50%)]" />
+              </div>
+
+              {/* CTA Buttons with dramatic effects */}
+              <div className="mt-12 max-w-lg mx-auto sm:flex sm:justify-center gap-8">
+                <RouterLink
+                  to="/contests"
+                  className="block w-full sm:w-auto mb-4 sm:mb-0"
+                >
+                  <button className="w-full group relative px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-600 rounded-lg overflow-hidden transform hover:scale-105 transition-all duration-300">
+                    {/* Animated background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_center,rgba(127,0,255,0.3)_0%,transparent_70%)]" />
+
+                    {/* Button content */}
+                    <div className="relative flex items-center justify-center space-x-2">
+                      <span className="text-xl font-bold text-white group-hover:text-brand-200 transition-colors">
+                        BATTLE NOW
+                      </span>
+                      <svg
+                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
+                      </svg>
+                    </div>
+
+                    {/* Glowing border */}
+                    <div className="absolute inset-0 border border-white/20 rounded-lg group-hover:border-brand-400/50 transition-colors duration-300" />
+                  </button>
                 </RouterLink>
 
-                <RouterLink to="/how-it-works">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full sm:w-auto px-8 py-4 text-cyber-400 border-cyber-400/20 hover:bg-cyber-400/10 hover:border-cyber-400/40 transition-all duration-300 backdrop-blur-sm"
-                  >
-                    Learn More
-                  </Button>
+                <RouterLink
+                  to="/how-it-works"
+                  className="block w-full sm:w-auto"
+                >
+                  <button className="w-full group relative px-8 py-4 bg-dark-200/50 backdrop-blur-sm rounded-lg overflow-hidden transform hover:scale-105 transition-all duration-300">
+                    {/* Hover effects */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    {/* Button content */}
+                    <span className="relative text-xl font-bold text-brand-300 group-hover:text-brand-200 transition-colors">
+                      LEARN MORE
+                    </span>
+
+                    {/* Border */}
+                    <div className="absolute inset-0 border border-brand-400/20 rounded-lg group-hover:border-brand-400/40 transition-colors duration-300" />
+                  </button>
                 </RouterLink>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Features section with enhanced styling */}
+        {/* Features section */}
         <div className="relative mt-20">
           <div className="absolute inset-0 bg-dark-200/50 backdrop-blur-sm" />
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -165,7 +265,7 @@ export const LandingPage: React.FC = () => {
         {error ? (
           <div className="text-center py-8 text-red-500">{error}</div>
         ) : (
-          <div className="relative">
+          <div className="relative bg-dark-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
               <ContestSection
                 title="Live Battles"
@@ -182,7 +282,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 };

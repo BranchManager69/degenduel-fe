@@ -18,7 +18,7 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
   if (loading) {
     return (
       <section className="py-12">
-        <div className="animate-pulse space-y-4">
+        <div className="space-y-4">
           <div className="h-8 bg-dark-300/50 w-64 rounded" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -33,7 +33,7 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
   if (contests.length === 0) {
     return (
       <section className="py-12">
-        <h2 className="text-2xl font-bold mb-8 bg-gradient-to-r from-brand-400 via-cyber-400 to-neon-400 text-transparent bg-clip-text">
+        <h2 className="text-2xl font-bold mb-8 bg-gradient-to-r from-brand-400 to-brand-500 text-transparent bg-clip-text">
           {title}
         </h2>
         <div className="text-center py-12 text-gray-400">
@@ -49,16 +49,16 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
       {/* Section Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-cyber-400 to-neon-400 text-transparent bg-clip-text">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 text-transparent bg-clip-text">
             {title}
           </h2>
           {type === "active" && contests.length > 0 && (
             <div className="flex items-center space-x-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyber-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500" />
               </span>
-              <span className="text-sm text-cyber-400">
+              <span className="text-sm text-brand-400 animate-pulse">
                 {contests.length} Live Match{contests.length !== 1 && "es"}
               </span>
             </div>

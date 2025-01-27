@@ -9,6 +9,7 @@ import { Header } from "./components/layout/Header";
 import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
+import { MovingBackground } from "./components/ui/MovingBackground";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { Contact } from "./pages/Contact";
 import { ContestBrowser } from "./pages/ContestBrowser";
@@ -38,9 +39,10 @@ console.log("Testing HMR again - " + new Date().toISOString());
 export const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-dark-100">
+      <div className="min-h-screen flex flex-col relative">
+        <MovingBackground />
         <Header />
-        <main className="flex-1">
+        <main className="flex-1 relative">
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />

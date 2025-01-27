@@ -2,27 +2,48 @@ import React from "react";
 
 export const MovingBackground: React.FC = () => {
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden">
-      {/* Animated gradient background */}
+    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+      {/* Dark base with subtle noise texture */}
       <div className="absolute inset-0 bg-dark-100">
-        <div className="absolute inset-0 opacity-50">
-          {/* Primary animated blobs */}
-          <div className="absolute top-0 -left-4 w-[600px] h-[600px] bg-gradient-radial from-brand-500/40 via-brand-500/20 to-transparent rounded-full mix-blend-soft-light animate-blob blur-3xl" />
-          <div className="absolute top-0 -right-4 w-[600px] h-[600px] bg-gradient-radial from-cyber-400/40 via-cyber-400/20 to-transparent rounded-full mix-blend-soft-light animate-blob [animation-delay:2000ms] blur-3xl" />
-          <div className="absolute -bottom-8 left-20 w-[600px] h-[600px] bg-gradient-radial from-neon-400/40 via-neon-400/20 to-transparent rounded-full mix-blend-soft-light animate-blob [animation-delay:4000ms] blur-3xl" />
-
-          {/* Secondary smaller blobs */}
-          <div className="absolute top-1/4 right-1/3 w-[300px] h-[300px] bg-gradient-radial from-brand-400/30 via-brand-400/10 to-transparent rounded-full mix-blend-soft-light animate-blob [animation-delay:1000ms] blur-2xl" />
-          <div className="absolute bottom-1/3 right-1/4 w-[300px] h-[300px] bg-gradient-radial from-cyber-500/30 via-cyber-500/10 to-transparent rounded-full mix-blend-soft-light animate-blob [animation-delay:3000ms] blur-2xl" />
-
-          {/* Floating elements with glow */}
-          <div className="absolute top-1/4 left-1/4 w-24 h-24 border border-brand-400/30 rounded-lg rotate-12 animate-float shadow-[0_0_15px_0_rgba(127,0,255,0.3)] backdrop-blur-sm" />
-          <div className="absolute top-3/4 right-1/4 w-32 h-32 border border-cyber-400/30 rounded-full animate-float [animation-delay:2000ms] shadow-[0_0_15px_0_rgba(0,225,255,0.3)] backdrop-blur-sm" />
-          <div className="absolute bottom-1/4 right-1/3 w-20 h-20 border border-neon-400/30 rounded-lg -rotate-12 animate-float [animation-delay:4000ms] shadow-[0_0_15px_0_rgba(0,175,255,0.3)] backdrop-blur-sm" />
+        {/* Circuit grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:24px_24px]">
+          {/* Diagonal circuit lines */}
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,#4f4f4f15_1px,transparent_1px),linear-gradient(-45deg,#4f4f4f15_1px,transparent_1px)] bg-[size:32px_32px]" />
         </div>
 
-        {/* Grid overlay with fade effect */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+        {/* Geometric shapes */}
+        <div className="absolute inset-0">
+          {/* Large hexagonal grid */}
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,#4f4f4f15_1px,transparent_1px)] bg-[size:48px_48px] animate-pulse" />
+
+          {/* Animated geometric elements */}
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 border border-cyber-400/20 rotate-45 animate-float">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyber-400/5 to-transparent" />
+          </div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 border border-brand-400/20 -rotate-45 animate-float [animation-delay:2000ms]">
+            <div className="absolute inset-0 bg-gradient-to-tl from-brand-400/5 to-transparent" />
+          </div>
+
+          {/* Tron-like light trails */}
+          <div className="absolute h-1 w-full top-1/3 bg-gradient-to-r from-transparent via-cyber-400/30 to-transparent animate-scan-line" />
+          <div className="absolute h-1 w-full bottom-1/3 bg-gradient-to-r from-transparent via-brand-400/30 to-transparent animate-scan-line [animation-delay:2000ms]" />
+
+          {/* Vertical light beams */}
+          <div className="absolute w-1 h-full left-1/3 bg-gradient-to-b from-transparent via-neon-400/20 to-transparent animate-scan-vertical" />
+          <div className="absolute w-1 h-full right-1/3 bg-gradient-to-b from-transparent via-cyber-400/20 to-transparent animate-scan-vertical [animation-delay:3000ms]" />
+
+          {/* Corner accents */}
+          <div className="absolute top-0 left-0 w-64 h-64 border-l-2 border-t-2 border-cyber-400/30 animate-pulse" />
+          <div className="absolute top-0 right-0 w-64 h-64 border-r-2 border-t-2 border-brand-400/30 animate-pulse [animation-delay:1000ms]" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 border-l-2 border-b-2 border-neon-400/30 animate-pulse [animation-delay:2000ms]" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 border-r-2 border-b-2 border-cyber-400/30 animate-pulse [animation-delay:3000ms]" />
+        </div>
+
+        {/* Scanline effect */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.1)_50%)] bg-[size:4px_4px] animate-scanlines opacity-50" />
+
+        {/* Glowing edges */}
+        <div className="absolute inset-0 border border-cyber-400/10 shadow-[inset_0_0_100px_rgba(0,200,255,0.1)]" />
       </div>
     </div>
   );

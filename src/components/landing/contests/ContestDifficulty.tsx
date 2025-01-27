@@ -94,10 +94,13 @@ export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
           border ${config.colors.border}
           transition-all duration-300
           hover:scale-105
+          overflow-hidden
         `}
       >
-        {/* Shine effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+        {/* Shine effect - contained within parent */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shine" />
+        </div>
 
         {/* Label */}
         <span className="relative">{config.label}</span>
