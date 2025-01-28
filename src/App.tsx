@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -30,6 +30,7 @@ import { TokensPage } from "./pages/TokensPage";
 // API Playground
 import ApiPlayground from "./pages/ApiPlayground";
 // AMM Simulation
+import { useAuth } from "./hooks/useAuth";
 import AmmSim from "./pages/AmmSim";
 import "./styles/color-schemes.css";
 
@@ -37,6 +38,27 @@ import "./styles/color-schemes.css";
 console.log("Testing HMR again - " + new Date().toISOString());
 
 export const App: React.FC = () => {
+  const { checkAuth } = useAuth();
+
+  useEffect(() => {
+    // Check auth every 5 minutes
+    const authCheckInterval = setInterval(checkAuth, 5 * 60 * 1000);
+
+    // Also check when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkAuth();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      clearInterval(authCheckInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [checkAuth]);
+
   return (
     <Router>
       <div className="min-h-screen flex flex-col relative">

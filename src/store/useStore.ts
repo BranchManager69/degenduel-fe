@@ -119,6 +119,27 @@ const retryFetch = async (
   throw new Error(`Failed after ${retries} attempts`);
 };
 
+// Add utility function to detect mobile
+const isMobileDevice = () => {
+  return (
+    typeof window !== "undefined" &&
+    (navigator.userAgent.match(/Android/i) ||
+      navigator.userAgent.match(/webOS/i) ||
+      navigator.userAgent.match(/iPhone/i) ||
+      navigator.userAgent.match(/iPad/i) ||
+      navigator.userAgent.match(/iPod/i) ||
+      navigator.userAgent.match(/BlackBerry/i) ||
+      navigator.userAgent.match(/Windows Phone/i))
+  );
+};
+
+// Add utility function for Phantom deep linking
+const getPhantomDeepLink = () => {
+  const url = window.location.href;
+  // You can customize this URL structure based on your needs
+  return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
+};
+
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
@@ -163,9 +184,27 @@ export const useStore = create<StoreState>()(
           // 1) Connect to Phantom
           console.log("Checking for Phantom wallet");
           const { solana } = window as any;
+
+          // Check if on mobile and Phantom not injected
+          if (isMobileDevice() && !solana?.isPhantom) {
+            console.log("Mobile device detected, redirecting to Phantom app");
+            window.location.href = getPhantomDeepLink();
+            return;
+          }
+
           if (!solana?.isPhantom) {
             console.error("Phantom wallet not found");
-            throw { code: "WALLET_NOT_FOUND", message: "No Phantom wallet" };
+            if (isMobileDevice()) {
+              // If we get here, we're on mobile but something else went wrong
+              window.location.href = "https://phantom.app/download";
+            } else {
+              throw {
+                code: "WALLET_NOT_FOUND",
+                message:
+                  "No Phantom wallet found. Please install Phantom to continue.",
+              };
+            }
+            return;
           }
 
           console.log("Requesting wallet connection from Phantom");
@@ -270,12 +309,80 @@ export const useStore = create<StoreState>()(
         }
       },
 
-      disconnectWallet: () => {
-        const { solana } = window as any;
-        if (solana?.isPhantom) {
-          solana.disconnect();
+      disconnectWallet: async () => {
+        try {
+          const { user } = get();
+          console.log("[Wallet Debug] Starting disconnect", {
+            user,
+            currentCookies: document.cookie,
+            origin: window.location.origin,
+          });
+
+          if (!user?.wallet_address) {
+            console.warn(
+              "[Wallet Debug] No wallet address found for disconnect"
+            );
+            // Still proceed with local cleanup
+          } else {
+            // 1. Call disconnect endpoint
+            console.log("[Wallet Debug] Calling disconnect endpoint");
+            await retryFetch(`${API_URL}/auth/disconnect`, {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                wallet: user.wallet_address,
+              }),
+            });
+          }
+
+          // 2. Disconnect Phantom wallet
+          console.log("[Wallet Debug] Disconnecting Phantom wallet");
+          const { solana } = window as any;
+          if (solana?.isPhantom) {
+            await solana.disconnect();
+          }
+
+          // 3. Clear local storage and cookies
+          console.log("[Wallet Debug] Clearing storage and cookies");
+          localStorage.removeItem("degen-duel-storage");
+          document.cookie.split(";").forEach((c) => {
+            document.cookie = c
+              .replace(/^ +/, "")
+              .replace(
+                /=.*/,
+                "=;expires=" +
+                  new Date().toUTCString() +
+                  ";path=/;domain=.degenduel.me"
+              );
+          });
+
+          // 4. Reset store state
+          console.log("[Wallet Debug] Resetting store state");
+          set({ user: null, isConnecting: false });
+
+          console.log("[Wallet Debug] Disconnect complete", {
+            remainingCookies: document.cookie,
+          });
+        } catch (error) {
+          console.error("[Wallet Debug] Disconnect failed:", error);
+          // Still clear local state even if API call fails
+          localStorage.removeItem("degen-duel-storage");
+          document.cookie.split(";").forEach((c) => {
+            document.cookie = c
+              .replace(/^ +/, "")
+              .replace(
+                /=.*/,
+                "=;expires=" +
+                  new Date().toUTCString() +
+                  ";path=/;domain=.degenduel.me"
+              );
+          });
+          set({ user: null, isConnecting: false });
         }
-        set({ user: null, isConnecting: false });
       },
     }),
     persistConfig

@@ -30,29 +30,33 @@ export const Header: React.FC = () => {
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <header className="bg-dark-200 border-b border-dark-300 sticky top-0 z-50">
+      <header className="bg-dark-200/95 backdrop-blur-lg border-b border-dark-300/50 sticky top-0 z-50 shadow-lg shadow-black/20">
         {user?.is_banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <p className="text-red-400 text-sm text-center">
-                Your account has been banned
+                Uh-oh! You're been banned from DegenDuel. GG.
                 {user.ban_reason ? `: ${user.ban_reason}` : ""}
               </p>
             </div>
           </div>
         )}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Subtle gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-transparent to-brand-600/5" />
+
           {/* Main header row */}
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-16 relative">
             {/* Logo */}
             <Link
               to="/"
-              className="flex-shrink-0"
+              className="flex-shrink-0 relative group"
               onClick={(e) => e.stopPropagation()}
             >
-              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-600">
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-600 group-hover:animate-pulse-fast">
                 DegenDuel
               </span>
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-400/20 to-brand-600/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
 
             {/* Desktop Navigation */}
@@ -62,33 +66,39 @@ export const Header: React.FC = () => {
             >
               <Link
                 to="/contests"
-                className="text-lg font-medium text-gray-100 hover:text-brand-400 transition-colors"
+                className="text-lg font-medium text-gray-100 hover:text-brand-400 transition-colors relative group"
                 onClick={(e) => e.stopPropagation()}
               >
-                Contests
+                <span className="relative z-10 group-hover:animate-glitch">
+                  Contests
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
               <Link
                 to="/tokens"
-                className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors"
+                className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors relative group"
                 onClick={(e) => e.stopPropagation()}
               >
-                Tokens
+                <span className="relative z-10 group-hover:animate-glitch">
+                  Tokens
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
               <div className="relative group">
                 <span className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors cursor-pointer">
                   Rankings
                 </span>
-                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                   <div className="py-1">
                     <Link
                       to="/rankings/global"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400/50 hover:text-brand-400 transition-colors"
                     >
                       Global Rankings
                     </Link>
                     <Link
                       to="/rankings/performance"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400/50 hover:text-brand-400 transition-colors"
                     >
                       Contest Performance
                     </Link>
@@ -233,7 +243,7 @@ export const Header: React.FC = () => {
             } md:hidden`}
           >
             <div
-              className="bg-dark-200/95 backdrop-blur-sm border-t border-dark-300 shadow-lg"
+              className="bg-dark-200/95 backdrop-blur-lg border-t border-dark-300/50 shadow-lg shadow-black/20"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="max-h-[calc(100vh-64px)] overflow-y-auto">
