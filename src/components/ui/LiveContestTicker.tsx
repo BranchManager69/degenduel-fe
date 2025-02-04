@@ -45,7 +45,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
 
   return (
     <div
-      className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap"
+      className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap relative z-20"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

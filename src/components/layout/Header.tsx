@@ -130,7 +130,7 @@ export const Header: React.FC = () => {
                 <span className="text-lg font-medium text-gray-400 hover:text-brand-400 transition-colors cursor-pointer">
                   Rankings
                 </span>
-                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30">
                   <div className="py-1">
                     <Link
                       to="/rankings/global"
@@ -152,7 +152,7 @@ export const Header: React.FC = () => {
                   <span className="text-lg font-medium text-brand-400 hover:text-brand-300 transition-colors cursor-pointer">
                     Admin
                   </span>
-                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30">
                     <div className="py-1">
                       {isAdmin() && (
                         <Link
