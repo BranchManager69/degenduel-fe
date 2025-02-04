@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import type { Contest } from "../../types/index";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || !contentRef.current) return;
@@ -42,10 +44,15 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   }
 
   return (
-    <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap">
+    <div
+      className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       <div
         ref={containerRef}
-        className="inline-flex items-center animate-ticker"
+        className={`inline-flex items-center animate-ticker`}
+        style={{ animationPlayState: isPaused ? "paused" : "running" }}
       >
         <div
           ref={contentRef}
@@ -55,9 +62,10 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
             // Check if the contest is live
             const isLive = contest.status === "active";
             return (
-              <div
+              <Link
                 key={contest.id}
-                className="inline-flex items-center space-x-2 text-sm"
+                to={`/contests/${contest.id}`}
+                className="inline-flex items-center space-x-2 text-sm hover:bg-dark-300/50 px-2 py-1 rounded transition-colors"
               >
                 {/* Check if the contest is live */}
                 {isLive ? (
@@ -74,7 +82,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 )}
 
                 {/* Contest Name */}
-                <span className="font-medium text-gray-200">
+                <span className="font-medium text-gray-200 hover:text-brand-400 transition-colors">
                   {contest.name}
                 </span>
 
@@ -87,7 +95,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 <span className="bg-gradient-to-r from-cyber-400 to-neon-400 text-transparent bg-clip-text">
                   {contest.prize_pool}◎
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>
