@@ -370,31 +370,53 @@ export const TokenSelection: React.FC = () => {
         "confirmed"
       );
 
+      // Get minimum rent exemption
+      const minRentExemption =
+        await connection.getMinimumBalanceForRentExemption(0);
       const lamports = Math.floor(parseFloat(contest.entry_fee) * 1e9);
+
       console.log("Transaction details:", {
         from: user.wallet_address,
         to: contestDetails.wallet_address,
         amount: contest.entry_fee,
         lamports,
+        minRentExemption,
+        estimatedFee: "~0.00016 SOL",
+        totalRequired: Number(contest.entry_fee) + 0.00016,
+        userBalance: "~3.03526 SOL",
         timestamp: new Date().toISOString(),
       });
 
-      const transaction = new Transaction().add(
+      // Get latest blockhash first to ensure fresh state
+      console.log("Getting recent blockhash...");
+      const { blockhash } = await connection.getLatestBlockhash("finalized");
+
+      // Create transaction
+      const transaction = new Transaction();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = new PublicKey(user.wallet_address);
+
+      // Check if destination account exists
+      const destAccount = await connection.getAccountInfo(
+        new PublicKey(contestDetails.wallet_address)
+      );
+      const finalLamports =
+        destAccount === null ? lamports + minRentExemption : lamports;
+
+      transaction.add(
         SystemProgram.transfer({
           fromPubkey: new PublicKey(user.wallet_address),
           toPubkey: new PublicKey(contestDetails.wallet_address),
-          lamports,
+          lamports: finalLamports,
         })
       );
-
-      console.log("Getting recent blockhash...");
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = new PublicKey(user.wallet_address);
 
       console.log("Transaction created:", {
         blockhash,
         feePayer: user.wallet_address,
+        instructions: transaction.instructions.length,
+        finalLamports,
+        includesRentExemption: destAccount === null,
       });
 
       // Sign and send transaction
@@ -415,14 +437,14 @@ export const TokenSelection: React.FC = () => {
           status: "confirmed",
         });
 
-        // 4. Submit portfolio to API with transaction signature
-        console.log(
-          "Submitting portfolio to API with transaction signature..."
-        );
-        await ddApi.contests.enterContest(contestId, {
-          ...portfolioData,
-          transaction_signature: signature,
-        });
+        // First join the contest with the transaction signature
+        console.log("Joining contest with transaction signature...");
+        await ddApi.contests.enterContest(contestId, signature);
+        console.log("Successfully joined contest!");
+
+        // Then submit the portfolio
+        console.log("Submitting portfolio...");
+        await ddApi.contests.submitPortfolio(contestId, portfolioData);
         console.log("Portfolio submission successful!");
 
         toast.success("Successfully entered contest!", {

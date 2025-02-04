@@ -614,7 +614,7 @@ export const ddApi = {
 
     enterContest: async (
       contestId: string,
-      portfolio: PortfolioResponse
+      transaction_signature: string
     ): Promise<void> => {
       const user = useStore.getState().user;
 
@@ -623,35 +623,9 @@ export const ddApi = {
       }
 
       try {
-        // Keep the original portfolio structure
-        const portfolioData: PortfolioResponse = {
-          tokens: portfolio.tokens.map(
-            (token: {
-              contractAddress: string;
-              symbol: string;
-              weight: number;
-            }) => ({
-              contractAddress: token.contractAddress,
-              symbol: token.symbol,
-              weight: Number(token.weight),
-            })
-          ),
-        };
-
-        // Send exactly what the server expects
         const payload = {
           wallet_address: user.wallet_address,
-          tokens: portfolioData.tokens.map(
-            (token: {
-              contractAddress: string;
-              symbol: string;
-              weight: number;
-            }) => ({
-              contractAddress: token.contractAddress,
-              symbol: token.symbol,
-              weight: Number(token.weight),
-            })
-          ),
+          transaction_signature,
         };
 
         const response = await fetch(`${API_URL}/contests/${contestId}/join`, {
@@ -695,6 +669,73 @@ export const ddApi = {
       }
     },
 
+    submitPortfolio: async (
+      contestId: string,
+      portfolio: PortfolioResponse
+    ): Promise<void> => {
+      const user = useStore.getState().user;
+
+      if (!user?.wallet_address) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      try {
+        const payload = {
+          wallet_address: user.wallet_address,
+          tokens: portfolio.tokens.map((token) => ({
+            contractAddress: token.contractAddress,
+            weight: Number(token.weight),
+          })),
+        };
+
+        console.log("[submitPortfolio] Initiating request:", {
+          contestId,
+          portfolio,
+          userWallet: user.wallet_address,
+          timestamp: new Date().toISOString(),
+        });
+
+        const response = await fetch(
+          `${API_URL}/contests/${contestId}/portfolio`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+            credentials: "include",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const error = new Error(data.message || "Failed to submit portfolio");
+          Object.assign(error, {
+            status: response.status,
+            responseData: data,
+          });
+          throw error;
+        }
+
+        console.log("[submitPortfolio] Success:", {
+          contestId,
+          response: data,
+          timestamp: new Date().toISOString(),
+        });
+
+        return data;
+      } catch (error: any) {
+        logError("contests.submitPortfolio", error, {
+          contestId,
+          portfolio,
+          userWallet: user?.wallet_address,
+          timestamp: new Date().toISOString(),
+        });
+        throw error;
+      }
+    },
+
     updatePortfolio: async (
       contestId: string | number,
       portfolio: PortfolioResponse
@@ -708,17 +749,10 @@ export const ddApi = {
 
         const payload = {
           wallet_address: user.wallet_address,
-          tokens: portfolio.tokens.map(
-            (token: {
-              contractAddress: string;
-              symbol: string;
-              weight: number;
-            }) => ({
-              contractAddress: token.contractAddress,
-              symbol: token.symbol,
-              weight: Number(token.weight),
-            })
-          ),
+          tokens: portfolio.tokens.map((token) => ({
+            contractAddress: token.contractAddress,
+            weight: Number(token.weight),
+          })),
         };
 
         console.log("[updatePortfolio] Initiating request:", {

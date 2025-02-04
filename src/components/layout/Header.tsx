@@ -1,8 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { isContestLive } from "../../lib/utils";
+import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
+import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
+import { LiveContestTicker } from "../ui/LiveContestTicker";
+
+interface ContestResponse {
+  contests: Contest[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+}
 
 export const Header: React.FC = () => {
   const {
@@ -15,6 +28,35 @@ export const Header: React.FC = () => {
   } = useStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isSuperAdmin, isAdmin } = useAuth();
+  const [activeContests, setActiveContests] = useState<Contest[]>([]);
+  const [openContests, setOpenContests] = useState<Contest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContests = async () => {
+      try {
+        const response = await ddApi.contests.getAll();
+        const contestsArray: Contest[] = Array.isArray(response)
+          ? response
+          : (response as ContestResponse).contests;
+        setActiveContests(contestsArray.filter(isContestLive));
+        setOpenContests(
+          contestsArray.filter(
+            (contest: Contest) => contest.status === "pending"
+          )
+        );
+      } catch (err) {
+        console.error("Failed to load contests:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContests();
+
+    // Refresh contests every minute
+    const interval = setInterval(fetchContests, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-clear errors after 5 seconds
   React.useEffect(() => {
@@ -235,6 +277,12 @@ export const Header: React.FC = () => {
               )}
             </button>
           </div>
+
+          {/* Add LiveContestTicker below the main header content */}
+          <LiveContestTicker
+            contests={[...activeContests, ...openContests]}
+            loading={loading}
+          />
 
           {/* Mobile Menu */}
           <div

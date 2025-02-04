@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { ContestSection } from "../components/landing/ContestSection";
 import { Features } from "../components/landing/Features";
-import { LiveContestTicker } from "../components/ui/LiveContestTicker";
 import { isContestLive } from "../lib/utils";
 import { ddApi } from "../services/dd-api";
 import { Contest } from "../types/index";
@@ -51,14 +50,6 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Animated ticker - fixed at top */}
-      <div className="sticky top-16 z-10 bg-dark-100">
-        <LiveContestTicker
-          contests={[...activeContests, ...openContests]}
-          loading={loading}
-        />
-      </div>
-
       {/* Hero Section */}
       <section className="relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
