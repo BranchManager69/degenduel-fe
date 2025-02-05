@@ -4,21 +4,21 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import React, { useEffect, useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
-import { ContestRules } from "../../components/contests/ContestRules";
-import { ParticipantsList } from "../../components/contests/ParticipantsList";
-import { PrizeStructure } from "../../components/contests/PrizeStructure";
-import { ContestDifficulty } from "../../components/landing/contests/ContestDifficulty";
-import { Button } from "../../components/ui/Button";
-import { Card, CardContent } from "../../components/ui/Card";
-import { CountdownTimer } from "../../components/ui/CountdownTimer";
-import { useAuth } from "../../hooks/useAuth";
+import { ContestRules } from "../../../components/contests/ContestRules";
+import { ParticipantsList } from "../../../components/contests/ParticipantsList";
+import { PrizeStructure } from "../../../components/contests/PrizeStructure";
+import { ContestDifficulty } from "../../../components/landing/contests/ContestDifficulty";
+import { Button } from "../../../components/ui/Button";
+import { Card, CardContent } from "../../../components/ui/Card";
+import { CountdownTimer } from "../../../components/ui/CountdownTimer";
+import { useAuth } from "../../../hooks/useAuth";
 import {
   formatCurrency,
   isContestLive,
   mapContestStatus,
-} from "../../lib/utils";
-import { ddApi } from "../../services/dd-api";
-import type { Contest } from "../../types/index";
+} from "../../../lib/utils";
+import { ddApi } from "../../../services/dd-api";
+import type { Contest } from "../../../types/index";
 
 interface ContestParticipant {
   wallet_address?: string;

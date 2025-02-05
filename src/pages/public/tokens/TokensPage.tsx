@@ -1,10 +1,11 @@
 // src/pages/public/TokensPage.tsx
 
 import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "../../components/ui/Card";
-import { ddApi } from "../../services/dd-api";
+import { Card, CardContent } from "../../../components/ui/Card";
+import { ddApi } from "../../../services/dd-api";
 
 // Token interface (matches DegenDuel market data API)
+// TODO: Move this to another file
 interface Token {
   contractAddress: string;
   name: string;
@@ -42,11 +43,24 @@ export const TokensPage: React.FC = () => {
   const [sortField, setSortField] = useState<keyof Token>("marketCap");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
   useEffect(() => {
-    const fetchTokens = async () => {
+    const checkMaintenanceAndFetchTokens = async () => {
       try {
-        setLoading(true);
+        // First check maintenance mode
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+
+        // If in maintenance mode, don't fetch tokens
+        if (isInMaintenance) {
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+          setLoading(false);
+          return;
+        }
+
         // Get all tokens in one request
         const response = await ddApi.fetch("/dd-serv/tokens");
         const responseData = await response.json();
@@ -92,13 +106,34 @@ export const TokensPage: React.FC = () => {
         setTokens(transformedTokens);
       } catch (err) {
         console.error("Failed to fetch tokens:", err);
-        setError("Failed to load tokens");
+
+        // Check if the error is a 503 (maintenance mode)
+        if (err instanceof Error && err.message.includes("503")) {
+          setIsMaintenanceMode(true);
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later. ⚙️"
+          );
+        } else {
+          setError("Failed to load tokens");
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTokens();
+    checkMaintenanceAndFetchTokens();
+
+    // Set up periodic maintenance check
+    const maintenanceCheckInterval = setInterval(async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+      } catch (err) {
+        console.error("Failed to check maintenance status:", err);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(maintenanceCheckInterval);
   }, []);
 
   const formatNumber = (value: string | number, decimals = 2) => {
@@ -136,6 +171,23 @@ export const TokensPage: React.FC = () => {
               <CardContent className="p-6 h-24 animate-pulse" />
             </Card>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isMaintenanceMode) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+          <div className="flex items-center justify-center gap-2 text-yellow-400">
+            <span className="animate-pulse">⚠</span>
+            <span>
+              ⚙️ DegenDuel is currently undergoing scheduled maintenance. Please
+              try again later.
+            </span>
+            <span className="animate-pulse">⚠</span>
+          </div>
         </div>
       </div>
     );

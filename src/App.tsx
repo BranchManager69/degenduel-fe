@@ -24,26 +24,26 @@ import { LiveContest } from "./pages/authenticated/LiveContest"; // shouldn't th
 import { Profile } from "./pages/authenticated/Profile";
 import { Results } from "./pages/authenticated/Results";
 import { TokenSelection } from "./pages/authenticated/TokenSelection";
-import { ContestBrowser } from "./pages/public/ContestBrowserPage";
-import { ContestDetails } from "./pages/public/ContestDetailPage";
+import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
+import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { Contact } from "./pages/public/general/Contact";
 import { FAQ } from "./pages/public/general/FAQ";
 import { HowItWorks } from "./pages/public/general/HowItWorks";
-import { LandingPage } from "./pages/public/LandingPage";
+import { LandingPage } from "./pages/public/general/LandingPage";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
-import { TokensPage } from "./pages/public/TokensPage";
+import { TokensPage } from "./pages/public/tokens/TokensPage";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { TestPage } from "./pages/superadmin/TestPage";
-/* some superadmin pages */
+/* some extra pages */
+import { BannedIP } from "./pages/public/general/BannedIP";
+import { BannedUser } from "./pages/public/general/BannedUser";
+import { Maintenance } from "./pages/public/general/Maintenance";
+import { NotFound } from "./pages/public/general/NotFound";
+/* some extra superadmin pages */
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
-/* some extra pages */
-import { BannedIP } from "./pages/other/BannedIP";
-import { BannedUser } from "./pages/other/BannedUser";
-import { Maintenance } from "./pages/other/Maintenance";
-import { NotFound } from "./pages/other/NotFound";
-/* styles */
+/* themes */
 import "./styles/color-schemes.css";
 
 // Test HMR
