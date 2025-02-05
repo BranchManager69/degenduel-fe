@@ -5,6 +5,7 @@ import { FONT_PRESETS, FontPreset } from "../../constants/fonts";
 import type { ColorScheme } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 
+// TODO: Move this to another file
 interface SystemStats {
   fps: number;
   memory: {
@@ -16,6 +17,7 @@ interface SystemStats {
   activeRequests: number;
 }
 
+// TODO: Move this to another file
 interface SessionInfo {
   duration: number;
   tokenExpiry: number | null;
@@ -53,106 +55,6 @@ const THEMES = {
     font: "cyberTech",
     scheme: "plasma",
     description: "Demonic AI with chrome and blood aesthetic",
-  },
-  "Synthwave Dreams": {
-    font: "neonLights",
-    scheme: "synthwave",
-    description: "Retro-future sunset with grid horizons",
-  },
-  "Neon Yakuza": {
-    font: "cyberTech",
-    scheme: "cyberpunk",
-    description: "Underground tech noir with neon tattoo patterns",
-  },
-  "Data Wraith": {
-    font: "neonLights",
-    scheme: "plasma",
-    description: "Ghost in the machine with ethereal data streams",
-  },
-  "Cyber Plague": {
-    font: "cyberTech",
-    scheme: "matrix",
-    description: "Digital virus aesthetic with corrupted code",
-  },
-  "Hologram Punk": {
-    font: "neonLights",
-    scheme: "teal",
-    description: "Glitchy holographic punk with rebellion vibes",
-  },
-  "Tech Necro": {
-    font: "cyberTech",
-    scheme: "plasma",
-    description: "Necromantic technology with ancient circuit patterns",
-  },
-  "Neon Ronin": {
-    font: "neonLights",
-    scheme: "cyberpunk",
-    description: "Masterless cyber samurai with electric blade trails",
-  },
-  "Virtual Voodoo": {
-    font: "cyberTech",
-    scheme: "synthwave",
-    description: "Digital shamanism with mystical circuitry",
-  },
-  "Plasma Prophet": {
-    font: "neonLights",
-    scheme: "plasma",
-    description: "Prophetic AI with plasma-based divination patterns",
-  },
-  "Pixel Perfect": {
-    font: "pixelPerfect",
-    scheme: "default",
-    description: "Classic gaming style with pixel fonts",
-  },
-  "Cyber Tech": {
-    font: "cyberTech",
-    scheme: "cyberpunk",
-    description: "High-tech cyberpunk with modern fonts",
-  },
-  "Matrix Rain": {
-    font: "cyberTech",
-    scheme: "matrix",
-    description: "Digital rain aesthetic with cascading code",
-  },
-  Vaporwave: {
-    font: "neonLights",
-    scheme: "synthwave",
-    description: "Retro aesthetic with pastel neons and glitch effects",
-  },
-  "Laser Punk": {
-    font: "cyberTech",
-    scheme: "plasma",
-    description: "Intense neon red with laser-sharp tech fonts",
-  },
-  "Digital Gold": {
-    font: "neonLights",
-    scheme: "gold",
-    description: "Luxurious cyber-gold with holographic effects",
-  },
-  "Quantum Teal": {
-    font: "cyberTech",
-    scheme: "teal",
-    description: "Quantum computing inspired electric teal interface",
-  },
-  "Plasma Storm": {
-    font: "neonLights",
-    scheme: "plasma",
-    description: "Electric purple storm with lightning effects",
-  },
-  "Cyber Chrome": {
-    font: "cyberTech",
-    scheme: "default",
-    description: "Sleek chrome aesthetic with high-tech accents",
-  },
-  Hologram: {
-    font: "neonLights",
-    scheme: "teal",
-    description: "Transparent holographic display with floating elements",
-  },
-  "Binary Sunset": {
-    font: "cyberTech",
-    scheme: "cyberpunk",
-    description: "Dystopian red-orange glow with digital artifacts",
   },
 } as const;
 
@@ -441,8 +343,8 @@ export const DebugPanel: React.FC = () => {
       className="fixed bg-dark-200/95 backdrop-blur-lg border border-dark-300/50 rounded-lg shadow-lg text-gray-300 select-none"
       style={{
         left: position.x,
-        top: position.y,
-        width: isMinimized ? "auto" : 320,
+        top: position.y + 10,
+        width: isMinimized ? "auto" : 370,
         zIndex: 9999,
       }}
       onMouseDown={handleMouseDown}
@@ -451,7 +353,7 @@ export const DebugPanel: React.FC = () => {
       <div className="flex items-center justify-between p-2 border-b border-dark-300 bg-gradient-to-r from-dark-300 to-dark-200">
         <h3 className="text-sm font-mono font-semibold text-brand-400 flex items-center">
           <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-          Debug
+          Debug{" "}
         </h3>
         <button
           className="text-brand-400 hover:text-brand-300 transition-colors"
