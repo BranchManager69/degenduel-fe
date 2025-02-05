@@ -3,6 +3,13 @@ import { formatDistanceToNow } from "date-fns";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as config from "../../config/config";
 
+/*
+
+THIS IS AN OLD LOGVIEWER
+EVENTUALLY DELETE THIS!
+
+*/
+
 declare global {
   interface Window {
     electron: {
