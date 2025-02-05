@@ -955,6 +955,49 @@ export const ddApi = {
         throw error;
       }
     },
+
+    enterContestWithPortfolio: async (
+      contestId: string,
+      transaction_signature: string,
+      portfolio: {
+        tokens: Array<{
+          contractAddress: string;
+          weight: number;
+        }>;
+      }
+    ) => {
+      const user = useStore.getState().user;
+      if (!user?.wallet_address) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      try {
+        const payload = {
+          wallet_address: user.wallet_address,
+          transaction_signature,
+          portfolio,
+        };
+
+        const response = await fetch(`${API_URL}/contests/${contestId}/enter`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || "Failed to enter contest");
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("[enterContestWithPortfolio] Error:", error);
+        throw error;
+      }
+    },
   },
 
   // Portfolio endpoints

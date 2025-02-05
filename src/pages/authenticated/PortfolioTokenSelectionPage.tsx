@@ -18,12 +18,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
-import {
-  Contest,
-  PortfolioResponse,
-  Token,
-  TokensResponse,
-} from "../../types/index";
+import { Contest, Token, TokensResponse } from "../../types/index";
 
 // Declare Buffer on window type
 declare global {
@@ -71,6 +66,7 @@ export const TokenSelection: React.FC = () => {
   const user = useStore((state) => state.user);
   const [tokenListLoading, setTokenListLoading] = useState(true);
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -293,72 +289,15 @@ export const TokenSelection: React.FC = () => {
     }
 
     try {
-      // 1. Prepare portfolio data
-      console.log("Preparing contest entry and portfolio submission:", {
-        selectedTokensCount: selectedTokens.size,
-        totalWeight,
-        userWallet: user.wallet_address,
-        contestId,
-      });
+      setIsLoading(true);
 
-      const portfolioData: PortfolioResponse = {
-        tokens: Array.from(selectedTokens.entries()).map(
-          ([contractAddress, weight]) => {
-            const token = memoizedTokens.find(
-              (t) => t.contractAddress === contractAddress
-            );
-            return {
-              contractAddress,
-              symbol: token?.symbol || "",
-              weight,
-            };
-          }
-        ),
-      };
-
-      // 2. Get contest wallet address from API
-      console.log("Fetching contest details for wallet address...");
+      // Get contest details to ensure we have the wallet address
       const contestDetails = await ddApi.contests.getById(contestId);
-      console.log("Contest details received:", {
-        id: contestDetails.id,
-        entryFee: contestDetails.entry_fee,
-        wallet_address: contestDetails.wallet_address,
-      });
-
       if (!contestDetails.wallet_address) {
-        console.error(
-          "Contest wallet address missing from API response:",
-          contestDetails
-        );
         throw new Error("Contest wallet address not found");
       }
 
-      // Block entries if contest is active, completed, or cancelled
-      if (
-        contestDetails.status === "active" ||
-        contestDetails.status === "completed" ||
-        contestDetails.status === "cancelled"
-      ) {
-        console.error("Submit failed: Contest is not accepting entries", {
-          status: contestDetails.status,
-          contestId,
-        });
-
-        // handle all 3 cases uniquely
-        let errorMessage = "";
-        if (contestDetails.status === "active") {
-          errorMessage =
-            "This contest is already in progress and not accepting new entries";
-        } else if (contestDetails.status === "completed") {
-          errorMessage = "This contest has already ended.";
-        } else if (contestDetails.status === "cancelled") {
-          errorMessage = "This contest has been cancelled.";
-        }
-        toast.error(errorMessage);
-        return;
-      }
-
-      // 3. Create and send Solana transaction
+      // 1. Create and send Solana transaction
       console.log("Initializing Solana transaction...");
       const { solana } = window as any;
       if (!solana?.isPhantom) {
@@ -385,11 +324,10 @@ export const TokenSelection: React.FC = () => {
         minRentExemption,
         estimatedFee: "~0.00016 SOL",
         totalRequired: Number(contest.entry_fee) + 0.00016,
-        userBalance: "~3.03526 SOL",
         timestamp: new Date().toISOString(),
       });
 
-      // Get latest blockhash first to ensure fresh state
+      // Get latest blockhash
       console.log("Getting recent blockhash...");
       const { blockhash } = await connection.getLatestBlockhash("finalized");
 
@@ -413,84 +351,45 @@ export const TokenSelection: React.FC = () => {
         })
       );
 
-      console.log("Transaction created:", {
-        blockhash,
-        feePayer: user.wallet_address,
-        instructions: transaction.instructions.length,
-        finalLamports,
-        includesRentExemption: destAccount === null,
+      // Sign and send transaction
+      console.log("Requesting transaction signature from Phantom...");
+      const signed = await solana.signTransaction(transaction);
+      console.log("Transaction signed, sending to network...");
+
+      const signature = await connection.sendRawTransaction(signed.serialize());
+      console.log("Transaction sent, signature:", signature);
+
+      console.log("Waiting for transaction confirmation...");
+      await connection.confirmTransaction(signature);
+      console.log("Transaction confirmed!");
+
+      // 2. Submit contest entry and portfolio in one atomic operation
+      console.log("Submitting contest entry and portfolio...");
+      const portfolioData = {
+        tokens: Array.from(selectedTokens.entries()).map(
+          ([contractAddress, weight]) => ({
+            contractAddress,
+            weight,
+          })
+        ),
+      };
+
+      await ddApi.contests.enterContestWithPortfolio(
+        contestId,
+        signature,
+        portfolioData
+      );
+
+      toast.success("Successfully entered contest!", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
 
-      // Sign and send transaction
-      let signature: string;
-      try {
-        console.log("Requesting transaction signature from Phantom...");
-        const signed = await solana.signTransaction(transaction);
-        console.log("Transaction signed, sending to network...");
-
-        signature = await connection.sendRawTransaction(signed.serialize());
-        console.log("Transaction sent, signature:", signature);
-
-        console.log("Waiting for transaction confirmation...");
-        await connection.confirmTransaction(signature);
-        console.log("Transaction confirmed! Details:", {
-          signature,
-          blockTime: new Date().toISOString(),
-          status: "confirmed",
-        });
-
-        // First join the contest with the transaction signature
-        console.log("Joining contest with transaction signature...");
-        await ddApi.contests.enterContest(contestId, signature);
-        console.log("Successfully joined contest!");
-
-        // Then submit the portfolio
-        console.log("Submitting portfolio...");
-        await ddApi.contests.submitPortfolio(contestId, portfolioData);
-        console.log("Portfolio submission successful!");
-
-        toast.success("Successfully entered contest!", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-
-        navigate(`/contests/${contestId}`);
-      } catch (txError: any) {
-        console.error("Transaction failed:", {
-          error: txError,
-          errorMessage:
-            txError instanceof Error ? txError.message : "Unknown error",
-          errorStack: txError instanceof Error ? txError.stack : undefined,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Check for specific errors
-        if (txError.message?.includes("Non-base58")) {
-          // This is a very specific error that occurs when a contest doesn't have a valid treasury wallet address
-          throw new Error(
-            "This contest was not created properly. Entries are not being accepted."
-          );
-        } else if (txError.message?.includes("Buffer is not defined")) {
-          throw new Error(
-            "Browser compatibility issue detected. Please try using a different browser or updating your current one."
-          );
-        }
-
-        console.error("⚠️ Failed to process entry fee payment:", {
-          error: txError,
-          errorMessage:
-            txError instanceof Error ? txError.message : "Unknown error",
-          errorStack: txError instanceof Error ? txError.stack : undefined,
-          timestamp: new Date().toISOString(),
-        });
-        throw new Error(
-          "Failed to process entry fee payment. Please try again."
-        );
-      }
+      navigate(`/contests/${contestId}`);
     } catch (error: any) {
       console.error("Contest entry failed:", {
         error,
@@ -499,30 +398,16 @@ export const TokenSelection: React.FC = () => {
         timestamp: new Date().toISOString(),
       });
 
-      // Show error toast with the detailed error message
-      toast.error(error.message, {
+      toast.error(error.message || "Failed to enter contest", {
         position: "top-right",
         autoClose: 10000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
-        style: {
-          maxWidth: "500px",
-          whiteSpace: "pre-line",
-        },
       });
-
-      if (
-        error.status === 409 &&
-        error.responseData?.error === "CONTEST_FULL"
-      ) {
-        console.log("Contest is full, could show alternatives here");
-      } else if (error.status === 401) {
-        console.log(
-          "Authentication error, could show wallet connection dialog"
-        );
-      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -638,13 +523,15 @@ export const TokenSelection: React.FC = () => {
                   <Button
                     onClick={handleSubmit}
                     disabled={
-                      loadingEntryStatus || portfolioValidation !== null
+                      loadingEntryStatus ||
+                      portfolioValidation !== null ||
+                      isLoading
                     }
                     className="w-full relative group overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
                     <span className="relative flex items-center justify-center font-medium group-hover:animate-glitch">
-                      {loadingEntryStatus ? (
+                      {isLoading ? (
                         <div className="animate-cyber-pulse">Entering...</div>
                       ) : (
                         "Enter Contest"
