@@ -122,8 +122,8 @@ export const ContestPerformance = () => {
               className="text-brand-400 hover:text-brand-300 group-hover:animate-cyber-pulse"
             >
               Global Leaderboard
-            </Link>
-            to see the DDPoint leaders.
+            </Link>{" "}
+            to see the points leaders.
           </div>
         </div>
       </div>

@@ -61,7 +61,7 @@ export const NotFound: React.FC = () => {
               to="/contact"
               className="text-cyber-400 hover:text-cyber-300 transition-colors"
             >
-              contact the Admin team
+              contact the Admins
             </Link>
             .
           </div>
