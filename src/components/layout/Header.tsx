@@ -97,8 +97,9 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        {/* Maintenance Mode Banner for Admins */}
-        {isAdmin() && maintenanceMode && (
+        {/* Maintenance Mode Banner */}
+        {/* {isAdmin() && maintenanceMode && ( */}
+        {maintenanceMode && (
           <div className="relative overflow-hidden">
             <div className="absolute inset-0 bg-yellow-400/20" />
             <div
@@ -141,18 +142,20 @@ export const Header: React.FC = () => {
               */}
 
               {/* Logo Text */}
-              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-white group-hover:animate-pulse-fast">
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-purple-400 group-hover:animate-pulse-fast">
                 Degen
               </span>
-              <span className="text-2xl font-bold text-white group-hover:animate-pulse-fast">
+              {/*
+              <span className="text-2xl font-bold text-dark-300 group-hover:animate-pulse-fast mx-1">
                 x
               </span>
-              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-400 group-hover:animate-pulse-fast">
+              */}
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-300 group-hover:animate-pulse-fast">
                 Duel
               </span>
 
               {/* Logo Glow */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-white/20 to-white/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-400/20 via-gray-300/10 to-gray-300/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
 
             {/* Desktop Navigation */}
