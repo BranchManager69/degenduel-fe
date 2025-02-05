@@ -20,10 +20,24 @@ export const ContestBrowser: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>("participant_count");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
   const fetchContests = async () => {
     try {
       setLoading(true);
+
+      // First check maintenance mode
+      const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+      setIsMaintenanceMode(isInMaintenance);
+
+      // If in maintenance mode, don't fetch contests
+      if (isInMaintenance) {
+        setError(
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+        );
+        return;
+      }
+
       const data = await ddApi.contests.getAll({
         field: sortField,
         direction: sortDirection,
@@ -31,7 +45,15 @@ export const ContestBrowser: React.FC = () => {
       setContests(data);
     } catch (error) {
       console.error("Failed to fetch contests:", error);
-      setError("Failed to load contests");
+      // Check if the error is a 503 (maintenance mode)
+      if (error instanceof Error && error.message.includes("503")) {
+        setIsMaintenanceMode(true);
+        setError(
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+        );
+      } else {
+        setError("Failed to load contests");
+      }
     } finally {
       setLoading(false);
     }
@@ -39,6 +61,23 @@ export const ContestBrowser: React.FC = () => {
 
   useEffect(() => {
     fetchContests();
+
+    // Set up periodic maintenance check
+    const maintenanceCheckInterval = setInterval(async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+        if (isInMaintenance) {
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+        }
+      } catch (err) {
+        console.error("Failed to check maintenance status:", err);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(maintenanceCheckInterval);
   }, [sortField, sortDirection]);
 
   // Filter and sort contests
@@ -107,6 +146,50 @@ export const ContestBrowser: React.FC = () => {
     sortField,
     sortDirection,
   ]);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse bg-dark-200 rounded-lg h-64 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isMaintenanceMode) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+          <div className="flex items-center justify-center gap-2 text-yellow-400">
+            <span className="animate-pulse">⚠</span>
+            <span>
+              ⚙️ DegenDuel is currently undergoing scheduled maintenance. Please
+              try again later.
+            </span>
+            <span className="animate-pulse">⚠</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -270,21 +353,7 @@ export const ContestBrowser: React.FC = () => {
 
       {/* Enhanced Contest Grid */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {loading ? (
-          // Enhanced Loading skeletons
-          [...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="animate-pulse bg-dark-200 rounded-lg h-64 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
-            </div>
-          ))
-        ) : error ? (
-          <div className="col-span-full text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
-            {error}
-          </div>
-        ) : filteredAndSortedContests.length === 0 ? (
+        {filteredAndSortedContests.length === 0 ? (
           <div className="col-span-full text-center text-gray-400 py-12 bg-dark-200/50 rounded-lg animate-fade-in">
             No contests found matching your filters
           </div>

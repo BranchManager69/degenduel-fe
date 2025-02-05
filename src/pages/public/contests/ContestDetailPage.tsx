@@ -37,6 +37,7 @@ export const ContestDetails: React.FC = () => {
   const { account, connected, connect, wallet } = useWallet();
   const { isWalletConnected, isFullyConnected, walletAddress } = useAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
   // Force wallet connection check on mount and when wallet state changes
   useEffect(() => {
@@ -80,6 +81,19 @@ export const ContestDetails: React.FC = () => {
 
     try {
       setIsLoading(true);
+
+      // First check maintenance mode
+      const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+      setIsMaintenanceMode(isInMaintenance);
+
+      // If in maintenance mode, don't fetch contest
+      if (isInMaintenance) {
+        setError(
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+        );
+        return;
+      }
+
       const data = await ddApi.contests.getById(id);
       console.log("Contest data (detailed):", {
         participant_count: data.participant_count,
@@ -137,9 +151,15 @@ export const ContestDetails: React.FC = () => {
       setContest(sanitizedContest);
     } catch (err) {
       console.error("Error fetching contest:", err);
-      setError((prev: string | null) =>
-        prev ? null : "Failed to load contest details"
-      );
+      // Check if the error is a 503 (maintenance mode)
+      if (err instanceof Error && err.message.includes("503")) {
+        setIsMaintenanceMode(true);
+        setError(
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+        );
+      } else {
+        setError("Failed to load contest details");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -147,6 +167,23 @@ export const ContestDetails: React.FC = () => {
 
   useEffect(() => {
     fetchContest();
+
+    // Set up periodic maintenance check
+    const maintenanceCheckInterval = setInterval(async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+        if (isInMaintenance) {
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+        }
+      } catch (err) {
+        console.error("Failed to check maintenance status:", err);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(maintenanceCheckInterval);
   }, [id, walletAddress]);
 
   const handleCountdownComplete = () => {
@@ -228,6 +265,23 @@ export const ContestDetails: React.FC = () => {
         </div>
       </div>
     );
+
+  if (isMaintenanceMode) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+          <div className="flex items-center justify-center gap-2 text-yellow-400">
+            <span className="animate-pulse">⚠</span>
+            <span>
+              ⚙️ DegenDuel is currently undergoing scheduled maintenance. Please
+              try again later.
+            </span>
+            <span className="animate-pulse">⚠</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error || !contest) {
     return (

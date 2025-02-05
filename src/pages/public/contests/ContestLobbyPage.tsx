@@ -1,22 +1,22 @@
-// src/pages/authenticated/LiveContest.tsx
+// src/pages/public/contests/ContestLobbyPage.tsx
 
 import React from "react";
 import { useParams } from "react-router-dom";
-import { ContestTimer } from "../../components/contests/ContestTimer";
-import { Leaderboard } from "../../components/contests/Leaderboard";
-import { PortfolioPerformance } from "../../components/contests/PortfolioPerformance";
-import { TestSkipButton } from "../../components/contests/TestSkipButton";
-import { TokenPerformance } from "../../components/contests/TokenPerformance";
-import { ContestDifficulty } from "../../components/landing/contests/ContestDifficulty";
-import { formatCurrency } from "../../lib/utils";
+import { ContestTimer } from "../../../components/contests/ContestTimer";
+import { Leaderboard } from "../../../components/contests/Leaderboard";
+import { PortfolioPerformance } from "../../../components/contests/PortfolioPerformance";
+import { TestSkipButton } from "../../../components/contests/TestSkipButton";
+import { TokenPerformance } from "../../../components/contests/TokenPerformance";
+import { ContestDifficulty } from "../../../components/landing/contests/ContestDifficulty";
+import { formatCurrency } from "../../../lib/utils";
 
 /*
  * THIS PAGE IS ONE OF THE OLDEST PAGES IN THE APP.
  * IT IS OLD AND NEEDS A HUGE OVERHAUL FOR REAL DATA!
  */
 
-// Live contest page
-export const LiveContest: React.FC = () => {
+// Contest Lobby page
+export const ContestLobby: React.FC = () => {
   // Get the contest ID from the URL
   const { id } = useParams();
   // Should be getting contest data from the API using just the id

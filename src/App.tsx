@@ -20,12 +20,12 @@ import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { MovingBackground } from "./components/ui/MovingBackground";
 /* Pages */
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { LiveContest } from "./pages/authenticated/LiveContest"; // shouldn't this be public?
-import { Profile } from "./pages/authenticated/Profile";
-import { Results } from "./pages/authenticated/Results";
-import { TokenSelection } from "./pages/authenticated/TokenSelection";
+import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
+import { Profile } from "./pages/authenticated/ProfilePage";
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
+import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
+import { ContestResults } from "./pages/public/contests/ContestResultsPage";
 import { Contact } from "./pages/public/general/Contact";
 import { FAQ } from "./pages/public/general/FAQ";
 import { HowItWorks } from "./pages/public/general/HowItWorks";
@@ -99,6 +99,39 @@ export const App: React.FC = () => {
             {/* Contest Details */}
             <Route path="/contests/:id" element={<ContestDetails />} />
 
+            {/* Contest Lobby */}
+            <Route
+              path="/contests/:id/live"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <ContestLobby />
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* Contest Results */}
+            <Route
+              path="/contests/:id/results"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <ContestResults />
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* Global Rankings Leaderboard */}
+            <Route path="/rankings/global" element={<GlobalRankings />} />
+
+            {/* Degen Rankings Leaderboard */}
+            <Route
+              path="/rankings/performance"
+              element={<ContestPerformance />}
+            />
+
             {/* How It Works */}
             <Route path="/how-it-works" element={<HowItWorks />} />
 
@@ -107,15 +140,6 @@ export const App: React.FC = () => {
 
             {/* Contact */}
             <Route path="/contact" element={<Contact />} />
-
-            {/* Global Rankings */}
-            <Route path="/rankings/global" element={<GlobalRankings />} />
-
-            {/* Contest Performance */}
-            <Route
-              path="/rankings/performance"
-              element={<ContestPerformance />}
-            />
 
             {/* AUTHENTICATED ROUTES - Wrap with MaintenanceGuard */}
 
@@ -138,30 +162,6 @@ export const App: React.FC = () => {
                 <AuthenticatedRoute>
                   <MaintenanceGuard>
                     <TokenSelection />
-                  </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
-
-            {/* Live Contest Page */}
-            <Route
-              path="/contests/:id/live"
-              element={
-                <AuthenticatedRoute>
-                  <MaintenanceGuard>
-                    <LiveContest />
-                  </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
-
-            {/* Contest Results Page */}
-            <Route
-              path="/contests/:id/results"
-              element={
-                <AuthenticatedRoute>
-                  <MaintenanceGuard>
-                    <Results />
                   </MaintenanceGuard>
                 </AuthenticatedRoute>
               }

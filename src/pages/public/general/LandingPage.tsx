@@ -25,11 +25,25 @@ export const LandingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
     const fetchContests = async () => {
       try {
+        // First check maintenance mode
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+
+        // If in maintenance mode, don't fetch contests
+        if (isInMaintenance) {
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+          setLoading(false);
+          return;
+        }
+
         const response = await ddApi.contests.getAll();
         const contestsArray: Contest[] = Array.isArray(response)
           ? response
@@ -42,12 +56,37 @@ export const LandingPage: React.FC = () => {
         );
       } catch (err) {
         console.error("Failed to load contests:", err);
-        setError("Failed to load contests");
+        // Check if the error is a 503 (maintenance mode)
+        if (err instanceof Error && err.message.includes("503")) {
+          setIsMaintenanceMode(true);
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+        } else {
+          setError("Failed to load contests");
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchContests();
+
+    // Set up periodic maintenance check
+    const maintenanceCheckInterval = setInterval(async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+        if (isInMaintenance) {
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+        }
+      } catch (err) {
+        console.error("Failed to check maintenance status:", err);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(maintenanceCheckInterval);
   }, []);
 
   return (
@@ -230,8 +269,29 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Contest sections */}
-        {error ? (
-          <div className="text-center py-8 text-red-500">{error}</div>
+        {isMaintenanceMode ? (
+          <div className="relative bg-dark-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+              <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+                <div className="flex items-center justify-center gap-2 text-yellow-400">
+                  <span className="animate-pulse">⚠</span>
+                  <span>
+                    ⚙️ DegenDuel is currently undergoing scheduled maintenance.
+                    Please try again later.
+                  </span>
+                  <span className="animate-pulse">⚠</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="relative bg-dark-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+              <div className="text-center p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg">
+                <div className="text-red-500 animate-glitch">{error}</div>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="relative bg-dark-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">

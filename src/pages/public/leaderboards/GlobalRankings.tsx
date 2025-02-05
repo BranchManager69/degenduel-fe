@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import type { GlobalRankingEntry } from "../../../types/leaderboard";
 
-const REFRESH_INTERVAL = 30000; // 30 seconds
 const PAGE_SIZE = 10;
 
 export const GlobalRankings = () => {
@@ -13,10 +12,24 @@ export const GlobalRankings = () => {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
   const fetchRankings = async () => {
     try {
       setError(null);
+
+      // First check maintenance mode
+      const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+      setIsMaintenanceMode(isInMaintenance);
+
+      // If in maintenance mode, don't fetch rankings
+      if (isInMaintenance) {
+        setError(
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+        );
+        return;
+      }
+
       const data = await ddApi.leaderboard.getGlobalRankings(
         PAGE_SIZE,
         page * PAGE_SIZE
@@ -24,7 +37,15 @@ export const GlobalRankings = () => {
       setRankings(data.rankings);
       setTotal(data.total);
     } catch (err) {
-      setError("Failed to load rankings. Please try again later.");
+      // Check if the error is a 503 (maintenance mode)
+      if (err instanceof Error && err.message.includes("503")) {
+        setIsMaintenanceMode(true);
+        setError(
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+        );
+      } else {
+        setError("Failed to load rankings. Please try again later.");
+      }
       console.error("Error fetching rankings:", err);
     } finally {
       setLoading(false);
@@ -33,8 +54,23 @@ export const GlobalRankings = () => {
 
   useEffect(() => {
     fetchRankings();
-    const interval = setInterval(fetchRankings, REFRESH_INTERVAL);
-    return () => clearInterval(interval);
+
+    // Set up periodic maintenance check
+    const maintenanceCheckInterval = setInterval(async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+        if (isInMaintenance) {
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+        }
+      } catch (err) {
+        console.error("Failed to check maintenance status:", err);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(maintenanceCheckInterval);
   }, [page]);
 
   const getTrendColor = (trend: "↑" | "↓" | "→") => {
@@ -64,6 +100,29 @@ export const GlobalRankings = () => {
         </h1>
         <div className="text-center py-8 text-gray-400 animate-cyber-pulse">
           Loading rankings...
+        </div>
+      </div>
+    );
+  }
+
+  if (isMaintenanceMode) {
+    return (
+      <div className="max-w-7xl mx-auto p-8">
+        <h1 className="text-3xl font-bold text-gray-100 mb-4 relative group">
+          <span className="relative z-10 group-hover:animate-glitch">
+            Global Rankings
+          </span>
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+        </h1>
+        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+          <div className="flex items-center justify-center gap-2 text-yellow-400">
+            <span className="animate-pulse">⚠</span>
+            <span>
+              ⚙️ DegenDuel is currently undergoing scheduled maintenance. Please
+              try again later.
+            </span>
+            <span className="animate-pulse">⚠</span>
+          </div>
         </div>
       </div>
     );

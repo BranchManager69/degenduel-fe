@@ -1,21 +1,21 @@
-// src/pages/authenticated/Results.tsx
+// src/pages/public/contests/ContestResultsPage.tsx
 
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CelebrationOverlay } from "../../components/results/CelebrationOverlay";
-import { FinalLeaderboard } from "../../components/results/FinalLeaderboard";
-import { PerformanceChart } from "../../components/results/PerformanceChart";
-import { TokenPerformance } from "../../components/results/TokenPerformance";
-import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
+import { CelebrationOverlay } from "../../../components/results/CelebrationOverlay";
+import { FinalLeaderboard } from "../../../components/results/FinalLeaderboard";
+import { PerformanceChart } from "../../../components/results/PerformanceChart";
+import { TokenPerformance } from "../../../components/results/TokenPerformance";
+import { Button } from "../../../components/ui/Button";
+import { Card } from "../../../components/ui/Card";
 
 /*
  * THIS PAGE IS ONE OF THE OLDEST PAGES IN THE APP.
  * IT IS OLD AND NEEDS A HUGE OVERHAUL FOR REAL DATA!
  */
 
-// Contests results page
-export const Results: React.FC = () => {
+// Contests Results page
+export const ContestResults: React.FC = () => {
   // Use the navigate function to go back to the contests page
   const navigate = useNavigate();
 
