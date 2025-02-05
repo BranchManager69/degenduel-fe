@@ -13,6 +13,30 @@ export type ColorScheme =
   | "teal"
   | "plasma";
 
+export type FontConfig = {
+  heading: string;
+  body: string;
+  mono: string;
+};
+
+export const FONT_PRESETS = {
+  pixelPerfect: {
+    heading: "Silkscreen",
+    body: "Pixelify Sans",
+    mono: "Source Code Pro",
+  },
+  neonLights: {
+    heading: "Tilt Neon",
+    body: "Quicksand",
+    mono: "DM Mono",
+  },
+  cyberTech: {
+    heading: "Chakra Petch",
+    body: "Inter",
+    mono: "Fira Code",
+  },
+} as const;
+
 // Add debug configuration
 interface DebugConfig {
   forceWalletNotFound?: boolean;
@@ -24,6 +48,8 @@ interface DebugConfig {
   slowAnimations?: boolean;
   forceLoadingStates?: boolean;
   colorScheme?: ColorScheme;
+  fontPreset?: keyof typeof FONT_PRESETS;
+  customFonts?: FontConfig;
 }
 
 type StoreState = {

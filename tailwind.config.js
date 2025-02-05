@@ -4,6 +4,14 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-body, Pixelify Sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-heading, Silkscreen)", "sans-serif"],
+        cyber: ["var(--font-cyber, Chakra Petch)", "sans-serif"],
+        mono: ["var(--font-mono, Source Code Pro)", "monospace"],
+        heading: ["var(--font-heading, Silkscreen)", "sans-serif"],
+        body: ["var(--font-body, Pixelify Sans)", "system-ui", "sans-serif"],
+      },
       colors: {
         brand: {
           50: "var(--color-brand-50, #f3e6ff)",

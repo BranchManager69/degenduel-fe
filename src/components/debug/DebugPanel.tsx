@@ -1,4 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import {
+  FONT_PRESETS,
+  FONT_PRESET_NAMES,
+  FontPreset,
+} from "../../constants/fonts";
 import type { ColorScheme } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 
@@ -39,6 +44,7 @@ export const DebugPanel: React.FC = () => {
     session: false,
     tools: false,
     theme: false,
+    fonts: false,
   });
   const [isMinimized, setIsMinimized] = useState(true);
   const [position, setPosition] = useState({
@@ -253,6 +259,41 @@ export const DebugPanel: React.FC = () => {
     applyColorScheme(savedScheme);
   }, []);
 
+  // Initialize font preset from localStorage
+  useEffect(() => {
+    try {
+      const savedPreset = localStorage.getItem("font-preset") || "pixelPerfect";
+      if (savedPreset in FONT_PRESETS) {
+        applyFontPreset(savedPreset as FontPreset);
+      } else {
+        console.warn(
+          `Invalid saved font preset: ${savedPreset}, falling back to pixelPerfect`
+        );
+        applyFontPreset("pixelPerfect");
+      }
+    } catch (error) {
+      console.error("Error initializing font preset:", error);
+      applyFontPreset("pixelPerfect");
+    }
+  }, []);
+
+  // Function to apply font preset
+  const applyFontPreset = (presetKey: FontPreset) => {
+    const preset = FONT_PRESETS[presetKey];
+    if (!preset) {
+      console.error(`Invalid font preset: ${presetKey}`);
+      return;
+    }
+
+    document.documentElement.style.setProperty(
+      "--font-heading",
+      preset.heading
+    );
+    document.documentElement.style.setProperty("--font-body", preset.body);
+    document.documentElement.style.setProperty("--font-mono", preset.mono);
+    localStorage.setItem("font-preset", presetKey);
+  };
+
   // Check if user is superadmin from the store
   if (user?.role !== "superadmin") return null;
 
@@ -266,11 +307,12 @@ export const DebugPanel: React.FC = () => {
   return (
     <div
       ref={panelRef}
-      className="fixed bg-dark-200/90 backdrop-blur-sm rounded-lg border border-dark-300 z-50 max-w-sm shadow-lg cursor-move transition-colors duration-300 hover:bg-dark-200"
+      className="fixed bg-dark-200/95 backdrop-blur-lg border border-dark-300/50 rounded-lg shadow-lg text-gray-300 select-none"
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        transform: `translate(0, 0)`,
+        left: position.x,
+        top: position.y,
+        width: isMinimized ? "auto" : 320,
+        zIndex: 9999,
       }}
       onMouseDown={handleMouseDown}
     >
@@ -294,6 +336,7 @@ export const DebugPanel: React.FC = () => {
                 session: true,
                 tools: true,
                 theme: true,
+                fonts: true,
               });
             }
           }}
@@ -563,6 +606,37 @@ export const DebugPanel: React.FC = () => {
                 </label>
               </div>
             )}
+          </div>
+
+          {/* Font Theme Selection */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Font Themes</h3>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">
+                Theme Selection
+              </label>
+              <div className="space-y-2">
+                {Object.entries(FONT_PRESET_NAMES).map(([key, name]) => (
+                  <button
+                    key={key}
+                    onClick={() => applyFontPreset(key as FontPreset)}
+                    className="block w-full text-left px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Font Preview */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Preview</h4>
+              <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded">
+                <p className="font-heading text-xl">Display Font</p>
+                <p className="font-body">Body Font</p>
+                <p className="font-mono">Monospace Font</p>
+              </div>
+            </div>
           </div>
 
           {/* Tools Section */}
