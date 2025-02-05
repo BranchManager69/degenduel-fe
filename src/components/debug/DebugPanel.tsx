@@ -282,23 +282,23 @@ export const DebugPanel: React.FC = () => {
   // Initialize theme (both font and color) from localStorage
   useEffect(() => {
     try {
-      // Default to Neon Lights theme
-      const savedTheme = localStorage.getItem("theme") || "Neon Lights";
+      // Default to Digital Void theme
+      const savedTheme = localStorage.getItem("theme") || "Digital Void";
       if (savedTheme in THEMES) {
         const theme = THEMES[savedTheme as ThemeKey];
         applyFontPreset(theme.font as FontPreset);
         applyColorScheme(theme.scheme);
       } else {
         console.warn(
-          `Invalid saved theme: ${savedTheme}, falling back to Neon Lights`
+          `Invalid saved theme: ${savedTheme}, falling back to Digital Void`
         );
-        applyFontPreset("neonLights");
-        applyColorScheme("synthwave");
+        applyFontPreset("cyberTech");
+        applyColorScheme("default");
       }
     } catch (error) {
       console.error("Error initializing theme:", error);
-      applyFontPreset("neonLights");
-      applyColorScheme("synthwave");
+      applyFontPreset("cyberTech");
+      applyColorScheme("default");
     }
   }, []);
 

@@ -472,7 +472,7 @@ export const Header: React.FC = () => {
           <div
             className={`absolute left-0 right-0 top-[64px] ${
               isMenuOpen ? "block" : "hidden"
-            } md:hidden`}
+            } md:hidden z-[60]`}
           >
             <div
               className="bg-dark-200/95 backdrop-blur-lg border-t border-dark-300/50 shadow-lg shadow-black/20"

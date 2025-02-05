@@ -40,6 +40,7 @@ import { BannedIP } from "./pages/public/general/BannedIP";
 import { BannedUser } from "./pages/public/general/BannedUser";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
+import { PublicProfilePage } from "./pages/public/general/PublicProfilePage";
 /* some extra superadmin pages */
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
@@ -141,11 +142,17 @@ export const App: React.FC = () => {
             {/* Contact */}
             <Route path="/contact" element={<Contact />} />
 
+            {/* Public Routes */}
+            <Route
+              path="/profile/:identifier"
+              element={<PublicProfilePage />}
+            />
+
             {/* AUTHENTICATED ROUTES - Wrap with MaintenanceGuard */}
 
             {/* Profile */}
             <Route
-              path="/profile"
+              path="/me"
               element={
                 <AuthenticatedRoute>
                   <MaintenanceGuard>
