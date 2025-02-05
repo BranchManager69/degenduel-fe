@@ -289,42 +289,101 @@ export const Header: React.FC = () => {
             {/* Desktop Wallet Connection */}
             <div className="hidden md:flex md:items-center md:space-x-3">
               {user ? (
-                <div className="flex items-center space-x-3">
-                  <Link
-                    to="/profile"
-                    className="text-sm text-gray-400 hover:text-brand-400 transition-colors flex items-center"
+                <div className="relative group">
+                  <button
+                    onClick={() => {}}
+                    className="relative px-4 py-1.5 bg-dark-300 group-hover:bg-dark-200 border border-brand-500/20 group-hover:border-brand-500/50 rounded flex items-center gap-2 transition-all duration-200"
                   >
-                    <span>{user.nickname}</span>
+                    {/* Glow effect */}
+                    <div className="absolute inset-px rounded-sm bg-brand-500/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    {/* Username */}
+                    <span className="relative font-cyber text-sm text-gray-300 group-hover:text-brand-400 transition-colors">
+                      {user.nickname}
+                    </span>
+
+                    {/* Banned indicator */}
                     {user.is_banned && (
                       <span
-                        className="ml-1.5 text-red-500"
+                        className="text-red-500 animate-pulse"
                         title={user.ban_reason || "Account banned"}
                       >
                         🚫
                       </span>
                     )}
-                  </Link>
-                  <Button
-                    onClick={disconnectWallet}
-                    variant="gradient"
-                    size="sm"
-                    className="relative group"
-                  >
-                    <span className="relative z-10">Disconnect</span>
-                  </Button>
+
+                    {/* Arrow icon */}
+                    <svg
+                      className="w-4 h-4 text-brand-500/50 group-hover:text-brand-500 transition-colors transform group-hover:rotate-180 duration-200"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown menu */}
+                  <div className="absolute right-0 mt-1 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-1 z-[60]">
+                    <div className="relative bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 rounded shadow-lg shadow-black/50 overflow-hidden">
+                      {/* Menu items container */}
+                      <div className="relative py-1">
+                        <Link
+                          to="/profile"
+                          className="block relative group/item"
+                        >
+                          <div className="absolute inset-0 bg-brand-500/0 group-hover/item:bg-brand-500/10 transition-colors" />
+                          <div className="relative px-4 py-2 flex items-center gap-2">
+                            <span className="text-sm text-gray-300 group-hover/item:text-brand-400 transition-colors">
+                              Profile
+                            </span>
+                          </div>
+                          {/* Left border highlight */}
+                          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-brand-500/0 group-hover/item:bg-brand-500 transition-colors" />
+                        </Link>
+
+                        <button
+                          onClick={disconnectWallet}
+                          className="block w-full relative group/item mt-1"
+                        >
+                          <div className="absolute inset-0 bg-red-500/0 group-hover/item:bg-red-500/10 transition-colors" />
+                          <div className="relative px-4 py-2 flex items-center gap-2">
+                            <span className="text-sm text-gray-400 group-hover/item:text-red-400 transition-colors">
+                              Disconnect
+                            </span>
+                          </div>
+                          {/* Left border highlight */}
+                          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500/0 group-hover/item:bg-red-500 transition-colors" />
+                        </button>
+                      </div>
+
+                      {/* Corner accents */}
+                      <div className="absolute top-0 left-0 w-2 h-2 border-l border-t border-brand-500/30" />
+                      <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-brand-500/30" />
+                      <div className="absolute bottom-0 left-0 w-2 h-2 border-l border-b border-brand-500/30" />
+                      <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-brand-500/30" />
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <Button
+                <button
                   onClick={connectWallet}
-                  variant="gradient"
-                  size="sm"
-                  className="relative group"
                   disabled={isConnecting}
+                  className="relative px-4 py-1.5 bg-dark-300 hover:bg-dark-200 border border-brand-500/20 hover:border-brand-500/50 rounded flex items-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="relative z-10">
+                  {/* Glow effect */}
+                  <div className="absolute inset-px rounded-sm bg-brand-500/20 blur-sm opacity-0 hover:opacity-100 transition-opacity" />
+
+                  {/* Button text */}
+                  <span className="relative font-cyber text-sm text-gray-300 hover:text-brand-400 transition-colors">
                     {isConnecting ? "Connecting..." : "Connect Wallet"}
                   </span>
-                </Button>
+                </button>
               )}
             </div>
 
@@ -497,15 +556,12 @@ export const Header: React.FC = () => {
                       <div className="space-y-3">
                         <Link
                           to="/profile"
-                          className="text-sm text-gray-400 hover:text-brand-400 transition-colors flex items-center"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setIsMenuOpen(false);
-                            window.location.href = "/profile";
-                          }}
+                          className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                          onClick={() => setIsMenuOpen(false)}
                         >
-                          <span>{user.nickname}</span>
+                          <span className="relative z-10 group-hover:animate-glitch">
+                            Profile
+                          </span>
                           {user.is_banned && (
                             <span
                               className="ml-1.5 text-red-500 animate-pulse"
@@ -515,21 +571,19 @@ export const Header: React.FC = () => {
                             </span>
                           )}
                         </Link>
-                        <Button
+                        <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             disconnectWallet();
                             setIsMenuOpen(false);
                           }}
-                          variant="gradient"
-                          size="sm"
-                          className="w-full group"
+                          className="w-full text-left px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
                         >
                           <span className="relative z-10 group-hover:animate-glitch">
-                            Disconnect
+                            Disconnect Wallet
                           </span>
-                        </Button>
+                        </button>
                       </div>
                     ) : (
                       <Button
