@@ -303,6 +303,9 @@ export default {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        "conic-gradient": "conic-gradient(var(--tw-gradient-stops))",
+        scanlines:
+          "repeating-linear-gradient(transparent 0px,transparent 1px,rgba(0,0,0,0.3) 2px,rgba(0,0,0,0.3) 3px)",
       },
       animation: {
         shine: "shine 2s linear infinite",
@@ -327,7 +330,6 @@ export default {
         scanlines: "scanlines 1s linear infinite",
         float: "float 6s ease-in-out infinite",
         pulse: "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "gradient-x": "gradient-x 15s ease infinite",
         "cyber-scan": "cyber-scan 8s ease infinite",
         "terminal-scan": "terminal-scan 3s ease-out infinite",
         "value-flicker": "value-flicker 0.3s ease-in-out infinite",
@@ -339,6 +341,9 @@ export default {
           "glitch-text 1s cubic-bezier(.25, .46, .45, .94) infinite",
         "title-float": "title-float 10s ease infinite",
         gradientX: "gradientX 3s linear infinite",
+        scanner: "scanner 8s linear infinite",
+        spin: "spin 3s linear infinite",
+        ping: "ping 2s cubic-bezier(0, 0, 0.2, 1) infinite",
       },
       keyframes: {
         shine: {
@@ -408,11 +413,9 @@ export default {
         },
         "gradient-x": {
           "0%, 100%": {
-            "background-size": "200% 200%",
             "background-position": "left center",
           },
           "50%": {
-            "background-size": "200% 200%",
             "background-position": "right center",
           },
         },
@@ -507,16 +510,6 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: ".5" },
         },
-        "gradient-x": {
-          "0%, 100%": {
-            "background-size": "200% 200%",
-            "background-position": "left center",
-          },
-          "50%": {
-            "background-size": "200% 200%",
-            "background-position": "right center",
-          },
-        },
         "cyber-scan": {
           "0%": { transform: "translateY(-100%)" },
           "100%": { transform: "translateY(100%)" },
@@ -549,6 +542,20 @@ export default {
         gradientX: {
           "0%": { backgroundPosition: "200% center" },
           "100%": { backgroundPosition: "-200% center" },
+        },
+        scanner: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
+        spin: {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        ping: {
+          "75%, 100%": {
+            transform: "scale(2)",
+            opacity: "0",
+          },
         },
       },
       animationDelay: {

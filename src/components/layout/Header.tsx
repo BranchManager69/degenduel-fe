@@ -103,7 +103,7 @@ export const Header: React.FC = () => {
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <header className="bg-dark-200/95 backdrop-blur-lg border-b border-dark-300/50 sticky top-0 z-50 shadow-lg shadow-black/20">
+      <header className="relative bg-dark-200/40 backdrop-blur-xl sticky top-0 z-50">
         {/* Banned User Banner */}
         {user?.is_banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
@@ -139,12 +139,47 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 relative">
-          {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-transparent to-brand-600/5" />
+        <div className="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Glass base with visible blur */}
+          <div className="absolute inset-0 bg-gradient-to-b from-dark-200/80 to-dark-200/40 backdrop-blur-xl" />
 
-          {/* Main header row */}
-          <div className="flex items-center justify-between h-16 relative">
+          {/* Visible gradient background */}
+          <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-500/20 via-dark-200/5 to-brand-500/20" />
+          </div>
+
+          {/* Animated scan effect */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div
+              className="absolute inset-x-0 h-1/2 bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-cyber-scan"
+              style={{ animationDuration: "3s" }}
+            />
+          </div>
+
+          {/* Glowing borders */}
+          <div className="absolute inset-x-0 top-0">
+            <div className="h-[1px] bg-brand-400/50" />
+            <div className="h-[2px] bg-gradient-to-b from-brand-400/30 to-transparent blur-sm" />
+          </div>
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="h-[1px] bg-cyber-400/50" />
+            <div className="h-[2px] bg-gradient-to-b from-cyber-400/30 to-transparent blur-sm" />
+          </div>
+
+          {/* Corner accents with glow */}
+          <div className="absolute top-0 left-0 w-20 h-20">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-brand-400/80" />
+            <div className="absolute top-0 left-0 h-full w-[1px] bg-gradient-to-b from-brand-400/80 to-transparent" />
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-b from-brand-400/30 to-transparent blur-sm" />
+          </div>
+          <div className="absolute top-0 right-0 w-20 h-20">
+            <div className="absolute top-0 right-0 w-full h-[1px] bg-brand-400/80" />
+            <div className="absolute top-0 right-0 h-full w-[1px] bg-gradient-to-b from-brand-400/80 to-transparent" />
+            <div className="absolute top-0 right-0 w-full h-[2px] bg-gradient-to-b from-brand-400/30 to-transparent blur-sm" />
+          </div>
+
+          {/* Main header content */}
+          <div className="relative flex items-center justify-between h-16">
             {/* Main Logo */}
             <Link
               to="/"

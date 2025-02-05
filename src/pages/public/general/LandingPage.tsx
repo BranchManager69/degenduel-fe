@@ -38,7 +38,7 @@ export const LandingPage: React.FC = () => {
         // If in maintenance mode, don't fetch contests
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
           );
           setLoading(false);
           return;
@@ -60,7 +60,7 @@ export const LandingPage: React.FC = () => {
         if (err instanceof Error && err.message.includes("503")) {
           setIsMaintenanceMode(true);
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
           );
         } else {
           setError("Failed to load contests");
@@ -78,7 +78,7 @@ export const LandingPage: React.FC = () => {
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
           );
         }
       } catch (err) {
@@ -98,7 +98,7 @@ export const LandingPage: React.FC = () => {
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center space-y-2">
               <h2 className="text-brand-300 text-xl tracking-wider font-medium">
-                UNLEASH THE POWER OF
+                Make PvP Great Again
               </h2>
               <h1 className="text-6xl font-bold tracking-tight">
                 <span className="bg-gradient-to-r from-brand-400 to-brand-500 text-transparent bg-clip-text">
@@ -107,7 +107,9 @@ export const LandingPage: React.FC = () => {
                 <span className="text-gray-400 mx-2">×</span>
                 <span className="text-gray-400">DUEL</span>
               </h1>
-              <p className="text-white text-lg mt-2">Trading Championship</p>
+              <p className="text-white text-lg mt-2">
+                Launching Soon on Solana
+              </p>
             </div>
 
             {/* Main content with enhanced animations */}
@@ -130,21 +132,23 @@ export const LandingPage: React.FC = () => {
               {/* Epic tagline with enhanced effects */}
               <div className="mt-4 max-w-4xl mx-auto space-y-3">
                 <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 text-transparent bg-clip-text animate-gradient-x tracking-tight leading-none">
-                  Where Diamond Hands Meet AI Supremacy
+                  Think You're A Top Trader?
                 </h2>
                 <p className="text-lg sm:text-xl text-gray-400 leading-snug font-medium tracking-wide">
-                  Challenge the elite in
+                  Duel against degens far and wide in
                   <span className="text-brand-400 font-bold mx-1.5">
-                    high-stakes
+                    high-stakes battle royales.
                   </span>
-                  competitions. Trade against both
+                  <br />
+                  Why fight the market?
                   <span className="text-brand-400 font-bold mx-1.5">
-                    human degens
+                    Duel real degens
                   </span>
-                  and
+                  and make
                   <span className="text-brand-400 font-bold mx-1.5">
-                    neural networks
+                    huge profits
                   </span>
+                  the fun way.
                 </p>
               </div>
 
@@ -158,23 +162,23 @@ export const LandingPage: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mt-16 mb-12">
                 {[
                   {
-                    label: "Live Contests",
+                    label: "Duels In Progress",
                     value: activeContests.length,
                     valueColor: "text-brand-300",
                   },
                   {
-                    label: "Open Contests",
+                    label: "Joinable Duels",
                     value: openContests.length,
                     valueColor: "text-brand-300",
                   },
                   {
-                    label: "Total Prize Pool",
+                    label: "Total Winnings",
                     value: "∞ SOL",
                     valueColor: "text-brand-300",
                   },
                   {
-                    label: "Agents Ready",
-                    value: "42",
+                    label: "Tokens Supported",
+                    value: "69",
                     valueColor: "text-brand-300",
                   },
                 ].map((stat, i) => (
@@ -216,7 +220,7 @@ export const LandingPage: React.FC = () => {
                     {/* Button content */}
                     <div className="relative flex items-center justify-center space-x-2">
                       <span className="text-xl font-bold text-white group-hover:text-brand-200 transition-colors">
-                        BATTLE NOW
+                        FIND A DUEL
                       </span>
                       <svg
                         className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
@@ -248,7 +252,7 @@ export const LandingPage: React.FC = () => {
 
                     {/* Button content */}
                     <span className="relative text-xl font-bold text-brand-300 group-hover:text-brand-200 transition-colors">
-                      LEARN MORE
+                      MORE INFO
                     </span>
 
                     {/* Border */}
@@ -276,8 +280,8 @@ export const LandingPage: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-yellow-400">
                   <span className="animate-pulse">⚠</span>
                   <span>
-                    ⚙️ DegenDuel is currently undergoing scheduled maintenance.
-                    Please try again later.
+                    DegenDuel is undergoing scheduled maintenance. Please try
+                    again later.
                   </span>
                   <span className="animate-pulse">⚠</span>
                 </div>
@@ -296,13 +300,13 @@ export const LandingPage: React.FC = () => {
           <div className="relative bg-dark-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
               <ContestSection
-                title="Live Battles"
+                title="Live Duels"
                 type="active"
                 contests={activeContests}
                 loading={loading}
               />
               <ContestSection
-                title="Open Challenges"
+                title="Open Duels"
                 type="pending"
                 contests={openContests}
                 loading={loading}
