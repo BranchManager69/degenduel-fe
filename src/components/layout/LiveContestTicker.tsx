@@ -40,7 +40,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
 
   if (maintenanceMode) {
     return (
-      <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative">
+      <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative w-full">
         <div
           ref={containerRef}
           className="inline-flex items-center"
@@ -111,7 +111,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   }
 
   return (
-    <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap relative">
+    <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
       <div
         ref={containerRef}
         className="inline-flex items-center"

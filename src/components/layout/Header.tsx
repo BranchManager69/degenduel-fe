@@ -8,7 +8,7 @@ import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
-import { LiveContestTicker } from "../ui/LiveContestTicker";
+import { LiveContestTicker } from "./LiveContestTicker";
 
 export const Header: React.FC = () => {
   const {
@@ -107,7 +107,7 @@ export const Header: React.FC = () => {
         {/* Banned User Banner */}
         {user?.is_banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <p className="text-red-400 text-sm text-center">
                 Uh-oh! You're been banned from DegenDuel. GG.
                 {user.ban_reason ? `: ${user.ban_reason}` : ""}
@@ -129,7 +129,7 @@ export const Header: React.FC = () => {
                 opacity: 0.15,
               }}
             />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 relative">
+            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2 relative">
               <p className="text-yellow-400 text-sm text-center font-bold tracking-wider uppercase flex items-center justify-center gap-2">
                 <span className="animate-pulse">⚠</span>
                 ⚙️ DegenDuel maintenance in progress ⚙️
@@ -139,7 +139,7 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-transparent to-brand-600/5" />
 
@@ -374,12 +374,6 @@ export const Header: React.FC = () => {
             </button>
           </div>
 
-          {/* Add LiveContestTicker below the main header content */}
-          <LiveContestTicker
-            contests={[...activeContests, ...openContests]}
-            loading={loading}
-          />
-
           {/* Mobile Menu */}
           <div
             className={`absolute left-0 right-0 top-[64px] ${
@@ -568,6 +562,12 @@ export const Header: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Add LiveContestTicker below the main header content */}
+        <LiveContestTicker
+          contests={[...activeContests, ...openContests]}
+          loading={loading}
+        />
       </header>
     </div>
   );
