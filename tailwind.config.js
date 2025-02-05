@@ -13,6 +13,7 @@ export default {
         mono: ["var(--font-mono, Source Code Pro)", "monospace"],
         heading: ["var(--font-heading, Silkscreen)", "sans-serif"],
         body: ["var(--font-body, Pixelify Sans)", "system-ui", "sans-serif"],
+        pressStart: ["'Press Start 2P'", "cursive"],
       },
       colors: {
         brand: {
@@ -337,11 +338,12 @@ export default {
         "glitch-text-b":
           "glitch-text 1s cubic-bezier(.25, .46, .45, .94) infinite",
         "title-float": "title-float 10s ease infinite",
+        gradientX: "gradientX 3s linear infinite",
       },
       keyframes: {
         shine: {
-          "0%": { backgroundPosition: "200% center" },
-          "100%": { backgroundPosition: "-200% center" },
+          "0%": { backgroundPosition: "300% center" },
+          "100%": { backgroundPosition: "0% center" },
         },
         "fade-in": {
           "0%": { opacity: "0", transform: "translateY(10px)" },
@@ -543,6 +545,10 @@ export default {
             transform: "translateY(-10px) rotate3d(1, 1, 1, 2deg)",
             textShadow: "0 0 20px rgba(127,0,255,0.7)",
           },
+        },
+        gradientX: {
+          "0%": { backgroundPosition: "200% center" },
+          "100%": { backgroundPosition: "-200% center" },
         },
       },
       animationDelay: {

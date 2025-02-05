@@ -148,33 +148,44 @@ export const Header: React.FC = () => {
             {/* Main Logo */}
             <Link
               to="/"
-              className="flex-shrink-0 relative group"
+              className="flex items-center gap-1 group relative"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Logo Image */}
-              {/* NO LOGO IMAGE YET
-              <img
-                src="/assets/media/dd-logo-small.png"
-                alt="DegenDuel Logo"
-                className="w-10 h-10"
+              <span
+                data-text="DEGEN"
+                className="text-sm font-black tracking-tight font-pressStart relative
+                  text-transparent bg-clip-text bg-gradient-to-r from-violet-500 via-pink-500 to-violet-500 
+                  bg-[length:200%_100%] animate-gradientX
+                  after:absolute after:inset-0
+                  after:bg-gradient-to-r after:from-transparent after:via-white/95 after:to-transparent
+                  after:translate-x-[-100%] after:animate-shine after:bg-clip-text
+                  [text-shadow:0_0_5px_rgba(139,92,246,0.15),0_0_10px_rgba(139,92,246,0.1)]
+                  transition-colors duration-300 group-hover:text-purple-500"
+              >
+                DEGEN
+              </span>
+              <span className="text-base font-extrabold text-gray-400/50 group-hover:text-gray-400/70 transition-colors duration-300">
+                ×
+              </span>
+              <span
+                data-text="DUEL"
+                className="text-sm font-black tracking-tight font-pressStart relative
+                  text-transparent bg-clip-text bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200
+                  after:absolute after:inset-0
+                  after:bg-gradient-to-r after:from-transparent after:via-white/40 after:to-transparent
+                  after:translate-x-[-100%] after:animate-shine after:bg-clip-text
+                  [text-shadow:0_0_3px_rgba(139,92,246,0.1),0_0_5px_rgba(139,92,246,0.05)]
+                  transition-colors duration-300 group-hover:text-gray-100"
+              >
+                DUEL
+              </span>
+
+              {/* Hover underline effect */}
+              <div
+                className="absolute -bottom-1 left-0 w-full h-0.5 scale-x-0 group-hover:scale-x-100
+                bg-gradient-to-r from-transparent via-purple-500/50 to-transparent
+                transition-transform duration-300 origin-center"
               />
-              */}
-
-              {/* Logo Text */}
-              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-purple-400 group-hover:animate-pulse-fast">
-                Degen
-              </span>
-              {/*
-              <span className="text-2xl font-bold text-dark-300 group-hover:animate-pulse-fast mx-1">
-                x
-              </span>
-              */}
-              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-300 group-hover:animate-pulse-fast">
-                Duel
-              </span>
-
-              {/* Logo Glow */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-purple-400/20 via-gray-300/10 to-gray-300/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
 
             {/* Desktop Navigation */}

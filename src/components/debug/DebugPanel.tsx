@@ -451,7 +451,7 @@ export const DebugPanel: React.FC = () => {
       <div className="flex items-center justify-between p-2 border-b border-dark-300 bg-gradient-to-r from-dark-300 to-dark-200">
         <h3 className="text-sm font-mono font-semibold text-brand-400 flex items-center">
           <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-          Debug Console v2.0
+          Debug
         </h3>
         <button
           className="text-brand-400 hover:text-brand-300 transition-colors"
@@ -460,11 +460,11 @@ export const DebugPanel: React.FC = () => {
             // When opening, expand all sections
             if (isMinimized) {
               setSectionsOpen({
-                wallet: true,
-                network: true,
+                wallet: false,
+                network: false,
                 ui: true,
-                system: true,
-                session: true,
+                system: false,
+                session: false,
                 tools: true,
                 theme: true,
                 fonts: true,
@@ -472,7 +472,7 @@ export const DebugPanel: React.FC = () => {
             }
           }}
         >
-          {isMinimized ? "□" : "−"}
+          {isMinimized ? ">" : "v"}
         </button>
       </div>
 
@@ -487,7 +487,7 @@ export const DebugPanel: React.FC = () => {
             >
               <span className="flex items-center">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-                Theme Switcher
+                Site Theme
               </span>
               <span>{sectionsOpen.theme ? "−" : "+"}</span>
             </button>
@@ -523,7 +523,7 @@ export const DebugPanel: React.FC = () => {
             >
               <span className="flex items-center">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-                System Metrics
+                Frontend Metrics
               </span>
               <span>{sectionsOpen.system ? "−" : "+"}</span>
             </button>
@@ -563,7 +563,7 @@ export const DebugPanel: React.FC = () => {
             >
               <span className="flex items-center">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-                Session Info
+                Socket Connection
               </span>
               <span>{sectionsOpen.session ? "−" : "+"}</span>
             </button>
@@ -605,7 +605,7 @@ export const DebugPanel: React.FC = () => {
             >
               <span className="flex items-center">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-                Wallet Debug
+                Phantom Wallet
               </span>
               <span>{sectionsOpen.wallet ? "−" : "+"}</span>
             </button>
@@ -648,7 +648,7 @@ export const DebugPanel: React.FC = () => {
             >
               <span className="flex items-center">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-                Network Debug
+                Networking
               </span>
               <span>{sectionsOpen.network ? "−" : "+"}</span>
             </button>
@@ -700,7 +700,7 @@ export const DebugPanel: React.FC = () => {
             >
               <span className="flex items-center">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-                UI Debug
+                User Interface
               </span>
               <span>{sectionsOpen.ui ? "−" : "+"}</span>
             </button>
@@ -752,7 +752,7 @@ export const DebugPanel: React.FC = () => {
             >
               <span className="flex items-center">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse mr-2"></span>
-                Debug Tools
+                Quick Tools
               </span>
               <span>{sectionsOpen.tools ? "−" : "+"}</span>
             </button>
