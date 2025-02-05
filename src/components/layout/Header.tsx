@@ -26,6 +26,7 @@ export const Header: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
 
   useEffect(() => {
     const fetchContests = async () => {
@@ -67,16 +68,28 @@ export const Header: React.FC = () => {
     }
   }, [error, clearError]);
 
-  // Add maintenance mode check on mount
+  // Add maintenance mode check on mount and every 30 seconds
   useEffect(() => {
     const checkMaintenance = async () => {
-      if (isAdmin() || isSuperAdmin()) {
+      if (!isAdmin() && !isSuperAdmin()) return;
+
+      const now = Date.now();
+      // Only check if 30 seconds have passed since last check
+      if (now - lastMaintenanceCheck < 30000) return;
+
+      try {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
         setMaintenanceMode(isInMaintenance);
+        setLastMaintenanceCheck(now);
+      } catch (err) {
+        console.error("Failed to check maintenance mode:", err);
       }
     };
+
     checkMaintenance();
-  }, [isAdmin, isSuperAdmin, setMaintenanceMode]);
+    const interval = setInterval(checkMaintenance, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin, isSuperAdmin, setMaintenanceMode, lastMaintenanceCheck]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

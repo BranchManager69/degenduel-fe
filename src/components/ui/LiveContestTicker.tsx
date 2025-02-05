@@ -61,13 +61,13 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 className="inline-flex items-center space-x-4 text-sm"
               >
                 <span className="text-yellow-400 font-mono">
-                  ⚠ SYSTEM MAINTENANCE
+                  ⚠ DUELS PAUSED
                 </span>
                 <span className="text-yellow-400/75 font-mono">
-                  UPGRADING SYSTEMS
+                  MAINTENANCE IN PROGRESS
                 </span>
                 <span className="text-yellow-400/50 font-mono">
-                  PLEASE STAND BY
+                  PLEASE DEGEN ELSEWHERE
                 </span>
                 <span
                   className="font-mono text-yellow-400/75"

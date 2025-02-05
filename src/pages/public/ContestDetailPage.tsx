@@ -1,3 +1,5 @@
+// src/pages/public/ContestDetailPage.tsx
+
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import React, { useEffect, useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";

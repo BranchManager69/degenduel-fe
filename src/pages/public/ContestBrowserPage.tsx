@@ -1,4 +1,4 @@
-// src/pages/public/ContestBrowser.tsx
+// src/pages/public/ContestBrowserPage.tsx
 
 import React, { useEffect, useMemo, useState } from "react";
 import { CreateContestButton } from "../../components/admin/CreateContestButton";

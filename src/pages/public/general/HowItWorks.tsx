@@ -1,5 +1,7 @@
+// src/pages/public/general/HowItWorks.tsx
+
 import React from "react";
-import { Card, CardContent } from "../../components/ui/Card";
+import { Card, CardContent } from "../../../components/ui/Card";
 
 export const HowItWorks: React.FC = () => {
   const steps = [

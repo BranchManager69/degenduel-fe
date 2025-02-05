@@ -8,7 +8,7 @@ import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { Contest } from "../../types/index";
 
-// Update the interface to match the actual API response structure
+// TODO: Move to a separate file
 interface ContestResponse {
   contests: Contest[];
   pagination: {
@@ -18,6 +18,7 @@ interface ContestResponse {
   };
 }
 
+// Landing Page
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);

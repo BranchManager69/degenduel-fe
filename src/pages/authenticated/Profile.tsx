@@ -1,3 +1,5 @@
+// src/pages/authenticated/Profile.tsx
+
 import React, { useEffect, useState } from "react";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
@@ -16,6 +18,7 @@ import {
   UserStats as UserStatsType,
 } from "../../types/profile";
 
+// TODO: Move to a separate file
 interface LoadingState {
   user: boolean;
   stats: boolean;
@@ -23,6 +26,7 @@ interface LoadingState {
   history: boolean;
 }
 
+// TODO: Move to a separate file
 interface ErrorState {
   user: string | null;
   stats: string | null;
@@ -30,6 +34,8 @@ interface ErrorState {
   history: string | null;
 }
 
+// Map History Response
+// Helper: map the history response to the ContestEntry type
 const mapHistoryResponse = (entry: any) => ({
   contest_id: entry.contest_id,
   contest_name: entry.contest_name,
@@ -39,8 +45,9 @@ const mapHistoryResponse = (entry: any) => ({
   rank: entry.rank,
 });
 
+// Profile Page
 export const Profile: React.FC = () => {
-  const { user, setUser } = useStore();
+  const { user, setUser, maintenanceMode } = useStore();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userStats, setUserStats] = useState<UserStatsType | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -63,14 +70,27 @@ export const Profile: React.FC = () => {
     const loadProfileData = async () => {
       if (!user?.wallet_address) return;
 
-      // Reset states
-      setLoading({
-        user: true,
-        stats: true,
-        achievements: true,
-        history: true,
-      });
+      // Only set loading true if we're actually going to load data
+      if (!maintenanceMode) {
+        setLoading({
+          user: true,
+          stats: true,
+          achievements: true,
+          history: true,
+        });
+      }
       setError({ user: null, stats: null, achievements: null, history: null });
+
+      if (maintenanceMode) {
+        // If in maintenance mode, set all loading to false and don't attempt API calls
+        setLoading({
+          user: false,
+          stats: false,
+          achievements: false,
+          history: false,
+        });
+        return;
+      }
 
       // Load user data and balance in parallel
       try {
@@ -101,6 +121,10 @@ export const Profile: React.FC = () => {
           ban_reason: userResponse.ban_reason ?? null,
         });
       } catch (err) {
+        if (err instanceof Response && err.status === 503) {
+          // Maintenance mode response, don't set error
+          return;
+        }
         setError((prev) => ({
           ...prev,
           user: err instanceof Error ? err.message : "Failed to load user data",
@@ -160,7 +184,7 @@ export const Profile: React.FC = () => {
     };
 
     loadProfileData();
-  }, [user?.wallet_address]);
+  }, [user?.wallet_address, maintenanceMode]);
 
   const handleUpdateNickname = async (newNickname: string) => {
     if (!user?.wallet_address) return;
@@ -190,6 +214,18 @@ export const Profile: React.FC = () => {
     }
   };
 
+  // Recyclable Maintenance Indicator
+  const MaintenanceIndicator = () => (
+    <div className="p-4 rounded-lg border border-yellow-400/20 bg-yellow-400/5 relative group">
+      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/0 via-yellow-400/5 to-yellow-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="flex items-center justify-center space-x-2">
+        <span className="text-yellow-400 animate-pulse">⚙️</span>
+        <p className="text-yellow-400 text-center font-mono">Unavailable</p>
+        <span className="text-yellow-400 animate-pulse">⚙️</span>
+      </div>
+    </div>
+  );
+
   if (!user) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
@@ -208,11 +244,15 @@ export const Profile: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Profile Container */}
       <div className="space-y-8">
+        {/* User Data */}
         {loading.user ? (
           <div className="h-32 flex items-center justify-center">
             <LoadingSpinner size="lg" className="animate-cyber-pulse" />
           </div>
+        ) : maintenanceMode ? (
+          <MaintenanceIndicator />
         ) : error.user ? (
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
@@ -239,10 +279,13 @@ export const Profile: React.FC = () => {
           </div>
         ) : null}
 
+        {/* User Stats */}
         {loading.stats ? (
           <div className="h-32 flex items-center justify-center">
             <LoadingSpinner size="lg" className="animate-cyber-pulse" />
           </div>
+        ) : maintenanceMode ? (
+          <MaintenanceIndicator />
         ) : error.stats ? (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
@@ -263,6 +306,7 @@ export const Profile: React.FC = () => {
           </div>
         ) : null}
 
+        {/* User Achievements */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
             <h2 className="text-2xl font-bold text-gray-100 group-hover:animate-glitch relative group">
@@ -273,6 +317,8 @@ export const Profile: React.FC = () => {
               <div className="h-32 flex items-center justify-center">
                 <LoadingSpinner size="lg" className="animate-cyber-pulse" />
               </div>
+            ) : maintenanceMode ? (
+              <MaintenanceIndicator />
             ) : error.achievements ? (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
@@ -303,11 +349,15 @@ export const Profile: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* User Contest History */}
           <div>
             {loading.history ? (
               <div className="h-32 flex items-center justify-center">
                 <LoadingSpinner size="lg" className="animate-cyber-pulse" />
               </div>
+            ) : maintenanceMode ? (
+              <MaintenanceIndicator />
             ) : error.history ? (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
@@ -322,8 +372,14 @@ export const Profile: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* END OF CONTEST HISTORY */}
         </div>
+
+        {/* END OF PROFILE CONTAINER */}
       </div>
+
+      {/* END OF PAGE */}
     </div>
   );
 };
