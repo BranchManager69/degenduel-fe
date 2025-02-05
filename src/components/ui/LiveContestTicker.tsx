@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
+  const { maintenanceMode } = useStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
@@ -17,11 +19,74 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   useEffect(() => {
     if (!containerRef.current || !contentRef.current) return;
 
+    // Remove any existing clones first
+    const existingClones = containerRef.current.querySelectorAll(".clone");
+    existingClones.forEach((clone) => clone.remove());
+
     // Clone items to create seamless loop
     const content = contentRef.current;
     const clone = content.cloneNode(true) as HTMLDivElement;
+    clone.classList.add("clone"); // Add class to identify clones
     containerRef.current.appendChild(clone);
-  }, [contests]);
+
+    return () => {
+      // Cleanup clones when component unmounts or deps change
+      if (containerRef.current) {
+        const clones = containerRef.current.querySelectorAll(".clone");
+        clones.forEach((clone) => clone.remove());
+      }
+    };
+  }, [contests, maintenanceMode]);
+
+  if (maintenanceMode) {
+    return (
+      <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative">
+        <div
+          ref={containerRef}
+          className="inline-flex items-center"
+          style={{
+            animation: "ticker 30s linear infinite",
+            animationPlayState: isPaused ? "paused" : "running",
+          }}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          <div
+            ref={contentRef}
+            className="inline-flex items-center space-x-8 px-4"
+          >
+            {[...Array(3)].map((_, index) => (
+              <div
+                key={index}
+                className="inline-flex items-center space-x-4 text-sm"
+              >
+                <span className="text-yellow-400 font-mono">
+                  ⚠ SYSTEM MAINTENANCE
+                </span>
+                <span className="text-yellow-400/75 font-mono">
+                  UPGRADING SYSTEMS
+                </span>
+                <span className="text-yellow-400/50 font-mono">
+                  PLEASE STAND BY
+                </span>
+                <span
+                  className="font-mono text-yellow-400/75"
+                  style={{
+                    backgroundImage:
+                      "repeating-linear-gradient(-45deg, #000 0, #000 10px, #fbbf24 10px, #fbbf24 20px)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  ▰▰▰▰▰▰▰▰
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Sort contests: active first, then pending
   const sortedContests = [...contests].sort((a, b) => {
@@ -46,22 +111,22 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   }
 
   return (
-    <div
-      className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap relative z-20"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap relative">
       <div
         ref={containerRef}
-        className={`inline-flex items-center animate-ticker`}
-        style={{ animationPlayState: isPaused ? "paused" : "running" }}
+        className="inline-flex items-center"
+        style={{
+          animation: "ticker 30s linear infinite",
+          animationPlayState: isPaused ? "paused" : "running",
+        }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
       >
         <div
           ref={contentRef}
           className="inline-flex items-center space-x-8 px-4"
         >
           {sortedContests.map((contest) => {
-            // Check if the contest is live
             const isLive = contest.status === "active";
             return (
               <Link
@@ -69,7 +134,6 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 to={`/contests/${contest.id}`}
                 className="inline-flex items-center space-x-2 text-sm hover:bg-dark-300/50 px-2 py-1 rounded transition-colors"
               >
-                {/* Check if the contest is live */}
                 {isLive ? (
                   <span className="inline-flex items-center text-cyber-400 space-x-1.5">
                     <span className="relative flex h-2 w-2">
@@ -79,21 +143,14 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                     <span>LIVE</span>
                   </span>
                 ) : (
-                  // Check if the contest is new
                   <span className="text-neon-400">NEW</span>
                 )}
-
-                {/* Contest Name */}
                 <span className="font-medium text-gray-200 hover:text-brand-400 transition-colors">
                   {contest.name}
                 </span>
-
-                {/* Contest Participants */}
                 <span className="text-gray-400">
                   {contest.participant_count}/{contest.max_participants}
                 </span>
-
-                {/* Contest Prize Pool */}
                 <span className="bg-gradient-to-r from-cyber-400 to-neon-400 text-transparent bg-clip-text">
                   {contest.prize_pool}◎
                 </span>

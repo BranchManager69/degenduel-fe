@@ -30,14 +30,22 @@ export const Header: React.FC = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        const response = await ddApi.contests.getAll();
-        const contests = Array.isArray(response) ? response : [];
+        // If not in maintenance mode, fetch contests
+        if (!maintenanceMode) {
+          const response = await ddApi.contests.getAll();
+          const contests = Array.isArray(response) ? response : [];
 
-        setActiveContests(contests.filter(isContestLive) || []);
-        setOpenContests(
-          contests.filter((contest: Contest) => contest.status === "pending") ||
-            []
-        );
+          setActiveContests(contests.filter(isContestLive) || []);
+          setOpenContests(
+            contests.filter(
+              (contest: Contest) => contest.status === "pending"
+            ) || []
+          );
+        } else {
+          // Clear contests during maintenance mode
+          setActiveContests([]);
+          setOpenContests([]);
+        }
       } catch (err) {
         console.error("Failed to load contests:", err);
       } finally {
@@ -49,7 +57,7 @@ export const Header: React.FC = () => {
     // Refresh contests every minute
     const interval = setInterval(fetchContests, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [maintenanceMode]);
 
   // Auto-clear errors after 5 seconds
   React.useEffect(() => {
@@ -103,7 +111,7 @@ export const Header: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 relative">
               <p className="text-yellow-400 text-sm text-center font-bold tracking-wider uppercase flex items-center justify-center gap-2">
                 <span className="animate-pulse">⚠</span>
-                Maintenance Mode Active
+                ⚙️ DegenDuel is undergoing scheduled maintenance ⚙️
                 <span className="animate-pulse">⚠</span>
               </p>
             </div>
@@ -116,16 +124,24 @@ export const Header: React.FC = () => {
 
           {/* Main header row */}
           <div className="flex items-center justify-between h-16 relative">
-            {/* Logo */}
+            {/* Main Logo */}
             <Link
               to="/"
               className="flex-shrink-0 relative group"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Logo Image */}
+              <img
+                src="/assets/media/dd-logo-small.png"
+                alt="DegenDuel Logo"
+                className="w-10 h-10"
+              />
+              {/* Logo Text */}
               <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-600 group-hover:animate-pulse-fast">
                 DegenDuel
               </span>
-              <div className="absolute -inset-1 bg-gradient-to-r from-brand-400/20 to-brand-600/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Logo Glow */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-white/20 to-white/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
 
             {/* Desktop Navigation */}
