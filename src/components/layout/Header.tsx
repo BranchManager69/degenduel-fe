@@ -47,7 +47,11 @@ export const Header: React.FC = () => {
           setActiveContests([]);
           setOpenContests([]);
         }
-      } catch (err) {
+      } catch (err: any) {
+        // If we get a 503, that means we're in maintenance mode
+        if (err?.status === 503 || err?.message?.includes("503")) {
+          setMaintenanceMode(true);
+        }
         console.error("Failed to load contests:", err);
       } finally {
         setLoading(false);
@@ -58,7 +62,7 @@ export const Header: React.FC = () => {
     // Refresh contests every minute
     const interval = setInterval(fetchContests, 60000);
     return () => clearInterval(interval);
-  }, [maintenanceMode]);
+  }, [maintenanceMode, setMaintenanceMode]);
 
   // Auto-clear errors after 5 seconds
   React.useEffect(() => {
@@ -71,8 +75,6 @@ export const Header: React.FC = () => {
   // Add maintenance mode check on mount and every 30 seconds
   useEffect(() => {
     const checkMaintenance = async () => {
-      if (!isAdmin() && !isSuperAdmin()) return;
-
       const now = Date.now();
       // Only check if 30 seconds have passed since last check
       if (now - lastMaintenanceCheck < 30000) return;
@@ -81,7 +83,11 @@ export const Header: React.FC = () => {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
         setMaintenanceMode(isInMaintenance);
         setLastMaintenanceCheck(now);
-      } catch (err) {
+      } catch (err: any) {
+        // If we get a 503, that means we're in maintenance mode
+        if (err?.status === 503 || err?.message?.includes("503")) {
+          setMaintenanceMode(true);
+        }
         console.error("Failed to check maintenance mode:", err);
       }
     };
@@ -89,7 +95,7 @@ export const Header: React.FC = () => {
     checkMaintenance();
     const interval = setInterval(checkMaintenance, 30000);
     return () => clearInterval(interval);
-  }, [isAdmin, isSuperAdmin, setMaintenanceMode, lastMaintenanceCheck]);
+  }, [setMaintenanceMode, lastMaintenanceCheck]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -126,7 +132,7 @@ export const Header: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 relative">
               <p className="text-yellow-400 text-sm text-center font-bold tracking-wider uppercase flex items-center justify-center gap-2">
                 <span className="animate-pulse">⚠</span>
-                ⚙️ Scheduled maintenance in progress ⚙️
+                ⚙️ DegenDuel maintenance in progress ⚙️
                 <span className="animate-pulse">⚠</span>
               </p>
             </div>
@@ -224,35 +230,44 @@ export const Header: React.FC = () => {
                   </span>
                   <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30">
                     <div className="py-1">
+                      {/* Superadmin Dashboard */}
+                      {isSuperAdmin() && (
+                        <Link
+                          to="/superadmin"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                        >
+                          Superadmin Dash
+                        </Link>
+                      )}
+
+                      {/* Admin Dashboard */}
                       {isAdmin() && (
                         <Link
                           to="/admin"
                           className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
                         >
-                          Contest Admin
+                          Admin Dash
                         </Link>
                       )}
+
+                      {/* Profit Simulator */}
                       {isSuperAdmin() && (
-                        <>
-                          <Link
-                            to="/superadmin"
-                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
-                          >
-                            SuperAdmin Tools
-                          </Link>
-                          <Link
-                            to="/amm-sim"
-                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
-                          >
-                            AMM Simulator
-                          </Link>
-                          <Link
-                            to="/api-playground"
-                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
-                          >
-                            API Playground
-                          </Link>
-                        </>
+                        <Link
+                          to="/amm-sim"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                        >
+                          Launch Sim
+                        </Link>
+                      )}
+
+                      {/* API Playground */}
+                      {isSuperAdmin() && (
+                        <Link
+                          to="/api-playground"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
+                        >
+                          API Playground
+                        </Link>
                       )}
                     </div>
                   </div>

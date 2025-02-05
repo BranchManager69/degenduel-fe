@@ -195,7 +195,8 @@ export const formatBonusPoints = (points: string | number): string => {
 // Add maintenance mode check function
 const checkMaintenanceMode = async () => {
   try {
-    const response = await fetch(`${API_URL}/admin/maintenance`, {
+    // First try the public status endpoint
+    const response = await fetch(`${API_URL}/status`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -204,18 +205,37 @@ const checkMaintenanceMode = async () => {
       },
     });
 
-    if (!response.ok) {
-      console.error(
-        "Failed to check maintenance mode status:",
-        response.status
-      );
-      return false;
+    // If we get a 503, that means we're in maintenance mode
+    if (response.status === 503) {
+      return true;
     }
 
-    const data = await response.json();
-    return data.enabled || false;
+    // If we get a successful response, check the maintenance flag
+    if (response.ok) {
+      const data = await response.json();
+      return data.maintenance || false;
+    }
+
+    // For admin users, try the admin endpoint as fallback
+    const adminResponse = await fetch(`${API_URL}/admin/maintenance`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    if (adminResponse.ok) {
+      const data = await adminResponse.json();
+      return data.enabled || false;
+    }
+
+    // If both checks fail, assume we're not in maintenance mode
+    return false;
   } catch (error) {
     console.error("Error checking maintenance mode:", error);
+    // If we can't check maintenance mode, assume we're not in maintenance
     return false;
   }
 };
