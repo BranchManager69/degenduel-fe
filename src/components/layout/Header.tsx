@@ -85,6 +85,7 @@ export const Header: React.FC = () => {
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <header className="bg-dark-200/95 backdrop-blur-lg border-b border-dark-300/50 sticky top-0 z-50 shadow-lg shadow-black/20">
+        {/* Banned User Banner */}
         {user?.is_banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
@@ -111,7 +112,7 @@ export const Header: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 relative">
               <p className="text-yellow-400 text-sm text-center font-bold tracking-wider uppercase flex items-center justify-center gap-2">
                 <span className="animate-pulse">⚠</span>
-                ⚙️ DegenDuel is undergoing scheduled maintenance ⚙️
+                ⚙️ Scheduled maintenance in progress ⚙️
                 <span className="animate-pulse">⚠</span>
               </p>
             </div>
@@ -131,15 +132,25 @@ export const Header: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Logo Image */}
+              {/* NO LOGO IMAGE YET
               <img
                 src="/assets/media/dd-logo-small.png"
                 alt="DegenDuel Logo"
                 className="w-10 h-10"
               />
+              */}
+
               {/* Logo Text */}
-              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-600 group-hover:animate-pulse-fast">
-                DegenDuel
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-white group-hover:animate-pulse-fast">
+                Degen
               </span>
+              <span className="text-2xl font-bold text-white group-hover:animate-pulse-fast">
+                x
+              </span>
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-400 group-hover:animate-pulse-fast">
+                Duel
+              </span>
+
               {/* Logo Glow */}
               <div className="absolute -inset-1 bg-gradient-to-r from-white/20 to-white/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
