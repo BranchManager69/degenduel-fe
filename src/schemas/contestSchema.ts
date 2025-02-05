@@ -19,11 +19,17 @@ const contestSettingsSchema = z.object({
     "shark",
     "whale",
   ]),
-  min_trades: z.number().min(1),
-  max_participants: z.number().min(2),
-  min_participants: z.number().min(2),
+  min_trades: z.number(),
+  max_participants: z.number(),
+  min_participants: z.number(),
   token_types: z.array(z.string()),
-  rules: z.array(z.string()),
+  rules: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string(),
+    })
+  ),
 }) satisfies z.ZodType<ContestSettings>;
 
 // Schema for form validation
@@ -46,3 +52,15 @@ export const contestFormSchema = z.object({
 });
 
 export type ContestFormData = z.infer<typeof contestFormSchema>;
+
+export const createContestSchema = z.object({
+  name: z.string().min(1),
+  description: z.string(),
+  entry_fee: z.string(),
+  prize_pool: z.string(),
+  start_time: z.string(),
+  end_time: z.string(),
+  settings: contestSettingsSchema,
+});
+
+export type CreateContestInput = z.infer<typeof createContestSchema>;

@@ -39,24 +39,28 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
   } = useForm<ContestFormData>({
     resolver: zodResolver(contestFormSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      entry_fee: "0.1",
-      prize_pool: "0",
-      current_prize_pool: "0",
-      start_time: getNextHourDateTime(),
-      end_time: getNextHourDateTime(2),
+      name: contest?.name,
+      description: contest?.description,
+      entry_fee: contest?.entry_fee,
+      prize_pool: contest?.prize_pool,
+      current_prize_pool: contest?.current_prize_pool,
+      start_time: contest?.start_time,
+      end_time: contest?.end_time,
       entry_deadline: getNextHourDateTime(),
       allowed_buckets: [1, 2, 3, 4, 5],
-      participant_count: 0,
-      status: "pending",
+      participant_count: contest?.participant_count || 0,
+      status: contest?.status,
       settings: {
-        difficulty: "guppy",
-        min_trades: 1,
+        difficulty: contest?.settings.difficulty,
+        min_trades: contest?.settings.min_trades,
         min_participants: 2,
         max_participants: 100,
-        token_types: [],
-        rules: [],
+        token_types: contest?.settings.token_types,
+        rules: contest?.settings.rules.map((rule) => ({
+          id: typeof rule === "string" ? crypto.randomUUID() : rule.id,
+          title: typeof rule === "string" ? "Rule" : rule.title,
+          description: typeof rule === "string" ? rule : rule.description,
+        })),
       },
     },
   });
@@ -81,7 +85,16 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
         status: contest.status,
         cancelled_at: contest.cancelled_at,
         cancellation_reason: contest.cancellation_reason,
-        settings: contest.settings,
+        settings: {
+          difficulty: contest.settings.difficulty,
+          min_trades: contest.settings.min_trades,
+          token_types: contest.settings.token_types,
+          rules: contest.settings.rules.map((rule) => ({
+            id: typeof rule === "string" ? crypto.randomUUID() : rule.id,
+            title: typeof rule === "string" ? "Rule" : rule.title,
+            description: typeof rule === "string" ? rule : rule.description,
+          })),
+        },
       });
     }
   }, [contest, reset]);

@@ -1,8 +1,14 @@
-import React from 'react';
-import { Card, CardHeader, CardContent } from '../ui/Card';
+import React from "react";
+import { Card, CardContent, CardHeader } from "../ui/Card";
+
+interface Rule {
+  id: string;
+  title: string;
+  description: string;
+}
 
 interface ContestRulesProps {
-  rules: string[];
+  rules: Rule[];
 }
 
 export const ContestRules: React.FC<ContestRulesProps> = ({ rules }) => {
@@ -12,11 +18,11 @@ export const ContestRules: React.FC<ContestRulesProps> = ({ rules }) => {
         <h3 className="text-lg font-semibold text-gray-100">Contest Rules</h3>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-3">
-          {rules.map((rule, index) => (
-            <li key={index} className="flex items-start space-x-3 text-gray-300">
-              <span className="text-brand-400 mt-1">•</span>
-              <span>{rule}</span>
+        <ul className="space-y-4">
+          {rules.map((rule) => (
+            <li key={rule.id} className="space-y-1">
+              <h4 className="text-brand-400 font-medium">{rule.title}</h4>
+              <p className="text-gray-300 text-sm">{rule.description}</p>
             </li>
           ))}
         </ul>

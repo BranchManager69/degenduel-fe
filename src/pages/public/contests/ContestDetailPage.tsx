@@ -18,7 +18,7 @@ import {
   mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
-import type { Contest } from "../../../types/index";
+import type { Contest as BaseContest } from "../../../types/index";
 
 interface ContestParticipant {
   wallet_address?: string;
@@ -26,7 +26,21 @@ interface ContestParticipant {
   nickname?: string;
   username?: string;
   score?: number;
+  users?: {
+    wallet_address?: string;
+    nickname?: string;
+  };
 }
+
+interface Participant {
+  address: string;
+  nickname: string;
+  score?: number;
+}
+
+type Contest = Omit<BaseContest, "participants"> & {
+  participants?: Participant[];
+};
 
 export const ContestDetails: React.FC = () => {
   const { id } = useParams();
@@ -125,11 +139,26 @@ export const ContestDetails: React.FC = () => {
           difficulty: data.settings?.difficulty || "guppy",
         },
         participants: Array.isArray(data.contest_participants)
-          ? data.contest_participants.map((p: ContestParticipant) => ({
-              address: p.wallet_address || p.address,
-              username: p.nickname || p.username,
-              score: p.score,
-            }))
+          ? data.contest_participants.map(
+              (p: ContestParticipant): Participant => {
+                // Extract address from either the participant or nested user object
+                const address =
+                  p.wallet_address || p.users?.wallet_address || "";
+                // Extract nickname from either the participant or nested user object
+                const nickname =
+                  p.nickname ||
+                  p.users?.nickname ||
+                  `${address.slice(0, 6)}...${address.slice(-4)}`;
+                // Handle score if present
+                const score = typeof p.score === "number" ? p.score : undefined;
+
+                return {
+                  address,
+                  nickname,
+                  score,
+                };
+              }
+            )
           : [],
       };
 

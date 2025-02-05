@@ -93,11 +93,14 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     settings: {
       difficulty: "shark" as ContestDifficulty,
       min_trades: 1,
-      ////max_participants: 50,
-      ////min_participants: 2,
       token_types: [],
       rules: [
-        `Democrats are strictly forbidden from playing DegenDuel at all times.`,
+        {
+          id: "1",
+          title: "Participation",
+          description:
+            "Democrats are strictly forbidden from playing DegenDuel at all times.",
+        },
       ],
     } satisfies ContestSettings,
   });
@@ -134,17 +137,28 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           participant_count: 0, // brand new contest
           min_participants: formData.min_participants, // Default 2
           max_participants: formData.max_participants, // Default 20
-          ////min_trades: formData.settings.min_trades, // Default 1
-          ////token_types: [],
-          ////rules: [],
           settings: {
             difficulty: formData.settings.difficulty,
             min_trades: formData.settings.min_trades,
-            ////max_participants: formData.max_participants,
-            ////min_participants: formData.min_participants,
-            token_types: [],
+            token_types: formData.settings.token_types || [],
             rules: [
-              `Democrats are STRICTLY FORBIDDEN from playing DegenDuel at all times.`,
+              {
+                id: "1",
+                title: "Platform Rules",
+                description:
+                  "All platform rules must be followed at all times.",
+              },
+              {
+                id: "2",
+                title: "Fair Play",
+                description: "No market manipulation or collusion is allowed.",
+              },
+              {
+                id: "3",
+                title: "Participation",
+                description:
+                  "Democrats are strictly forbidden from playing DegenDuel at all times.",
+              },
             ],
           } as ContestSettings,
         };

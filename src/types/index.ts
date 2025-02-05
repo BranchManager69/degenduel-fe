@@ -182,10 +182,12 @@ export type DifficultyLevel =
 export interface ContestSettings {
   difficulty: DifficultyLevel;
   min_trades: number;
-  ////max_participants: number;
-  ////min_participants: number;
   token_types: string[];
-  rules: string[];
+  rules: Array<{
+    id: string;
+    title: string;
+    description: string;
+  }>;
 }
 
 export interface Contest {

@@ -255,16 +255,16 @@ export const Header: React.FC = () => {
                 <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-dark-300/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30">
                   <div className="py-1">
                     <Link
+                      to="/rankings/performance"
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400/50 hover:text-brand-400 transition-colors"
+                    >
+                      Degen Leaderboard
+                    </Link>
+                    <Link
                       to="/rankings/global"
                       className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400/50 hover:text-brand-400 transition-colors"
                     >
                       Global Rankings
-                    </Link>
-                    <Link
-                      to="/rankings/performance"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400/50 hover:text-brand-400 transition-colors"
-                    >
-                      Contest Performance
                     </Link>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export const Header: React.FC = () => {
                           to="/superadmin"
                           className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
                         >
-                          Superadmin Dash
+                          Superadmin Dashboard
                         </Link>
                       )}
 
@@ -292,7 +292,7 @@ export const Header: React.FC = () => {
                           to="/admin"
                           className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
                         >
-                          Admin Dash
+                          Admin Dashboard
                         </Link>
                       )}
 
@@ -302,7 +302,7 @@ export const Header: React.FC = () => {
                           to="/amm-sim"
                           className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-400"
                         >
-                          Launch Sim
+                          Launch Simulator
                         </Link>
                       )}
 
@@ -368,10 +368,7 @@ export const Header: React.FC = () => {
                     <div className="relative bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 rounded shadow-lg shadow-black/50 overflow-hidden">
                       {/* Menu items container */}
                       <div className="relative py-1">
-                        <Link
-                          to="/profile"
-                          className="block relative group/item"
-                        >
+                        <Link to="/me" className="block relative group/item">
                           <div className="absolute inset-0 bg-brand-500/0 group-hover/item:bg-brand-500/10 transition-colors" />
                           <div className="relative px-4 py-2 flex items-center gap-2">
                             <span className="text-sm text-gray-300 group-hover/item:text-brand-400 transition-colors">
@@ -590,7 +587,7 @@ export const Header: React.FC = () => {
                     {user ? (
                       <div className="space-y-3">
                         <Link
-                          to="/profile"
+                          to="/me"
                           className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
                           onClick={() => setIsMenuOpen(false)}
                         >

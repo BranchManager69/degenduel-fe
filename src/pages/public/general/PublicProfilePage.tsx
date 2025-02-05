@@ -1,3 +1,5 @@
+// src/pages/public/general/PublicProfilePage.tsx
+
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { CopyToClipboard } from "../../../components/common/CopyToClipboard";

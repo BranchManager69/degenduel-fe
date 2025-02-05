@@ -1,6 +1,7 @@
 // src/pages/authenticated/Profile.tsx
 
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { AchievementCard } from "../../components/profile/AchievementCard";
@@ -255,7 +256,6 @@ export const Profile: React.FC = () => {
           <MaintenanceIndicator />
         ) : error.user ? (
           <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             <ErrorMessage
               message={error.user}
               onRetry={() => window.location.reload()}
@@ -265,17 +265,40 @@ export const Profile: React.FC = () => {
         ) : userData ? (
           <div className="relative group overflow-hidden rounded-lg">
             <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <ProfileHeader
-              address={userData.wallet_address}
-              username={userData.nickname || userData.wallet_address}
-              rankScore={userData.rank_score}
-              joinDate={new Date(userData.created_at).toLocaleDateString()}
-              bonusBalance={userData.bonusBalance}
-              onUpdateNickname={handleUpdateNickname}
-              isUpdating={isUpdatingNickname}
-              isBanned={userData.is_banned ?? false}
-              banReason={userData.ban_reason ?? null}
-            />
+            <div className="relative">
+              <Link
+                to={`/profile/${userData.nickname || userData.wallet_address}`}
+                className="absolute top-2 right-2 px-3 py-1.5 bg-dark-300/50 hover:bg-dark-300 border border-brand-500/20 hover:border-brand-500/50 rounded flex items-center gap-2 transition-all duration-200 group/link"
+              >
+                <span className="text-sm text-gray-300 group-hover/link:text-brand-400 transition-colors">
+                  View Public Profile
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-gray-400 group-hover/link:text-brand-400 transition-colors"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path
+                    fillRule="evenodd"
+                    d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </Link>
+              <ProfileHeader
+                address={userData.wallet_address}
+                username={userData.nickname || userData.wallet_address}
+                rankScore={userData.rank_score}
+                joinDate={new Date(userData.created_at).toLocaleDateString()}
+                bonusBalance={userData.bonusBalance}
+                onUpdateNickname={handleUpdateNickname}
+                isUpdating={isUpdatingNickname}
+                isBanned={userData.is_banned ?? false}
+                banReason={userData.ban_reason ?? null}
+              />
+            </div>
           </div>
         ) : null}
 
