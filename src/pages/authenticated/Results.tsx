@@ -1,19 +1,34 @@
+// src/pages/authenticated/Results.tsx
+
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CelebrationOverlay } from "../components/results/CelebrationOverlay";
-import { FinalLeaderboard } from "../components/results/FinalLeaderboard";
-import { PerformanceChart } from "../components/results/PerformanceChart";
-import { TokenPerformance } from "../components/results/TokenPerformance";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
+import { CelebrationOverlay } from "../../components/results/CelebrationOverlay";
+import { FinalLeaderboard } from "../../components/results/FinalLeaderboard";
+import { PerformanceChart } from "../../components/results/PerformanceChart";
+import { TokenPerformance } from "../../components/results/TokenPerformance";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
 
+/*
+ * THIS PAGE IS ONE OF THE OLDEST PAGES IN THE APP.
+ * IT IS OLD AND NEEDS A HUGE OVERHAUL FOR REAL DATA!
+ */
+
+// Contests results page
 export const Results: React.FC = () => {
-  const { id } = useParams();
+  // Use the navigate function to go back to the contests page
   const navigate = useNavigate();
 
-  // Simulated random result when using test skip button
-  const randomResult = Math.random() > 0.5 ? 1.5 : 0.5; // 50% chance of win/loss
+  // Get the contest ID from the URL
+  const { id } = useParams();
+  // Should be getting contest data from the API using just the id
 
+  /*
+   * THE BELOW PLACEHOLDER DATA SHOULDN'T EVEN BE HERE!
+   * ALWAYS USE REAL DATA.
+   */
+  // Placeholder simulated random result when using test skip button
+  const randomResult = Math.random() > 0.5 ? 1.5 : 0.5; // 50% chance of win/loss
   // Placeholder contest data
   const contest = {
     id,
@@ -21,7 +36,7 @@ export const Results: React.FC = () => {
     initialPortfolioValue: 1000,
     finalPortfolioValue: Math.round(1000 * randomResult), // Random win/loss
   };
-
+  // Placeholder leaderboard entries
   const leaderboardEntries = [
     {
       rank: 1,
@@ -52,14 +67,14 @@ export const Results: React.FC = () => {
       prize: 0,
     },
   ];
-
+  // Placeholder performance data
   const performanceData = Array.from({ length: 24 }, (_, i) => ({
     timestamp: new Date(Date.now() - (23 - i) * 3600000).toISOString(),
     value:
       contest.initialPortfolioValue +
       (contest.finalPortfolioValue - contest.initialPortfolioValue) * (i / 23),
   }));
-
+  // Placeholder token results
   const tokenResults = [
     {
       symbol: "SOL",

@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "../components/ui/Card";
-import { ddApi } from "../services/dd-api";
+// src/pages/public/TokensPage.tsx
 
+import React, { useEffect, useState } from "react";
+import { Card, CardContent } from "../../components/ui/Card";
+import { ddApi } from "../../services/dd-api";
+
+// Token interface (matches DegenDuel market data API)
 interface Token {
   contractAddress: string;
   name: string;
@@ -31,6 +34,7 @@ interface Token {
   }>;
 }
 
+// Tokens page
 export const TokensPage: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);

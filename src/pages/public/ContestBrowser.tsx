@@ -1,11 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { CreateContestButton } from "../components/admin/CreateContestButton";
-import { ContestCard } from "../components/contests/ContestCard";
-import { ContestSort } from "../components/contests/ContestSort";
-import { ddApi } from "../services/dd-api";
-import { Contest, ContestSettings } from "../types/index";
-import type { SortDirection, SortField } from "../types/sort";
+// src/pages/public/ContestBrowser.tsx
 
+import React, { useEffect, useMemo, useState } from "react";
+import { CreateContestButton } from "../../components/admin/CreateContestButton";
+import { ContestCard } from "../../components/contests/ContestCard";
+import { ContestSort } from "../../components/contests/ContestSort";
+import { ddApi } from "../../services/dd-api";
+import { Contest, ContestSettings } from "../../types/index";
+import type { SortDirection, SortField } from "../../types/sort";
+
+// Contest browser page
 export const ContestBrowser: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);

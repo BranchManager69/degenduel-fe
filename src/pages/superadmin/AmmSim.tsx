@@ -1,4 +1,4 @@
-import AmmSimulation from "../components/AmmSimulation";
+import AmmSimulation from "../../components/AmmSimulation";
 
 export default function AmmSim() {
   return (

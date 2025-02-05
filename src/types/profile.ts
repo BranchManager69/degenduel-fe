@@ -1,3 +1,5 @@
+// src/types/profile.ts
+
 export interface UserData {
   wallet_address: string;
   nickname: string | null;

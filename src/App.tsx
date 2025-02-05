@@ -1,48 +1,60 @@
+// src/App.tsx
+
 import React, { useEffect } from "react";
-import { Toaster } from "react-hot-toast";
+/* Router */
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+/* Toast */
+import { Toaster } from "react-hot-toast";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+/* Hooks */
+import { useAuth } from "./hooks/useAuth";
+/* Components */
 import { DebugPanel } from "./components/debug/DebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
+import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { MovingBackground } from "./components/ui/MovingBackground";
-import { AdminDashboard } from "./pages/AdminDashboard";
-import { Contact } from "./pages/Contact";
-import { ContestBrowser } from "./pages/ContestBrowser";
-import { ContestDetails } from "./pages/ContestDetails";
-import { ContestPerformance } from "./pages/ContestPerformance";
-import { FAQ } from "./pages/FAQ";
-import { GlobalRankings } from "./pages/GlobalRankings";
-import { HowItWorks } from "./pages/HowItWorks";
-import { LandingPage } from "./pages/LandingPage";
-import { LiveContest } from "./pages/LiveContest";
-import { Profile } from "./pages/Profile";
-import { Results } from "./pages/Results";
-import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
-import { TestPage } from "./pages/TestPage";
-import { TokenSelection } from "./pages/TokenSelection";
-import { TokensPage } from "./pages/TokensPage";
-/* Extra Pages */
-// API Playground
-import ApiPlayground from "./pages/ApiPlayground";
-// AMM Simulation
-import { useAuth } from "./hooks/useAuth";
-import AmmSim from "./pages/AmmSim";
+/* Pages */
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { LiveContest } from "./pages/authenticated/LiveContest"; // shouldn't this be public?
+import { Profile } from "./pages/authenticated/Profile";
+import { Results } from "./pages/authenticated/Results";
+import { TokenSelection } from "./pages/authenticated/TokenSelection";
+import { Contact } from "./pages/public/Contact";
+import { ContestBrowser } from "./pages/public/ContestBrowser";
+import { ContestDetails } from "./pages/public/ContestDetails";
+import { ContestPerformance } from "./pages/public/ContestPerformance";
+import { FAQ } from "./pages/public/FAQ";
+import { GlobalRankings } from "./pages/public/GlobalRankings";
+import { HowItWorks } from "./pages/public/HowItWorks";
+import { LandingPage } from "./pages/public/LandingPage";
+import { TokensPage } from "./pages/public/TokensPage";
+import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
+import { TestPage } from "./pages/superadmin/TestPage";
+/* some superadmin pages */
+import AmmSim from "./pages/superadmin/AmmSim";
+import ApiPlayground from "./pages/superadmin/ApiPlayground";
+/* some extra pages */
+import { BannedIP } from "./pages/other/BannedIP";
+import { BannedUser } from "./pages/other/BannedUser";
+import { Maintenance } from "./pages/other/Maintenance";
+import { NotFound } from "./pages/other/NotFound";
+/* styles */
 import "./styles/color-schemes.css";
 
 // Test HMR
-console.log("Testing HMR again - " + new Date().toISOString());
+//console.log("[Debug] Testing HMR - " + new Date().toISOString());
 
 export const App: React.FC = () => {
   const { checkAuth } = useAuth();
 
   useEffect(() => {
-    // Check auth every 5 minutes
-    const authCheckInterval = setInterval(checkAuth, 5 * 60 * 1000);
+    // Check auth every 30 seconds
+    const authCheckInterval = setInterval(checkAuth, 1 * 30 * 1000);
 
     // Also check when tab becomes visible
     const handleVisibilityChange = () => {
@@ -61,60 +73,103 @@ export const App: React.FC = () => {
 
   return (
     <Router>
+      {/* Parent Container */}
       <div className="min-h-screen flex flex-col relative">
+        {/* Animated Background */}
         <MovingBackground />
+
+        {/* Header */}
         <Header />
+
+        {/* Main Content */}
         <main className="flex-1 relative">
+          {/* Routes */}
           <Routes>
-            {/* Public Routes */}
+            {/* PUBLIC ROUTES */}
+
+            {/* Landing Page */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/contests" element={<ContestBrowser />} />
-            <Route path="/contests/:id" element={<ContestDetails />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/rankings/global" element={<GlobalRankings />} />
+
+            {/* Tokens Page */}
             <Route path="/tokens" element={<TokensPage />} />
+
+            {/* Contest Browser */}
+            <Route path="/contests" element={<ContestBrowser />} />
+
+            {/* Contest Details */}
+            <Route path="/contests/:id" element={<ContestDetails />} />
+
+            {/* How It Works */}
+            <Route path="/how-it-works" element={<HowItWorks />} />
+
+            {/* FAQ */}
+            <Route path="/faq" element={<FAQ />} />
+
+            {/* Contact */}
+            <Route path="/contact" element={<Contact />} />
+
+            {/* Global Rankings */}
+            <Route path="/rankings/global" element={<GlobalRankings />} />
+
+            {/* Contest Performance */}
             <Route
               path="/rankings/performance"
               element={<ContestPerformance />}
             />
 
-            {/* Authenticated Routes */}
+            {/* AUTHENTICATED ROUTES - Wrap with MaintenanceGuard */}
+
+            {/* Profile */}
             <Route
               path="/profile"
               element={
                 <AuthenticatedRoute>
-                  <Profile />
-                </AuthenticatedRoute>
-              }
-            />
-            <Route
-              path="/contests/:id/select-tokens"
-              element={
-                <AuthenticatedRoute>
-                  <TokenSelection />
-                </AuthenticatedRoute>
-              }
-            />
-            <Route
-              path="/contests/:id/live"
-              element={
-                <AuthenticatedRoute>
-                  <LiveContest />
-                </AuthenticatedRoute>
-              }
-            />
-            <Route
-              path="/contests/:id/results"
-              element={
-                <AuthenticatedRoute>
-                  <Results />
+                  <MaintenanceGuard>
+                    <Profile />
+                  </MaintenanceGuard>
                 </AuthenticatedRoute>
               }
             />
 
-            {/* Admin Routes */}
+            {/* Portfolio Token Selection */}
+            <Route
+              path="/contests/:id/select-tokens"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <TokenSelection />
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* Live Contest Page */}
+            <Route
+              path="/contests/:id/live"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <LiveContest />
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* Contest Results Page */}
+            <Route
+              path="/contests/:id/results"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <Results />
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* ADMIN ROUTES */}
+
+            {/* Admin Dashboard */}
             <Route
               path="/admin"
               element={
@@ -124,7 +179,9 @@ export const App: React.FC = () => {
               }
             />
 
-            {/* SuperAdmin Routes */}
+            {/* SUPERADMIN ROUTES*/}
+
+            {/* Superadmin Dashboard */}
             <Route
               path="/superadmin"
               element={
@@ -133,6 +190,8 @@ export const App: React.FC = () => {
                 </SuperAdminRoute>
               }
             />
+
+            {/* AMM Simulation */}
             <Route
               path="/amm-sim"
               element={
@@ -141,6 +200,8 @@ export const App: React.FC = () => {
                 </SuperAdminRoute>
               }
             />
+
+            {/* API Playground */}
             <Route
               path="/api-playground"
               element={
@@ -149,6 +210,8 @@ export const App: React.FC = () => {
                 </SuperAdminRoute>
               }
             />
+
+            {/* Test Page */}
             <Route
               path="/test"
               element={
@@ -157,11 +220,30 @@ export const App: React.FC = () => {
                 </SuperAdminRoute>
               }
             />
+
+            {/* OTHER ROUTES */}
+
+            {/* 404 Page */}
+            <Route path="*" element={<NotFound />} />
+            {/* Banned User */}
+            <Route path="/banned" element={<BannedUser />} />
+            {/* Banned IP */}
+            <Route path="/banned-ip" element={<BannedIP />} />
+            {/* Maintenance Mode */}
+            <Route path="/maintenance" element={<Maintenance />} />
           </Routes>
         </main>
+
+        {/* Footer */}
         <Footer />
+
+        {/* Debug Panel */}
         <DebugPanel />
+
+        {/* Toast Container */}
         <ToastContainer />
+
+        {/* Toaster */}
         <Toaster />
       </div>
     </Router>

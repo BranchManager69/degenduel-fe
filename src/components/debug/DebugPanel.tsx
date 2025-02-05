@@ -1,9 +1,7 @@
+// src/components/debug/DebugPanel.tsx
+
 import React, { useEffect, useRef, useState } from "react";
-import {
-  FONT_PRESETS,
-  FONT_PRESET_NAMES,
-  FontPreset,
-} from "../../constants/fonts";
+import { FONT_PRESETS, FontPreset } from "../../constants/fonts";
 import type { ColorScheme } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 
@@ -24,15 +22,141 @@ interface SessionInfo {
   wsStatus: "connected" | "disconnected" | "connecting";
 }
 
-const COLOR_SCHEMES = {
-  "Cyber Blue": "default",
-  "Neon Green (Matrix)": "matrix",
-  "Neon Red (Cyberpunk)": "cyberpunk",
-  "Synthwave (80s Retro)": "synthwave",
-  "Gold Rush": "gold",
-  "Electric Teal": "teal",
-  "Plasma Purple": "plasma",
+// Theme configuration with expanded radical options
+const THEMES = {
+  "Neon Lights": {
+    font: "neonLights",
+    scheme: "synthwave",
+    description: "Retro-futuristic neon aesthetic with smooth fonts",
+  },
+  "Neural Net": {
+    font: "cyberTech",
+    scheme: "matrix",
+    description: "Deep learning matrix with pulsing data streams",
+  },
+  "Cyber Samurai": {
+    font: "neonLights",
+    scheme: "cyberpunk",
+    description: "Neo-Tokyo street tech with glowing katana aesthetics",
+  },
+  "Digital Void": {
+    font: "cyberTech",
+    scheme: "default",
+    description: "Deep space terminal with cosmic radiation",
+  },
+  "Quantum Flux": {
+    font: "neonLights",
+    scheme: "teal",
+    description: "Reality-bending quantum interface with probability waves",
+  },
+  "Chrome Demon": {
+    font: "cyberTech",
+    scheme: "plasma",
+    description: "Demonic AI with chrome and blood aesthetic",
+  },
+  "Synthwave Dreams": {
+    font: "neonLights",
+    scheme: "synthwave",
+    description: "Retro-future sunset with grid horizons",
+  },
+  "Neon Yakuza": {
+    font: "cyberTech",
+    scheme: "cyberpunk",
+    description: "Underground tech noir with neon tattoo patterns",
+  },
+  "Data Wraith": {
+    font: "neonLights",
+    scheme: "plasma",
+    description: "Ghost in the machine with ethereal data streams",
+  },
+  "Cyber Plague": {
+    font: "cyberTech",
+    scheme: "matrix",
+    description: "Digital virus aesthetic with corrupted code",
+  },
+  "Hologram Punk": {
+    font: "neonLights",
+    scheme: "teal",
+    description: "Glitchy holographic punk with rebellion vibes",
+  },
+  "Tech Necro": {
+    font: "cyberTech",
+    scheme: "plasma",
+    description: "Necromantic technology with ancient circuit patterns",
+  },
+  "Neon Ronin": {
+    font: "neonLights",
+    scheme: "cyberpunk",
+    description: "Masterless cyber samurai with electric blade trails",
+  },
+  "Virtual Voodoo": {
+    font: "cyberTech",
+    scheme: "synthwave",
+    description: "Digital shamanism with mystical circuitry",
+  },
+  "Plasma Prophet": {
+    font: "neonLights",
+    scheme: "plasma",
+    description: "Prophetic AI with plasma-based divination patterns",
+  },
+  "Pixel Perfect": {
+    font: "pixelPerfect",
+    scheme: "default",
+    description: "Classic gaming style with pixel fonts",
+  },
+  "Cyber Tech": {
+    font: "cyberTech",
+    scheme: "cyberpunk",
+    description: "High-tech cyberpunk with modern fonts",
+  },
+  "Matrix Rain": {
+    font: "cyberTech",
+    scheme: "matrix",
+    description: "Digital rain aesthetic with cascading code",
+  },
+  Vaporwave: {
+    font: "neonLights",
+    scheme: "synthwave",
+    description: "Retro aesthetic with pastel neons and glitch effects",
+  },
+  "Laser Punk": {
+    font: "cyberTech",
+    scheme: "plasma",
+    description: "Intense neon red with laser-sharp tech fonts",
+  },
+  "Digital Gold": {
+    font: "neonLights",
+    scheme: "gold",
+    description: "Luxurious cyber-gold with holographic effects",
+  },
+  "Quantum Teal": {
+    font: "cyberTech",
+    scheme: "teal",
+    description: "Quantum computing inspired electric teal interface",
+  },
+  "Plasma Storm": {
+    font: "neonLights",
+    scheme: "plasma",
+    description: "Electric purple storm with lightning effects",
+  },
+  "Cyber Chrome": {
+    font: "cyberTech",
+    scheme: "default",
+    description: "Sleek chrome aesthetic with high-tech accents",
+  },
+  Hologram: {
+    font: "neonLights",
+    scheme: "teal",
+    description: "Transparent holographic display with floating elements",
+  },
+  "Binary Sunset": {
+    font: "cyberTech",
+    scheme: "cyberpunk",
+    description: "Dystopian red-orange glow with digital artifacts",
+  },
 } as const;
+
+type ThemeKey = keyof typeof THEMES;
 
 export const DebugPanel: React.FC = () => {
   const { user, debugConfig, setDebugConfig } = useStore();
@@ -253,29 +377,36 @@ export const DebugPanel: React.FC = () => {
     setDebugConfig({ colorScheme: scheme as ColorScheme });
   };
 
-  // Initialize color scheme from localStorage
-  useEffect(() => {
-    const savedScheme = localStorage.getItem("color-scheme") || "default";
-    applyColorScheme(savedScheme);
-  }, []);
-
-  // Initialize font preset from localStorage
+  // Initialize theme (both font and color) from localStorage
   useEffect(() => {
     try {
-      const savedPreset = localStorage.getItem("font-preset") || "pixelPerfect";
-      if (savedPreset in FONT_PRESETS) {
-        applyFontPreset(savedPreset as FontPreset);
+      // Default to Neon Lights theme
+      const savedTheme = localStorage.getItem("theme") || "Neon Lights";
+      if (savedTheme in THEMES) {
+        const theme = THEMES[savedTheme as ThemeKey];
+        applyFontPreset(theme.font as FontPreset);
+        applyColorScheme(theme.scheme);
       } else {
         console.warn(
-          `Invalid saved font preset: ${savedPreset}, falling back to pixelPerfect`
+          `Invalid saved theme: ${savedTheme}, falling back to Neon Lights`
         );
-        applyFontPreset("pixelPerfect");
+        applyFontPreset("neonLights");
+        applyColorScheme("synthwave");
       }
     } catch (error) {
-      console.error("Error initializing font preset:", error);
-      applyFontPreset("pixelPerfect");
+      console.error("Error initializing theme:", error);
+      applyFontPreset("neonLights");
+      applyColorScheme("synthwave");
     }
   }, []);
+
+  // Function to apply complete theme
+  const applyTheme = (themeKey: ThemeKey) => {
+    const theme = THEMES[themeKey];
+    applyFontPreset(theme.font as FontPreset);
+    applyColorScheme(theme.scheme);
+    localStorage.setItem("theme", themeKey);
+  };
 
   // Function to apply font preset
   const applyFontPreset = (presetKey: FontPreset) => {
@@ -362,17 +493,22 @@ export const DebugPanel: React.FC = () => {
             </button>
             {sectionsOpen.theme && (
               <div className="space-y-2 ml-2">
-                {Object.entries(COLOR_SCHEMES).map(([name, value]) => (
+                {Object.entries(THEMES).map(([name, theme]) => (
                   <button
-                    key={value}
-                    onClick={() => applyColorScheme(value)}
+                    key={name}
+                    onClick={() => applyTheme(name as ThemeKey)}
                     className={`w-full px-3 py-2 text-sm rounded-md transition-all duration-300 ${
-                      debugConfig.colorScheme === value
+                      debugConfig.colorScheme === theme.scheme
                         ? "bg-brand-500/20 text-brand-400 border border-brand-500/30"
                         : "text-gray-400 hover:bg-brand-500/10 hover:text-brand-300"
                     }`}
                   >
-                    {name}
+                    <div className="text-left">
+                      <div className="font-medium">{name}</div>
+                      <div className="text-xs opacity-75">
+                        {theme.description}
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -606,37 +742,6 @@ export const DebugPanel: React.FC = () => {
                 </label>
               </div>
             )}
-          </div>
-
-          {/* Font Theme Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Font Themes</h3>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">
-                Theme Selection
-              </label>
-              <div className="space-y-2">
-                {Object.entries(FONT_PRESET_NAMES).map(([key, name]) => (
-                  <button
-                    key={key}
-                    onClick={() => applyFontPreset(key as FontPreset)}
-                    className="block w-full text-left px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Font Preview */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Preview</h4>
-              <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded">
-                <p className="font-heading text-xl">Display Font</p>
-                <p className="font-body">Body Font</p>
-                <p className="font-mono">Monospace Font</p>
-              </div>
-            </div>
           </div>
 
           {/* Tools Section */}

@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { ErrorMessage } from "../components/common/ErrorMessage";
-import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { AchievementCard } from "../components/profile/AchievementCard";
+import { ErrorMessage } from "../../components/common/ErrorMessage";
+import { LoadingSpinner } from "../../components/common/LoadingSpinner";
+import { AchievementCard } from "../../components/profile/AchievementCard";
 import {
   ContestEntry,
   ContestHistory,
-} from "../components/profile/ContestHistory";
-import { ProfileHeader } from "../components/profile/ProfileHeader";
-import { UserStats } from "../components/profile/UserStats";
-import { ddApi, formatBonusPoints } from "../services/dd-api";
-import { useStore } from "../store/useStore";
+} from "../../components/profile/ContestHistory";
+import { ProfileHeader } from "../../components/profile/ProfileHeader";
+import { UserStats } from "../../components/profile/UserStats";
+import { ddApi, formatBonusPoints } from "../../services/dd-api";
+import { useStore } from "../../store/useStore";
 import {
   Achievement,
   UserData,
   UserStats as UserStatsType,
-} from "../types/profile";
+} from "../../types/profile";
 
 interface LoadingState {
   user: boolean;

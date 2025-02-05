@@ -1,3 +1,5 @@
+// src/pages/authenticated/TokenSelection.tsx
+
 import {
   Connection,
   PublicKey,
@@ -9,19 +11,19 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { PortfolioSummary } from "../components/tokens/PortfolioSummary";
-import { TokenFilters } from "../components/tokens/TokenFilters";
-import { TokenGrid } from "../components/tokens/TokenGrid";
-import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
-import { ddApi } from "../services/dd-api";
-import { useStore } from "../store/useStore";
+import { PortfolioSummary } from "../../components/tokens/PortfolioSummary";
+import { TokenFilters } from "../../components/tokens/TokenFilters";
+import { TokenGrid } from "../../components/tokens/TokenGrid";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { ddApi } from "../../services/dd-api";
+import { useStore } from "../../store/useStore";
 import {
   Contest,
   PortfolioResponse,
   Token,
   TokensResponse,
-} from "../types/index";
+} from "../../types/index";
 
 // Declare Buffer on window type
 declare global {

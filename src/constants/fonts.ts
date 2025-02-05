@@ -1,3 +1,5 @@
+// src/constants/fonts.ts
+
 export const FONT_PRESETS = {
   pixelPerfect: {
     heading: "Silkscreen",

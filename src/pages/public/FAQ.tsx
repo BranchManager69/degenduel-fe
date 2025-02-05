@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, CardContent } from "../components/ui/Card";
+import { Card, CardContent } from "../../components/ui/Card";
 
 export const FAQ: React.FC = () => {
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);

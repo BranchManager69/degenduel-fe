@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ActivityMonitor } from "../components/admin/ActivityMonitor";
-import { BalanceManager } from "../components/admin/BalanceManager";
-import { LogViewer } from "../components/admin/LogViewer";
+import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
+import { BalanceManager } from "../../components/admin/BalanceManager";
+import { LogViewer } from "../../components/admin/LogViewer";
 
 export const SuperAdminDashboard: React.FC = () => {
   return (

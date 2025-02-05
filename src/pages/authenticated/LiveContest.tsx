@@ -1,25 +1,38 @@
+// src/pages/authenticated/LiveContest.tsx
+
 import React from "react";
 import { useParams } from "react-router-dom";
-import { ContestTimer } from "../components/contests/ContestTimer";
-import { Leaderboard } from "../components/contests/Leaderboard";
-import { PortfolioPerformance } from "../components/contests/PortfolioPerformance";
-import { TestSkipButton } from "../components/contests/TestSkipButton";
-import { TokenPerformance } from "../components/contests/TokenPerformance";
-import { ContestDifficulty } from "../components/landing/contests/ContestDifficulty";
-import { formatCurrency } from "../lib/utils";
+import { ContestTimer } from "../../components/contests/ContestTimer";
+import { Leaderboard } from "../../components/contests/Leaderboard";
+import { PortfolioPerformance } from "../../components/contests/PortfolioPerformance";
+import { TestSkipButton } from "../../components/contests/TestSkipButton";
+import { TokenPerformance } from "../../components/contests/TokenPerformance";
+import { ContestDifficulty } from "../../components/landing/contests/ContestDifficulty";
+import { formatCurrency } from "../../lib/utils";
 
+/*
+ * THIS PAGE IS ONE OF THE OLDEST PAGES IN THE APP.
+ * IT IS OLD AND NEEDS A HUGE OVERHAUL FOR REAL DATA!
+ */
+
+// Live contest page
 export const LiveContest: React.FC = () => {
+  // Get the contest ID from the URL
   const { id } = useParams();
+  // Should be getting contest data from the API using just the id
 
+  /*
+   * THE BELOW PLACEHOLDER DATA SHOULDN'T EVEN BE HERE!
+   * ALWAYS USE REAL DATA.
+   */
   // Placeholder contest data
   const contest = {
     id,
-    title: "Daily SOL Tournament",
+    title: "DEBUG CONTEST NAME",
     difficulty: "dolphin" as const,
-    prizePool: 5000,
+    prizePool: 666666,
     endTime: new Date(Date.now() + 3600000), // 1 hour from now
   };
-
   // Placeholder portfolio data
   const portfolioData = {
     tokens: [
@@ -47,12 +60,11 @@ export const LiveContest: React.FC = () => {
     totalValue: 1367.5,
     totalChange: 7.2,
   };
-
   // Placeholder leaderboard data
   const leaderboardEntries = [
     {
       rank: 1,
-      username: "BranchManager69",
+      username: "DebugManager69",
       portfolioValue: 69420,
       change24h: 420.7,
     },
@@ -88,13 +100,16 @@ export const LiveContest: React.FC = () => {
       <div className="mb-8 relative group">
         <div className="flex items-center justify-between mb-4">
           <div>
+            {/* Contest Title */}
             <h1 className="text-3xl font-bold text-gray-100 mb-2 relative group-hover:animate-glitch">
               {contest.title}
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             </h1>
             <div className="flex items-center space-x-4">
+              {/* Contest Difficulty */}
               <ContestDifficulty difficulty={contest.difficulty} />
               <span className="text-gray-400 group-hover:text-brand-400 transition-colors">
+                {/* Prize Pool */}
                 Prize Pool:{" "}
                 <span className="text-brand-400 group-hover:animate-neon-flicker">
                   {formatCurrency(contest.prizePool)}
@@ -103,10 +118,12 @@ export const LiveContest: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            {/* Contest Timer */}
             <div className="relative group">
               <ContestTimer endTime={contest.endTime} />
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
+            {/* Test Skip Button */}
             <TestSkipButton contestId={id!} />
           </div>
         </div>

@@ -23,12 +23,20 @@ export function ContestProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
       const response = await fetch("https://degenduel.me/api/contests");
+
+      if (response.status === 503) {
+        // Handle maintenance mode
+        setContests([]);
+        return;
+      }
+
       const data = await response.json();
       if (!response.ok) throw data;
-      setContests(data.contests);
+      setContests(Array.isArray(data.contests) ? data.contests : []);
     } catch (err) {
       setError(err);
       console.error("Error fetching contests:", err);
+      setContests([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -73,19 +81,29 @@ export function ContestSelect({
 }) {
   const { contests, loading, error } = useContests();
 
-  if (loading)
+  if (loading) {
     return (
       <select className={className} disabled>
         <option>Loading contests...</option>
       </select>
     );
+  }
 
-  if (error)
+  if (error) {
+    // Check if it's a maintenance mode error (503)
+    if (error.status === 503) {
+      return (
+        <select className={className} disabled>
+          <option>System is under maintenance</option>
+        </select>
+      );
+    }
     return (
       <select className={className} disabled>
         <option>Error loading contests</option>
       </select>
     );
+  }
 
   return (
     <select

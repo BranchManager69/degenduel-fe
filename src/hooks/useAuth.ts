@@ -1,6 +1,8 @@
+// src/hooks/useAuth.ts
+
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useEffect, useState } from "react";
-import { API_URL } from "../config/config";
+import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { useStore } from "../store/useStore";
 
 interface AuthState {
@@ -11,6 +13,7 @@ interface AuthState {
   walletAddress: string | undefined;
 }
 
+// Auth hook
 export function useAuth() {
   const store = useStore();
   const { account, connected } = useWallet();
@@ -22,22 +25,28 @@ export function useAuth() {
     walletAddress: undefined,
   });
 
-  // Add checkAuth function
+  // Check auth
   const checkAuth = async () => {
     try {
-      console.log("[Auth Debug] Starting auth check", {
-        currentCookies: document.cookie,
-        parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
-          const [key, value] = cookie.split("=").map((c) => c.trim());
-          return { ...acc, [key]: value };
-        }, {}),
-        cookieEnabled: navigator.cookieEnabled,
-        protocol: window.location.protocol,
-        host: window.location.host,
-        origin: window.location.origin,
-      });
+      // If debug mode is enabled, log the request
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.log("[Auth Debug] Starting auth check", {
+          currentCookies: document.cookie,
+          parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
+            const [key, value] = cookie.split("=").map((c) => c.trim());
+            return { ...acc, [key]: value };
+          }, {}),
+          cookieEnabled: navigator.cookieEnabled,
+          protocol: window.location.protocol,
+          host: window.location.host,
+          origin: window.location.origin,
+        });
+      }
 
+      // Set loading to true
       setAuthState((prev) => ({ ...prev, loading: true }));
+
+      // Check auth
       const response = await fetch(`${API_URL}/auth/session`, {
         method: "GET",
         credentials: "include",
@@ -47,19 +56,26 @@ export function useAuth() {
         },
       });
 
-      console.log("[Auth Debug] Session check response:", {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries([...response.headers]),
-        url: response.url,
-      });
-
-      if (!response.ok) {
-        console.log("[Auth Debug] Session check failed", {
+      // Log the response if debug mode is enabled
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.log("[Auth Debug] Session check response:", {
           status: response.status,
           statusText: response.statusText,
+          headers: Object.fromEntries([...response.headers]),
+          url: response.url,
         });
-        // If auth check fails, clear the stored state
+      }
+
+      // If auth check fails, clear the stored state
+      if (!response.ok) {
+        // Log the failure if debug mode is enabled
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.log("[Auth Debug] Session check failed", {
+            status: response.status,
+            statusText: response.statusText,
+          });
+        }
+        // Clear the stored state
         store.disconnectWallet();
         setAuthState((prev) => ({
           ...prev,
@@ -70,11 +86,20 @@ export function useAuth() {
         return;
       }
 
+      // Get the data
       const data = await response.json();
-      console.log("[Auth Debug] Session check data:", data);
 
+      // Log the data if debug mode is enabled
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.log("[Auth Debug] Session check data:", data);
+      }
+
+      // If the user is not authenticated, clear the stored state
       if (!data.authenticated) {
-        console.log("[Auth Debug] Not authenticated");
+        // Log the failure if debug mode is enabled
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.log("[Auth Debug] Not authenticated");
+        }
         store.disconnectWallet();
         setAuthState((prev) => ({
           ...prev,
@@ -83,10 +108,14 @@ export function useAuth() {
           error: new Error("Session expired"),
         }));
       } else {
-        console.log("[Auth Debug] Successfully authenticated", {
-          user: data.user,
-          currentCookies: document.cookie,
-        });
+        // Log the success if debug mode is enabled
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.log("[Auth Debug] Successfully authenticated", {
+            user: data.user,
+            currentCookies: document.cookie,
+          });
+        }
+        // Update the auth state
         setAuthState((prev) => ({
           ...prev,
           user: data.user,
@@ -95,7 +124,11 @@ export function useAuth() {
         }));
       }
     } catch (error) {
-      console.error("[Auth Debug] Auth check error:", error);
+      // Log the error if debug mode is enabled
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.error("[Auth Debug] Auth check error:", error);
+      }
+      // Clear the stored state
       store.disconnectWallet();
       setAuthState((prev) => ({
         ...prev,
@@ -106,16 +139,21 @@ export function useAuth() {
     }
   };
 
+  // Initialize auth
   useEffect(() => {
     // Check auth immediately on mount, regardless of store.user state
     const initializeAuth = async () => {
-      console.log("[Auth Debug] Initializing auth state", {
-        currentCookies: document.cookie,
-        hasUser: !!store.user,
-        origin: window.location.origin,
-      });
+      // Log the initialization if debug mode is enabled
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.log("[Auth Debug] Initializing auth state", {
+          currentCookies: document.cookie,
+          hasUser: !!store.user,
+          origin: window.location.origin,
+        });
+      }
 
       try {
+        // Check auth
         const response = await fetch(`${API_URL}/auth/session`, {
           method: "GET",
           credentials: "include",
@@ -125,11 +163,21 @@ export function useAuth() {
           },
         });
 
+        // Log the response if debug mode is enabled
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.log("[Auth Debug] Session check response:", {
+            status: response.status,
+            statusText: response.statusText,
+          });
+        }
         if (!response.ok) {
           throw new Error("Session check failed");
         }
 
+        // Get the data
         const data = await response.json();
+
+        // If the user is authenticated, update the store and local state
         if (data.authenticated && data.user) {
           // Update the store first
           store.setUser(data.user);
@@ -141,6 +189,7 @@ export function useAuth() {
             error: null,
           }));
         } else {
+          // If the user is not authenticated, clear the stored state
           store.disconnectWallet();
           setAuthState((prev) => ({
             ...prev,
@@ -150,8 +199,13 @@ export function useAuth() {
           }));
         }
       } catch (error) {
-        console.error("[Auth Debug] Initial auth check failed:", error);
+        // Log the error if debug mode is enabled
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.error("[Auth Debug] Initial auth check failed:", error);
+        }
+        // Clear the stored state
         store.disconnectWallet();
+        // Update the auth state
         setAuthState((prev) => ({
           ...prev,
           user: null,
@@ -162,18 +216,21 @@ export function useAuth() {
       }
     };
 
+    // Initialize auth
     initializeAuth();
   }, []); // Run once on mount
 
+  // Additional auth check when user state changes
   useEffect(() => {
-    // Additional auth check when user state changes
+    // Check auth when the user state changes
     if (store.user) {
       checkAuth();
     }
   }, [store.user]);
 
+  // Update auth state when store user or wallet state changes
   useEffect(() => {
-    // Update auth state when store user or wallet state changes
+    // Update the auth state
     setAuthState((state) => ({
       ...state,
       user: store.user,
@@ -182,20 +239,24 @@ export function useAuth() {
     }));
   }, [store.user, connected, account?.address]);
 
+  // Check if the user is a superadmin
   const isSuperAdmin = (): boolean => {
     return authState.user?.role === "superadmin";
   };
 
+  // Check if the user is an admin
   const isAdmin = (): boolean => {
     return (
       authState.user?.role === "admin" || authState.user?.role === "superadmin"
     );
   };
 
+  // Check if the user is fully connected
   const isFullyConnected = (): boolean => {
     return authState.isWalletConnected && !!authState.user;
   };
 
+  // Return the auth state
   return {
     user: authState.user,
     loading: authState.loading,

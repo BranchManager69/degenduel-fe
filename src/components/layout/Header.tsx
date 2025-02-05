@@ -1,3 +1,5 @@
+// src/components/layout/Header.tsx
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -8,15 +10,6 @@ import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
 import { LiveContestTicker } from "../ui/LiveContestTicker";
 
-interface ContestResponse {
-  contests: Contest[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-  };
-}
-
 export const Header: React.FC = () => {
   const {
     user,
@@ -25,6 +18,8 @@ export const Header: React.FC = () => {
     isConnecting,
     error,
     clearError,
+    maintenanceMode,
+    setMaintenanceMode,
   } = useStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isSuperAdmin, isAdmin } = useAuth();
@@ -36,14 +31,12 @@ export const Header: React.FC = () => {
     const fetchContests = async () => {
       try {
         const response = await ddApi.contests.getAll();
-        const contestsArray: Contest[] = Array.isArray(response)
-          ? response
-          : (response as ContestResponse).contests;
-        setActiveContests(contestsArray.filter(isContestLive));
+        const contests = Array.isArray(response) ? response : [];
+
+        setActiveContests(contests.filter(isContestLive) || []);
         setOpenContests(
-          contestsArray.filter(
-            (contest: Contest) => contest.status === "pending"
-          )
+          contests.filter((contest: Contest) => contest.status === "pending") ||
+            []
         );
       } catch (err) {
         console.error("Failed to load contests:", err);
@@ -66,6 +59,17 @@ export const Header: React.FC = () => {
     }
   }, [error, clearError]);
 
+  // Add maintenance mode check on mount
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      if (isAdmin() || isSuperAdmin()) {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setMaintenanceMode(isInMaintenance);
+      }
+    };
+    checkMaintenance();
+  }, [isAdmin, isSuperAdmin, setMaintenanceMode]);
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -83,6 +87,29 @@ export const Header: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Maintenance Mode Banner for Admins */}
+        {isAdmin() && maintenanceMode && (
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-yellow-400/20" />
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, #000 0, #000 10px, #fbbf24 10px, #fbbf24 20px)",
+                opacity: 0.15,
+              }}
+            />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 relative">
+              <p className="text-yellow-400 text-sm text-center font-bold tracking-wider uppercase flex items-center justify-center gap-2">
+                <span className="animate-pulse">⚠</span>
+                Maintenance Mode Active
+                <span className="animate-pulse">⚠</span>
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-transparent to-brand-600/5" />

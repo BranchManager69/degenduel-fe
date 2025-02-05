@@ -1,4 +1,5 @@
 // src/config/config.ts
+
 /* Environment */
 const isDev =
   window.location.hostname === "localhost" ||
@@ -7,6 +8,9 @@ const PROD_URL = "https://degenduel.me";
 const PORT = "3003";
 
 export const NODE_ENV = isDev ? "development" : "production";
+
+/* Debug Mode */
+export const DDAPI_DEBUG_MODE = isDev ? "true" : "false";
 
 /* Server */
 export const PORT_CONFIG = PORT;

@@ -27,14 +27,18 @@ export function StartContest() {
 
   const fetchContests = async () => {
     try {
+      setLoading(true);
       const response = await fetch(`${API_URL}/contests?status=pending`, {
         credentials: "include",
       });
       const data = await response.json();
-      setContests(data.contests);
+      setContests(Array.isArray(data.contests) ? data.contests : []);
     } catch (err) {
       console.error("Error fetching contests:", err);
       setError("Failed to fetch contests");
+      setContests([]); // Set empty array on error
+    } finally {
+      setLoading(false);
     }
   };
 

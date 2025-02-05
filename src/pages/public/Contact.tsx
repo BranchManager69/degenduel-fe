@@ -1,7 +1,10 @@
-import React, { useState } from "react";
-import { Button } from "../components/ui/Button";
-import { Card, CardContent } from "../components/ui/Card";
+// src/pages/public/Contact.tsx
 
+import React, { useState } from "react";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent } from "../../components/ui/Card";
+
+// Contact page
 export const Contact: React.FC = () => {
   const [formState, setFormState] = useState({
     name: "",

@@ -1,3 +1,5 @@
+// src/components/admin/LogViewer.tsx
+
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { ddApi } from "../../services/dd-api";

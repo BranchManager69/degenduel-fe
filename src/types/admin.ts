@@ -1,3 +1,5 @@
+// src/types/admin.ts
+
 import {
   BaseActivity,
   PlatformStats as BasePlatformStats,

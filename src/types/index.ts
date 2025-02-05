@@ -1,5 +1,14 @@
 // src/types/index.ts
 
+// Re-export leaderboard types
+export type {
+  ContestPerformanceEntry,
+  ContestPerformanceResponse,
+  GlobalRankingEntry,
+  GlobalRankingsResponse,
+  TimeFrame,
+} from "./leaderboard";
+
 // Core Entity Types
 export interface User {
   wallet_address: string;

@@ -1,5 +1,6 @@
 // src/services/dd-api.ts
-import { API_URL } from "../config/config";
+
+import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { useStore } from "../store/useStore";
 import {
   BaseActivity as Activity,
@@ -10,6 +11,11 @@ import {
   Transaction,
   User,
 } from "../types/index";
+import type {
+  ContestPerformanceResponse,
+  GlobalRankingsResponse,
+  TimeFrame,
+} from "../types/leaderboard";
 import type { SortOptions } from "../types/sort";
 
 // Helper function to check and update ban status
@@ -44,13 +50,16 @@ const createApiClient = () => {
         });
       }
 
-      console.log("[DD-API Debug] Request:", {
-        url: `${API_URL}${endpoint}`,
-        method: options.method || "GET",
-        headers: Object.fromEntries([...headers]),
-        cookies: document.cookie,
-        timestamp: new Date().toISOString(),
-      });
+      // Log the request if debug mode is enabled
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.log("[DD-API Debug] Request:", {
+          url: `${API_URL}${endpoint}`,
+          method: options.method || "GET",
+          headers: Object.fromEntries([...headers]),
+          cookies: document.cookie,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
@@ -59,13 +68,16 @@ const createApiClient = () => {
         mode: "cors",
       });
 
-      console.log("[DD-API Debug] Response:", {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries([...response.headers]),
-        url: response.url,
-        timestamp: new Date().toISOString(),
-      });
+      // If debug mode is enabled, log the response
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.log("[DD-API Debug] Response:", {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries([...response.headers]),
+          url: response.url,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       // Check for ban status
       checkAndUpdateBanStatus(response);
@@ -86,6 +98,7 @@ const createApiClient = () => {
   };
 };
 
+// Log error
 const logError = (
   endpoint: string,
   error: any,
@@ -126,6 +139,7 @@ const participationCache = new Map<
 const CACHE_DURATION = 30000; // 30 seconds
 const FETCH_TIMEOUT = 5000; // 5 second timeout for fetch requests
 
+// Check contest participation
 const checkContestParticipation = async (
   contestId: number | string,
   userWallet?: string
@@ -172,10 +186,38 @@ const checkContestParticipation = async (
   }
 };
 
-// Add this helper function to dd-api.ts or a separate utils file
+// Helper function to format bonus points
 export const formatBonusPoints = (points: string | number): string => {
   const amount = typeof points === "string" ? parseInt(points) : points;
   return `${amount.toLocaleString()} pts`;
+};
+
+// Add maintenance mode check function
+const checkMaintenanceMode = async () => {
+  try {
+    const response = await fetch(`${API_URL}/admin/maintenance`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(
+        "Failed to check maintenance mode status:",
+        response.status
+      );
+      return false;
+    }
+
+    const data = await response.json();
+    return data.enabled || false;
+  } catch (error) {
+    console.error("Error checking maintenance mode:", error);
+    return false;
+  }
 };
 
 /* DegenDuel API Endpoints (client-side) */
@@ -323,6 +365,7 @@ export const ddApi = {
 
   // Admin endpoints
   admin: {
+    // Get platform stats
     getPlatformStats: async (): Promise<PlatformStats> => {
       try {
         const response = await fetch(`${API_URL}/admin/stats/platform`, {
@@ -340,18 +383,21 @@ export const ddApi = {
       }
     },
 
+    // Get contests
     getContests: async (): Promise<{ contests: Contest[] }> => {
       const response = await fetch(`${API_URL}/contests`);
       if (!response.ok) throw new Error("Failed to fetch contests");
       return response.json();
     },
 
+    // Get recent activities
     getRecentActivities: async (): Promise<{ activities: Activity[] }> => {
       const response = await fetch(`${API_URL}/admin/activities`);
       if (!response.ok) throw new Error("Failed to fetch activities");
       return response.json();
     },
 
+    // Update contest
     updateContest: async (
       contestId: string,
       data: Partial<Contest>
@@ -420,6 +466,7 @@ export const ddApi = {
       }
     },
 
+    // Delete contest
     deleteContest: async (contestId: string): Promise<void> => {
       const response = await fetch(`${API_URL}/contests/${contestId}`, {
         method: "DELETE",
@@ -427,6 +474,7 @@ export const ddApi = {
       if (!response.ok) throw new Error("Failed to delete contest");
     },
 
+    // Adjust user balance
     adjustUserBalance: async (
       walletAddress: string,
       amount: number
@@ -470,10 +518,45 @@ export const ddApi = {
       if (!response.ok) throw new Error("Failed to fetch log content");
       return response.json();
     },
+
+    // Set maintenance mode
+    setMaintenanceMode: async (enabled: boolean) => {
+      const response = await fetch(`${API_URL}/admin/maintenance`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enabled }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to set maintenance mode");
+      }
+
+      return response.json();
+    },
+
+    // Get maintenance status
+    getMaintenanceStatus: async () => {
+      const response = await fetch(`${API_URL}/admin/maintenance`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get maintenance status");
+      }
+
+      return response.json();
+    },
+
+    checkMaintenanceMode,
   },
 
   // Contest endpoints
   contests: {
+    // Get active contests
     getActive: async (): Promise<Contest[]> => {
       const user = useStore.getState().user;
 
@@ -498,6 +581,7 @@ export const ddApi = {
       );
     },
 
+    // Get all contests
     getAll: async (sortOptions?: SortOptions): Promise<Contest[]> => {
       const user = useStore.getState().user;
 
@@ -569,6 +653,7 @@ export const ddApi = {
       }
     },
 
+    // Get contest by ID
     getById: async (contestId: string) => {
       const user = useStore.getState().user;
 
@@ -612,6 +697,7 @@ export const ddApi = {
       }
     },
 
+    // Enter contest
     enterContest: async (
       contestId: string,
       transaction_signature: string
@@ -669,6 +755,7 @@ export const ddApi = {
       }
     },
 
+    // Submit portfolio
     submitPortfolio: async (
       contestId: string,
       portfolio: PortfolioResponse
@@ -736,6 +823,7 @@ export const ddApi = {
       }
     },
 
+    // Update portfolio
     updatePortfolio: async (
       contestId: string | number,
       portfolio: PortfolioResponse
@@ -803,6 +891,7 @@ export const ddApi = {
       }
     },
 
+    // Create contest
     create: async (contestData: Partial<Contest>): Promise<Contest> => {
       console.log("API Service - Contest data before send:", contestData);
 
@@ -915,6 +1004,42 @@ export const ddApi = {
     },
   },
 
+  // Leaderboard endpoints
+  leaderboard: {
+    // Get global rankings (DD Point Leaderboard)
+    getGlobalRankings: async (
+      limit: number = 10,
+      offset: number = 0
+    ): Promise<GlobalRankingsResponse> => {
+      const response = await fetch(
+        `${API_URL}/leaderboard/global?limit=${limit}&offset=${offset}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to fetch global rankings");
+      return response.json();
+    },
+
+    // Get contest performance (Degen Rankings)
+    getContestPerformance: async (
+      timeframe: TimeFrame = "month",
+      limit: number = 10,
+      offset: number = 0
+    ): Promise<ContestPerformanceResponse> => {
+      const response = await fetch(
+        `${API_URL}/leaderboard/contests/performance?timeframe=${timeframe}&limit=${limit}&offset=${offset}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (!response.ok)
+        throw new Error("Failed to fetch contest performance rankings");
+      return response.json();
+    },
+  },
+
+  // Fetch -- generic endpoint
   fetch: async (endpoint: string, options: RequestInit = {}) => {
     const defaultOptions = {
       credentials: "include" as const,

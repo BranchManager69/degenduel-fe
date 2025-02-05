@@ -1,14 +1,37 @@
 // src/pages/AdminDashboard.tsx
 import React from "react";
-import { ActivityMonitor } from "../components/admin/ActivityMonitor";
-import { BalanceManager } from "../components/admin/BalanceManager";
-import { ContestProvider } from "../components/ApiPlaygroundParts/ContestContext";
-import { ContestsList } from "../components/ApiPlaygroundParts/ContestsList";
-import { EndContest } from "../components/ApiPlaygroundParts/EndContest";
-import { StartContest } from "../components/ApiPlaygroundParts/StartContest";
-import { UserDetail } from "../components/ApiPlaygroundParts/UserDetail";
+import { toast } from "react-hot-toast";
+import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
+import { BalanceManager } from "../../components/admin/BalanceManager";
+import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
+import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
+import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
+import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
+import { UserDetail } from "../../components/ApiPlaygroundParts/UserDetail";
+import { ddApi } from "../../services/dd-api";
+import { useStore } from "../../store/useStore";
 
 export const AdminDashboard: React.FC = () => {
+  const { maintenanceMode, setMaintenanceMode } = useStore();
+
+  const toggleMaintenanceMode = async () => {
+    try {
+      // Call API to toggle maintenance mode
+      await ddApi.admin.setMaintenanceMode(!maintenanceMode);
+
+      // Update local state
+      setMaintenanceMode(!maintenanceMode);
+
+      // Show success message
+      toast.success(
+        `Maintenance mode ${!maintenanceMode ? "enabled" : "disabled"}`
+      );
+    } catch (error) {
+      console.error("Failed to toggle maintenance mode:", error);
+      toast.error("Failed to toggle maintenance mode");
+    }
+  };
+
   return (
     <ContestProvider>
       <div className="container mx-auto p-6">
@@ -19,6 +42,37 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-gray-400">
             Manage user balances, contests, and monitor system activities.
           </p>
+        </div>
+
+        {/* Maintenance Mode Section */}
+        <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-brand-500/20 mb-8">
+          <h2 className="text-xl font-heading text-brand-400 mb-4">
+            System Status
+          </h2>
+
+          <div className="flex items-center justify-between p-4 bg-dark-300/50 rounded-lg">
+            <div>
+              <h3 className="text-lg text-gray-200 mb-1">Maintenance Mode</h3>
+              <p className="text-sm text-gray-400">
+                {maintenanceMode
+                  ? "Site is currently in maintenance mode. Only admins can access protected routes."
+                  : "Site is operating normally."}
+              </p>
+            </div>
+
+            <button
+              onClick={toggleMaintenanceMode}
+              className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                maintenanceMode
+                  ? "bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50"
+                  : "bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50"
+              }`}
+            >
+              {maintenanceMode
+                ? "Disable Maintenance Mode"
+                : "Enable Maintenance Mode"}
+            </button>
+          </div>
         </div>
 
         {/* Contest Management Section */}

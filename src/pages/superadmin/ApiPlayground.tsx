@@ -1,4 +1,4 @@
-import ApiPlayground from "../components/ApiPlayground";
+import ApiPlayground from "../../components/ApiPlayground";
 
 export default function ApiPlaygroundPage() {
   return (

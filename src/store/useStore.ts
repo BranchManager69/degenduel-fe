@@ -1,7 +1,8 @@
 // src/store/useStore.ts
+
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
-import { API_URL } from "../config/config";
+import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { Contest, Token, User, WalletError } from "../types/index";
 
 export type ColorScheme =
@@ -59,6 +60,7 @@ type StoreState = {
   debugConfig: DebugConfig;
   contests: Contest[];
   tokens: Token[];
+  maintenanceMode: boolean;
   setUser: (user: User | null) => void;
   setContests: (contests: Contest[]) => void;
   setTokens: (tokens: Token[]) => void;
@@ -66,6 +68,7 @@ type StoreState = {
   clearError: () => void;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
+  setMaintenanceMode: (enabled: boolean) => void;
 };
 
 type StorePersist = PersistOptions<
@@ -173,6 +176,7 @@ export const useStore = create<StoreState>()(
       user: null,
       error: null,
       debugConfig: {},
+      maintenanceMode: false,
 
       setDebugConfig: (config) =>
         set((state) => ({
@@ -410,6 +414,9 @@ export const useStore = create<StoreState>()(
           set({ user: null, isConnecting: false });
         }
       },
+
+      setMaintenanceMode: (enabled: boolean) =>
+        set({ maintenanceMode: enabled }),
     }),
     persistConfig
   )
@@ -420,7 +427,10 @@ const verifyWallet = async (
   signature: any,
   message: string
 ) => {
-  console.log("[Auth Debug] Sending verification request");
+  // If debug mode is enabled, log the request
+  if (DDAPI_DEBUG_MODE === "true") {
+    console.log("[Auth Debug] Sending verification request");
+  }
 
   // Use retryFetch to ensure consistent behavior
   const response = await retryFetch(`${API_URL}/auth/verify-wallet`, {
@@ -435,18 +445,24 @@ const verifyWallet = async (
     body: JSON.stringify({ wallet, signature, message }),
   });
 
-  console.log("[Auth Debug] Verification response:", {
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries([...response.headers]),
-    url: response.url,
-    cookies: document.cookie,
-    setCookie: response.headers.get("set-cookie"),
-    allHeaders: [...response.headers.entries()].reduce((acc, [key, value]) => {
-      acc[key.toLowerCase()] = value;
-      return acc;
-    }, {} as Record<string, string>),
-  });
+  // If debug mode is enabled, log the response
+  if (DDAPI_DEBUG_MODE === "true") {
+    console.log("[Auth Debug] Verification response:", {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries([...response.headers]),
+      url: response.url,
+      cookies: document.cookie,
+      setCookie: response.headers.get("set-cookie"),
+      allHeaders: [...response.headers.entries()].reduce(
+        (acc, [key, value]) => {
+          acc[key.toLowerCase()] = value;
+          return acc;
+        },
+        {} as Record<string, string>
+      ),
+    });
+  }
 
   if (!response.ok) {
     const error = await response.json();
@@ -454,30 +470,36 @@ const verifyWallet = async (
   }
 
   const data = await response.json();
-  console.log("[Auth Debug] Verification successful:", {
-    data,
-    cookies: document.cookie,
-    parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
-      const [key, value] = cookie.split("=").map((c) => c.trim());
-      return { ...acc, [key]: value };
-    }, {}),
-    documentCookie: document.cookie,
-    cookieEnabled: navigator.cookieEnabled,
-    protocol: window.location.protocol,
-    host: window.location.host,
-    origin: window.location.origin,
-  });
+  // If debug mode is enabled, log the successful verification
+  if (DDAPI_DEBUG_MODE === "true") {
+    console.log("[Auth Debug] Verification successful:", {
+      data,
+      cookies: document.cookie,
+      parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
+        const [key, value] = cookie.split("=").map((c) => c.trim());
+        return { ...acc, [key]: value };
+      }, {}),
+      documentCookie: document.cookie,
+      cookieEnabled: navigator.cookieEnabled,
+      protocol: window.location.protocol,
+      host: window.location.host,
+      origin: window.location.origin,
+    });
+  }
 
   // Add a small delay to ensure cookie is set
   await new Promise((resolve) => setTimeout(resolve, 100));
 
-  console.log("[Auth Debug] Post-delay cookie check:", {
-    cookies: document.cookie,
-    parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
-      const [key, value] = cookie.split("=").map((c) => c.trim());
-      return { ...acc, [key]: value };
-    }, {}),
-  });
+  // If debug mode is enabled, log the post-delay cookie check
+  if (DDAPI_DEBUG_MODE === "true") {
+    console.log("[Auth Debug] Post-delay cookie check:", {
+      cookies: document.cookie,
+      parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
+        const [key, value] = cookie.split("=").map((c) => c.trim());
+        return { ...acc, [key]: value };
+      }, {} as Record<string, string>),
+    });
+  }
 
   return data;
 };

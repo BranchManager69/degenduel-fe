@@ -1,7 +1,8 @@
+// src/pages/public/GlobalRankings.tsx
+
 import { useEffect, useState } from "react";
-import type { GlobalRankingEntry } from "../services/api/leaderboard";
-import { ddApi } from "../services/api/leaderboard";
-import { formatBonusPoints } from "../services/dd-api";
+import { ddApi, formatBonusPoints } from "../../services/dd-api";
+import type { GlobalRankingEntry } from "../../types/leaderboard";
 
 const REFRESH_INTERVAL = 30000; // 30 seconds
 const PAGE_SIZE = 10;
