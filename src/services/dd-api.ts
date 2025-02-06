@@ -41,6 +41,7 @@ const createApiClient = () => {
         "Content-Type": "application/json",
         Accept: "application/json",
         "X-Debug": "true",
+        Origin: window.location.origin,
       });
 
       // Merge provided headers with defaults
@@ -307,10 +308,8 @@ export const ddApi = {
   stats: {
     getOverall: async (wallet: string) => {
       try {
-        const response = await fetch(`${API_URL}/stats/${wallet}`, {
-          credentials: "include",
-        });
-        if (!response.ok) throw new Error("Failed to fetch stats");
+        const api = createApiClient();
+        const response = await api.fetch(`/stats/${wallet}`);
         return response.json();
       } catch (error: any) {
         logError("stats.getOverall", error, { wallet });
@@ -320,11 +319,10 @@ export const ddApi = {
 
     getHistory: async (wallet: string, limit = 10, offset = 0) => {
       try {
-        const response = await fetch(
-          `${API_URL}/stats/${wallet}/history?limit=${limit}&offset=${offset}`,
-          { credentials: "include" }
+        const api = createApiClient();
+        const response = await api.fetch(
+          `/stats/${wallet}/history?limit=${limit}&offset=${offset}`
         );
-        if (!response.ok) throw new Error("Failed to fetch history");
         return response.json();
       } catch (error: any) {
         logError("stats.getHistory", error, { wallet, limit, offset });
@@ -334,13 +332,8 @@ export const ddApi = {
 
     getAchievements: async (wallet: string) => {
       try {
-        const response = await fetch(
-          `${API_URL}/stats/${wallet}/achievements`,
-          {
-            credentials: "include",
-          }
-        );
-        if (!response.ok) throw new Error("Failed to fetch achievements");
+        const api = createApiClient();
+        const response = await api.fetch(`/stats/${wallet}/achievements`);
         return response.json();
       } catch (error: any) {
         logError("stats.getAchievements", error, { wallet });
@@ -350,14 +343,8 @@ export const ddApi = {
 
     getPlatformStats: async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/stats/platform`, {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch platform stats");
-        }
-
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/stats/platform`);
         return response.json();
       } catch (error) {
         console.error("Failed to fetch platform stats:", error);
@@ -367,14 +354,8 @@ export const ddApi = {
 
     getRecentActivity: async () => {
       try {
-        const response = await fetch(`${API_URL}/admin/stats/activity`, {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch recent activity");
-        }
-
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/stats/activity`);
         return response.json();
       } catch (error) {
         console.error("Failed to fetch recent activity:", error);
@@ -579,17 +560,12 @@ export const ddApi = {
     // Get active contests
     getActive: async (): Promise<Contest[]> => {
       const user = useStore.getState().user;
-
-      const response = await fetch(`${API_URL}/contests`, {
+      const api = createApiClient();
+      const response = await api.fetch("/contests", {
         headers: {
-          "Content-Type": "application/json",
           "Cache-Control": "no-cache",
         },
-        credentials: "include",
       });
-      // This does not actually filter for active contests; it returns all contests.
-
-      if (!response.ok) throw new Error("Failed to fetch active contests");
 
       const data = await response.json();
       const contests: Contest[] = Array.isArray(data)
@@ -678,18 +654,12 @@ export const ddApi = {
       const user = useStore.getState().user;
 
       try {
-        const response = await fetch(`${API_URL}/contests/${contestId}`, {
+        const api = createApiClient();
+        const response = await api.fetch(`/contests/${contestId}`, {
           headers: {
-            "Content-Type": "application/json",
             "Cache-Control": "no-cache",
           },
-          credentials: "include",
         });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(error.message || "Failed to fetch contest");
-        }
 
         const contest = await response.json();
 
@@ -734,39 +704,13 @@ export const ddApi = {
           transaction_signature,
         };
 
-        const response = await fetch(`${API_URL}/contests/${contestId}/join`, {
+        const api = createApiClient();
+        const response = await api.fetch(`/contests/${contestId}/join`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
           body: JSON.stringify(payload),
         });
 
-        // Log raw response before any processing
-        console.log("[enterContest] Raw response:", {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-        });
-
-        if (!response.ok) {
-          const responseText = await response.text();
-          let responseData;
-          try {
-            responseData = responseText ? JSON.parse(responseText) : {};
-          } catch (e) {
-            throw new Error("Server returned invalid response");
-          }
-
-          throw new Error(
-            responseData.error ||
-              responseData.message ||
-              `Server error: ${response.status}`
-          );
-        }
-
-        return await response.json();
+        return response.json();
       } catch (error) {
         console.error("[enterContest] Error:", error);
         throw error instanceof Error

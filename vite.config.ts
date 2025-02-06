@@ -45,9 +45,15 @@ export default defineConfig(({ command, mode }) => {
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, "/api"),
         },
+        "/portfolio": {
+          target: "ws://localhost:3003",
+          ws: true,
+          changeOrigin: true,
+          secure: false,
+        },
       },
       watch: {
-        usePolling: true,
+        usePolling: false,
       },
     },
     define: {
@@ -71,10 +77,15 @@ export default defineConfig(({ command, mode }) => {
       esbuildOptions: {
         target: "esnext",
       },
+      cache: true,
     },
     build: {
-      sourcemap: true,
-      minify: false,
+      sourcemap: isDev,
+      minify: !isDev,
+      target: "esnext",
+      rollupOptions: {
+        cache: true,
+      },
     },
   };
 

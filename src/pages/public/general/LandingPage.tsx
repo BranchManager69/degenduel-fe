@@ -4,18 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { ContestSection } from "../../../components/landing/ContestSection";
 import { Features } from "../../../components/landing/Features";
-import { isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types/index";
-
-interface ContestResponse {
-  contests: Contest[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-  };
-}
 
 // Landing Page
 export const LandingPage: React.FC = () => {
@@ -43,24 +33,42 @@ export const LandingPage: React.FC = () => {
           return;
         }
 
-        const response = await ddApi.contests.getAll();
-        const contestsArray: Contest[] = Array.isArray(response)
-          ? response
-          : (response as ContestResponse).contests;
-        setActiveContests(contestsArray.filter(isContestLive));
-        setOpenContests(
-          contestsArray.filter(
-            (contest: Contest) => contest.status === "pending"
-          )
+        const response: Contest[] = await ddApi.contests.getAll();
+        console.log("Contest response:", response);
+
+        if (!response || response.length === 0) {
+          console.log("No contests found or invalid response format");
+        }
+
+        // Filter contests with proper error handling
+        const activeContestsArray = response.filter(
+          (contest: Contest) =>
+            contest && contest.status && contest.status === "active"
         );
+        const openContestsArray = response.filter(
+          (contest: Contest) =>
+            contest && contest.status && contest.status === "pending"
+        );
+
+        console.log("Filtered contests:", {
+          active: activeContestsArray,
+          open: openContestsArray,
+        });
+
+        setActiveContests(activeContestsArray);
+        setOpenContests(openContestsArray);
       } catch (err) {
         console.error("Failed to load contests:", err);
         // Check if the error is a 503 (maintenance mode)
-        if (err instanceof Error && err.message.includes("503")) {
-          setIsMaintenanceMode(true);
-          setError(
-            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
-          );
+        if (err instanceof Error) {
+          if (err.message.includes("503")) {
+            setIsMaintenanceMode(true);
+            setError(
+              "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            );
+          } else {
+            setError(err.message || "Failed to load contests");
+          }
         } else {
           setError("Failed to load contests");
         }

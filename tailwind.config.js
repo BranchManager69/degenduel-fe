@@ -391,6 +391,7 @@ export default {
         "random-slide": "randomSlide 10s linear infinite",
         "random-slide-reverse": "randomSlide 10s linear infinite reverse",
         sparkle: "sparkle 4s ease-in-out infinite",
+        'contest-card-entrance': 'contestCardEntrance 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards',
       },
       keyframes: {
         shine: {
@@ -850,6 +851,16 @@ export default {
         sparkle: {
           "0%, 100%": { opacity: 0, transform: "scale(0.5)" },
           "50%": { opacity: 1, transform: "scale(1.2)" },
+        },
+        contestCardEntrance: {
+          '0%': { 
+            opacity: '0',
+            transform: 'translateX(100%) rotateY(12deg) scale(0.9)',
+          },
+          '100%': { 
+            opacity: '1',
+            transform: 'translateX(0) rotateY(0) scale(1)',
+          },
         },
       },
       animationDelay: {

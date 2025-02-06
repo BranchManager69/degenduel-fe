@@ -274,27 +274,109 @@ export const Header: React.FC = () => {
                 >
                   Tokens
                 </Link>
-                <Link
-                  to="/rankings/global"
-                  className="text-sm text-gray-400 hover:text-brand-400 transition-colors animate-slide-down opacity-0"
-                  style={{
-                    animationDelay: "1.1s",
-                    animationFillMode: "forwards",
-                  }}
-                >
-                  Rankings
-                </Link>
-                {isAdmin() && (
-                  <Link
-                    to="/admin"
-                    className="text-sm text-brand-400 hover:text-brand-300 transition-colors animate-slide-down opacity-0"
+                {/* Rankings Dropdown */}
+                <div className="relative group">
+                  <button
+                    className="text-sm text-gray-400 hover:text-brand-400 transition-colors animate-slide-down opacity-0 flex items-center gap-1"
                     style={{
-                      animationDelay: "1.3s",
+                      animationDelay: "1.1s",
                       animationFillMode: "forwards",
                     }}
                   >
-                    Admin
-                  </Link>
+                    Rankings
+                    <svg
+                      className="w-4 h-4 transform group-hover:rotate-180 transition-transform"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  {/* Rankings Dropdown Menu */}
+                  <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 rounded-md shadow-lg bg-dark-200/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
+                    <div className="py-1">
+                      <Link
+                        to="/rankings/global"
+                        className="block px-4 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-dark-300/50"
+                      >
+                        Global Leaderboard
+                      </Link>
+                      <Link
+                        to="/rankings/performance"
+                        className="block px-4 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-dark-300/50"
+                      >
+                        Degen Rankings
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                {/* Admin Dropdown - Only show if user is admin */}
+                {isAdmin() && (
+                  <div className="relative group">
+                    <button
+                      className="text-sm text-brand-400 hover:text-brand-300 transition-colors animate-slide-down opacity-0 flex items-center gap-1"
+                      style={{
+                        animationDelay: "1.3s",
+                        animationFillMode: "forwards",
+                      }}
+                    >
+                      Admin
+                      <svg
+                        className="w-4 h-4 transform group-hover:rotate-180 transition-transform"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                    {/* Admin Dropdown Menu */}
+                    <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 rounded-md shadow-lg bg-dark-200/95 backdrop-blur-sm ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
+                      <div className="py-1">
+                        {isSuperAdmin() && (
+                          <Link
+                            to="/superadmin"
+                            className="block px-4 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-dark-300/50"
+                          >
+                            SuperAdmin Panel
+                          </Link>
+                        )}
+                        <Link
+                          to="/admin"
+                          className="block px-4 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-dark-300/50"
+                        >
+                          Admin Panel
+                        </Link>
+                        {isSuperAdmin() && (
+                          <>
+                            <Link
+                              to="/amm-sim"
+                              className="block px-4 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-dark-300/50"
+                            >
+                              Launch Sim
+                            </Link>
+                            <Link
+                              to="/api-playground"
+                              className="block px-4 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-dark-300/50"
+                            >
+                              API Playground
+                            </Link>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </nav>

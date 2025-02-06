@@ -180,49 +180,100 @@ const features = [
 
 export const Features: React.FC = () => {
   return (
-    <div className="py-16">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold bg-gradient-to-r from-brand-400 via-cyber-400 to-brand-500 text-transparent bg-clip-text mb-2">
-          Platform Features
-        </h2>
-        <div className="h-1 w-24 mx-auto bg-gradient-to-r from-brand-400 via-cyber-400 to-brand-500 rounded-full mb-4" />
-        <p className="mt-4 text-gray-400 max-w-2xl mx-auto text-lg">
-          Experience the future of competitive token trading with our innovative
-          platform
-        </p>
+    <div className="relative py-16 overflow-hidden">
+      {/* Background Effects - Matching Landing Page Style */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Base dark gradient layer */}
+        <div className="absolute inset-0 bg-gradient-to-b from-dark-800 via-dark-900 to-dark-800 opacity-90" />
+
+        {/* Animated gradient overlays */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-gradient-x"
+            style={{ animationDuration: "15s" }}
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-gradient-y"
+            style={{ animationDuration: "20s" }}
+          />
+        </div>
+
+        {/* Energy disruption lines */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute h-[2px] w-[200px] bg-brand-400/20 blur-sm animate-random-slide"
+            style={{ animationDuration: "7s", animationDelay: "-2s" }}
+          />
+          <div
+            className="absolute h-[2px] w-[300px] bg-purple-400/20 blur-sm animate-random-slide-reverse"
+            style={{ animationDuration: "8s", animationDelay: "-4s" }}
+          />
+        </div>
+
+        {/* Ambient glow effects */}
+        <div className="absolute inset-0 opacity-30">
+          <div
+            className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[100px] animate-float"
+            style={{ animationDuration: "18s" }}
+          />
+          <div
+            className="absolute bottom-[10%] right-[20%] w-[35%] h-[35%] bg-purple-500/10 rounded-full blur-[100px] animate-float"
+            style={{ animationDuration: "15s", animationDelay: "-5s" }}
+          />
+        </div>
+
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(68,0,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(68,0,255,0.05)_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4">
-        {features.map((feature) => (
-          <Card
-            key={feature.title}
-            className="group relative bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-cyber-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-cyber-500/10 overflow-hidden"
-          >
-            {/* Animated gradient overlay */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
-            />
+      {/* Content Container */}
+      <div className="relative">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase">
+            Platform Features
+          </h2>
+          <p className="mt-4 text-gray-400 max-w-2xl mx-auto text-lg font-cyber tracking-wide">
+            Experience the future of competitive token trading with our
+            innovative platform
+          </p>
+        </div>
 
-            {/* Glow effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-cyber-400/10 via-brand-500/10 to-neon-400/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        {/* Feature Cards Grid - To be converted to 3D carousel later */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 relative z-10">
+          {features.map((feature) => (
+            <Card
+              key={feature.title}
+              className="group relative bg-dark-200/40 backdrop-blur-sm border-dark-300 hover:border-purple-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10 overflow-hidden"
+            >
+              {/* Animated gradient background */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
+              />
 
-            <CardContent className="relative p-6">
-              <div className="flex items-start space-x-4">
-                <div className="text-cyber-400 group-hover:text-neon-400 transition-colors duration-300">
-                  {feature.icon}
+              {/* Animated border glow */}
+              <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-400/10 via-brand-500/10 to-purple-400/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              {/* Scan line effect */}
+              <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(99,102,241,0.05)_50%,transparent_100%)] bg-[length:100%_8px] animate-scan" />
+
+              <CardContent className="relative p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="text-purple-400 group-hover:text-brand-400 transition-colors duration-300">
+                    {feature.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-100 mb-2 group-hover:text-purple-400 transition-colors duration-300 font-cyber tracking-wide">
+                      {feature.title}
+                    </h3>
+                    <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
+                      {feature.description}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-100 mb-2 group-hover:text-cyber-400 transition-colors duration-300">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

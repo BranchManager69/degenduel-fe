@@ -1,29 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
+import React, { useState } from "react";
 import { BalanceManager } from "../../components/admin/BalanceManager";
 import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
-import { ddApi } from "../../services/dd-api";
 
 type TabType = "system" | "spy";
 
 export const SuperAdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("system");
-  const [superadminToken, setSuperadminToken] = useState<string>("");
-
-  useEffect(() => {
-    // Fetch superadmin token on component mount
-    const fetchToken = async () => {
-      try {
-        const response = await ddApi.superadmin.getToken();
-        setSuperadminToken(response.token);
-      } catch (error) {
-        console.error("Failed to fetch superadmin token:", error);
-        toast.error("Failed to fetch superadmin token");
-      }
-    };
-    fetchToken();
-  }, []);
 
   return (
     <div className="min-h-screen bg-dark-100">
@@ -54,7 +37,7 @@ export const SuperAdminDashboard: React.FC = () => {
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === "spy" ? (
-              <SpyPanel superadminToken={superadminToken} />
+              <SpyPanel />
             ) : activeTab === "system" ? (
               <div className="space-y-6">
                 {/* System Logs */}
