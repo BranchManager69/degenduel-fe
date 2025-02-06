@@ -4,12 +4,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { CreateContestButton } from "../../../components/admin/CreateContestButton";
 import { ContestCard } from "../../../components/contests/ContestCard";
 import { ContestSort } from "../../../components/contests/ContestSort";
+import { useAuth } from "../../../hooks/useAuth";
 import { ddApi } from "../../../services/dd-api";
 import { Contest, ContestSettings } from "../../../types/index";
 import type { SortDirection, SortField } from "../../../types/sort";
 
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
+  ////const { user } = useStore();
+  const { isAdmin } = useAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,10 +20,12 @@ export const ContestBrowser: React.FC = () => {
   const [activeDifficultyFilter, setActiveDifficultyFilter] = useState<
     ContestSettings["difficulty"] | ""
   >("");
-  const [sortField, setSortField] = useState<SortField>("participant_count");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortField, setSortField] = useState<SortField>("start_time");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [showCancelled, setShowCancelled] = useState(false);
 
   const fetchContests = async () => {
     try {
@@ -84,6 +89,22 @@ export const ContestBrowser: React.FC = () => {
   const filteredAndSortedContests = useMemo(() => {
     let filtered = [...contests];
 
+    // First apply completed/cancelled filters
+    filtered = filtered.filter((contest) => {
+      const now = new Date();
+      const endTime = new Date(contest.end_time);
+      const isCompleted = now >= endTime || contest.status === "completed";
+      const isCancelled = contest.status === "cancelled";
+
+      // Skip completed contests unless showCompleted is true
+      if (isCompleted && !showCompleted) return false;
+
+      // Skip cancelled contests unless showCancelled is true
+      if (isCancelled && !showCancelled) return false;
+
+      return true;
+    });
+
     // Apply status filter
     if (activeStatusFilter !== "all") {
       filtered = filtered.filter((contest) => {
@@ -101,9 +122,12 @@ export const ContestBrowser: React.FC = () => {
           case "upcoming":
             return now < startTime && contest.status !== "cancelled";
           case "completed":
-            return now >= endTime || contest.status === "completed";
+            return (
+              (now >= endTime || contest.status === "completed") &&
+              showCompleted
+            );
           case "cancelled":
-            return contest.status === "cancelled";
+            return contest.status === "cancelled" && showCancelled;
           default:
             return true;
         }
@@ -145,6 +169,8 @@ export const ContestBrowser: React.FC = () => {
     activeDifficultyFilter,
     sortField,
     sortDirection,
+    showCompleted,
+    showCancelled,
   ]);
 
   if (loading) {
@@ -201,7 +227,7 @@ export const ContestBrowser: React.FC = () => {
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
         </h1>
-        <CreateContestButton />
+        {isAdmin() && <CreateContestButton />}
       </div>
 
       {/* Enhanced Filter Toggle Button (Mobile) */}
@@ -259,12 +285,39 @@ export const ContestBrowser: React.FC = () => {
                 value={activeStatusFilter}
                 onChange={(e) => setActiveStatusFilter(e.target.value)}
               >
-                <option value="all">All Contests</option>
+                <option value="all">All Active Contests</option>
                 <option value="live">Live Now (Spectate)</option>
                 <option value="upcoming">Pre-Registration</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+            </div>
+
+            {/* Show Completed/Cancelled Checkboxes */}
+            <div className="space-y-2">
+              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+                Additional Filters
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={showCompleted}
+                    onChange={(e) => setShowCompleted(e.target.checked)}
+                    className="form-checkbox h-4 w-4 text-brand-500 rounded border-dark-400 bg-dark-300 focus:ring-brand-500"
+                  />
+                  <span className="text-gray-300">Show Completed Contests</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={showCancelled}
+                    onChange={(e) => setShowCancelled(e.target.checked)}
+                    className="form-checkbox h-4 w-4 text-brand-500 rounded border-dark-400 bg-dark-300 focus:ring-brand-500"
+                  />
+                  <span className="text-gray-300">Show Cancelled Contests</span>
+                </label>
+              </div>
             </div>
 
             {/* Difficulty Filter */}

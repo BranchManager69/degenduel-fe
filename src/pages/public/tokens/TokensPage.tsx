@@ -1,4 +1,4 @@
-// src/pages/public/TokensPage.tsx
+// src/pages/public/tokens/TokensPage.tsx
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "../../../components/ui/Card";
@@ -34,6 +34,207 @@ interface Token {
     label: string;
   }>;
 }
+
+// Shared utility function
+const formatNumber = (value: string | number, decimals = 2) => {
+  const num = Number(value);
+  if (isNaN(num)) return "0";
+
+  if (num >= 1e9) return (num / 1e9).toFixed(decimals) + "B";
+  if (num >= 1e6) return (num / 1e6).toFixed(decimals) + "M";
+  if (num >= 1e3) return (num / 1e3).toFixed(decimals) + "K";
+  return num.toFixed(decimals);
+};
+
+// TokenCard component for better organization
+const TokenCard: React.FC<{ token: Token }> = ({ token }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  const handleClick = () => {
+    setIsFlipped(!isFlipped);
+  };
+
+  return (
+    <div
+      className="h-[300px] w-full perspective-1000 cursor-pointer"
+      onClick={handleClick}
+    >
+      <div
+        className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${
+          isFlipped ? "rotate-y-180" : ""
+        }`}
+      >
+        {/* Front of card */}
+        <div className="absolute w-full h-full backface-hidden">
+          <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 h-full">
+            <CardContent className="p-6 flex flex-col h-full">
+              <div className="flex items-start space-x-4 mb-6">
+                {token.images?.imageUrl && (
+                  <img
+                    src={token.images.imageUrl}
+                    alt={token.name}
+                    className="w-12 h-12 rounded-full flex-shrink-0"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold text-gray-100 truncate">
+                    {token.name}
+                  </h3>
+                  <p className="text-gray-400">{token.symbol}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 flex-1">
+                <div>
+                  <p className="text-sm text-gray-400">Price</p>
+                  <p className="text-base font-medium text-gray-100">
+                    ${formatNumber(token.price)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">24h Change</p>
+                  <p
+                    className={`text-base font-medium ${
+                      Number(token.change24h) >= 0
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {formatNumber(token.change24h)}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Market Cap</p>
+                  <p className="text-base font-medium text-gray-100">
+                    ${formatNumber(token.marketCap)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Volume (24h)</p>
+                  <p className="text-base font-medium text-gray-100">
+                    ${formatNumber(token.volume24h)}
+                  </p>
+                </div>
+              </div>
+
+              {token.socials &&
+                Object.values(token.socials).some((s) => s?.url) && (
+                  <div className="mt-6 pt-4 border-t border-dark-300 flex items-center space-x-4">
+                    {token.socials.twitter?.url && (
+                      <a
+                        href={token.socials.twitter.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-brand-400 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Twitter
+                      </a>
+                    )}
+                    {token.socials.telegram?.url && (
+                      <a
+                        href={token.socials.telegram.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-brand-400 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Telegram
+                      </a>
+                    )}
+                    {token.socials.discord?.url && (
+                      <a
+                        href={token.socials.discord.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-brand-400 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Discord
+                      </a>
+                    )}
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Back of card */}
+        <div className="absolute w-full h-full backface-hidden rotate-y-180">
+          <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 h-full">
+            <CardContent className="p-6 flex flex-col h-full">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-100">
+                  {token.name} Details
+                </h3>
+                <button
+                  onClick={() => setIsFlipped(false)}
+                  className="text-gray-400 hover:text-brand-400 transition-colors"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4 flex-1">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Contract Address</p>
+                  <p className="text-sm font-mono text-gray-100 break-all">
+                    {token.contractAddress}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Liquidity</p>
+                  <p className="text-base font-medium text-gray-100">
+                    ${formatNumber(token.liquidity?.usd || "0")}
+                  </p>
+                </div>
+
+                {token.websites && token.websites.length > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-2">Links</p>
+                    <div className="flex flex-wrap gap-2">
+                      {token.websites.map((website, index) => (
+                        <a
+                          key={index}
+                          href={website.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-brand-400 hover:text-brand-300 transition-colors"
+                        >
+                          {website.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-dark-300">
+                <p className="text-xs text-gray-400 text-center">
+                  Click card to flip back
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Tokens page
 export const TokensPage: React.FC = () => {
@@ -111,7 +312,7 @@ export const TokensPage: React.FC = () => {
         if (err instanceof Error && err.message.includes("503")) {
           setIsMaintenanceMode(true);
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later. ⚙️"
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
           );
         } else {
           setError("Failed to load tokens");
@@ -136,16 +337,6 @@ export const TokensPage: React.FC = () => {
     return () => clearInterval(maintenanceCheckInterval);
   }, []);
 
-  const formatNumber = (value: string | number, decimals = 2) => {
-    const num = Number(value);
-    if (isNaN(num)) return "0";
-
-    if (num >= 1e9) return (num / 1e9).toFixed(decimals) + "B";
-    if (num >= 1e6) return (num / 1e6).toFixed(decimals) + "M";
-    if (num >= 1e3) return (num / 1e3).toFixed(decimals) + "K";
-    return num.toFixed(decimals);
-  };
-
   const filteredAndSortedTokens = tokens
     .filter(
       (token) =>
@@ -163,12 +354,16 @@ export const TokensPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 gap-4">
           {[...Array(6)].map((_, i) => (
-            <Card
-              key={i}
-              className="bg-dark-200/50 backdrop-blur-sm relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
-              <CardContent className="p-6 h-24 animate-pulse" />
+            <Card key={i} className="bg-dark-200/50 backdrop-blur-sm">
+              <CardContent className="p-6 h-24">
+                <div className="animate-pulse flex space-x-4">
+                  <div className="rounded-full bg-dark-300 h-12 w-12"></div>
+                  <div className="flex-1 space-y-4">
+                    <div className="h-4 bg-dark-300 rounded w-3/4"></div>
+                    <div className="h-4 bg-dark-300 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -181,12 +376,12 @@ export const TokensPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
           <div className="flex items-center justify-center gap-2 text-yellow-400">
-            <span className="animate-pulse">⚠</span>
+            <span>⚠</span>
             <span>
-              ⚙️ DegenDuel is currently undergoing scheduled maintenance. Please
+              DegenDuel is currently undergoing scheduled maintenance. Please
               try again later.
             </span>
-            <span className="animate-pulse">⚠</span>
+            <span>⚠</span>
           </div>
         </div>
       </div>
@@ -196,7 +391,7 @@ export const TokensPage: React.FC = () => {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
+        <div className="text-center text-red-500 p-8 bg-dark-200/50 rounded-lg">
           {error}
         </div>
       </div>
@@ -205,36 +400,32 @@ export const TokensPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Enhanced Header */}
-      <div className="mb-8 relative group">
-        <h1 className="text-3xl font-bold text-gray-100 mb-4 relative">
-          <span className="relative z-10 group-hover:animate-glitch">
-            Available Tokens
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-100 mb-2">
+          Available Tokens
         </h1>
-        <p className="text-gray-400 group-hover:animate-cyber-pulse">
+        <p className="text-gray-400">
           Explore all tokens available for trading in DegenDuel contests
         </p>
       </div>
 
-      {/* Enhanced Search and Sort Controls */}
+      {/* Search and Sort Controls */}
       <div className="mb-6 flex flex-col sm:flex-row justify-between gap-4">
-        <div className="relative group w-full sm:max-w-md">
+        <div className="w-full sm:max-w-md">
           <input
             type="text"
             placeholder="Search tokens..."
-            className="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 group-hover:border-brand-400/50 transition-colors"
+            className="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg pointer-events-none" />
         </div>
         <div className="flex items-center space-x-4">
           <select
             value={sortField}
             onChange={(e) => setSortField(e.target.value as keyof Token)}
-            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400/50 transition-colors"
+            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
           >
             <option value="marketCap">Market Cap</option>
             <option value="volume24h">Volume</option>
@@ -245,14 +436,11 @@ export const TokensPage: React.FC = () => {
             onClick={() =>
               setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
             }
-            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 hover:bg-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 flex items-center space-x-2 relative group overflow-hidden"
+            className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 hover:bg-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 flex items-center space-x-2 transition-colors"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-            <span className="relative z-10 group-hover:animate-glitch">
-              {sortDirection === "asc" ? "Ascending" : "Descending"}
-            </span>
+            <span>{sortDirection === "asc" ? "Ascending" : "Descending"}</span>
             <svg
-              className={`w-4 h-4 transform transition-transform relative z-10 ${
+              className={`w-4 h-4 transform transition-transform ${
                 sortDirection === "asc" ? "rotate-180" : ""
               }`}
               fill="none"
@@ -270,112 +458,10 @@ export const TokensPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Token Grid */}
-      <div className="grid grid-cols-1 gap-4">
+      {/* Token Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredAndSortedTokens.map((token) => (
-          <Card
-            key={token.contractAddress}
-            className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors relative group overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-            <CardContent className="p-6 relative">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center space-x-4 group-hover:animate-cyber-scan">
-                  {token.images?.imageUrl && (
-                    <img
-                      src={token.images.imageUrl}
-                      alt={token.name}
-                      className="w-12 h-12 rounded-full"
-                    />
-                  )}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-100 group-hover:animate-glitch">
-                      {token.name}
-                    </h3>
-                    <p className="text-gray-400 group-hover:text-brand-400 transition-colors">
-                      {token.symbol}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 sm:space-x-8">
-                  <div className="text-right">
-                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                      Price
-                    </p>
-                    <p className="text-lg font-medium text-gray-100 group-hover:animate-neon-flicker">
-                      ${formatNumber(token.price)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                      24h Change
-                    </p>
-                    <p
-                      className={`text-lg font-medium group-hover:animate-neon-flicker ${
-                        Number(token.change24h) >= 0
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {formatNumber(token.change24h)}%
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                      Market Cap
-                    </p>
-                    <p className="text-lg font-medium text-gray-100 group-hover:animate-neon-flicker">
-                      ${formatNumber(token.marketCap)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                      Volume (24h)
-                    </p>
-                    <p className="text-lg font-medium text-gray-100 group-hover:animate-neon-flicker">
-                      ${formatNumber(token.volume24h)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Enhanced Social Links */}
-              {token.socials && (
-                <div className="mt-4 flex items-center space-x-4">
-                  {token.socials.twitter?.url && (
-                    <a
-                      href={token.socials.twitter.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 transition-colors group-hover:animate-cyber-pulse"
-                    >
-                      Twitter
-                    </a>
-                  )}
-                  {token.socials.telegram?.url && (
-                    <a
-                      href={token.socials.telegram.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 transition-colors group-hover:animate-cyber-pulse"
-                    >
-                      Telegram
-                    </a>
-                  )}
-                  {token.socials.discord?.url && (
-                    <a
-                      href={token.socials.discord.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 transition-colors group-hover:animate-cyber-pulse"
-                    >
-                      Discord
-                    </a>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <TokenCard key={token.contractAddress} token={token} />
         ))}
       </div>
     </div>

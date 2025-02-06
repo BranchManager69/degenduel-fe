@@ -562,7 +562,31 @@ export default {
         2000: "2000ms",
         4000: "4000ms",
       },
+      perspective: {
+        1000: "1000px",
+      },
+      rotate: {
+        "y-180": "180deg",
+      },
     },
   },
-  plugins: [require("tailwind-scrollbar")({ nocompatible: true })],
+  plugins: [
+    require("tailwind-scrollbar")({ nocompatible: true }),
+    function ({ addUtilities }) {
+      addUtilities({
+        ".perspective-1000": {
+          perspective: "1000px",
+        },
+        ".transform-style-3d": {
+          transformStyle: "preserve-3d",
+        },
+        ".backface-hidden": {
+          backfaceVisibility: "hidden",
+        },
+        ".rotate-y-180": {
+          transform: "rotateY(180deg)",
+        },
+      });
+    },
+  ],
 };
