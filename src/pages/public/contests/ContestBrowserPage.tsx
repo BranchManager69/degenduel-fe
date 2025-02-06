@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { CreateContestButton } from "../../../components/admin/CreateContestButton";
-import { ContestCard } from "../../../components/contests/ContestCard";
-import { ContestSort } from "../../../components/contests/ContestSort";
+import { ContestCard } from "../../../components/contests/browser/ContestCard";
+import { ContestSort } from "../../../components/contests/browser/ContestSort";
 import { useAuth } from "../../../hooks/useAuth";
 import { ddApi } from "../../../services/dd-api";
 import { Contest, ContestSettings } from "../../../types/index";

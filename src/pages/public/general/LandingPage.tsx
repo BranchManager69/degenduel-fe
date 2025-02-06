@@ -471,7 +471,6 @@ export const LandingPage: React.FC = () => {
 
           {/* Features section */}
           <div className="relative mt-20">
-            <div className="absolute inset-0 bg-dark-200/50 backdrop-blur-sm" />
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
               <Features />
             </div>
@@ -479,7 +478,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Contest sections */}
           {isMaintenanceMode ? (
-            <div className="relative bg-dark-100">
+            <div className="relative">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                 <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
                   <div className="flex items-center justify-center gap-2 text-yellow-400">
@@ -494,15 +493,15 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
           ) : error ? (
-            <div className="relative bg-dark-100">
+            <div className="relative">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div className="text-center p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg">
+                <div className="text-center p-8 backdrop-blur-sm rounded-lg">
                   <div className="text-red-500">{error}</div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="relative bg-dark-100">
+            <div className="relative">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                 <ContestSection
                   title="Live Duels"

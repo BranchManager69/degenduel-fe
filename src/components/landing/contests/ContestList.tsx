@@ -1,7 +1,7 @@
 // src/components/landing/contests/ContestList.tsx
 import React from "react";
 import { Contest } from "../../../types/index";
-import { ContestCard } from "../../contests/ContestCard";
+import { ContestCard } from "../../contests/browser/ContestCard";
 
 interface ContestListProps {
   contests: Contest[];

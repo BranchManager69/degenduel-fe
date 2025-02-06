@@ -1,5 +1,5 @@
 import React from "react";
-import type { SortDirection, SortField } from "../../types/sort";
+import type { SortDirection, SortField } from "../../../types/sort";
 
 interface ContestSortProps {
   currentField: SortField;

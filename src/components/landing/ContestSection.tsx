@@ -23,31 +23,13 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
   if (loading) {
     return (
       <section className="relative py-12">
-        {/* Background Effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Base dark gradient layer */}
-          <div className="absolute inset-0 bg-gradient-to-b from-dark-800 via-dark-900 to-dark-800 opacity-90" />
-
-          {/* Animated gradient overlays */}
-          <div className="absolute inset-0">
-            <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-gradient-x"
-              style={{ animationDuration: "15s" }}
-            />
-            <div
-              className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-gradient-y"
-              style={{ animationDuration: "20s" }}
-            />
-          </div>
-        </div>
-
         <div className="relative space-y-4">
-          <div className="h-8 bg-dark-300/50 w-64 rounded animate-pulse" />
+          <div className="h-8 w-64 rounded animate-pulse bg-dark-300/20" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-48 bg-dark-300/50 rounded animate-pulse"
+                className="h-48 rounded animate-pulse bg-dark-300/20"
               />
             ))}
           </div>
@@ -60,24 +42,6 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
   if (type === "pending" && contests.length === 0) {
     return (
       <section className="relative py-12">
-        {/* Background Effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Base dark gradient layer */}
-          <div className="absolute inset-0 bg-gradient-to-b from-dark-800 via-dark-900 to-dark-800 opacity-90" />
-
-          {/* Animated gradient overlays */}
-          <div className="absolute inset-0">
-            <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-green-500/5 to-transparent animate-gradient-x"
-              style={{ animationDuration: "15s" }}
-            />
-            <div
-              className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-500/5 to-transparent animate-gradient-y"
-              style={{ animationDuration: "20s" }}
-            />
-          </div>
-        </div>
-
         <div className="relative">
           <h2 className="text-2xl font-bold mb-8 font-cyber tracking-wide bg-gradient-to-r from-green-400 to-brand-500 text-transparent bg-clip-text">
             {title}
@@ -94,72 +58,69 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
 
   return (
     <section className="relative py-12">
-      {/* Background Effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Base dark gradient layer */}
-        <div className="absolute inset-0 bg-gradient-to-b from-dark-800 via-dark-900 to-dark-800 opacity-90" />
-
-        {/* Animated gradient overlays */}
-        <div className="absolute inset-0">
-          <div
-            className={`absolute inset-0 bg-gradient-to-r from-transparent ${
-              isPending ? "via-green-500/5" : "via-purple-500/5"
-            } to-transparent animate-gradient-x`}
-            style={{ animationDuration: "15s" }}
-          />
-          <div
-            className={`absolute inset-0 bg-gradient-to-b from-transparent ${
-              isPending ? "via-brand-500/5" : "via-brand-500/5"
-            } to-transparent animate-gradient-y`}
-            style={{ animationDuration: "20s" }}
-          />
-        </div>
-
-        {/* Energy disruption lines */}
-        <div className="absolute inset-0">
-          <div
-            className={`absolute h-[2px] w-[200px] ${
-              isPending ? "bg-green-400/20" : "bg-brand-400/20"
-            } blur-sm animate-random-slide`}
-            style={{ animationDuration: "7s", animationDelay: "-2s" }}
-          />
-          <div
-            className={`absolute h-[2px] w-[300px] ${
-              isPending ? "bg-brand-400/20" : "bg-purple-400/20"
-            } blur-sm animate-random-slide-reverse`}
-            style={{ animationDuration: "8s", animationDelay: "-4s" }}
-          />
-        </div>
-
-        {/* Ambient glow effects */}
-        <div className="absolute inset-0 opacity-30">
-          <div
-            className={`absolute top-[20%] left-[10%] w-[40%] h-[40%] ${
-              isPending ? "bg-green-500/10" : "bg-brand-500/10"
-            } rounded-full blur-[100px] animate-float`}
-            style={{ animationDuration: "18s" }}
-          />
-          <div
-            className={`absolute bottom-[10%] right-[20%] w-[35%] h-[35%] ${
-              isPending ? "bg-brand-500/10" : "bg-purple-500/10"
-            } rounded-full blur-[100px] animate-float`}
-            style={{ animationDuration: "15s", animationDelay: "-5s" }}
-          />
-        </div>
-
-        {/* Grid overlay */}
+      {/* Cosmic effects container */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Solar flares */}
+        <div className="absolute -top-[200px] left-[10%] w-[600px] h-[600px] bg-gradient-to-r from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[100px] animate-pulse-slow" />
         <div
-          className={`absolute inset-0 bg-[linear-gradient(${
-            isPending ? "rgba(0,255,128,0.05)" : "rgba(68,0,255,0.05)"
-          }_1px,transparent_1px),linear-gradient(90deg,${
-            isPending ? "rgba(0,255,128,0.05)" : "rgba(68,0,255,0.05)"
-          }_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]`}
+          className="absolute -bottom-[300px] right-[5%] w-[800px] h-[800px] bg-gradient-to-l from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[120px] animate-pulse-slow"
+          style={{ animationDelay: "-2s" }}
         />
+
+        {/* Star field - multiple layers for parallax effect */}
+        <div
+          className="absolute inset-0 animate-float"
+          style={{ animationDuration: "15s" }}
+        >
+          <div
+            className="absolute h-1 w-1 bg-white/20 rounded-full top-[10%] left-[25%] animate-sparkle"
+            style={{ animationDelay: "-3s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/30 rounded-full top-[30%] left-[65%] animate-sparkle"
+            style={{ animationDelay: "-1s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/20 rounded-full top-[70%] left-[15%] animate-sparkle"
+            style={{ animationDelay: "-4s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/30 rounded-full top-[80%] left-[85%] animate-sparkle"
+            style={{ animationDelay: "-2s" }}
+          />
+        </div>
+
+        {/* Cosmic dust streams */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute h-[1px] w-[200px] bg-brand-400/10 blur-sm animate-random-slide"
+            style={{ animationDuration: "20s", top: "30%" }}
+          />
+          <div
+            className="absolute h-[1px] w-[300px] bg-purple-400/10 blur-sm animate-random-slide-reverse"
+            style={{ animationDuration: "25s", top: "60%" }}
+          />
+          <div
+            className="absolute h-[1px] w-[250px] bg-brand-400/10 blur-sm animate-random-slide"
+            style={{ animationDuration: "22s", top: "80%" }}
+          />
+        </div>
+
+        {/* Energy waves */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-scan-fast opacity-20"
+            style={{ animationDuration: "8s" }}
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan-vertical opacity-20"
+            style={{ animationDuration: "12s" }}
+          />
+        </div>
       </div>
 
-      {/* Content */}
       <div className="relative">
-        {/* Section Header */}
+        {/* Section Header with cosmic glow */}
         <div className="flex items-center justify-between mb-8">
           <div className="space-y-1">
             <h2
@@ -169,8 +130,8 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
                   : "from-brand-400 via-purple-400 to-brand-500"
               } text-transparent bg-clip-text relative group`}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
               {title}
-              {/* Glitch effect for title */}
               <span
                 className={`absolute -left-[1px] top-[1px] text-2xl font-bold font-cyber ${
                   isPending ? "text-green-600/30" : "text-purple-600/30"
@@ -193,18 +154,21 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
           </div>
         </div>
 
-        {/* Contest Grid */}
-        <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [perspective:1000px]">
+        {/* Contest Grid with enhanced perspective */}
+        <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [perspective:1500px]">
           {contests.map((contest, index) => (
             <div
               key={contest.id}
-              className="opacity-0 translate-x-full rotate-y-12 animate-contest-card-entrance"
+              className="opacity-0 translate-x-full rotate-y-12 animate-contest-card-entrance group/card"
               style={{
                 animationDelay: `${index * 150}ms`,
                 animationFillMode: "forwards",
                 transformStyle: "preserve-3d",
               }}
             >
+              {/* Card glow effect */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-brand-500/0 via-brand-400/10 to-purple-500/0 rounded-lg blur-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
+
               <div
                 className="relative"
                 style={{ zIndex: contests.length - index }}

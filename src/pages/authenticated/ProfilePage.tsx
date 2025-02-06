@@ -245,9 +245,54 @@ export const Profile: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Cosmic effects container */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Solar flares */}
+        <div className="absolute -top-[300px] right-[5%] w-[800px] h-[800px] bg-gradient-to-r from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[120px] animate-pulse-slow" />
+        <div
+          className="absolute -bottom-[200px] left-[10%] w-[600px] h-[600px] bg-gradient-to-l from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[100px] animate-pulse-slow"
+          style={{ animationDelay: "-2s" }}
+        />
+
+        {/* Star field */}
+        <div
+          className="absolute inset-0 animate-float"
+          style={{ animationDuration: "15s" }}
+        >
+          <div
+            className="absolute h-1 w-1 bg-white/20 rounded-full top-[15%] left-[35%] animate-sparkle"
+            style={{ animationDelay: "-2s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/30 rounded-full top-[45%] left-[75%] animate-sparkle"
+            style={{ animationDelay: "-1s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/20 rounded-full top-[65%] left-[25%] animate-sparkle"
+            style={{ animationDelay: "-3s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/30 rounded-full top-[85%] left-[65%] animate-sparkle"
+            style={{ animationDelay: "-4s" }}
+          />
+        </div>
+
+        {/* Energy waves */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-scan-fast opacity-20"
+            style={{ animationDuration: "10s" }}
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan-vertical opacity-20"
+            style={{ animationDuration: "15s" }}
+          />
+        </div>
+      </div>
+
       {/* Profile Container */}
-      <div className="space-y-8">
-        {/* User Data */}
+      <div className="relative space-y-8">
+        {/* User Data Section */}
         {loading.user ? (
           <div className="h-32 flex items-center justify-center">
             <LoadingSpinner size="lg" className="animate-cyber-pulse" />
@@ -263,12 +308,12 @@ export const Profile: React.FC = () => {
             />
           </div>
         ) : userData ? (
-          <div className="relative group overflow-hidden rounded-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative group overflow-hidden rounded-lg backdrop-blur-sm border border-dark-300/20">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative">
               <Link
                 to={`/profile/${userData.nickname || userData.wallet_address}`}
-                className="absolute top-2 right-2 px-3 py-1.5 bg-dark-300/50 hover:bg-dark-300 border border-brand-500/20 hover:border-brand-500/50 rounded flex items-center gap-2 transition-all duration-200 group/link"
+                className="absolute top-2 right-2 px-3 py-1.5 backdrop-blur-sm border border-brand-500/20 hover:border-brand-500/50 rounded flex items-center gap-2 transition-all duration-200 group/link"
               >
                 <span className="text-sm text-gray-300 group-hover/link:text-brand-400 transition-colors">
                   View Public Profile
@@ -302,7 +347,7 @@ export const Profile: React.FC = () => {
           </div>
         ) : null}
 
-        {/* User Stats */}
+        {/* User Stats Section */}
         {loading.stats ? (
           <div className="h-32 flex items-center justify-center">
             <LoadingSpinner size="lg" className="animate-cyber-pulse" />
@@ -310,15 +355,15 @@ export const Profile: React.FC = () => {
         ) : maintenanceMode ? (
           <MaintenanceIndicator />
         ) : error.stats ? (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
+          <div className="border border-red-500/20 rounded-lg p-4 relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             <p className="text-red-400 text-center animate-glitch">
               {error.stats}
             </p>
           </div>
         ) : userStats ? (
-          <div className="relative group overflow-hidden rounded-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative group overflow-hidden rounded-lg backdrop-blur-sm border border-dark-300/20">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <UserStats
               totalWinnings={userStats.total_earnings}
               contestsPlayed={userStats.total_contests}
@@ -329,13 +374,15 @@ export const Profile: React.FC = () => {
           </div>
         ) : null}
 
-        {/* User Achievements */}
+        {/* Two Column Layout for Achievements and History */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-8">
-            <h2 className="text-2xl font-bold text-gray-100 group-hover:animate-glitch relative group">
+          {/* Achievements Column */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
               Achievements
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
             </h2>
+
             {loading.achievements ? (
               <div className="h-32 flex items-center justify-center">
                 <LoadingSpinner size="lg" className="animate-cyber-pulse" />
@@ -343,7 +390,7 @@ export const Profile: React.FC = () => {
             ) : maintenanceMode ? (
               <MaintenanceIndicator />
             ) : error.achievements ? (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
+              <div className="border border-red-500/20 rounded-lg p-4 relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
                 <p className="text-red-400 text-center animate-glitch">
                   {error.achievements}
@@ -355,15 +402,15 @@ export const Profile: React.FC = () => {
                   achievements.map((achievement) => (
                     <div
                       key={achievement.achievement}
-                      className="relative group"
+                      className="relative group backdrop-blur-sm border border-dark-300/20 rounded-lg overflow-hidden"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       <AchievementCard achievement={achievement} />
                     </div>
                   ))
                 ) : (
-                  <div className="p-4 rounded-lg border border-gray-700 bg-gray-800/50 relative group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="p-4 rounded-lg border border-dark-300/20 backdrop-blur-sm relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     <p className="text-gray-400 text-center group-hover:animate-cyber-pulse">
                       No achievements yet. Keep playing!
                     </p>
@@ -373,8 +420,13 @@ export const Profile: React.FC = () => {
             )}
           </div>
 
-          {/* User Contest History */}
-          <div>
+          {/* Contest History Column */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
+              Contest History
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
+            </h2>
+
             {loading.history ? (
               <div className="h-32 flex items-center justify-center">
                 <LoadingSpinner size="lg" className="animate-cyber-pulse" />
@@ -382,27 +434,21 @@ export const Profile: React.FC = () => {
             ) : maintenanceMode ? (
               <MaintenanceIndicator />
             ) : error.history ? (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 relative group">
+              <div className="border border-red-500/20 rounded-lg p-4 relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
                 <p className="text-red-400 text-center animate-glitch">
                   {error.history}
                 </p>
               </div>
             ) : (
-              <div className="relative group overflow-hidden rounded-lg">
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative group backdrop-blur-sm border border-dark-300/20 rounded-lg overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <ContestHistory contests={contestHistory} />
               </div>
             )}
           </div>
-
-          {/* END OF CONTEST HISTORY */}
         </div>
-
-        {/* END OF PROFILE CONTAINER */}
       </div>
-
-      {/* END OF PAGE */}
     </div>
   );
 };

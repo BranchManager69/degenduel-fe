@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { CopyToClipboard } from "../common/CopyToClipboard";
-import { Card, CardContent } from "../ui/Card";
 
 const MAX_NICKNAME_LENGTH = 15;
 const MIN_NICKNAME_LENGTH = 4;
@@ -176,33 +175,38 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <>
       {isBanned && (
-        <div className="mb-4 p-4 bg-red-900/50 border border-red-800 rounded-md">
-          <div className="flex items-center space-x-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-red-500"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <div>
-              <h2 className="text-red-100 font-semibold">Account Banned</h2>
-              {banReason && (
-                <p className="text-red-200 text-sm mt-1">{banReason}</p>
-              )}
+        <div className="mb-4 rounded-lg backdrop-blur-sm border border-red-500/20 relative group overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-red-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="p-4 relative">
+            <div className="flex items-center space-x-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-red-500 animate-pulse"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div>
+                <h2 className="text-red-400 font-semibold font-cyber">
+                  Account Banned
+                </h2>
+                {banReason && (
+                  <p className="text-red-300/80 text-sm mt-1">{banReason}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
-      <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
-        <CardContent className="p-6">
+      <div className="rounded-lg border shadow-sm backdrop-blur-sm border-dark-300/20">
+        <div className="p-6">
           <div className="flex items-center space-x-4">
-            <div className="h-16 w-16 rounded-full bg-brand-500/20 flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full bg-brand-500/10 flex items-center justify-center">
               <span className="text-2xl">{isBanned ? "🚫" : "👤"}</span>
             </div>
             <div className="flex-1">
@@ -343,8 +347,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </>
   );
 };

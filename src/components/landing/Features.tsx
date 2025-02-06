@@ -181,55 +181,72 @@ const features = [
 export const Features: React.FC = () => {
   return (
     <div className="relative py-16 overflow-hidden">
-      {/* Background Effects - Matching Landing Page Style */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Base dark gradient layer */}
-        <div className="absolute inset-0 bg-gradient-to-b from-dark-800 via-dark-900 to-dark-800 opacity-90" />
+      {/* Cosmic effects container */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Solar flares */}
+        <div className="absolute -top-[300px] right-[5%] w-[800px] h-[800px] bg-gradient-to-r from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[120px] animate-pulse-slow" />
+        <div
+          className="absolute -bottom-[200px] left-[10%] w-[600px] h-[600px] bg-gradient-to-l from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[100px] animate-pulse-slow"
+          style={{ animationDelay: "-2s" }}
+        />
 
-        {/* Animated gradient overlays */}
+        {/* Star field */}
+        <div
+          className="absolute inset-0 animate-float"
+          style={{ animationDuration: "15s" }}
+        >
+          <div
+            className="absolute h-1 w-1 bg-white/20 rounded-full top-[15%] left-[35%] animate-sparkle"
+            style={{ animationDelay: "-2s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/30 rounded-full top-[45%] left-[75%] animate-sparkle"
+            style={{ animationDelay: "-1s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/20 rounded-full top-[65%] left-[25%] animate-sparkle"
+            style={{ animationDelay: "-3s" }}
+          />
+          <div
+            className="absolute h-1 w-1 bg-white/30 rounded-full top-[85%] left-[65%] animate-sparkle"
+            style={{ animationDelay: "-4s" }}
+          />
+        </div>
+
+        {/* Cosmic dust streams */}
         <div className="absolute inset-0">
           <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-gradient-x"
+            className="absolute h-[1px] w-[250px] bg-brand-400/10 blur-sm animate-random-slide"
+            style={{ animationDuration: "18s", top: "25%" }}
+          />
+          <div
+            className="absolute h-[1px] w-[350px] bg-purple-400/10 blur-sm animate-random-slide-reverse"
+            style={{ animationDuration: "23s", top: "55%" }}
+          />
+          <div
+            className="absolute h-[1px] w-[200px] bg-brand-400/10 blur-sm animate-random-slide"
+            style={{ animationDuration: "20s", top: "75%" }}
+          />
+        </div>
+
+        {/* Energy waves */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-scan-fast opacity-20"
+            style={{ animationDuration: "10s" }}
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan-vertical opacity-20"
             style={{ animationDuration: "15s" }}
           />
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-gradient-y"
-            style={{ animationDuration: "20s" }}
-          />
         </div>
-
-        {/* Energy disruption lines */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute h-[2px] w-[200px] bg-brand-400/20 blur-sm animate-random-slide"
-            style={{ animationDuration: "7s", animationDelay: "-2s" }}
-          />
-          <div
-            className="absolute h-[2px] w-[300px] bg-purple-400/20 blur-sm animate-random-slide-reverse"
-            style={{ animationDuration: "8s", animationDelay: "-4s" }}
-          />
-        </div>
-
-        {/* Ambient glow effects */}
-        <div className="absolute inset-0 opacity-30">
-          <div
-            className="absolute top-[20%] left-[10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[100px] animate-float"
-            style={{ animationDuration: "18s" }}
-          />
-          <div
-            className="absolute bottom-[10%] right-[20%] w-[35%] h-[35%] bg-purple-500/10 rounded-full blur-[100px] animate-float"
-            style={{ animationDuration: "15s", animationDelay: "-5s" }}
-          />
-        </div>
-
-        {/* Grid overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(68,0,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(68,0,255,0.05)_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]" />
       </div>
 
       {/* Content Container */}
       <div className="relative">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase">
+          <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
             Platform Features
           </h2>
           <p className="mt-4 text-gray-400 max-w-2xl mx-auto text-lg font-cyber tracking-wide">
@@ -238,23 +255,23 @@ export const Features: React.FC = () => {
           </p>
         </div>
 
-        {/* Feature Cards Grid - To be converted to 3D carousel later */}
+        {/* Feature Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 relative z-10">
           {features.map((feature) => (
             <Card
               key={feature.title}
-              className="group relative bg-dark-200/40 backdrop-blur-sm border-dark-300 hover:border-purple-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10 overflow-hidden"
+              className="group relative backdrop-blur-sm border-dark-300/20 hover:border-purple-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10 overflow-hidden"
             >
               {/* Animated gradient background */}
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
+                className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
               />
 
               {/* Animated border glow */}
-              <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-400/10 via-brand-500/10 to-purple-400/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-400/5 via-brand-500/5 to-purple-400/5 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
               {/* Scan line effect */}
-              <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(99,102,241,0.05)_50%,transparent_100%)] bg-[length:100%_8px] animate-scan" />
+              <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(99,102,241,0.02)_50%,transparent_100%)] bg-[length:100%_8px] animate-scan" />
 
               <CardContent className="relative p-6">
                 <div className="flex items-start space-x-4">
