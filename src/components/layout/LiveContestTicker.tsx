@@ -120,23 +120,28 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
       <div className="absolute inset-0 bg-dark-200/90" />
 
       {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-brand-900/40 via-brand-500/20 to-brand-900/40" />
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-900/40 via-brand-500/20 to-brand-900/40" />
+        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(68,0,255,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-shine opacity-30" />
+      </div>
 
-      {/* Animated scan effect */}
+      {/* Animated scan effects */}
       <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(99,102,241,0.05)_50%,transparent_100%)] animate-scan-fast opacity-30" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(99,102,241,0.05)_50%,transparent_100%)] animate-scan-vertical opacity-30" />
         <div
           className="absolute inset-x-0 h-1/2 bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-cyber-scan"
           style={{ animationDuration: "3s" }}
         />
       </div>
 
-      {/* Glowing borders */}
+      {/* Glowing borders with gradient */}
       <div className="absolute inset-x-0 top-0">
-        <div className="h-[1px] bg-brand-400/50" />
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-400/50 to-transparent" />
         <div className="h-[2px] bg-gradient-to-b from-brand-400/30 to-transparent blur-sm" />
       </div>
       <div className="absolute inset-x-0 bottom-0">
-        <div className="h-[1px] bg-cyber-400/50" />
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-cyber-400/50 to-transparent" />
         <div className="h-[2px] bg-gradient-to-b from-cyber-400/30 to-transparent blur-sm" />
       </div>
 
@@ -164,39 +169,42 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                   <Link
                     key={contest.id}
                     to={`/contests/${contest.id}`}
-                    className={`group/item relative inline-flex items-center space-x-2 text-sm hover:bg-dark-300/50 px-2 py-1 rounded transition-colors ${
+                    className={`group/item relative inline-flex items-center space-x-2 text-sm hover:bg-dark-300/50 px-2 py-1 rounded transition-all duration-300 ${
                       contest.status === "cancelled"
                         ? "line-through opacity-60"
                         : ""
                     }`}
                     title={contest.description}
                   >
+                    {/* Hover background effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 animate-data-stream rounded" />
+
                     {/* Status-based Contest Indicator */}
                     {contest.status === "active" ? (
-                      <span className="inline-flex items-center text-cyber-400 hover:text-cyber-300 space-x-1.5">
+                      <span className="inline-flex items-center text-green-400 group-hover/item:text-green-300 space-x-1.5 transition-colors">
                         <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-cyber-500" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                         </span>
-                        <span className="text-cyber-400 hover:text-cyber-300 font-bold animate-pulse">
+                        <span className="font-bold animate-pulse group-hover/item:text-green-300 transition-colors">
                           LIVE NOW
                         </span>
                       </span>
                     ) : contest.status === "pending" ? (
-                      <span className="inline-flex items-center text-green-400 hover:text-green-300 space-x-1.5">
+                      <span className="inline-flex items-center text-cyber-400 group-hover/item:text-cyber-300 space-x-1.5 transition-colors">
                         <span className="relative flex h-2 w-2">
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-cyber-500 animate-pulse" />
                         </span>
-                        <span className="font-bold text-green-400 hover:text-green-300">
+                        <span className="font-bold group-hover/item:text-cyber-300 transition-colors">
                           OPEN
                         </span>
                       </span>
                     ) : contest.status === "completed" ? (
-                      <span className="text-green-400/50 hover:text-green-300 font-medium">
+                      <span className="text-green-400/50 group-hover/item:text-green-300 font-medium transition-colors">
                         ENDED
                       </span>
                     ) : (
-                      <span className="text-red-400/50 hover:text-red-300 font-medium">
+                      <span className="text-red-400/50 group-hover/item:text-red-300 font-medium transition-colors">
                         CANCELLED
                       </span>
                     )}
@@ -205,38 +213,72 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                     <span
                       className={`font-medium transition-colors ${
                         contest.status === "active"
-                          ? "text-gray-300 hover:text-gray-200"
+                          ? "text-gray-300 group-hover/item:text-gray-200"
                           : contest.status === "pending"
-                          ? "text-gray-300 hover:text-gray-200"
+                          ? "text-gray-300 group-hover/item:text-gray-200"
                           : contest.status === "completed"
-                          ? "text-green-300/50 hover:text-green-200"
-                          : "text-red-300/50 hover:text-red-200"
+                          ? "text-green-300/50 group-hover/item:text-green-200"
+                          : "text-red-300/50 group-hover/item:text-red-200"
                       }`}
                     >
-                      <span className="text-gray-300 hover:text-gray-200">
-                        {contest.name}
-                      </span>
+                      {contest.name}
                     </span>
 
-                    {/* Solana amounts (e.g., entry fee, prize pool) */}
+                    {/* Solana amounts with gradient text */}
                     <div className="flex items-center gap-1">
-                      {/* Entry Fee */}
                       <span
-                        className={`text-sm ${
+                        className={`text-sm bg-gradient-to-r ${
                           contest.status === "active"
-                            ? "text-gray-400 hover:text-gray-300"
+                            ? "from-cyber-400 to-brand-400"
                             : contest.status === "pending"
-                            ? "text-gray-400 hover:text-gray-300"
+                            ? "from-green-400 to-brand-400"
                             : contest.status === "completed"
-                            ? "text-green-400/50 hover:text-green-300"
-                            : "text-red-400/50 hover:text-red-300"
-                        }`}
+                            ? "from-green-600/50 to-brand-400/50"
+                            : "from-red-400/50 to-brand-400/50"
+                        } bg-clip-text text-transparent group-hover/item:animate-gradientX`}
                       >
                         {Number(contest.entry_fee)} SOL
                       </span>
                     </div>
 
-                    {/* Custom Tooltip */}
+                    {/* Integrated Progress Bar with Entry Count */}
+                    <div className="flex flex-col items-center gap-0.5 ml-2">
+                      {/* Entry Count */}
+                      <div className="text-[10px] text-gray-400 group-hover/item:text-gray-300 transition-colors">
+                        {contest.participant_count}/{contest.max_participants}
+                      </div>
+                      {/* Enhanced Progress Bar */}
+                      <div className="relative h-1 w-16 bg-dark-300/50 rounded-full overflow-hidden group/progress">
+                        {/* Background Pulse Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-scan-fast" />
+                        {/* Progress Fill */}
+                        <div
+                          className={`absolute left-0 top-0 bottom-0 rounded-full transition-all duration-500 ${
+                            contest.status === "active"
+                              ? "bg-gradient-to-r from-cyber-400 to-brand-400"
+                              : contest.status === "pending"
+                              ? "bg-gradient-to-r from-green-400 to-brand-400"
+                              : contest.status === "completed"
+                              ? "bg-gradient-to-r from-green-600/50 to-brand-400/50"
+                              : "bg-gradient-to-r from-red-400/50 to-brand-400/50"
+                          }`}
+                          style={{
+                            width: `${
+                              (contest.participant_count /
+                                contest.max_participants) *
+                              100
+                            }%`,
+                          }}
+                        >
+                          {/* Shine Effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine" />
+                        </div>
+                        {/* Hover Glow Effect */}
+                        <div className="absolute inset-0 opacity-0 group-hover/progress:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 blur-sm" />
+                      </div>
+                    </div>
+
+                    {/* Enhanced Tooltip */}
                     <div
                       className="absolute left-1/2 -translate-x-1/2 -top-24 min-w-[300px] opacity-0 invisible 
                         group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 z-[100]"
@@ -245,7 +287,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                         className="relative bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 
                           rounded-lg p-3 shadow-xl shadow-black/50"
                       >
-                        <div className="mb-1 font-bold text-brand-400">
+                        <div className="mb-1 font-bold text-brand-400 group-hover/item:text-brand-300 transition-colors">
                           Contest Details
                         </div>
                         <p className="text-sm text-gray-300 leading-relaxed">
@@ -259,7 +301,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                       </div>
                     </div>
 
-                    {/* Time Info */}
+                    {/* Time Info with enhanced styling */}
                     {(contest.status === "active" ||
                       contest.status === "pending" ||
                       contest.status === "cancelled" ||
@@ -267,9 +309,9 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                       <span
                         className={`text-sm ${
                           contest.status === "active"
-                            ? "text-gray-500 hover:text-gray-400"
-                            : "text-gray-500 hover:text-gray-400"
-                        }`}
+                            ? "text-gray-500 group-hover/item:text-gray-400"
+                            : "text-gray-500 group-hover/item:text-gray-400"
+                        } transition-colors`}
                       >
                         {/* Handle different status cases */}
                         {contest.status === "active" && (
@@ -321,66 +363,6 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                         )}
                       </span>
                     )}
-
-                    {/* Contest Entry Stats */}
-                    <div className="flex items-center gap-1.5">
-                      {/* Entry Count */}
-                      <span
-                        className={`text-xs ${
-                          contest.status === "active"
-                            ? "text-neon-400 hover:text-neon-300"
-                            : contest.status === "pending"
-                            ? "text-neon-400 hover:text-neon-300"
-                            : contest.status === "completed"
-                            ? "text-green-600/50 hover:text-green-500"
-                            : "text-red-400/50 hover:text-red-400"
-                        }`}
-                      >
-                        {contest.participant_count} of{" "}
-                        {contest.max_participants}
-                      </span>
-                      {/* Entry Progress Bar */}
-                      <div className="relative h-1.5 w-12 bg-dark-300 rounded-full overflow-hidden">
-                        <div
-                          className={`absolute left-0 top-0 bottom-0 rounded-full transition-all ${
-                            contest.status === "active"
-                              ? "bg-cyber-400"
-                              : contest.status === "pending"
-                              ? "bg-cyber-400"
-                              : contest.status === "completed"
-                              ? "bg-green-600/50"
-                              : "bg-red-400/50"
-                          }`}
-                          style={{
-                            width: `${
-                              (contest.participant_count /
-                                contest.max_participants) *
-                              100
-                            }%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* All of the below are almost never visible so who cares */}
-
-                    {/* Contest "Difficulty" */}
-                    <span className="text-red-400">
-                      {/* format: "{difficulty}" */}
-                      {contest.settings.difficulty}
-                    </span>
-
-                    {/* Contest Cancelled At */}
-                    <span className="text-orange-400">
-                      {/* format: "{cancelled at}" */}
-                      {contest.cancelled_at}
-                    </span>
-
-                    {/* Contest Cancellation Reason */}
-                    <span className="text-red-400">
-                      {/* format: "{cancellation reason}" */}
-                      {contest.cancellation_reason}
-                    </span>
                   </Link>
                 );
               })}

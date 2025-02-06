@@ -100,19 +100,35 @@ export const LandingPage: React.FC = () => {
               <h2 className="text-brand-300 text-xl tracking-wider font-medium">
                 Make PvP Great Again
               </h2>
-              <h1 className="text-6xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-brand-400 to-brand-500 text-transparent bg-clip-text">
-                  DEGEN
-                </span>
-                <span className="text-gray-400 mx-2">×</span>
-                <span className="text-gray-400">DUEL</span>
-              </h1>
-              <p className="text-white text-lg mt-2">
-                Launching Soon on Solana
+              <div className="relative">
+                <h1 className="text-7xl font-black tracking-tighter">
+                  <span className="relative inline-block">
+                    <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600">
+                      DEGEN
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 blur-lg -z-10" />
+                  </span>
+                  <span className="relative inline-block mx-2 text-gray-400 transform -skew-x-12 font-cyber">
+                    ×
+                  </span>
+                  <span className="relative inline-block group">
+                    <span className="relative z-10 text-gray-400 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-br group-hover:from-brand-400 group-hover:via-brand-500 group-hover:to-brand-600 transition-all duration-500">
+                      DUEL
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-500/10 to-brand-600/0 blur-lg -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  </span>
+                </h1>
+                {/* Subtle line accent */}
+                <div className="absolute left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-400/30 to-transparent" />
+              </div>
+              <p className="text-xl text-gray-400 mt-4 font-medium tracking-wide">
+                <span className="text-brand-400">Launching Soon</span>
+                <span className="mx-2">on</span>
+                <span className="text-brand-300">Solana</span>
               </p>
             </div>
 
-            {/* Main content with enhanced animations */}
+            {/* Main content with subtle transitions */}
             <div
               className={`transform transition-all duration-1000 ${
                 isVisible
@@ -120,18 +136,16 @@ export const LandingPage: React.FC = () => {
                   : "translate-y-10 opacity-0"
               }`}
             >
-              {/* Welcome text with enhanced effect */}
+              {/* Welcome text with subtle effect */}
               <div className="relative inline-block mb-6">
-                <span className="text-2xl sm:text-3xl font-light tracking-widest text-brand-300 opacity-90 hover:opacity-100 transition-opacity uppercase group">
-                  <span className="group-hover:animate-glitch relative">
-                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent animate-scan-line" />
-                  </span>
+                <span className="text-2xl sm:text-3xl font-light tracking-widest text-brand-300 opacity-90 hover:opacity-100 transition-opacity uppercase">
+                  Welcome to the Arena
                 </span>
               </div>
 
-              {/* Epic tagline with enhanced effects */}
+              {/* Epic tagline with subtle effects */}
               <div className="mt-4 max-w-4xl mx-auto space-y-3">
-                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 text-transparent bg-clip-text animate-gradient-x tracking-tight leading-none">
+                <h2 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600">
                   Think You're A Top Trader?
                 </h2>
                 <p className="text-lg sm:text-xl text-gray-400 leading-snug font-medium tracking-wide">

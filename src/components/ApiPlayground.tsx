@@ -54,18 +54,12 @@ export default function ApiPlayground() {
 
         <div className="max-w-7xl mx-auto p-8 relative">
           <div className="mb-8 space-y-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-400 to-cyber-400 bg-clip-text text-transparent mb-4 group">
-              <span className="inline-block group-hover:animate-glitch">
-                DegenDuel
-              </span>{" "}
-              <span className="inline-block group-hover:animate-glitch">
-                API
-              </span>{" "}
-              <span className="inline-block group-hover:animate-glitch">
-                Playground
-              </span>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-400 to-cyber-400 bg-clip-text text-transparent mb-4">
+              <span className="inline-block">DegenDuel</span>{" "}
+              <span className="inline-block">API</span>{" "}
+              <span className="inline-block">Playground</span>
             </h1>
-            <p className="text-neon-300 animate-cyber-pulse">
+            <p className="text-neon-300">
               Test and interact with the DegenDuel API endpoints.
             </p>
           </div>
@@ -76,31 +70,27 @@ export default function ApiPlayground() {
               <button
                 key={key}
                 onClick={() => setActiveSection(key as Section)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 hover:scale-105 group ${
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 hover:scale-105 ${
                   activeSection === key
-                    ? "bg-gradient-to-r from-brand-500 to-cyber-500 text-white shadow-lg shadow-brand-500/20 animate-cyber-pulse"
+                    ? "bg-gradient-to-r from-brand-500 to-cyber-500 text-white shadow-lg shadow-brand-500/20"
                     : "bg-dark-200/80 text-gray-400 hover:bg-dark-300 hover:text-white backdrop-blur-sm border border-dark-300/50"
                 }`}
               >
-                <span className="text-xl group-hover:animate-bounce">
-                  {icon}
-                </span>
-                <span className="group-hover:animate-glitch">{title}</span>
+                <span className="text-xl">{icon}</span>
+                <span>{title}</span>
               </button>
             ))}
           </div>
 
           {/* Section Description */}
-          <div className="bg-dark-200/80 rounded-lg p-6 mb-8 border border-dark-300/50 animate-fade-in shadow-lg backdrop-blur-sm group hover:bg-dark-200 transition-all duration-300">
+          <div className="bg-dark-200/80 rounded-lg p-6 mb-8 border border-dark-300/50 shadow-lg backdrop-blur-sm group hover:bg-dark-200 transition-all duration-300">
             <div className="flex items-center gap-3">
-              <span className="text-3xl group-hover:animate-bounce">
-                {sections[activeSection].icon}
-              </span>
+              <span className="text-3xl">{sections[activeSection].icon}</span>
               <div>
-                <h2 className="text-2xl font-semibold text-cyber-400 mb-2 group-hover:animate-glitch">
+                <h2 className="text-2xl font-semibold text-cyber-400 mb-2">
                   {sections[activeSection].title}
                 </h2>
-                <p className="text-neon-300 group-hover:animate-cyber-pulse">
+                <p className="text-neon-300">
                   {sections[activeSection].description}
                 </p>
               </div>

@@ -8,7 +8,6 @@ import { ContestRules } from "../../../components/contests/ContestRules";
 import { ParticipantsList } from "../../../components/contests/ParticipantsList";
 import { PrizeStructure } from "../../../components/contests/PrizeStructure";
 import { ContestDifficulty } from "../../../components/landing/contests/ContestDifficulty";
-import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useAuth } from "../../../hooks/useAuth";
@@ -325,13 +324,13 @@ export const ContestDetails: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Enhanced Header Section with Cyber Theme */}
-      <div className="relative mb-8 group">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-dark-200/80 backdrop-blur-sm rounded-lg border border-dark-300 hover:border-brand-400/20 transition-colors">
+      {/* Enhanced Header Section with Cyberpunk Theme */}
+      <div className="relative mb-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
+        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/50">
           {/* Title and Description */}
           <div className="space-y-2 flex-1">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 text-transparent bg-clip-text group-hover:animate-gradient-x">
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x">
               {contest.name}
             </h1>
             <p className="text-lg text-gray-400 max-w-2xl">
@@ -347,52 +346,43 @@ export const ContestDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Stats Grid with Cyber Theme */}
+      {/* Enhanced Stats Grid with Cyberpunk Theme */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Entry Fee Card */}
-        <Card className="group bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300 overflow-hidden">
-          <CardContent className="p-6 relative">
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            {/* Glow effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center justify-between">
+        <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="p-6 relative">
+            <div className="flex items-center justify-between">
               <span className="text-gray-400 group-hover:text-brand-300 transition-colors">
                 Entry Fee
               </span>
-              <span className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 text-transparent bg-clip-text group-hover:animate-gradient-x">
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
                 {formatCurrency(Number(contest.entry_fee))}
               </span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Prize Pool Card */}
-        <Card className="group bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300 overflow-hidden">
-          <CardContent className="p-6 relative">
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            {/* Glow effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center justify-between">
+        <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="p-6 relative">
+            <div className="flex items-center justify-between">
               <span className="text-gray-400 group-hover:text-brand-300 transition-colors">
                 Prize Pool
               </span>
-              <span className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 text-transparent bg-clip-text group-hover:animate-gradient-x">
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
                 {formatCurrency(Number(contest.prize_pool))}
               </span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Timer Card */}
-        <Card className="group bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300 overflow-hidden">
-          <CardContent className="p-6 relative">
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            {/* Glow effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center justify-between">
+        <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="p-6 relative">
+            <div className="flex items-center justify-between">
               <span className="text-gray-400 group-hover:text-brand-300 transition-colors">
                 {isContestLive(contest) ? "Ends In" : "Starts In"}
               </span>
@@ -408,24 +398,21 @@ export const ContestDetails: React.FC = () => {
                 />
               </span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Players Card */}
-        <Card className="group bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300 overflow-hidden">
-          <CardContent className="p-6 relative">
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            {/* Glow effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center justify-between">
+        <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="p-6 relative">
+            <div className="flex items-center justify-between">
               <span className="text-gray-400 group-hover:text-brand-300 transition-colors">
                 Players
               </span>
               <div className="flex items-center gap-3">
-                <div className="w-24 h-1.5 bg-dark-300 rounded-full overflow-hidden">
+                <div className="w-24 h-1.5 bg-dark-300 overflow-hidden transform skew-x-[-15deg]">
                   <div
-                    className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-300 ease-out group-hover:animate-pulse"
+                    className="h-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-300 ease-out group-hover:animate-pulse"
                     style={{
                       width: `${
                         (Number(contest.participant_count) /
@@ -442,8 +429,8 @@ export const ContestDetails: React.FC = () => {
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Enhanced Content Grid */}
@@ -452,30 +439,28 @@ export const ContestDetails: React.FC = () => {
         <div className="lg:col-span-2 space-y-8">
           {/* Rules Section */}
           {contest?.settings?.rules && contest.settings.rules.length > 0 ? (
-            <div className="group">
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
               <ContestRules rules={contest.settings.rules} />
-              {/* Animated border effect */}
-              <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           ) : (
-            <Card className="group bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300">
-              <CardContent className="p-6 relative">
+            <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+              <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-100 mb-4">
                   Contest Rules
                 </h3>
                 <p className="text-gray-400">
                   No rules specified for this contest.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Available Tokens Section */}
-          <Card className="group bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300 overflow-hidden">
-            <CardContent className="p-6 relative">
-              {/* Animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <h3 className="text-xl font-bold text-gray-100 mb-4 relative">
+          <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="p-6 relative">
+              <h3 className="text-xl font-bold text-gray-100 mb-4">
                 Available Tokens
               </h3>
               {contest?.settings?.token_types &&
@@ -484,7 +469,7 @@ export const ContestDetails: React.FC = () => {
                   {contest.settings.token_types.map((token: string) => (
                     <span
                       key={token}
-                      className="px-3 py-1.5 bg-dark-300/50 rounded-full text-sm text-gray-300 border border-dark-300 hover:border-brand-400/20 hover:text-brand-400 transition-all duration-300"
+                      className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
                     >
                       {token}
                     </span>
@@ -495,17 +480,16 @@ export const ContestDetails: React.FC = () => {
                   No tokens specified for this contest.
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Right Column - Prize Structure and Participants */}
         <div className="space-y-8">
           {/* Prize Structure */}
           <div className="group relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
             <PrizeStructure prizePool={Number(contest?.prize_pool || 0)} />
-            {/* Animated border effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           </div>
 
           {/* Participants List */}
@@ -513,34 +497,35 @@ export const ContestDetails: React.FC = () => {
             {Number(contest.participant_count) > 0 &&
             Array.isArray(contest.participants) ? (
               contest.participants.length > 0 ? (
-                <ParticipantsList
-                  participants={contest.participants}
-                  contestStatus={mapContestStatus(contest.status)}
-                />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
+                  <ParticipantsList
+                    participants={contest.participants}
+                    contestStatus={mapContestStatus(contest.status)}
+                  />
+                </div>
               ) : (
-                <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300">
-                  <CardContent className="p-6">
+                <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+                  <div className="p-6">
                     <h3 className="text-xl font-bold text-gray-100 mb-4">
                       Participants ({contest.participant_count}/
                       {contest.max_participants})
                     </h3>
                     <p className="text-gray-400">Participant list is empty</p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )
             ) : (
-              <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-all duration-300">
-                <CardContent className="p-6">
+              <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+                <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-100 mb-4">
                     Participants ({contest.participant_count}/
                     {contest.max_participants})
                   </h3>
                   <p className="text-gray-400">No participants yet.</p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
-            {/* Animated border effect */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           </div>
         </div>
       </div>
@@ -550,13 +535,12 @@ export const ContestDetails: React.FC = () => {
         {!isWalletConnected && (
           <div className="flex items-center gap-2 text-brand-400 mb-4">
             <span className="font-medium">Wallet disconnected</span>
-            <Button
-              size="sm"
+            <button
               onClick={() => wallet && connect(wallet.name)}
-              className="group relative overflow-hidden"
+              className="px-4 py-2 bg-dark-300/50 border-l-2 border-brand-400/30 hover:border-brand-400/50 text-brand-400 hover:text-brand-300 transition-all duration-300 transform hover:translate-x-1"
             >
               Reconnect Wallet
-            </Button>
+            </button>
           </div>
         )}
         {isParticipating && (
@@ -569,38 +553,13 @@ export const ContestDetails: React.FC = () => {
             </span>
           </div>
         )}
-        {error && (
-          <div className="text-center text-red-500 animate-pulse">{error}</div>
-        )}
-        <Button
-          size="lg"
-          onClick={handleJoinContest}
-          className={`group relative overflow-hidden ${
-            isParticipating && contest.status !== "pending"
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-          disabled={
-            (isParticipating && contest.status !== "pending") ||
-            Number(contest.participant_count) >= contest.max_participants
-          }
-        >
-          {/* Button gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-          {/* Button content */}
-          <span className="relative flex items-center justify-center gap-2 font-medium">
-            {isParticipating
-              ? contest.status === "pending"
-                ? "Update Tokens"
-                : "Already Joined"
-              : Number(contest.participant_count) >= contest.max_participants
-              ? "Contest Full"
-              : `Enter Contest (${formatCurrency(
-                  parseInt(contest.entry_fee)
-                )})`}
-
-            {/* Animated arrow */}
+        {/* Add Join Contest Button */}
+        {!isParticipating && isWalletConnected && (
+          <button
+            onClick={handleJoinContest}
+            className="px-6 py-3 bg-dark-300/50 border-l-2 border-brand-400/30 hover:border-brand-400/50 text-brand-400 hover:text-brand-300 transition-all duration-300 transform hover:translate-x-1 font-medium text-lg flex items-center gap-2"
+          >
+            <span>Enter Arena</span>
             <svg
               className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
               fill="none"
@@ -611,14 +570,14 @@ export const ContestDetails: React.FC = () => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M13 7l5 5m0 0l-5 5m5-5H6"
+                d="M14 5l7 7m0 0l-7 7m7-7H3"
               />
             </svg>
-          </span>
-
-          {/* Glowing border */}
-          <div className="absolute inset-0 border border-brand-400/20 rounded-lg group-hover:border-brand-400/40 transition-colors duration-300" />
-        </Button>
+          </button>
+        )}
+        {error && (
+          <div className="text-center text-red-500 animate-pulse">{error}</div>
+        )}
       </div>
     </div>
   );

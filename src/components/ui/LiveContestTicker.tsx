@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStore } from "../../store/useStore";
-import type { Contest } from "../../types/index";
+import { Contest, ContestStatus } from "../../types";
 
 interface Props {
   contests: Contest[];
@@ -26,11 +26,10 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
     // Clone items to create seamless loop
     const content = contentRef.current;
     const clone = content.cloneNode(true) as HTMLDivElement;
-    clone.classList.add("clone"); // Add class to identify clones
+    clone.classList.add("clone");
     containerRef.current.appendChild(clone);
 
     return () => {
-      // Cleanup clones when component unmounts or deps change
       if (containerRef.current) {
         const clones = containerRef.current.querySelectorAll(".clone");
         clones.forEach((clone) => clone.remove());
@@ -69,17 +68,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 <span className="text-yellow-400/50 font-mono">
                   PLEASE DEGEN ELSEWHERE
                 </span>
-                <span
-                  className="font-mono text-yellow-400/75"
-                  style={{
-                    backgroundImage:
-                      "repeating-linear-gradient(-45deg, #000 0, #000 10px, #fbbf24 10px, #fbbf24 20px)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  ▰▰▰▰▰▰▰▰
-                </span>
+                <span className="font-mono text-yellow-400/75">▰▰▰▰▰▰▰▰</span>
               </div>
             ))}
           </div>
@@ -88,16 +77,21 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
     );
   }
 
-  // Sort contests: active first, then pending
+  const statusOrder: Record<ContestStatus, number> = {
+    active: 0,
+    pending: 1,
+    completed: 2,
+    cancelled: 3,
+  };
+
   const sortedContests = [...contests].sort((a, b) => {
-    const statusOrder = { active: 0, pending: 1, completed: 2, cancelled: 3 };
     return statusOrder[a.status] - statusOrder[b.status];
   });
 
   if (loading) {
     return (
       <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300">
-        <div className="animate-pulse h-full bg-dark-300/50" />
+        <div className="h-full bg-dark-300/50" />
       </div>
     );
   }
@@ -137,7 +131,6 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
                 {isLive ? (
                   <span className="inline-flex items-center text-cyber-400 space-x-1.5">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-cyber-500" />
                     </span>
                     <span>LIVE</span>

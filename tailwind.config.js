@@ -344,6 +344,25 @@ export default {
         scanner: "scanner 8s linear infinite",
         spin: "spin 3s linear infinite",
         ping: "ping 2s cubic-bezier(0, 0, 0.2, 1) infinite",
+        "slide-down": "slide-down 0.5s ease-out forwards",
+        "slide-in-left":
+          "slide-in-left 1s cubic-bezier(0.23, 1, 0.32, 1) forwards",
+        "slide-in-right":
+          "slide-in-right 1s cubic-bezier(0.23, 1, 0.32, 1) forwards",
+        "spin-fast": "spin-fast 1.5s cubic-bezier(0.23, 1, 0.32, 1) forwards",
+        "logo-shine": "logo-shine 2s ease-in-out infinite",
+        "logo-slam-left":
+          "logo-slam-left 1.2s cubic-bezier(0.6, 0.2, 0.1, 1) forwards",
+        "logo-slam-right":
+          "logo-slam-right 1.2s cubic-bezier(0.6, 0.2, 0.1, 1) forwards",
+        "logo-impact":
+          "logo-impact 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards",
+        "logo-shift": "logo-shift 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards",
+        "logo-flash": "logo-flash 0.3s ease-out forwards",
+        "logo-shockwave": "logo-shockwave 0.5s ease-out forwards",
+        "matrix-glow": "matrix-glow 2s ease-in-out infinite",
+        "holo-shine": "holo-shine 3s ease-in-out infinite",
+        "cyber-distort": "cyber-distort 0.5s ease-in-out infinite",
       },
       keyframes: {
         shine: {
@@ -556,6 +575,101 @@ export default {
             transform: "scale(2)",
             opacity: "0",
           },
+        },
+        "slide-down": {
+          "0%": { transform: "translateY(-100%)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "slide-in-left": {
+          "0%": { transform: "translateX(-200%)", opacity: "0" },
+          "50%": { transform: "translateX(-100%)", opacity: "1" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        "slide-in-right": {
+          "0%": { transform: "translateX(200%)", opacity: "0" },
+          "50%": { transform: "translateX(100%)", opacity: "1" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        "spin-fast": {
+          "0%": { transform: "rotate(0deg) scale(0.5)", opacity: "0" },
+          "50%": { transform: "rotate(720deg) scale(2)", opacity: "1" },
+          "100%": { transform: "rotate(1080deg) scale(1)", opacity: "1" },
+        },
+        "logo-shine": {
+          "0%": { opacity: "0", transform: "scale(0.7) rotate(-15deg)" },
+          "50%": { opacity: "1", transform: "scale(1.2) rotate(15deg)" },
+          "100%": { opacity: "0", transform: "scale(0.7) rotate(-15deg)" },
+        },
+        "logo-slam-left": {
+          "0%": { transform: "translateX(-200%) scale(0.5)", opacity: "0" },
+          "50%": { transform: "translateX(0) scale(1.2)", opacity: "1" },
+          "65%": { transform: "translateX(-10%) scale(0.95)" },
+          "80%": { transform: "translateX(5%) scale(1.1)" },
+          "100%": { transform: "translateX(0) scale(1)" },
+        },
+        "logo-slam-right": {
+          "0%": { transform: "translateX(200%) scale(0.5)", opacity: "0" },
+          "50%": { transform: "translateX(0) scale(1.2)", opacity: "1" },
+          "65%": { transform: "translateX(10%) scale(0.95)" },
+          "80%": { transform: "translateX(-5%) scale(1.1)" },
+          "100%": { transform: "translateX(0) scale(1)" },
+        },
+        "logo-impact": {
+          "0%": { transform: "scale(1) rotate(0deg)", opacity: "1" },
+          "20%": { transform: "scale(1.4) rotate(180deg)", opacity: "1" },
+          "40%": { transform: "scale(0.9) rotate(360deg)", opacity: "0.8" },
+          "60%": { transform: "scale(1.2) rotate(540deg)", opacity: "1" },
+          "80%": { transform: "scale(0.95) rotate(720deg)", opacity: "0.9" },
+          "100%": { transform: "scale(1) rotate(1080deg)", opacity: "1" },
+        },
+        "logo-shift": {
+          "0%": { transform: "translateX(0)" },
+          "30%": { transform: "translateX(-10%)" },
+          "100%": { transform: "translateX(-90%)" },
+        },
+        "logo-flash": {
+          "0%": { filter: "brightness(100%)" },
+          "20%": { filter: "brightness(300%)" },
+          "100%": { filter: "brightness(100%)" },
+        },
+        "logo-shockwave": {
+          "0%": {
+            boxShadow: "0 0 0 0 rgba(99, 102, 241, 0.4)",
+            transform: "scale(1)",
+          },
+          "50%": {
+            boxShadow: "0 0 50px 20px rgba(99, 102, 241, 0)",
+            transform: "scale(1.1)",
+          },
+          "100%": {
+            boxShadow: "0 0 100px 40px rgba(99, 102, 241, 0)",
+            transform: "scale(1)",
+          },
+        },
+        "matrix-glow": {
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 2px #00ff00) drop-shadow(0 0 5px #00ff00)",
+            textShadow: "0 0 8px #00ff00",
+          },
+          "50%": {
+            filter: "drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff)",
+            textShadow: "0 0 12px #00ffff",
+          },
+        },
+        "holo-shine": {
+          "0%, 100%": {
+            opacity: "0.5",
+            filter: "hue-rotate(0deg) brightness(1)",
+          },
+          "50%": {
+            opacity: "1",
+            filter: "hue-rotate(180deg) brightness(1.5)",
+          },
+        },
+        "cyber-distort": {
+          "0%, 100%": { transform: "skewX(0deg) scale(1)" },
+          "25%": { transform: "skewX(3deg) scale(1.02)" },
+          "75%": { transform: "skewX(-3deg) scale(0.98)" },
         },
       },
       animationDelay: {

@@ -37,12 +37,12 @@ export const Contact: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div className="text-center mb-12 relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-        <h1 className="text-4xl font-bold text-gray-100 group-hover:animate-glitch relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <h1 className="text-4xl font-bold text-gray-100 relative">
           Contact Us
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </h1>
-        <p className="mt-4 text-gray-400 max-w-2xl mx-auto group-hover:animate-cyber-pulse">
+        <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
           Have questions? We're here to help!
         </p>
       </div>
