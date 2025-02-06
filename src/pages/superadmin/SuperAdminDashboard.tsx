@@ -241,22 +241,14 @@ export const SuperAdminDashboard: React.FC = () => {
     setSyncStatsError(null);
 
     try {
+      // Use ddApi instead of fetch directly
       const [statusRes, validationRes, qualityRes, healthRes] =
         await Promise.all([
-          fetch("/api/admin/token-sync/status"),
-          fetch("/api/admin/token-sync/validation-stats"),
-          fetch("/api/admin/token-sync/metadata-quality"),
-          fetch("/api/admin/token-sync/health"),
+          ddApi.fetch("/admin/token-sync/status"),
+          ddApi.fetch("/admin/token-sync/validation-stats"),
+          ddApi.fetch("/admin/token-sync/metadata-quality"),
+          ddApi.fetch("/admin/token-sync/health"),
         ]);
-
-      if (
-        !statusRes.ok ||
-        !validationRes.ok ||
-        !qualityRes.ok ||
-        !healthRes.ok
-      ) {
-        throw new Error("One or more API endpoints returned an error");
-      }
 
       const [status, validation, quality, health] = await Promise.all([
         statusRes.json(),
@@ -264,6 +256,32 @@ export const SuperAdminDashboard: React.FC = () => {
         qualityRes.json(),
         healthRes.json(),
       ]);
+
+      // Add validation for each response
+      if (!status || typeof status !== "object") {
+        throw new Error("Invalid status data received");
+      }
+
+      if (!validation || typeof validation !== "object") {
+        throw new Error("Invalid validation data received");
+      }
+
+      // More lenient validation for quality data
+      const validatedQuality = {
+        overall: quality?.overall || 0,
+        byField: quality?.byField || {
+          images: 0,
+          socials: 0,
+          websites: 0,
+          description: 0,
+          marketData: 0,
+        },
+        recommendations: quality?.recommendations || [],
+      };
+
+      if (!health || typeof health !== "object") {
+        throw new Error("Invalid health data received");
+      }
 
       // Ensure metrics object exists with default values
       const validatedHealth = {
@@ -277,16 +295,25 @@ export const SuperAdminDashboard: React.FC = () => {
       };
 
       setTokenSyncStats(status);
-      setValidationStats(validation);
-      setMetadataQuality(quality);
+      setValidationStats({
+        total: validation.total || 0,
+        byType: validation.byType || {},
+      });
+      setMetadataQuality(validatedQuality);
       setSyncHealth(validatedHealth);
+
+      // Show success toast
+      toast.success("Token sync data refreshed successfully");
     } catch (error) {
-      setSyncStatsError(
+      const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to fetch token sync data"
-      );
+          : "Failed to fetch token sync data";
+      setSyncStatsError(errorMessage);
       console.error("Token sync data fetch error:", error);
+
+      // Show error toast
+      toast.error(errorMessage);
     } finally {
       setSyncStatsLoading(false);
       setIsRefreshing(false);
@@ -294,12 +321,13 @@ export const SuperAdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTokenSyncData();
+    if (activeTab === "token-sync") {
+      fetchTokenSyncData();
 
-    // Poll every 30 seconds when the token-sync tab is active
-    const interval = setInterval(fetchTokenSyncData, 30000);
-
-    return () => clearInterval(interval);
+      // Poll every 30 seconds when the token-sync tab is active
+      const interval = setInterval(fetchTokenSyncData, 30000);
+      return () => clearInterval(interval);
+    }
   }, [activeTab]);
 
   const handlePhaseExecution = async (
@@ -687,20 +715,22 @@ export const SuperAdminDashboard: React.FC = () => {
 
         {/* Token Sync Tab */}
         {activeTab === "token-sync" && (
-          <div className="space-y-6 p-6">
+          <div className="relative space-y-6 p-6">
             {/* Header with Refresh Button */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 relative z-10">
               <h2 className="text-2xl font-bold text-gray-100">
                 Token Sync Monitoring
               </h2>
               <button
                 onClick={fetchTokenSyncData}
                 disabled={syncStatsLoading || isRefreshing}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                  isRefreshing
-                    ? "bg-brand-500/50 cursor-wait"
-                    : "bg-brand-500 hover:bg-brand-600"
-                } text-white transition-colors`}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 relative z-10 
+                  ${
+                    isRefreshing
+                      ? "bg-brand-500/50"
+                      : "bg-brand-500 hover:bg-brand-600"
+                  } 
+                  text-white transition-colors cursor-pointer select-none`}
               >
                 <svg
                   className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
@@ -719,242 +749,282 @@ export const SuperAdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            {/* Health Status Card */}
-            <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-              <h2 className="text-xl font-semibold text-gray-100 mb-4">
-                Sync Health Status
-              </h2>
-              {syncStatsLoading && !tokenSyncStats ? (
-                <div className="animate-pulse flex space-x-4">
-                  <div className="flex-1 space-y-4 py-1">
-                    <div className="h-4 bg-dark-300 rounded w-3/4"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-dark-300 rounded"></div>
-                      <div className="h-4 bg-dark-300 rounded w-5/6"></div>
-                    </div>
-                  </div>
+            {/* Loading State */}
+            {syncStatsLoading && !tokenSyncStats && (
+              <div className="absolute inset-0 bg-dark-200/80 backdrop-blur-sm flex items-center justify-center z-20">
+                <div className="flex items-center gap-3">
+                  <svg
+                    className="animate-spin h-8 w-8 text-brand-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span className="text-lg text-brand-400">
+                    Loading token sync data...
+                  </span>
                 </div>
-              ) : syncStatsError ? (
-                <div className="text-red-400 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                  <div className="font-medium mb-1">
-                    Error fetching sync data:
-                  </div>
-                  {syncStatsError}
+              </div>
+            )}
+
+            {/* Error State */}
+            {syncStatsError && (
+              <div className="relative z-10 text-red-400 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="font-medium mb-1">
+                  Error fetching sync data:
                 </div>
-              ) : syncHealth ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div
-                    className={`p-4 rounded-lg ${
-                      syncHealth.status === "healthy"
-                        ? "bg-green-500/20 border-green-500/50"
-                        : syncHealth.status === "degraded"
-                        ? "bg-yellow-500/20 border-yellow-500/50"
-                        : "bg-red-500/20 border-red-500/50"
-                    } border relative group`}
-                    title="Overall health status of the token sync system"
-                  >
-                    <div className="text-sm text-gray-400">Status</div>
-                    <div
-                      className={`text-lg font-semibold ${
-                        syncHealth.status === "healthy"
-                          ? "text-green-400"
-                          : syncHealth.status === "degraded"
-                          ? "text-yellow-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {syncHealth.status.charAt(0).toUpperCase() +
-                        syncHealth.status.slice(1)}
-                    </div>
-                  </div>
+                {syncStatsError}
+              </div>
+            )}
 
-                  <div
-                    className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                    title="Average time taken to process API requests"
-                  >
-                    <div className="text-sm text-gray-400">Response Time</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {syncHealth.metrics?.responseTime
-                        ? `${syncHealth.metrics.responseTime.toFixed(2)}ms`
-                        : "N/A"}
-                    </div>
-                  </div>
-
-                  <div
-                    className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                    title="Percentage of failed API requests in the last hour"
-                  >
-                    <div className="text-sm text-gray-400">Error Rate</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {syncHealth.metrics?.errorRate
-                        ? `${(syncHealth.metrics.errorRate * 100).toFixed(2)}%`
-                        : "N/A"}
-                    </div>
-                  </div>
-
-                  <div
-                    className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                    title="Time since the last successful data update"
-                  >
-                    <div className="text-sm text-gray-400">Data Freshness</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {Math.round(
-                        (syncHealth.metrics?.dataFreshness ?? 0) / 60
-                      )}{" "}
-                      min
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Sync Statistics Card */}
-            <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-              <h2 className="text-xl font-semibold text-gray-100 mb-4">
-                Sync Statistics
-              </h2>
-              {tokenSyncStats ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div
-                    className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                    title="Total number of tokens being tracked"
-                  >
-                    <div className="text-sm text-gray-400">Total Tokens</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {tokenSyncStats.totalTokens}
-                    </div>
-                  </div>
-
-                  <div
-                    className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                    title="Percentage of successful sync operations"
-                  >
-                    <div className="text-sm text-gray-400">Success Rate</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {tokenSyncStats?.successRate
-                        ? `${(tokenSyncStats.successRate * 100).toFixed(2)}%`
-                        : "N/A"}
-                    </div>
-                  </div>
-
-                  <div
-                    className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                    title="Average time taken to sync all tokens"
-                  >
-                    <div className="text-sm text-gray-400">Avg Sync Time</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {tokenSyncStats?.averageSyncTime
-                        ? `${tokenSyncStats.averageSyncTime.toFixed(2)}s`
-                        : "N/A"}
-                    </div>
-                  </div>
-
-                  <div
-                    className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                    title="Time of the most recent sync operation"
-                  >
-                    <div className="text-sm text-gray-400">Last Sync</div>
-                    <div className="text-lg font-semibold text-gray-100">
-                      {new Date(
-                        tokenSyncStats.lastSyncTime
-                      ).toLocaleTimeString()}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Validation Stats Card */}
-            <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-              <h2 className="text-xl font-semibold text-gray-100 mb-4">
-                Validation Statistics
-              </h2>
-              {validationStats?.byType ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Object.entries(validationStats.byType).map(
-                    ([type, count]) => (
-                      <div
-                        key={type}
-                        className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                        title={`Number of ${type
-                          .replace(/([A-Z])/g, " $1")
-                          .toLowerCase()} issues`}
-                      >
-                        <div className="text-sm text-gray-400">
-                          {type.replace(/([A-Z])/g, " $1").trim()}
-                        </div>
-                        <div className="text-lg font-semibold text-gray-100">
-                          {count}
-                        </div>
+            {/* Content */}
+            <div className="relative z-10 pointer-events-auto">
+              {/* Health Status Card */}
+              <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+                <h2 className="text-xl font-semibold text-gray-100 mb-4">
+                  Sync Health Status
+                </h2>
+                {syncStatsLoading && !tokenSyncStats ? (
+                  <div className="animate-pulse flex space-x-4">
+                    <div className="flex-1 space-y-4 py-1">
+                      <div className="h-4 bg-dark-300 rounded w-3/4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-dark-300 rounded"></div>
+                        <div className="h-4 bg-dark-300 rounded w-5/6"></div>
                       </div>
-                    )
-                  )}
-                </div>
-              ) : null}
-            </div>
+                    </div>
+                  </div>
+                ) : syncHealth ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div
+                      className={`p-4 rounded-lg ${
+                        syncHealth.status === "healthy"
+                          ? "bg-green-500/20 border-green-500/50"
+                          : syncHealth.status === "degraded"
+                          ? "bg-yellow-500/20 border-yellow-500/50"
+                          : "bg-red-500/20 border-red-500/50"
+                      } border relative group`}
+                      title="Overall health status of the token sync system"
+                    >
+                      <div className="text-sm text-gray-400">Status</div>
+                      <div
+                        className={`text-lg font-semibold ${
+                          syncHealth.status === "healthy"
+                            ? "text-green-400"
+                            : syncHealth.status === "degraded"
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                        }`}
+                      >
+                        {syncHealth.status.charAt(0).toUpperCase() +
+                          syncHealth.status.slice(1)}
+                      </div>
+                    </div>
 
-            {/* Metadata Quality Card */}
-            <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-              <h2 className="text-xl font-semibold text-gray-100 mb-4">
-                Metadata Quality
-              </h2>
-              {metadataQuality?.byField ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {Object.entries(metadataQuality.byField).map(
-                      ([field, score]) => (
+                    <div
+                      className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                      title="Average time taken to process API requests"
+                    >
+                      <div className="text-sm text-gray-400">Response Time</div>
+                      <div className="text-lg font-semibold text-gray-100">
+                        {syncHealth.metrics?.responseTime
+                          ? `${syncHealth.metrics.responseTime.toFixed(2)}ms`
+                          : "N/A"}
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                      title="Percentage of failed API requests in the last hour"
+                    >
+                      <div className="text-sm text-gray-400">Error Rate</div>
+                      <div className="text-lg font-semibold text-gray-100">
+                        {syncHealth.metrics?.errorRate
+                          ? `${(syncHealth.metrics.errorRate * 100).toFixed(
+                              2
+                            )}%`
+                          : "N/A"}
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                      title="Time since the last successful data update"
+                    >
+                      <div className="text-sm text-gray-400">
+                        Data Freshness
+                      </div>
+                      <div className="text-lg font-semibold text-gray-100">
+                        {Math.round(
+                          (syncHealth.metrics?.dataFreshness ?? 0) / 60
+                        )}{" "}
+                        min
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Sync Statistics Card */}
+              <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+                <h2 className="text-xl font-semibold text-gray-100 mb-4">
+                  Sync Statistics
+                </h2>
+                {tokenSyncStats ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div
+                      className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                      title="Total number of tokens being tracked"
+                    >
+                      <div className="text-sm text-gray-400">Total Tokens</div>
+                      <div className="text-lg font-semibold text-gray-100">
+                        {tokenSyncStats.totalTokens}
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                      title="Percentage of successful sync operations"
+                    >
+                      <div className="text-sm text-gray-400">Success Rate</div>
+                      <div className="text-lg font-semibold text-gray-100">
+                        {tokenSyncStats?.successRate
+                          ? `${(tokenSyncStats.successRate * 100).toFixed(2)}%`
+                          : "N/A"}
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                      title="Average time taken to sync all tokens"
+                    >
+                      <div className="text-sm text-gray-400">Avg Sync Time</div>
+                      <div className="text-lg font-semibold text-gray-100">
+                        {tokenSyncStats?.averageSyncTime
+                          ? `${tokenSyncStats.averageSyncTime.toFixed(2)}s`
+                          : "N/A"}
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                      title="Time of the most recent sync operation"
+                    >
+                      <div className="text-sm text-gray-400">Last Sync</div>
+                      <div className="text-lg font-semibold text-gray-100">
+                        {new Date(
+                          tokenSyncStats.lastSyncTime
+                        ).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Validation Stats Card */}
+              <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+                <h2 className="text-xl font-semibold text-gray-100 mb-4">
+                  Validation Statistics
+                </h2>
+                {validationStats?.byType ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.entries(validationStats.byType).map(
+                      ([type, count]) => (
                         <div
-                          key={field}
+                          key={type}
                           className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
-                          title={`Quality score for ${field
+                          title={`Number of ${type
                             .replace(/([A-Z])/g, " $1")
-                            .toLowerCase()} data`}
+                            .toLowerCase()} issues`}
                         >
                           <div className="text-sm text-gray-400">
-                            {field.replace(/([A-Z])/g, " $1").trim()}
+                            {type.replace(/([A-Z])/g, " $1").trim()}
                           </div>
                           <div className="text-lg font-semibold text-gray-100">
-                            {score ? `${(score * 100).toFixed(1)}%` : "N/A"}
+                            {count}
                           </div>
                         </div>
                       )
                     )}
                   </div>
+                ) : null}
+              </div>
 
-                  {/* Recommendations */}
-                  {metadataQuality.recommendations?.length > 0 && (
-                    <div className="mt-6">
-                      <h3 className="text-lg font-medium text-gray-200 mb-3">
-                        Recommendations
-                      </h3>
-                      <div className="space-y-3">
-                        {metadataQuality.recommendations.map((rec, index) => (
+              {/* Metadata Quality Card */}
+              <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+                <h2 className="text-xl font-semibold text-gray-100 mb-4">
+                  Metadata Quality
+                </h2>
+                {metadataQuality?.byField ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                      {Object.entries(metadataQuality.byField).map(
+                        ([field, score]) => (
                           <div
-                            key={index}
-                            className="p-4 rounded-lg bg-dark-300/50 border border-dark-400"
+                            key={field}
+                            className="p-4 rounded-lg bg-dark-300/50 border border-dark-400 relative group"
+                            title={`Quality score for ${field
+                              .replace(/([A-Z])/g, " $1")
+                              .toLowerCase()} data`}
                           >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-medium text-gray-300">
-                                {rec.field}
-                              </span>
-                              <span className="text-sm text-gray-400">
-                                Score: {(rec.score * 100).toFixed(1)}%
-                              </span>
+                            <div className="text-sm text-gray-400">
+                              {field.replace(/([A-Z])/g, " $1").trim()}
                             </div>
-                            <p className="text-sm text-gray-400">
-                              {rec.suggestion}
-                            </p>
+                            <div className="text-lg font-semibold text-gray-100">
+                              {score ? `${(score * 100).toFixed(1)}%` : "N/A"}
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                        )
+                      )}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-gray-400 text-sm">
-                  No metadata quality data available
-                </div>
-              )}
+
+                    {/* Recommendations */}
+                    {metadataQuality.recommendations?.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-medium text-gray-200 mb-3">
+                          Recommendations
+                        </h3>
+                        <div className="space-y-3">
+                          {metadataQuality.recommendations.map((rec, index) => (
+                            <div
+                              key={index}
+                              className="p-4 rounded-lg bg-dark-300/50 border border-dark-400"
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm font-medium text-gray-300">
+                                  {rec.field}
+                                </span>
+                                <span className="text-sm text-gray-400">
+                                  Score: {(rec.score * 100).toFixed(1)}%
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-400">
+                                {rec.suggestion}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-sm">
+                    No metadata quality data available
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
