@@ -41,7 +41,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
 
   if (maintenanceMode) {
     return (
-      <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative w-full">
+      <div className="bg-dark-200/60 backdrop-blur-sm h-8 border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative w-full">
         <div
           ref={containerRef}
           className="inline-flex items-center"
@@ -98,7 +98,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   // TODO: improve the loading state
   if (loading) {
     return (
-      <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300">
+      <div className="bg-dark-200/60 backdrop-blur-sm h-8 border-y border-dark-300">
         <div className="animate-pulse h-full bg-dark-300/50" />
       </div>
     );
@@ -107,7 +107,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   // TODO: improve the empty state
   if (sortedContests.length === 0) {
     return (
-      <div className="bg-dark-200/80 backdrop-blur-sm h-8 border-y border-dark-300 flex items-center justify-center text-sm text-gray-400">
+      <div className="bg-dark-200/60 backdrop-blur-sm h-8 border-y border-dark-300 flex items-center justify-center text-sm text-gray-400">
         Featured Duels are currently unavailable
       </div>
     );
@@ -115,9 +115,9 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
 
   // Live Contest Ticker (edge-to-edge)
   return (
-    <div className="relative w-full bg-dark-200 overflow-hidden">
+    <div className="relative w-full overflow-hidden">
       {/* Dark base layer */}
-      <div className="absolute inset-0 bg-dark-200/90" />
+      <div className="absolute inset-0 bg-dark-200/60" />
 
       {/* Animated gradient background */}
       <div className="absolute inset-0">

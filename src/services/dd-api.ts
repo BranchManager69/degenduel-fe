@@ -1133,6 +1133,14 @@ export const ddApi = {
 
     return response;
   },
+
+  superadmin: {
+    getToken: async (): Promise<{ token: string }> => {
+      const api = createApiClient();
+      const response = await api.fetch("/superadmin/token");
+      return response.json();
+    },
+  },
 };
 
 export const createDDApi = () => {

@@ -103,7 +103,7 @@ export const Header: React.FC = () => {
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <header className="relative bg-dark-200/40 backdrop-blur-xl sticky top-0 z-50">
+      <header className="relative bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50">
         {/* Banned User Banner */}
         {user?.is_banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
@@ -141,7 +141,7 @@ export const Header: React.FC = () => {
 
         <div className="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Glass base with visible blur */}
-          <div className="absolute inset-0 bg-gradient-to-b from-dark-200/80 to-dark-200/40 backdrop-blur-xl" />
+          <div className="absolute inset-0 bg-gradient-to-b from-dark-200/60 to-dark-200/30 backdrop-blur-lg" />
 
           {/* Visible gradient background */}
           <div className="absolute inset-0">
@@ -179,63 +179,74 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Main header content */}
-          <div className="relative flex items-center justify-between h-16">
+          <div className="relative flex items-center justify-between h-16 min-h-[64px]">
             {/* Main Logo */}
             <Link
               to="/"
-              className="flex items-center gap-1 group relative pl-5 md:pl-5 sm:w-full sm:justify-center md:w-auto md:justify-start"
+              className="flex items-center gap-1 group relative pl-2 md:pl-5 flex-shrink-0 min-w-[80px]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Container for the epic collision animation */}
-              <div
-                className="relative flex items-center justify-center"
-                style={{ transform: "translateX(0)" }}
-              >
+              {/* Container for the compact DxD logo */}
+              <div className="relative flex items-center justify-center scale-[0.85] sm:scale-100">
                 {/* Shockwave effect container */}
                 <div
                   className="absolute inset-0 rounded-full animate-logo-shockwave"
                   style={{ animationDelay: "1s" }}
                 />
 
-                {/* DEGEN text with aggressive entrance */}
-                <div className="relative">
-                  <span className="text-2xl font-display text-brand-400 group-hover:text-brand-300 transition-colors animate-logo-slam-left inline-block">
-                    DEGEN
+                {/* DD container with relative positioning */}
+                <div className="relative flex items-center gap-[2px]">
+                  {/* First D with purple/violet color */}
+                  <span className="text-3xl sm:text-4xl font-cyber text-purple-400 group-hover:text-purple-300 transition-colors animate-logo-slam-left inline-block tracking-tighter relative">
+                    <span className="relative z-20">D</span>
+                    {/* 3D layers for depth */}
+                    <span className="absolute inset-0 text-purple-500 translate-x-[1px] translate-y-[1px] z-10">
+                      D
+                    </span>
+                    <span className="absolute inset-0 text-purple-600 translate-x-[2px] translate-y-[2px] z-[5]">
+                      D
+                    </span>
+                    <span className="absolute inset-0 text-purple-700 translate-x-[3px] translate-y-[3px] z-[1]">
+                      D
+                    </span>
+                    {/* Glow effect */}
+                    <span className="absolute inset-0 blur-[2px] text-purple-400/50 z-0">
+                      D
+                    </span>
                   </span>
-                  {/* Energy flash effect */}
-                  <div
-                    className="absolute inset-0 bg-brand-400/30 mix-blend-overlay animate-logo-flash"
-                    style={{ animationDelay: "1s" }}
-                  />
-                </div>
+                  {/* Second D with grey-white color */}
+                  <span className="text-3xl sm:text-4xl font-cyber text-gray-300 group-hover:text-gray-200 transition-colors animate-logo-slam-right inline-block tracking-tighter relative">
+                    <span className="relative z-20">D</span>
+                    {/* 3D layers for depth */}
+                    <span className="absolute inset-0 text-gray-400 translate-x-[1px] translate-y-[1px] z-10">
+                      D
+                    </span>
+                    <span className="absolute inset-0 text-gray-500 translate-x-[2px] translate-y-[2px] z-[5]">
+                      D
+                    </span>
+                    <span className="absolute inset-0 text-gray-600 translate-x-[3px] translate-y-[3px] z-[1]">
+                      D
+                    </span>
+                    {/* Glow effect */}
+                    <span className="absolute inset-0 blur-[2px] text-gray-300/50 z-0">
+                      D
+                    </span>
+                  </span>
 
-                {/* × symbol with explosive spin effect */}
-                <div className="relative mx-0.5">
-                  <span
-                    className="inline-block text-3xl font-display text-gray-300 transition-all duration-300 animate-logo-impact"
-                    style={{ animationDelay: "1s" }}
-                  >
-                    ×
-                  </span>
-                  {/* Energy burst effect */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div
-                      className="absolute w-8 h-8 bg-brand-400/20 rounded-full animate-ping"
-                      style={{ animationDelay: "1s" }}
-                    />
+                  {/* Centered x overlay */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
+                    <span className="text-xl sm:text-2xl font-display text-cyan-400 inline-block animate-spin-slow relative">
+                      <span className="relative z-10">×</span>
+                      {/* Shadow effect */}
+                      <span className="absolute inset-0 text-cyan-600 blur-[1px] -translate-y-[1px] translate-x-[1px] z-0">
+                        ×
+                      </span>
+                    </span>
+                    {/* Energy burst effect */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="absolute w-8 h-8 bg-cyan-400/20 rounded-full animate-ping" />
+                    </div>
                   </div>
-                </div>
-
-                {/* DUEL text with aggressive entrance */}
-                <div className="relative">
-                  <span className="text-2xl font-display text-cyber-400 group-hover:text-cyber-300 transition-colors animate-logo-slam-right inline-block">
-                    DUEL
-                  </span>
-                  {/* Energy flash effect */}
-                  <div
-                    className="absolute inset-0 bg-cyber-400/30 mix-blend-overlay animate-logo-flash"
-                    style={{ animationDelay: "1s" }}
-                  />
                 </div>
               </div>
             </Link>
@@ -288,257 +299,254 @@ export const Header: React.FC = () => {
               </div>
             </nav>
 
-            {/* Wallet Connection */}
-            <div
-              className="flex items-center gap-4 animate-slide-down opacity-0"
-              style={{ animationDelay: "1.5s", animationFillMode: "forwards" }}
-            >
-              {user ? (
-                <div className="flex items-center gap-2">
-                  <Link
-                    to="/me"
-                    className="px-4 py-1.5 text-sm text-brand-400 hover:text-brand-300 border border-brand-400/20 hover:border-brand-400/40 transition-all duration-300"
-                  >
-                    PROFILE
-                  </Link>
-                  <button
-                    onClick={disconnectWallet}
-                    className="px-4 py-1.5 text-sm text-red-400 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 transition-all duration-300"
-                  >
-                    DISCONNECT
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={connectWallet}
-                  disabled={isConnecting}
-                  className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors relative group overflow-hidden"
-                >
-                  <span className="relative z-10">
-                    {isConnecting ? "Connecting..." : "Connect Wallet"}
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-gradient-x" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Stop event propagation
-              toggleMenu();
-            }}
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-dark-300 focus:outline-none"
-            aria-label="Toggle menu"
-          >
-            <span className="sr-only">Open main menu</span>
-            {!isMenuOpen ? (
-              <svg
-                className="block h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="block h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <div
-          className={`absolute left-0 right-0 top-[64px] ${
-            isMenuOpen ? "block" : "hidden"
-          } md:hidden z-[60]`}
-        >
-          <div
-            className="bg-dark-200/95 backdrop-blur-lg border-t border-dark-300/50 shadow-lg shadow-black/20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="max-h-[calc(100vh-64px)] overflow-y-auto">
-              <div className="space-y-1 pb-3 pt-2">
-                <Link
-                  to="/contests"
-                  className="block px-3 py-2 text-base font-medium text-gray-100 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Contests
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </Link>
-                <Link
-                  to="/tokens"
-                  className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Tokens
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </Link>
-
-                {/* Rankings Section */}
-                <div className="px-3 py-2 space-y-1">
-                  <span className="block text-base font-medium text-brand-400 animate-cyber-pulse">
-                    Rankings
-                  </span>
-                  <Link
-                    to="/rankings/global"
-                    className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="relative z-10 group-hover:animate-glitch">
-                      Global Rankings
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </Link>
-                  <Link
-                    to="/rankings/performance"
-                    className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="relative z-10 group-hover:animate-glitch">
-                      Contest Performance
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </Link>
-                </div>
-
-                {/* Admin Section */}
-                {(isAdmin() || isSuperAdmin()) && (
-                  <div className="px-3 py-2 space-y-1">
-                    <span className="block text-base font-medium text-brand-400 animate-cyber-pulse">
-                      Admin
-                    </span>
-                    {isAdmin() && (
-                      <Link
-                        to="/admin"
-                        className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <span className="relative z-10 group-hover:animate-glitch">
-                          Contest Admin
-                        </span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      </Link>
-                    )}
-                    {isSuperAdmin() && (
-                      <>
-                        <Link
-                          to="/superadmin"
-                          className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <span className="relative z-10 group-hover:animate-glitch">
-                            SuperAdmin Tools
-                          </span>
-                          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        </Link>
-                        <Link
-                          to="/amm-sim"
-                          className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <span className="relative z-10 group-hover:animate-glitch">
-                            AMM Simulator
-                          </span>
-                          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        </Link>
-                        <Link
-                          to="/api-playground"
-                          className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <span className="relative z-10 group-hover:animate-glitch">
-                            API Playground
-                          </span>
-                          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        </Link>
-                      </>
-                    )}
+            {/* Right Side Controls (Wallet + Menu) */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Wallet Connection */}
+              <div className="flex items-center">
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to="/me"
+                      className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm text-brand-400 hover:text-brand-300 border border-brand-400/20 hover:border-brand-400/40 transition-all duration-300 whitespace-nowrap"
+                    >
+                      PROFILE
+                    </Link>
+                    <button
+                      onClick={disconnectWallet}
+                      className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm text-red-400 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 transition-all duration-300 whitespace-nowrap"
+                    >
+                      DISCONNECT
+                    </button>
                   </div>
+                ) : (
+                  <button
+                    onClick={connectWallet}
+                    disabled={isConnecting}
+                    className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm text-brand-400 hover:text-brand-300 border border-brand-400/20 hover:border-brand-400/40 transition-all duration-300 whitespace-nowrap"
+                  >
+                    {isConnecting ? "..." : "CONNECT"}
+                  </button>
                 )}
               </div>
 
-              {/* Mobile Wallet Connection */}
-              <div className="pt-4 pb-3 border-t border-dark-300">
-                <div className="px-3 space-y-3">
-                  {user ? (
-                    <div className="space-y-3">
-                      <Link
-                        to="/me"
-                        className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <span className="relative z-10 group-hover:animate-glitch">
-                          Profile
-                        </span>
-                        {user.is_banned && (
-                          <span
-                            className="ml-1.5 text-red-500 animate-pulse"
-                            title={user.ban_reason || "Account banned"}
-                          >
-                            🚫
+              {/* Mobile Menu Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMenu();
+                }}
+                className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-dark-300 focus:outline-none flex-shrink-0"
+                aria-label="Toggle menu"
+              >
+                <span className="sr-only">Open main menu</span>
+                {!isMenuOpen ? (
+                  <svg
+                    className="block h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="block h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          <div
+            className={`absolute left-0 right-0 top-[64px] ${
+              isMenuOpen ? "block" : "hidden"
+            } md:hidden z-[60]`}
+          >
+            <div
+              className="bg-dark-200/95 backdrop-blur-lg border-t border-dark-300/50 shadow-lg shadow-black/20"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="max-h-[calc(100vh-64px)] overflow-y-auto">
+                <div className="space-y-1 pb-3 pt-2">
+                  <Link
+                    to="/contests"
+                    className="block px-3 py-2 text-base font-medium text-gray-100 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="relative z-10 group-hover:animate-glitch">
+                      Contests
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </Link>
+                  <Link
+                    to="/tokens"
+                    className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="relative z-10 group-hover:animate-glitch">
+                      Tokens
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </Link>
+
+                  {/* Rankings Section */}
+                  <div className="px-3 py-2 space-y-1">
+                    <span className="block text-base font-medium text-brand-400 animate-cyber-pulse">
+                      Rankings
+                    </span>
+                    <Link
+                      to="/rankings/global"
+                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="relative z-10 group-hover:animate-glitch">
+                        Global Rankings
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </Link>
+                    <Link
+                      to="/rankings/performance"
+                      className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="relative z-10 group-hover:animate-glitch">
+                        Contest Performance
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </Link>
+                  </div>
+
+                  {/* Admin Section */}
+                  {(isAdmin() || isSuperAdmin()) && (
+                    <div className="px-3 py-2 space-y-1">
+                      <span className="block text-base font-medium text-brand-400 animate-cyber-pulse">
+                        Admin
+                      </span>
+                      {isAdmin() && (
+                        <Link
+                          to="/admin"
+                          className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <span className="relative z-10 group-hover:animate-glitch">
+                            Contest Admin
                           </span>
-                        )}
-                      </Link>
-                      <button
+                          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </Link>
+                      )}
+                      {isSuperAdmin() && (
+                        <>
+                          <Link
+                            to="/superadmin"
+                            className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <span className="relative z-10 group-hover:animate-glitch">
+                              SuperAdmin Tools
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </Link>
+                          <Link
+                            to="/amm-sim"
+                            className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <span className="relative z-10 group-hover:animate-glitch">
+                              AMM Simulator
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </Link>
+                          <Link
+                            to="/api-playground"
+                            className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <span className="relative z-10 group-hover:animate-glitch">
+                              API Playground
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile Wallet Connection */}
+                <div className="pt-4 pb-3 border-t border-dark-300">
+                  <div className="px-3 space-y-3">
+                    {user ? (
+                      <div className="space-y-3">
+                        <Link
+                          to="/me"
+                          className="block px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <span className="relative z-10 group-hover:animate-glitch">
+                            Profile
+                          </span>
+                          {user.is_banned && (
+                            <span
+                              className="ml-1.5 text-red-500 animate-pulse"
+                              title={user.ban_reason || "Account banned"}
+                            >
+                              🚫
+                            </span>
+                          )}
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            disconnectWallet();
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                        >
+                          <span className="relative z-10 group-hover:animate-glitch">
+                            Disconnect Wallet
+                          </span>
+                        </button>
+                      </div>
+                    ) : (
+                      <Button
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          disconnectWallet();
+                          connectWallet();
                           setIsMenuOpen(false);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm font-medium text-gray-400 hover:text-brand-400 hover:bg-dark-300/50 rounded-md transition-all duration-200 relative group"
+                        variant="gradient"
+                        size="sm"
+                        className="w-full group"
+                        disabled={isConnecting}
                       >
                         <span className="relative z-10 group-hover:animate-glitch">
-                          Disconnect Wallet
+                          {isConnecting ? "Connecting..." : "Connect Wallet"}
                         </span>
-                      </button>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        connectWallet();
-                        setIsMenuOpen(false);
-                      }}
-                      variant="gradient"
-                      size="sm"
-                      className="w-full group"
-                      disabled={isConnecting}
-                    >
-                      <span className="relative z-10 group-hover:animate-glitch">
-                        {isConnecting ? "Connecting..." : "Connect Wallet"}
-                      </span>
-                    </Button>
-                  )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

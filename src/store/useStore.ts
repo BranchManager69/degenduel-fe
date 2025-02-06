@@ -268,6 +268,14 @@ export const useStore = create<StoreState>()(
               headers: nonceRes.headers,
               timestamp: new Date().toISOString(),
             });
+
+            // Handle 502 Bad Gateway specifically
+            if (nonceRes.status === 502) {
+              throw new Error(
+                "Server is currently unavailable. Please try again in a few minutes."
+              );
+            }
+
             throw new Error(
               `Failed to get nonce after retries: ${nonceRes.status} ${errorText}`
             );
@@ -465,7 +473,16 @@ const verifyWallet = async (
   }
 
   if (!response.ok) {
-    const error = await response.json();
+    // Handle 502 Bad Gateway specifically
+    if (response.status === 502) {
+      throw new Error(
+        "Server is currently unavailable. Please try again in a few minutes."
+      );
+    }
+
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Server error" }));
     throw new Error(error.message || "Failed to verify wallet");
   }
 
