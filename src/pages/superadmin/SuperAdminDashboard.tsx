@@ -5,7 +5,7 @@ import { BalanceManager } from "../../components/admin/BalanceManager";
 import { FaucetManager } from "../../components/admin/FaucetManager";
 import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
-import { VanityWalletPool } from "../../components/admin/VanityWalletPool";
+import { VanityPool } from "../../components/admin/VanityPool";
 import { WalletManagement } from "../../components/admin/WalletManagement";
 
 type TabType =
@@ -77,7 +77,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 </div>
               </div>
             ) : activeTab === "vanity" ? (
-              <VanityWalletPool />
+              <VanityPool />
             ) : activeTab === "wallet-gen" ? (
               <WalletManagement />
             ) : activeTab === "faucet-mgr" ? (

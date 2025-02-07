@@ -39,25 +39,26 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
 
   const fetchWalletData = async () => {
     try {
-      setError(null);
       setIsRefreshing(true);
+      setError(null);
 
-      const [walletsResponse, balanceResponse] = await Promise.all([
-        ddApi.fetch("/admin/wallets/contest-wallets"),
-        ddApi.fetch("/admin/wallets/total-sol-balance"),
-      ]);
+      const [walletsResponse, statsResponse, metricsResponse] =
+        await Promise.all([
+          ddApi.fetch("/api/admin/wallets/contest-wallets"),
+          ddApi.fetch("/api/admin/wallets/cache-stats"),
+          ddApi.fetch("/api/admin/wallets/metrics"),
+        ]);
 
-      const [walletsData, balanceData] = await Promise.all([
+      const [walletsData, statsData, metricsData] = await Promise.all([
         walletsResponse.json(),
-        balanceResponse.json(),
+        statsResponse.json(),
+        metricsResponse.json(),
       ]);
 
-      if (walletsData.success && Array.isArray(walletsData.data)) {
-        setWallets(walletsData.data);
-      }
-
-      if (balanceData.success && balanceData.data) {
-        setTotalBalance(balanceData.data);
+      if (walletsData.success) setWallets(walletsData.data);
+      if (statsData.success) setTotalBalance(statsData.data);
+      if (metricsData.success) {
+        // Handle metrics data
       }
     } catch (err) {
       setError("Failed to fetch wallet data");
