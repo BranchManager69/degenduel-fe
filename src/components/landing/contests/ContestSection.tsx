@@ -1,6 +1,6 @@
 import React from "react";
-import type { Contest } from "../../types/index";
-import { ContestCard } from "./contests/ContestCard";
+import type { Contest } from "../../../types/index";
+import { ContestCard } from "./ContestCard";
 
 interface ContestSectionProps {
   title: string;

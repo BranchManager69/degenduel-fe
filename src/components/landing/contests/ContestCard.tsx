@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { formatCurrency } from "../../lib/utils";
-import { ContestStatus, DifficultyLevel } from "../../types/index";
-import { Card, CardHeader } from "../ui/Card";
-import { ContestButton } from "./contests/ContestButton";
-import { ContestDifficulty } from "./contests/ContestDifficulty";
+import { formatCurrency } from "../../../lib/utils";
+import { ContestStatus, DifficultyLevel } from "../../../types/index";
+import { Card, CardHeader } from "../../ui/Card";
+import { ContestButton } from "./ContestButton";
+import { ContestDifficulty } from "./ContestDifficulty";
 
 interface ContestCardProps {
   id: string;

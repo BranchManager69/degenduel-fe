@@ -43,23 +43,30 @@ export const ContestHistory: React.FC<ContestHistoryProps> = ({ contests }) => {
       <div className="relative">
         {contests.length > 0 ? (
           <div className="space-y-1">
-            {contests.map((contest, index) => (
+            {contests.map((contest) => (
               <Link
                 key={contest.contest_id}
                 to={`/contests/${contest.contest_id}/results`}
-                className="block group relative"
+                className="block group relative animate-fade-in-up"
+                style={{
+                  animationDelay: `${(contest.contest_id % 5) * 100}ms`,
+                  animationFillMode: "both",
+                }}
               >
                 {/* Digital portal effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-scan-fast" />
 
                 <div className="relative p-4 transition-colors duration-300 hover:bg-dark-300/30">
-                  {/* Connector line */}
-                  <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-brand-400/30 to-transparent group-hover:via-brand-400/50 transition-colors duration-300" />
+                  {/* Enhanced connector line with glow */}
+                  <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-brand-400/30 to-transparent group-hover:via-brand-400/50 transition-colors duration-300">
+                    <div className="absolute inset-0 bg-brand-400/30 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
 
-                  {/* Time node */}
+                  {/* Enhanced time node with stronger glow */}
                   <div className="absolute left-[-4px] top-1/2 transform -translate-y-1/2 w-[10px] h-[10px] rounded-full bg-dark-300 border border-brand-400/30 group-hover:border-brand-400 group-hover:bg-brand-400/20 transition-all duration-300">
-                    {/* Pulse effect */}
+                    {/* Stronger pulse effect */}
                     <div className="absolute inset-0 rounded-full bg-brand-400/30 group-hover:animate-ping" />
+                    <div className="absolute inset-0 rounded-full bg-brand-400/20 group-hover:animate-pulse" />
                   </div>
 
                   <div className="ml-6 space-y-2">

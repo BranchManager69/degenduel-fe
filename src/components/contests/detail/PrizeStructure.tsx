@@ -1,16 +1,18 @@
-import React from 'react';
-import { Card, CardHeader, CardContent } from '../ui/Card';
-import { formatCurrency } from '../../lib/utils';
+import React from "react";
+import { formatCurrency } from "../../../lib/utils";
+import { Card, CardContent, CardHeader } from "../../ui/Card";
 
 interface PrizeStructureProps {
   prizePool: number;
 }
 
-export const PrizeStructure: React.FC<PrizeStructureProps> = ({ prizePool }) => {
+export const PrizeStructure: React.FC<PrizeStructureProps> = ({
+  prizePool,
+}) => {
   const prizes = [
-    { place: '1st', percentage: 50 },
-    { place: '2nd', percentage: 30 },
-    { place: '3rd', percentage: 20 },
+    { place: "1st", percentage: 50 },
+    { place: "2nd", percentage: 30 },
+    { place: "3rd", percentage: 20 },
   ];
 
   return (
@@ -21,7 +23,10 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({ prizePool }) => 
       <CardContent>
         <div className="space-y-3">
           {prizes.map(({ place, percentage }) => (
-            <div key={place} className="flex items-center justify-between p-2 rounded bg-dark-300/50">
+            <div
+              key={place}
+              className="flex items-center justify-between p-2 rounded bg-dark-300/50"
+            >
               <span className="text-gray-300">{place}</span>
               <div className="flex flex-col items-end">
                 <span className="text-brand-400 font-medium">

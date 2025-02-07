@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button } from "../ui/Button";
+import { Button } from "../../ui/Button";
 import { CreateContestModal } from "./CreateContestModal";
 
 interface CreateContestButtonProps {

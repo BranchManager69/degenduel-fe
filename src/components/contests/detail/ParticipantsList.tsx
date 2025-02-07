@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "../ui/Card";
+import { Card, CardContent, CardHeader } from "../../ui/Card";
 
 interface Participant {
   address: string;

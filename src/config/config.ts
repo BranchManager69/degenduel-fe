@@ -29,4 +29,4 @@ console.log("API_URL configuration in use:", {
 });
 
 /* Superadmin Secret */
-export const SUPERADMIN_SECRET = import.meta.env.VITE_SUPERADMIN_SECRET;
+export const SUPERADMIN_SECRET = import.meta.env.VITE_SUPERADMIN_SECRET; // is this safe to have here?

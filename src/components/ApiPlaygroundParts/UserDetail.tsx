@@ -1,17 +1,22 @@
+// src/components/ApiPlaygroundParts/UserDetail.tsx
+
 import { format } from "date-fns";
 import { useState } from "react";
+import { UserBanModal } from "../admin/BanUserModal";
 import { UserSearch } from "../admin/UserSearch";
 import { CopyToClipboard } from "../common/CopyToClipboard";
-import { UserBanModal } from "../modals/BanUserModal";
 
+// TODO: Move elsewhere
 type Role = "SUPERADMIN" | "ADMIN" | "USER";
 
+// TODO: Move elsewhere
 const ROLE_HIERARCHY: Record<Role, number> = {
   SUPERADMIN: 3,
   ADMIN: 2,
   USER: 1,
 };
 
+// TODO: Move to types/index.ts
 interface UserStats {
   contests_entered: number;
   contests_won: number;
@@ -21,6 +26,7 @@ interface UserStats {
   last_updated: string;
 }
 
+// TODO: Move to types/index.ts
 interface UserResponse {
   wallet_address: string;
   nickname: string;

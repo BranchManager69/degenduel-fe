@@ -1,14 +1,15 @@
 // src/pages/AdminDashboard.tsx
+
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import { BalanceManager } from "../../components/admin/BalanceManager";
-import { CreateContestButton } from "../../components/admin/CreateContestButton";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
 import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
 import { UserDetail } from "../../components/ApiPlaygroundParts/UserDetail";
+import { CreateContestButton } from "../../components/contests/browser/CreateContestButton";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
@@ -47,9 +48,7 @@ export const AdminDashboard: React.FC = () => {
     <ContestProvider>
       <div className="container mx-auto p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-100 mb-4">
-            Admin Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-100 mb-4">Admin Panel</h1>
           <p className="text-gray-400">
             Manage user balances, contests, and monitor system activities.
           </p>

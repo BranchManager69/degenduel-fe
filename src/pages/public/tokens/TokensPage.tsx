@@ -34,7 +34,7 @@ interface Token {
     label: string;
   }>;
 }
-
+// TODO: Move this to another file! Useful!!
 // Shared utility function
 const formatNumber = (value: string | number, decimals = 2) => {
   const num = Number(value);
@@ -225,7 +225,7 @@ const TokenCard: React.FC<{ token: Token }> = ({ token }) => {
 
               <div className="mt-4 pt-4 border-t border-dark-300">
                 <p className="text-xs text-gray-400 text-center">
-                  Click card to flip back
+                  Tap to flip again
                 </p>
               </div>
             </CardContent>
@@ -256,7 +256,7 @@ export const TokensPage: React.FC = () => {
         // If in maintenance mode, don't fetch tokens
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
           );
           setLoading(false);
           return;
@@ -312,7 +312,7 @@ export const TokensPage: React.FC = () => {
         if (err instanceof Error && err.message.includes("503")) {
           setIsMaintenanceMode(true);
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
           );
         } else {
           setError("Failed to load tokens");
@@ -378,8 +378,7 @@ export const TokensPage: React.FC = () => {
           <div className="flex items-center justify-center gap-2 text-yellow-400">
             <span>⚠</span>
             <span>
-              DegenDuel is currently undergoing scheduled maintenance. Please
-              try again later.
+              DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.
             </span>
             <span>⚠</span>
           </div>
@@ -403,10 +402,19 @@ export const TokensPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-100 mb-2">
-          Available Tokens
+          Tokens Supported
         </h1>
         <p className="text-gray-400">
-          Explore all tokens available for trading in DegenDuel contests
+          Due to the nature of our game, portfolios must consist of tokens on
+          the DegenDuel Whitelist. Read about our Whitelist selection criteria{" "}
+          <a
+            href="https://degenduel.me/whitelist"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            here
+          </a>
+          .
         </p>
       </div>
 
@@ -427,10 +435,11 @@ export const TokensPage: React.FC = () => {
             onChange={(e) => setSortField(e.target.value as keyof Token)}
             className="px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
           >
-            <option value="marketCap">Market Cap</option>
+            <option value="marketCap">Mkt. Cap.</option>
             <option value="volume24h">Volume</option>
-            <option value="price">Price</option>
-            <option value="change24h">24h Change</option>
+            <option value="change24h">24h Chg.</option>
+            <option value="liquidity">Liquidity</option>
+            {/* <option value="price">Price</option> */}
           </select>
           <button
             onClick={() =>
@@ -459,7 +468,7 @@ export const TokensPage: React.FC = () => {
       </div>
 
       {/* Token Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-4 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredAndSortedTokens.map((token) => (
           <TokenCard key={token.contractAddress} token={token} />
         ))}

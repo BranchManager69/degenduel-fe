@@ -1,9 +1,9 @@
 // src/pages/public/ContestBrowserPage.tsx
 
 import React, { useEffect, useMemo, useState } from "react";
-import { CreateContestButton } from "../../../components/admin/CreateContestButton";
 import { ContestCard } from "../../../components/contests/browser/ContestCard";
 import { ContestSort } from "../../../components/contests/browser/ContestSort";
+import { CreateContestButton } from "../../../components/contests/browser/CreateContestButton";
 import { useAuth } from "../../../hooks/useAuth";
 import { ddApi } from "../../../services/dd-api";
 import { Contest, ContestSettings } from "../../../types/index";
@@ -38,7 +38,7 @@ export const ContestBrowser: React.FC = () => {
       // If in maintenance mode, don't fetch contests
       if (isInMaintenance) {
         setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
         );
         return;
       }
@@ -54,7 +54,7 @@ export const ContestBrowser: React.FC = () => {
       if (error instanceof Error && error.message.includes("503")) {
         setIsMaintenanceMode(true);
         setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
         );
       } else {
         setError("Failed to load contests");
@@ -74,7 +74,7 @@ export const ContestBrowser: React.FC = () => {
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
           );
         }
       } catch (err) {
@@ -89,7 +89,7 @@ export const ContestBrowser: React.FC = () => {
   const filteredAndSortedContests = useMemo(() => {
     let filtered = [...contests];
 
-    // First apply completed/cancelled filters
+    // First, apply completed/cancelled filters
     filtered = filtered.filter((contest) => {
       const now = new Date();
       const endTime = new Date(contest.end_time);
@@ -147,12 +147,12 @@ export const ContestBrowser: React.FC = () => {
         switch (sortField) {
           case "start_time":
             return new Date(contest.start_time).getTime();
+          case "participant_count":
+            return contest.participant_count;
           case "prize_pool":
             return Number(contest.prize_pool);
           case "entry_fee":
             return Number(contest.entry_fee);
-          case "participant_count":
-            return contest.participant_count;
           default:
             return 0;
         }
@@ -197,8 +197,7 @@ export const ContestBrowser: React.FC = () => {
           <div className="flex items-center justify-center gap-2 text-yellow-400">
             <span className="animate-pulse">⚠</span>
             <span>
-              ⚙️ DegenDuel is currently undergoing scheduled maintenance. Please
-              try again later.
+              DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.
             </span>
             <span className="animate-pulse">⚠</span>
           </div>
@@ -223,7 +222,7 @@ export const ContestBrowser: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative group">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
           <span className="relative z-10 group-hover:animate-glitch">
-            Find Contests
+            Duel Explorer
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
         </h1>
@@ -248,7 +247,7 @@ export const ContestBrowser: React.FC = () => {
               clipRule="evenodd"
             />
           </svg>
-          <span>Filters & Sort</span>
+          <span>Sort/Filter</span>
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -278,25 +277,23 @@ export const ContestBrowser: React.FC = () => {
             {/* Status Filter */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                Contest Status
+                Status
               </label>
               <select
                 className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors"
                 value={activeStatusFilter}
                 onChange={(e) => setActiveStatusFilter(e.target.value)}
               >
-                <option value="all">All Active Contests</option>
-                <option value="live">Live Now (Spectate)</option>
-                <option value="upcoming">Pre-Registration</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="all">All Duels</option>
+                <option value="upcoming">OPEN | Can Enter</option>
+                <option value="live">LIVE | Can Spectate</option>
               </select>
             </div>
 
             {/* Show Completed/Cancelled Checkboxes */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                Additional Filters
+                Include Finished Duels?
               </label>
               <div className="space-y-2">
                 <label className="flex items-center space-x-2">
@@ -320,10 +317,10 @@ export const ContestBrowser: React.FC = () => {
               </div>
             </div>
 
-            {/* Difficulty Filter */}
+            {/* Difficulty Filter (New: "DUEL STYLE") */}
             <div className="space-y-2">
               <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                Risk Level*
+                Duel Style
               </label>
               <select
                 className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors"
@@ -334,25 +331,13 @@ export const ContestBrowser: React.FC = () => {
                   )
                 }
               >
-                <option value="">All Risk Levels</option>
-                <option value="guppy">
-                  Guppy (Most winners; lowest individual payouts)
-                </option>
-                <option value="tadpole">
-                  Tadpole (More winners; lower payouts)
-                </option>
-                <option value="squid">
-                  Squid (Many winners; below-average payouts)
-                </option>
-                <option value="dolphin">
-                  Dolphin (Few winners; above-average payouts)
-                </option>
-                <option value="shark">
-                  Shark (Fewer winners; higher payouts)
-                </option>
-                <option value="whale">
-                  Whale (Fewest winner(s); highest individual payout(s))
-                </option>
+                <option value="">ALL STYLES</option>
+                <option value="guppy">Guppy</option>
+                <option value="tadpole">Tadpole</option>
+                <option value="squid">Squid</option>
+                <option value="dolphin">Dolphin</option>
+                <option value="shark">Shark</option>
+                <option value="whale">Whale</option>
               </select>
             </div>
           </div>
@@ -408,7 +393,7 @@ export const ContestBrowser: React.FC = () => {
       <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredAndSortedContests.length === 0 ? (
           <div className="col-span-full text-center text-gray-400 py-12 bg-dark-200/50 rounded-lg animate-fade-in">
-            No contests found matching your filters
+            No duels matching these filters
           </div>
         ) : (
           filteredAndSortedContests.map((contest) => (

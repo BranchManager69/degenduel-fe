@@ -1,10 +1,10 @@
 import React from "react";
 import { formatCurrency } from "../../lib/utils";
 import { Contest } from "../../types/index";
+import { CreateContestButton } from "../contests/browser/CreateContestButton";
 import { ContestDifficulty } from "../landing/contests/ContestDifficulty";
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader } from "../ui/Card";
-import { CreateContestButton } from "./CreateContestButton";
 
 interface ContestManagementProps {
   contests: Contest[];

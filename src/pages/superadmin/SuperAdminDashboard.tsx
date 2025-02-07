@@ -1,9 +1,20 @@
+// src/pages/superadmin/SuperAdminDashboard.tsx
+
 import React, { useState } from "react";
 import { BalanceManager } from "../../components/admin/BalanceManager";
+import { FaucetManager } from "../../components/admin/FaucetManager";
 import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
+import { VanityWalletPool } from "../../components/admin/VanityWalletPool";
+import { WalletManagement } from "../../components/admin/WalletManagement";
 
-type TabType = "system" | "spy";
+type TabType =
+  | "system"
+  | "spy"
+  | "faucet-mgr"
+  | "wallet-gen"
+  | "vanity"
+  | "reseed";
 
 export const SuperAdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("system");
@@ -15,9 +26,14 @@ export const SuperAdminDashboard: React.FC = () => {
           {/* Tab Navigation */}
           <div className="border-b border-dark-300">
             <nav className="-mb-px flex">
+              {/* Tabs */}
               {[
-                { key: "system", label: "System" },
-                { key: "spy", label: "Spy" },
+                { key: "system", label: "Sys. Logs" },
+                { key: "spy", label: "User Spy" },
+                { key: "faucet-mgr", label: "Faucet Mgr." },
+                { key: "wallet-gen", label: "Wallet Gen." },
+                { key: "vanity", label: "Vanity Pool" },
+                { key: "reseed", label: "Reseed DB" },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -59,6 +75,21 @@ export const SuperAdminDashboard: React.FC = () => {
                   </h2>
                   <BalanceManager />
                 </div>
+              </div>
+            ) : activeTab === "vanity" ? (
+              <VanityWalletPool />
+            ) : activeTab === "wallet-gen" ? (
+              <WalletManagement />
+            ) : activeTab === "faucet-mgr" ? (
+              <FaucetManager />
+            ) : activeTab === "reseed" ? (
+              <div className="p-4">
+                <h2 className="text-xl font-semibold text-gray-100 mb-4">
+                  Database Reseed
+                </h2>
+                <p className="text-gray-400">
+                  Database reseed interface coming soon...
+                </p>
               </div>
             ) : null}
           </div>

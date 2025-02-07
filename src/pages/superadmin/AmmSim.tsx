@@ -1,3 +1,5 @@
+// src/pages/superadmin/AmmSim.tsx
+
 import AmmSimulation from "../../components/AmmSimulation";
 
 export default function AmmSim() {

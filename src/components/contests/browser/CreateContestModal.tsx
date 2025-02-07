@@ -1,16 +1,18 @@
+// src/components/contests/browser/CreateContestModal.tsx
+
 import React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
-import { ddApi } from "../../services/dd-api";
-import { Contest, ContestSettings } from "../../types/index";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { MultiSelect } from "../ui/MultiSelect";
-import { Select } from "../ui/Select";
-import { Textarea } from "../ui/Textarea";
+import { DD_PLATFORM_FEE } from "../../../constants/rates";
+import { ddApi } from "../../../services/dd-api";
+import { Contest, ContestSettings } from "../../../types/index";
+import { Button } from "../../ui/Button";
+import { Input } from "../../ui/Input";
+import { MultiSelect } from "../../ui/MultiSelect";
+import { Select } from "../../ui/Select";
+import { Textarea } from "../../ui/Textarea";
 
-const DD_CONTEST_VIG = 0.1; // 10% cut
-
+// TODO: move to types/index.ts
 type ContestDifficulty =
   | "guppy"
   | "tadpole"
@@ -19,6 +21,7 @@ type ContestDifficulty =
   | "shark"
   | "whale";
 
+// TODO: move to types/index.ts
 interface CreateContestModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,7 +49,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   const calculateMaxPrizePool = (entryFee: string, maxParticipants: number) => {
     const fee = parseFloat(entryFee) || 0;
-    return Math.floor(fee * maxParticipants * (1 - DD_CONTEST_VIG));
+    return Math.floor(fee * maxParticipants * (1 - DD_PLATFORM_FEE));
   };
 
   const calculateCurrentPrizePool = (
@@ -54,7 +57,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     currentParticipants: number
   ) => {
     const fee = parseFloat(entryFee) || 0;
-    return Math.floor(fee * currentParticipants * (1 - DD_CONTEST_VIG));
+    return Math.floor(fee * currentParticipants * (1 - DD_PLATFORM_FEE));
   };
 
   const generateContestCode = (name: string, attempt = 0) => {

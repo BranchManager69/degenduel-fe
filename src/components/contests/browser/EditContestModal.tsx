@@ -1,4 +1,5 @@
-// src/components/admin/EditContestModal.tsx
+// src/components/contests/browser/EditContestModal.tsx
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { createPortal } from "react-dom";
@@ -6,14 +7,15 @@ import { Controller, ControllerRenderProps, useForm } from "react-hook-form";
 import {
   contestFormSchema,
   type ContestFormData,
-} from "../../schemas/contestSchema";
-import { Contest } from "../../types/index";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { MultiSelect } from "../ui/MultiSelect";
-import { Select } from "../ui/Select";
-import { Textarea } from "../ui/Textarea";
+} from "../../../schemas/contestSchema";
+import { Contest } from "../../../types/index";
+import { Button } from "../../ui/Button";
+import { Input } from "../../ui/Input";
+import { MultiSelect } from "../../ui/MultiSelect";
+import { Select } from "../../ui/Select";
+import { Textarea } from "../../ui/Textarea";
 
+// TODO: Move to types/index.ts
 interface EditContestModalProps {
   contest: Contest | null;
   isOpen: boolean;

@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { ContestSection } from "../../../components/landing/ContestSection";
-import { Features } from "../../../components/landing/Features";
+import { ContestSection } from "../../../components/landing/contests/ContestSection";
+import { Features } from "../../../components/landing/features/Features";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types/index";
 

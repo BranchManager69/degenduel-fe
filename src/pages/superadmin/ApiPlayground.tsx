@@ -1,3 +1,5 @@
+// src/pages/superadmin/ApiPlayground.tsx
+
 import ApiPlayground from "../../components/ApiPlayground";
 
 export default function ApiPlaygroundPage() {
