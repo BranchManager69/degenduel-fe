@@ -33,6 +33,7 @@ import { LandingPage } from "./pages/public/general/LandingPage";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
 import { TokensPage } from "./pages/public/tokens/TokensPage";
+import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { TestPage } from "./pages/superadmin/TestPage";
 /* some extra pages */
@@ -196,6 +197,12 @@ export const App: React.FC = () => {
                   <SuperAdminDashboard />
                 </SuperAdminRoute>
               }
+            />
+
+            {/* Services Control Panel*/}
+            <Route
+              path="/superadmin/services"
+              element={<ServiceControlPage />}
             />
 
             {/* AMM Simulation */}

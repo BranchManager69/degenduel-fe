@@ -6,19 +6,22 @@ interface PrizeStructureProps {
   prizePool: number;
 }
 
+// TODO: Address this poort implemenation
 export const PrizeStructure: React.FC<PrizeStructureProps> = ({
   prizePool,
 }) => {
   const prizes = [
-    { place: "1st", percentage: 50 },
-    { place: "2nd", percentage: 30 },
-    { place: "3rd", percentage: 20 },
+    { place: "1st", percentage: 69 },
+    { place: "2nd", percentage: 20 },
+    { place: "3rd", percentage: 11 },
   ];
 
   return (
     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300">
       <CardHeader>
-        <h3 className="text-lg font-semibold text-gray-100">Prize Structure</h3>
+        <h3 className="text-lg font-semibold text-gray-100">
+          Payout Structure
+        </h3>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">

@@ -193,7 +193,7 @@ export const formatBonusPoints = (points: string | number): string => {
   return `${amount.toLocaleString()} pts`;
 };
 
-// Add maintenance mode check function
+// Maintenance mode check function
 const checkMaintenanceMode = async () => {
   try {
     // First try the public status endpoint

@@ -2,14 +2,6 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { ddApi } from "../../services/dd-api";
 
-interface VanityRequest {
-  pattern: string;
-  identifier: string;
-  isCaseSensitive?: boolean;
-  position?: "start" | "end" | "anywhere";
-  metadata?: Record<string, any>;
-}
-
 interface ComplexityAnalysis {
   complexity: number;
   isReasonable: boolean;
@@ -53,7 +45,7 @@ export const VanityPool: React.FC = () => {
   const [generatedWallets, setGeneratedWallets] = useState<GeneratedWallet[]>(
     []
   );
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const validateAndAnalyzePattern = async () => {
     if (!pattern) return;
@@ -68,9 +60,9 @@ export const VanityPool: React.FC = () => {
 
       if (data.success) {
         setComplexity(data.analysis);
-        setError(null);
+        setErrorMessage(null);
       } else {
-        setError(data.message || "Invalid pattern");
+        setErrorMessage(data.message || "Invalid pattern");
         setComplexity(null);
       }
     } catch (err) {
@@ -116,7 +108,7 @@ export const VanityPool: React.FC = () => {
 
     try {
       setIsGenerating(true);
-      setError(null);
+      setErrorMessage(null);
 
       const response = await ddApi.fetch("/api/admin/vanity-wallets/generate", {
         method: "POST",
@@ -146,7 +138,7 @@ export const VanityPool: React.FC = () => {
       toast.error(
         err instanceof Error ? err.message : "Failed to generate vanity wallet"
       );
-      setError(err instanceof Error ? err.message : "Generation failed");
+      setErrorMessage(err instanceof Error ? err.message : "Generation failed");
     } finally {
       setIsGenerating(false);
     }
@@ -216,6 +208,11 @@ export const VanityPool: React.FC = () => {
           <span className="text-xl">🎯</span>
           Generate Vanity Wallet
         </h3>
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-red-400">{errorMessage}</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="block text-sm text-gray-400">Pattern</label>
@@ -303,13 +300,13 @@ export const VanityPool: React.FC = () => {
               isGenerating ||
               !pattern ||
               !identifier ||
-              (complexity && !complexity.isReasonable)
+              complexity?.isReasonable === false
             }
             className={`px-4 py-2 rounded-lg ${
               isGenerating ||
               !pattern ||
               !identifier ||
-              (complexity && !complexity.isReasonable)
+              complexity?.isReasonable === false
                 ? "bg-brand-500/50"
                 : "bg-brand-500 hover:bg-brand-600"
             } text-white transition-colors`}

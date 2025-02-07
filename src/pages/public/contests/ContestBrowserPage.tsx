@@ -273,57 +273,42 @@ export const ContestBrowser: React.FC = () => {
       >
         <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream rounded-lg" />
         <div className="relative z-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Status Filter */}
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+          {/* Filter Controls */}
+          <div className="flex flex-wrap gap-4 mb-4">
+            {/* Status Filter - Now as buttons */}
+            <div className="flex-1 min-w-[200px] max-w-[300px]">
+              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
                 Status
               </label>
-              <select
-                className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors"
-                value={activeStatusFilter}
-                onChange={(e) => setActiveStatusFilter(e.target.value)}
-              >
-                <option value="all">All Duels</option>
-                <option value="upcoming">OPEN | Can Enter</option>
-                <option value="live">LIVE | Can Spectate</option>
-              </select>
-            </div>
-
-            {/* Show Completed/Cancelled Checkboxes */}
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
-                Include Finished Duels?
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={showCompleted}
-                    onChange={(e) => setShowCompleted(e.target.checked)}
-                    className="form-checkbox h-4 w-4 text-brand-500 rounded border-dark-400 bg-dark-300 focus:ring-brand-500"
-                  />
-                  <span className="text-gray-300">Show Completed Contests</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={showCancelled}
-                    onChange={(e) => setShowCancelled(e.target.checked)}
-                    className="form-checkbox h-4 w-4 text-brand-500 rounded border-dark-400 bg-dark-300 focus:ring-brand-500"
-                  />
-                  <span className="text-gray-300">Show Cancelled Contests</span>
-                </label>
+              <div className="flex gap-2">
+                {[
+                  { value: "all", label: "All" },
+                  { value: "upcoming", label: "Open" },
+                  { value: "live", label: "Live" },
+                ].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setActiveStatusFilter(value)}
+                    className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
+                      activeStatusFilter === value
+                        ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+                        : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Difficulty Filter (New: "DUEL STYLE") */}
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
+            {/* Duel Style Filter - Compact dropdown */}
+            <div className="flex-1 min-w-[200px] max-w-[300px]">
+              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
                 Duel Style
               </label>
+              <div className="relative">
               <select
-                className="w-full bg-dark-300 text-gray-100 rounded px-3 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors"
+                  className="w-full bg-dark-300/50 text-gray-100 rounded-lg px-4 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors appearance-none"
                 value={activeDifficultyFilter}
                 onChange={(e) =>
                   setActiveDifficultyFilter(
@@ -331,7 +316,7 @@ export const ContestBrowser: React.FC = () => {
                   )
                 }
               >
-                <option value="">ALL STYLES</option>
+                  <option value="">All Styles</option>
                 <option value="guppy">Guppy</option>
                 <option value="tadpole">Tadpole</option>
                 <option value="squid">Squid</option>
@@ -339,11 +324,60 @@ export const ContestBrowser: React.FC = () => {
                 <option value="shark">Shark</option>
                 <option value="whale">Whale</option>
               </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Include Finished Duels - Now as toggle buttons */}
+            <div className="flex-1 min-w-[200px] max-w-[300px]">
+              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
+                Include Finished
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
+                    showCompleted
+                      ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                      : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    {showCompleted ? "✓" : ""} Completed
+                  </span>
+                </button>
+                <button
+                  onClick={() => setShowCancelled(!showCancelled)}
+                  className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
+                    showCancelled
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    {showCancelled ? "✓" : ""} Cancelled
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Sort Controls */}
-          <div className="pt-4 border-t border-dark-400 mt-4">
+          {/* Sort Controls - Keep as is since it looks good */}
+          <div className="pt-4 border-t border-dark-400">
             <ContestSort
               currentField={sortField}
               direction={sortDirection}

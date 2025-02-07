@@ -19,26 +19,30 @@ import {
 import { ddApi } from "../../../services/dd-api";
 import type { Contest as BaseContest } from "../../../types/index";
 
+// TODO: move elsewhere
 interface ContestParticipant {
   wallet_address?: string;
   address?: string;
   nickname?: string;
   username?: string;
   score?: number;
-  users?: {
+  profile?: {
     wallet_address?: string;
     nickname?: string;
   };
 }
 
+// TODO: move elsewhere
 interface Participant {
   address: string;
   nickname: string;
   score?: number;
 }
 
+// TODO: move elsewhere
 type Contest = Omit<BaseContest, "participants"> & {
   participants?: Participant[];
+  max_prize_pool: number;
 };
 
 export const ContestDetails: React.FC = () => {
@@ -70,7 +74,7 @@ export const ContestDetails: React.FC = () => {
         } catch (err) {
           console.error("Failed to reconnect wallet:", err);
           setError(
-            "Failed to reconnect wallet. Please try connecting manually."
+            "Failed to reconnect wallet. Please try connecting, umm, manually, I guess?"
           );
         }
       }
@@ -102,7 +106,7 @@ export const ContestDetails: React.FC = () => {
       // If in maintenance mode, don't fetch contest
       if (isInMaintenance) {
         setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
         );
         return;
       }
@@ -142,11 +146,11 @@ export const ContestDetails: React.FC = () => {
               (p: ContestParticipant): Participant => {
                 // Extract address from either the participant or nested user object
                 const address =
-                  p.wallet_address || p.users?.wallet_address || "";
+                  p.wallet_address || p.profile?.wallet_address || "";
                 // Extract nickname from either the participant or nested user object
                 const nickname =
                   p.nickname ||
-                  p.users?.nickname ||
+                  p.profile?.nickname ||
                   `${address.slice(0, 6)}...${address.slice(-4)}`;
                 // Handle score if present
                 const score = typeof p.score === "number" ? p.score : undefined;
@@ -178,15 +182,15 @@ export const ContestDetails: React.FC = () => {
 
       setContest(sanitizedContest);
     } catch (err) {
-      console.error("Error fetching contest:", err);
+      console.error("Error fetching duel:", err);
       // Check if the error is a 503 (maintenance mode)
       if (err instanceof Error && err.message.includes("503")) {
         setIsMaintenanceMode(true);
         setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
         );
       } else {
-        setError("Failed to load contest details");
+        setError("Failed to load duel details.");
       }
     } finally {
       setIsLoading(false);
@@ -203,13 +207,13 @@ export const ContestDetails: React.FC = () => {
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
           );
         }
       } catch (err) {
         console.error("Failed to check maintenance status:", err);
       }
-    }, 30000); // Check every 30 seconds
+    }, 30000); // Check for maintenance mode every 30 secs
 
     return () => clearInterval(maintenanceCheckInterval);
   }, [id, walletAddress]);
@@ -231,7 +235,7 @@ export const ContestDetails: React.FC = () => {
   };
 
   const handleJoinContest = () => {
-    console.log("Join Contest Button Clicked - Initial State:", {
+    console.log("Join Duel Button Clicked - Initial State:", {
       isWalletConnected,
       isFullyConnected,
       walletAddress,
@@ -241,13 +245,13 @@ export const ContestDetails: React.FC = () => {
     });
 
     if (!contest) {
-      console.log("No contest data available");
+      console.log("No data available on this duel. Please try again later.");
       return;
     }
 
     if (isParticipating) {
       console.log("User is already participating");
-      setError("You are already entered in this contest.");
+      setError("You are already entered in this duel.");
       return;
     }
 
@@ -259,11 +263,11 @@ export const ContestDetails: React.FC = () => {
         walletAddress,
         timestamp: new Date().toISOString(),
       });
-      setError("Please connect your wallet to enter the contest.");
+      setError("Please connect your wallet to set your portfolio.");
       return;
     }
 
-    console.log("Proceeding to token selection:", {
+    console.log("Navigating to portfolio token selection page:", {
       contestId: contest.id,
       userAddress: walletAddress,
       timestamp: new Date().toISOString(),
@@ -301,8 +305,7 @@ export const ContestDetails: React.FC = () => {
           <div className="flex items-center justify-center gap-2 text-yellow-400">
             <span className="animate-pulse">⚠</span>
             <span>
-              ⚙️ DegenDuel is currently undergoing scheduled maintenance. Please
-              try again later.
+              DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.
             </span>
             <span className="animate-pulse">⚠</span>
           </div>
@@ -324,20 +327,21 @@ export const ContestDetails: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Enhanced Header Section with Cyberpunk Theme */}
+      {/* Header w/ Cyberpunk Theme */}
       <div className="relative mb-8">
         <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/50">
-          {/* Title and Description */}
           <div className="space-y-2 flex-1">
+            {/* Contest title */}
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x">
               {contest.name}
             </h1>
+            {/* Contest description */}
             <p className="text-lg text-gray-400 max-w-2xl">
               {contest.description}
             </p>
           </div>
-          {/* Difficulty Badge */}
+          {/* Contest Style Badge (was previously difficulty) */}
           <div className="flex-shrink-0">
             <ContestDifficulty
               difficulty={contest.settings.difficulty || "guppy"}
@@ -369,10 +373,10 @@ export const ContestDetails: React.FC = () => {
           <div className="p-6 relative">
             <div className="flex items-center justify-between">
               <span className="text-gray-400 group-hover:text-brand-300 transition-colors">
-                Prize Pool
+                Estimated Prize Pool
               </span>
               <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
-                {formatCurrency(Number(contest.prize_pool))}
+                {formatCurrency(Number(contest?.max_prize_pool || 0))}
               </span>
             </div>
           </div>
@@ -407,7 +411,7 @@ export const ContestDetails: React.FC = () => {
           <div className="p-6 relative">
             <div className="flex items-center justify-between">
               <span className="text-gray-400 group-hover:text-brand-300 transition-colors">
-                Players
+                Duelers
               </span>
               <div className="flex items-center gap-3">
                 <div className="w-24 h-1.5 bg-dark-300 overflow-hidden transform skew-x-[-15deg]">
@@ -447,10 +451,11 @@ export const ContestDetails: React.FC = () => {
             <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-100 mb-4">
-                  Contest Rules
+                  Rules of the Duel
                 </h3>
                 <p className="text-gray-400">
-                  No rules specified for this contest.
+                  No rules in this duel. Anything goes - it's every degen for
+                  himself.
                 </p>
               </div>
             </div>
@@ -461,7 +466,7 @@ export const ContestDetails: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="p-6 relative">
               <h3 className="text-xl font-bold text-gray-100 mb-4">
-                Available Tokens
+                Token Whitelist
               </h3>
               {contest?.settings?.token_types &&
               contest.settings.token_types.length > 0 ? (
@@ -476,9 +481,11 @@ export const ContestDetails: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400">
-                  No tokens specified for this contest.
-                </p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-gray-400">Selection restrictions: N/A</p>
+                  <p className="text-gray-400">Allocation constraints: N/A</p>
+                  <p className="text-gray-400">Whitelisted tokens list: All</p>
+                </div>
               )}
             </div>
           </div>
@@ -492,7 +499,7 @@ export const ContestDetails: React.FC = () => {
             <PrizeStructure prizePool={Number(contest?.prize_pool || 0)} />
           </div>
 
-          {/* Participants List */}
+          {/* Duelers (entrants) List */}
           <div className="group relative">
             {Number(contest.participant_count) > 0 &&
             Array.isArray(contest.participants) ? (
@@ -508,10 +515,12 @@ export const ContestDetails: React.FC = () => {
                 <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
                   <div className="p-6">
                     <h3 className="text-xl font-bold text-gray-100 mb-4">
-                      Participants ({contest.participant_count}/
+                      Duelers ({contest.participant_count}/
                       {contest.max_participants})
                     </h3>
-                    <p className="text-gray-400">Participant list is empty</p>
+                    <p className="text-gray-400">
+                      No duelers have entered yet.
+                    </p>
                   </div>
                 </div>
               )
@@ -519,10 +528,10 @@ export const ContestDetails: React.FC = () => {
               <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-100 mb-4">
-                    Participants ({contest.participant_count}/
+                    Duelers ({contest.participant_count}/
                     {contest.max_participants})
                   </h3>
-                  <p className="text-gray-400">No participants yet.</p>
+                  <p className="text-gray-400">No duelers yet.</p>
                 </div>
               </div>
             )}
@@ -534,12 +543,12 @@ export const ContestDetails: React.FC = () => {
       <div className="flex flex-col items-center gap-4">
         {!isWalletConnected && (
           <div className="flex items-center gap-2 text-brand-400 mb-4">
-            <span className="font-medium">Wallet disconnected</span>
+            <span className="font-medium">Wallet Disconnected!</span>
             <button
               onClick={() => wallet && connect(wallet.name)}
               className="px-4 py-2 bg-dark-300/50 border-l-2 border-brand-400/30 hover:border-brand-400/50 text-brand-400 hover:text-brand-300 transition-all duration-300 transform hover:translate-x-1"
             >
-              Reconnect Wallet
+              Reconnect!
             </button>
           </div>
         )}
@@ -547,19 +556,41 @@ export const ContestDetails: React.FC = () => {
           <div className="flex items-center gap-2 text-brand-400">
             <FaCheckCircle className="w-5 h-5 animate-pulse" />
             <span className="font-medium">
-              You're entered in this contest
-              {contest.status === "pending" &&
-                " - You can update your tokens before the contest begins"}
+              You're already entered in this duel. Good luck!
+              {contest?.status === "pending" &&
+                " - You can update your portfolio at any time prior to the Duel's start."}
             </span>
           </div>
         )}
-        {/* Add Join Contest Button */}
+        {/* if user has a wallet connected and IS entered into this contest, then show this nav button (push to proceed to portfolio token selection page) */}
+        {isParticipating && isWalletConnected && (
+          <button
+            onClick={handleJoinContest}
+            className="px-6 py-3 bg-dark-300/50 border-l-2 border-brand-400/30 hover:border-brand-400/50 text-brand-400 hover:text-brand-300 transition-all duration-300 transform hover:translate-x-1 font-medium text-lg flex items-center gap-2"
+          >
+            <span>Modify Portfolio</span>
+            <svg
+              className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14 5l7 7m0 0l-7 7m7-7H3"
+              />
+            </svg>
+          </button>
+        )}
+        {/* if user has a wallet connected but is NOT yet entered into this contest, then show this nav button (push to proceed to portfolio token selection page) */}
         {!isParticipating && isWalletConnected && (
           <button
             onClick={handleJoinContest}
             className="px-6 py-3 bg-dark-300/50 border-l-2 border-brand-400/30 hover:border-brand-400/50 text-brand-400 hover:text-brand-300 transition-all duration-300 transform hover:translate-x-1 font-medium text-lg flex items-center gap-2"
           >
-            <span>Enter Arena</span>
+            <span>Draft Tokens for Portfolio</span>
             <svg
               className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
               fill="none"

@@ -47,7 +47,7 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
           ddApi.fetch("/api/admin/wallets/contest-wallets"),
           ddApi.fetch("/api/admin/wallets/cache-stats"),
           ddApi.fetch("/api/admin/wallets/metrics"),
-        ]);
+      ]);
 
       const [walletsData, statsData, metricsData] = await Promise.all([
         walletsResponse.json(),

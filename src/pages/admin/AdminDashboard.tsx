@@ -61,8 +61,8 @@ export const AdminDashboard: React.FC = () => {
               <h3 className="text-lg text-gray-200 mb-1">Maintenance Mode</h3>
               <p className="text-sm text-gray-400">
                 {maintenanceMode
-                  ? "Site is currently in maintenance mode. Only admins can access protected routes."
-                  : "Site is operating normally."}
+                  ? "DegenDuel is currently in Maintenance Mode. All important pages and actions are unavailable, and you might notice other unexpected behavior on the site."
+                  : "DegenDuel is live and operating normally."}
               </p>
             </div>
             <button
@@ -73,9 +73,7 @@ export const AdminDashboard: React.FC = () => {
                   : "bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50"
               }`}
             >
-              {maintenanceMode
-                ? "Disable Maintenance Mode"
-                : "Enable Maintenance Mode"}
+              {maintenanceMode ? "🔓 Unlock Site" : "🔒 Engage Lockdown"}
             </button>
           </div>
         </div>
@@ -89,9 +87,9 @@ export const AdminDashboard: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  px-6 py-3 text-sm font-medium 
+                  relative z-20 px-6 py-3 text-sm font-medium 
                   transition-all duration-300 ease-in-out
-                  relative overflow-hidden group
+                  group
                   ${
                     activeTab === tab.id
                       ? "text-brand-400 bg-dark-200/50 border-x border-t border-dark-300"
@@ -135,31 +133,28 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="bg-dark-200 border border-dark-300 rounded-lg relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-brand-400/5 via-transparent to-transparent pointer-events-none" />
-
+        {/* Tab Content Container */}
+        <div className="bg-dark-200 border border-dark-300 rounded-lg relative">
           {/* Overview Tab */}
           <div
             className={`
-            transition-all duration-300 ease-in-out
-            ${
-              activeTab === "overview"
-                ? "opacity-100 transform translate-x-0"
-                : "opacity-0 absolute inset-0 translate-x-4"
-            }
-          `}
+              relative z-10
+              transition-all duration-300 ease-in-out
+              ${activeTab === "overview" ? "block" : "hidden"}
+            `}
           >
             {activeTab === "overview" && (
-              <div className="p-6">
+              <div className="p-6 relative">
                 <div className="space-y-6">
                   {/* Balance Manager */}
-                  <div>
+                  <div className="relative z-10">
                     <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
                       <span className="text-xl">💰</span>
                       Balance Management
                     </h2>
-                    <BalanceManager />
+                    <div className="relative z-10">
+                      <BalanceManager />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -169,34 +164,31 @@ export const AdminDashboard: React.FC = () => {
           {/* Contests Tab */}
           <div
             className={`
-            transition-all duration-300 ease-in-out
-            ${
-              activeTab === "contests"
-                ? "opacity-100 transform translate-x-0"
-                : "opacity-0 absolute inset-0 translate-x-4"
-            }
-          `}
+              relative z-10
+              transition-all duration-300 ease-in-out
+              ${activeTab === "contests" ? "block" : "hidden"}
+            `}
           >
             {activeTab === "contests" && (
-              <div className="p-6">
+              <div className="p-6 relative">
                 <div className="space-y-6">
                   {/* Contest Actions */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-dark-300/30 rounded-lg p-4">
+                    <div className="bg-dark-300/30 rounded-lg p-4 relative z-10">
                       <StartContest />
                     </div>
-                    <div className="bg-dark-300/30 rounded-lg p-4">
+                    <div className="bg-dark-300/30 rounded-lg p-4 relative z-10">
                       <EndContest />
                     </div>
                   </div>
 
                   {/* Create Contest Button */}
-                  <div className="flex justify-end">
+                  <div className="flex justify-end relative z-10">
                     <CreateContestButton />
                   </div>
 
                   {/* Contest List */}
-                  <div>
+                  <div className="relative z-10">
                     <h3 className="text-lg font-medium text-gray-100 mb-4">
                       Contest Overview
                     </h3>
@@ -210,22 +202,19 @@ export const AdminDashboard: React.FC = () => {
           {/* Users Tab */}
           <div
             className={`
-            transition-all duration-300 ease-in-out
-            ${
-              activeTab === "users"
-                ? "opacity-100 transform translate-x-0"
-                : "opacity-0 absolute inset-0 translate-x-4"
-            }
-          `}
+              relative z-10
+              transition-all duration-300 ease-in-out
+              ${activeTab === "users" ? "block" : "hidden"}
+            `}
           >
             {activeTab === "users" && (
-              <div className="p-6">
+              <div className="p-6 relative">
                 <div className="space-y-6">
                   <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
                     <span className="text-xl">👥</span>
                     User Management
                   </h2>
-                  <div className="space-y-4">
+                  <div className="relative z-10">
                     <UserDetail />
                   </div>
                 </div>
@@ -236,22 +225,21 @@ export const AdminDashboard: React.FC = () => {
           {/* Activity Tab */}
           <div
             className={`
-            transition-all duration-300 ease-in-out
-            ${
-              activeTab === "activity"
-                ? "opacity-100 transform translate-x-0"
-                : "opacity-0 absolute inset-0 translate-x-4"
-            }
-          `}
+              relative z-10
+              transition-all duration-300 ease-in-out
+              ${activeTab === "activity" ? "block" : "hidden"}
+            `}
           >
             {activeTab === "activity" && (
-              <div className="p-6">
+              <div className="p-6 relative">
                 <div className="space-y-6">
                   <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
                     <span className="text-xl">📈</span>
                     Activity Monitor
                   </h2>
-                  <ActivityMonitor limit={10} />
+                  <div className="relative z-10">
+                    <ActivityMonitor limit={10} />
+                  </div>
                 </div>
               </div>
             )}

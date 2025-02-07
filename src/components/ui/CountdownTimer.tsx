@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 interface CountdownTimerProps {
-  targetDate: string;
+  targetDate: string | Date;
   onComplete?: () => void;
   showSeconds?: boolean;
 }
@@ -11,63 +11,78 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   onComplete,
   showSeconds = false,
 }) => {
-  const [timeLeft, setTimeLeft] = useState<string>("");
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  }>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const target = new Date(targetDate).getTime();
-      const now = new Date().getTime();
-      const diff = target - now;
+      const difference = new Date(targetDate).getTime() - new Date().getTime();
 
-      // If time has passed, return early with "Ended"
-      if (diff <= 0) {
+      if (difference <= 0) {
         onComplete?.();
-        return "Ended";
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       }
 
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      if (hours > 24) {
-        const days = Math.floor(hours / 24);
-        return `${days}d ${hours % 24}h`;
-      }
-
-      let timeString = "";
-      if (hours > 0) {
-        timeString += `${hours}h `;
-      }
-      timeString += `${minutes}m`;
-      if (showSeconds) {
-        timeString += ` ${seconds}s`;
-      }
-      return timeString;
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      };
     };
 
-    // Initial calculation
-    const initialTime = calculateTimeLeft();
-    setTimeLeft(initialTime);
+    // Calculate initial time
+    setTimeLeft(calculateTimeLeft());
 
-    // Only set up interval if contest hasn't ended
-    let timer: number | null = null;
-    if (initialTime !== "Ended") {
-      timer = setInterval(
-        () => {
-          const newTime = calculateTimeLeft();
-          setTimeLeft(newTime);
-          if (newTime === "Ended") {
-            timer && clearInterval(timer);
-          }
-        },
-        showSeconds ? 1000 : 60000
-      ); // Update every second if showing seconds, otherwise every minute
-    }
+    // Set up interval
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    timer = setInterval(() => {
+      const timeLeft = calculateTimeLeft();
+      setTimeLeft(timeLeft);
 
+      if (Object.values(timeLeft).every((v) => v === 0)) {
+        if (timer) clearInterval(timer);
+      }
+    }, 1000);
+
+    // Cleanup
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [targetDate, onComplete, showSeconds]);
+  }, [targetDate, onComplete]);
 
-  return <span>{timeLeft}</span>;
+  const formatNumber = (num: number) => String(num).padStart(2, "0");
+
+  if (timeLeft.days > 0) {
+    return (
+      <span>
+        {timeLeft.days}d {formatNumber(timeLeft.hours)}h{" "}
+        {formatNumber(timeLeft.minutes)}m
+      </span>
+    );
+  }
+
+  if (timeLeft.hours > 0) {
+    return (
+      <span>
+        {formatNumber(timeLeft.hours)}h {formatNumber(timeLeft.minutes)}m
+        {showSeconds && ` ${formatNumber(timeLeft.seconds)}s`}
+      </span>
+    );
+  }
+
+  if (timeLeft.minutes > 0) {
+    return (
+      <span>
+        {formatNumber(timeLeft.minutes)}m
+        {showSeconds && ` ${formatNumber(timeLeft.seconds)}s`}
+      </span>
+    );
+  }
+
+  return <span>{formatNumber(timeLeft.seconds)}s</span>;
 };

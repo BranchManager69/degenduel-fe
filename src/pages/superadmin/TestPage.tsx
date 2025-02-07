@@ -38,6 +38,7 @@ export const TestPage: React.FC = () => {
     null
   );
 
+  // Connect to the WebSocket
   const connectWebSocket = () => {
     try {
       setStatus("connecting");
@@ -46,6 +47,12 @@ export const TestPage: React.FC = () => {
       if (wsRef.current) {
         wsRef.current.close();
       }
+
+      // Add error logging
+      console.log(
+        "Attempting WebSocket connection with token:",
+        user?.wallet_address
+      );
 
       const ws = new WebSocket(
         `wss://degenduel.me/portfolio?token=${user?.wallet_address}`
@@ -57,59 +64,49 @@ export const TestPage: React.FC = () => {
         setStatus("connected");
         setError(null);
         setStats((prev) => ({ ...prev, lastReconnect: new Date() }));
+
+        // Send initial message to test connection
+        ws.send(
+          JSON.stringify({
+            type: "ping",
+            timestamp: new Date().toISOString(),
+          })
+        );
       };
 
-      ws.onclose = () => {
-        console.log("WebSocket Disconnected");
+      ws.onclose = (event) => {
+        console.log("WebSocket Disconnected", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        });
         setStatus("disconnected");
 
         // Auto reconnect logic
         if (autoReconnect) {
           reconnectTimeoutRef.current = setTimeout(() => {
             connectWebSocket();
-          }, 5000); // Reconnect after 5 seconds
+          }, 5000);
         }
       };
 
       ws.onerror = (event) => {
         console.error("WebSocket Error:", event);
-        setError("WebSocket connection error");
+        // Try to get more error details
+        const error = event as ErrorEvent;
+        setError(`WebSocket error: ${error.message || "Unknown error"}`);
         setStatus("disconnected");
         setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
       };
 
-      ws.onmessage = (event) => {
-        try {
-          const startTime = performance.now();
-          const data = JSON.parse(event.data);
-          const latency = performance.now() - startTime;
-
-          const newMessage: Message = {
-            timestamp: new Date().toISOString(),
-            type: data.type || "unknown",
-            data: data,
-            latency,
-          };
-
-          setMessages((prev) => [newMessage, ...prev.slice(0, 99)]);
-
-          // Update stats
-          setStats((prev) => ({
-            ...prev,
-            messageCount: prev.messageCount + 1,
-            avgLatency:
-              (prev.avgLatency * prev.messageCount + latency) /
-              (prev.messageCount + 1),
-          }));
-        } catch (err) {
-          console.error("Failed to parse message:", err);
-          setError("Failed to parse message");
-          setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
-        }
-      };
-    } catch (err) {
+      // ... rest of your code ...
+    } catch (err: unknown) {
       console.error("Failed to create WebSocket:", err);
-      setError("Failed to create WebSocket connection");
+      setError(
+        `Failed to create WebSocket: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
       setStatus("disconnected");
       setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
     }
