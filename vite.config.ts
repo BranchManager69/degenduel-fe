@@ -1,7 +1,7 @@
 import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
-import { defineConfig } from "vite";
+import { defineConfig, LogLevel } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -80,13 +80,19 @@ export default defineConfig(({ command, mode }) => {
       cache: true,
     },
     build: {
-      sourcemap: isDev,
-      minify: !isDev,
+      sourcemap: true,
+      minify: false,
       target: "esnext",
       rollupOptions: {
         cache: true,
+        output: {
+          entryFileNames: `assets/[name].js`,
+          chunkFileNames: `assets/[name].js`,
+          assetFileNames: `assets/[name].[ext]`,
+        },
       },
     },
+    logLevel: "info" as LogLevel,
   };
 
   return config;
