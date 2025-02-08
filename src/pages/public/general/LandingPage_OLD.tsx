@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { ContestSection } from "../../../components/landing/ContestSection";
 import { Features } from "../../../components/landing/Features";
-import { MarketVerse } from "../../../components/visualization/MarketVerse";
 import { isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
@@ -19,6 +18,7 @@ interface ContestResponse {
   };
 }
 
+// Landing Page
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
@@ -38,7 +38,7 @@ export const LandingPage: React.FC = () => {
         // If in maintenance mode, don't fetch contests
         if (isInMaintenance) {
           setError(
-            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
           );
           setLoading(false);
           return;
@@ -56,10 +56,11 @@ export const LandingPage: React.FC = () => {
         );
       } catch (err) {
         console.error("Failed to load contests:", err);
+        // Check if the error is a 503 (maintenance mode)
         if (err instanceof Error && err.message.includes("503")) {
           setIsMaintenanceMode(true);
           setError(
-            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
           );
         } else {
           setError("Failed to load contests");
@@ -70,43 +71,26 @@ export const LandingPage: React.FC = () => {
     };
     fetchContests();
 
+    // Set up periodic maintenance check
     const maintenanceCheckInterval = setInterval(async () => {
       try {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
           );
         }
       } catch (err) {
         console.error("Failed to check maintenance status:", err);
       }
-    }, 30000);
+    }, 30000); // Check every 30 seconds
 
     return () => clearInterval(maintenanceCheckInterval);
   }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* MarketVerse Background with enhanced overlay effects */}
-      <div className="fixed inset-0">
-        <MarketVerse />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-transparent to-black/90 pointer-events-none" />
-        {/* Additional cosmic effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(127,0,255,0.1)_0%,transparent_70%)] animate-pulse-slow" />
-        <div className="absolute inset-0 overflow-hidden">
-          <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/20 to-transparent animate-scan-vertical"
-            style={{ left: "20%" }}
-          />
-          <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/20 to-transparent animate-scan-vertical"
-            style={{ left: "80%", animationDelay: "-2s" }}
-          />
-        </div>
-      </div>
-
       {/* Hero Section */}
       <section className="relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -114,37 +98,19 @@ export const LandingPage: React.FC = () => {
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center space-y-2">
               <h2 className="text-brand-300 text-xl tracking-wider font-medium">
-                Make PvP Great Again
+                UNLEASH THE POWER OF
               </h2>
-              <div className="relative">
-                <h1 className="text-7xl font-black tracking-tighter">
-                  <span className="relative inline-block">
-                    <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600">
-                      DEGEN
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 blur-lg -z-10" />
-                  </span>
-                  <span className="relative inline-block mx-2 text-gray-400 transform -skew-x-12 font-cyber">
-                    ×
-                  </span>
-                  <span className="relative inline-block group">
-                    <span className="relative z-10 text-gray-400 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-br group-hover:from-brand-400 group-hover:via-brand-500 group-hover:to-brand-600 transition-all duration-500">
-                      DUEL
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-500/10 to-brand-600/0 blur-lg -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  </span>
-                </h1>
-                {/* Subtle line accent */}
-                <div className="absolute left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-400/30 to-transparent" />
-              </div>
-              <p className="text-xl text-gray-400 mt-4 font-medium tracking-wide">
-                <span className="text-brand-400">Launching Soon</span>
-                <span className="mx-2">on</span>
-                <span className="text-brand-300">Solana</span>
-              </p>
+              <h1 className="text-6xl font-bold tracking-tight">
+                <span className="bg-gradient-to-r from-brand-400 to-brand-500 text-transparent bg-clip-text">
+                  DEGEN
+                </span>
+                <span className="text-gray-400 mx-2">×</span>
+                <span className="text-gray-400">DUEL</span>
+              </h1>
+              <p className="text-white text-lg mt-2">Trading Championship</p>
             </div>
 
-            {/* Main content with subtle transitions */}
+            {/* Main content with enhanced animations */}
             <div
               className={`transform transition-all duration-1000 ${
                 isVisible
@@ -152,33 +118,33 @@ export const LandingPage: React.FC = () => {
                   : "translate-y-10 opacity-0"
               }`}
             >
-              {/* Welcome text with subtle effect */}
+              {/* Welcome text with enhanced effect */}
               <div className="relative inline-block mb-6">
-                <span className="text-2xl sm:text-3xl font-light tracking-widest text-brand-300 opacity-90 hover:opacity-100 transition-opacity uppercase">
-                  Welcome to the Arena
+                <span className="text-2xl sm:text-3xl font-light tracking-widest text-brand-300 opacity-90 hover:opacity-100 transition-opacity uppercase group">
+                  <span className="group-hover:animate-glitch relative">
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent animate-scan-line" />
+                  </span>
                 </span>
               </div>
 
-              {/* Epic tagline with subtle effects */}
+              {/* Epic tagline with enhanced effects */}
               <div className="mt-4 max-w-4xl mx-auto space-y-3">
-                <h2 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600">
-                  Think You're A Top Trader?
+                <h2 className="text-3xl sm:text-4xl font-black bg-gradient-to-br from-brand-300 via-brand-400 to-brand-600 text-transparent bg-clip-text animate-gradient-x tracking-tight leading-none">
+                  Where Diamond Hands Meet AI Supremacy
                 </h2>
                 <p className="text-lg sm:text-xl text-gray-400 leading-snug font-medium tracking-wide">
-                  Duel against degens far and wide in
+                  Challenge the elite in
                   <span className="text-brand-400 font-bold mx-1.5">
-                    high-stakes battle royales.
+                    high-stakes
                   </span>
-                  <br />
-                  Why fight the market?
+                  competitions. Trade against both
                   <span className="text-brand-400 font-bold mx-1.5">
-                    Duel real degens
+                    human degens
                   </span>
-                  and make
+                  and
                   <span className="text-brand-400 font-bold mx-1.5">
-                    huge profits
+                    neural networks
                   </span>
-                  the fun way.
                 </p>
               </div>
 
@@ -192,23 +158,23 @@ export const LandingPage: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mt-16 mb-12">
                 {[
                   {
-                    label: "Duels In Progress",
+                    label: "Live Contests",
                     value: activeContests.length,
                     valueColor: "text-brand-300",
                   },
                   {
-                    label: "Joinable Duels",
+                    label: "Open Contests",
                     value: openContests.length,
                     valueColor: "text-brand-300",
                   },
                   {
-                    label: "Total Winnings",
+                    label: "Total Prize Pool",
                     value: "∞ SOL",
                     valueColor: "text-brand-300",
                   },
                   {
-                    label: "Tokens Supported",
-                    value: "69",
+                    label: "Agents Ready",
+                    value: "42",
                     valueColor: "text-brand-300",
                   },
                 ].map((stat, i) => (
@@ -250,7 +216,7 @@ export const LandingPage: React.FC = () => {
                     {/* Button content */}
                     <div className="relative flex items-center justify-center space-x-2">
                       <span className="text-xl font-bold text-white group-hover:text-brand-200 transition-colors">
-                        FIND A DUEL
+                        BATTLE NOW
                       </span>
                       <svg
                         className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
@@ -282,7 +248,7 @@ export const LandingPage: React.FC = () => {
 
                     {/* Button content */}
                     <span className="relative text-xl font-bold text-brand-300 group-hover:text-brand-200 transition-colors">
-                      MORE INFO
+                      LEARN MORE
                     </span>
 
                     {/* Border */}
@@ -310,8 +276,8 @@ export const LandingPage: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-yellow-400">
                   <span className="animate-pulse">⚠</span>
                   <span>
-                    DegenDuel is undergoing scheduled maintenance. Please try
-                    again later.
+                    ⚙️ DegenDuel is currently undergoing scheduled maintenance.
+                    Please try again later.
                   </span>
                   <span className="animate-pulse">⚠</span>
                 </div>
@@ -330,13 +296,13 @@ export const LandingPage: React.FC = () => {
           <div className="relative bg-dark-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
               <ContestSection
-                title="Live Duels"
+                title="Live Battles"
                 type="active"
                 contests={activeContests}
                 loading={loading}
               />
               <ContestSection
-                title="Open Duels"
+                title="Open Challenges"
                 type="pending"
                 contests={openContests}
                 loading={loading}

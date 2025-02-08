@@ -329,6 +329,7 @@ export const useStore = create<StoreState>()(
               is_banned: authResponse.user.is_banned,
               ban_reason: authResponse.user.ban_reason,
               risk_level: authResponse.user.risk_level,
+              jwt: authResponse.token
             },
           });
 

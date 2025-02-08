@@ -87,33 +87,31 @@ export const MarketVerse: React.FC = () => {
     // Create spheres based on market data
     marketData.forEach((token, index) => {
       const marketCap = parseFloat(token.marketCap) || 0;
-      const volume = parseFloat(token.volume24h) || 0;
-      const price = parseFloat(token.price) || 0;
-      
+
       // Calculate size based on market cap
       const size = Math.max(20, Math.min(50, Math.log10(marketCap) * 5));
-      
+
       // Create sphere
       const geometry = new THREE.SphereGeometry(size, 32, 32);
-      
+
       // Color based on 24h change
       const change24h = token.changesJson?.h24 || 0;
       const hue = change24h > 0 ? 0.3 : 0.0; // Green for positive, red for negative
       const saturation = Math.min(Math.abs(change24h), 1);
-      
+
       const material = new THREE.MeshPhongMaterial({
         color: new THREE.Color().setHSL(hue, saturation, 0.5),
         shininess: 60,
       });
-      
+
       const sphere = new THREE.Mesh(geometry, material);
-      
+
       // Position in a circular pattern
       const angle = (index / marketData.length) * Math.PI * 2;
       const radius = 200;
       sphere.position.x = Math.cos(angle) * radius;
       sphere.position.z = Math.sin(angle) * radius;
-      
+
       scene.add(sphere);
     });
 

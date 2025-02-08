@@ -1,6 +1,9 @@
+// src/components/landing/ContestSection.tsx
+
+import { motion } from "framer-motion";
 import React from "react";
-import type { Contest } from "../../types/index";
-import { ContestCard } from "./contests/ContestCard";
+import type { Contest } from "../../types";
+import { ContestCard } from "./ContestCard";
 
 interface ContestSectionProps {
   title: string;
@@ -154,42 +157,36 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
           </div>
         </div>
 
-        {/* Contest Grid with enhanced perspective */}
-        <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [perspective:1500px]">
+        {/* Contest Grid - Fixed Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {contests.map((contest, index) => (
-            <div
+            <motion.div
               key={contest.id}
-              className="opacity-0 translate-x-full rotate-y-12 animate-contest-card-entrance group/card"
-              style={{
-                animationDelay: `${index * 150}ms`,
-                animationFillMode: "forwards",
-                transformStyle: "preserve-3d",
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.5,
+                delay: index * 0.1,
+                ease: "easeOut",
               }}
+              className="min-h-[500px]" // Ensure consistent card height
             >
-              {/* Card glow effect */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-brand-500/0 via-brand-400/10 to-purple-500/0 rounded-lg blur-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
-
-              <div
-                className="relative"
-                style={{ zIndex: contests.length - index }}
-              >
-                <ContestCard
-                  id={String(contest.id)}
-                  name={contest.name}
-                  description={contest.description}
-                  entryFee={Number(contest.entry_fee)}
-                  prizePool={Number(contest.prize_pool)}
-                  startTime={contest.start_time}
-                  endTime={contest.end_time}
-                  participantCount={contest.participant_count}
-                  maxParticipants={contest.max_participants}
-                  status={contest.status}
-                  difficulty={contest.settings.difficulty}
-                  contestCode={contest.contest_code}
-                  isParticipating={contest.is_participating ?? false}
-                />
-              </div>
-            </div>
+              <ContestCard
+                id={String(contest.id)}
+                name={contest.name}
+                description={contest.description}
+                entryFee={Number(contest.entry_fee)}
+                prizePool={Number(contest.prize_pool)}
+                startTime={contest.start_time}
+                endTime={contest.end_time}
+                participantCount={contest.participant_count}
+                maxParticipants={contest.max_participants}
+                status={contest.status}
+                difficulty={contest.settings.difficulty}
+                contestCode={contest.contest_code}
+                isParticipating={contest.is_participating ?? false}
+              />
+            </motion.div>
           ))}
         </div>
       </div>

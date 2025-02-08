@@ -1,0 +1,59 @@
+/* 3D Transform Utilities */
+.preserve-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Cyberpunk Clip Paths */
+.clip-edges {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 4px) 0,
+    100% 4px,
+    100% calc(100% - 4px),
+    calc(100% - 4px) 100%,
+    4px 100%,
+    0 calc(100% - 4px),
+    0 4px
+  );
+}
+
+/* Grid Animation */
+@keyframes grid-scroll {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(8px);
+  }
+}
+
+.animate-grid-scroll {
+  animation: grid-scroll 20s linear infinite;
+}
+
+/* Cyber Pulse Animation */
+@keyframes cyber-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(var(--brand-400-rgb), 0.5);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 20px rgba(var(--brand-400-rgb), 0.7);
+  }
+}
+
+.animate-cyber-pulse {
+  animation: cyber-pulse 2s ease-in-out infinite;
+}

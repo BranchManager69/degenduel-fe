@@ -1,0 +1,10 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@import "./utilities.css";
+
+/* Ensure we have the RGB values for brand colors for our animations */
+:root {
+  --brand-400-rgb: 129, 140, 248; /* Indigo-400 equivalent */
+}

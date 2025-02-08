@@ -29,6 +29,7 @@ export interface User {
   kyc_status?: string;
   risk_level: string;
   is_admin?: boolean;
+  jwt?: string; // JWT token for authentication
 }
 
 export interface BaseToken {
