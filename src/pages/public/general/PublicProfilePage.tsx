@@ -63,6 +63,7 @@ export const PublicProfilePage: React.FC = () => {
   });
 
   // Helper to determine if a string is likely a Solana wallet address
+  // TODO: FIX THIS BULLSHIT
   const isWalletAddress = (str: string) => {
     // Base58 check (Solana addresses are base58 encoded)
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;

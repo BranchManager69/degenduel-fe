@@ -5,205 +5,69 @@ import { Link } from "react-router-dom";
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="relative bg-dark-200/80 backdrop-blur-sm border-t border-dark-300/50">
-      {/* Animated background effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Cyber scan line */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-400/5 to-transparent animate-cyber-scan" />
-
-        {/* Matrix-like data stream */}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,var(--color-brand-400)_50%,transparent_100%)] opacity-10 animate-data-stream" />
-
-        {/* Subtle grid pattern */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, var(--color-brand-400) 1px, transparent 1px)`,
-            backgroundSize: "32px 32px",
-            opacity: 0.1,
-          }}
-        />
-      </div>
-
-      <div className="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* Platform Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-brand-400 tracking-wider uppercase relative inline-block group">
-              <span className="relative z-10 group-hover:animate-glitch">
+    <footer className="bg-dark-100/50 backdrop-blur-sm border-t border-dark-300/30">
+      <div className="max-w-7xl mx-auto px-4 py-3">
+        {" "}
+        {/* Drastically reduced padding */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Left side - Links */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/platform"
+                className="text-sm text-gray-400 hover:text-brand-400"
+              >
                 Platform
-              </span>
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <ul className="mt-4 space-y-4">
-              <li>
-                <Link
-                  to="/how-it-works"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    How it works
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/contests"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Browse Contests
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/tokens"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Token Explorer
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Rankings Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-brand-400 tracking-wider uppercase relative inline-block group">
-              <span className="relative z-10 group-hover:animate-glitch">
+              </Link>
+              <Link
+                to="/rankings"
+                className="text-sm text-gray-400 hover:text-brand-400"
+              >
                 Rankings
-              </span>
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <ul className="mt-4 space-y-4">
-              <li>
-                <Link
-                  to="/rankings/global"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Global Rankings
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/rankings/performance"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Performance
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Support Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-brand-400 tracking-wider uppercase relative inline-block group">
-              <span className="relative z-10 group-hover:animate-glitch">
+              </Link>
+              <Link
+                to="/support"
+                className="text-sm text-gray-400 hover:text-brand-400"
+              >
                 Support
-              </span>
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <ul className="mt-4 space-y-4">
-              <li>
-                <Link
-                  to="/faq"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    FAQ
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/contact"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Contact
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Social Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-brand-400 tracking-wider uppercase relative inline-block group">
-              <span className="relative z-10 group-hover:animate-glitch">
-                Community
-              </span>
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-brand-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <ul className="mt-4 space-y-4">
-              <li>
-                <a
-                  href="https://twitter.com/degenduel"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Twitter
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://discord.gg/degenduel"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-base text-gray-400 hover:text-brand-400 transition-colors group relative"
-                >
-                  <span className="relative z-10 group-hover:animate-glitch">
-                    Discord
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Copyright Section with enhanced styling */}
-        <div className="mt-12 pt-8 relative">
-          {/* Animated separator */}
-          <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-400/50 to-transparent animate-data-stream" />
-          </div>
-
-          {/* Logo and copyright text */}
-          <div className="flex flex-col items-center justify-center space-y-4">
-            {/* Logo */}
-            <div className="relative group">
-              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-600 group-hover:animate-pulse-fast">
-                DegenDuel
-              </span>
-              <div className="absolute -inset-1 bg-gradient-to-r from-brand-400/20 to-brand-600/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Link>
             </div>
-
-            {/* Copyright text */}
-            <p className="text-sm text-gray-400 text-center group">
-              <span className="group-hover:animate-cyber-pulse">
-                &copy; {new Date().getFullYear()} DegenDuel. All rights
-                reserved.
-              </span>
-            </p>
+            <div className="flex items-center space-x-4">
+              <a
+                href="https://twitter.com/degenduel"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-brand-400"
+              >
+                <span className="sr-only">Twitter</span>
+                <svg
+                  className="h-5 w-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                </svg>
+              </a>
+              <a
+                href="https://discord.gg/degenduel"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-brand-400"
+              >
+                <span className="sr-only">Discord</span>
+                <svg
+                  className="h-5 w-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
+                </svg>
+              </a>
+            </div>
           </div>
+
+          {/* Right side - Copyright */}
+          <div className="text-sm text-gray-500">© 2025 DegenDuel</div>
         </div>
       </div>
     </footer>

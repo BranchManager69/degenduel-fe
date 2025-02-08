@@ -1,9 +1,9 @@
 // src/components/landing/ContestSection.tsx
 
-import { motion } from "framer-motion";
 import React from "react";
 import type { Contest } from "../../types";
-import { ContestCard } from "./ContestCard";
+import type { ContestCardProps } from "./ContestCard";
+import { AnimatedContestCards } from "./ContestCard";
 
 interface ContestSectionProps {
   title: string;
@@ -59,8 +59,25 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
 
   const isPending = type === "pending";
 
+  // Transform contests to ContestCardProps
+  const contestCards: ContestCardProps[] = contests.map((contest) => ({
+    id: String(contest.id),
+    name: contest.name,
+    description: contest.description,
+    entryFee: Number(contest.entry_fee),
+    prizePool: Number(contest.prize_pool),
+    startTime: contest.start_time,
+    endTime: contest.end_time,
+    participantCount: contest.participant_count,
+    maxParticipants: contest.max_participants,
+    status: contest.status,
+    difficulty: contest.settings.difficulty,
+    contestCode: contest.contest_code,
+    isParticipating: contest.is_participating ?? false,
+  }));
+
   return (
-    <section className="relative py-12">
+    <section className="relative mb-16">
       {/* Cosmic effects container */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Solar flares */}
@@ -124,7 +141,7 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
 
       <div className="relative">
         {/* Section Header with cosmic glow */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div className="space-y-1">
             <h2
               className={`text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r ${
@@ -157,37 +174,9 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
           </div>
         </div>
 
-        {/* Contest Grid - Fixed Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {contests.map((contest, index) => (
-            <motion.div
-              key={contest.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.5,
-                delay: index * 0.1,
-                ease: "easeOut",
-              }}
-              className="min-h-[500px]" // Ensure consistent card height
-            >
-              <ContestCard
-                id={String(contest.id)}
-                name={contest.name}
-                description={contest.description}
-                entryFee={Number(contest.entry_fee)}
-                prizePool={Number(contest.prize_pool)}
-                startTime={contest.start_time}
-                endTime={contest.end_time}
-                participantCount={contest.participant_count}
-                maxParticipants={contest.max_participants}
-                status={contest.status}
-                difficulty={contest.settings.difficulty}
-                contestCode={contest.contest_code}
-                isParticipating={contest.is_participating ?? false}
-              />
-            </motion.div>
-          ))}
+        {/* Contest Cards Container - Add padding to ensure buttons are visible */}
+        <div className="pb-8">
+          <AnimatedContestCards contests={contestCards} />
         </div>
       </div>
     </section>

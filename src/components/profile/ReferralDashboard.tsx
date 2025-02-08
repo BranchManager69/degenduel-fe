@@ -1,6 +1,7 @@
 // src/components/profile/ReferralDashboard.tsx
 
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import {
   FaCheck,
@@ -14,66 +15,76 @@ import {
 } from "react-icons/fa";
 import { ddApi } from "../../services/dd-api";
 
+// Clean interfaces
 interface ReferralStats {
   total_referrals: number;
   qualified_referrals: number;
   pending_referrals: number;
   total_rewards: number;
-  recent_referrals: {
+  recent_referrals: Array<{
     username: string;
     status: "pending" | "qualified" | "rewarded" | "expired";
     joined_at: string;
-  }[];
-  recent_rewards: {
+  }>;
+  recent_rewards: Array<{
     type: "signup_bonus" | "contest_bonus" | "special_event";
     amount: number;
     date: string;
     description: string;
-  }[];
+  }>;
 }
 
-export const ReferralDashboard: React.FC = () => {
-  const [referralCode, setReferralCode] = useState<string>("");
-  const [stats, setStats] = useState<ReferralStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
+// Shared animation variants
+const fadeIn = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 }
+};
 
-  const fetchReferralData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+// Modular components
+const SocialShareButton: React.FC<{
+  platform: "twitter" | "discord" | "telegram";
+  referralCode: string;
+}> = ({ platform, referralCode }) => {
+  const shareToSocial = () => {
+    const referralLink = `https://degenduel.me/join?ref=${referralCode}`;
+    const message = encodeURIComponent(
+      "Join me on DegenDuel - the ultimate crypto portfolio PvP platform! Use my referral link to get started:"
+    );
 
-      // Fetch referral code and stats in parallel
-      const [codeResponse, statsResponse] = await Promise.all([
-        ddApi.fetch("/api/referrals/code"),
-        ddApi.fetch("/api/referrals/stats"),
-      ]);
+    const urls = {
+      twitter: `https://x.com/intent/tweet?text=${message}&url=${encodeURIComponent(referralLink)}`,
+      discord: `https://discord.com/channels/@me?content=${message} ${referralLink}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${message}`
+    };
 
-      const [codeData, statsData] = await Promise.all([
-        codeResponse.json(),
-        statsResponse.json(),
-      ]);
-
-      if (codeData.success) {
-        setReferralCode(codeData.referral_code);
-      }
-
-      if (statsData.success) {
-        setStats(statsData);
-      }
-    } catch (err) {
-      console.error("Failed to fetch referral data:", err);
-      setError("Failed to load referral data");
-      toast.error("Failed to load referral data");
-    } finally {
-      setLoading(false);
-    }
+    window.open(urls[platform], "_blank");
   };
 
+  const Icon = {
+    twitter: FaTwitter,
+    discord: FaDiscord,
+    telegram: FaTelegram
+  }[platform];
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={shareToSocial}
+      className="p-2 hover:bg-dark-400/50 rounded-lg text-brand-400 transition-colors"
+      title={`Share on ${platform.charAt(0).toUpperCase() + platform.slice(1)}`}
+    >
+      <Icon />
+    </motion.button>
+  );
+};
+
+const ReferralLink: React.FC<{ code: string }> = ({ code }) => {
+  const [copied, setCopied] = React.useState(false);
+
   const copyReferralLink = async () => {
-    const referralLink = `https://degenduel.me/join?ref=${referralCode}`;
+    const referralLink = `https://degenduel.me/join?ref=${code}`;
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
@@ -84,112 +95,159 @@ export const ReferralDashboard: React.FC = () => {
     }
   };
 
-  const shareToSocial = (platform: "twitter" | "discord" | "telegram") => {
-    const referralLink = `https://degenduel.me/join?ref=${referralCode}`;
-    const message = encodeURIComponent(
-      "Join me on DegenDuel - the ultimate crypto portfolio PvP platform! Use my referral link to get started:"
-    );
+  return (
+    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+      <motion.div 
+        className="flex-1 bg-dark-300/30 p-3 rounded-lg font-mono text-gray-300 break-all"
+        {...fadeIn}
+      >
+        https://degenduel.me/join?ref={code}
+      </motion.div>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={copyReferralLink}
+        className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 ${
+          copied
+            ? "bg-green-500/20 text-green-400 border border-green-500/30"
+            : "bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30"
+        }`}
+      >
+        {copied ? <FaCheck /> : <FaCopy />}
+        {copied ? "Copied!" : "Copy Link"}
+      </motion.button>
+    </div>
+  );
+};
 
-    const urls = {
-      twitter: `https://x.com/intent/tweet?text=${message}&url=${encodeURIComponent(
-        referralLink
-      )}`,
-      discord: `https://discord.com/channels/@me?content=${message} ${referralLink}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(
-        referralLink
-      )}&text=${message}`,
+export const ReferralDashboard: React.FC = () => {
+  const [{ referralCode, stats, loading, error }, setState] = React.useState<{
+    referralCode: string;
+    stats: ReferralStats | null;
+    loading: boolean;
+    error: string | null;
+  }>({
+    referralCode: "",
+    stats: null,
+    loading: true,
+    error: null
+  });
+
+  const [showShareMenu, setShowShareMenu] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchReferralData = async () => {
+      try {
+        const [codeResponse, statsResponse] = await Promise.all([
+          ddApi.fetch("/api/referrals/code"),
+          ddApi.fetch("/api/referrals/stats")
+        ]);
+
+        const [codeData, statsData] = await Promise.all([
+          codeResponse.json(),
+          statsResponse.json()
+        ]);
+
+        setState(prev => ({
+          ...prev,
+          referralCode: codeData.success ? codeData.referral_code : "",
+          stats: statsData.success ? statsData : null,
+          loading: false
+        }));
+      } catch (err) {
+        console.error("Failed to fetch referral data:", err);
+        setState(prev => ({
+          ...prev,
+          error: "Failed to load referral data",
+          loading: false
+        }));
+        toast.error("Failed to load referral data");
+      }
     };
 
-    window.open(urls[platform], "_blank");
-  };
-
-  useEffect(() => {
     fetchReferralData();
   }, []);
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-32 bg-dark-300/30 rounded-lg"></div>
+      <motion.div 
+        className="space-y-4"
+        initial="initial"
+        animate="animate"
+        variants={fadeIn}
+      >
+        <div className="h-32 bg-dark-300/30 rounded-lg animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="h-24 bg-dark-300/30 rounded-lg"></div>
-          <div className="h-24 bg-dark-300/30 rounded-lg"></div>
-          <div className="h-24 bg-dark-300/30 rounded-lg"></div>
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-24 bg-dark-300/30 rounded-lg animate-pulse" />
+          ))}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+      <motion.div 
+        className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
+        {...fadeIn}
+      >
         <p className="text-red-400">{error}</p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Enhanced Referral Link Section */}
+    <motion.div 
+      className="space-y-6"
+      initial="initial"
+      animate="animate"
+      variants={fadeIn}
+    >
       <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
         <div className="flex justify-between items-start mb-6">
-          <h3 className="text-xl font-bold text-gray-100 flex items-center gap-2">
+          <motion.h3 
+            className="text-xl font-bold text-gray-100 flex items-center gap-2"
+            {...fadeIn}
+          >
             <FaUsers className="text-brand-400" />
             Your Unique Referral Link
-          </h3>
-          <div className="flex items-center gap-2">
-            <button
+          </motion.h3>
+          <div className="relative">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowShareMenu(!showShareMenu)}
               className="px-4 py-2 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30 transition-all duration-300"
             >
               Share
-            </button>
-            {showShareMenu && (
-              <div className="absolute mt-10 right-0 bg-dark-300/95 backdrop-blur-sm border border-brand-400/20 rounded-lg p-2 shadow-xl z-50">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => shareToSocial("twitter")}
-                    className="p-2 hover:bg-dark-400/50 rounded-lg text-brand-400 transition-colors"
-                    title="Share on X"
-                  >
-                    <FaTwitter />
-                  </button>
-                  <button
-                    onClick={() => shareToSocial("discord")}
-                    className="p-2 hover:bg-dark-400/50 rounded-lg text-brand-400 transition-colors"
-                    title="Share on Discord"
-                  >
-                    <FaDiscord />
-                  </button>
-                  <button
-                    onClick={() => shareToSocial("telegram")}
-                    className="p-2 hover:bg-dark-400/50 rounded-lg text-brand-400 transition-colors"
-                    title="Share on Telegram"
-                  >
-                    <FaTelegram />
-                  </button>
-                </div>
-              </div>
-            )}
+            </motion.button>
+            <AnimatePresence>
+              {showShareMenu && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="absolute mt-2 right-0 bg-dark-300/95 backdrop-blur-sm border border-brand-400/20 rounded-lg p-2 shadow-xl z-50"
+                >
+                  <div className="flex gap-2">
+                    {["twitter", "discord", "telegram"].map(platform => (
+                      <SocialShareButton
+                        key={platform}
+                        platform={platform as any}
+                        referralCode={referralCode}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
+        
+        <ReferralLink code={referralCode} />
+        
         <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-            <div className="flex-1 bg-dark-300/30 p-3 rounded-lg font-mono text-gray-300 break-all">
-              https://degenduel.me/join?ref={referralCode}
-            </div>
-            <button
-              onClick={copyReferralLink}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 ${
-                copied
-                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                  : "bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30"
-              }`}
-            >
-              {copied ? <FaCheck /> : <FaCopy />}
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
-          </div>
           <div className="bg-brand-500/10 border border-brand-500/20 rounded-lg p-4">
             <h4 className="text-brand-400 font-medium mb-2">How it works:</h4>
             <ul className="text-sm text-gray-400 space-y-2">
@@ -471,6 +529,6 @@ export const ReferralDashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

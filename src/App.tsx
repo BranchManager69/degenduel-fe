@@ -45,6 +45,7 @@ import { PublicProfilePage } from "./pages/public/general/PublicProfilePage";
 /* some extra superadmin pages */
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
+import { ReferralPage } from "./pages/authenticated/ReferralPage";
 /* themes */
 import "./styles/color-schemes.css";
 
@@ -158,6 +159,18 @@ export const App: React.FC = () => {
                 <AuthenticatedRoute>
                   <MaintenanceGuard>
                     <Profile />
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* Referrals */}
+            <Route
+              path="/referrals"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <ReferralPage />
                   </MaintenanceGuard>
                 </AuthenticatedRoute>
               }

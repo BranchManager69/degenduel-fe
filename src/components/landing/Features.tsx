@@ -1,7 +1,13 @@
 // src/components/landing/Features.tsx
 
-import { motion } from "framer-motion";
-import React from "react";
+import {
+  AnimatePresence,
+  motion,
+  useAnimation,
+  useMotionValue,
+  useTransform,
+} from "framer-motion";
+import React, { useState } from "react";
 import { Card, CardContent } from "../ui/Card";
 
 interface Feature {
@@ -9,6 +15,7 @@ interface Feature {
   description: string;
   icon: JSX.Element;
   gradient: string;
+  isUpcoming: boolean;
 }
 
 const existingFeatures: Feature[] = [
@@ -49,6 +56,7 @@ const existingFeatures: Feature[] = [
       </svg>
     ),
     gradient: "from-brand-400/20 via-brand-500/20 to-brand-600/20",
+    isUpcoming: false,
   },
   {
     title: "High Stakes Duels",
@@ -72,6 +80,7 @@ const existingFeatures: Feature[] = [
       </svg>
     ),
     gradient: "from-amber-400/20 via-amber-500/20 to-orange-500/20",
+    isUpcoming: false,
   },
   {
     title: "Real-Time Analytics",
@@ -94,6 +103,7 @@ const existingFeatures: Feature[] = [
       </svg>
     ),
     gradient: "from-emerald-400/20 via-emerald-500/20 to-green-500/20",
+    isUpcoming: false,
   },
   {
     title: "Secure Trading",
@@ -127,6 +137,7 @@ const existingFeatures: Feature[] = [
       </svg>
     ),
     gradient: "from-blue-400/20 via-blue-500/20 to-cyan-500/20",
+    isUpcoming: false,
   },
 ] as const;
 
@@ -169,6 +180,7 @@ const upcomingFeatures: Feature[] = [
       </svg>
     ),
     gradient: "from-purple-400/10 via-purple-500/10 to-brand-400/10",
+    isUpcoming: true,
   },
   {
     title: "Market-Agnostic Action",
@@ -199,118 +211,240 @@ const upcomingFeatures: Feature[] = [
       </svg>
     ),
     gradient: "from-brand-400/10 via-indigo-400/10 to-blue-400/10",
+    isUpcoming: true,
   },
 ] as const;
 
+// Combine all features with a type flag
+const allFeatures = [
+  ...existingFeatures.map((feature) => ({ ...feature, isUpcoming: false })),
+  ...upcomingFeatures.map((feature) => ({ ...feature, isUpcoming: true })),
+];
+
 export const Features: React.FC = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [expandedFeature, setExpandedFeature] = useState<
+    (typeof allFeatures)[0] | null
+  >(null);
+
+  // Motion values for the orbital carousel
+  const dragX = useMotionValue(0);
+  const rotation = useTransform(dragX, [-200, 200], [30, -30]);
+  const controls = useAnimation();
+
+  // Calculate positions for each card in the orbit
+  const calculateCardPosition = (
+    index: number,
+    totalCards: number,
+    active: number
+  ) => {
+    const radius = 600; // Orbit radius
+    const angleStep = 360 / totalCards;
+    const baseAngle = (index - active) * angleStep;
+
+    return {
+      x: Math.sin(baseAngle * (Math.PI / 180)) * radius,
+      z: Math.cos(baseAngle * (Math.PI / 180)) * radius - radius,
+      rotateY: -baseAngle,
+      scale: Math.max(0.8, 1 - Math.abs(index - active) * 0.15),
+    };
+  };
+
+  const handleDragEnd = (_: any, info: any) => {
+    const threshold = 100; // Minimum drag distance for navigation
+    const velocity = info.velocity.x;
+
+    if (Math.abs(info.offset.x) > threshold || Math.abs(velocity) > 500) {
+      const direction = info.offset.x > 0 ? -1 : 1;
+      const newIndex =
+        (activeIndex + direction + allFeatures.length) % allFeatures.length;
+      setActiveIndex(newIndex);
+    }
+
+    controls.start({ x: 0 });
+    setIsDragging(false);
+  };
+
   return (
-    <section className="relative w-full overflow-hidden">
-      {/* Background gradient transition */}
-      <div className="absolute inset-0 bg-gradient-to-b from-dark-300/90 via-dark-200/95 to-transparent pointer-events-none" />
+    <motion.section
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-100px" }}
+      className="relative w-full overflow-hidden py-32"
+    >
+      <div className="relative container mx-auto px-4">
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.19, 1.0, 0.22, 1.0] }}
+          className="text-center mb-24"
+        >
+          <h2 className="text-4xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200">
+            Platform Features
+          </h2>
+        </motion.div>
 
-      {/* Content */}
-      <div className="relative container mx-auto px-4 py-16 space-y-16">
-        {/* Current Features */}
-        <div className="space-y-8">
-          <div className="text-center space-y-4">
-            <h2 className="text-4xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200">
-              Platform Features
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Experience the future of trading with our cutting-edge platform
-            </p>
-          </div>
+        {/* 3D Orbital Carousel */}
+        <div className="relative h-[600px] perspective-1000">
+          <motion.div
+            style={{
+              rotateX: 10,
+              rotateY: rotation,
+              x: dragX,
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.1}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={handleDragEnd}
+            className="relative w-full h-full preserve-3d"
+          >
+            <AnimatePresence>
+              {allFeatures.map((feature, index) => {
+                const position = calculateCardPosition(
+                  index,
+                  allFeatures.length,
+                  activeIndex
+                );
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {existingFeatures.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="group"
-              >
-                <Card className="h-full bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-300">
-                  <CardContent className="p-6 space-y-4">
-                    {/* Icon with glow effect */}
-                    <div className="relative w-12 h-12">
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-500/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
-                      <div className="relative w-full h-full text-emerald-400 group-hover:text-emerald-300 transition-colors">
-                        {feature.icon}
-                      </div>
-                    </div>
+                return (
+                  <motion.div
+                    key={feature.title}
+                    initial={false}
+                    animate={{
+                      x: position.x,
+                      z: position.z,
+                      rotateY: position.rotateY,
+                      scale: position.scale,
+                      opacity: position.scale,
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 30,
+                    }}
+                    style={{
+                      position: "absolute",
+                      width: "400px",
+                      transformStyle: "preserve-3d",
+                    }}
+                    onClick={() => !isDragging && setExpandedFeature(feature)}
+                    className="cursor-pointer"
+                  >
+                    <Card
+                      className={`bg-dark-200/40 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-300 group ${
+                        feature.isUpcoming ? "border-emerald-400/20" : ""
+                      }`}
+                    >
+                      <CardContent className="p-6 space-y-4">
+                        {/* Icon with enhanced glow effect */}
+                        <div className="relative w-12 h-12">
+                          <div
+                            className={`absolute inset-0 bg-gradient-to-r ${
+                              feature.isUpcoming
+                                ? "from-emerald-400/10 to-teal-500/10"
+                                : "from-emerald-400/20 to-teal-500/20"
+                            } rounded-full blur-lg group-hover:blur-xl transition-all`}
+                          />
+                          <div
+                            className={`relative w-full h-full ${
+                              feature.isUpcoming
+                                ? "text-emerald-400/70 group-hover:text-emerald-300/70"
+                                : "text-emerald-400 group-hover:text-emerald-300"
+                            } transition-colors`}
+                          >
+                            {feature.icon}
+                          </div>
+                        </div>
 
-                    {/* Title with gradient */}
-                    <h3 className="text-xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
-                      {feature.title}
-                    </h3>
+                        {/* Title with consistent height */}
+                        <h3 className="h-[56px] flex items-center text-xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
+                          {feature.title}
+                          {feature.isUpcoming && (
+                            <span className="ml-2 text-xs font-cyber tracking-wider text-emerald-400/70 bg-dark-200/60 px-2 py-1 rounded-sm">
+                              SOON
+                            </span>
+                          )}
+                        </h3>
 
-                    {/* Description */}
-                    <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                        {/* Description with truncation */}
+                        <p
+                          className={`${
+                            feature.isUpcoming
+                              ? "text-gray-500 group-hover:text-gray-400"
+                              : "text-gray-400 group-hover:text-gray-300"
+                          } transition-colors line-clamp-3`}
+                        >
+                          {feature.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         </div>
 
-        {/* Upcoming Features */}
-        <div className="space-y-8">
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
-              Coming Soon
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {upcomingFeatures.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 + 0.4 }}
-                className="group"
-              >
-                <Card className="h-full bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-emerald-400/20 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300">
-                  <CardContent className="p-6 space-y-4">
-                    {/* Icon with glow effect */}
-                    <div className="relative w-12 h-12">
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 to-teal-500/10 rounded-full blur-lg group-hover:blur-xl transition-all" />
-                      <div className="relative w-full h-full text-emerald-400/70 group-hover:text-emerald-300/70 transition-colors">
-                        {feature.icon}
-                      </div>
-                    </div>
-
-                    {/* Title with gradient */}
-                    <h3 className="text-xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400/70 to-teal-500/70">
-                      {feature.title}
-                    </h3>
-
-                    {/* Description */}
-                    <p className="text-gray-500 group-hover:text-gray-400 transition-colors">
-                      {feature.description}
-                    </p>
-
-                    {/* Coming Soon Badge */}
-                    <div className="absolute top-4 right-4">
-                      <div className="relative">
-                        <div className="absolute -inset-[1px] bg-gradient-to-r from-emerald-400/20 to-teal-500/20 blur-sm" />
-                        <div className="relative px-3 py-1 bg-dark-200/90 clip-edges">
-                          <span className="text-xs font-cyber tracking-wider text-emerald-400">
-                            COMING SOON
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+        {/* Navigation Indicators */}
+        <div className="flex justify-center mt-8 space-x-2">
+          {allFeatures.map((feature, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === activeIndex
+                  ? feature.isUpcoming
+                    ? "bg-emerald-400/70 w-4"
+                    : "bg-emerald-400 w-4"
+                  : feature.isUpcoming
+                  ? "bg-gray-600/70 hover:bg-emerald-600/70"
+                  : "bg-gray-600 hover:bg-emerald-600"
+              }`}
+            />
+          ))}
         </div>
       </div>
-    </section>
+
+      {/* Expanded Feature View */}
+      <AnimatePresence>
+        {expandedFeature && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setExpandedFeature(null)}
+          >
+            <motion.div
+              className="relative w-full max-w-4xl bg-dark-200/90 rounded-lg overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              layoutId={`feature-${expandedFeature.title}`}
+            >
+              {/* Expanded content here - will enhance in next iteration */}
+              <div className="p-8">
+                <h2
+                  className={`text-3xl font-cyber mb-4 ${
+                    expandedFeature.isUpcoming
+                      ? "text-emerald-400/70"
+                      : "text-emerald-400"
+                  }`}
+                >
+                  {expandedFeature.title}
+                  {expandedFeature.isUpcoming && (
+                    <span className="ml-4 text-sm font-cyber tracking-wider text-emerald-400/70 bg-dark-200/60 px-3 py-1 rounded-sm">
+                      COMING SOON
+                    </span>
+                  )}
+                </h2>
+                <p className="text-gray-300">{expandedFeature.description}</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.section>
   );
 };

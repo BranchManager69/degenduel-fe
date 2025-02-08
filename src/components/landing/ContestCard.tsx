@@ -9,7 +9,7 @@ import { ContestStatus, DifficultyLevel } from "../../types";
 import { Card } from "../ui/Card";
 import { ContestDifficulty } from "./contests/ContestDifficulty";
 
-interface ContestCardProps {
+export interface ContestCardProps {
   id: string;
   name: string;
   description: string;
@@ -25,7 +25,7 @@ interface ContestCardProps {
   isParticipating: boolean;
 }
 
-export const ContestCard: React.FC<ContestCardProps> = ({
+export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
   id,
   name,
   description,
@@ -39,6 +39,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   difficulty,
   contestCode,
   isParticipating,
+  index,
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const isLive = status === "active";
@@ -159,145 +160,159 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   };
 
   return (
-    <div
+    <motion.div
       className="relative w-full h-full cursor-pointer"
       style={{ perspective: "2000px" }}
       onClick={handleCardClick}
+      initial={{
+        opacity: 0,
+        y: 50,
+        scale: 0.9,
+        rotateX: -15,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        rotateX: 0,
+      }}
+      transition={{
+        duration: 0.8,
+        delay: index * 0.15, // Stagger based on index
+        ease: [0.19, 1.0, 0.22, 1.0], // Smooth easing
+      }}
     >
-      <div
+      <motion.div
         className={`relative w-full h-full duration-700 preserve-3d ${
           isFlipped ? "rotate-y-180" : ""
         }`}
         style={{ transformStyle: "preserve-3d" }}
+        whileHover={{
+          y: -5,
+          transition: { duration: 0.2 },
+        }}
       >
         {/* Front of card */}
         <div
           className="absolute w-full h-full backface-hidden"
           style={{ backfaceVisibility: "hidden" }}
         >
-          <Card className="h-full group relative bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10">
+          <Card className="h-full group relative bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10 flex flex-col">
             {/* Participation badge with overlap effect */}
             {isParticipating && (
-              <div className="absolute -top-1 -right-1 z-30">
+              <div className="absolute -top-2 -right-2 z-30">
                 <div className="relative">
-                  {/* Glow effect */}
                   <div className="absolute -inset-2 bg-gradient-to-r from-brand-400 to-brand-600 opacity-75 blur-lg animate-pulse" />
-                  {/* Badge background with clip effect */}
                   <div className="relative px-4 py-1 bg-dark-200/95 clip-edges transform rotate-3 border-t border-r border-brand-400/50">
                     <span className="text-xs font-cyber tracking-widest text-brand-400 animate-pulse-slow">
                       ENTERED
                     </span>
                   </div>
-                  {/* Decorative corner accent */}
                   <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-brand-400/30 clip-edges transform rotate-45" />
                 </div>
               </div>
             )}
 
-            {/* Banner with background image support */}
-            <div className="relative h-40 overflow-hidden">
-              {/* Background image - commented out until images are provided */}
-              {/* <div 
-                className="absolute inset-0 bg-cover bg-center blur-sm"
-                style={{ 
-                  backgroundImage: `url(${backgroundImage})`,
-                  filter: 'brightness(0.3) saturate(1.2)'
-                }} 
-              /> */}
-
-              {/* Shine and gradient effects */}
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-400 opacity-20" />
-              <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(68,0,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-shine-slow" />
+            {/* Header section with vibrant animations */}
+            <div className="relative h-32 overflow-hidden">
+              {/* Enhanced gradient background */}
+              <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-600/40 via-brand-500/30 to-brand-400/40 animate-pulse-slow" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-600/20 via-purple-500/30 to-brand-400/20 animate-gradient-x" />
+                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(68,0,255,0.3)_50%,transparent_75%)] bg-[length:250%_250%] animate-shine-slow" />
+              </div>
 
               {/* Content */}
-              <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <Link to={`/contests/${id}`} className="flex-1">
-                    <h3 className="text-2xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200 truncate pr-2">
-                      {name}
-                    </h3>
-                  </Link>
-                </div>
+              <div className="relative z-10 p-4 h-full flex flex-col">
+                <Link to={`/contests/${id}`} className="flex-1">
+                  <h3 className="text-2xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200 truncate">
+                    {name}
+                  </h3>
+                  <p className="text-gray-400/90 text-sm leading-relaxed mt-2 line-clamp-2">
+                    {description}
+                  </p>
+                </Link>
 
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex justify-between items-center mt-2">
+                  <div className="flex items-center text-sm font-medium text-brand-300 font-cyber">
+                    <FaClock className="inline-block mr-1 -mt-1" />
+                    {timeRemaining}
+                  </div>
                   <span
                     className={`px-3 py-1.5 rounded-sm clip-edges text-xs font-cyber tracking-wider uppercase ${getStatusColor()}`}
                   >
                     {getStatusText()}
                   </span>
-                  <div className="flex items-center text-sm font-medium text-brand-300 font-cyber">
-                    <FaClock className="inline-block mr-1 -mt-1" />
-                    {timeRemaining}
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Main content */}
-            <div className="p-6 pt-4 flex-1 flex flex-col">
-              {/* Description */}
-              <p className="text-gray-400/90 text-sm leading-relaxed mb-6">
-                {description}
-              </p>
-
-              {/* Progress bars */}
-              <div className="space-y-2 mb-6">
+            {/* Progress section */}
+            <div className="px-4 py-3 flex-1 flex flex-col">
+              {/* Progress bars with improved spacing and styling */}
+              <div className="space-y-3">
                 {/* Participants progress */}
-                <div className="relative h-3 bg-dark-300 clip-edges overflow-hidden">
-                  <motion.div
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 to-emerald-600"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-2000" />
-                  </motion.div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-medium text-white font-cyber z-10">
-                      {participantCount} / {maxParticipants} Degens
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs font-cyber">
+                    <span className="text-gray-400">Participants</span>
+                    <span className="text-brand-300">
+                      {participantCount} / {maxParticipants}
                     </span>
+                  </div>
+                  <div className="relative h-2 bg-dark-300/50 rounded-sm overflow-hidden">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-sm"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-2000" />
+                    </motion.div>
                   </div>
                 </div>
 
                 {/* Prize pool progress */}
-                <div className="relative h-3 bg-dark-300 clip-edges overflow-hidden">
-                  <motion.div
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-amber-600"
-                    initial={{ width: 0 }}
-                    animate={{
-                      width: `${(currentPrizePool / maxPrizePool) * 100}%`,
-                    }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-2000" />
-                  </motion.div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-medium text-white font-cyber z-10">
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs font-cyber">
+                    <span className="text-gray-400">Prize Pool</span>
+                    <span className="text-amber-300">
                       {formatCurrency(currentPrizePool)} /{" "}
                       {formatCurrency(maxPrizePool)} SOL
                     </span>
                   </div>
+                  <div className="relative h-2 bg-dark-300/50 rounded-sm overflow-hidden">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-amber-600 rounded-sm"
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${(currentPrizePool / maxPrizePool) * 100}%`,
+                      }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-2000" />
+                    </motion.div>
+                  </div>
                 </div>
               </div>
-
-              {/* Join button */}
-              <button
-                className="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 transition-all font-cyber text-lg font-bold text-white uppercase tracking-wider clip-edges"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.location.href = `/contests/${id}`;
-                }}
-              >
-                <div className="flex items-center justify-between px-6">
-                  <span>{isParticipating ? "VIEW ENTRY" : "JOIN CONTEST"}</span>
-                  {!isParticipating && (
-                    <span className="text-white/90">
-                      {formatCurrency(entryFee)} SOL
-                    </span>
-                  )}
-                </div>
-              </button>
             </div>
+
+            {/* Join button - truly edge to edge */}
+            <button
+              className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 transition-all font-cyber text-lg font-bold text-white uppercase tracking-wider clip-edges-bottom"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = `/contests/${id}`;
+              }}
+            >
+              <div className="flex items-center justify-between px-6">
+                <span>{isParticipating ? "VIEW ENTRY" : "JOIN CONTEST"}</span>
+                {!isParticipating && (
+                  <span className="text-white/90">
+                    {formatCurrency(entryFee)}
+                  </span>
+                )}
+              </div>
+            </button>
           </Card>
         </div>
 
@@ -372,7 +387,32 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             </div>
           </Card>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// Export a wrapped version that handles array rendering with animations
+export const AnimatedContestCards: React.FC<{
+  contests: ContestCardProps[];
+}> = ({ contests }) => {
+  return (
+    <motion.div
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: {},
+        visible: {
+          transition: {
+            staggerChildren: 0.15,
+          },
+        },
+      }}
+    >
+      {contests.map((contest, index) => (
+        <ContestCard key={contest.id} {...contest} index={index} />
+      ))}
+    </motion.div>
   );
 };
