@@ -33,6 +33,23 @@ const checkAndUpdateBanStatus = (response: Response) => {
   }
 };
 
+// Normalize path to avoid double API URL issues
+const normalizePath = (path: string): string => {
+  // Remove any leading/trailing slashes
+  const trimmed = path
+    .replace(/^\/+(.*?)\/+$|^\/+|\/+$/g, "$1")
+    .replace(/^\/+|\/+$/g, "");
+  // Alternatively, a simpler version:
+  // const trimmed = path.replace(/^\/+|\/+$/g, '');
+
+  // If path already starts with 'api/', remove it to prevent double
+  if (trimmed.startsWith("api/")) {
+    return trimmed.substring(4);
+  }
+
+  return trimmed;
+};
+
 // Create a consistent API client
 const createApiClient = () => {
   return {
@@ -62,7 +79,9 @@ const createApiClient = () => {
         });
       }
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      // Use normalized path to construct URL
+      const normalizedPath = normalizePath(endpoint);
+      const response = await fetch(`${API_URL}/${normalizedPath}`, {
         ...options,
         headers,
         credentials: "include",
@@ -1055,7 +1074,9 @@ export const ddApi = {
       },
     };
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    // Use normalized path here
+    const normalizedPath = normalizePath(endpoint);
+    const response = await fetch(`${API_URL}/${normalizedPath}`, {
       ...defaultOptions,
       ...options,
       headers: {
@@ -1097,7 +1118,9 @@ export const createDDApi = () => {
         },
       };
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      // Normalize endpoint path
+      const normalizedPath = normalizePath(endpoint);
+      const response = await fetch(`${API_URL}/${normalizedPath}`, {
         ...defaultOptions,
         ...options,
         headers: {

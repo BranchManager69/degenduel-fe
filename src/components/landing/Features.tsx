@@ -1,7 +1,7 @@
 // src/components/landing/Features.tsx
 
 import { motion } from "framer-motion";
-import React, { useMemo } from "react";
+import React from "react";
 import { Card, CardContent } from "../ui/Card";
 
 interface Feature {
@@ -48,7 +48,7 @@ const existingFeatures: Feature[] = [
         />
       </svg>
     ),
-    gradient: "from-violet-500 via-purple-500 to-violet-500",
+    gradient: "from-brand-400/20 via-brand-500/20 to-brand-600/20",
   },
   {
     title: "High Stakes Duels",
@@ -71,7 +71,7 @@ const existingFeatures: Feature[] = [
         />
       </svg>
     ),
-    gradient: "from-amber-500 via-orange-500 to-amber-500",
+    gradient: "from-amber-400/20 via-amber-500/20 to-orange-500/20",
   },
   {
     title: "Real-Time Analytics",
@@ -93,7 +93,7 @@ const existingFeatures: Feature[] = [
         />
       </svg>
     ),
-    gradient: "from-emerald-500 via-green-500 to-emerald-500",
+    gradient: "from-emerald-400/20 via-emerald-500/20 to-green-500/20",
   },
   {
     title: "Secure Trading",
@@ -126,7 +126,7 @@ const existingFeatures: Feature[] = [
         />
       </svg>
     ),
-    gradient: "from-blue-500 via-cyan-500 to-blue-500",
+    gradient: "from-blue-400/20 via-blue-500/20 to-cyan-500/20",
   },
 ] as const;
 
@@ -168,7 +168,7 @@ const upcomingFeatures: Feature[] = [
         />
       </svg>
     ),
-    gradient: "from-blue-400 via-indigo-400 to-purple-400",
+    gradient: "from-purple-400/10 via-purple-500/10 to-brand-400/10",
   },
   {
     title: "Market-Agnostic Action",
@@ -198,195 +198,119 @@ const upcomingFeatures: Feature[] = [
         />
       </svg>
     ),
-    gradient: "from-cyan-400 via-blue-400 to-indigo-400",
+    gradient: "from-brand-400/10 via-indigo-400/10 to-blue-400/10",
   },
 ] as const;
 
 export const Features: React.FC = () => {
-  // Memoize the cosmic effects container
-  const CosmicEffects = useMemo(
-    () => (
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Solar flares */}
-        <div className="absolute -top-[300px] right-[5%] w-[800px] h-[800px] bg-gradient-to-r from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[120px] animate-pulse-slow" />
-        <div
-          className="absolute -bottom-[200px] left-[10%] w-[600px] h-[600px] bg-gradient-to-l from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[100px] animate-pulse-slow"
-          style={{ animationDelay: "-2s" }}
-        />
-
-        {/* Star field */}
-        <div
-          className="absolute inset-0 animate-float"
-          style={{ animationDuration: "15s" }}
-        >
-          <div
-            className="absolute h-1 w-1 bg-white/20 rounded-full top-[15%] left-[35%] animate-sparkle"
-            style={{ animationDelay: "-2s" }}
-          />
-          <div
-            className="absolute h-1 w-1 bg-white/30 rounded-full top-[45%] left-[75%] animate-sparkle"
-            style={{ animationDelay: "-1s" }}
-          />
-          <div
-            className="absolute h-1 w-1 bg-white/20 rounded-full top-[65%] left-[25%] animate-sparkle"
-            style={{ animationDelay: "-3s" }}
-          />
-          <div
-            className="absolute h-1 w-1 bg-white/30 rounded-full top-[85%] left-[65%] animate-sparkle"
-            style={{ animationDelay: "-4s" }}
-          />
-        </div>
-
-        {/* Cosmic dust streams */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute h-[1px] w-[250px] bg-brand-400/10 blur-sm animate-random-slide"
-            style={{ animationDuration: "18s", top: "25%" }}
-          />
-          <div
-            className="absolute h-[1px] w-[350px] bg-purple-400/10 blur-sm animate-random-slide-reverse"
-            style={{ animationDuration: "23s", top: "55%" }}
-          />
-          <div
-            className="absolute h-[1px] w-[200px] bg-brand-400/10 blur-sm animate-random-slide"
-            style={{ animationDuration: "20s", top: "75%" }}
-          />
-        </div>
-
-        {/* Energy waves */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-scan-fast opacity-20"
-            style={{ animationDuration: "10s" }}
-          />
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan-vertical opacity-20"
-            style={{ animationDuration: "15s" }}
-          />
-        </div>
-
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px)] bg-[size:3rem] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black_70%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:3rem] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black_70%)]" />
-      </div>
-    ),
-    []
-  );
-
-  // Memoize the feature cards
-  const FeatureCard = useMemo(
-    () =>
-      ({
-        feature,
-        isUpcoming = false,
-      }: {
-        feature: Feature;
-        isUpcoming?: boolean;
-      }) =>
-        (
-          <Card
-            key={feature.title}
-            className={`group relative backdrop-blur-sm border-dark-300/20 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 overflow-hidden ${
-              isUpcoming ? "bg-dark-200/80" : "bg-dark-200/80"
-            }`}
-          >
-            {isUpcoming && (
-              <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-brand-400/10 border border-brand-400/20 z-20">
-                <span className="text-xs font-cyber text-brand-400/90 tracking-wider flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
-                  COMING SOON
-                </span>
-              </div>
-            )}
-
-            {/* Animated gradient background */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-${
-                isUpcoming ? "15" : "10"
-              } transition-opacity duration-500 ${feature.gradient}`}
-            />
-
-            {/* Animated border glow */}
-            <div
-              className={`absolute -inset-[1px] rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r ${feature.gradient}`}
-            />
-
-            {/* Scan line effect */}
-            <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(99,102,241,0.03)_50%,transparent_100%)] bg-[length:100%_8px] animate-scan" />
-
-            <CardContent className="relative p-6">
-              <div className="flex items-start space-x-4">
-                <div
-                  className={`text-brand-400/80 group-hover:text-brand-400 transition-colors duration-300`}
-                >
-                  {feature.icon}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-100 mb-2 group-hover:text-brand-400 transition-colors duration-300 font-cyber tracking-wide">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-400/90 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-
-              {/* Inner glow effect */}
-              <div
-                className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-brand-500/5 via-transparent to-transparent`}
-              />
-
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            </CardContent>
-          </Card>
-        ),
-    []
-  );
-
   return (
-    <div className="relative py-16 overflow-hidden">
-      {CosmicEffects}
+    <section className="relative w-full overflow-hidden">
+      {/* Background gradient transition */}
+      <div className="absolute inset-0 bg-gradient-to-b from-dark-300/90 via-dark-200/95 to-transparent pointer-events-none" />
 
-      {/* Content Container */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 tracking-wider uppercase relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-            Platform Features
-          </h2>
-          <motion.div
-            className="h-1 w-24 mx-auto bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 mt-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 96 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-          />
-          <p className="mt-6 text-gray-400 max-w-2xl mx-auto text-lg">
-            Experience the future of competitive token trading with our
-            innovative platform
-          </p>
-        </motion.div>
+      {/* Content */}
+      <div className="relative container mx-auto px-4 py-16 space-y-16">
+        {/* Current Features */}
+        <div className="space-y-8">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200">
+              Platform Features
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Experience the future of trading with our cutting-edge platform
+            </p>
+          </div>
 
-        {/* Feature Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 relative z-10">
-          {existingFeatures.map((feature) => (
-            <FeatureCard key={feature.title} feature={feature} />
-          ))}
-          {upcomingFeatures.map((feature) => (
-            <FeatureCard
-              key={feature.title}
-              feature={feature}
-              isUpcoming={true}
-            />
-          ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {existingFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="group"
+              >
+                <Card className="h-full bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-300">
+                  <CardContent className="p-6 space-y-4">
+                    {/* Icon with glow effect */}
+                    <div className="relative w-12 h-12">
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-500/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
+                      <div className="relative w-full h-full text-emerald-400 group-hover:text-emerald-300 transition-colors">
+                        {feature.icon}
+                      </div>
+                    </div>
+
+                    {/* Title with gradient */}
+                    <h3 className="text-xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
+                      {feature.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
+                      {feature.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Upcoming Features */}
+        <div className="space-y-8">
+          <div className="text-center space-y-4">
+            <h2 className="text-3xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
+              Coming Soon
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {upcomingFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 + 0.4 }}
+                className="group"
+              >
+                <Card className="h-full bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-emerald-400/20 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300">
+                  <CardContent className="p-6 space-y-4">
+                    {/* Icon with glow effect */}
+                    <div className="relative w-12 h-12">
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 to-teal-500/10 rounded-full blur-lg group-hover:blur-xl transition-all" />
+                      <div className="relative w-full h-full text-emerald-400/70 group-hover:text-emerald-300/70 transition-colors">
+                        {feature.icon}
+                      </div>
+                    </div>
+
+                    {/* Title with gradient */}
+                    <h3 className="text-xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400/70 to-teal-500/70">
+                      {feature.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-gray-500 group-hover:text-gray-400 transition-colors">
+                      {feature.description}
+                    </p>
+
+                    {/* Coming Soon Badge */}
+                    <div className="absolute top-4 right-4">
+                      <div className="relative">
+                        <div className="absolute -inset-[1px] bg-gradient-to-r from-emerald-400/20 to-teal-500/20 blur-sm" />
+                        <div className="relative px-3 py-1 bg-dark-200/90 clip-edges">
+                          <span className="text-xs font-cyber tracking-wider text-emerald-400">
+                            COMING SOON
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

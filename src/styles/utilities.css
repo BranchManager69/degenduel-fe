@@ -41,6 +41,20 @@
   animation: grid-scroll 20s linear infinite;
 }
 
+/* Slower shine animation */
+@keyframes shine-slow {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shine-slow {
+  animation: shine-slow 8s ease-in-out infinite;
+}
+
 /* Cyber Pulse Animation */
 @keyframes cyber-pulse {
   0%,

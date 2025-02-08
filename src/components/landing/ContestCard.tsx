@@ -43,6 +43,8 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   const [isFlipped, setIsFlipped] = useState(false);
   const isLive = status === "active";
   const progress = (participantCount / maxParticipants) * 100;
+  const maxPrizePool = 0.9 * (maxParticipants * entryFee); // 90% after platform fee
+  const currentPrizePool = 0.9 * (participantCount * entryFee);
 
   const timeRemaining = useMemo(() => {
     try {
@@ -174,112 +176,126 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           style={{ backfaceVisibility: "hidden" }}
         >
           <Card className="h-full group relative bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10">
-            {/* Banner with integrated content */}
-            <div className="relative h-48 overflow-hidden">
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-400 opacity-20" />
-              <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(68,0,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-shine" />
-
-              {/* Content overlay */}
-              <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-                {/* Top section */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-start">
-                    <Link to={`/contests/${id}`} className="flex-1">
-                      <h3 className="text-2xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200 truncate pr-2">
-                        {name}
-                      </h3>
-                    </Link>
-                    <motion.span
-                      className={`px-3 py-1.5 rounded-sm clip-edges text-xs font-cyber tracking-wider uppercase border-l-2 border-r-2 ${getStatusColor()} ${
-                        status === "active" ? "animate-cyber-pulse" : ""
-                      }`}
-                    >
-                      {getStatusText()}
-                    </motion.span>
+            {/* Participation badge with overlap effect */}
+            {isParticipating && (
+              <div className="absolute -top-1 -right-1 z-30">
+                <div className="relative">
+                  {/* Glow effect */}
+                  <div className="absolute -inset-2 bg-gradient-to-r from-brand-400 to-brand-600 opacity-75 blur-lg animate-pulse" />
+                  {/* Badge background with clip effect */}
+                  <div className="relative px-4 py-1 bg-dark-200/95 clip-edges transform rotate-3 border-t border-r border-brand-400/50">
+                    <span className="text-xs font-cyber tracking-widest text-brand-400 animate-pulse-slow">
+                      ENTERED
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-300 font-cyber line-clamp-2">
-                    {description || "No description available"}
-                  </p>
+                  {/* Decorative corner accent */}
+                  <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-brand-400/30 clip-edges transform rotate-45" />
+                </div>
+              </div>
+            )}
+
+            {/* Banner with background image support */}
+            <div className="relative h-40 overflow-hidden">
+              {/* Background image - commented out until images are provided */}
+              {/* <div 
+                className="absolute inset-0 bg-cover bg-center blur-sm"
+                style={{ 
+                  backgroundImage: `url(${backgroundImage})`,
+                  filter: 'brightness(0.3) saturate(1.2)'
+                }} 
+              /> */}
+
+              {/* Shine and gradient effects */}
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-400 opacity-20" />
+              <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(68,0,255,0.2)_50%,transparent_75%)] bg-[length:250%_250%] animate-shine-slow" />
+
+              {/* Content */}
+              <div className="relative z-10 p-6 h-full flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <Link to={`/contests/${id}`} className="flex-1">
+                    <h3 className="text-2xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200 truncate pr-2">
+                      {name}
+                    </h3>
+                  </Link>
                 </div>
 
-                {/* Time indicator */}
-                <motion.p
-                  className="text-sm font-medium text-brand-300 font-cyber"
-                  initial={{ opacity: 0.8 }}
-                  animate={{ opacity: [0.8, 1, 0.8] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <FaClock className="inline-block mr-1 -mt-1" />
-                  {timeRemaining.startsWith("Late to start")
-                    ? timeRemaining
-                    : timeRemaining === "Ending soon" ||
-                      timeRemaining === "Starting soon"
-                    ? timeRemaining
-                    : `${isLive ? "Ends" : "Starts"} in ${timeRemaining}`}
-                </motion.p>
+                <div className="flex justify-between items-center mt-4">
+                  <span
+                    className={`px-3 py-1.5 rounded-sm clip-edges text-xs font-cyber tracking-wider uppercase ${getStatusColor()}`}
+                  >
+                    {getStatusText()}
+                  </span>
+                  <div className="flex items-center text-sm font-medium text-brand-300 font-cyber">
+                    <FaClock className="inline-block mr-1 -mt-1" />
+                    {timeRemaining}
+                  </div>
+                </div>
               </div>
-
-              {/* Bottom gradient fade */}
-              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-dark-200/80 to-transparent" />
             </div>
 
             {/* Main content */}
             <div className="p-6 pt-4 flex-1 flex flex-col">
-              {/* Entry Fee & Prize Pool */}
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="relative space-y-1 p-4 bg-dark-300/30 rounded-sm clip-edges border-l-2 border-amber-400/30">
-                  <span className="text-sm text-gray-400 font-cyber tracking-wider">
-                    Entry Fee
-                  </span>
+              {/* Description */}
+              <p className="text-gray-400/90 text-sm leading-relaxed mb-6">
+                {description}
+              </p>
+
+              {/* Progress bars */}
+              <div className="space-y-2 mb-6">
+                {/* Participants progress */}
+                <div className="relative h-3 bg-dark-300 clip-edges overflow-hidden">
                   <motion.div
-                    className="text-2xl font-bold font-cyber text-amber-300"
-                    whileHover={{ scale: 1.05, x: 5 }}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 to-emerald-600"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
                   >
-                    {formatCurrency(entryFee)}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-2000" />
                   </motion.div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-white font-cyber z-10">
+                      {participantCount} / {maxParticipants} Degens
+                    </span>
+                  </div>
                 </div>
-                <div className="relative space-y-1 p-4 bg-dark-300/30 rounded-sm clip-edges border-r-2 border-green-400/30">
-                  <span className="text-sm text-gray-400 font-cyber tracking-wider">
-                    Max Prize
-                  </span>
+
+                {/* Prize pool progress */}
+                <div className="relative h-3 bg-dark-300 clip-edges overflow-hidden">
                   <motion.div
-                    className="text-2xl font-bold font-cyber text-green-300"
-                    whileHover={{ scale: 1.05, x: -5 }}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-amber-600"
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: `${(currentPrizePool / maxPrizePool) * 100}%`,
+                    }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
                   >
-                    {formatCurrency(prizePool * maxParticipants * 0.9)}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-2000" />
                   </motion.div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-white font-cyber z-10">
+                      {formatCurrency(currentPrizePool)} /{" "}
+                      {formatCurrency(maxPrizePool)} SOL
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Players Progress with integrated count */}
-              <div className="relative h-8 bg-dark-300 clip-edges overflow-hidden mb-8">
-                <motion.div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-brand-400 to-brand-600"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                </motion.div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-medium text-white font-cyber z-10">
-                    {participantCount} / {maxParticipants} Degens
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Full-width bottom button */}
-            <div className="mt-auto">
+              {/* Join button */}
               <button
-                className="w-full py-6 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 transition-all font-cyber text-xl font-bold text-white uppercase tracking-wider"
+                className="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 transition-all font-cyber text-lg font-bold text-white uppercase tracking-wider clip-edges"
                 onClick={(e) => {
                   e.stopPropagation();
                   window.location.href = `/contests/${id}`;
                 }}
               >
-                Enter the Thunderdome
+                <div className="flex items-center justify-between px-6">
+                  <span>{isParticipating ? "VIEW ENTRY" : "JOIN CONTEST"}</span>
+                  {!isParticipating && (
+                    <span className="text-white/90">
+                      {formatCurrency(entryFee)} SOL
+                    </span>
+                  )}
+                </div>
               </button>
             </div>
           </Card>

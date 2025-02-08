@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
+import { ModuleFormat } from "rollup";
 import { defineConfig, LogLevel } from "vite";
 
 // https://vitejs.dev/config/
@@ -80,7 +81,7 @@ export default defineConfig(({ command, mode }) => {
       cache: true,
     },
     build: {
-      sourcemap: true,
+      sourcemap: "inline" as const,
       minify: false,
       target: "esnext",
       rollupOptions: {
@@ -89,6 +90,21 @@ export default defineConfig(({ command, mode }) => {
           entryFileNames: `assets/[name].js`,
           chunkFileNames: `assets/[name].js`,
           assetFileNames: `assets/[name].[ext]`,
+          format: "esm" as ModuleFormat,
+          compact: false,
+          generatedCode: {
+            symbols: true,
+            constBindings: true,
+          },
+          minifyInternalExports: false,
+        },
+      },
+      terserOptions: {
+        compress: false,
+        mangle: false,
+        format: {
+          beautify: true,
+          comments: true,
         },
       },
     },

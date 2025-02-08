@@ -43,7 +43,7 @@ export const MarketVerse: React.FC = () => {
     const fetchMarketData = async () => {
       try {
         console.log("Fetching market data...");
-        const response = await ddApi.fetch("/dd-serv/tokens");
+        const response = await ddApi.fetch("/api/tokens");
 
         if (!response.ok) {
           const errorText = await response.text();
