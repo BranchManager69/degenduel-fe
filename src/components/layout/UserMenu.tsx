@@ -1,45 +1,28 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaUser, FaUserFriends, FaSignOutAlt, FaCog, FaChartLine } from 'react-icons/fa';
-import { User } from '../../types';
+import { AnimatePresence, motion } from "framer-motion";
+import React from "react";
+import { FaSignOutAlt, FaUser, FaUserFriends } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { User } from "../../types";
 
 interface UserMenuProps {
   user: User;
   onDisconnect: () => void;
-  isAdmin?: boolean;
-  isSuperAdmin?: boolean;
 }
 
-export const UserMenu: React.FC<UserMenuProps> = ({ 
-  user, 
-  onDisconnect,
-  isAdmin,
-  isSuperAdmin
-}) => {
+export const UserMenu: React.FC<UserMenuProps> = ({ user, onDisconnect }) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
   const menuItems = [
-    { 
-      label: 'Profile',
+    {
+      label: "Profile",
       icon: FaUser,
-      to: '/me'
+      to: "/me",
     },
     {
-      label: 'Referrals',
+      label: "Referrals",
       icon: FaUserFriends,
-      to: '/referrals'
+      to: "/referrals",
     },
-    ...(isAdmin ? [{
-      label: 'Admin',
-      icon: FaCog,
-      to: '/admin'
-    }] : []),
-    ...(isSuperAdmin ? [{
-      label: 'Super Admin',
-      icon: FaChartLine,
-      to: '/superadmin'
-    }] : [])
   ];
 
   return (
@@ -52,7 +35,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         whileTap={{ scale: 0.98 }}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
-        <span className="truncate max-w-[120px] text-xs">{user.nickname || user.wallet_address}</span>
+        <span className="truncate max-w-[120px] text-xs">
+          {user.nickname || user.wallet_address}
+        </span>
       </motion.button>
 
       {/* Dropdown Menu */}
@@ -104,4 +89,4 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       </AnimatePresence>
     </div>
   );
-}; 
+};

@@ -185,25 +185,41 @@ export const Header: React.FC = () => {
                 >
                   Rankings
                 </Link>
+                {isAdmin() && (
+                  <Link
+                    to="/admin"
+                    className="text-red-400 hover:text-red-300 transition-colors font-medium"
+                  >
+                    Admin
+                  </Link>
+                )}
+                {isSuperAdmin() && (
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    className="!px-2 !py-1 !text-xs font-bold tracking-wider bg-gradient-to-r from-red-500 to-brand-500 hover:from-red-400 hover:to-brand-400"
+                    onClick={() => (window.location.href = "/superadmin")}
+                  >
+                    SUPER
+                  </Button>
+                )}
               </nav>
             </div>
 
             {/* Center section: Live Contest Ticker */}
-            <div className="flex-1 mx-8">
+            <div className="flex-1 mx-8 min-w-0">
               <AnimatePresence>
-                {!loading && activeContests.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="w-full"
-                  >
-                    <LiveContestTicker
-                      contests={activeContests}
-                      loading={loading}
-                    />
-                  </motion.div>
-                )}
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="w-full"
+                >
+                  <LiveContestTicker
+                    contests={activeContests}
+                    loading={loading}
+                  />
+                </motion.div>
               </AnimatePresence>
             </div>
 
@@ -217,12 +233,7 @@ export const Header: React.FC = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                   >
-                    <UserMenu
-                      user={user}
-                      onDisconnect={disconnectWallet}
-                      isAdmin={isAdmin()}
-                      isSuperAdmin={isSuperAdmin()}
-                    />
+                    <UserMenu user={user} onDisconnect={disconnectWallet} />
                   </motion.div>
                 ) : (
                   <motion.div

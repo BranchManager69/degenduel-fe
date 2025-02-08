@@ -44,7 +44,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
       <div className="bg-dark-200/60 backdrop-blur-sm h-8 border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative w-full">
         <div
           ref={containerRef}
-          className="inline-flex items-center"
+          className="inline-flex items-center w-full"
           style={{
             animation: "ticker 30s linear infinite",
             animationPlayState: isPaused ? "paused" : "running",
@@ -54,7 +54,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
         >
           <div
             ref={contentRef}
-            className="inline-flex items-center space-x-8 px-4"
+            className="inline-flex items-center space-x-8 px-4 flex-shrink-0"
           >
             {[...Array(3)].map((_, index) => (
               <div
@@ -151,7 +151,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
           {/* Parent Container */}
           <div
             ref={containerRef}
-            className="inline-flex items-center"
+            className="inline-flex items-center w-full"
             style={{
               animation: "ticker 30s linear infinite",
               animationPlayState: isPaused ? "paused" : "running",
@@ -164,7 +164,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
             {/* Content Container */}
             <div
               ref={contentRef}
-              className="inline-flex items-center space-x-8 px-4"
+              className="inline-flex items-center space-x-8 px-4 flex-shrink-0"
             >
               {sortedContests.map((contest) => {
                 return (
