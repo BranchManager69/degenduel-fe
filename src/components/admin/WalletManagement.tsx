@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { ddApi } from "../../services/dd-api";
 
 interface WalletData {
   id: number;
@@ -27,6 +26,13 @@ interface WalletManagementProps {
   autoRefresh?: boolean;
 }
 
+interface WalletGenerationOptions {
+  count: number;
+  initialBalance: number;
+  purpose: 'contest' | 'faucet' | 'admin';
+  label?: string;
+}
+
 export const WalletManagement: React.FC<WalletManagementProps> = ({
   refreshInterval = 60000,
   autoRefresh = true,
@@ -36,6 +42,14 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generationOptions, setGenerationOptions] = useState<WalletGenerationOptions>({
+    count: 1,
+    initialBalance: 0.1,
+    purpose: 'contest',
+    label: ''
+  });
 
   const fetchWalletData = async () => {
     try {
@@ -44,9 +58,9 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
 
       const [walletsResponse, statsResponse, metricsResponse] =
         await Promise.all([
-          ddApi.fetch("/api/admin/wallets/contest-wallets"),
-          ddApi.fetch("/api/admin/wallets/cache-stats"),
-          ddApi.fetch("/api/admin/wallets/metrics"),
+          fetch("/api/admin/wallets/contest-wallets"),
+          fetch("/api/admin/wallets/cache-stats"),
+          fetch("/api/admin/wallets/metrics"),
       ]);
 
       const [walletsData, statsData, metricsData] = await Promise.all([
@@ -70,6 +84,62 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
     }
   };
 
+  const generateWallets = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+
+      const response = await fetch("/api/admin/wallets/generate", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...generationOptions,
+          initialBalance: generationOptions.initialBalance * 1e9 // Convert to lamports
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(`Successfully generated ${generationOptions.count} wallet(s)`);
+        fetchWalletData(); // Refresh the list
+        setShowGenerateModal(false);
+      } else {
+        throw new Error(data.error || 'Failed to generate wallets');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate wallets');
+      toast.error('Failed to generate wallets');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const updateWalletStatus = async (walletId: number, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/admin/wallets/${walletId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Wallet status updated');
+        fetchWalletData(); // Refresh the list
+      } else {
+        throw new Error(data.error || 'Failed to update wallet status');
+      }
+    } catch (err) {
+      toast.error('Failed to update wallet status');
+    }
+  };
+
   useEffect(() => {
     fetchWalletData();
   }, []);
@@ -81,6 +151,102 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval]);
 
+  // Generate Wallet Modal
+  const GenerateWalletModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-dark-200 rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-medium text-gray-100 mb-4">Generate New Wallets</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Number of Wallets</label>
+            <input
+              type="number"
+              min="1"
+              max="50"
+              value={generationOptions.count}
+              onChange={(e) => setGenerationOptions(prev => ({
+                ...prev,
+                count: Math.min(50, Math.max(1, parseInt(e.target.value) || 1))
+              }))}
+              className="w-full bg-dark-300 rounded px-3 py-2 text-gray-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Initial Balance (SOL)</label>
+            <input
+              type="number"
+              min="0.001"
+              step="0.001"
+              value={generationOptions.initialBalance}
+              onChange={(e) => setGenerationOptions(prev => ({
+                ...prev,
+                initialBalance: parseFloat(e.target.value) || 0
+              }))}
+              className="w-full bg-dark-300 rounded px-3 py-2 text-gray-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Purpose</label>
+            <select
+              value={generationOptions.purpose}
+              onChange={(e) => setGenerationOptions(prev => ({
+                ...prev,
+                purpose: e.target.value as WalletGenerationOptions['purpose']
+              }))}
+              className="w-full bg-dark-300 rounded px-3 py-2 text-gray-100"
+            >
+              <option value="contest">Contest</option>
+              <option value="faucet">Faucet</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Label (Optional)</label>
+            <input
+              type="text"
+              value={generationOptions.label}
+              onChange={(e) => setGenerationOptions(prev => ({
+                ...prev,
+                label: e.target.value
+              }))}
+              className="w-full bg-dark-300 rounded px-3 py-2 text-gray-100"
+              placeholder="e.g., Tournament #123"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={() => setShowGenerateModal(false)}
+            className="px-4 py-2 rounded-lg bg-dark-300 hover:bg-dark-400 text-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={generateWallets}
+            disabled={isGenerating}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 
+              ${isGenerating ? 'bg-brand-500/50' : 'bg-brand-500 hover:bg-brand-600'}
+              text-white transition-colors`}
+          >
+            {isGenerating ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Generating...
+              </>
+            ) : (
+              'Generate'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -91,37 +257,45 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header with Refresh Button */}
+      {/* Header with Actions */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-100">
           Wallet Management
         </h2>
-        <button
-          onClick={fetchWalletData}
-          disabled={isRefreshing}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 
-            ${
-              isRefreshing
-                ? "bg-brand-500/50"
-                : "bg-brand-500 hover:bg-brand-600"
-            }
-            text-white transition-colors`}
-        >
-          <svg
-            className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
+        <div className="flex gap-3">
+          <button
+            onClick={fetchWalletData}
+            disabled={isRefreshing}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 
+              ${isRefreshing ? 'bg-brand-500/50' : 'bg-brand-500 hover:bg-brand-600'}
+              text-white transition-colors`}
           >
-            <path
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          {isRefreshing ? "Refreshing..." : "Refresh"}
-        </button>
+            <svg
+              className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {isRefreshing ? "Refreshing..." : "Refresh"}
+          </button>
+          
+          <button
+            onClick={() => setShowGenerateModal(true)}
+            className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Generate Wallets
+          </button>
+        </div>
       </div>
 
       {/* Total Balance Overview */}
@@ -168,15 +342,19 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
                     Wallet: {wallet.wallet_address}
                   </p>
                 </div>
-                <div
-                  className={`px-3 py-1 rounded-full text-sm border 
-                  ${
-                    wallet.status === "active"
-                      ? "bg-green-500/20 text-green-400 border-green-500/50"
-                      : "bg-brand-500/20 text-brand-400 border-brand-500/50"
-                  }`}
-                >
-                  {wallet.status.toUpperCase()}
+                <div className="flex items-center gap-3">
+                  <select
+                    value={wallet.status}
+                    onChange={(e) => updateWalletStatus(wallet.id, e.target.value)}
+                    className={`px-3 py-1 rounded-full text-sm border bg-dark-400
+                      ${wallet.status === 'active' 
+                        ? 'border-green-500/50 text-green-400' 
+                        : 'border-brand-500/50 text-brand-400'}`}
+                  >
+                    <option value="active">ACTIVE</option>
+                    <option value="inactive">INACTIVE</option>
+                    <option value="reserved">RESERVED</option>
+                  </select>
                 </div>
               </div>
 
@@ -211,6 +389,9 @@ export const WalletManagement: React.FC<WalletManagementProps> = ({
           ))}
         </div>
       )}
+
+      {/* Generate Wallet Modal */}
+      {showGenerateModal && <GenerateWalletModal />}
     </div>
   );
 };

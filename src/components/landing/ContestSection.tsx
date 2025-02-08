@@ -1,9 +1,9 @@
 // src/components/landing/ContestSection.tsx
 
-import React from "react";
+import { motion } from "framer-motion";
+import React, { useEffect, useState } from "react";
 import type { Contest } from "../../types";
-import type { ContestCardProps } from "./ContestCard";
-import { AnimatedContestCards } from "./ContestCard";
+import { ContestCard } from "./contests/ContestCard";
 
 interface ContestSectionProps {
   title: string;
@@ -18,6 +18,16 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
   contests,
   loading,
 }) => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Don't render the active contests section if there are no active contests
   if (type === "active" && contests.length === 0 && !loading) {
     return null;
@@ -25,7 +35,12 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
 
   if (loading) {
     return (
-      <section className="relative py-12">
+      <motion.section
+        className="relative py-12"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-100px" }}
+      >
         <div className="relative space-y-4">
           <div className="h-8 w-64 rounded animate-pulse bg-dark-300/20" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -37,14 +52,20 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
     );
   }
 
   // For pending contests with no entries, show empty state
   if (type === "pending" && contests.length === 0) {
     return (
-      <section className="relative py-12">
+      <motion.section
+        className="relative py-12"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="relative">
           <h2 className="text-2xl font-bold mb-8 font-cyber tracking-wide bg-gradient-to-r from-green-400 to-brand-500 text-transparent bg-clip-text">
             {title}
@@ -53,95 +74,62 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
             No joinable contests available at the moment.
           </div>
         </div>
-      </section>
+      </motion.section>
     );
   }
 
   const isPending = type === "pending";
 
-  // Transform contests to ContestCardProps
-  const contestCards: ContestCardProps[] = contests.map((contest) => ({
-    id: String(contest.id),
-    name: contest.name,
-    description: contest.description,
-    entryFee: Number(contest.entry_fee),
-    prizePool: Number(contest.prize_pool),
-    startTime: contest.start_time,
-    endTime: contest.end_time,
-    participantCount: contest.participant_count,
-    maxParticipants: contest.max_participants,
-    status: contest.status,
-    difficulty: contest.settings.difficulty,
-    contestCode: contest.contest_code,
-    isParticipating: contest.is_participating ?? false,
-  }));
-
   return (
-    <section className="relative mb-16">
+    <motion.section
+      className="relative py-12"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6 }}
+    >
       {/* Cosmic effects container */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Solar flares */}
-        <div className="absolute -top-[200px] left-[10%] w-[600px] h-[600px] bg-gradient-to-r from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[100px] animate-pulse-slow" />
+        {/* Subtle ambient glow */}
+        <div className="absolute -top-[200px] left-[10%] w-[600px] h-[600px] bg-gradient-to-r from-brand-500/2 to-transparent rounded-full blur-[100px] animate-pulse-slow" />
         <div
-          className="absolute -bottom-[300px] right-[5%] w-[800px] h-[800px] bg-gradient-to-l from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[120px] animate-pulse-slow"
+          className="absolute -bottom-[300px] right-[5%] w-[800px] h-[800px] bg-gradient-to-l from-brand-500/2 to-transparent rounded-full blur-[120px] animate-pulse-slow"
           style={{ animationDelay: "-2s" }}
         />
 
-        {/* Star field - multiple layers for parallax effect */}
+        {/* Minimal star field */}
         <div
-          className="absolute inset-0 animate-float"
+          className="absolute inset-0 animate-float opacity-30"
           style={{ animationDuration: "15s" }}
         >
           <div
-            className="absolute h-1 w-1 bg-white/20 rounded-full top-[10%] left-[25%] animate-sparkle"
+            className="absolute h-1 w-1 bg-white/10 rounded-full top-[10%] left-[25%] animate-sparkle"
             style={{ animationDelay: "-3s" }}
           />
           <div
-            className="absolute h-1 w-1 bg-white/30 rounded-full top-[30%] left-[65%] animate-sparkle"
-            style={{ animationDelay: "-1s" }}
-          />
-          <div
-            className="absolute h-1 w-1 bg-white/20 rounded-full top-[70%] left-[15%] animate-sparkle"
+            className="absolute h-1 w-1 bg-white/10 rounded-full top-[70%] left-[15%] animate-sparkle"
             style={{ animationDelay: "-4s" }}
           />
-          <div
-            className="absolute h-1 w-1 bg-white/30 rounded-full top-[80%] left-[85%] animate-sparkle"
-            style={{ animationDelay: "-2s" }}
-          />
         </div>
 
-        {/* Cosmic dust streams */}
+        {/* Single subtle scan line */}
         <div className="absolute inset-0">
           <div
-            className="absolute h-[1px] w-[200px] bg-brand-400/10 blur-sm animate-random-slide"
-            style={{ animationDuration: "20s", top: "30%" }}
-          />
-          <div
-            className="absolute h-[1px] w-[300px] bg-purple-400/10 blur-sm animate-random-slide-reverse"
-            style={{ animationDuration: "25s", top: "60%" }}
-          />
-          <div
-            className="absolute h-[1px] w-[250px] bg-brand-400/10 blur-sm animate-random-slide"
-            style={{ animationDuration: "22s", top: "80%" }}
-          />
-        </div>
-
-        {/* Energy waves */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-scan-fast opacity-20"
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/2 to-transparent animate-scan-fast opacity-10"
             style={{ animationDuration: "8s" }}
-          />
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan-vertical opacity-20"
-            style={{ animationDuration: "12s" }}
           />
         </div>
       </div>
 
       <div className="relative">
         {/* Section Header with cosmic glow */}
-        <div className="flex items-center justify-between mb-6">
+        <motion.div
+          className="flex items-center justify-between mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
           <div className="space-y-1">
             <h2
               className={`text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r ${
@@ -172,13 +160,62 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Contest Cards Container - Add padding to ensure buttons are visible */}
-        <div className="pb-8">
-          <AnimatedContestCards contests={contestCards} />
+        {/* Contest Grid with enhanced perspective */}
+        <div
+          className={`relative grid grid-cols-1 ${
+            isMobile ? "" : "md:grid-cols-2 lg:grid-cols-3"
+          } gap-6 [perspective:1500px]`}
+        >
+          {contests.map((contest, index) => (
+            <motion.div
+              key={contest.id}
+              className="opacity-0 group/card"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{
+                duration: 0.6,
+                delay: index * 0.1,
+                ease: [0.19, 1.0, 0.22, 1.0],
+              }}
+              whileHover={{
+                y: -5,
+                scale: 1.02,
+                transition: { duration: 0.2 },
+              }}
+              style={{
+                transformStyle: "preserve-3d",
+              }}
+            >
+              {/* Card glow effect */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-brand-500/0 via-brand-400/10 to-purple-500/0 rounded-lg blur-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
+
+              <div
+                className="relative"
+                style={{ zIndex: contests.length - index }}
+              >
+                <ContestCard
+                  id={String(contest.id)}
+                  name={contest.name}
+                  description={contest.description}
+                  entryFee={Number(contest.entry_fee)}
+                  prizePool={Number(contest.prize_pool)}
+                  startTime={contest.start_time}
+                  endTime={contest.end_time}
+                  participantCount={contest.participant_count}
+                  maxParticipants={contest.max_participants}
+                  status={contest.status}
+                  difficulty={contest.settings.difficulty}
+                  contestCode={contest.contest_code}
+                  isParticipating={contest.is_participating ?? false}
+                />
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };

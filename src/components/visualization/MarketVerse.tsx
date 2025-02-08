@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { ddApi } from "../../services/dd-api";
@@ -29,42 +29,111 @@ interface ApiResponse {
   data: TokenData[];
 }
 
+// Type guard to check if response is ApiResponse format
+function isApiResponse(response: unknown): response is ApiResponse {
+  const isValid =
+    typeof response === "object" &&
+    response !== null &&
+    "timestamp" in response &&
+    "data" in response &&
+    Array.isArray((response as ApiResponse).data);
+
+  console.log("[MarketVerse] Response format check (wrapped):", {
+    isValid,
+    hasTimestamp:
+      response && typeof response === "object" && "timestamp" in response,
+    hasData: response && typeof response === "object" && "data" in response,
+    isDataArray:
+      response &&
+      typeof response === "object" &&
+      "data" in response &&
+      Array.isArray((response as ApiResponse).data),
+  });
+
+  return isValid;
+}
+
+// Type guard to check if response is direct array format
+function isTokenDataArray(response: unknown): response is TokenData[] {
+  const isArray = Array.isArray(response);
+  const hasValidItems =
+    isArray &&
+    response.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        "id" in item &&
+        "symbol" in item &&
+        "marketCap" in item
+    );
+
+  console.log("[MarketVerse] Response format check (array):", {
+    isArray,
+    length: isArray ? response.length : 0,
+    hasValidItems,
+    sampleItem: isArray && response.length > 0 ? response[0] : null,
+  });
+
+  return isArray && hasValidItems;
+}
+
 export const MarketVerse: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const spheresRef = useRef<THREE.Mesh[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
 
   // Fetch market data
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        console.log("Fetching market data...");
+        console.log("[MarketVerse] Initiating market data fetch...");
         const response = await ddApi.fetch("/api/tokens");
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error("Market data fetch failed:", errorText);
+          console.error("[MarketVerse] Market data fetch failed:", {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText,
+          });
           throw new Error(
             `Failed to fetch market data: ${response.status} ${response.statusText}`
           );
         }
 
-        const data: ApiResponse = await response.json();
-        console.log("Market data received:", data);
+        const rawData = await response.json();
+        console.log("[MarketVerse] Raw market data received:", rawData);
 
-        if (!data || !data.data || !Array.isArray(data.data)) {
+        let tokenData: TokenData[];
+        if (isApiResponse(rawData)) {
+          console.log("[MarketVerse] Processing wrapped response format");
+          tokenData = rawData.data;
+          setLastUpdateTime(rawData.timestamp);
+        } else if (isTokenDataArray(rawData)) {
+          console.log("[MarketVerse] Processing direct array format");
+          tokenData = rawData;
+          setLastUpdateTime(new Date().toISOString());
+        } else {
+          console.error("[MarketVerse] Invalid data format:", rawData);
           throw new Error("Invalid market data format received");
         }
 
+        console.log("[MarketVerse] Processed token data:", {
+          count: tokenData.length,
+          symbols: tokenData.map((t) => t.symbol).join(", "),
+        });
+
         // Initialize visualization with data
-        initializeVisualization(data.data);
+        initializeVisualization(tokenData);
         setIsLoading(false);
       } catch (err) {
-        console.error("Error in market data fetch:", err);
+        console.error("[MarketVerse] Error in market data fetch:", err);
         setError(
           err instanceof Error ? err.message : "Failed to fetch market data"
         );
@@ -78,106 +147,173 @@ export const MarketVerse: React.FC = () => {
   }, []);
 
   const initializeVisualization = (marketData: TokenData[]) => {
-    if (!containerRef.current || !sceneRef.current) return;
+    console.log(
+      "[MarketVerse] Initializing visualization with",
+      marketData.length,
+      "tokens"
+    );
 
-    // Initialize Three.js scene
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
+    if (!containerRef.current) {
+      console.error("[MarketVerse] Container ref not available");
+      return;
+    }
 
-    // Create spheres based on market data
-    marketData.forEach((token, index) => {
-      const marketCap = parseFloat(token.marketCap) || 0;
+    try {
+      // Initialize Three.js scene
+      const scene = new THREE.Scene();
+      sceneRef.current = scene;
 
-      // Calculate size based on market cap
-      const size = Math.max(20, Math.min(50, Math.log10(marketCap) * 5));
+      // Clear existing spheres
+      spheresRef.current.forEach((sphere) => scene.remove(sphere));
+      spheresRef.current = [];
 
-      // Create sphere
-      const geometry = new THREE.SphereGeometry(size, 32, 32);
+      // Create spheres based on market data
+      marketData.forEach((token, index) => {
+        try {
+          const marketCap = parseFloat(token.marketCap) || 0;
+          console.log(
+            `[MarketVerse] Processing token: ${token.symbol}, Market Cap: ${marketCap}`
+          );
 
-      // Color based on 24h change
-      const change24h = token.changesJson?.h24 || 0;
-      const hue = change24h > 0 ? 0.3 : 0.0; // Green for positive, red for negative
-      const saturation = Math.min(Math.abs(change24h), 1);
+          // Calculate size based on market cap
+          const size = Math.max(20, Math.min(50, Math.log10(marketCap) * 5));
 
-      const material = new THREE.MeshPhongMaterial({
-        color: new THREE.Color().setHSL(hue, saturation, 0.5),
-        shininess: 60,
+          // Create sphere
+          const geometry = new THREE.SphereGeometry(size, 32, 32);
+
+          // Color based on 24h change
+          const change24h = token.changesJson?.h24 || 0;
+          const hue = change24h > 0 ? 0.3 : 0.0; // Green for positive, red for negative
+          const saturation = Math.min(Math.abs(change24h), 1);
+
+          const material = new THREE.MeshPhongMaterial({
+            color: new THREE.Color().setHSL(hue, saturation, 0.5),
+            shininess: 60,
+          });
+
+          const sphere = new THREE.Mesh(geometry, material);
+
+          // Position in a circular pattern
+          const angle = (index / marketData.length) * Math.PI * 2;
+          const radius = 200;
+          sphere.position.x = Math.cos(angle) * radius;
+          sphere.position.z = Math.sin(angle) * radius;
+
+          scene.add(sphere);
+          spheresRef.current.push(sphere);
+        } catch (err) {
+          console.error(
+            `[MarketVerse] Error processing token ${token.symbol}:`,
+            err
+          );
+        }
       });
 
-      const sphere = new THREE.Mesh(geometry, material);
+      // Add lights
+      const ambientLight = new THREE.AmbientLight(0x404040);
+      scene.add(ambientLight);
 
-      // Position in a circular pattern
-      const angle = (index / marketData.length) * Math.PI * 2;
-      const radius = 200;
-      sphere.position.x = Math.cos(angle) * radius;
-      sphere.position.z = Math.sin(angle) * radius;
+      const light = new THREE.PointLight(0xffffff, 1, 1000);
+      light.position.set(100, 100, 100);
+      scene.add(light);
 
-      scene.add(sphere);
-    });
+      // Initialize camera if not exists
+      if (!cameraRef.current) {
+        const camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
+        camera.position.z = 400;
+        camera.position.y = 100;
+        cameraRef.current = camera;
+      }
 
-    // Add lights
-    const ambientLight = new THREE.AmbientLight(0x404040);
-    scene.add(ambientLight);
+      // Initialize renderer if not exists
+      if (!rendererRef.current) {
+        const renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        containerRef.current.appendChild(renderer.domElement);
+        rendererRef.current = renderer;
 
-    const light = new THREE.PointLight(0xffffff, 1, 1000);
-    light.position.set(100, 100, 100);
-    scene.add(light);
+        // Initialize controls
+        const controls = new OrbitControls(
+          cameraRef.current,
+          renderer.domElement
+        );
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controlsRef.current = controls;
+      }
 
-    // Initialize camera
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    camera.position.z = 400;
-    camera.position.y = 100;
-    cameraRef.current = camera;
+      // Animation loop
+      const animate = () => {
+        if (!sceneRef.current || !cameraRef.current || !rendererRef.current)
+          return;
 
-    // Initialize renderer
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+        requestAnimationFrame(animate);
+        if (controlsRef.current) {
+          controlsRef.current.update();
+        }
 
-    // Initialize controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controlsRef.current = controls;
+        // Rotate spheres
+        spheresRef.current.forEach((sphere, index) => {
+          sphere.rotation.y += 0.01 * (index % 2 ? 1 : -1);
+        });
 
-    // Animation loop
-    const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
-    animate();
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      };
+      animate();
 
-    // Handle resize
+      console.log("[MarketVerse] Visualization initialized successfully");
+    } catch (err) {
+      console.error(
+        "[MarketVerse] Error in visualization initialization:",
+        err
+      );
+      setError("Failed to initialize visualization");
+    }
+  };
+
+  // Handle window resize
+  useEffect(() => {
     const handleResize = () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !rendererRef.current || !cameraRef.current)
+        return;
+
       const width = window.innerWidth;
       const height = window.innerHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-    };
-    window.addEventListener("resize", handleResize);
 
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      if (containerRef.current && renderer.domElement) {
-        containerRef.current.removeChild(renderer.domElement);
-      }
-      renderer.dispose();
+      cameraRef.current.aspect = width / height;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(width, height);
+
+      console.log("[MarketVerse] Resized to:", { width, height });
     };
-  };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      console.log("[MarketVerse] Cleaning up resources");
+      if (containerRef.current && rendererRef.current?.domElement) {
+        containerRef.current.removeChild(rendererRef.current.domElement);
+      }
+      rendererRef.current?.dispose();
+      spheresRef.current.forEach((sphere) => {
+        sphere.geometry.dispose();
+        (sphere.material as THREE.Material).dispose();
+      });
+    };
+  }, []);
 
   return (
     <div
@@ -193,10 +329,28 @@ export const MarketVerse: React.FC = () => {
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-red-500 bg-red-500/10 px-4 py-2 rounded-lg">
-            {error}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 z-50">
+          <div className="bg-red-500/10 border-r border-y border-red-500/20 backdrop-blur-sm py-3 px-4 min-w-[200px] max-w-[90vw] clip-edges">
+            <div className="flex items-start gap-2">
+              <div className="text-red-400 mt-0.5">⚠</div>
+              <div className="flex-1">
+                <div className="text-red-400 font-medium mb-1">
+                  Visualization Error
+                </div>
+                <div className="text-red-400/90 text-sm break-words">
+                  {error}
+                </div>
+                <div className="text-red-400/75 text-xs mt-2">
+                  Last attempt: {new Date().toLocaleTimeString()}
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+      )}
+      {lastUpdateTime && !error && (
+        <div className="absolute bottom-4 right-4 text-xs text-gray-500">
+          Last updated: {new Date(lastUpdateTime).toLocaleTimeString()}
         </div>
       )}
     </div>

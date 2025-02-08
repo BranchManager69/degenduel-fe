@@ -14,7 +14,6 @@ export interface ContestCardProps {
   name: string;
   description: string;
   entryFee: number;
-  prizePool: number;
   startTime: string;
   endTime: string;
   participantCount: number;
@@ -30,7 +29,6 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
   name,
   description,
   entryFee,
-  prizePool,
   startTime,
   endTime,
   participantCount,
@@ -44,7 +42,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
   const [isFlipped, setIsFlipped] = useState(false);
   const isLive = status === "active";
   const progress = (participantCount / maxParticipants) * 100;
-  const maxPrizePool = 0.9 * (maxParticipants * entryFee); // 90% after platform fee
+  const maxPrizePool = 0.9 * (maxParticipants * entryFee);
   const currentPrizePool = 0.9 * (participantCount * entryFee);
 
   const timeRemaining = useMemo(() => {
@@ -146,59 +144,24 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
     }
   };
 
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Don't flip if clicking on interactive elements
-    const target = e.target as HTMLElement;
-    if (
-      target.closest("a") ||
-      target.closest("button") ||
-      target.closest(".interactive")
-    ) {
-      return;
-    }
-    setIsFlipped(!isFlipped);
-  };
-
   return (
     <motion.div
-      className="relative w-full h-full cursor-pointer"
+      className="relative w-full h-full cursor-pointer preserve-3d"
+      onClick={() => setIsFlipped(!isFlipped)}
       style={{ perspective: "2000px" }}
-      onClick={handleCardClick}
-      initial={{
-        opacity: 0,
-        y: 50,
-        scale: 0.9,
-        rotateX: -15,
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        rotateX: 0,
-      }}
-      transition={{
-        duration: 0.8,
-        delay: index * 0.15, // Stagger based on index
-        ease: [0.19, 1.0, 0.22, 1.0], // Smooth easing
-      }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
     >
       <motion.div
-        className={`relative w-full h-full duration-700 preserve-3d ${
-          isFlipped ? "rotate-y-180" : ""
-        }`}
+        className="relative w-full h-full duration-700"
+        animate={{ rotateY: isFlipped ? 180 : 0 }}
         style={{ transformStyle: "preserve-3d" }}
-        whileHover={{
-          y: -5,
-          transition: { duration: 0.2 },
-        }}
       >
         {/* Front of card */}
-        <div
-          className="absolute w-full h-full backface-hidden"
-          style={{ backfaceVisibility: "hidden" }}
-        >
+        <div className="absolute w-full h-full backface-hidden">
           <Card className="h-full group relative bg-dark-200/80 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10 flex flex-col">
-            {/* Participation badge with overlap effect */}
+            {/* Participation badge */}
             {isParticipating && (
               <div className="absolute -top-2 -right-2 z-30">
                 <div className="relative">
@@ -208,12 +171,11 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
                       ENTERED
                     </span>
                   </div>
-                  <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-brand-400/30 clip-edges transform rotate-45" />
                 </div>
               </div>
             )}
 
-            {/* Header section with vibrant animations */}
+            {/* Header section */}
             <div className="relative h-32 overflow-hidden">
               {/* Enhanced gradient background */}
               <div className="absolute inset-0">
@@ -249,7 +211,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
 
             {/* Progress section */}
             <div className="px-4 py-3 flex-1 flex flex-col">
-              {/* Progress bars with improved spacing and styling */}
+              {/* Progress bars */}
               <div className="space-y-3">
                 {/* Participants progress */}
                 <div className="space-y-1">
@@ -296,33 +258,30 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
               </div>
             </div>
 
-            {/* Join button - truly edge to edge */}
-            <button
-              className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 transition-all font-cyber text-lg font-bold text-white uppercase tracking-wider clip-edges-bottom"
-              onClick={(e) => {
-                e.stopPropagation();
-                window.location.href = `/contests/${id}`;
-              }}
+            {/* Join button - edge to edge */}
+            <Link
+              to={`/contests/${id}`}
+              className="mt-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-6">
-                <span>{isParticipating ? "VIEW ENTRY" : "JOIN CONTEST"}</span>
-                {!isParticipating && (
-                  <span className="text-white/90">
-                    {formatCurrency(entryFee)}
-                  </span>
-                )}
-              </div>
-            </button>
+              <button className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 transition-all font-cyber text-lg font-bold text-white uppercase tracking-wider">
+                <div className="flex items-center justify-between px-6">
+                  <span>{isParticipating ? "VIEW ENTRY" : "JOIN CONTEST"}</span>
+                  {!isParticipating && (
+                    <span className="text-white/90">
+                      {formatCurrency(entryFee)} SOL
+                    </span>
+                  )}
+                </div>
+              </button>
+            </Link>
           </Card>
         </div>
 
         {/* Back of card */}
         <div
           className="absolute w-full h-full backface-hidden"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-          }}
+          style={{ transform: "rotateY(180deg)" }}
         >
           <Card className="h-full bg-dark-200/90 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20">
             <div className="p-6 flex flex-col h-full">
@@ -338,9 +297,9 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
                   </h4>
                   <div className="flex items-baseline gap-2">
                     <p className="text-2xl font-cyber text-green-300">
-                      {formatCurrency(prizePool * maxParticipants * 0.9)}
+                      {formatCurrency(maxPrizePool)}
                     </p>
-                    <span className="text-xs text-gray-500">max</span>
+                    <span className="text-xs text-gray-500">SOL</span>
                   </div>
                 </div>
 
@@ -384,6 +343,17 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
                   {contestCode}
                 </p>
               </div>
+
+              {/* Edge to edge button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFlipped(false);
+                }}
+                className="w-full py-3 mt-4 bg-gradient-to-r from-brand-400 to-purple-500 hover:from-brand-300 hover:to-purple-400 transition-all font-cyber text-lg font-bold text-white uppercase tracking-wider"
+              >
+                <span>Back to Contest</span>
+              </button>
             </div>
           </Card>
         </div>

@@ -1,14 +1,7 @@
 // src/components/landing/Features.tsx
 
-import {
-  AnimatePresence,
-  motion,
-  useAnimation,
-  useMotionValue,
-  useTransform,
-} from "framer-motion";
-import React, { useState } from "react";
-import { Card, CardContent } from "../ui/Card";
+import { AnimatePresence, motion, useMotionValue } from "framer-motion";
+import React, { useRef, useState } from "react";
 
 interface Feature {
   title: string;
@@ -222,226 +215,264 @@ const allFeatures = [
 ];
 
 export const Features: React.FC = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [expandedFeature, setExpandedFeature] = useState<
     (typeof allFeatures)[0] | null
   >(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const itemsPerView = 3;
+  const totalItems = allFeatures.length;
 
-  // Motion values for the orbital carousel
-  const dragX = useMotionValue(0);
-  const rotation = useTransform(dragX, [-200, 200], [30, -30]);
-  const controls = useAnimation();
-
-  // Calculate positions for each card in the orbit
-  const calculateCardPosition = (
-    index: number,
-    totalCards: number,
-    active: number
-  ) => {
-    const radius = 600; // Orbit radius
-    const angleStep = 360 / totalCards;
-    const baseAngle = (index - active) * angleStep;
-
-    return {
-      x: Math.sin(baseAngle * (Math.PI / 180)) * radius,
-      z: Math.cos(baseAngle * (Math.PI / 180)) * radius - radius,
-      rotateY: -baseAngle,
-      scale: Math.max(0.8, 1 - Math.abs(index - active) * 0.15),
-    };
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    const currentX = x.get();
+    const itemWidth = carouselRef.current?.offsetWidth || 0;
+    const snapPoint = Math.round(currentX / itemWidth) * itemWidth;
+    x.set(snapPoint);
   };
 
-  const handleDragEnd = (_: any, info: any) => {
-    const threshold = 100; // Minimum drag distance for navigation
-    const velocity = info.velocity.x;
-
-    if (Math.abs(info.offset.x) > threshold || Math.abs(velocity) > 500) {
-      const direction = info.offset.x > 0 ? -1 : 1;
-      const newIndex =
-        (activeIndex + direction + allFeatures.length) % allFeatures.length;
-      setActiveIndex(newIndex);
-    }
-
-    controls.start({ x: 0 });
-    setIsDragging(false);
+  const navigateCarousel = (direction: "prev" | "next") => {
+    const newIndex =
+      direction === "next"
+        ? Math.min(currentIndex + 1, totalItems - itemsPerView)
+        : Math.max(currentIndex - 1, 0);
+    setCurrentIndex(newIndex);
   };
 
   return (
     <motion.section
-      initial="hidden"
-      whileInView="visible"
+      className="relative w-full py-16 md:py-24 overflow-hidden"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
       viewport={{ once: true, margin: "-100px" }}
-      className="relative w-full overflow-hidden py-32"
+      transition={{ duration: 0.8 }}
     >
-      <div className="relative container mx-auto px-4">
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.19, 1.0, 0.22, 1.0] }}
-          className="text-center mb-24"
-        >
-          <h2 className="text-4xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200">
-            Platform Features
-          </h2>
-        </motion.div>
-
-        {/* 3D Orbital Carousel */}
-        <div className="relative h-[600px] perspective-1000">
-          <motion.div
-            style={{
-              rotateX: 10,
-              rotateY: rotation,
-              x: dragX,
-            }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.1}
-            onDragStart={() => setIsDragging(true)}
-            onDragEnd={handleDragEnd}
-            className="relative w-full h-full preserve-3d"
-          >
-            <AnimatePresence>
-              {allFeatures.map((feature, index) => {
-                const position = calculateCardPosition(
-                  index,
-                  allFeatures.length,
-                  activeIndex
-                );
-
-                return (
-                  <motion.div
-                    key={feature.title}
-                    initial={false}
-                    animate={{
-                      x: position.x,
-                      z: position.z,
-                      rotateY: position.rotateY,
-                      scale: position.scale,
-                      opacity: position.scale,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                    }}
-                    style={{
-                      position: "absolute",
-                      width: "400px",
-                      transformStyle: "preserve-3d",
-                    }}
-                    onClick={() => !isDragging && setExpandedFeature(feature)}
-                    className="cursor-pointer"
-                  >
-                    <Card
-                      className={`bg-dark-200/40 backdrop-blur-sm border-dark-300/50 hover:border-brand-400/20 hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-300 group ${
-                        feature.isUpcoming ? "border-emerald-400/20" : ""
-                      }`}
-                    >
-                      <CardContent className="p-6 space-y-4">
-                        {/* Icon with enhanced glow effect */}
-                        <div className="relative w-12 h-12">
-                          <div
-                            className={`absolute inset-0 bg-gradient-to-r ${
-                              feature.isUpcoming
-                                ? "from-emerald-400/10 to-teal-500/10"
-                                : "from-emerald-400/20 to-teal-500/20"
-                            } rounded-full blur-lg group-hover:blur-xl transition-all`}
-                          />
-                          <div
-                            className={`relative w-full h-full ${
-                              feature.isUpcoming
-                                ? "text-emerald-400/70 group-hover:text-emerald-300/70"
-                                : "text-emerald-400 group-hover:text-emerald-300"
-                            } transition-colors`}
-                          >
-                            {feature.icon}
-                          </div>
-                        </div>
-
-                        {/* Title with consistent height */}
-                        <h3 className="h-[56px] flex items-center text-xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">
-                          {feature.title}
-                          {feature.isUpcoming && (
-                            <span className="ml-2 text-xs font-cyber tracking-wider text-emerald-400/70 bg-dark-200/60 px-2 py-1 rounded-sm">
-                              SOON
-                            </span>
-                          )}
-                        </h3>
-
-                        {/* Description with truncation */}
-                        <p
-                          className={`${
-                            feature.isUpcoming
-                              ? "text-gray-500 group-hover:text-gray-400"
-                              : "text-gray-400 group-hover:text-gray-300"
-                          } transition-colors line-clamp-3`}
-                        >
-                          {feature.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </motion.div>
-        </div>
-
-        {/* Navigation Indicators */}
-        <div className="flex justify-center mt-8 space-x-2">
-          {allFeatures.map((feature, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveIndex(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === activeIndex
-                  ? feature.isUpcoming
-                    ? "bg-emerald-400/70 w-4"
-                    : "bg-emerald-400 w-4"
-                  : feature.isUpcoming
-                  ? "bg-gray-600/70 hover:bg-emerald-600/70"
-                  : "bg-gray-600 hover:bg-emerald-600"
-              }`}
-            />
-          ))}
+      {/* Background Effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(127,0,255,0.05)_0%,transparent_70%)] animate-pulse-slow" />
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/5 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-float-delayed" />
         </div>
       </div>
 
-      {/* Expanded Feature View */}
+      <div className="container mx-auto px-4">
+        {/* Section Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: [0.19, 1.0, 0.22, 1.0] }}
+          className="text-center mb-12 md:mb-16"
+        >
+          <h2 className="text-3xl md:text-4xl font-cyber font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-200">
+            Platform Features
+          </h2>
+          <p className="mt-4 text-lg text-gray-400">
+            Experience the future of competitive trading
+          </p>
+        </motion.div>
+
+        {/* Features Carousel */}
+        <div className="relative">
+          {/* Navigation Arrows */}
+          <button
+            onClick={() => navigateCarousel("prev")}
+            disabled={currentIndex === 0}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-dark-200/80 backdrop-blur-sm rounded-r-lg border border-brand-400/20 
+              ${
+                currentIndex === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-brand-400/20"
+              }`}
+          >
+            <svg
+              className="w-6 h-6 text-brand-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => navigateCarousel("next")}
+            disabled={currentIndex >= totalItems - itemsPerView}
+            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-dark-200/80 backdrop-blur-sm rounded-l-lg border border-brand-400/20
+              ${
+                currentIndex >= totalItems - itemsPerView
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-brand-400/20"
+              }`}
+          >
+            <svg
+              className="w-6 h-6 text-brand-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          {/* Features Grid */}
+          <motion.div
+            ref={carouselRef}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-hidden"
+            drag="x"
+            dragConstraints={{
+              left: -(totalItems - itemsPerView) * 100,
+              right: 0,
+            }}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={handleDragEnd}
+            animate={{
+              x:
+                (-currentIndex * (carouselRef.current?.offsetWidth || 0)) /
+                itemsPerView,
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            {allFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{
+                  duration: 0.5,
+                  delay: index * 0.1,
+                  ease: [0.19, 1.0, 0.22, 1.0],
+                }}
+                className="h-full"
+                onClick={() => !isDragging && setExpandedFeature(feature)}
+              >
+                <div
+                  className={`relative h-full p-6 rounded-lg backdrop-blur-sm cursor-pointer border
+                    ${
+                      feature.isUpcoming
+                        ? "bg-dark-200/30 border-emerald-400/20"
+                        : "bg-dark-200/40 border-dark-300/50"
+                    }
+                    transition-all duration-300`}
+                >
+                  {/* Feature content remains the same ... */}
+                  <motion.div className="relative w-12 h-12 mb-4">
+                    <div
+                      className={`text-${
+                        feature.isUpcoming ? "emerald" : "brand"
+                      }-400`}
+                    >
+                      {feature.icon}
+                    </div>
+                  </motion.div>
+
+                  <motion.h3
+                    className={`text-xl font-cyber mb-2 ${
+                      feature.isUpcoming ? "text-emerald-400" : "text-brand-400"
+                    }`}
+                  >
+                    {feature.title}
+                    {feature.isUpcoming && (
+                      <span className="ml-2 text-xs text-emerald-400/60 font-cyber">
+                        SOON™
+                      </span>
+                    )}
+                  </motion.h3>
+
+                  <p className="text-gray-400 text-sm md:text-base">
+                    {feature.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Enhanced Expanded Feature Modal */}
       <AnimatePresence>
         {expandedFeature && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 p-4 bg-black/80 backdrop-blur-lg overflow-y-auto"
             onClick={() => setExpandedFeature(null)}
           >
-            <motion.div
-              className="relative w-full max-w-4xl bg-dark-200/90 rounded-lg overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-              layoutId={`feature-${expandedFeature.title}`}
-            >
-              {/* Expanded content here - will enhance in next iteration */}
-              <div className="p-8">
-                <h2
-                  className={`text-3xl font-cyber mb-4 ${
-                    expandedFeature.isUpcoming
-                      ? "text-emerald-400/70"
-                      : "text-emerald-400"
-                  }`}
+            <div className="min-h-full flex items-center justify-center">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, rotateX: -10 }}
+                animate={{ scale: 1, opacity: 1, rotateX: 0 }}
+                exit={{ scale: 0.95, opacity: 0, rotateX: 10 }}
+                transition={{ type: "spring", damping: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-2xl bg-dark-200/90 rounded-lg overflow-hidden transform-gpu"
+                style={{ perspective: "1000px" }}
+              >
+                <motion.div
+                  className="p-6 md:p-8"
+                  whileHover={{ scale: 1.02, rotateX: 2 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 >
-                  {expandedFeature.title}
-                  {expandedFeature.isUpcoming && (
-                    <span className="ml-4 text-sm font-cyber tracking-wider text-emerald-400/70 bg-dark-200/60 px-3 py-1 rounded-sm">
-                      COMING SOON
-                    </span>
-                  )}
-                </h2>
-                <p className="text-gray-300">{expandedFeature.description}</p>
-              </div>
-            </motion.div>
+                  {/* Modal Content */}
+                  <div className="flex items-start gap-4">
+                    <motion.div
+                      className={`w-12 h-12 flex-shrink-0 ${
+                        expandedFeature.isUpcoming
+                          ? "text-emerald-400"
+                          : "text-brand-400"
+                      }`}
+                      whileHover={{ scale: 1.1, rotate: 360 }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      {expandedFeature.icon}
+                    </motion.div>
+                    <div className="flex-1">
+                      <motion.h2
+                        className={`text-2xl md:text-3xl font-cyber mb-4 ${
+                          expandedFeature.isUpcoming
+                            ? "text-emerald-400"
+                            : "text-brand-400"
+                        }`}
+                        whileHover={{ x: 10 }}
+                      >
+                        {expandedFeature.title}
+                        {expandedFeature.isUpcoming && (
+                          <motion.span
+                            className="ml-3 text-sm tracking-wider bg-dark-200/60 px-3 py-1 rounded-sm"
+                            whileHover={{ scale: 1.1 }}
+                          >
+                            COMING SOON
+                          </motion.span>
+                        )}
+                      </motion.h2>
+                      <motion.p
+                        className="text-gray-300 text-lg leading-relaxed"
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        {expandedFeature.description}
+                      </motion.p>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

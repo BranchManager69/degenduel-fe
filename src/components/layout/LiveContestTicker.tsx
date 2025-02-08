@@ -115,7 +115,7 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
 
   // Live Contest Ticker (edge-to-edge)
   return (
-    <div className="relative w-full overflow-hidden">
+    <div className="relative w-full overflow-hidden block">
       {/* Dark base layer */}
       <div className="absolute inset-0 bg-dark-200/60" />
 
@@ -158,6 +158,8 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
             }}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
           >
             {/* Content Container */}
             <div

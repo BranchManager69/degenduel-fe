@@ -7,6 +7,8 @@ import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
 import { VanityPool } from "../../components/admin/VanityPool";
 import { WalletManagement } from "../../components/admin/WalletManagement";
+import { CircuitBreakerMonitor } from "../../components/admin/CircuitBreakerMonitor";
+import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -19,10 +21,12 @@ type TabType =
   | "wallet-gen"
   | "vanity"
   | "reseed"
-  | "contests";
+  | "contests"
+  | "circuit"
+  | "activity";
 
 export const SuperAdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>("system");
+  const [activeTab, setActiveTab] = useState<TabType>("activity");
 
   return (
     <ContestProvider>
@@ -34,14 +38,16 @@ export const SuperAdminDashboard: React.FC = () => {
               <nav className="-mb-px flex flex-wrap">
                 {/* Tabs */}
                 {[
-                  { key: "system", label: "Sys. Logs" },
-                  { key: "spy", label: "User Spy" },
-                  { key: "contests", label: "Contests" },
-                  { key: "faucet-mgr", label: "Faucet Mgr." },
-                  { key: "wallet-gen", label: "Wallet Gen." },
-                  { key: "vanity", label: "Vanity Pool" },
-                  { key: "reseed", label: "Reseed DB" },
-                ].map(({ key, label }) => (
+                  { key: "activity", label: "Live Activity", icon: "👥" },
+                  { key: "system", label: "Sys. Logs", icon: "📋" },
+                  { key: "circuit", label: "Circuit Monitor", icon: "⚡" },
+                  { key: "spy", label: "User Spy", icon: "🔍" },
+                  { key: "contests", label: "Contests", icon: "🏆" },
+                  { key: "faucet-mgr", label: "Faucet Mgr.", icon: "💧" },
+                  { key: "wallet-gen", label: "Wallet Gen.", icon: "🔑" },
+                  { key: "vanity", label: "Vanity Pool", icon: "✨" },
+                  { key: "reseed", label: "Reseed DB", icon: "🌱" },
+                ].map(({ key, label, icon }) => (
                   <button
                     key={key}
                     onClick={() => setActiveTab(key as TabType)}
@@ -49,8 +55,9 @@ export const SuperAdminDashboard: React.FC = () => {
                       activeTab === key
                         ? "border-brand-500 text-brand-400"
                         : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
-                    } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm focus:outline-none transition-colors duration-200`}
+                    } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm focus:outline-none transition-colors duration-200 flex items-center gap-2`}
                   >
+                    <span className="text-base">{icon}</span>
                     {label}
                   </button>
                 ))}
@@ -59,7 +66,9 @@ export const SuperAdminDashboard: React.FC = () => {
 
             {/* Tab Content */}
             <div className="p-6">
-              {activeTab === "spy" ? (
+              {activeTab === "activity" ? (
+                <LiveUserActivityMap />
+              ) : activeTab === "spy" ? (
                 <SpyPanel />
               ) : activeTab === "system" ? (
                 <div className="space-y-6">
@@ -82,6 +91,14 @@ export const SuperAdminDashboard: React.FC = () => {
                     </h2>
                     <BalanceManager />
                   </div>
+                </div>
+              ) : activeTab === "circuit" ? (
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
+                    <span className="text-xl">⚡</span>
+                    Circuit Breaker Monitor
+                  </h2>
+                  <CircuitBreakerMonitor />
                 </div>
               ) : activeTab === "contests" ? (
                 <div className="space-y-6">

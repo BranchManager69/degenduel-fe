@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-dark-100/50 backdrop-blur-sm border-t border-dark-300/30">
+    <footer className="backdrop-blur-sm border-t border-dark-300/30 relative mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-3">
         {" "}
         {/* Drastically reduced padding */}
