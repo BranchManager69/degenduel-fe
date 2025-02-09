@@ -27,6 +27,8 @@ export const Header: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
+  const [isTransitioningToMaintenance, setIsTransitioningToMaintenance] =
+    useState(false);
 
   useEffect(() => {
     const fetchContests = async () => {
@@ -40,7 +42,7 @@ export const Header: React.FC = () => {
         }
       } catch (err: any) {
         if (err?.status === 503 || err?.message?.includes("503")) {
-          setMaintenanceMode(true);
+          handleMaintenanceTransition();
         }
         console.error("Failed to load contests:", err);
       } finally {
@@ -50,7 +52,69 @@ export const Header: React.FC = () => {
     fetchContests();
     const interval = setInterval(fetchContests, 60000);
     return () => clearInterval(interval);
-  }, [maintenanceMode, setMaintenanceMode]);
+  }, [maintenanceMode]);
+
+  // Separate function to handle maintenance transitions
+  const handleMaintenanceTransition = () => {
+    if (!maintenanceMode && !isTransitioningToMaintenance) {
+      setIsTransitioningToMaintenance(true);
+      setMaintenanceMode(true);
+
+      // Use a fade-out animation and then transition
+      setTimeout(() => {
+        // Only reload if we're not an admin
+        if (!isAdmin()) {
+          window.location.href = "/maintenance";
+        }
+        setIsTransitioningToMaintenance(false);
+      }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      const now = Date.now();
+      // Reduce polling interval to 15 seconds
+      if (now - lastMaintenanceCheck < 15000) return;
+
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+
+        if (isInMaintenance !== maintenanceMode) {
+          handleMaintenanceTransition();
+        }
+
+        setLastMaintenanceCheck(now);
+      } catch (err: any) {
+        if (err?.status === 503 || err?.message?.includes("503")) {
+          handleMaintenanceTransition();
+        }
+        console.error("Failed to check maintenance mode:", err);
+      }
+    };
+
+    checkMaintenance();
+    const interval = setInterval(checkMaintenance, 15000); // 15-second interval
+    return () => clearInterval(interval);
+  }, [
+    setMaintenanceMode,
+    lastMaintenanceCheck,
+    maintenanceMode,
+    isTransitioningToMaintenance,
+  ]);
+
+  // Add transition overlay
+  useEffect(() => {
+    if (isTransitioningToMaintenance) {
+      document.body.style.opacity = "0.5";
+      document.body.style.transition = "opacity 0.5s ease-in-out";
+    } else {
+      document.body.style.opacity = "1";
+    }
+    return () => {
+      document.body.style.opacity = "1";
+    };
+  }, [isTransitioningToMaintenance]);
 
   useEffect(() => {
     if (error) {
@@ -58,28 +122,6 @@ export const Header: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [error, clearError]);
-
-  useEffect(() => {
-    const checkMaintenance = async () => {
-      const now = Date.now();
-      if (now - lastMaintenanceCheck < 30000) return;
-
-      try {
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        setMaintenanceMode(isInMaintenance);
-        setLastMaintenanceCheck(now);
-      } catch (err: any) {
-        if (err?.status === 503 || err?.message?.includes("503")) {
-          setMaintenanceMode(true);
-        }
-        console.error("Failed to check maintenance mode:", err);
-      }
-    };
-
-    checkMaintenance();
-    const interval = setInterval(checkMaintenance, 30000);
-    return () => clearInterval(interval);
-  }, [setMaintenanceMode, lastMaintenanceCheck]);
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -114,6 +156,15 @@ export const Header: React.FC = () => {
                 ⚙️ DegenDuel maintenance in progress ⚙️
                 <span className="animate-pulse">⚠</span>
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Add transition overlay */}
+        {isTransitioningToMaintenance && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="text-white text-xl font-cyber animate-pulse">
+              Entering Maintenance Mode...
             </div>
           </div>
         )}

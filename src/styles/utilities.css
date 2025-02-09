@@ -71,3 +71,17 @@
 .animate-cyber-pulse {
   animation: cyber-pulse 2s ease-in-out infinite;
 }
+
+/* Gradient Shift Animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-gradient-shift {
+  animation: gradient-shift 10s linear infinite;
+}
