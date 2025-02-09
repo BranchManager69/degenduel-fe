@@ -43,9 +43,9 @@ import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
 import { PublicProfilePage } from "./pages/public/general/PublicProfilePage";
 /* some extra superadmin pages */
+import { ReferralPage } from "./pages/authenticated/ReferralPage";
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
-import { ReferralPage } from "./pages/authenticated/ReferralPage";
 /* themes */
 import "./styles/color-schemes.css";
 
@@ -56,21 +56,35 @@ export const App: React.FC = () => {
   const { checkAuth } = useAuth();
 
   useEffect(() => {
-    // Check auth every 30 seconds
-    const authCheckInterval = setInterval(checkAuth, 1 * 30 * 1000);
+    // Check auth every 10 seconds in production, 30 in development
+    const checkInterval = import.meta.env.PROD ? 10 * 1000 : 30 * 1000;
+    const authCheckInterval = setInterval(checkAuth, checkInterval);
 
-    // Also check when tab becomes visible
+    // Check auth on page load
+    checkAuth();
+
+    // Check when tab becomes visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         checkAuth();
       }
     };
+
+    // Check when online status changes
+    const handleOnlineStatus = () => {
+      if (navigator.onLine) {
+        checkAuth();
+      }
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnlineStatus);
 
     // Cleanup
     return () => {
       clearInterval(authCheckInterval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnlineStatus);
     };
   }, [checkAuth]);
 

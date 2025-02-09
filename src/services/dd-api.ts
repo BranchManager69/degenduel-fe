@@ -215,26 +215,35 @@ export const formatBonusPoints = (points: string | number): string => {
 // Maintenance mode check function
 const checkMaintenanceMode = async () => {
   try {
-    // First try the admin endpoint if we're logged in
-    try {
-      const adminResponse = await fetch(`${API_URL}/admin/maintenance`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
+    // Get current user state
+    const store = useStore.getState();
+    const isAdmin =
+      store.user?.role === "admin" || store.user?.role === "superadmin";
 
-      if (adminResponse.ok) {
-        const data = await adminResponse.json();
-        return data.enabled;
+    // If user is admin, try admin endpoint
+    if (isAdmin) {
+      try {
+        const adminResponse = await fetch(`${API_URL}/admin/maintenance`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
+
+        if (adminResponse.ok) {
+          const data = await adminResponse.json();
+          return data.enabled;
+        }
+      } catch (err) {
+        console.warn(
+          "Admin maintenance check failed, falling back to public endpoint"
+        );
       }
-    } catch (err) {
-      // Silently fail admin check - we'll try public endpoint
     }
 
-    // Fallback to public status endpoint
+    // For non-admins or if admin check fails, use public endpoint
     const response = await fetch(`${API_URL}/status`, {
       method: "GET",
       credentials: "include",

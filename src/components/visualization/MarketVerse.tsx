@@ -67,7 +67,11 @@ function isTokenDataArray(response: unknown): response is TokenData[] {
         item !== null &&
         "id" in item &&
         "symbol" in item &&
-        "marketCap" in item
+        "name" in item &&
+        "token_prices" in item &&
+        "change_24h" in item &&
+        "volume_24h" in item &&
+        "market_cap" in item
     );
 
   console.log("[MarketVerse] Response format check (array):", {
@@ -78,6 +82,30 @@ function isTokenDataArray(response: unknown): response is TokenData[] {
   });
 
   return isArray && hasValidItems;
+}
+
+// Transform API response to TokenData format
+function transformApiResponse(data: any[]): TokenData[] {
+  return data.map((item) => ({
+    id: item.id,
+    symbol: item.symbol,
+    name: item.name,
+    price: item.token_prices?.price || "0",
+    marketCap: item.market_cap || "0",
+    volume24h: item.volume_24h || "0",
+    changesJson: {
+      h24: parseFloat(item.change_24h || "0"),
+      h1: 0, // Not available in current API
+      m5: 0, // Not available in current API
+    },
+    transactionsJson: {
+      h24: {
+        buys: 0, // Not available in current API
+        sells: 0, // Not available in current API
+      },
+    },
+    imageUrl: item.image_url || null,
+  }));
 }
 
 export const MarketVerse: React.FC = () => {
@@ -123,11 +151,11 @@ export const MarketVerse: React.FC = () => {
         let tokenData: TokenData[];
         if (isApiResponse(rawData)) {
           console.log("[MarketVerse] Processing wrapped response format");
-          tokenData = rawData.data;
+          tokenData = transformApiResponse(rawData.data);
           setLastUpdateTime(rawData.timestamp);
         } else if (isTokenDataArray(rawData)) {
           console.log("[MarketVerse] Processing direct array format");
-          tokenData = rawData;
+          tokenData = transformApiResponse(rawData);
           setLastUpdateTime(new Date().toISOString());
         } else {
           console.error("[MarketVerse] Invalid data format:", rawData);

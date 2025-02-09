@@ -329,7 +329,7 @@ export const useStore = create<StoreState>()(
               is_banned: authResponse.user.is_banned,
               ban_reason: authResponse.user.ban_reason,
               risk_level: authResponse.user.risk_level,
-              jwt: authResponse.token
+              jwt: authResponse.token,
             },
           });
 
@@ -365,17 +365,25 @@ export const useStore = create<StoreState>()(
           } else {
             // 1. Call disconnect endpoint
             console.log("[Wallet Debug] Calling disconnect endpoint");
-            await retryFetch(`${API_URL}/auth/disconnect`, {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              body: JSON.stringify({
-                wallet: user.wallet_address,
-              }),
-            });
+            try {
+              await retryFetch(`${API_URL}/auth/disconnect`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                body: JSON.stringify({
+                  wallet: user.wallet_address,
+                }),
+              });
+            } catch (error) {
+              console.error(
+                "[Wallet Debug] Disconnect endpoint failed:",
+                error
+              );
+              // Continue with local cleanup even if server call fails
+            }
           }
 
           // 2. Disconnect Phantom wallet
@@ -388,15 +396,25 @@ export const useStore = create<StoreState>()(
           // 3. Clear local storage and cookies
           console.log("[Wallet Debug] Clearing storage and cookies");
           localStorage.removeItem("degen-duel-storage");
+
+          // Clear cookies for all possible domains/paths
+          const domains = [
+            window.location.hostname,
+            `.${window.location.hostname}`,
+            "degenduel.me",
+            ".degenduel.me",
+          ];
+          const paths = ["/", "/api"];
+
           document.cookie.split(";").forEach((c) => {
-            document.cookie = c
-              .replace(/^ +/, "")
-              .replace(
-                /=.*/,
-                "=;expires=" +
-                  new Date().toUTCString() +
-                  ";path=/;domain=.degenduel.me"
-              );
+            const cookieName = c.split("=")[0].trim();
+            domains.forEach((domain) => {
+              paths.forEach((path) => {
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${
+                  domain ? `; domain=${domain}` : ""
+                }`;
+              });
+            });
           });
 
           // 4. Reset store state
@@ -408,18 +426,8 @@ export const useStore = create<StoreState>()(
           });
         } catch (error) {
           console.error("[Wallet Debug] Disconnect failed:", error);
-          // Still clear local state even if API call fails
+          // Still clear local state even if something fails
           localStorage.removeItem("degen-duel-storage");
-          document.cookie.split(";").forEach((c) => {
-            document.cookie = c
-              .replace(/^ +/, "")
-              .replace(
-                /=.*/,
-                "=;expires=" +
-                  new Date().toUTCString() +
-                  ";path=/;domain=.degenduel.me"
-              );
-          });
           set({ user: null, isConnecting: false });
         }
       },
