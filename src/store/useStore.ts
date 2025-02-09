@@ -73,7 +73,7 @@ type StoreState = {
 
 type StorePersist = PersistOptions<
   StoreState,
-  Pick<StoreState, "user" | "debugConfig">
+  Pick<StoreState, "user" | "debugConfig" | "maintenanceMode">
 >;
 
 const persistConfig: StorePersist = {
@@ -81,6 +81,7 @@ const persistConfig: StorePersist = {
   partialize: (state) => ({
     user: state.user,
     debugConfig: state.debugConfig,
+    maintenanceMode: state.maintenanceMode,
   }),
 };
 
@@ -191,6 +192,47 @@ export const useStore = create<StoreState>()(
       setUser: (user) => set({ user }),
       setContests: (contests) => set({ contests }),
       setTokens: (tokens) => set({ tokens }),
+
+      setMaintenanceMode: async (enabled: boolean) => {
+        try {
+          set({ maintenanceMode: enabled });
+
+          const response = await retryFetch(
+            `${API_URL}/admin/maintenance/status`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to verify maintenance mode status");
+          }
+
+          const { enabled: backendStatus } = await response.json();
+
+          if (backendStatus !== enabled) {
+            console.warn(
+              "Maintenance mode state mismatch detected, syncing with backend"
+            );
+            set({ maintenanceMode: backendStatus });
+          }
+        } catch (error) {
+          console.error("Failed to sync maintenance mode:", error);
+          const response = await retryFetch(
+            `${API_URL}/admin/maintenance/status`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          ).catch(() => null);
+
+          if (response) {
+            const { enabled: backendStatus } = await response.json();
+            set({ maintenanceMode: backendStatus });
+          }
+        }
+      },
 
       connectWallet: async () => {
         const { isConnecting, debugConfig } = get();
@@ -431,11 +473,31 @@ export const useStore = create<StoreState>()(
           set({ user: null, isConnecting: false });
         }
       },
-
-      setMaintenanceMode: (enabled: boolean) =>
-        set({ maintenanceMode: enabled }),
     }),
-    persistConfig
+    {
+      ...persistConfig,
+      onRehydrateStorage: () => async (state) => {
+        if (!state) return;
+
+        try {
+          const response = await fetch(`${API_URL}/admin/maintenance/status`, {
+            credentials: "include",
+          });
+
+          if (response.ok) {
+            const { enabled: backendStatus } = await response.json();
+            if (backendStatus !== state.maintenanceMode) {
+              console.warn(
+                "Maintenance mode state mismatch on init, syncing with backend"
+              );
+              state.setMaintenanceMode(backendStatus);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to verify maintenance mode on init:", error);
+        }
+      },
+    }
   )
 );
 

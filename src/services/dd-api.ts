@@ -50,10 +50,196 @@ const normalizePath = (path: string): string => {
   return trimmed;
 };
 
+// Add circuit breaker state management
+interface CircuitBreakerState {
+  isOpen: boolean;
+  failures: number;
+  lastFailure: number | null;
+  lastSuccess: number | null;
+  cooldownPeriod: number;
+  failureThreshold: number;
+  notifiedAdmin: boolean;
+}
+
+interface ServiceCircuitBreaker extends CircuitBreakerState {
+  endpoint: string;
+  affectedOperations: string[];
+  recoveryHistory: Array<{ timestamp: number; success: boolean }>;
+}
+
+interface CircuitBreakerAnalytics {
+  totalFailures: number;
+  lastIncident: number | null;
+  recoveryAttempts: number;
+  meanTimeBetweenFailures: number | null;
+  serviceHealth: Record<
+    string,
+    {
+      status: "healthy" | "degraded" | "failed";
+      lastCheck: number;
+      failureRate: number;
+    }
+  >;
+}
+
+// Track circuit breakers by service
+const circuitBreakers = new Map<string, ServiceCircuitBreaker>();
+const analytics: CircuitBreakerAnalytics = {
+  totalFailures: 0,
+  lastIncident: null,
+  recoveryAttempts: 0,
+  meanTimeBetweenFailures: null,
+  serviceHealth: {},
+};
+
+const getServiceKey = (endpoint: string): string => {
+  // Extract service name from endpoint
+  const parts = normalizePath(endpoint).split("/");
+  return parts[0] || "default";
+};
+
+const getOrCreateBreaker = (endpoint: string): ServiceCircuitBreaker => {
+  const serviceKey = getServiceKey(endpoint);
+  if (!circuitBreakers.has(serviceKey)) {
+    circuitBreakers.set(serviceKey, {
+      endpoint: serviceKey,
+      isOpen: false,
+      failures: 0,
+      lastFailure: null,
+      lastSuccess: null,
+      cooldownPeriod: 30000,
+      failureThreshold: 5,
+      notifiedAdmin: false,
+      affectedOperations: [],
+      recoveryHistory: [],
+    });
+  }
+  return circuitBreakers.get(serviceKey)!;
+};
+
+const updateAnalytics = (breaker: ServiceCircuitBreaker, success: boolean) => {
+  const now = Date.now();
+
+  if (!success) {
+    analytics.totalFailures++;
+    analytics.lastIncident = now;
+
+    // Update MTBF if we have multiple incidents
+    if (breaker.recoveryHistory.length > 1) {
+      const incidents = breaker.recoveryHistory.filter((r) => !r.success);
+      if (incidents.length > 1) {
+        const mtbf =
+          incidents.reduce((acc, curr, idx, arr) => {
+            if (idx === 0) return 0;
+            return acc + (curr.timestamp - arr[idx - 1].timestamp);
+          }, 0) /
+          (incidents.length - 1);
+        analytics.meanTimeBetweenFailures = mtbf;
+      }
+    }
+  }
+
+  // Update service health
+  analytics.serviceHealth[breaker.endpoint] = {
+    status: breaker.isOpen
+      ? "failed"
+      : breaker.failures > 0
+      ? "degraded"
+      : "healthy",
+    lastCheck: now,
+    failureRate: breaker.failures / (breaker.recoveryHistory.length || 1),
+  };
+};
+
 // Create a consistent API client
 const createApiClient = () => {
+  const resetCircuitBreaker = (endpoint: string) => {
+    const breaker = getOrCreateBreaker(endpoint);
+    breaker.isOpen = false;
+    breaker.failures = 0;
+    breaker.lastFailure = null;
+    breaker.notifiedAdmin = false;
+    updateAnalytics(breaker, true);
+  };
+
+  const handleSuccess = (endpoint: string) => {
+    const breaker = getOrCreateBreaker(endpoint);
+    breaker.lastSuccess = Date.now();
+    if (breaker.failures > 0) {
+      breaker.failures = 0;
+      breaker.recoveryHistory.push({ timestamp: Date.now(), success: true });
+      console.log(
+        `[DD-API] Circuit breaker reset for service: ${breaker.endpoint}`
+      );
+    }
+    updateAnalytics(breaker, true);
+  };
+
+  const handleFailure = (endpoint: string, error: any) => {
+    const breaker = getOrCreateBreaker(endpoint);
+    breaker.failures++;
+    breaker.lastFailure = Date.now();
+    breaker.recoveryHistory.push({ timestamp: Date.now(), success: false });
+    updateAnalytics(breaker, false);
+
+    // Check if we should open the circuit breaker
+    if (breaker.failures >= breaker.failureThreshold) {
+      breaker.isOpen = true;
+
+      // Only notify once per circuit breaker open event
+      if (!breaker.notifiedAdmin) {
+        const store = useStore.getState();
+        if (store.user?.role === "admin" || store.user?.role === "superadmin") {
+          const details = {
+            service: breaker.endpoint,
+            failures: breaker.failures,
+            lastFailure: new Date(breaker.lastFailure).toISOString(),
+            lastSuccess: breaker.lastSuccess
+              ? new Date(breaker.lastSuccess).toISOString()
+              : "never",
+            error: error instanceof Error ? error.message : "Unknown error",
+            analytics: {
+              totalFailures: analytics.totalFailures,
+              meanTimeBetweenFailures: analytics.meanTimeBetweenFailures,
+              serviceHealth: analytics.serviceHealth[breaker.endpoint],
+            },
+          };
+
+          // Dispatch event for admin dashboard
+          const event = new CustomEvent("circuit-breaker", {
+            detail: {
+              ...details,
+              cooldownPeriod: breaker.cooldownPeriod,
+              failureThreshold: breaker.failureThreshold,
+              recoveryTime: new Date(
+                Date.now() + breaker.cooldownPeriod
+              ).toISOString(),
+            },
+          });
+          window.dispatchEvent(event);
+        }
+        breaker.notifiedAdmin = true;
+      }
+    }
+  };
+
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
+      const breaker = getOrCreateBreaker(endpoint);
+
+      // Check if circuit breaker is open
+      if (breaker.isOpen && breaker.lastFailure) {
+        const timeSinceLastFailure = Date.now() - breaker.lastFailure;
+        if (timeSinceLastFailure < breaker.cooldownPeriod) {
+          throw new Error(
+            `Service ${breaker.endpoint} temporarily unavailable - Circuit breaker is open`
+          );
+        } else {
+          // Try to reset after cooldown
+          resetCircuitBreaker(endpoint);
+        }
+      }
+
       const headers = new Headers({
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -68,52 +254,55 @@ const createApiClient = () => {
         });
       }
 
-      // Log the request if debug mode is enabled
-      if (DDAPI_DEBUG_MODE === "true") {
-        console.log("[DD-API Debug] Request:", {
-          url: `${API_URL}${endpoint}`,
-          method: options.method || "GET",
-          headers: Object.fromEntries([...headers]),
-          cookies: document.cookie,
-          timestamp: new Date().toISOString(),
+      try {
+        // Log the request if debug mode is enabled
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.log("[DD-API Debug] Request:", {
+            url: `${API_URL}${endpoint}`,
+            method: options.method || "GET",
+            headers: Object.fromEntries([...headers]),
+            cookies: document.cookie,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Use normalized path to construct URL
+        const normalizedPath = normalizePath(endpoint);
+        const response = await fetch(`${API_URL}/${normalizedPath}`, {
+          ...options,
+          headers,
+          credentials: "include",
+          mode: "cors",
         });
+
+        // If debug mode is enabled, log the response
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.log("[DD-API Debug] Response:", {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries([...response.headers]),
+            url: response.url,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Check for ban status
+        checkAndUpdateBanStatus(response);
+
+        if (!response.ok) {
+          handleFailure(
+            endpoint,
+            new Error(`${response.status} ${response.statusText}`)
+          );
+          throw new Error(`API Error: ${response.statusText}`);
+        }
+
+        handleSuccess(endpoint);
+        return response;
+      } catch (error) {
+        handleFailure(endpoint, error);
+        throw error;
       }
-
-      // Use normalized path to construct URL
-      const normalizedPath = normalizePath(endpoint);
-      const response = await fetch(`${API_URL}/${normalizedPath}`, {
-        ...options,
-        headers,
-        credentials: "include",
-        mode: "cors",
-      });
-
-      // If debug mode is enabled, log the response
-      if (DDAPI_DEBUG_MODE === "true") {
-        console.log("[DD-API Debug] Response:", {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries([...response.headers]),
-          url: response.url,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      // Check for ban status
-      checkAndUpdateBanStatus(response);
-
-      if (!response.ok) {
-        console.error(`[API Error] ${endpoint}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries([...response.headers]),
-          url: response.url,
-          cookies: document.cookie,
-        });
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-
-      return response;
     },
   };
 };
@@ -587,6 +776,89 @@ export const ddApi = {
     },
 
     checkMaintenanceMode,
+
+    // Get service capacities
+    getServiceCapacities: async (): Promise<Record<string, number>> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/settings/service-capacities");
+        return response.json();
+      } catch (error) {
+        console.error("Failed to fetch service capacities:", error);
+        // Return default capacities if fetch fails
+        return {
+          "dd-serv": 300,
+          contests: 200,
+          users: 150,
+          stats: 100,
+        };
+      }
+    },
+
+    // Update service capacity
+    updateServiceCapacity: async (
+      service: string,
+      capacity: number
+    ): Promise<void> => {
+      try {
+        const api = createApiClient();
+        await api.fetch("/admin/settings/service-capacities", {
+          method: "PUT",
+          body: JSON.stringify({
+            service,
+            capacity,
+          }),
+        });
+      } catch (error) {
+        console.error(
+          `Failed to update capacity for service ${service}:`,
+          error
+        );
+        throw error;
+      }
+    },
+
+    // Get performance metrics
+    getPerformanceMetrics: async () => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/metrics/performance");
+        return response.json();
+      } catch (error) {
+        console.error("Failed to fetch performance metrics:", error);
+        throw error;
+      }
+    },
+
+    // Get memory stats
+    getMemoryStats: async () => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/metrics/memory");
+        return response.json();
+      } catch (error) {
+        console.error("Failed to fetch memory stats:", error);
+        throw error;
+      }
+    },
+
+    getServiceAnalytics: async (): Promise<{
+      services: Array<{
+        name: string;
+        status: "healthy" | "degraded" | "failed";
+        lastCheck: number;
+        failureRate: number;
+      }>;
+    }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/metrics/service-analytics");
+        return response.json();
+      } catch (error) {
+        console.error("Failed to fetch service analytics:", error);
+        throw error;
+      }
+    },
   },
 
   // Contest endpoints
@@ -1161,3 +1433,20 @@ export const createDDApi = () => {
     },
   };
 };
+
+// Export analytics for admin dashboard
+export const getCircuitBreakerAnalytics = () => ({
+  ...analytics,
+  services: Array.from(circuitBreakers.entries()).map(([key, breaker]) => ({
+    name: key,
+    status: breaker.isOpen
+      ? "failed"
+      : breaker.failures > 0
+      ? "degraded"
+      : "healthy",
+    failures: breaker.failures,
+    lastFailure: breaker.lastFailure,
+    lastSuccess: breaker.lastSuccess,
+    recoveryHistory: breaker.recoveryHistory,
+  })),
+});

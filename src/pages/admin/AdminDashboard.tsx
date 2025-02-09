@@ -15,6 +15,16 @@ import { useStore } from "../../store/useStore";
 
 type TabType = "overview" | "contests" | "users" | "activity";
 
+// Add new interface for system alerts
+interface SystemAlert {
+  id: string;
+  type: "error" | "warning" | "info";
+  title: string;
+  message: string;
+  timestamp: Date;
+  details?: Record<string, any>;
+}
+
 export const AdminDashboard: React.FC = () => {
   const { maintenanceMode, setMaintenanceMode, user } = useStore();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -24,6 +34,7 @@ export const AdminDashboard: React.FC = () => {
   const [retryAttempt, setRetryAttempt] = useState(0);
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000; // 2 seconds between retries
+  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
 
   const toggleMaintenanceMode = async () => {
     try {
@@ -135,6 +146,44 @@ export const AdminDashboard: React.FC = () => {
     fetchDuration();
   }, []);
 
+  // Add system alert handler
+  const addSystemAlert = (alert: Omit<SystemAlert, "id" | "timestamp">) => {
+    setSystemAlerts((prev) =>
+      [
+        {
+          ...alert,
+          id: Math.random().toString(36).substring(7),
+          timestamp: new Date(),
+        },
+        ...prev,
+      ].slice(0, 10)
+    ); // Keep only last 10 alerts
+  };
+
+  // Listen for circuit breaker events
+  useEffect(() => {
+    const handleCircuitBreaker = (event: CustomEvent<any>) => {
+      addSystemAlert({
+        type: "error",
+        title: "Circuit Breaker Activated",
+        message:
+          "Service protection mechanism activated due to multiple failures",
+        details: event.detail,
+      });
+    };
+
+    window.addEventListener(
+      "circuit-breaker",
+      handleCircuitBreaker as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "circuit-breaker",
+        handleCircuitBreaker as EventListener
+      );
+    };
+  }, []);
+
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: "overview", label: "Overview", icon: "📊" },
     { id: "contests", label: "Contests", icon: "🏆" },
@@ -145,6 +194,116 @@ export const AdminDashboard: React.FC = () => {
   return (
     <ContestProvider>
       <div className="container mx-auto p-6">
+        {/* System Alerts Section */}
+        <AnimatePresence>
+          {systemAlerts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-8"
+            >
+              <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-brand-500/20">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-100">
+                    System Alerts
+                  </h2>
+                  <button
+                    onClick={() => setSystemAlerts([])}
+                    className="text-gray-400 hover:text-gray-300"
+                  >
+                    Clear All
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {systemAlerts.map((alert) => (
+                    <motion.div
+                      key={alert.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className={`
+                        p-4 rounded-lg border
+                        ${
+                          alert.type === "error"
+                            ? "bg-red-500/10 border-red-500/20"
+                            : ""
+                        }
+                        ${
+                          alert.type === "warning"
+                            ? "bg-yellow-500/10 border-yellow-500/20"
+                            : ""
+                        }
+                        ${
+                          alert.type === "info"
+                            ? "bg-blue-500/10 border-blue-500/20"
+                            : ""
+                        }
+                      `}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`
+                          mt-1 text-xl
+                          ${alert.type === "error" ? "text-red-400" : ""}
+                          ${alert.type === "warning" ? "text-yellow-400" : ""}
+                          ${alert.type === "info" ? "text-blue-400" : ""}
+                        `}
+                        >
+                          {alert.type === "error"
+                            ? "⚠"
+                            : alert.type === "warning"
+                            ? "⚡"
+                            : "ℹ"}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3
+                              className={`
+                              font-medium
+                              ${alert.type === "error" ? "text-red-400" : ""}
+                              ${
+                                alert.type === "warning"
+                                  ? "text-yellow-400"
+                                  : ""
+                              }
+                              ${alert.type === "info" ? "text-blue-400" : ""}
+                            `}
+                            >
+                              {alert.title}
+                            </h3>
+                            <span className="text-xs text-gray-500">
+                              {alert.timestamp.toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-300 mt-1">{alert.message}</p>
+                          {alert.details && (
+                            <div className="mt-2 text-sm font-mono bg-dark-300/50 rounded p-2">
+                              <pre className="whitespace-pre-wrap break-words">
+                                {JSON.stringify(alert.details, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() =>
+                            setSystemAlerts((prev) =>
+                              prev.filter((a) => a.id !== alert.id)
+                            )
+                          }
+                          className="text-gray-500 hover:text-gray-400"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-100 mb-4">Admin Panel</h1>
           <p className="text-gray-400">

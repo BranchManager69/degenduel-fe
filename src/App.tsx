@@ -13,6 +13,7 @@ import { useAuth } from "./hooks/useAuth";
 import { DebugPanel } from "./components/debug/DebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
+import { ServiceStatusBanner } from "./components/layout/ServiceStatusBanner";
 import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
@@ -94,6 +95,9 @@ export const App: React.FC = () => {
       <div className="min-h-screen flex flex-col relative">
         {/* Animated Background */}
         <MovingBackground />
+
+        {/* Service Status Banner */}
+        <ServiceStatusBanner />
 
         {/* Header */}
         <Header />
