@@ -3,19 +3,39 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ddApi } from "../../services/dd-api";
+import { useStore } from "../../store/useStore";
 
 export const Footer: React.FC = () => {
-  const [serverStatus, setServerStatus] = useState<"online" | "offline">(
-    "online"
-  );
+  const { maintenanceMode } = useStore();
+  const [serverStatus, setServerStatus] = useState<
+    "online" | "maintenance" | "offline"
+  >(maintenanceMode ? "maintenance" : "online");
 
   useEffect(() => {
+    // Update status when maintenance mode changes
+    if (maintenanceMode) {
+      setServerStatus("maintenance");
+    }
+  }, [maintenanceMode]);
+
+  useEffect(() => {
+    // Only check server status if not in maintenance mode
+    if (maintenanceMode) return;
+
     const checkServerStatus = async () => {
       try {
-        await ddApi.fetch("/status");
-        setServerStatus("online");
+        const response = await ddApi.fetch("/status");
+        if (response.status === 503) {
+          setServerStatus("maintenance");
+        } else {
+          setServerStatus("online");
+        }
       } catch (err) {
-        setServerStatus("offline");
+        if (err instanceof Error && err.message.includes("503")) {
+          setServerStatus("maintenance");
+        } else {
+          setServerStatus("offline");
+        }
       }
     };
 
@@ -31,7 +51,7 @@ export const Footer: React.FC = () => {
     );
 
     return () => clearInterval(interval);
-  }, [serverStatus]);
+  }, [serverStatus, maintenanceMode]);
 
   return (
     <footer className="backdrop-blur-sm border-t border-dark-300/30 relative mt-auto">
@@ -103,6 +123,8 @@ export const Footer: React.FC = () => {
                 ${
                   serverStatus === "online"
                     ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                    : serverStatus === "maintenance"
+                    ? "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"
                     : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                 }
                 ${serverStatus === "online" ? "animate-pulse" : ""}
