@@ -1,14 +1,15 @@
 // src/pages/superadmin/SuperAdminDashboard.tsx
 
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { BalanceManager } from "../../components/admin/BalanceManager";
+import { CircuitBreakerMonitor } from "../../components/admin/CircuitBreakerMonitor";
 import { FaucetManager } from "../../components/admin/FaucetManager";
+import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap";
 import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
 import { VanityPool } from "../../components/admin/VanityPool";
 import { WalletManagement } from "../../components/admin/WalletManagement";
-import { CircuitBreakerMonitor } from "../../components/admin/CircuitBreakerMonitor";
-import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -32,6 +33,29 @@ export const SuperAdminDashboard: React.FC = () => {
     <ContestProvider>
       <div className="min-h-screen bg-dark-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Service Control Panel Link */}
+          <Link
+            to="/superadmin/services"
+            className="block mb-6 bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-brand-500/20 hover:bg-dark-200/70 transition-colors group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚡</span>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-100">
+                    Service Control Panel
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    Manage and monitor system services
+                  </p>
+                </div>
+              </div>
+              <span className="text-brand-400 group-hover:translate-x-1 transition-transform">
+                →
+              </span>
+            </div>
+          </Link>
+
           <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
             {/* Tab Navigation */}
             <div className="border-b border-dark-300">

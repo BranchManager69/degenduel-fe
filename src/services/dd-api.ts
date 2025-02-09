@@ -151,78 +151,92 @@ const updateAnalytics = (breaker: ServiceCircuitBreaker, success: boolean) => {
   };
 };
 
+// Helper function to handle expected unauthorized endpoints
+const isExpectedUnauthorized = (path: string, status: number): boolean => {
+  const expectedUnauthEndpoints: readonly string[] = [
+    "/api/auth/session",
+    "/api/admin/maintenance/status",
+    "/api/admin/metrics/service-analytics",
+  ] as const;
+
+  return expectedUnauthEndpoints.some(
+    (endpoint) => path.includes(endpoint.replace("/api/", "")) && status === 401
+  );
+};
+
+// Circuit breaker helper functions
+const resetCircuitBreaker = (endpoint: string) => {
+  const breaker = getOrCreateBreaker(endpoint);
+  breaker.isOpen = false;
+  breaker.failures = 0;
+  breaker.lastFailure = null;
+  breaker.notifiedAdmin = false;
+  updateAnalytics(breaker, true);
+};
+
+const handleSuccess = (endpoint: string) => {
+  const breaker = getOrCreateBreaker(endpoint);
+  breaker.lastSuccess = Date.now();
+  if (breaker.failures > 0) {
+    breaker.failures = 0;
+    breaker.recoveryHistory.push({ timestamp: Date.now(), success: true });
+    console.log(
+      `[DD-API] Circuit breaker reset for service: ${breaker.endpoint}`
+    );
+  }
+  updateAnalytics(breaker, true);
+};
+
+const handleFailure = (endpoint: string, error: any) => {
+  const breaker = getOrCreateBreaker(endpoint);
+  breaker.failures++;
+  breaker.lastFailure = Date.now();
+  breaker.recoveryHistory.push({ timestamp: Date.now(), success: false });
+  updateAnalytics(breaker, false);
+
+  // Check if we should open the circuit breaker
+  if (breaker.failures >= breaker.failureThreshold) {
+    breaker.isOpen = true;
+
+    // Only notify once per circuit breaker open event
+    if (!breaker.notifiedAdmin) {
+      const store = useStore.getState();
+      if (store.user?.role === "admin" || store.user?.role === "superadmin") {
+        const details = {
+          service: breaker.endpoint,
+          failures: breaker.failures,
+          lastFailure: new Date(breaker.lastFailure).toISOString(),
+          lastSuccess: breaker.lastSuccess
+            ? new Date(breaker.lastSuccess).toISOString()
+            : "never",
+          error: error instanceof Error ? error.message : "Unknown error",
+          analytics: {
+            totalFailures: analytics.totalFailures,
+            meanTimeBetweenFailures: analytics.meanTimeBetweenFailures,
+            serviceHealth: analytics.serviceHealth[breaker.endpoint],
+          },
+        };
+
+        // Dispatch event for admin dashboard
+        const event = new CustomEvent("circuit-breaker", {
+          detail: {
+            ...details,
+            cooldownPeriod: breaker.cooldownPeriod,
+            failureThreshold: breaker.failureThreshold,
+            recoveryTime: new Date(
+              Date.now() + breaker.cooldownPeriod
+            ).toISOString(),
+          },
+        });
+        window.dispatchEvent(event);
+      }
+      breaker.notifiedAdmin = true;
+    }
+  }
+};
+
 // Create a consistent API client
 const createApiClient = () => {
-  const resetCircuitBreaker = (endpoint: string) => {
-    const breaker = getOrCreateBreaker(endpoint);
-    breaker.isOpen = false;
-    breaker.failures = 0;
-    breaker.lastFailure = null;
-    breaker.notifiedAdmin = false;
-    updateAnalytics(breaker, true);
-  };
-
-  const handleSuccess = (endpoint: string) => {
-    const breaker = getOrCreateBreaker(endpoint);
-    breaker.lastSuccess = Date.now();
-    if (breaker.failures > 0) {
-      breaker.failures = 0;
-      breaker.recoveryHistory.push({ timestamp: Date.now(), success: true });
-      console.log(
-        `[DD-API] Circuit breaker reset for service: ${breaker.endpoint}`
-      );
-    }
-    updateAnalytics(breaker, true);
-  };
-
-  const handleFailure = (endpoint: string, error: any) => {
-    const breaker = getOrCreateBreaker(endpoint);
-    breaker.failures++;
-    breaker.lastFailure = Date.now();
-    breaker.recoveryHistory.push({ timestamp: Date.now(), success: false });
-    updateAnalytics(breaker, false);
-
-    // Check if we should open the circuit breaker
-    if (breaker.failures >= breaker.failureThreshold) {
-      breaker.isOpen = true;
-
-      // Only notify once per circuit breaker open event
-      if (!breaker.notifiedAdmin) {
-        const store = useStore.getState();
-        if (store.user?.role === "admin" || store.user?.role === "superadmin") {
-          const details = {
-            service: breaker.endpoint,
-            failures: breaker.failures,
-            lastFailure: new Date(breaker.lastFailure).toISOString(),
-            lastSuccess: breaker.lastSuccess
-              ? new Date(breaker.lastSuccess).toISOString()
-              : "never",
-            error: error instanceof Error ? error.message : "Unknown error",
-            analytics: {
-              totalFailures: analytics.totalFailures,
-              meanTimeBetweenFailures: analytics.meanTimeBetweenFailures,
-              serviceHealth: analytics.serviceHealth[breaker.endpoint],
-            },
-          };
-
-          // Dispatch event for admin dashboard
-          const event = new CustomEvent("circuit-breaker", {
-            detail: {
-              ...details,
-              cooldownPeriod: breaker.cooldownPeriod,
-              failureThreshold: breaker.failureThreshold,
-              recoveryTime: new Date(
-                Date.now() + breaker.cooldownPeriod
-              ).toISOString(),
-            },
-          });
-          window.dispatchEvent(event);
-        }
-        breaker.notifiedAdmin = true;
-      }
-    }
-  };
-
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
       const breaker = getOrCreateBreaker(endpoint);
@@ -240,69 +254,71 @@ const createApiClient = () => {
         }
       }
 
-      const headers = new Headers({
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Debug": "true",
-        Origin: window.location.origin,
+      const defaultOptions = {
+        credentials: "include" as const,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+
+      // Normalize endpoint path
+      const normalizedPath = normalizePath(endpoint);
+      const response = await fetch(`${API_URL}/${normalizedPath}`, {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...options.headers,
+        },
       });
 
-      // Merge provided headers with defaults
-      if (options.headers) {
-        Object.entries(options.headers).forEach(([key, value]) => {
-          headers.append(key, value);
+      // Check for ban status
+      checkAndUpdateBanStatus(response);
+
+      if (!response.ok) {
+        // Check if this is an expected unauthorized response
+        if (isExpectedUnauthorized(normalizedPath, response.status)) {
+          // Log as info instead of error for expected unauthorized responses
+          if (DDAPI_DEBUG_MODE === "true") {
+            console.info(
+              `[DD-API Info] Expected unauthorized access to ${endpoint}`,
+              {
+                status: response.status,
+                statusText: response.statusText,
+              }
+            );
+          }
+          return response;
+        }
+
+        // Don't treat 503 maintenance mode as an error
+        if (response.status === 503) {
+          return response;
+        }
+
+        // Handle failure with circuit breaker
+        handleFailure(
+          endpoint,
+          new Error(`${response.status} ${response.statusText}`)
+        );
+
+        // Log actual errors
+        console.error(`[API Error] ${endpoint}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          cookies: document.cookie,
         });
+
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `API Error: ${response.statusText}`
+        );
       }
 
-      try {
-        // Log the request if debug mode is enabled
-        if (DDAPI_DEBUG_MODE === "true") {
-          console.log("[DD-API Debug] Request:", {
-            url: `${API_URL}${endpoint}`,
-            method: options.method || "GET",
-            headers: Object.fromEntries([...headers]),
-            cookies: document.cookie,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        // Use normalized path to construct URL
-        const normalizedPath = normalizePath(endpoint);
-        const response = await fetch(`${API_URL}/${normalizedPath}`, {
-          ...options,
-          headers,
-          credentials: "include",
-          mode: "cors",
-        });
-
-        // If debug mode is enabled, log the response
-        if (DDAPI_DEBUG_MODE === "true") {
-          console.log("[DD-API Debug] Response:", {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries([...response.headers]),
-            url: response.url,
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        // Check for ban status
-        checkAndUpdateBanStatus(response);
-
-        if (!response.ok) {
-          handleFailure(
-            endpoint,
-            new Error(`${response.status} ${response.statusText}`)
-          );
-          throw new Error(`API Error: ${response.statusText}`);
-        }
-
-        handleSuccess(endpoint);
-        return response;
-      } catch (error) {
-        handleFailure(endpoint, error);
-        throw error;
-      }
+      // Handle success with circuit breaker
+      handleSuccess(endpoint);
+      return response;
     },
   };
 };
@@ -1361,7 +1377,7 @@ export const ddApi = {
       },
     };
 
-    // Use normalized path here
+    // Normalize endpoint path
     const normalizedPath = normalizePath(endpoint);
     const response = await fetch(`${API_URL}/${normalizedPath}`, {
       ...defaultOptions,
@@ -1373,12 +1389,34 @@ export const ddApi = {
     });
 
     if (!response.ok) {
+      // Check if this is an expected unauthorized response
+      if (isExpectedUnauthorized(normalizedPath, response.status)) {
+        // Log as info instead of error for expected unauthorized responses
+        if (DDAPI_DEBUG_MODE === "true") {
+          console.info(
+            `[DD-API Info] Expected unauthorized access to ${endpoint}`,
+            {
+              status: response.status,
+              statusText: response.statusText,
+            }
+          );
+        }
+        return response;
+      }
+
+      // Don't treat 503 maintenance mode as an error
+      if (response.status === 503) {
+        return response;
+      }
+
+      // Log actual errors
       console.error(`[API Error] ${endpoint}:`, {
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries()),
         cookies: document.cookie,
       });
+
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `API Error: ${response.statusText}`);
     }
@@ -1398,6 +1436,21 @@ export const ddApi = {
 export const createDDApi = () => {
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
+      const breaker = getOrCreateBreaker(endpoint);
+
+      // Check if circuit breaker is open
+      if (breaker.isOpen && breaker.lastFailure) {
+        const timeSinceLastFailure = Date.now() - breaker.lastFailure;
+        if (timeSinceLastFailure < breaker.cooldownPeriod) {
+          throw new Error(
+            `Service ${breaker.endpoint} temporarily unavailable - Circuit breaker is open`
+          );
+        } else {
+          // Try to reset after cooldown
+          resetCircuitBreaker(endpoint);
+        }
+      }
+
       const defaultOptions = {
         credentials: "include" as const,
         headers: {
@@ -1416,19 +1469,52 @@ export const createDDApi = () => {
         },
       });
 
+      // Check for ban status
+      checkAndUpdateBanStatus(response);
+
       if (!response.ok) {
+        // Check if this is an expected unauthorized response
+        if (isExpectedUnauthorized(normalizedPath, response.status)) {
+          // Log as info instead of error for expected unauthorized responses
+          if (DDAPI_DEBUG_MODE === "true") {
+            console.info(
+              `[DD-API Info] Expected unauthorized access to ${endpoint}`,
+              {
+                status: response.status,
+                statusText: response.statusText,
+              }
+            );
+          }
+          return response;
+        }
+
+        // Don't treat 503 maintenance mode as an error
+        if (response.status === 503) {
+          return response;
+        }
+
+        // Handle failure with circuit breaker
+        handleFailure(
+          endpoint,
+          new Error(`${response.status} ${response.statusText}`)
+        );
+
+        // Log actual errors
         console.error(`[API Error] ${endpoint}:`, {
           status: response.status,
           statusText: response.statusText,
           headers: Object.fromEntries(response.headers.entries()),
           cookies: document.cookie,
         });
+
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.message || `API Error: ${response.statusText}`
         );
       }
 
+      // Handle success with circuit breaker
+      handleSuccess(endpoint);
       return response;
     },
   };

@@ -233,7 +233,11 @@ export const App: React.FC = () => {
             {/* Services Control Panel*/}
             <Route
               path="/superadmin/services"
-              element={<ServiceControlPage />}
+              element={
+                <SuperAdminRoute>
+                  <ServiceControlPage />
+                </SuperAdminRoute>
+              }
             />
 
             {/* AMM Simulation */}

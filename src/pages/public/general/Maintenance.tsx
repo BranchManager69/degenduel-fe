@@ -6,107 +6,122 @@ import { ddApi } from "../../../services/dd-api";
 const DEFAULT_DURATION = 15; // 15 minutes
 
 export const Maintenance: React.FC = () => {
-  const [estimatedDuration, setEstimatedDuration] = useState<number | null>(
-    null
-  );
+  const [estimatedEndTime, setEstimatedEndTime] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [startTime, setStartTime] = useState<Date | null>(null);
 
   useEffect(() => {
     const fetchMaintenanceSettings = async () => {
       try {
-        const response = await ddApi.fetch("/api/system/settings");
+        // First check if maintenance is actually active using public endpoint
+        const statusResponse = await ddApi.fetch("/api/status");
+        if (statusResponse.status !== 503) {
+          // If we don't get a 503, maintenance is not active
+          window.location.href = "/";
+          return;
+        }
+
+        // Get maintenance settings from public endpoint
+        const response = await ddApi.fetch("/api/status/maintenance");
         if (!response.ok) {
           throw new Error("Failed to fetch maintenance settings");
         }
         const settings = await response.json();
 
-        // Get maintenance start time
-        const maintenanceStartTime = settings.find(
-          (s: any) => s.key === "maintenance_start_time"
-        )?.value;
+        // Calculate end time
+        const startTimeUTC = new Date(settings.start_time);
+        const durationMinutes = settings.estimated_duration || DEFAULT_DURATION;
 
-        if (maintenanceStartTime) {
-          setStartTime(new Date(maintenanceStartTime));
+        // Calculate raw end time
+        const rawEndTime = new Date(
+          startTimeUTC.getTime() + durationMinutes * 60000
+        );
+
+        // Only extend time if we've passed the current estimated end time
+        const now = new Date();
+        if (now > rawEndTime) {
+          // If we've passed the end time, add 15 minutes from now and round up
+          const extendedEnd = new Date(
+            now.getTime() + DEFAULT_DURATION * 60000
+          );
+          const minutes = extendedEnd.getMinutes();
+          const remainder = minutes % 5;
+          if (remainder > 0) {
+            extendedEnd.setMinutes(minutes + (5 - remainder));
+            extendedEnd.setSeconds(0);
+            extendedEnd.setMilliseconds(0);
+          }
+          setEstimatedEndTime(extendedEnd);
         } else {
-          setStartTime(new Date());
-          // Set start time if not exists
-          await ddApi.fetch("/api/system/settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              key: "maintenance_start_time",
-              value: new Date().toISOString(),
-              description: "Time when maintenance mode was enabled",
-            }),
-          });
+          // Otherwise, just round the original end time if needed
+          const roundedEndTime = new Date(rawEndTime);
+          const minutes = roundedEndTime.getMinutes();
+          const remainder = minutes % 5;
+          if (remainder > 0) {
+            roundedEndTime.setMinutes(minutes + (5 - remainder));
+            roundedEndTime.setSeconds(0);
+            roundedEndTime.setMilliseconds(0);
+          }
+          setEstimatedEndTime(roundedEndTime);
         }
-
-        // Get duration
-        const duration = settings.find(
-          (s: any) => s.key === "maintenance_estimated_duration"
-        )?.value;
-
-        setEstimatedDuration(duration ? parseInt(duration) : DEFAULT_DURATION);
       } catch (err) {
         console.error("Failed to fetch maintenance settings:", err);
-        setError("Unable to fetch maintenance duration");
-        setEstimatedDuration(DEFAULT_DURATION);
+        // Only show error for non-503 failures
+        if (
+          err instanceof Error &&
+          !err.message.includes("under maintenance")
+        ) {
+          setError("Unable to fetch maintenance duration");
+        }
+
+        if (!estimatedEndTime) {
+          // Only set fallback if we don't already have an end time
+          const fallbackEnd = new Date(Date.now() + DEFAULT_DURATION * 60000);
+          const minutes = fallbackEnd.getMinutes();
+          const remainder = minutes % 5;
+          if (remainder > 0) {
+            fallbackEnd.setMinutes(minutes + (5 - remainder));
+            fallbackEnd.setSeconds(0);
+            fallbackEnd.setMilliseconds(0);
+          }
+          setEstimatedEndTime(fallbackEnd);
+        }
       }
     };
 
     fetchMaintenanceSettings();
 
-    // Check and extend duration if needed every minute
-    const interval = setInterval(async () => {
-      if (startTime && estimatedDuration) {
-        const endTime = new Date(
-          startTime.getTime() + estimatedDuration * 60000
-        );
-        if (new Date() > endTime) {
-          // Auto-extend by 15 minutes
-          try {
-            const response = await ddApi.fetch("/api/system/settings", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                key: "maintenance_estimated_duration",
-                value: (estimatedDuration + DEFAULT_DURATION).toString(),
-                description: "Estimated maintenance duration in minutes",
-              }),
-            });
-
-            if (response.ok) {
-              setEstimatedDuration((prev) => (prev || 0) + DEFAULT_DURATION);
-            }
-          } catch (err) {
-            console.error("Failed to extend maintenance duration:", err);
-          }
-        }
-      }
-    }, 60000); // Check every minute
+    // Check every minute
+    const interval = setInterval(fetchMaintenanceSettings, 60000);
 
     return () => clearInterval(interval);
-  }, [startTime, estimatedDuration]);
+  }, [estimatedEndTime]); // Add estimatedEndTime to dependencies
 
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${remainingMinutes
-      .toString()
-      .padStart(2, "0")}:00`;
-  };
+  const formatExpectedTime = (date: Date | null) => {
+    if (!date) return "Calculating...";
 
-  const getTimeRemaining = () => {
-    if (!startTime || !estimatedDuration) return "00:00:00";
+    // Format time in user's timezone
+    const timeString = date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZoneName: "short",
+    });
 
-    const endTime = new Date(startTime.getTime() + estimatedDuration * 60000);
-    const remaining = endTime.getTime() - new Date().getTime();
+    // If the date is tomorrow, add that info
+    const now = new Date();
+    if (
+      date.getDate() !== now.getDate() ||
+      date.getMonth() !== now.getMonth() ||
+      date.getFullYear() !== now.getFullYear()
+    ) {
+      return `${date.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      })} at ${timeString}`;
+    }
 
-    if (remaining <= 0) return formatDuration(DEFAULT_DURATION);
-
-    const minutes = Math.ceil(remaining / 60000);
-    return formatDuration(minutes);
+    return timeString;
   };
 
   return (
@@ -141,10 +156,10 @@ export const Maintenance: React.FC = () => {
         <div className="mt-8">
           <div className="inline-block px-8 py-4 bg-dark-300/50 rounded-lg border border-brand-500/20">
             <div className="text-sm text-gray-400 mb-2">
-              Estimated Time Remaining
+              Expected Completion
             </div>
             <div className="font-mono text-2xl text-brand-400">
-              {getTimeRemaining()}
+              {formatExpectedTime(estimatedEndTime)}
             </div>
           </div>
         </div>

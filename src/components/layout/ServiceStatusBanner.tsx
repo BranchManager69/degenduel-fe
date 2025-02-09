@@ -4,21 +4,14 @@ import { ddApi } from "../../services/dd-api";
 
 interface ServiceStatus {
   isDegraded: boolean;
-  affectedServices: string[];
+  message: string;
   lastChecked: number;
-}
-
-interface ServiceInfo {
-  name: string;
-  status: "healthy" | "degraded" | "failed";
-  lastCheck: number;
-  failureRate: number;
 }
 
 export const ServiceStatusBanner: React.FC = () => {
   const [status, setStatus] = useState<ServiceStatus>({
     isDegraded: false,
-    affectedServices: [],
+    message: "",
     lastChecked: Date.now(),
   });
   const [isVisible, setIsVisible] = useState(false);
@@ -26,28 +19,44 @@ export const ServiceStatusBanner: React.FC = () => {
   useEffect(() => {
     const checkServiceStatus = async () => {
       try {
-        const analytics = await ddApi.admin.getServiceAnalytics();
-        const degradedServices = analytics.services.filter(
-          (service: ServiceInfo) =>
-            service.status === "degraded" || service.status === "failed"
-        );
+        // Use the public status endpoint
+        const response = await ddApi.fetch("/api/status");
 
-        // Only update if it's been at least 30 seconds since last change
-        const shouldUpdate =
-          Date.now() - status.lastChecked > 30000 &&
-          ((degradedServices.length > 0 && !status.isDegraded) ||
-            (degradedServices.length === 0 && status.isDegraded));
-
-        if (shouldUpdate) {
+        // If we get a 503, the system is in maintenance mode
+        if (response.status === 503) {
+          const data = await response.json();
           setStatus({
-            isDegraded: degradedServices.length > 0,
-            affectedServices: degradedServices.map((s: ServiceInfo) => s.name),
+            isDegraded: true,
+            message: data.message || "System is under maintenance",
             lastChecked: Date.now(),
           });
-          setIsVisible(degradedServices.length > 0);
+          setIsVisible(true);
+          return;
+        }
+
+        // If we get a 200, check if there are any degraded services
+        const data = await response.json();
+        if (data.degraded_services?.length > 0) {
+          setStatus({
+            isDegraded: true,
+            message: `Some services are experiencing issues: ${data.degraded_services.join(
+              ", "
+            )}`,
+            lastChecked: Date.now(),
+          });
+          setIsVisible(true);
+        } else {
+          setStatus({
+            isDegraded: false,
+            message: "",
+            lastChecked: Date.now(),
+          });
+          setIsVisible(false);
         }
       } catch (error) {
         console.error("Failed to check service status:", error);
+        // Don't show banner on error - better UX to not show false positives
+        setIsVisible(false);
       }
     };
 
@@ -57,7 +66,7 @@ export const ServiceStatusBanner: React.FC = () => {
     // Check every 30 seconds
     const interval = setInterval(checkServiceStatus, 30000);
     return () => clearInterval(interval);
-  }, [status.isDegraded, status.lastChecked]);
+  }, []);
 
   return (
     <AnimatePresence>
@@ -87,15 +96,7 @@ export const ServiceStatusBanner: React.FC = () => {
                     />
                   </svg>
                   <span className="text-sm font-medium">
-                    Some services are experiencing degraded performance
-                    {status.affectedServices.length > 0 && (
-                      <>
-                        :{" "}
-                        <span className="font-mono">
-                          {status.affectedServices.join(", ")}
-                        </span>
-                      </>
-                    )}
+                    {status.message || "Some services are experiencing issues"}
                   </span>
                 </div>
                 <button
