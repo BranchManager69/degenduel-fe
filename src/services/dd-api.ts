@@ -215,7 +215,26 @@ export const formatBonusPoints = (points: string | number): string => {
 // Maintenance mode check function
 const checkMaintenanceMode = async () => {
   try {
-    // First try the public status endpoint
+    // First try the admin endpoint if we're logged in
+    try {
+      const adminResponse = await fetch(`${API_URL}/admin/maintenance`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+
+      if (adminResponse.ok) {
+        const data = await adminResponse.json();
+        return data.enabled;
+      }
+    } catch (err) {
+      // Silently fail admin check - we'll try public endpoint
+    }
+
+    // Fallback to public status endpoint
     const response = await fetch(`${API_URL}/status`, {
       method: "GET",
       credentials: "include",
@@ -236,26 +255,11 @@ const checkMaintenanceMode = async () => {
       return data.maintenance || false;
     }
 
-    // For admin users, try the admin endpoint as fallback
-    const adminResponse = await fetch(`${API_URL}/admin/maintenance`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-
-    if (adminResponse.ok) {
-      const data = await adminResponse.json();
-      return data.enabled || false;
-    }
-
-    // If both checks fail, assume we're not in maintenance mode
     return false;
   } catch (error) {
-    console.error("Error checking maintenance mode:", error);
-    // If we can't check maintenance mode, assume we're not in maintenance
+    console.error("Failed to check maintenance mode:", error);
+    // Default to false on error - better to let users try to access
+    // than falsely block them
     return false;
   }
 };
@@ -541,34 +545,36 @@ export const ddApi = {
 
     // Set maintenance mode
     setMaintenanceMode: async (enabled: boolean) => {
-      const response = await fetch(`${API_URL}/admin/maintenance`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ enabled }),
-      });
+      try {
+        const response = await fetch(`${API_URL}/admin/maintenance`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ enabled }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to set maintenance mode");
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error ||
+              `Failed to set maintenance mode: ${response.statusText}`
+          );
+        }
+
+        return response;
+      } catch (error) {
+        console.error("Failed to set maintenance mode:", error);
+        throw error;
       }
-
-      return response.json();
     },
 
     // Get maintenance status
     getMaintenanceStatus: async () => {
-      const response = await fetch(`${API_URL}/admin/maintenance`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get maintenance status");
-      }
-
-      return response.json();
+      const api = createApiClient();
+      return api.fetch("/admin/maintenance");
     },
 
     checkMaintenanceMode,

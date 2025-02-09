@@ -74,34 +74,52 @@ export const Header: React.FC = () => {
   useEffect(() => {
     const checkMaintenance = async () => {
       const now = Date.now();
-      // Reduce polling interval to 15 seconds
       if (now - lastMaintenanceCheck < 15000) return;
 
       try {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setLastMaintenanceCheck(now);
 
         if (isInMaintenance !== maintenanceMode) {
-          handleMaintenanceTransition();
-        }
+          // If transitioning out of maintenance mode, try to fetch contests first
+          if (!isInMaintenance && maintenanceMode) {
+            try {
+              const response = await ddApi.contests.getAll();
+              const contests = Array.isArray(response) ? response : [];
+              setActiveContests(contests.filter(isContestLive) || []);
+              useStore.setState({ maintenanceMode: false }); // Use store setState directly
+            } catch (err) {
+              console.error(
+                "Failed to fetch contests during maintenance exit:",
+                err
+              );
+              // Don't update maintenance mode if we can't fetch contests
+              return;
+            }
+          } else {
+            useStore.setState({ maintenanceMode: isInMaintenance }); // Use store setState directly
+          }
 
-        setLastMaintenanceCheck(now);
+          // Only reload for non-admin users entering maintenance mode
+          if (isInMaintenance && !isAdmin()) {
+            setTimeout(() => {
+              window.location.href = "/maintenance";
+            }, 500);
+          }
+        }
       } catch (err: any) {
+        console.error("Failed to check maintenance mode:", err);
+        // Only set maintenance mode on 503 errors
         if (err?.status === 503 || err?.message?.includes("503")) {
           handleMaintenanceTransition();
         }
-        console.error("Failed to check maintenance mode:", err);
       }
     };
 
     checkMaintenance();
-    const interval = setInterval(checkMaintenance, 15000); // 15-second interval
+    const interval = setInterval(checkMaintenance, 15000);
     return () => clearInterval(interval);
-  }, [
-    setMaintenanceMode,
-    lastMaintenanceCheck,
-    maintenanceMode,
-    isTransitioningToMaintenance,
-  ]);
+  }, [lastMaintenanceCheck, maintenanceMode, isTransitioningToMaintenance]);
 
   // Add transition overlay
   useEffect(() => {

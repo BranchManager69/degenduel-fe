@@ -20,57 +20,97 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [maintenanceDuration, setMaintenanceDuration] = useState<number>(15); // Default 15 minutes
   const [error, setError] = useState<string | null>(null);
+  const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000; // 2 seconds between retries
 
   const toggleMaintenanceMode = async () => {
     try {
-      // Optimistically update UI first
+      setError(null);
+      setIsTogglingMaintenance(true);
       const newState = !maintenanceMode;
-      setMaintenanceMode(newState);
 
-      // If enabling maintenance mode, set initial settings first
-      if (newState) {
-        try {
-          await ddApi.fetch("/api/system/settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify([
-              {
-                key: "maintenance_start_time",
-                value: new Date().toISOString(),
-                description: "Time when maintenance mode was enabled",
-              },
-              {
-                key: "maintenance_estimated_duration",
-                value: "15",
-                description: "Estimated maintenance duration in minutes",
-              },
-            ]),
-          });
-        } catch (err) {
-          console.warn(
-            "Failed to set initial maintenance settings, will retry"
-          );
-        }
-      }
-
-      // Toggle maintenance mode
+      // First try to toggle maintenance mode
       const response = await ddApi.admin.setMaintenanceMode(newState);
 
       if (!response.ok) {
-        // Revert UI if failed
-        setMaintenanceMode(!newState);
         throw new Error(
           `Failed to ${newState ? "enable" : "disable"} maintenance mode`
         );
       }
 
-      // Force reload app state after successful toggle
+      // If enabling maintenance mode, set initial settings
+      if (newState) {
+        try {
+          const settingsResponse = await ddApi.fetch(
+            "/admin/maintenance/settings",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify([
+                {
+                  key: "maintenance_start_time",
+                  value: new Date().toISOString(),
+                  description: "Time when maintenance mode was enabled",
+                },
+                {
+                  key: "maintenance_estimated_duration",
+                  value: maintenanceDuration.toString(),
+                  description: "Estimated maintenance duration in minutes",
+                },
+              ]),
+            }
+          );
+
+          if (!settingsResponse.ok) {
+            console.warn(
+              "Failed to set maintenance settings, but mode was toggled"
+            );
+          }
+        } catch (err) {
+          console.warn(
+            "Failed to set maintenance settings, but mode was toggled:",
+            err
+          );
+        }
+      }
+
+      // Reset retry count on success
+      setRetryAttempt(0);
+      setMaintenanceMode(newState);
+
+      // Add a small delay before reload to ensure state is saved
+      await new Promise((resolve) => setTimeout(resolve, 500));
       window.location.reload();
     } catch (err) {
       console.error("Failed to toggle maintenance mode:", err);
-      setError(
-        `Failed to ${maintenanceMode ? "disable" : "enable"} maintenance mode`
-      );
+
+      // Handle retry logic for disabling maintenance mode
+      if (!maintenanceMode && retryAttempt < MAX_RETRIES) {
+        setError(
+          `Failed to disable maintenance mode. Retrying in ${
+            RETRY_DELAY / 1000
+          } seconds... ` + `(Attempt ${retryAttempt + 1}/${MAX_RETRIES})`
+        );
+
+        setTimeout(() => {
+          setRetryAttempt((prev) => prev + 1);
+          toggleMaintenanceMode();
+        }, RETRY_DELAY);
+      } else {
+        setError(
+          `Failed to ${
+            maintenanceMode ? "disable" : "enable"
+          } maintenance mode. ` +
+            (err instanceof Error && err.message.includes("network")
+              ? "Please check your network connection."
+              : "Please try again in a few seconds.")
+        );
+        setRetryAttempt(0);
+      }
+    } finally {
+      setIsTogglingMaintenance(false);
     }
   };
 
@@ -78,8 +118,12 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const fetchDuration = async () => {
       try {
-        const response = await ddApi.fetch("/api/system/settings");
+        const response = await ddApi.fetch("/admin/maintenance/settings");
         if (!response.ok) {
+          // If settings don't exist yet, that's okay - we'll use defaults
+          if (response.status === 404) {
+            return;
+          }
           throw new Error("Failed to fetch maintenance settings");
         }
         const settings = await response.json();
@@ -91,6 +135,7 @@ export const AdminDashboard: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to fetch maintenance duration:", err);
+        // Don't show error to user for this - we'll just use defaults
       }
     };
 
@@ -251,6 +296,7 @@ export const AdminDashboard: React.FC = () => {
                   {/* The Epic Switch */}
                   <button
                     onClick={toggleMaintenanceMode}
+                    disabled={isTogglingMaintenance}
                     className="w-full group relative"
                   >
                     <motion.div
@@ -261,7 +307,8 @@ export const AdminDashboard: React.FC = () => {
                             ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
                             : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
                         }
-                        transition-colors duration-300
+                        ${isTogglingMaintenance ? "opacity-75" : ""}
+                        transition-all duration-300
                       `}
                     >
                       {/* Key Lock Effect */}
@@ -291,7 +338,13 @@ export const AdminDashboard: React.FC = () => {
                       {/* Button Content */}
                       <div className="px-6 py-4 pl-12">
                         <div className="font-cyber tracking-wider text-lg">
-                          {maintenanceMode ? (
+                          {isTogglingMaintenance ? (
+                            <span className="text-brand-400 animate-pulse">
+                              {maintenanceMode
+                                ? "DEACTIVATING..."
+                                : "INITIATING..."}
+                            </span>
+                          ) : maintenanceMode ? (
                             <span className="text-red-400 group-hover:text-red-300">
                               DEACTIVATE MAINTENANCE
                             </span>

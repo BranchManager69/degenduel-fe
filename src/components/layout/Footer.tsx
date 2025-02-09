@@ -1,9 +1,38 @@
 // src/components/layout/Footer.tsx
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ddApi } from "../../services/dd-api";
 
 export const Footer: React.FC = () => {
+  const [serverStatus, setServerStatus] = useState<"online" | "offline">(
+    "online"
+  );
+
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        await ddApi.fetch("/status");
+        setServerStatus("online");
+      } catch (err) {
+        setServerStatus("offline");
+      }
+    };
+
+    // Initial check
+    checkServerStatus();
+
+    // Check every 5 seconds when offline, every 30 seconds when online
+    const interval = setInterval(
+      () => {
+        checkServerStatus();
+      },
+      serverStatus === "offline" ? 5000 : 30000
+    );
+
+    return () => clearInterval(interval);
+  }, [serverStatus]);
+
   return (
     <footer className="backdrop-blur-sm border-t border-dark-300/30 relative mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-3">
@@ -66,8 +95,20 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Right side - Copyright */}
-          <div className="text-sm text-gray-500">© 2025 DegenDuel</div>
+          {/* Right side - Copyright and Status Indicator */}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">© 2025 DegenDuel</div>
+            <div
+              className={`w-2 h-2 rounded-full transition-all duration-300
+                ${
+                  serverStatus === "online"
+                    ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                    : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                }
+                ${serverStatus === "online" ? "animate-pulse" : ""}
+              `}
+            />
+          </div>
         </div>
       </div>
     </footer>
