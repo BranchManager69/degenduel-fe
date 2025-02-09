@@ -16,7 +16,7 @@ import { useStore } from "../../store/useStore";
 type TabType = "overview" | "contests" | "users" | "activity";
 
 export const AdminDashboard: React.FC = () => {
-  const { maintenanceMode, setMaintenanceMode } = useStore();
+  const { maintenanceMode, setMaintenanceMode, user } = useStore();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [maintenanceDuration, setMaintenanceDuration] = useState<number>(15); // Default 15 minutes
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +30,9 @@ export const AdminDashboard: React.FC = () => {
       setError(null);
       setIsTogglingMaintenance(true);
       const newState = !maintenanceMode;
+      const timestamp = new Date().toISOString();
 
-      // First try to toggle maintenance mode
+      // First try to toggle maintenance mode with consolidated settings
       const response = await ddApi.admin.setMaintenanceMode(newState);
 
       if (!response.ok) {
@@ -40,34 +41,26 @@ export const AdminDashboard: React.FC = () => {
         );
       }
 
-      // If enabling maintenance mode, set initial settings
+      // If enabling maintenance mode, update settings
       if (newState) {
         try {
-          const settingsResponse = await ddApi.fetch(
-            "/admin/maintenance/settings",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify([
-                {
-                  key: "maintenance_start_time",
-                  value: new Date().toISOString(),
-                  description: "Time when maintenance mode was enabled",
+          await ddApi.fetch("/admin/maintenance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              enabled: true,
+              value: {
+                enabled: true,
+                updated_by: user?.wallet_address,
+                last_enabled: timestamp,
+                last_disabled: null,
+                settings: {
+                  estimated_duration: maintenanceDuration,
+                  start_time: timestamp,
                 },
-                {
-                  key: "maintenance_estimated_duration",
-                  value: maintenanceDuration.toString(),
-                  description: "Estimated maintenance duration in minutes",
-                },
-              ]),
-            }
-          );
-
-          if (!settingsResponse.ok) {
-            console.warn(
-              "Failed to set maintenance settings, but mode was toggled"
-            );
-          }
+              },
+            }),
+          });
         } catch (err) {
           console.warn(
             "Failed to set maintenance settings, but mode was toggled:",

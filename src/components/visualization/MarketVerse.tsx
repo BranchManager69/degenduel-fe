@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { ddApi } from "../../services/dd-api";
+import { useStore } from "../../store/useStore";
 
 interface TokenData {
   id: number;
@@ -78,6 +79,7 @@ function isTokenDataArray(response: unknown): response is TokenData[] {
 }
 
 export const MarketVerse: React.FC = () => {
+  const { maintenanceMode } = useStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -92,6 +94,12 @@ export const MarketVerse: React.FC = () => {
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
+        // Skip fetching if in maintenance mode
+        if (maintenanceMode) {
+          setIsLoading(false);
+          return;
+        }
+
         console.log("[MarketVerse] Initiating market data fetch...");
         const response = await ddApi.fetch("/api/tokens");
 
@@ -142,9 +150,12 @@ export const MarketVerse: React.FC = () => {
     };
 
     fetchMarketData();
-    const interval = setInterval(fetchMarketData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    // Only set up interval if not in maintenance mode
+    if (!maintenanceMode) {
+      const interval = setInterval(fetchMarketData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [maintenanceMode]);
 
   const initializeVisualization = (marketData: TokenData[]) => {
     console.log(

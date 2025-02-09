@@ -33,18 +33,22 @@ export const Header: React.FC = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
-        if (!maintenanceMode) {
-          const response = await ddApi.contests.getAll();
-          const contests = Array.isArray(response) ? response : [];
-          setActiveContests(contests.filter(isContestLive) || []);
-        } else {
+        // Don't fetch if we're in maintenance mode
+        if (maintenanceMode) {
           setActiveContests([]);
+          setLoading(false);
+          return;
         }
+
+        const response = await ddApi.contests.getAll();
+        const contests = Array.isArray(response) ? response : [];
+        setActiveContests(contests.filter(isContestLive) || []);
       } catch (err: any) {
         if (err?.status === 503 || err?.message?.includes("503")) {
           handleMaintenanceTransition();
+        } else {
+          console.error("Failed to load contests:", err);
         }
-        console.error("Failed to load contests:", err);
       } finally {
         setLoading(false);
       }
