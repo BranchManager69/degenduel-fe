@@ -1,3 +1,5 @@
+// src/components/layout/ServiceStatusBanner.tsx
+
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { ddApi } from "../../services/dd-api";
@@ -27,7 +29,9 @@ export const ServiceStatusBanner: React.FC = () => {
           const data = await response.json();
           setStatus({
             isDegraded: true,
-            message: data.message || "System is under maintenance",
+            message:
+              data.message ||
+              "DegenDuel is currently under scheduled maintenance",
             lastChecked: Date.now(),
           });
           setIsVisible(true);
@@ -39,7 +43,7 @@ export const ServiceStatusBanner: React.FC = () => {
         if (data.degraded_services?.length > 0) {
           setStatus({
             isDegraded: true,
-            message: `Some services are experiencing issues: ${data.degraded_services.join(
+            message: `Some services are having issues: ${data.degraded_services.join(
               ", "
             )}`,
             lastChecked: Date.now(),
@@ -96,7 +100,8 @@ export const ServiceStatusBanner: React.FC = () => {
                     />
                   </svg>
                   <span className="text-sm font-medium">
-                    {status.message || "Some services are experiencing issues"}
+                    {status.message ||
+                      "DegenDuel is experiencing high traffic. Please be patient."}
                   </span>
                 </div>
                 <button

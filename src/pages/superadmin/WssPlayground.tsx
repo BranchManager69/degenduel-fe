@@ -1,4 +1,4 @@
-// src/pages/superadmin/TestPage.tsx
+// src/pages/superadmin/WssPlayground.tsx
 
 import React, { useEffect, useRef, useState } from "react";
 import { useStore } from "../../store/useStore";
@@ -28,9 +28,11 @@ interface PortfolioData {
   performance_24h: number;
 }
 
-export const TestPage: React.FC = () => {
+export const WssPlayground: React.FC = () => {
   const { user } = useStore();
-  const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [status, setStatus] = useState<
+    "disconnected" | "connecting" | "connected"
+  >("disconnected");
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [autoReconnect, setAutoReconnect] = useState(true);
@@ -44,7 +46,9 @@ export const TestPage: React.FC = () => {
   });
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const connectWebSocket = () => {
     try {
@@ -62,9 +66,11 @@ export const TestPage: React.FC = () => {
 
       console.log("Attempting WebSocket connection...");
 
-      // Create WebSocket with JWT token in protocol
+      // Create the Portfolio WebSocket with JWT token in protocol
       const ws = new WebSocket(
-        `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v2/ws/portfolio`,
+        `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
+          window.location.host
+        }/api/v2/ws/portfolio`,
         user.jwt
       );
       wsRef.current = ws;
@@ -93,11 +99,13 @@ export const TestPage: React.FC = () => {
           if (message.type === "pong") {
             const latency = Date.now() - new Date(message.timestamp).getTime();
             message.latency = latency;
-            
+
             setStats((prev) => ({
               ...prev,
               messageCount: prev.messageCount + 1,
-              avgLatency: (prev.avgLatency * prev.messageCount + latency) / (prev.messageCount + 1),
+              avgLatency:
+                (prev.avgLatency * prev.messageCount + latency) /
+                (prev.messageCount + 1),
             }));
           } else {
             setStats((prev) => ({
@@ -116,7 +124,10 @@ export const TestPage: React.FC = () => {
               break;
             case "ERROR":
               setError(message.error || "Unknown error");
-              setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
+              setStats((prev) => ({
+                ...prev,
+                errorCount: prev.errorCount + 1,
+              }));
               break;
           }
 
@@ -146,14 +157,18 @@ export const TestPage: React.FC = () => {
 
       ws.onerror = (event) => {
         console.error("WebSocket Error:", event);
-        setError(`WebSocket error: ${(event as ErrorEvent).message || "Unknown error"}`);
+        setError(
+          `WebSocket error: ${(event as ErrorEvent).message || "Unknown error"}`
+        );
         setStatus("disconnected");
         setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
       };
     } catch (err) {
       console.error("Failed to create WebSocket:", err);
       setError(
-        `Failed to create WebSocket: ${err instanceof Error ? err.message : "Unknown error"}`
+        `Failed to create WebSocket: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
       );
       setStatus("disconnected");
       setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
@@ -178,11 +193,14 @@ export const TestPage: React.FC = () => {
 
     const testPortfolio: PortfolioData = {
       tokens: [
-        { symbol: "SOL", amount: 1.5 },
-        { symbol: "BONK", amount: 1000000 },
+        { symbol: "DUEL", amount: 1420069 },
+        { symbol: "BONKFA", amount: 696969 },
+        { symbol: "ASS", amount: 420420 },
+        { symbol: "TITS", amount: 8008135 },
+        { symbol: "SOL", amount: 0.69 },
       ],
-      total_value: 150,
-      performance_24h: 5.2,
+      total_value: 169,
+      performance_24h: 69.0,
     };
 
     wsRef.current.send(
@@ -206,15 +224,23 @@ export const TestPage: React.FC = () => {
   }, []);
 
   const filteredMessages = filterType
-    ? messages.filter((msg) => msg.type.toLowerCase().includes(filterType.toLowerCase()))
+    ? messages.filter((msg) =>
+        msg.type.toLowerCase().includes(filterType.toLowerCase())
+      )
     : messages;
 
   return (
     <div className="container mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-100">Portfolio WebSocket Test</h1>
+        <h1 className="text-3xl font-bold text-gray-100">WSS Playground</h1>
+        <h2 className="text-xl font-bold text-gray-100">
+          WebSocket Playground
+        </h2>
         <div className="flex items-center gap-4">
           {/* Connection Status */}
+          <h2 className="text-xl font-bold text-gray-100">
+            Portfolio Connection
+          </h2>
           <div className="flex items-center gap-2">
             <div
               className={`h-3 w-3 rounded-full ${
@@ -225,12 +251,14 @@ export const TestPage: React.FC = () => {
                   : "bg-red-500"
               }`}
             />
-            <span className="text-sm font-medium text-gray-300 capitalize">{status}</span>
+            <span className="text-sm font-medium text-gray-300 capitalize">
+              {status}
+            </span>
           </div>
 
           {/* Auto Reconnect Toggle */}
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-400">Auto Reconnect</label>
+            <label className="text-sm text-gray-400">Auto-Reconnect</label>
             <input
               type="checkbox"
               checked={autoReconnect}
@@ -263,24 +291,33 @@ export const TestPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
           <div className="text-sm text-gray-400">Connection Status</div>
-          <div className="text-xl font-semibold text-gray-100 capitalize">{status}</div>
+          <div className="text-xl font-semibold text-gray-100 capitalize">
+            {status}
+          </div>
           <div className="text-xs text-gray-500 mt-1">
-            {stats.lastReconnect && `Last reconnect: ${stats.lastReconnect.toLocaleTimeString()}`}
+            {stats.lastReconnect &&
+              `Last reconnect: ${stats.lastReconnect.toLocaleTimeString()}`}
           </div>
         </div>
         <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
           <div className="text-sm text-gray-400">Performance</div>
-          <div className="text-xl font-semibold text-gray-100">{stats.avgLatency.toFixed(2)}ms</div>
+          <div className="text-xl font-semibold text-gray-100">
+            {stats.avgLatency.toFixed(2)}ms
+          </div>
           <div className="text-xs text-gray-500 mt-1">Average latency</div>
         </div>
         <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
           <div className="text-sm text-gray-400">Messages</div>
-          <div className="text-xl font-semibold text-gray-100">{stats.messageCount}</div>
+          <div className="text-xl font-semibold text-gray-100">
+            {stats.messageCount}
+          </div>
           <div className="text-xs text-gray-500 mt-1">Total received</div>
         </div>
         <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
           <div className="text-sm text-gray-400">Errors</div>
-          <div className="text-xl font-semibold text-red-400">{stats.errorCount}</div>
+          <div className="text-xl font-semibold text-red-400">
+            {stats.errorCount}
+          </div>
           <div className="text-xs text-gray-500 mt-1">Total errors</div>
         </div>
       </div>
@@ -307,7 +344,7 @@ export const TestPage: React.FC = () => {
           onClick={clearMessages}
           className="px-4 py-2 bg-dark-300 text-gray-300 rounded-lg hover:bg-dark-400 transition-colors"
         >
-          Clear Log
+          Clear Logs
         </button>
       </div>
 
@@ -321,28 +358,38 @@ export const TestPage: React.FC = () => {
       {/* Message Log */}
       <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-dark-300">
         <div className="p-4 border-b border-dark-300 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-100">Message Log</h2>
+          <h2 className="text-xl font-semibold text-gray-100">Message Logs</h2>
           <span className="text-sm text-gray-400">
-            {filteredMessages.length} message{filteredMessages.length !== 1 ? "s" : ""}
+            {filteredMessages.length} message
+            {filteredMessages.length !== 1 ? "s" : ""}
             {filterType && ` (filtered by "${filterType}")`}
           </span>
         </div>
         <div className="overflow-auto max-h-[500px]">
           {filteredMessages.length === 0 ? (
-            <div className="p-4 text-gray-400 text-center">No messages received</div>
+            <div className="p-4 text-gray-400 text-center">
+              No messages received
+            </div>
           ) : (
             <div className="divide-y divide-dark-300">
               {filteredMessages.map((msg, index) => (
-                <div key={index} className="p-4 hover:bg-dark-300/30 transition-colors">
+                <div
+                  key={index}
+                  className="p-4 hover:bg-dark-300/30 transition-colors"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-400">
                       {new Date(msg.timestamp).toLocaleTimeString()}
                     </span>
                     <div className="flex items-center gap-4">
                       {msg.latency && (
-                        <span className="text-xs text-gray-500">{msg.latency.toFixed(2)}ms</span>
+                        <span className="text-xs text-gray-500">
+                          {msg.latency.toFixed(2)}ms
+                        </span>
                       )}
-                      <span className="text-sm font-mono text-brand-400">{msg.type}</span>
+                      <span className="text-sm font-mono text-brand-400">
+                        {msg.type}
+                      </span>
                     </div>
                   </div>
                   <pre className="text-sm text-gray-300 overflow-auto">

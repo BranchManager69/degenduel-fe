@@ -19,10 +19,11 @@ import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { MovingBackground } from "./components/ui/MovingBackground";
-/* Pages */
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
+/* authenticated pages */
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/ProfilePage";
+import { ReferralPage } from "./pages/authenticated/ReferralPage";
+/* public pages */
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
@@ -34,19 +35,20 @@ import { LandingPage } from "./pages/public/general/LandingPage";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
 import { TokensPage } from "./pages/public/tokens/TokensPage";
-import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
-import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
-import { TestPage } from "./pages/superadmin/TestPage";
 /* some extra pages */
 import { BannedIP } from "./pages/public/general/BannedIP";
 import { BannedUser } from "./pages/public/general/BannedUser";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
 import { PublicProfilePage } from "./pages/public/general/PublicProfilePage";
-/* some extra superadmin pages */
-import { ReferralPage } from "./pages/authenticated/ReferralPage";
+/* admin pages */
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+/* superadmin pages */
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
+import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
+import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
+import { WssPlayground } from "./pages/superadmin/WssPlayground";
 /* themes */
 import "./styles/color-schemes.css";
 
@@ -57,8 +59,10 @@ export const App: React.FC = () => {
   const { checkAuth } = useAuth();
 
   useEffect(() => {
-    // Check auth every 10 seconds in production, 30 in development
-    const checkInterval = import.meta.env.PROD ? 10 * 1000 : 30 * 1000;
+    // (is the sheer amount of checks needed?)
+
+    // Check auth every 20 seconds in production, 10 in development
+    const checkInterval = import.meta.env.PROD ? 20 * 1000 : 10 * 1000;
     const authCheckInterval = setInterval(checkAuth, checkInterval);
 
     // Check auth on page load
@@ -96,7 +100,7 @@ export const App: React.FC = () => {
         {/* Animated Background */}
         <MovingBackground />
 
-        {/* Service Status Banner */}
+        {/* Service Status Banner (OLD LOCATION -- BAD AND UGLY) */}
         <ServiceStatusBanner />
 
         {/* Header */}
@@ -120,57 +124,54 @@ export const App: React.FC = () => {
             {/* Contest Details */}
             <Route path="/contests/:id" element={<ContestDetails />} />
 
-            {/* Contest Lobby */}
-            <Route
-              path="/contests/:id/live"
-              element={
-                <AuthenticatedRoute>
-                  <MaintenanceGuard>
-                    <ContestLobby />
-                  </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
-
-            {/* Contest Results */}
-            <Route
-              path="/contests/:id/results"
-              element={
-                <AuthenticatedRoute>
-                  <MaintenanceGuard>
-                    <ContestResults />
-                  </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
-
-            {/* Global Rankings Leaderboard */}
-            <Route path="/rankings/global" element={<GlobalRankings />} />
-
-            {/* Degen Rankings Leaderboard */}
-            <Route
-              path="/rankings/performance"
-              element={<ContestPerformance />}
-            />
-
-            {/* How It Works */}
-            <Route path="/how-it-works" element={<HowItWorks />} />
-
-            {/* FAQ */}
-            <Route path="/faq" element={<FAQ />} />
-
-            {/* Contact */}
-            <Route path="/contact" element={<Contact />} />
-
-            {/* Public Routes */}
+            {/* Public Profile */}
             <Route
               path="/profile/:identifier"
               element={<PublicProfilePage />}
             />
 
-            {/* AUTHENTICATED ROUTES - Wrap with MaintenanceGuard */}
+            {/* FAQ */}
+            <Route
+              path="/faq"
+              element={
+                <MaintenanceGuard>
+                  <FAQ />
+                </MaintenanceGuard>
+              }
+            />
 
-            {/* Profile */}
+            {/* How It Works */}
+            <Route
+              path="/how-it-works"
+              element={
+                <MaintenanceGuard>
+                  <HowItWorks />
+                </MaintenanceGuard>
+              }
+            />
+
+            {/* Contact */}
+            <Route
+              path="/contact"
+              element={
+                <MaintenanceGuard>
+                  <Contact />
+                </MaintenanceGuard>
+              }
+            />
+
+            {/* "Degen Rankings" Leaderboard */}
+            <Route
+              path="/rankings/performance"
+              element={<ContestPerformance />}
+            />
+
+            {/* "Global Rankings" Leaderboard */}
+            <Route path="/rankings/global" element={<GlobalRankings />} />
+
+            {/* AUTHENTICATED ROUTES */}
+
+            {/* Profile (self) */}
             <Route
               path="/me"
               element={
@@ -201,6 +202,30 @@ export const App: React.FC = () => {
                 <AuthenticatedRoute>
                   <MaintenanceGuard>
                     <TokenSelection />
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* Contest Lobby */}
+            <Route
+              path="/contests/:id/live"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <ContestLobby />{" "}
+                  </MaintenanceGuard>
+                </AuthenticatedRoute>
+              }
+            />
+
+            {/* Contest Results */}
+            <Route
+              path="/contests/:id/results"
+              element={
+                <AuthenticatedRoute>
+                  <MaintenanceGuard>
+                    <ContestResults />{" "}
                   </MaintenanceGuard>
                 </AuthenticatedRoute>
               }
@@ -240,16 +265,6 @@ export const App: React.FC = () => {
               }
             />
 
-            {/* AMM Simulation */}
-            <Route
-              path="/amm-sim"
-              element={
-                <SuperAdminRoute>
-                  <AmmSim />
-                </SuperAdminRoute>
-              }
-            />
-
             {/* API Playground */}
             <Route
               path="/api-playground"
@@ -260,17 +275,27 @@ export const App: React.FC = () => {
               }
             />
 
-            {/* Test Page */}
+            {/* WSS Playground */}
             <Route
-              path="/test"
+              path="/wss-playground"
               element={
                 <SuperAdminRoute>
-                  <TestPage />
+                  <WssPlayground />
                 </SuperAdminRoute>
               }
             />
 
-            {/* OTHER ROUTES */}
+            {/* AMM Simulation */}
+            <Route
+              path="/amm-sim"
+              element={
+                <SuperAdminRoute>
+                  <AmmSim />
+                </SuperAdminRoute>
+              }
+            />
+
+            {/* MISC ROUTES */}
 
             {/* 404 Page */}
             <Route path="*" element={<NotFound />} />
@@ -294,6 +319,9 @@ export const App: React.FC = () => {
 
         {/* Toaster */}
         <Toaster />
+
+        {/* Service Status Banner (TESTING LOCATION) */}
+        <ServiceStatusBanner />
       </div>
     </Router>
   );

@@ -1,7 +1,7 @@
 // src/components/profile/ReferralDashboard.tsx
 
+import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import {
   FaCheck,
@@ -38,7 +38,7 @@ interface ReferralStats {
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 }
+  exit: { opacity: 0, y: -20 },
 };
 
 // Modular components
@@ -53,9 +53,13 @@ const SocialShareButton: React.FC<{
     );
 
     const urls = {
-      twitter: `https://x.com/intent/tweet?text=${message}&url=${encodeURIComponent(referralLink)}`,
+      twitter: `https://x.com/intent/tweet?text=${message}&url=${encodeURIComponent(
+        referralLink
+      )}`,
       discord: `https://discord.com/channels/@me?content=${message} ${referralLink}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${message}`
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(
+        referralLink
+      )}&text=${message}`,
     };
 
     window.open(urls[platform], "_blank");
@@ -64,7 +68,7 @@ const SocialShareButton: React.FC<{
   const Icon = {
     twitter: FaTwitter,
     discord: FaDiscord,
-    telegram: FaTelegram
+    telegram: FaTelegram,
   }[platform];
 
   return (
@@ -88,16 +92,16 @@ const ReferralLink: React.FC<{ code: string }> = ({ code }) => {
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
-      toast.success("Referral link copied!");
+      toast.success("🔗 Copied referral link");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      toast.error("Failed to copy referral link");
+      toast.error("🚨 Couldn't copy referral link");
     }
   };
 
   return (
     <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-      <motion.div 
+      <motion.div
         className="flex-1 bg-dark-300/30 p-3 rounded-lg font-mono text-gray-300 break-all"
         {...fadeIn}
       >
@@ -114,91 +118,51 @@ const ReferralLink: React.FC<{ code: string }> = ({ code }) => {
         }`}
       >
         {copied ? <FaCheck /> : <FaCopy />}
-        {copied ? "Copied!" : "Copy Link"}
+        {copied ? "☑️ Copied the link" : "Copy Link"}
       </motion.button>
     </div>
   );
 };
 
 export const ReferralDashboard: React.FC = () => {
-  const [{ referralCode, stats, loading, error }, setState] = React.useState<{
-    referralCode: string;
-    stats: ReferralStats | null;
-    loading: boolean;
-    error: string | null;
-  }>({
-    referralCode: "",
-    stats: null,
-    loading: true,
-    error: null
-  });
-
+  const [stats, setStats] = React.useState<ReferralStats | null>(null);
+  const [referralCode, setReferralCode] = React.useState<string>("");
+  const [loading, setLoading] = React.useState(true);
   const [showShareMenu, setShowShareMenu] = React.useState(false);
 
   React.useEffect(() => {
-    const fetchReferralData = async () => {
+    const fetchData = async () => {
       try {
-        const [codeResponse, statsResponse] = await Promise.all([
-          ddApi.fetch("/api/referrals/code"),
-          ddApi.fetch("/api/referrals/stats")
+        setLoading(true);
+        const [statsResponse, codeResponse] = await Promise.all([
+          ddApi.fetch("/referrals/stats").then((res) => res.json()),
+          ddApi.fetch("/referrals/code").then((res) => res.json()),
         ]);
 
-        const [codeData, statsData] = await Promise.all([
-          codeResponse.json(),
-          statsResponse.json()
-        ]);
-
-        setState(prev => ({
-          ...prev,
-          referralCode: codeData.success ? codeData.referral_code : "",
-          stats: statsData.success ? statsData : null,
-          loading: false
-        }));
-      } catch (err) {
-        console.error("Failed to fetch referral data:", err);
-        setState(prev => ({
-          ...prev,
-          error: "Failed to load referral data",
-          loading: false
-        }));
-        toast.error("Failed to load referral data");
+        setStats(statsResponse);
+        setReferralCode(codeResponse.referral_code);
+      } catch (error) {
+        console.error("Error fetching referral data:", error);
+        toast.error("🚨 Couldn't load your referral data");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchReferralData();
+    // Fetch data on mount
+    fetchData();
   }, []);
 
   if (loading) {
     return (
-      <motion.div 
-        className="space-y-4"
-        initial="initial"
-        animate="animate"
-        variants={fadeIn}
-      >
-        <div className="h-32 bg-dark-300/30 rounded-lg animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 bg-dark-300/30 rounded-lg animate-pulse" />
-          ))}
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (error) {
-    return (
-      <motion.div 
-        className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
-        {...fadeIn}
-      >
-        <p className="text-red-400">{error}</p>
-      </motion.div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-400"></div>
+      </div>
     );
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-6"
       initial="initial"
       animate="animate"
@@ -206,7 +170,7 @@ export const ReferralDashboard: React.FC = () => {
     >
       <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
         <div className="flex justify-between items-start mb-6">
-          <motion.h3 
+          <motion.h3
             className="text-xl font-bold text-gray-100 flex items-center gap-2"
             {...fadeIn}
           >
@@ -220,7 +184,7 @@ export const ReferralDashboard: React.FC = () => {
               onClick={() => setShowShareMenu(!showShareMenu)}
               className="px-4 py-2 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30 transition-all duration-300"
             >
-              Share
+              Shill Ref Link
             </motion.button>
             <AnimatePresence>
               {showShareMenu && (
@@ -231,7 +195,7 @@ export const ReferralDashboard: React.FC = () => {
                   className="absolute mt-2 right-0 bg-dark-300/95 backdrop-blur-sm border border-brand-400/20 rounded-lg p-2 shadow-xl z-50"
                 >
                   <div className="flex gap-2">
-                    {["twitter", "discord", "telegram"].map(platform => (
+                    {["twitter", "discord", "telegram"].map((platform) => (
                       <SocialShareButton
                         key={platform}
                         platform={platform as any}
@@ -244,74 +208,156 @@ export const ReferralDashboard: React.FC = () => {
             </AnimatePresence>
           </div>
         </div>
-        
+
         <ReferralLink code={referralCode} />
-        
-        <div className="space-y-4">
-          <div className="bg-brand-500/10 border border-brand-500/20 rounded-lg p-4">
-            <h4 className="text-brand-400 font-medium mb-2">How it works:</h4>
-            <ul className="text-sm text-gray-400 space-y-2">
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  1
+
+        <div className="space-y-6 mt-8">
+          {/* Value Proposition */}
+          <div className="bg-gradient-to-br from-dark-200/80 to-dark-300/80 backdrop-blur-sm rounded-xl border border-brand-400/20 p-6">
+            <h4 className="text-xl font-bold text-brand-400 mb-4">
+              Refer, Earn, Repeat
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400 mt-1">
+                    🎯
+                  </div>
+                  <div>
+                    <h5 className="text-gray-100 font-medium mb-1">
+                      Strategic Portfolio Battles
+                    </h5>
+                    <p className="text-gray-400 text-sm">
+                      Engage in thrilling head-to-head portfolio competitions
+                      with real-time performance tracking.
+                    </p>
+                  </div>
                 </div>
-                Degen A:  Shares his unique referral link on X.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  2
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400 mt-1">
+                    💎
+                  </div>
+                  <div>
+                    <h5 className="text-gray-100 font-medium mb-1">
+                      Exclusive Token Selection
+                    </h5>
+                    <p className="text-gray-400 text-sm">
+                      Access a curated list of top-performing tokens to build
+                      your winning strategy.
+                    </p>
+                  </div>
                 </div>
-                Degen B:  Clicks the link, connects his wallet <span className="text-brand-400">for the first-time</span>, and chooses a username.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  3
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400 mt-1">
+                    🏆
+                  </div>
+                  <div>
+                    <h5 className="text-gray-100 font-medium mb-1">
+                      Competitive Rewards
+                    </h5>
+                    <p className="text-gray-400 text-sm">
+                      Earn rewards for your market insights and portfolio
+                      performance.
+                    </p>
+                  </div>
                 </div>
-                Degen A:  Earns [REDACTED] rewards for each referral.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  4
+              </div>
+              {/* Right Column */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400 mt-1">
+                    📊
+                  </div>
+                  <div>
+                    <h5 className="text-gray-100 font-medium mb-1">
+                      Real-Time Analytics
+                    </h5>
+                    <p className="text-gray-400 text-sm">
+                      Track your performance with advanced analytics and market
+                      insights.
+                    </p>
+                  </div>
                 </div>
-                Degen B:  Enters a Duel for the first time.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  5
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400 mt-1">
+                    🤝
+                  </div>
+                  <div>
+                    <h5 className="text-gray-100 font-medium mb-1">
+                      Growing Community
+                    </h5>
+                    <p className="text-gray-400 text-sm">
+                      Join a community of skilled traders and market
+                      enthusiasts.
+                    </p>
+                  </div>
                 </div>
-                Degen A:  Earns big [REDACTED] rewards for all Duels Degen B enters in perpetuity.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  6
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400 mt-1">
+                    🚀
+                  </div>
+                  <div>
+                    <h5 className="text-gray-100 font-medium mb-1">
+                      Early Access Benefits
+                    </h5>
+                    <p className="text-gray-400 text-sm">
+                      Your referrals get priority access to new features and
+                      special events.
+                    </p>
+                  </div>
                 </div>
-                Degen B:  Wins a Duel.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  7
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Guide */}
+          <div className="bg-dark-200/80 backdrop-blur-sm rounded-xl border border-brand-400/20 p-6">
+            <h4 className="text-lg font-bold text-gray-100 mb-4 flex items-center gap-2">
+              <span className="text-brand-400">Quick Guide</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-dark-300/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 text-sm">
+                    1
+                  </div>
+                  <h5 className="text-gray-100 font-medium">Share Your Link</h5>
                 </div>
-                Degen A:  Earns <span className="text-brand-400">bonus</span> [REDACTED] rewards every time Degen B wins a Duel.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  8
+                <p className="text-sm text-gray-400">
+                  Copy your unique referral link and share it to your X,
+                  Telegram, or Discord. You may want to send personalized
+                  invites to any apes, giga-whales, or based chads you know.
+                </p>
+              </div>
+              <div className="bg-dark-300/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 text-sm">
+                    2
+                  </div>
+                  <h5 className="text-gray-100 font-medium">Track Progress</h5>
                 </div>
-                Degen B:  Quits his job and becomes a full-time Duelist.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  9
+                <p className="text-sm text-gray-400">
+                  Monitor your referrals and rewards in real-time on your
+                  dashboard. Once a referral joins, you'll receive a
+                  notification. You'll receive a notification when they qualify
+                  for a reward, too, because <i>guess what!?</i> You win when
+                  they win! See details below.
+                </p>
+              </div>
+              <div className="bg-dark-300/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 text-sm">
+                    3
+                  </div>
+                  <h5 className="text-gray-100 font-medium">Earn Together</h5>
                 </div>
-                Degen A:  Feels happy to have helped Degen B achieve financial freedom.
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
-                  10
-                </div>
-                Degen B:  Sends Degen A a thank you note and a ridiculously [REDACTED] amount of [REDACTED].
-              </li>
-            </ul>
+                <p className="text-sm text-gray-400">
+                  Both you and your referrals benefit from the platform's
+                  success. It's PvP <b>and</b> PvE! LFG.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -325,14 +371,14 @@ export const ReferralDashboard: React.FC = () => {
               Total Referrals
             </div>
             <p className="text-2xl font-bold text-gray-100">
-              {stats.total_referrals}
+              {stats.total_referrals} total
             </p>
             <div className="mt-2 flex items-center gap-2 text-sm">
-              <span className="text-green-400">
-                {stats.qualified_referrals} qualified
-              </span>
               <span className="text-yellow-400">
-                {stats.pending_referrals} pending
+                {stats.pending_referrals} are pending
+              </span>
+              <span className="text-green-400">
+                {stats.qualified_referrals} have dueled
               </span>
             </div>
           </div>
@@ -340,10 +386,10 @@ export const ReferralDashboard: React.FC = () => {
           <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-4">
             <div className="flex items-center gap-2 text-gray-400 mb-2">
               <FaGift className="text-brand-400" />
-              Total Rewards
+              Cumulative Rewards
             </div>
             <p className="text-2xl font-bold text-gray-100">
-              ${stats.total_rewards.toFixed(2)}
+              {stats.total_rewards.toFixed(2)} SOL
             </p>
           </div>
 
@@ -355,7 +401,7 @@ export const ReferralDashboard: React.FC = () => {
             <p className="text-lg text-gray-100">
               {stats.recent_referrals.length} new referrals
             </p>
-            <p className="text-sm text-gray-400">in the last 30 days</p>
+            <p className="text-sm text-gray-400">in the last 30d</p>
           </div>
         </div>
       )}
@@ -365,7 +411,7 @@ export const ReferralDashboard: React.FC = () => {
         <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
           <h3 className="text-lg font-bold text-gray-100 mb-4 flex items-center gap-2">
             <FaGift className="text-brand-400" />
-            Rewards Progress
+            Rewards Tiers
           </h3>
           <div className="space-y-6">
             {/* Tier 1: First 5 Referrals */}
@@ -385,9 +431,7 @@ export const ReferralDashboard: React.FC = () => {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Reward: $5 per qualified referral
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Reward: [TBA]</p>
             </div>
 
             {/* Tier 2: 6-20 Referrals */}
@@ -409,9 +453,7 @@ export const ReferralDashboard: React.FC = () => {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Reward: $7.50 per qualified referral
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Reward: [TBA]</p>
             </div>
 
             {/* Tier 3: 21+ Referrals */}
@@ -430,10 +472,7 @@ export const ReferralDashboard: React.FC = () => {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Reward: $10 per qualified referral + 1% of their contest
-                earnings
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Reward: [TBA]</p>
             </div>
 
             {/* Additional Rewards Info */}
@@ -442,15 +481,9 @@ export const ReferralDashboard: React.FC = () => {
                 Additional Rewards
               </h4>
               <ul className="text-xs text-gray-400 space-y-1">
-                <li>
-                  • Contest Bonus: Extra $5 when referred users join their first
-                  contest
-                </li>
-                <li>• Monthly Bonus: Top referrers get additional rewards</li>
-                <li>
-                  • Special Events: Earn bonus rewards during promotional
-                  periods
-                </li>
+                <li>• Contest Bonus: [TBA]</li>
+                <li>• Monthly Bonus: [TBA]</li>
+                <li>• Special Events: [TBA]</li>
               </ul>
             </div>
           </div>
