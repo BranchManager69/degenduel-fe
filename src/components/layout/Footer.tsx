@@ -83,12 +83,12 @@ export const Footer: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <a
-                href="https://twitter.com/degenduel"
+                href="https://x.com/DegenDuelMe"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-brand-400"
               >
-                <span className="sr-only">Twitter</span>
+                <span className="sr-only">X</span>
                 <svg
                   className="h-5 w-5"
                   fill="currentColor"
@@ -98,7 +98,7 @@ export const Footer: React.FC = () => {
                 </svg>
               </a>
               <a
-                href="https://discord.gg/degenduel"
+                href="https://discord.gg/DegenDuelMe"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-brand-400"
