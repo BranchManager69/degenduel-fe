@@ -69,10 +69,10 @@ export const Footer: React.FC = () => {
                 Platform
               </Link>
               <Link
-                to="/rankings"
+                to="/referrals"
                 className="text-sm text-gray-400 hover:text-brand-400"
               >
-                Rankings
+                Refer
               </Link>
               <Link
                 to="/support"
