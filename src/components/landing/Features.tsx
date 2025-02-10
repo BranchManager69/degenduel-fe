@@ -209,6 +209,7 @@ const upcomingFeatures: Feature[] = [
 ] as const;
 
 // Combine all features with a type flag
+// TODO: NO!! WHY COMBINE THE TWO SECTIONS???
 const allFeatures = [
   ...existingFeatures.map((feature) => ({ ...feature, isUpcoming: false })),
   ...upcomingFeatures.map((feature) => ({ ...feature, isUpcoming: true })),
