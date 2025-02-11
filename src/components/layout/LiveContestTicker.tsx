@@ -107,8 +107,32 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
   // TODO: improve the empty state
   if (sortedContests.length === 0) {
     return (
-      <div className="bg-dark-200/60 backdrop-blur-sm h-8 border-y border-dark-300 flex items-center justify-center text-sm text-gray-400">
-        Featured Duels are currently unavailable
+      <div className="bg-dark-200/60 backdrop-blur-sm h-8 border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
+        <div
+          ref={containerRef}
+          className="inline-flex items-center w-full"
+          style={{
+            animation: "ticker 30s linear infinite",
+            animationPlayState: isPaused ? "paused" : "running",
+          }}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          <div
+            ref={contentRef}
+            className="inline-flex items-center space-x-8 px-4 flex-shrink-0"
+          >
+            {[...Array(3)].map((_, index) => (
+              <div
+                key={index}
+                className="inline-flex items-center space-x-4 text-sm text-gray-400"
+              >
+                <span>Featured Duels are currently unavailable</span>
+                <span className="text-gray-500">•</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

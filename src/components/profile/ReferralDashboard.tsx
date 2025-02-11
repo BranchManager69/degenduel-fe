@@ -49,7 +49,7 @@ const SocialShareButton: React.FC<{
   const shareToSocial = () => {
     const referralLink = `https://degenduel.me/join?ref=${referralCode}`;
     const message = encodeURIComponent(
-      "Join me on DegenDuel - the ultimate crypto portfolio PvP platform! Use my referral link to get started:"
+      `DegenDuel is a new platform for crypto portfolio battles. \n✌🏻 Find me in the @DegenDuelMe trenches. \n\nUse my ref link: ${referralLink}`
     );
 
     const urls = {
@@ -118,7 +118,7 @@ const ReferralLink: React.FC<{ code: string }> = ({ code }) => {
         }`}
       >
         {copied ? <FaCheck /> : <FaCopy />}
-        {copied ? "☑️ Copied the link" : "Copy Link"}
+        {copied ? "🔗 Copied the link" : "Copy Link"}
       </motion.button>
     </div>
   );

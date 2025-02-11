@@ -82,10 +82,10 @@ export const ServiceStatusBanner: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="relative z-50"
         >
-          <div className="bg-amber-500/10 border-b border-amber-500/20 backdrop-blur-sm">
+          <div className="bg-red-500/10 border-b border-red-500/20 backdrop-blur-sm">
             <div className="container mx-auto px-4 py-2">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-amber-200/90">
+                <div className="flex items-center gap-2 text-red-200/90">
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -106,7 +106,7 @@ export const ServiceStatusBanner: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setIsVisible(false)}
-                  className="text-amber-200/70 hover:text-amber-200/90 transition-colors"
+                  className="text-red-200/70 hover:text-red-200/90 transition-colors"
                 >
                   <span className="sr-only">Dismiss</span>
                   <svg

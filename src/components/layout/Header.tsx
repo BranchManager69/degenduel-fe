@@ -10,6 +10,7 @@ import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
 import { LiveContestTicker } from "./LiveContestTicker";
+import { MobileMenuButton } from "./MobileMenuButton";
 import { UserMenu } from "./UserMenu";
 
 export const Header: React.FC = () => {
@@ -280,7 +281,7 @@ export const Header: React.FC = () => {
             </div>
 
             {/* Center section: Live Contest Ticker */}
-            <div className="flex-1 mx-8 min-w-0">
+            <div className="flex-1 mx-4 md:mx-8 min-w-0">
               <AnimatePresence>
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
@@ -296,8 +297,8 @@ export const Header: React.FC = () => {
               </AnimatePresence>
             </div>
 
-            {/* Right section: Auth */}
-            <div className="flex items-center space-x-4">
+            {/* Right section: Auth and Mobile Menu */}
+            <div className="flex items-center gap-2 md:gap-4">
               <AnimatePresence mode="wait">
                 {user ? (
                   <motion.div
@@ -327,6 +328,9 @@ export const Header: React.FC = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+              <div className="md:hidden">
+                <MobileMenuButton />
+              </div>
             </div>
           </div>
         </div>
