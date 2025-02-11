@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useScrollHeader } from "../../hooks/useScrollHeader";
 import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
@@ -14,6 +15,7 @@ import { MobileMenuButton } from "./MobileMenuButton";
 import { UserMenu } from "./UserMenu";
 
 export const Header: React.FC = () => {
+  const { isCompact } = useScrollHeader(50);
   const {
     user,
     connectWallet,
@@ -24,13 +26,14 @@ export const Header: React.FC = () => {
     maintenanceMode,
     setMaintenanceMode,
   } = useStore();
-  const { isSuperAdmin, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
   const [isTransitioningToMaintenance, setIsTransitioningToMaintenance] =
     useState(false);
 
+  // Fetch contests
   useEffect(() => {
     const fetchContests = async () => {
       try {
@@ -43,6 +46,9 @@ export const Header: React.FC = () => {
 
         const response = await ddApi.contests.getAll();
         const contests = Array.isArray(response) ? response : [];
+
+        // Filter to only include live contests
+        // TODO: Why not include pending contests too?
         setActiveContests(contests.filter(isContestLive) || []);
       } catch (err: any) {
         if (err?.status === 503 || err?.message?.includes("503")) {
@@ -59,7 +65,7 @@ export const Header: React.FC = () => {
     return () => clearInterval(interval);
   }, [maintenanceMode]);
 
-  // Separate function to handle maintenance transitions
+  // Handle maintenance transitions
   const handleMaintenanceTransition = () => {
     if (!maintenanceMode && !isTransitioningToMaintenance) {
       setIsTransitioningToMaintenance(true);
@@ -139,6 +145,7 @@ export const Header: React.FC = () => {
     };
   }, [isTransitioningToMaintenance]);
 
+  // Error display
   useEffect(() => {
     if (error) {
       const timer = setTimeout(clearError, 5000);
@@ -146,9 +153,13 @@ export const Header: React.FC = () => {
     }
   }, [error, clearError]);
 
+  // Header
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <header className="relative bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50">
+      <header
+        className={`relative bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+          ${isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16"}`}
+      >
         {/* Banned User Banner */}
         {user?.is_banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
@@ -192,18 +203,26 @@ export const Header: React.FC = () => {
           </div>
         )}
 
-        <div className="relative max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-8">
           {/* Main header content */}
-          <div className="relative flex items-center justify-between h-16">
+          <div
+            className={`relative flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+            ${isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16"}`}
+          >
             {/* Left section: Logo and Nav */}
             <div className="flex items-center">
               {/* Logo */}
               <Link
                 to="/"
-                className="flex items-center gap-1 group relative pl-2 md:pl-0"
+                className={`flex items-center gap-1 group relative pl-1 sm:pl-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                  ${
+                    isCompact
+                      ? "scale-[0.8] sm:scale-[0.85]"
+                      : "scale-[0.85] sm:scale-100"
+                  }`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="relative flex items-center justify-center scale-[0.85] sm:scale-100">
+                <div className="relative flex items-center justify-center">
                   <div className="relative flex items-center gap-[2px]">
                     <span className="text-3xl sm:text-4xl font-cyber text-purple-400 group-hover:text-purple-300 transition-colors animate-logo-slam-left inline-block tracking-tighter relative">
                       <span className="relative z-20">D</span>
@@ -259,46 +278,42 @@ export const Header: React.FC = () => {
                 >
                   Rankings
                 </Link>
-                {isAdmin() && (
-                  <Link
-                    to="/admin"
-                    className="text-red-400 hover:text-red-300 transition-colors font-medium"
-                  >
-                    Admin
-                  </Link>
-                )}
-                {isSuperAdmin() && (
-                  <Button
-                    variant="gradient"
-                    size="sm"
-                    className="!px-2 !py-1 !text-xs font-bold tracking-wider bg-gradient-to-r from-red-500 to-brand-500 hover:from-red-400 hover:to-brand-400"
-                    onClick={() => (window.location.href = "/superadmin")}
-                  >
-                    SUPER
-                  </Button>
-                )}
               </nav>
             </div>
 
             {/* Center section: Live Contest Ticker */}
-            <div className="flex-1 mx-4 md:mx-8 min-w-0">
+            <div
+              className={`flex-1 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+              ${
+                isCompact ? "mx-2 sm:mx-3 md:mx-4" : "mx-3 sm:mx-4 md:mx-8"
+              } min-w-0`}
+            >
               <AnimatePresence>
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   className="w-full"
                 >
                   <LiveContestTicker
                     contests={activeContests}
                     loading={loading}
+                    isCompact={isCompact}
                   />
                 </motion.div>
               </AnimatePresence>
             </div>
 
             {/* Right section: Auth and Mobile Menu */}
-            <div className="flex items-center gap-2 md:gap-4">
+            <div
+              className={`flex items-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+              ${
+                isCompact
+                  ? "gap-1 sm:gap-1.5 md:gap-2"
+                  : "gap-2 sm:gap-3 md:gap-4"
+              }`}
+            >
               <AnimatePresence mode="wait">
                 {user ? (
                   <motion.div
@@ -306,8 +321,13 @@ export const Header: React.FC = () => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    <UserMenu user={user} onDisconnect={disconnectWallet} />
+                    <UserMenu
+                      user={user}
+                      onDisconnect={disconnectWallet}
+                      isCompact={isCompact}
+                    />
                   </motion.div>
                 ) : (
                   <motion.div
@@ -315,13 +335,20 @@ export const Header: React.FC = () => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   >
                     <Button
                       onClick={connectWallet}
                       disabled={isConnecting}
-                      className="bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 text-white font-cyber"
+                      className={`bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 
+                        text-white font-cyber transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                        ${
+                          isCompact
+                            ? "text-xs sm:text-sm py-1 sm:py-1.5 px-2 sm:px-3"
+                            : "text-sm sm:text-base py-1.5 sm:py-2 px-3 sm:px-4"
+                        }`}
                       variant="gradient"
-                      size="md"
+                      size={isCompact ? "sm" : "md"}
                     >
                       {isConnecting ? "Connecting..." : "Connect Wallet"}
                     </Button>
@@ -329,7 +356,7 @@ export const Header: React.FC = () => {
                 )}
               </AnimatePresence>
               <div className="md:hidden">
-                <MobileMenuButton />
+                <MobileMenuButton isCompact={isCompact} />
               </div>
             </div>
           </div>

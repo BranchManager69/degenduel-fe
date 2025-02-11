@@ -9,9 +9,14 @@ import type { Contest } from "../../types/index";
 interface Props {
   contests: Contest[];
   loading: boolean;
+  isCompact?: boolean;
 }
 
-export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
+export const LiveContestTicker: React.FC<Props> = ({
+  contests,
+  loading,
+  isCompact = false,
+}) => {
   const { maintenanceMode } = useStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -170,7 +175,11 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
       </div>
 
       {/* Content container */}
-      <div className="relative h-8">
+      <div
+        className={`relative transition-all duration-200 ease-out ${
+          isCompact ? "h-6" : "h-8"
+        }`}
+      >
         <div className="h-full overflow-hidden whitespace-nowrap">
           {/* Parent Container */}
           <div
@@ -188,14 +197,15 @@ export const LiveContestTicker: React.FC<Props> = ({ contests, loading }) => {
             {/* Content Container */}
             <div
               ref={contentRef}
-              className="inline-flex items-center space-x-8 px-4 flex-shrink-0"
+              className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 transition-all duration-200 ease-out
+                ${isCompact ? "text-xs" : "text-sm"}`}
             >
               {sortedContests.map((contest) => {
                 return (
                   <Link
                     key={contest.id}
                     to={`/contests/${contest.id}`}
-                    className={`group/item relative inline-flex items-center space-x-2 text-sm hover:bg-dark-300/50 px-2 py-1 rounded transition-all duration-300 ${
+                    className={`group/item relative inline-flex items-center space-x-2 hover:bg-dark-300/50 px-2 py-1 rounded transition-all duration-300 ${
                       contest.status === "cancelled"
                         ? "line-through opacity-60"
                         : ""
