@@ -2,10 +2,10 @@ import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
 import { ModuleFormat } from "rollup";
-import { defineConfig, LogLevel } from "vite";
+import { defineConfig, LogLevel, UserConfig } from "vite";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ command, mode }): UserConfig => {
   // Force development mode when running dev server
   const isDev = command === "serve" || mode === "development";
   console.log("Running in", isDev ? "development" : "production", "mode");
@@ -28,7 +28,7 @@ export default defineConfig(({ command, mode }) => {
     console.warn("SSL certificates not accessible, falling back to HTTP only");
   }
 
-  const config = {
+  const config: UserConfig = {
     server: {
       port: 3004,
       host: true,
@@ -75,38 +75,59 @@ export default defineConfig(({ command, mode }) => {
     ],
     optimizeDeps: {
       include: ["react", "react-dom", "react-router-dom"],
+      exclude: ["@react-three/fiber", "@react-three/drei"],
       esbuildOptions: {
         target: "esnext",
       },
-      cache: true,
     },
     build: {
-      sourcemap: "inline" as const,
-      minify: false,
+      sourcemap: isDev,
+      minify: isDev ? false : ("esbuild" as const),
       target: "esnext",
+      cssCodeSplit: true,
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         cache: true,
         output: {
-          entryFileNames: `assets/[name].js`,
-          chunkFileNames: `assets/[name].js`,
-          assetFileNames: `assets/[name].[ext]`,
+          manualChunks: {
+            "react-vendor": ["react", "react-dom", "react-router-dom"],
+            "three-vendor": [
+              "three",
+              "@react-three/fiber",
+              "@react-three/drei",
+            ],
+            "ui-vendor": ["framer-motion", "react-icons", "styled-components"],
+          },
+          entryFileNames: "assets/[name].[hash].js",
+          chunkFileNames: "assets/[name].[hash].js",
+          assetFileNames: "assets/[name].[hash].[ext]",
           format: "esm" as ModuleFormat,
-          compact: false,
+          compact: !isDev,
           generatedCode: {
             symbols: true,
             constBindings: true,
           },
-          minifyInternalExports: false,
+          minifyInternalExports: !isDev,
         },
       },
-      terserOptions: {
-        compress: false,
-        mangle: false,
-        format: {
-          beautify: true,
-          comments: true,
-        },
-      },
+      terserOptions: isDev
+        ? undefined
+        : {
+            compress: {
+              drop_console: true,
+              drop_debugger: true,
+              pure_funcs: [
+                "console.log",
+                "console.info",
+                "console.debug",
+                "console.trace",
+              ],
+            },
+            mangle: true,
+            format: {
+              comments: false,
+            },
+          },
     },
     logLevel: "info" as LogLevel,
   };
