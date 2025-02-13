@@ -1,20 +1,14 @@
 // tsconfig.test.json
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "./dist-test",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "resolveJsonModule": true,
-    "allowJs": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "types": ["node"],
-    "allowImportingTsExtensions": true,  // Add this
-    "noEmit": true  // Add this
+    "types": ["jest", "node", "@testing-library/jest-dom"]
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/setupTests.ts"],
   "exclude": ["node_modules"]
 }

@@ -20,6 +20,19 @@ export interface UserStats {
 
 export interface Achievement {
   achievement: string;
-  achieved_at: string;
-  display_name: string;
+  description: string;
+  earned_at: string;
+  icon?: string;
+  rarity?: "common" | "rare" | "epic" | "legendary";
 }
+
+export interface ContestHistoryEntry {
+  contest_id: string;
+  contest_name: string;
+  start_time: string;
+  end_time: string;
+  portfolio_return: number;
+  rank: number;
+}
+
+export type ContestHistory = ContestHistoryEntry[];

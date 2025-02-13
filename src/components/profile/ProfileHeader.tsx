@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { CopyToClipboard } from "../common/CopyToClipboard";
@@ -23,6 +24,14 @@ interface ProfileHeaderProps {
   banReason: string | null;
   isPublicView?: boolean;
 }
+
+// Helper function to truncate wallet address
+const truncateAddress = (address: string, short: boolean = false) => {
+  if (short) {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  }
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
 
 // Validation function for nicknames
 function validateNickname(nickname: string): {
@@ -83,7 +92,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const [newNickname, setNewNickname] = useState(username);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
   let timeoutId: ReturnType<typeof setTimeout>;
+
+  const isWalletAddress = username === address;
+  const displayName = isWalletAddress ? truncateAddress(address) : username;
 
   // Check nickname availability with debounce
   const checkNicknameAvailability = async (nickname: string) => {
@@ -175,7 +188,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <>
       {isBanned && (
-        <div className="mb-4 rounded-lg backdrop-blur-sm border border-red-500/20 relative group overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 rounded-lg backdrop-blur-sm border border-red-500/20 relative group overflow-hidden"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-red-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="p-4 relative">
             <div className="flex items-center space-x-2">
@@ -201,16 +218,54 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
-      <div className="rounded-lg border shadow-sm backdrop-blur-sm border-dark-300/20">
-        <div className="p-6">
-          <div className="flex items-center space-x-4">
-            <div className="h-16 w-16 rounded-full bg-brand-500/10 flex items-center justify-center">
-              <span className="text-2xl">{isBanned ? "🚫" : "👤"}</span>
+      <div className="rounded-lg border shadow-sm backdrop-blur-sm border-dark-300/20 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-brand-600/5" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(74,22,220,0.15),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%)] bg-[length:250%_250%] animate-shine opacity-30" />
+        </div>
+
+        <div className="relative p-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            {/* Profile Picture Section */}
+            <div
+              className="relative group/avatar"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
+              {/* Main Profile Picture */}
+              <motion.div
+                initial={{ scale: 1 }}
+                animate={{ scale: isHovered ? 1.05 : 1 }}
+                transition={{ duration: 0.3 }}
+                className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-brand-500/30 bg-dark-300/50"
+              >
+                <img
+                  src="/assets/media/default/profile_pic.png"
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+                {/* Overlay Effects */}
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-brand-600/10 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(127,0,255,0.1),transparent)] opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300" />
+              </motion.div>
+
+              {/* Rank Badge */}
+              <div className="absolute -bottom-2 -right-2 bg-brand-500 rounded-full px-3 py-1 text-sm font-bold text-white shadow-lg border border-brand-400 transform group-hover/avatar:scale-110 transition-transform duration-300 flex items-center gap-1.5">
+                <span className="text-xs text-brand-200">Rank</span>
+                <span className="text-white font-cyber">#{rankScore}</span>
+              </div>
+
+              {/* Glow Effect */}
+              <div className="absolute inset-0 bg-brand-500/20 rounded-full blur-xl opacity-0 group-hover/avatar:opacity-30 transition-opacity duration-300" />
             </div>
-            <div className="flex-1">
-              <div className="flex items-center space-x-2">
+
+            {/* User Info Section */}
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-2">
                 {isEditing && !isPublicView ? (
                   <form
                     onSubmit={handleSubmit}
@@ -287,14 +342,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                       )}
                   </form>
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <h1 className="text-3xl font-bold text-gray-100">
-                      {username}
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-300 via-brand-400 to-brand-500 text-transparent bg-clip-text animate-gradient-x">
+                      {displayName}
                     </h1>
                     {!isPublicView && onUpdateNickname && (
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="text-gray-400 hover:text-gray-200 transition-colors"
+                        className="text-gray-400 hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-dark-300/50"
                         disabled={isUpdating}
                       >
                         <svg
@@ -310,39 +365,56 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   </div>
                 )}
               </div>
-              <div className="mt-1">
+
+              {/* Wallet Address */}
+              <div className="mt-2">
                 <CopyToClipboard
                   text={address}
-                  className="group flex items-center gap-2 max-w-full"
+                  className="group inline-flex items-center gap-2 px-3 py-1.5 bg-dark-300/50 rounded-full hover:bg-dark-300 transition-colors"
                 >
-                  <button className="p-1 rounded hover:bg-dark-300/50 transition-colors">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-gray-400 group-hover:text-brand-400 transition-colors"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                    </svg>
-                  </button>
                   <span className="text-sm text-gray-400 group-hover:text-gray-200 transition-colors font-mono">
-                    {address}
+                    {truncateAddress(address, true)}
                   </span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 text-gray-400 group-hover:text-brand-400 transition-colors"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                  </svg>
                 </CopyToClipboard>
               </div>
-              <div className="flex flex-wrap gap-4 mt-2">
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-400">Rank Score</span>
-                  <span className="text-sm text-gray-200">{rankScore}</span>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="p-3 backdrop-blur-sm border border-dark-300/20 rounded-lg bg-dark-200/30 relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative">
+                    <div className="text-sm text-gray-400">Rank Score</div>
+                    <div className="text-lg font-bold text-brand-400">
+                      {rankScore}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-400">Bonus Balance</span>
-                  <span className="text-sm text-gray-200">{bonusBalance}</span>
+                <div className="p-3 backdrop-blur-sm border border-dark-300/20 rounded-lg bg-dark-200/30 relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative">
+                    <div className="text-sm text-gray-400">Bonus Balance</div>
+                    <div className="text-lg font-bold text-brand-400">
+                      {bonusBalance}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-400">Joined</span>
-                  <span className="text-sm text-gray-200">{joinDate}</span>
+                <div className="p-3 backdrop-blur-sm border border-dark-300/20 rounded-lg bg-dark-200/30 relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative">
+                    <div className="text-sm text-gray-400">Joined</div>
+                    <div className="text-lg font-bold text-brand-400">
+                      {joinDate}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

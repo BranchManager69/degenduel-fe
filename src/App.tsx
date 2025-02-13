@@ -14,14 +14,16 @@ import { DebugPanel } from "./components/debug/DebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { ServiceStatusBanner } from "./components/layout/ServiceStatusBanner";
+import { ReferralWelcomeModal } from "./components/modals/ReferralWelcomeModal";
 import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { MovingBackground } from "./components/ui/MovingBackground";
+import { ReferralProvider } from "./hooks/useReferral";
 /* authenticated pages */
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
-import { Profile } from "./pages/authenticated/ProfilePage";
+import { Profile } from "./pages/authenticated/Profile";
 import { ReferralPage } from "./pages/authenticated/ReferralPage";
 /* public pages */
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
@@ -40,7 +42,7 @@ import { BannedIP } from "./pages/public/general/BannedIP";
 import { BannedUser } from "./pages/public/general/BannedUser";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
-import { PublicProfilePage } from "./pages/public/general/PublicProfilePage";
+import { PublicProfile } from "./pages/public/general/PublicProfile";
 /* admin pages */
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 /* superadmin pages */
@@ -59,7 +61,7 @@ export const App: React.FC = () => {
   const { checkAuth } = useAuth();
 
   useEffect(() => {
-    // (is the sheer amount of checks needed?)
+    // (is the sheer amount of auth checks needed?)
 
     // Check auth every 20 seconds in production, 10 in development
     const checkInterval = import.meta.env.PROD ? 20 * 1000 : 10 * 1000;
@@ -95,234 +97,243 @@ export const App: React.FC = () => {
 
   return (
     <Router>
-      {/* Parent Container */}
-      <div className="min-h-screen flex flex-col relative">
-        {/* Animated Background */}
-        <MovingBackground />
+      <ReferralProvider>
+        {/* Parent Container */}
+        <div className="min-h-screen flex flex-col relative">
+          {/* Animated Background */}
+          <MovingBackground />
 
-        {/* Service Status Banner (OLD LOCATION -- BAD AND UGLY) */}
-        <ServiceStatusBanner />
+          {/* Service Status Banner (Moved to Footer) */}
+          {/* <ServiceStatusBanner /> */}
 
-        {/* Header */}
-        <Header />
+          {/* Header */}
+          <Header />
 
-        {/* Main Content */}
-        <main className="flex-1 relative">
-          {/* Routes */}
-          <Routes>
-            {/* PUBLIC ROUTES */}
+          {/* Main Content */}
+          <main className="flex-1 relative">
+            {/* Routes */}
+            <Routes>
+              {/* PUBLIC ROUTES */}
 
-            {/* Landing Page */}
-            <Route path="/" element={<LandingPage />} />
+              {/* Landing Page */}
+              <Route path="/" element={<LandingPage />} />
 
-            {/* Tokens Page */}
-            <Route path="/tokens" element={<TokensPage />} />
+              {/* Contest Browser */}
+              <Route path="/contests" element={<ContestBrowser />} />
 
-            {/* Contest Browser */}
-            <Route path="/contests" element={<ContestBrowser />} />
+              {/* Tokens Page */}
+              <Route path="/tokens" element={<TokensPage />} />
 
-            {/* Contest Details */}
-            <Route path="/contests/:id" element={<ContestDetails />} />
+              {/* Contest Details */}
+              <Route path="/contests/:id" element={<ContestDetails />} />
 
-            {/* Public Profile */}
-            <Route
-              path="/profile/:identifier"
-              element={<PublicProfilePage />}
-            />
+              {/* Public Profile Page */}
+              <Route path="/profile/:identifier" element={<PublicProfile />} />
 
-            {/* FAQ */}
-            <Route
-              path="/faq"
-              element={
-                <MaintenanceGuard>
-                  <FAQ />
-                </MaintenanceGuard>
-              }
-            />
-
-            {/* How It Works */}
-            <Route
-              path="/how-it-works"
-              element={
-                <MaintenanceGuard>
-                  <HowItWorks />
-                </MaintenanceGuard>
-              }
-            />
-
-            {/* Contact */}
-            <Route
-              path="/contact"
-              element={
-                <MaintenanceGuard>
-                  <Contact />
-                </MaintenanceGuard>
-              }
-            />
-
-            {/* "Degen Rankings" Leaderboard */}
-            <Route
-              path="/rankings/performance"
-              element={<ContestPerformance />}
-            />
-
-            {/* "Global Rankings" Leaderboard */}
-            <Route path="/rankings/global" element={<GlobalRankings />} />
-
-            {/* AUTHENTICATED ROUTES */}
-
-            {/* Profile (self) */}
-            <Route
-              path="/me"
-              element={
-                <AuthenticatedRoute>
+              {/* FAQ */}
+              <Route
+                path="/faq"
+                element={
                   <MaintenanceGuard>
-                    <Profile />
+                    <FAQ />
                   </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
+                }
+              />
 
-            {/* Referrals */}
-            <Route
-              path="/referrals"
-              element={
-                <AuthenticatedRoute>
+              {/* How It Works */}
+              <Route
+                path="/how-it-works"
+                element={
                   <MaintenanceGuard>
-                    <ReferralPage />
+                    <HowItWorks />
                   </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
+                }
+              />
 
-            {/* Portfolio Token Selection */}
-            <Route
-              path="/contests/:id/select-tokens"
-              element={
-                <AuthenticatedRoute>
+              {/* Contact */}
+              <Route
+                path="/contact"
+                element={
                   <MaintenanceGuard>
-                    <TokenSelection />
+                    <Contact />
                   </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
+                }
+              />
 
-            {/* Contest Lobby */}
-            <Route
-              path="/contests/:id/live"
-              element={
-                <AuthenticatedRoute>
-                  <MaintenanceGuard>
-                    <ContestLobby />{" "}
-                  </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
+              {/* "Degen Rankings" Leaderboard */}
+              <Route
+                path="/rankings/performance"
+                element={<ContestPerformance />}
+              />
 
-            {/* Contest Results */}
-            <Route
-              path="/contests/:id/results"
-              element={
-                <AuthenticatedRoute>
-                  <MaintenanceGuard>
-                    <ContestResults />{" "}
-                  </MaintenanceGuard>
-                </AuthenticatedRoute>
-              }
-            />
+              {/* "Global Rankings" Leaderboard */}
+              <Route path="/rankings/global" element={<GlobalRankings />} />
 
-            {/* ADMIN ROUTES */}
+              {/* AUTHENTICATED ROUTES */}
 
-            {/* Admin Dashboard */}
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminDashboard />
-                </AdminRoute>
-              }
-            />
+              {/* Profile (own profile) */}
+              <Route
+                path="/me"
+                element={
+                  <AuthenticatedRoute>
+                    <MaintenanceGuard>
+                      <Profile />
+                    </MaintenanceGuard>
+                  </AuthenticatedRoute>
+                }
+              />
 
-            {/* SUPERADMIN ROUTES*/}
+              {/* Referrals */}
+              <Route
+                path="/referrals"
+                element={
+                  <AuthenticatedRoute>
+                    <MaintenanceGuard>
+                      <ReferralPage />
+                    </MaintenanceGuard>
+                  </AuthenticatedRoute>
+                }
+              />
 
-            {/* Superadmin Dashboard */}
-            <Route
-              path="/superadmin"
-              element={
-                <SuperAdminRoute>
-                  <SuperAdminDashboard />
-                </SuperAdminRoute>
-              }
-            />
+              {/* Portfolio Token Selection */}
+              <Route
+                path="/contests/:id/select-tokens"
+                element={
+                  <AuthenticatedRoute>
+                    <MaintenanceGuard>
+                      <TokenSelection />
+                    </MaintenanceGuard>
+                  </AuthenticatedRoute>
+                }
+              />
 
-            {/* Services Control Panel*/}
-            <Route
-              path="/superadmin/services"
-              element={
-                <SuperAdminRoute>
-                  <ServiceControlPage />
-                </SuperAdminRoute>
-              }
-            />
+              {/* Contest Live In-Game Lobby */}
+              <Route
+                path="/contests/:id/live"
+                element={
+                  <AuthenticatedRoute>
+                    <MaintenanceGuard>
+                      <ContestLobby />{" "}
+                    </MaintenanceGuard>
+                  </AuthenticatedRoute>
+                }
+              />
 
-            {/* API Playground */}
-            <Route
-              path="/api-playground"
-              element={
-                <SuperAdminRoute>
-                  <ApiPlayground />
-                </SuperAdminRoute>
-              }
-            />
+              {/* Contest Results */}
+              <Route
+                path="/contests/:id/results"
+                element={
+                  <AuthenticatedRoute>
+                    <MaintenanceGuard>
+                      <ContestResults />{" "}
+                    </MaintenanceGuard>
+                  </AuthenticatedRoute>
+                }
+              />
 
-            {/* WSS Playground */}
-            <Route
-              path="/wss-playground"
-              element={
-                <SuperAdminRoute>
-                  <WssPlayground />
-                </SuperAdminRoute>
-              }
-            />
+              {/* ADMIN ROUTES */}
 
-            {/* AMM Simulation */}
-            <Route
-              path="/amm-sim"
-              element={
-                <SuperAdminRoute>
-                  <AmmSim />
-                </SuperAdminRoute>
-              }
-            />
+              {/* Admin Dashboard */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
 
-            {/* MISC ROUTES */}
+              {/* SUPERADMIN ROUTES*/}
 
-            {/* 404 Page */}
-            <Route path="*" element={<NotFound />} />
-            {/* Banned User */}
-            <Route path="/banned" element={<BannedUser />} />
-            {/* Banned IP */}
-            <Route path="/banned-ip" element={<BannedIP />} />
-            {/* Maintenance Mode */}
-            <Route path="/maintenance" element={<Maintenance />} />
-          </Routes>
-        </main>
+              {/* Superadmin Dashboard */}
+              <Route
+                path="/superadmin"
+                element={
+                  <SuperAdminRoute>
+                    <SuperAdminDashboard />
+                  </SuperAdminRoute>
+                }
+              />
 
-        {/* Footer */}
-        <Footer />
+              {/* Services Control Panel*/}
+              <Route
+                path="/superadmin/services"
+                element={
+                  <SuperAdminRoute>
+                    <ServiceControlPage />
+                  </SuperAdminRoute>
+                }
+              />
 
-        {/* Debug Panel */}
-        <DebugPanel />
+              {/* API Playground */}
+              <Route
+                path="/api-playground"
+                element={
+                  <SuperAdminRoute>
+                    <ApiPlayground />
+                  </SuperAdminRoute>
+                }
+              />
 
-        {/* Toast Container */}
-        <ToastContainer />
+              {/* WSS Playground */}
+              <Route
+                path="/wss-playground"
+                element={
+                  <SuperAdminRoute>
+                    <WssPlayground />
+                  </SuperAdminRoute>
+                }
+              />
 
-        {/* Toaster */}
-        <Toaster />
+              {/* AMM Simulation */}
+              <Route
+                path="/amm-sim"
+                element={
+                  <SuperAdminRoute>
+                    <AmmSim />
+                  </SuperAdminRoute>
+                }
+              />
 
-        {/* Service Status Banner (TESTING LOCATION) */}
-        <ServiceStatusBanner />
-      </div>
+              {/* MISC ROUTES */}
+
+              {/* 404 Page */}
+              <Route path="*" element={<NotFound />} />
+              {/* Banned User */}
+              <Route path="/banned" element={<BannedUser />} />
+              {/* Banned IP */}
+              <Route path="/banned-ip" element={<BannedIP />} />
+              {/* Maintenance Mode */}
+              <Route path="/maintenance" element={<Maintenance />} />
+            </Routes>
+          </main>
+
+          {/* Footer */}
+          <Footer />
+
+          {/* Debug Panel */}
+          <DebugPanel />
+
+          {/* Modals and Overlays */}
+          <ReferralWelcomeModal />
+          <Toaster position="top-right" />
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
+
+          {/* Service Status Banner (consider deleting, moving, or reusing for general non-MM server issues) */}
+          <ServiceStatusBanner />
+        </div>
+      </ReferralProvider>
     </Router>
   );
 };

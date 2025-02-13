@@ -1,14 +1,23 @@
 // src/components/profile/ReferralDashboard.tsx
 
 import { AnimatePresence, motion } from "framer-motion";
-import React from "react";
+import { useReferral } from "hooks/useReferral";
+import React, { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import {
+  FaChartBar,
   FaCheck,
+  FaChrome,
   FaClock,
   FaCopy,
+  FaDesktop,
   FaDiscord,
+  FaEdge,
+  FaFirefox,
   FaGift,
+  FaMobile,
+  FaSafari,
+  FaTabletAlt,
   FaTelegram,
   FaTwitter,
   FaUsers,
@@ -34,6 +43,26 @@ interface ReferralStats {
   }>;
 }
 
+// Modify interface name and structure
+interface LeaderboardStats {
+  total_global_referrals: number;
+  current_period: {
+    start_date: string;
+    end_date: string;
+    days_remaining: number;
+  };
+  next_payout_date: string;
+}
+
+interface LeaderboardEntry {
+  username: string;
+  referrals: number;
+  lifetime_rewards: number;
+  period_rewards: number;
+  rank: number;
+  trend: "up" | "down" | "stable";
+}
+
 // Shared animation variants
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -45,24 +74,63 @@ const fadeIn = {
 const SocialShareButton: React.FC<{
   platform: "twitter" | "discord" | "telegram";
   referralCode: string;
-}> = ({ platform, referralCode }) => {
-  const shareToSocial = () => {
+  stats?: ReferralStats | null;
+}> = ({ platform, referralCode, stats }) => {
+  const getShareMessage = () => {
     const referralLink = `https://degenduel.me/join?ref=${referralCode}`;
-    const message = encodeURIComponent(
-      `DegenDuel is a new platform for crypto portfolio battles. \n✌🏻 Find me in the @DegenDuelMe trenches. \n\nUse my ref link: ${referralLink}`
+    const baseMessage =
+      "🎮 Join me in @DegenDuelMe - The ultimate crypto portfolio battle arena!";
+
+    // Add social proof if available
+    const socialProof = stats
+      ? `\n🔥 Already ${stats.total_referrals.toLocaleString()} degens battling it out`
+      : "\n🔥 Early access spots filling up fast";
+
+    // Add launch-specific urgency
+    const urgency = "\n⏰ Launch phase rewards ending soon";
+
+    // Add personalized touch
+    const personal = "\n💎 Use my ref link to get exclusive rewards";
+
+    return encodeURIComponent(
+      `${baseMessage}${socialProof}${urgency}${personal}\n\n${referralLink}`
     );
+  };
 
-    const urls = {
-      twitter: `https://x.com/intent/tweet?text=${message}&url=${encodeURIComponent(
-        referralLink
-      )}`,
-      discord: `https://discord.com/channels/@me?content=${message} ${referralLink}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(
-        referralLink
-      )}&text=${message}`,
-    };
+  const getShareLink = () => {
+    const message = getShareMessage();
+    const referralLink = `https://degenduel.me/join?ref=${referralCode}`;
 
-    window.open(urls[platform], "_blank");
+    switch (platform) {
+      case "twitter":
+        return `https://x.com/intent/tweet?text=${message}`;
+      case "discord":
+        return `https://discord.com/channels/@me?content=${message} ${referralLink}`;
+      case "telegram":
+        return `https://t.me/share/url?url=${encodeURIComponent(
+          referralLink
+        )}&text=${message}`;
+    }
+  };
+
+  const handleShare = async () => {
+    const shareLink = getShareLink();
+
+    // Track share attempt
+    try {
+      await ddApi.fetch("/referrals/share", {
+        method: "POST",
+        body: JSON.stringify({
+          platform,
+          referralCode,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to track share:", error);
+    }
+
+    // Open share dialog
+    window.open(shareLink, "_blank");
   };
 
   const Icon = {
@@ -75,17 +143,24 @@ const SocialShareButton: React.FC<{
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      onClick={shareToSocial}
-      className="p-2 hover:bg-dark-400/50 rounded-lg text-brand-400 transition-colors"
+      onClick={handleShare}
+      className="p-3 hover:bg-dark-400/50 rounded-lg text-brand-400 transition-colors flex items-center gap-2"
       title={`Share on ${platform.charAt(0).toUpperCase() + platform.slice(1)}`}
     >
       <Icon />
+      <span className="text-sm">
+        Share on {platform.charAt(0).toUpperCase() + platform.slice(1)}
+      </span>
     </motion.button>
   );
 };
 
-const ReferralLink: React.FC<{ code: string }> = ({ code }) => {
+const ReferralLink: React.FC<{
+  code: string;
+  stats?: ReferralStats | null;
+}> = ({ code, stats }) => {
   const [copied, setCopied] = React.useState(false);
+  const [showPreview, setShowPreview] = React.useState(false);
 
   const copyReferralLink = async () => {
     const referralLink = `https://degenduel.me/join?ref=${code}`;
@@ -93,6 +168,16 @@ const ReferralLink: React.FC<{ code: string }> = ({ code }) => {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       toast.success("🔗 Copied referral link");
+
+      // Track copy action
+      await ddApi.fetch("/referrals/share", {
+        method: "POST",
+        body: JSON.stringify({
+          platform: "copy",
+          referralCode: code,
+        }),
+      });
+
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error("🚨 Couldn't copy referral link");
@@ -100,26 +185,359 @@ const ReferralLink: React.FC<{ code: string }> = ({ code }) => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-      <motion.div
-        className="flex-1 bg-dark-300/30 p-3 rounded-lg font-mono text-gray-300 break-all"
-        {...fadeIn}
-      >
-        https://degenduel.me/join?ref={code}
-      </motion.div>
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={copyReferralLink}
-        className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 ${
-          copied
-            ? "bg-green-500/20 text-green-400 border border-green-500/30"
-            : "bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30"
-        }`}
-      >
-        {copied ? <FaCheck /> : <FaCopy />}
-        {copied ? "🔗 Copied the link" : "Copy Link"}
-      </motion.button>
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+        <motion.div
+          className="flex-1 bg-dark-300/30 p-3 rounded-lg font-mono text-gray-300 break-all relative group"
+          {...fadeIn}
+          onMouseEnter={() => setShowPreview(true)}
+          onMouseLeave={() => setShowPreview(false)}
+        >
+          https://degenduel.me/join?ref={code}
+          {showPreview && (
+            <div className="absolute top-full mt-2 left-0 w-full bg-dark-200/95 backdrop-blur-sm border border-brand-400/20 rounded-lg p-4 z-50">
+              <h5 className="text-sm font-medium text-brand-400 mb-2">
+                Preview Message
+              </h5>
+              <p className="text-xs text-gray-400">
+                🎮 Join me in @DegenDuelMe - The ultimate crypto portfolio
+                battle arena!
+                {stats &&
+                  `\n🔥 Already ${stats.total_referrals.toLocaleString()} degens battling it out`}
+                {"\n⏰ Launch phase rewards ending soon"}
+                {"\n💎 Use my ref link to get exclusive rewards"}
+              </p>
+            </div>
+          )}
+        </motion.div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={copyReferralLink}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 ${
+            copied
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : "bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30"
+          }`}
+        >
+          {copied ? <FaCheck /> : <FaCopy />}
+          {copied ? "🔗 Copied!" : "Copy Link"}
+        </motion.button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {["twitter", "discord", "telegram"].map((platform) => (
+          <SocialShareButton
+            key={platform}
+            platform={platform as any}
+            referralCode={code}
+            stats={stats}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const AnalyticsSection: React.FC = () => {
+  const { analytics, refreshAnalytics } = useReferral();
+
+  useEffect(() => {
+    refreshAnalytics();
+  }, [refreshAnalytics]);
+
+  if (!analytics) return null;
+
+  const totalClicks = Object.values(analytics.clicks.by_source).reduce(
+    (a, b) => a + b,
+    0
+  );
+  const totalConversions = Object.values(
+    analytics.conversions.by_source
+  ).reduce((a, b) => a + b, 0);
+  const conversionRate = totalClicks
+    ? ((totalConversions / totalClicks) * 100).toFixed(1)
+    : "0";
+
+  const getDeviceIcon = (device: string) => {
+    switch (device.toLowerCase()) {
+      case "mobile":
+        return <FaMobile className="text-brand-400" />;
+      case "tablet":
+        return <FaTabletAlt className="text-brand-400" />;
+      default:
+        return <FaDesktop className="text-brand-400" />;
+    }
+  };
+
+  const getBrowserIcon = (browser: string) => {
+    switch (browser.toLowerCase()) {
+      case "chrome":
+        return <FaChrome className="text-brand-400" />;
+      case "firefox":
+        return <FaFirefox className="text-brand-400" />;
+      case "safari":
+        return <FaSafari className="text-brand-400" />;
+      case "edge":
+        return <FaEdge className="text-brand-400" />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6 space-y-6">
+      <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+        <FaChartBar className="text-brand-400" />
+        Referral Analytics
+      </h3>
+
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-dark-300/30 rounded-lg p-4">
+          <div className="text-sm text-gray-400">Total Clicks</div>
+          <div className="text-2xl font-bold text-gray-100">{totalClicks}</div>
+        </div>
+        <div className="bg-dark-300/30 rounded-lg p-4">
+          <div className="text-sm text-gray-400">Conversions</div>
+          <div className="text-2xl font-bold text-gray-100">
+            {totalConversions}
+          </div>
+        </div>
+        <div className="bg-dark-300/30 rounded-lg p-4">
+          <div className="text-sm text-gray-400">Conversion Rate</div>
+          <div className="text-2xl font-bold text-gray-100">
+            {conversionRate}%
+          </div>
+        </div>
+      </div>
+
+      {/* Source Analysis */}
+      <div className="space-y-4">
+        <h4 className="text-md font-semibold text-gray-300">Traffic Sources</h4>
+        <div className="space-y-2">
+          {Object.entries(analytics.clicks.by_source).map(([source, count]) => {
+            const conversions = analytics.conversions.by_source[source] || 0;
+            const rate = count ? ((conversions / count) * 100).toFixed(1) : "0";
+
+            return (
+              <div key={source} className="bg-dark-300/20 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-gray-200 capitalize">{source}</div>
+                    <div className="text-sm text-gray-400">
+                      {conversions} conversions ({rate}%)
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold text-gray-200">{count}</div>
+                </div>
+                <div className="mt-2 h-1 bg-dark-300 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-brand-400 transition-all duration-500"
+                    style={{ width: `${(count / totalClicks) * 100}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Device & Browser Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Device Distribution */}
+        <div className="space-y-4">
+          <h4 className="text-md font-semibold text-gray-300">Devices</h4>
+          <div className="space-y-2">
+            {Object.entries(analytics.clicks.by_device).map(
+              ([device, count]) => (
+                <div key={device} className="bg-dark-300/20 rounded-lg p-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      {getDeviceIcon(device)}
+                      <div className="capitalize">{device}</div>
+                    </div>
+                    <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Browser Distribution */}
+        <div className="space-y-4">
+          <h4 className="text-md font-semibold text-gray-300">Browsers</h4>
+          <div className="space-y-2">
+            {Object.entries(analytics.clicks.by_browser).map(
+              ([browser, count]) => (
+                <div key={browser} className="bg-dark-300/20 rounded-lg p-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      {getBrowserIcon(browser)}
+                      <div className="capitalize">{browser}</div>
+                    </div>
+                    <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Reward Distribution */}
+      <div className="space-y-4">
+        <h4 className="text-md font-semibold text-gray-300">Rewards by Type</h4>
+        <div className="space-y-2">
+          {Object.entries(analytics.rewards.by_type).map(([type, amount]) => (
+            <div key={type} className="bg-dark-300/20 rounded-lg p-3">
+              <div className="flex justify-between items-center">
+                <div className="capitalize">{type.replace(/_/g, " ")}</div>
+                <div className="font-bold">{amount.toFixed(2)} SOL</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Rename and update the component
+const ReferralLeaderboard: React.FC = () => {
+  const [leaderboardStats, setLeaderboardStats] =
+    React.useState<LeaderboardStats | null>(null);
+  const [leaderboard, setLeaderboard] = React.useState<LeaderboardEntry[]>([]);
+
+  React.useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      try {
+        const [statsRes, leaderboardRes] = await Promise.all([
+          ddApi.fetch("/referrals/leaderboard/stats").then((res) => res.json()),
+          ddApi
+            .fetch("/referrals/leaderboard/rankings")
+            .then((res) => res.json()),
+        ]);
+        setLeaderboardStats(statsRes);
+        setLeaderboard(leaderboardRes);
+      } catch (error) {
+        console.error("Error fetching leaderboard data:", error);
+      }
+    };
+
+    fetchLeaderboardData();
+    const interval = setInterval(fetchLeaderboardData, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!leaderboardStats) return null;
+
+  return (
+    <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
+      {/* Period Status Banner */}
+      <div className="bg-gradient-to-r from-brand-500/20 to-brand-700/20 rounded-lg p-4 mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-xl font-bold text-brand-400">
+              Current Period:{" "}
+              {new Date(
+                leaderboardStats.current_period.start_date
+              ).toLocaleDateString()}{" "}
+              -{" "}
+              {new Date(
+                leaderboardStats.current_period.end_date
+              ).toLocaleDateString()}
+            </h3>
+            <p className="text-sm text-gray-400">
+              Next Payout:{" "}
+              {new Date(leaderboardStats.next_payout_date).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-400">Global Referrals</p>
+            <p className="text-2xl font-bold text-brand-400">
+              {leaderboardStats.total_global_referrals.toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Leaderboard */}
+      <div className="space-y-4">
+        <h4 className="text-lg font-bold text-gray-100">
+          🏆 Referral Rankings
+        </h4>
+        <div className="space-y-2">
+          {leaderboard.map((entry) => (
+            <div
+              key={entry.username}
+              className="bg-dark-300/30 rounded-lg p-4 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className={`text-lg font-bold ${
+                    entry.rank <= 3 ? "text-brand-400" : "text-gray-400"
+                  }`}
+                >
+                  #{entry.rank}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-200">{entry.username}</p>
+                  <p className="text-sm text-gray-400">
+                    {entry.referrals} referrals
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-brand-400 font-bold">
+                    {entry.period_rewards} DUEL
+                  </span>
+                  {entry.trend === "up" && (
+                    <span className="text-green-400">↑</span>
+                  )}
+                  {entry.trend === "down" && (
+                    <span className="text-red-400">↓</span>
+                  )}
+                  {entry.trend === "stable" && (
+                    <span className="text-gray-400">→</span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500">
+                  Lifetime: {entry.lifetime_rewards} DUEL
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Milestone Rewards */}
+      <div className="mt-6">
+        <h4 className="text-lg font-bold text-gray-100 mb-4">
+          🎯 Referral Milestones
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-dark-300/30 rounded-lg p-4">
+            <div className="text-sm text-gray-400">Milestone 1</div>
+            <div className="text-lg font-bold text-gray-100">100 Referrals</div>
+            <div className="text-sm text-brand-400">Reward: 1,000 DUEL</div>
+          </div>
+          <div className="bg-dark-300/30 rounded-lg p-4">
+            <div className="text-sm text-gray-400">Milestone 2</div>
+            <div className="text-lg font-bold text-gray-100">500 Referrals</div>
+            <div className="text-sm text-brand-400">Reward: 10,000 DUEL</div>
+          </div>
+          <div className="bg-dark-300/30 rounded-lg p-4">
+            <div className="text-sm text-gray-400">Milestone 3</div>
+            <div className="text-lg font-bold text-gray-100">
+              1000 Referrals
+            </div>
+            <div className="text-sm text-brand-400">Reward: 25,000 DUEL</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -168,6 +586,9 @@ export const ReferralDashboard: React.FC = () => {
       animate="animate"
       variants={fadeIn}
     >
+      {/* Replace LaunchSection with ReferralLeaderboard */}
+      <ReferralLeaderboard />
+
       <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
         <div className="flex justify-between items-start mb-6">
           <motion.h3
@@ -200,6 +621,7 @@ export const ReferralDashboard: React.FC = () => {
                         key={platform}
                         platform={platform as any}
                         referralCode={referralCode}
+                        stats={stats}
                       />
                     ))}
                   </div>
@@ -209,7 +631,7 @@ export const ReferralDashboard: React.FC = () => {
           </div>
         </div>
 
-        <ReferralLink code={referralCode} />
+        <ReferralLink code={referralCode} stats={stats} />
 
         <div className="space-y-6 mt-8">
           {/* Value Proposition */}
@@ -489,6 +911,9 @@ export const ReferralDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Analytics Section */}
+      {stats && <AnalyticsSection />}
 
       {/* Recent Activity */}
       {stats && (
