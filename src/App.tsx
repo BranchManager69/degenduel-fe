@@ -48,6 +48,7 @@ import { AdminDashboard } from "./pages/admin/AdminDashboard";
 /* superadmin pages */
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
+import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub";
 import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
@@ -251,6 +252,16 @@ export const App: React.FC = () => {
                 element={
                   <SuperAdminRoute>
                     <SuperAdminDashboard />
+                  </SuperAdminRoute>
+                }
+              />
+
+              {/* Control Panel Hub */}
+              <Route
+                path="/superadmin/control-hub"
+                element={
+                  <SuperAdminRoute>
+                    <ControlPanelHub />
                   </SuperAdminRoute>
                 }
               />

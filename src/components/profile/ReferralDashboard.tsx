@@ -1,7 +1,6 @@
 // src/components/profile/ReferralDashboard.tsx
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useReferral } from "hooks/useReferral";
 import React, { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import {
@@ -22,6 +21,7 @@ import {
   FaTwitter,
   FaUsers,
 } from "react-icons/fa";
+import { useReferral } from "../../hooks/useReferral";
 import { ddApi } from "../../services/dd-api";
 
 // Clean interfaces

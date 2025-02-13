@@ -1,5 +1,5 @@
 export const ddApi = {
-  fetch: jest.fn().mockImplementation((path: string, options?: RequestInit) => {
+  fetch: jest.fn().mockImplementation((path: string) => {
     // Default successful responses for different endpoints
     switch (path) {
       case "/referrals/analytics":

@@ -123,6 +123,33 @@ export const SuperAdminDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Control Panel Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Control Panel Hub Link */}
+            <Link
+              to="/superadmin/control-hub"
+              className="group relative overflow-hidden bg-dark-200/50 backdrop-blur-lg rounded-lg border border-brand-500/20 hover:bg-dark-200/70 transition-all duration-300"
+            >
+              <div className="p-6">
+                <div className="flex items-center gap-4">
+                  <span className="text-3xl">🎛️</span>
+                  <div>
+                    <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
+                      CONTROL HUB
+                    </h2>
+                    <p className="text-sm text-gray-400 font-mono mt-1">
+                      MASTER_CONTROL_PANEL_ACCESS
+                    </p>
+                  </div>
+                </div>
+                <div className="absolute bottom-0 right-0 p-4">
+                  <span className="text-brand-400 text-lg group-hover:translate-x-1 transition-transform">
+                    →
+                  </span>
+                </div>
+                {/* Animated gradient border */}
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-500/0 via-brand-500/10 to-brand-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              </div>
+            </Link>
+
             {/* Service Control Panel Link */}
             <Link
               to="/superadmin/services"
