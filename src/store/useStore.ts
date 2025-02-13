@@ -38,6 +38,22 @@ export const FONT_PRESETS = {
   },
 } as const;
 
+export interface ServiceState {
+  status: "online" | "offline" | "degraded";
+  metrics: {
+    uptime: number;
+    latency: number;
+    activeUsers: number;
+  };
+}
+
+export interface ServiceAlert {
+  id: string;
+  type: "info" | "warning" | "error";
+  message: string;
+  timestamp: number;
+}
+
 // Add debug configuration
 interface DebugConfig {
   forceWalletNotFound?: boolean;
@@ -61,6 +77,8 @@ type StoreState = {
   contests: Contest[];
   tokens: Token[];
   maintenanceMode: boolean;
+  serviceState: ServiceState | null;
+  serviceAlerts: ServiceAlert[];
   setUser: (user: User | null) => void;
   setContests: (contests: Contest[]) => void;
   setTokens: (tokens: Token[]) => void;
@@ -69,11 +87,26 @@ type StoreState = {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   setMaintenanceMode: (enabled: boolean) => void;
+  setServiceState: (
+    status: "online" | "offline" | "degraded",
+    metrics: { uptime: number; latency: number; activeUsers: number }
+  ) => void;
+  addServiceAlert: (
+    type: "info" | "warning" | "error",
+    message: string
+  ) => void;
 };
 
 type StorePersist = PersistOptions<
   StoreState,
-  Pick<StoreState, "user" | "debugConfig" | "maintenanceMode">
+  Pick<
+    StoreState,
+    | "user"
+    | "debugConfig"
+    | "maintenanceMode"
+    | "serviceState"
+    | "serviceAlerts"
+  >
 >;
 
 const persistConfig: StorePersist = {
@@ -82,6 +115,8 @@ const persistConfig: StorePersist = {
     user: state.user,
     debugConfig: state.debugConfig,
     maintenanceMode: state.maintenanceMode,
+    serviceState: state.serviceState,
+    serviceAlerts: state.serviceAlerts,
   }),
 };
 
@@ -178,6 +213,8 @@ export const useStore = create<StoreState>()(
       error: null,
       debugConfig: {},
       maintenanceMode: false,
+      serviceState: null,
+      serviceAlerts: [],
 
       setDebugConfig: (config) =>
         set((state) => ({
@@ -472,6 +509,28 @@ export const useStore = create<StoreState>()(
           localStorage.removeItem("degen-duel-storage");
           set({ user: null, isConnecting: false });
         }
+      },
+
+      setServiceState: (status, metrics) =>
+        set({
+          serviceState: {
+            status,
+            metrics,
+          },
+        }),
+      addServiceAlert: (type, message) => {
+        const alerts = get().serviceAlerts || [];
+        set({
+          serviceAlerts: [
+            ...alerts,
+            {
+              id: crypto.randomUUID(),
+              type,
+              message,
+              timestamp: Date.now(),
+            },
+          ],
+        });
       },
     }),
     {

@@ -30,6 +30,7 @@ export interface User {
   risk_level: string;
   is_admin?: boolean;
   jwt?: string; // JWT token for authentication
+  session_token?: string; // Session token for WebSocket authentication
 }
 
 export interface BaseToken {

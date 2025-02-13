@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { ContestSection } from "../../../components/landing/ContestSection";
 import { Features } from "../../../components/landing/Features";
-import { MarketVerse } from "../../../components/visualization/MarketVerse";
+import { TokenVerse } from "../../../components/visualization/TokenVerse";
 import { isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
@@ -87,9 +87,9 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* MarketVerse Background with enhanced overlay effects */}
+      {/* TokenVerse Background with enhanced overlay effects */}
       <div className="fixed inset-0">
-        <MarketVerse />
+        <TokenVerse />
         <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-transparent to-black/90 pointer-events-none" />
         {/* Additional cosmic effects */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(127,0,255,0.1)_0%,transparent_70%)] animate-pulse-slow" />

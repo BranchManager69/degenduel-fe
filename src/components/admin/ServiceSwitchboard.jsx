@@ -5,6 +5,27 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import ServiceSwitch from './ServiceSwitch';
+import { useServiceWebSocket } from '../../hooks/useServiceWebSocket';
+import { useStore } from '../../store/useStore';
+
+// Define service groups
+const SERVICE_GROUPS = {
+    CORE: {
+        title: 'Core Services',
+        description: 'Essential system services',
+        services: ['token_sync_service', 'contest_evaluation_service']
+    },
+    WALLET: {
+        title: 'Wallet Services',
+        description: 'Wallet and transaction management',
+        services: ['wallet_rake_service', 'admin_wallet_service']
+    },
+    MONITORING: {
+        title: 'Monitoring Services',
+        description: 'System monitoring and analytics',
+        services: ['analytics_service', 'performance_monitor_service']
+    }
+};
 
 const SwitchboardContainer = styled.div`
     background: #1a202c;
@@ -51,10 +72,61 @@ const LoadingOverlay = styled(motion.div)`
     border-radius: 15px;
 `;
 
+const ServiceGroup = styled.div`
+    background: #2d3748;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+`;
+
+const GroupTitle = styled.h3`
+    color: #e2e8f0;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+`;
+
+const GroupDescription = styled.p`
+    color: #a0aec0;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+`;
+
+const GroupStatus = styled.div`
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+    font-size: 0.8rem;
+`;
+
+const StatusDot = styled.div`
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${props => 
+        props.$status === 'healthy' ? '#48BB78' :
+        props.$status === 'warning' ? '#ECC94B' :
+        '#F56565'};
+    box-shadow: 0 0 8px ${props => 
+        props.$status === 'healthy' ? 'rgba(72, 187, 120, 0.5)' :
+        props.$status === 'warning' ? 'rgba(236, 201, 75, 0.5)' :
+        'rgba(245, 101, 101, 0.5)'};
+`;
+
 const ServiceSwitchboard = () => {
-    const [services, setServices] = useState({});
+    const { services, setServices } = useStore();
     const [loading, setLoading] = useState(true);
     const [toggleLoading, setToggleLoading] = useState('');
+    useServiceWebSocket(); // Initialize WebSocket connection
 
     const fetchServices = async () => {
         try {
@@ -80,13 +152,7 @@ const ServiceSwitchboard = () => {
                 method: 'POST'
             });
             const data = await response.json();
-            if (data.success) {
-                setServices(prev => ({
-                    ...prev,
-                    [serviceName]: data.state
-                }));
-                toast.success(`${serviceName.replace(/_/g, ' ')} ${data.state.enabled ? 'enabled' : 'disabled'}`);
-            } else {
+            if (!data.success) {
                 toast.error('Failed to toggle service');
             }
         } catch (error) {
@@ -97,26 +163,58 @@ const ServiceSwitchboard = () => {
         }
     };
 
+    const getGroupStatus = (groupServices) => {
+        const statuses = groupServices.map(serviceName => {
+            const service = services[serviceName];
+            if (!service) return 'unknown';
+            if (service.status === 'error') return 'error';
+            if (service.stats?.circuitBreaker?.isOpen) return 'warning';
+            return 'healthy';
+        });
+
+        if (statuses.includes('error')) return 'error';
+        if (statuses.includes('warning')) return 'warning';
+        if (statuses.includes('unknown')) return 'warning';
+        return 'healthy';
+    };
+
     useEffect(() => {
         fetchServices();
-        const interval = setInterval(fetchServices, 30000); // Refresh every 30 seconds
-        return () => clearInterval(interval);
     }, []);
 
     return (
         <SwitchboardContainer>
             <Title>Service Control Panel</Title>
-            <SwitchGrid>
-                {Object.entries(services).map(([name, state]) => (
-                    <ServiceSwitch
-                        key={name}
-                        name={name}
-                        enabled={state.enabled}
-                        onToggle={() => handleToggle(name)}
-                        loading={toggleLoading === name}
-                    />
-                ))}
-            </SwitchGrid>
+            
+            {Object.entries(SERVICE_GROUPS).map(([groupKey, group]) => {
+                const groupStatus = getGroupStatus(group.services);
+                
+                return (
+                    <ServiceGroup key={groupKey}>
+                        <GroupTitle>
+                            {group.title}
+                            <GroupStatus>
+                                <StatusDot $status={groupStatus} />
+                                {groupStatus.toUpperCase()}
+                            </GroupStatus>
+                        </GroupTitle>
+                        <GroupDescription>{group.description}</GroupDescription>
+                        <SwitchGrid>
+                            {group.services.map(serviceName => (
+                                <ServiceSwitch
+                                    key={serviceName}
+                                    name={serviceName}
+                                    enabled={services[serviceName]?.enabled}
+                                    state={services[serviceName]}
+                                    onToggle={() => handleToggle(serviceName)}
+                                    loading={toggleLoading === serviceName}
+                                />
+                            ))}
+                        </SwitchGrid>
+                    </ServiceGroup>
+                );
+            })}
+
             {loading && (
                 <LoadingOverlay
                     initial={{ opacity: 0 }}
