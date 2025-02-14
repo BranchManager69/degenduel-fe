@@ -103,7 +103,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                 `}
               >
                 <img
-                  src="/assets/media/default_profile_pic.png"
+                  src="/assets/media/default/profile_pic.png"
                   alt={displayName}
                   className="w-full h-full object-cover"
                 />

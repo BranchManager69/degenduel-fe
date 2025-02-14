@@ -96,8 +96,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
     },
     build: {
       outDir,
-      sourcemap: isDev,
-      minify: isDev ? false : ("esbuild" as const),
+      sourcemap: true,
+      minify: isDev ? false : "esbuild",
       target: "esnext",
       cssCodeSplit: true,
       chunkSizeWarningLimit: 1000,
@@ -113,16 +113,22 @@ export default defineConfig(({ command, mode }): UserConfig => {
             ],
             "ui-vendor": ["framer-motion", "react-icons", "styled-components"],
           },
-          entryFileNames: "assets/[name].[hash].js",
-          chunkFileNames: "assets/[name].[hash].js",
-          assetFileNames: "assets/[name].[hash].[ext]",
+          entryFileNames: isDev
+            ? "assets/[name].js"
+            : "assets/[name].[hash].js",
+          chunkFileNames: isDev
+            ? "assets/[name].js"
+            : "assets/[name].[hash].js",
+          assetFileNames: isDev
+            ? "assets/[name].[ext]"
+            : "assets/[name].[hash].[ext]",
           format: "esm" as ModuleFormat,
-          compact: !isDev,
+          compact: false,
           generatedCode: {
             symbols: true,
             constBindings: true,
           },
-          minifyInternalExports: !isDev,
+          minifyInternalExports: false,
         },
       },
       terserOptions: isDev
@@ -143,6 +149,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
               comments: false,
             },
           },
+    },
+    esbuild: {
+      keepNames: isDev,
+      minifyIdentifiers: !isDev,
+      minifySyntax: !isDev,
+      minifyWhitespace: !isDev,
+      sourcemap: true,
     },
     logLevel: "info" as LogLevel,
   };

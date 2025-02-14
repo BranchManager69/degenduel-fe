@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAnalyticsWebSocket } from "../../hooks/useAnalyticsWebSocket";
 import { useCircuitBreakerSocket } from "../../hooks/useCircuitBreakerSocket";
 import { usePortfolioWebSocket } from "../../hooks/usePortfolioWebSocket";
@@ -9,17 +9,36 @@ import { useStore } from "../../store/useStore";
 export const WebSocketManager: React.FC = () => {
   const { user } = useStore();
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAuthenticated = !!user?.session_token;
 
-  // Initialize all required WebSocket connections
-  usePortfolioWebSocket(); // Always connect for authenticated users
-  useWalletWebSocket(); // Always connect for authenticated users
+  // Only initialize WebSocket connections if user is authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-  // Admin-only connections
-  if (isAdmin) {
-    useServiceWebSocket();
-    useCircuitBreakerSocket();
-    useAnalyticsWebSocket();
-  }
+    // Initialize user WebSocket connections
+    const portfolio = usePortfolioWebSocket();
+    const wallet = useWalletWebSocket();
+
+    // Initialize admin-only connections
+    let service: any, circuit: any, analytics: any;
+    if (isAdmin) {
+      service = useServiceWebSocket();
+      circuit = useCircuitBreakerSocket();
+      analytics = useAnalyticsWebSocket();
+    }
+
+    // Cleanup function
+    return () => {
+      // Close all active connections
+      portfolio?.close?.();
+      wallet?.close?.();
+      if (isAdmin) {
+        service?.close?.();
+        circuit?.close?.();
+        analytics?.close?.();
+      }
+    };
+  }, [isAuthenticated, isAdmin]);
 
   // This component doesn't render anything
   return null;
