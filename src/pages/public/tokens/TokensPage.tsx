@@ -46,6 +46,61 @@ const formatNumber = (value: string | number, decimals = 2) => {
   return num.toFixed(decimals);
 };
 
+// Add new interface for token response metadata
+interface TokenResponseMetadata {
+  timestamp: string;
+  _cached?: boolean;
+  _stale?: boolean;
+  _cachedAt?: string;
+}
+
+// DataStatus component for showing data freshness
+const DataStatus: React.FC<{ metadata: TokenResponseMetadata }> = ({
+  metadata,
+}) => {
+  const [, forceUpdate] = React.useState({});
+
+  // Force update every second to keep the "ago" text current
+  React.useEffect(() => {
+    const interval = setInterval(() => forceUpdate({}), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!metadata._cached) {
+    return (
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm">
+        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        Live Data
+      </div>
+    );
+  }
+
+  const cachedAt = new Date(metadata._cachedAt || metadata.timestamp);
+  const ageSeconds = Math.floor(
+    (new Date().getTime() - cachedAt.getTime()) / 1000
+  );
+  const ageText =
+    ageSeconds < 60
+      ? `${ageSeconds}s ago`
+      : `${Math.floor(ageSeconds / 60)}m ago`;
+
+  if (metadata._stale) {
+    return (
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-sm">
+        <span className="w-2 h-2 rounded-full bg-yellow-400" />
+        Stale Cache ({ageText})
+      </div>
+    );
+  }
+
+  return (
+    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 text-brand-400 text-sm">
+      <span className="w-2 h-2 rounded-full bg-brand-400" />
+      Cached ({ageText})
+    </div>
+  );
+};
+
 // TokenCard component for better organization
 const TokenCard: React.FC<{ token: Token }> = ({ token }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -239,6 +294,9 @@ const TokenCard: React.FC<{ token: Token }> = ({ token }) => {
 // Tokens page
 export const TokensPage: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
+  const [metadata, setMetadata] = useState<TokenResponseMetadata>({
+    timestamp: new Date().toISOString(),
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof Token>("marketCap");
@@ -265,6 +323,15 @@ export const TokensPage: React.FC = () => {
         // Get all tokens in one request
         const response = await ddApi.fetch("/dd-serv/tokens");
         const responseData = await response.json();
+
+        // Extract metadata
+        const metadata: TokenResponseMetadata = {
+          timestamp: responseData.timestamp,
+          _cached: responseData._cached,
+          _stale: responseData._stale,
+          _cachedAt: responseData._cachedAt,
+        };
+        setMetadata(metadata);
 
         // Check if the data is in a 'data' property or is the response itself
         const tokensData = Array.isArray(responseData)
@@ -324,18 +391,14 @@ export const TokensPage: React.FC = () => {
 
     checkMaintenanceAndFetchTokens();
 
-    // Set up periodic maintenance check
-    const maintenanceCheckInterval = setInterval(async () => {
-      try {
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        setIsMaintenanceMode(isInMaintenance);
-      } catch (err) {
-        console.error("Failed to check maintenance status:", err);
-      }
-    }, 30000); // Check every 30 seconds
+    // Set up auto-refresh interval - 30s for fresh data, 5s for stale
+    const refreshInterval = setInterval(
+      checkMaintenanceAndFetchTokens,
+      metadata._stale ? 5000 : 30000
+    );
 
-    return () => clearInterval(maintenanceCheckInterval);
-  }, []);
+    return () => clearInterval(refreshInterval);
+  }, [metadata._stale]); // Add dependency on stale status
 
   const filteredAndSortedTokens = tokens
     .filter(
@@ -401,9 +464,10 @@ export const TokensPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-100 mb-2">
-          Tokens Supported
-        </h1>
+        <div className="flex justify-between items-start mb-2">
+          <h1 className="text-3xl font-bold text-gray-100">Tokens Supported</h1>
+          <DataStatus metadata={metadata} />
+        </div>
         <p className="text-gray-400">
           Due to the nature of our game, portfolios must consist of tokens on
           the DegenDuel Whitelist. Read about our Whitelist selection criteria{" "}
@@ -411,6 +475,7 @@ export const TokensPage: React.FC = () => {
             href="https://degenduel.me/whitelist"
             target="_blank"
             rel="noopener noreferrer"
+            className="text-brand-400 hover:text-brand-300"
           >
             here
           </a>
