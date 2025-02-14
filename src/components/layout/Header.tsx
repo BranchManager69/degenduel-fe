@@ -12,7 +12,7 @@ import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
 import { LiveContestTicker } from "./LiveContestTicker";
 import { MobileMenuButton } from "./MobileMenuButton";
-import { UserMenu } from "./UserMenu";
+import { UserMenu } from "./user-menu/UserMenu";
 
 export const Header: React.FC = () => {
   const { isCompact } = useScrollHeader(50);

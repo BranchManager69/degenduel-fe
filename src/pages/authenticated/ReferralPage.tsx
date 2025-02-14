@@ -1,5 +1,5 @@
-import React from 'react';
-import { ReferralDashboard } from '../../components/profile/ReferralDashboard';
+import React from "react";
+import { ReferralDashboard } from "../../components/referrals-dashboard/ReferralDashboard";
 
 export const ReferralPage: React.FC = () => {
   return (
@@ -7,4 +7,4 @@ export const ReferralPage: React.FC = () => {
       <ReferralDashboard />
     </div>
   );
-}; 
+};

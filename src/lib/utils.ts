@@ -10,9 +10,22 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Helper: Format currency
-export const formatCurrency = (amount: number | string): string => {
+export const formatCurrency = (amount: string | number): string => {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return `${num.toFixed(2)} SOL`;
+  if (isNaN(num)) return "0 SOL";
+
+  // For very small amounts (less than 0.01), show all decimal places up to 9
+  if (num < 0.01) {
+    return `${num.toFixed(9).replace(/\.?0+$/, "")} SOL`;
+  }
+
+  // For amounts between 0.01 and 1, show 3 decimal places
+  if (num < 1) {
+    return `${num.toFixed(3).replace(/\.?0+$/, "")} SOL`;
+  }
+
+  // For larger amounts, show 2 decimal places
+  return `${num.toFixed(2).replace(/\.?0+$/, "")} SOL`;
 };
 
 // Helper: Format market cap

@@ -109,20 +109,19 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
 
                 {/* Divider before admin sections */}
                 <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
-
-                <MenuItem
-                  to="/admin"
-                  onClick={() => setIsOpen(false)}
-                  className="text-red-300 hover:text-red-200 font-medium"
-                >
-                  Admin
-                </MenuItem>
                 <MenuItem
                   to="/superadmin"
                   onClick={() => setIsOpen(false)}
                   className="bg-gradient-to-r from-red-200 via-brand-200 to-purple-200 hover:from-white hover:via-brand-100 hover:to-purple-100 text-transparent bg-clip-text font-bold tracking-wider"
                 >
                   SUPER
+                </MenuItem>
+                <MenuItem
+                  to="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className="text-red-300 hover:text-red-200 font-medium"
+                >
+                  Admin
                 </MenuItem>
               </motion.div>
             </motion.div>

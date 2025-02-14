@@ -1,8 +1,8 @@
 import React from "react";
 import { formatCurrency } from "../../lib/utils";
 import { Contest } from "../../types/index";
-import { CreateContestButton } from "../contests/browser/CreateContestButton";
-import { ContestDifficulty } from "../landing/contests/ContestDifficulty";
+import { CreateContestButton } from "../contest-lobby/browser/CreateContestButton";
+import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 

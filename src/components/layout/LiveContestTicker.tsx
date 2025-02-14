@@ -1,4 +1,4 @@
-// src/components/ui/LiveContestTicker.tsx
+// src/components/layout/LiveContestTicker.tsx
 
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
@@ -132,7 +132,7 @@ export const LiveContestTicker: React.FC<Props> = ({
                 key={index}
                 className="inline-flex items-center space-x-4 text-sm text-gray-400"
               >
-                <span>Featured Duels are currently unavailable</span>
+                <span>There are no featured duels right now.</span>
                 <span className="text-gray-500">•</span>
               </div>
             ))}
@@ -186,7 +186,7 @@ export const LiveContestTicker: React.FC<Props> = ({
             ref={containerRef}
             className="inline-flex items-center w-full"
             style={{
-              animation: "ticker 30s linear infinite",
+              animation: "ticker 20s linear infinite",
               animationPlayState: isPaused ? "paused" : "running",
             }}
             onMouseEnter={() => setIsPaused(true)}

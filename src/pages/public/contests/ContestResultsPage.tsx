@@ -2,10 +2,10 @@
 
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CelebrationOverlay } from "../../../components/results/CelebrationOverlay";
-import { FinalLeaderboard } from "../../../components/results/FinalLeaderboard";
-import { PerformanceChart } from "../../../components/results/PerformanceChart";
-import { TokenPerformance } from "../../../components/results/TokenPerformance";
+import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
+import { FinalLeaderboard } from "../../../components/contest-results/FinalLeaderboard";
+import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
+import { TokenPerformance } from "../../../components/contest-results/TokenPerformance";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 

@@ -32,6 +32,11 @@ export interface User {
   jwt?: string; // JWT token for authentication
   session_token?: string; // Session token for WebSocket authentication
   is_superadmin?: boolean;
+  profile_image?: {
+    url: string;
+    thumbnail_url?: string;
+    updated_at?: string;
+  };
 }
 
 export interface BaseToken {
@@ -63,74 +68,58 @@ export interface TokensResponse {
   data: Token[];
 }
 
-interface Website {
-  url: string;
-  label: string;
-}
-
+// Token interface (matches DegenDuel market data API)
 export interface Token {
-  id: number;
-  symbol: string;
-  name: string;
   contractAddress: string;
-  chain: string;
-  createdAt: string;
-  updatedAt: string;
-
-  // Price and market data
+  name: string;
+  symbol: string;
   price: string;
-  marketCap: number | null;
+  marketCap: string;
   volume24h: string;
-
-  // Changes and metrics
-  changesJson: {
+  change24h: string;
+  changesJson?: {
     m5: number;
     h1: number;
     h6: number;
     h24: number;
-    [key: string]: number; // Allow for future timeframes
+    [key: string]: number;
   };
-
-  // Token metadata
-  imageUrl: string | null;
-  headerImage: string | null;
-  openGraphImage: string | null;
-  coingeckoId: string | null;
-  websites: Website[] | null;
-
-  // Liquidity information
-  liquidity: TokenLiquidity;
-  pairUrl: string;
-
-  // Transaction statistics
-  transactionsJson: {
+  transactionsJson?: {
     m5: TimeframeStats;
     h1: TimeframeStats;
     h6: TimeframeStats;
     h24: TimeframeStats;
-    [key: string]: TimeframeStats; // Allow for future timeframes
+    [key: string]: TimeframeStats;
   };
-
-  // Token pair information
-  baseToken: BaseToken;
-  quoteToken: BaseToken;
-
-  // Historical price changes
-  priceChanges: PriceChange[];
-
-  // Social media links
-  socials: Array<{
-    platform: string;
+  baseToken?: BaseToken;
+  quoteToken?: BaseToken;
+  liquidity?: {
+    usd: string;
+    base: string;
+    quote: string;
+  };
+  images?: {
+    imageUrl: string;
+    headerImage: string;
+    openGraphImage: string;
+  };
+  socials?: {
+    twitter?: { url: string; count: number | null };
+    telegram?: { url: string; count: number | null };
+    discord?: { url: string; count: number | null };
+  };
+  websites?: Array<{
     url: string;
+    label: string;
   }>;
+}
 
-  // Computed/transformed fields
-  change_24h?: number; // Maintained for backward compatibility
-
-  // Future-proofing
-  metadata?: Record<string, any>;
-  flags?: Record<string, boolean>;
-  [key: string]: any; // Allow for additional properties
+// Token response metadata
+export interface TokenResponseMetadata {
+  timestamp: string;
+  _cached?: boolean;
+  _stale?: boolean;
+  _cachedAt?: string;
 }
 
 // Activity Types

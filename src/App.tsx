@@ -25,7 +25,7 @@ import { MovingBackground } from "./components/ui/MovingBackground";
 import { ReferralProvider } from "./hooks/useReferral";
 /* authenticated pages */
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
-import { Profile } from "./pages/authenticated/Profile";
+import { Profile } from "./pages/authenticated/PrivateProfilePage";
 import { ReferralPage } from "./pages/authenticated/ReferralPage";
 /* public pages */
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
@@ -44,7 +44,8 @@ import { BannedIP } from "./pages/public/general/BannedIP";
 import { BannedUser } from "./pages/public/general/BannedUser";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
-import { PublicProfile } from "./pages/public/general/PublicProfile";
+import { PublicProfileA } from "./pages/public/general/PublicProfilePageA"; // debug
+import { PublicProfileB } from "./pages/public/general/PublicProfilePageB"; // production
 /* admin pages */
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { WebSocketTesting } from "./pages/admin/WebSocketTesting";
@@ -137,8 +138,12 @@ export const App: React.FC = () => {
               {/* Contest Details */}
               <Route path="/contests/:id" element={<ContestDetails />} />
 
-              {/* Public Profile Page */}
-              <Route path="/profile/:identifier" element={<PublicProfile />} />
+              {/* Public Profile Page (A-B Testing) */}
+              <Route path="/profile/:identifier" element={<PublicProfileB />} />
+              <Route
+                path="/profile-alt/:identifier"
+                element={<PublicProfileA />}
+              />
 
               {/* FAQ */}
               <Route

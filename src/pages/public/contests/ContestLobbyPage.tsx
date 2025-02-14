@@ -2,12 +2,12 @@
 
 import React from "react";
 import { useParams } from "react-router-dom";
-import { ContestTimer } from "../../../components/contests/ContestTimer";
-import { Leaderboard } from "../../../components/contests/Leaderboard";
-import { PortfolioPerformance } from "../../../components/contests/PortfolioPerformance";
-import { TestSkipButton } from "../../../components/contests/TestSkipButton";
-import { TokenPerformance } from "../../../components/contests/TokenPerformance";
-import { ContestDifficulty } from "../../../components/landing/contests/ContestDifficulty";
+import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
+import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
+import { PortfolioPerformance } from "../../../components/contest-lobby/PortfolioPerformance";
+import { TestSkipButton } from "../../../components/contest-lobby/TestSkipButton";
+import { TokenPerformance } from "../../../components/contest-lobby/TokenPerformance";
+import { ContestDifficulty } from "../../../components/landing/contests-preview/ContestDifficulty";
 import { formatCurrency } from "../../../lib/utils";
 
 /*

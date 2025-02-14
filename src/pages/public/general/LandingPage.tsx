@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { ContestSection } from "../../../components/landing/ContestSection";
-import { Features } from "../../../components/landing/Features";
-import { TokenVerse } from "../../../components/visualization/TokenVerse";
+import { TokenVerse } from "../../../components/animated-background/TokenVerse";
+import { ContestSection } from "../../../components/landing/duplicates-to-delete/ContestSection";
+import { Features } from "../../../components/landing/duplicates-to-delete/Features";
 import { isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
@@ -35,9 +35,7 @@ export const LandingPage: React.FC = () => {
 
         // If in maintenance mode, don't fetch contests
         if (isInMaintenance) {
-          setError(
-            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
-          );
+          setError("DegenDuel is undergoing maintenance ⚙️ Try again later.");
           setLoading(false);
           return;
         }
@@ -56,9 +54,7 @@ export const LandingPage: React.FC = () => {
         console.error("Failed to load contests:", err);
         if (err instanceof Error && err.message.includes("503")) {
           setIsMaintenanceMode(true);
-          setError(
-            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
-          );
+          setError("DegenDuel is undergoing maintenance ⚙️ Try again later.");
         } else {
           setError("Failed to load contests");
         }
@@ -73,9 +69,7 @@ export const LandingPage: React.FC = () => {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
-          setError(
-            "DegenDuel is currently undergoing scheduled maintenance. Please try again later."
-          );
+          setError("DegenDuel is undergoing maintenance ⚙️ Try again later.");
         }
       } catch (err) {
         console.error("Failed to check maintenance status:", err);
@@ -120,7 +114,7 @@ export const LandingPage: React.FC = () => {
                     </span>
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 blur-lg -z-10" />
                   </span>
-                  <span className="relative inline-block mx-4 text-gray-400 transform -skew-x-12 font-cyber">
+                  <span className="relative inline-block mx-4 text-cyan-400 transform -skew-x-12 font-cyber">
                     ×
                   </span>
                   <span className="relative inline-block">
@@ -170,7 +164,7 @@ export const LandingPage: React.FC = () => {
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                       <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
                         <span className="text-brand-400 group-hover:text-brand-300">
-                          LEARN MORE
+                          MORE INFO
                         </span>
                         <svg
                           className="w-6 h-6 text-brand-400 group-hover:text-brand-300 transform group-hover:translate-x-1 transition-all"
@@ -195,8 +189,8 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Features section - Reduced spacing */}
-        <div className="relative mt-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Features />
           </div>
         </div>
@@ -204,15 +198,14 @@ export const LandingPage: React.FC = () => {
         {/* Contest sections */}
         {isMaintenanceMode ? (
           <div className="relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
                 <div className="flex items-center justify-center gap-2 text-yellow-400">
                   <span className="animate-pulse">⚠</span>
                   <span>
-                    DegenDuel is undergoing scheduled maintenance. Please try
-                    again later.
+                    DegenDuel is undergoing maintenance ⚙️ Try again later.
                   </span>
-                  <span className="animate-pulse">⚠</span>
+                  <span className="animate-pulse">⚙️</span>
                 </div>
               </div>
             </div>
@@ -227,17 +220,17 @@ export const LandingPage: React.FC = () => {
           </div>
         ) : (
           <div className="relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               {/* Add significant bottom margin to prevent footer overlap */}
               <div className="mb-32">
                 <ContestSection
-                  title="Live Battles"
+                  title="Live Duels"
                   type="active"
                   contests={activeContests}
                   loading={loading}
                 />
                 <ContestSection
-                  title="Open Challenges"
+                  title="Starting Soon"
                   type="pending"
                   contests={openContests}
                   loading={loading}

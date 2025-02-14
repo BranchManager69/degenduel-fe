@@ -10,7 +10,6 @@ import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
 import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
 import { UserDetail } from "../../components/ApiPlaygroundParts/UserDetail";
-import { CreateContestButton } from "../../components/contests/browser/CreateContestButton";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
@@ -688,11 +687,6 @@ export const AdminDashboard: React.FC = () => {
                     <div className="bg-dark-300/30 rounded-lg p-4 relative z-10">
                       <EndContest />
                     </div>
-                  </div>
-
-                  {/* Create Contest Button */}
-                  <div className="flex justify-end relative z-10">
-                    <CreateContestButton />
                   </div>
 
                   {/* Contest List */}

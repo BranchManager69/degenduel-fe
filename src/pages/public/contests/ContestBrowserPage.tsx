@@ -1,9 +1,10 @@
 // src/pages/public/ContestBrowserPage.tsx
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ContestCard } from "../../../components/contests/browser/ContestCard";
-import { ContestSort } from "../../../components/contests/browser/ContestSort";
-import { CreateContestButton } from "../../../components/contests/browser/CreateContestButton";
+import { ContestCard } from "../../../components/contest-browser/ContestCard";
+import { ContestSort } from "../../../components/contest-browser/ContestSort";
+import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
+import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { useAuth } from "../../../hooks/useAuth";
 import { ddApi } from "../../../services/dd-api";
 import { Contest, ContestSettings } from "../../../types/index";
@@ -11,7 +12,6 @@ import type { SortDirection, SortField } from "../../../types/sort";
 
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
-  ////const { user } = useStore();
   const { isAdmin } = useAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,7 @@ export const ContestBrowser: React.FC = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showCancelled, setShowCancelled] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const fetchContests = async () => {
     try {
@@ -226,7 +227,11 @@ export const ContestBrowser: React.FC = () => {
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
         </h1>
-        {isAdmin() && <CreateContestButton />}
+        {isAdmin() && (
+          <CreateContestButton
+            onCreateClick={() => setIsCreateModalOpen(true)}
+          />
+        )}
       </div>
 
       {/* Enhanced Filter Toggle Button (Mobile) */}
@@ -307,23 +312,23 @@ export const ContestBrowser: React.FC = () => {
                 Duel Style
               </label>
               <div className="relative">
-              <select
+                <select
                   className="w-full bg-dark-300/50 text-gray-100 rounded-lg px-4 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors appearance-none"
-                value={activeDifficultyFilter}
-                onChange={(e) =>
-                  setActiveDifficultyFilter(
-                    e.target.value as ContestSettings["difficulty"] | ""
-                  )
-                }
-              >
+                  value={activeDifficultyFilter}
+                  onChange={(e) =>
+                    setActiveDifficultyFilter(
+                      e.target.value as ContestSettings["difficulty"] | ""
+                    )
+                  }
+                >
                   <option value="">All Styles</option>
-                <option value="guppy">Guppy</option>
-                <option value="tadpole">Tadpole</option>
-                <option value="squid">Squid</option>
-                <option value="dolphin">Dolphin</option>
-                <option value="shark">Shark</option>
-                <option value="whale">Whale</option>
-              </select>
+                  <option value="guppy">Guppy</option>
+                  <option value="tadpole">Tadpole</option>
+                  <option value="squid">Squid</option>
+                  <option value="dolphin">Dolphin</option>
+                  <option value="shark">Shark</option>
+                  <option value="whale">Whale</option>
+                </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg
                     className="w-4 h-4 text-gray-400"
@@ -445,6 +450,12 @@ export const ContestBrowser: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Create Contest Modal */}
+      <CreateContestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 };
