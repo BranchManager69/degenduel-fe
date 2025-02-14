@@ -58,6 +58,7 @@ import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
 /* themes */
+import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import "./styles/color-schemes.css";
 
 // Test HMR
@@ -384,6 +385,8 @@ export const App: React.FC = () => {
 
           {/* Global ServiceDebugPanel for superadmins */}
           {user?.is_superadmin && <ServiceDebugPanel />}
+
+          <AchievementNotification />
         </div>
       </ReferralProvider>
     </Router>

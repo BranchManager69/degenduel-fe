@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useAchievementWebSocket } from "../../hooks/useAchievementWebSocket";
 import { useAnalyticsWebSocket } from "../../hooks/useAnalyticsWebSocket";
 import { useCircuitBreakerSocket } from "../../hooks/useCircuitBreakerSocket";
 import { usePortfolioWebSocket } from "../../hooks/usePortfolioWebSocket";
@@ -18,6 +19,7 @@ export const WebSocketManager: React.FC = () => {
     // Initialize user WebSocket connections
     const portfolio = usePortfolioWebSocket();
     const wallet = useWalletWebSocket();
+    const achievements = useAchievementWebSocket();
 
     // Initialize admin-only connections
     let service: any, circuit: any, analytics: any;
@@ -32,6 +34,7 @@ export const WebSocketManager: React.FC = () => {
       // Close all active connections
       portfolio?.close?.();
       wallet?.close?.();
+      achievements?.close?.();
       if (isAdmin) {
         service?.close?.();
         circuit?.close?.();

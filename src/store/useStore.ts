@@ -69,7 +69,7 @@ interface DebugConfig {
   customFonts?: FontConfig;
 }
 
-type StoreState = {
+interface StoreState {
   isConnecting: boolean;
   user: User | null;
   error: WalletError | null;
@@ -307,6 +307,54 @@ type StoreState = {
     }>;
   };
 
+  // Achievement System State
+  achievements: {
+    userProgress: {
+      level: number;
+      experiencePoints: number;
+      nextLevelThreshold: number;
+      tierProgress: {
+        achievements: {
+          bronze: number;
+          silver: number;
+          gold: number;
+          platinum: number;
+          diamond: number;
+        };
+      };
+    } | null;
+    unlockedAchievements: Array<{
+      id: string;
+      tier:
+        | "BRONZE"
+        | "SILVER"
+        | "GOLD"
+        | "PLATINUM"
+        | "DIAMOND"
+        | "TRANSCENDENT";
+      xp_awarded: number;
+      achieved_at: string;
+      context: any;
+    }>;
+    pendingCelebrations: Array<{
+      type: "achievement" | "level_up";
+      data: any;
+      timestamp: string;
+    }>;
+  };
+
+  // Achievement Actions
+  updateUserProgress: (
+    progress: StoreState["achievements"]["userProgress"]
+  ) => void;
+  addAchievement: (
+    achievement: StoreState["achievements"]["unlockedAchievements"][0]
+  ) => void;
+  addCelebration: (
+    celebration: StoreState["achievements"]["pendingCelebrations"][0]
+  ) => void;
+  clearCelebration: (timestamp: string) => void;
+
   // Analytics Actions
   updateUserActivity: (
     users: Array<{
@@ -367,7 +415,7 @@ type StoreState = {
     location?: string;
     timestamp: string;
   }) => void;
-};
+}
 
 type StorePersist = PersistOptions<
   StoreState,
@@ -382,6 +430,7 @@ type StorePersist = PersistOptions<
     | "services"
     | "analytics"
     | "wallet"
+    | "achievements"
   >
 >;
 
@@ -397,6 +446,7 @@ const persistConfig: StorePersist = {
     services: state.services,
     analytics: state.analytics,
     wallet: state.wallet,
+    achievements: state.achievements,
   }),
 };
 
@@ -512,6 +562,13 @@ export const useStore = create<StoreState>()(
         status: null,
         transfers: {},
         activities: [],
+      },
+
+      // Achievement System Initial State
+      achievements: {
+        userProgress: null,
+        unlockedAchievements: [],
+        pendingCelebrations: [],
       },
 
       setDebugConfig: (config) =>
@@ -964,6 +1021,59 @@ export const useStore = create<StoreState>()(
           wallet: {
             ...state.wallet,
             activities: [activity, ...state.wallet.activities.slice(0, 99)], // Keep last 100 activities
+          },
+        }));
+      },
+
+      // Achievement Actions Implementation
+      updateUserProgress: (progress) => {
+        set((state) => ({
+          achievements: {
+            ...state.achievements,
+            userProgress: progress,
+          },
+        }));
+      },
+
+      addAchievement: (achievement) => {
+        set((state) => ({
+          achievements: {
+            ...state.achievements,
+            unlockedAchievements: [
+              ...state.achievements.unlockedAchievements,
+              achievement,
+            ],
+            pendingCelebrations: [
+              ...state.achievements.pendingCelebrations,
+              {
+                type: "achievement",
+                data: achievement,
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          },
+        }));
+      },
+
+      addCelebration: (celebration) => {
+        set((state) => ({
+          achievements: {
+            ...state.achievements,
+            pendingCelebrations: [
+              ...state.achievements.pendingCelebrations,
+              celebration,
+            ],
+          },
+        }));
+      },
+
+      clearCelebration: (timestamp) => {
+        set((state) => ({
+          achievements: {
+            ...state.achievements,
+            pendingCelebrations: state.achievements.pendingCelebrations.filter(
+              (c) => c.timestamp !== timestamp
+            ),
           },
         }));
       },

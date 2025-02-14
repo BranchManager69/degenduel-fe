@@ -14,7 +14,14 @@ import { CreateContestButton } from "../../components/contests/browser/CreateCon
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
-type TabType = "overview" | "contests" | "users" | "activity" | "websocket";
+type TabType =
+  | "overview"
+  | "contests"
+  | "users"
+  | "activity"
+  | "websocket"
+  | "transactions"
+  | "achievements";
 
 // Add new interface for system alerts
 interface SystemAlert {
@@ -198,6 +205,8 @@ export const AdminDashboard: React.FC = () => {
     { id: "contests", label: "Contests", icon: "🏆" },
     { id: "users", label: "Users", icon: "👥" },
     { id: "activity", label: "Activity", icon: "📈" },
+    { id: "transactions", label: "Transactions", icon: "💰" },
+    { id: "achievements", label: "Achievements", icon: "🎯" },
   ];
 
   return (
@@ -738,6 +747,76 @@ export const AdminDashboard: React.FC = () => {
                   </h2>
                   <div className="relative z-10">
                     <ActivityMonitor limit={10} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Transactions Tab */}
+          <div
+            className={`
+              relative z-10
+              transition-all duration-300 ease-in-out
+              ${activeTab === "transactions" ? "block" : "hidden"}
+            `}
+          >
+            {activeTab === "transactions" && (
+              <div className="p-6 relative">
+                <div className="space-y-6">
+                  <div className="relative z-10">
+                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
+                      <span className="text-xl">💰</span>
+                      Transactions
+                    </h2>
+                    <div className="bg-dark-300/30 rounded-lg p-6">
+                      <p className="text-gray-400 mb-4">
+                        Access the transactions interface to manage and view all
+                        transactions.
+                      </p>
+                      <Link
+                        to="/transactions"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
+                      >
+                        <span>Open Transactions Panel</span>
+                        <span className="text-brand-400">→</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Achievements Tab */}
+          <div
+            className={`
+              relative z-10
+              transition-all duration-300 ease-in-out
+              ${activeTab === "achievements" ? "block" : "hidden"}
+            `}
+          >
+            {activeTab === "achievements" && (
+              <div className="p-6 relative">
+                <div className="space-y-6">
+                  <div className="relative z-10">
+                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
+                      <span className="text-xl">🎯</span>
+                      Achievement Testing
+                    </h2>
+                    <div className="bg-dark-300/30 rounded-lg p-6">
+                      <p className="text-gray-400 mb-4">
+                        Access the achievement testing interface to manage and
+                        test achievements.
+                      </p>
+                      <Link
+                        to="/achievement-test"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
+                      >
+                        <span>Open Achievement Testing Panel</span>
+                        <span className="text-brand-400">→</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

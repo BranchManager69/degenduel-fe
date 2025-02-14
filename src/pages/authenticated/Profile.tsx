@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
-import { AchievementsSection } from "../../components/profile/AchievementsSection";
+import { AchievementsSection } from "../../components/achievements/AchievementsSection";
+import { UserProgress } from "../../components/achievements/UserProgress";
 import { ContestHistorySection } from "../../components/profile/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/ProfileHeaderSection";
 import { UserStatsSection } from "../../components/profile/UserStatsSection";
@@ -95,6 +96,16 @@ export const Profile: React.FC = () => {
             exit={{ opacity: 0, y: -20 }}
           >
             <ProfileHeaderSection />
+          </motion.div>
+
+          {/* User Progress Section */}
+          <motion.div
+            key="user-progress"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <UserProgress />
           </motion.div>
 
           {/* User Stats Section */}
