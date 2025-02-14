@@ -56,32 +56,30 @@ export const Footer: React.FC = () => {
   return (
     <footer className="backdrop-blur-sm border-t border-dark-300/30 relative mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-3">
-        {" "}
-        {/* Drastically reduced padding */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Left side - Links */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between min-w-0">
+          {/* Left side - Links with horizontal scroll if needed */}
+          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0">
+            <div className="flex items-center space-x-4 shrink-0">
               <Link
                 to="/platform"
-                className="text-sm text-gray-400 hover:text-brand-400"
+                className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
               >
                 Platform
               </Link>
               <Link
                 to="/referrals"
-                className="text-sm text-gray-400 hover:text-brand-400"
+                className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
               >
                 Refer
               </Link>
               <Link
                 to="/support"
-                className="text-sm text-gray-400 hover:text-brand-400"
+                className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
               >
                 Support
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 shrink-0">
               <a
                 href="https://x.com/DegenDuelMe"
                 target="_blank"
@@ -115,21 +113,48 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Right side - Copyright and Status Indicator */}
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-500">© 2025 DegenDuel</div>
+          {/* Right side - Status Indicator */}
+          <div className="flex items-center gap-2 pl-4 shrink-0">
             <div
-              className={`w-2 h-2 rounded-full transition-all duration-300
+              className={`
+                flex items-center gap-2 px-3 py-1 rounded-full 
+                transition-all duration-300
                 ${
                   serverStatus === "online"
-                    ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                    ? "bg-green-500/10"
                     : serverStatus === "maintenance"
-                    ? "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"
-                    : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                    ? "bg-yellow-500/10"
+                    : "bg-red-500/10"
                 }
-                ${serverStatus === "online" ? "animate-pulse" : ""}
               `}
-            />
+            >
+              <div
+                className={`w-2 h-2 rounded-full transition-all duration-300
+                  ${
+                    serverStatus === "online"
+                      ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                      : serverStatus === "maintenance"
+                      ? "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"
+                      : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                  }
+                  ${serverStatus === "online" ? "animate-pulse" : ""}
+                `}
+              />
+              <span
+                className={`
+                text-xs font-cyber tracking-wide
+                ${
+                  serverStatus === "online"
+                    ? "text-green-400"
+                    : serverStatus === "maintenance"
+                    ? "text-yellow-400"
+                    : "text-red-400"
+                }
+              `}
+              >
+                {serverStatus.toUpperCase()}
+              </span>
+            </div>
           </div>
         </div>
       </div>

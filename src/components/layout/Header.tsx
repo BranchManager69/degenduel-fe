@@ -175,21 +175,50 @@ export const Header: React.FC = () => {
         {/* Maintenance Mode Banner */}
         {maintenanceMode && (
           <div className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-yellow-400/20" />
+            {/* Base glow layer */}
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-yellow-400/20 to-yellow-400/10" />
+
+            {/* Primary caution stripes - flowing left */}
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 animate-caution-flow-left"
               style={{
                 backgroundImage:
-                  "repeating-linear-gradient(-45deg, #000 0, #000 10px, #fbbf24 10px, #fbbf24 20px)",
+                  "repeating-linear-gradient(-45deg, transparent 0, transparent 10px, #fbbf24 10px, #fbbf24 20px, transparent 20px, transparent 30px)",
+                backgroundSize: "200% 200%",
                 opacity: 0.15,
               }}
             />
-            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2 relative">
-              <p className="text-yellow-400 text-sm text-center font-bold tracking-wider uppercase flex items-center justify-center gap-2">
-                <span className="animate-pulse">⚠</span>
-                ⚙️ DegenDuel maintenance in progress ⚙️
-                <span className="animate-pulse">⚠</span>
-              </p>
+
+            {/* Secondary caution stripes - flowing right */}
+            <div
+              className="absolute inset-0 animate-caution-flow-right"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, transparent 0, transparent 10px, #000 10px, #000 20px, transparent 20px, transparent 30px)",
+                backgroundSize: "200% 200%",
+                opacity: 0.1,
+              }}
+            />
+
+            {/* Shine effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/5 to-transparent animate-shine-slow" />
+
+            {/* Content */}
+            <div className="relative py-1.5">
+              <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Desktop message */}
+                <p className="hidden sm:flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">
+                  <span className="animate-pulse">⚠</span>
+                  <span>⚙️ DegenDuel maintenance in progress ⚙️</span>
+                  <span className="animate-pulse">⚠</span>
+                </p>
+                {/* Mobile message */}
+                <p className="sm:hidden flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">
+                  <span className="animate-pulse">⚠</span>
+                  <span>⚙️ Maintenance in progress ⚙️</span>
+                  <span className="animate-pulse">⚠</span>
+                </p>
+              </div>
             </div>
           </div>
         )}

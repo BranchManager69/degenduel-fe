@@ -414,9 +414,11 @@ const ReferralLeaderboard: React.FC = () => {
     const fetchLeaderboardData = async () => {
       try {
         const [statsRes, leaderboardRes] = await Promise.all([
-          ddApi.fetch("/referrals/leaderboard/stats").then((res) => res.json()),
           ddApi
-            .fetch("/referrals/leaderboard/rankings")
+            .fetch("/api/referrals/leaderboard/stats")
+            .then((res) => res.json()),
+          ddApi
+            .fetch("/api/referrals/leaderboard/rankings")
             .then((res) => res.json()),
         ]);
         setLeaderboardStats(statsRes);
@@ -553,8 +555,8 @@ export const ReferralDashboard: React.FC = () => {
       try {
         setLoading(true);
         const [statsResponse, codeResponse] = await Promise.all([
-          ddApi.fetch("/referrals/stats").then((res) => res.json()),
-          ddApi.fetch("/referrals/code").then((res) => res.json()),
+          ddApi.fetch("/api/referrals/stats").then((res) => res.json()),
+          ddApi.fetch("/api/referrals/code").then((res) => res.json()),
         ]);
 
         setStats(statsResponse);
