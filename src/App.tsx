@@ -23,33 +23,30 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { MovingBackground } from "./components/ui/MovingBackground";
 import { ReferralProvider } from "./hooks/useReferral";
-/* authenticated pages */
+/* Pages */
+import { AchievementNotification } from "./components/achievements/AchievementNotification";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { WebSocketTesting } from "./pages/admin/WebSocketTesting";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/PrivateProfilePage";
 import { ReferralPage } from "./pages/authenticated/ReferralPage";
-/* public pages */
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
 import { ContestResults } from "./pages/public/contests/ContestResultsPage";
+import { BannedIP } from "./pages/public/general/BannedIP";
+import { BannedUser } from "./pages/public/general/BannedUser";
 import { Contact } from "./pages/public/general/Contact";
 import { FAQ } from "./pages/public/general/FAQ";
 import { HowItWorks } from "./pages/public/general/HowItWorks";
 import { LandingPage } from "./pages/public/general/LandingPage";
-import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
-import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
-import { TokensPage } from "./pages/public/tokens/TokensPage";
-/* some extra pages */
-import { BannedIP } from "./pages/public/general/BannedIP";
-import { BannedUser } from "./pages/public/general/BannedUser";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
-import { PublicProfileA } from "./pages/public/general/PublicProfilePageA"; // debug
-import { PublicProfileB } from "./pages/public/general/PublicProfilePageB"; // production
-/* admin pages */
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { WebSocketTesting } from "./pages/admin/WebSocketTesting";
-/* superadmin pages */
+import { PublicProfile } from "./pages/public/general/PublicProfile";
+import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
+import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
+import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding";
+import { TokensPage } from "./pages/public/tokens/TokensPage";
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
 import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage";
@@ -58,8 +55,6 @@ import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
-/* themes */
-import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import "./styles/color-schemes.css";
 
 // Test HMR
@@ -72,8 +67,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     // (is the sheer amount of auth checks needed?)
 
-    // Check auth every 20 seconds in production, 10 in development
-    const checkInterval = import.meta.env.PROD ? 20 * 1000 : 10 * 1000;
+    // Check auth every 30 seconds in production, 10 in development
+    const checkInterval = import.meta.env.PROD ? 30 * 1000 : 10 * 1000;
     const authCheckInterval = setInterval(checkAuth, checkInterval);
 
     // Check auth on page load
@@ -93,6 +88,7 @@ export const App: React.FC = () => {
       }
     };
 
+    // Add event listeners for auth checks
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("online", handleOnlineStatus);
 
@@ -108,7 +104,7 @@ export const App: React.FC = () => {
     <Router>
       <ReferralProvider>
         <div className="min-h-screen flex flex-col relative">
-          {/* Add WebSocketManager at the root level */}
+          {/* Add WebSocketManager at the root */}
           <WebSocketManager />
 
           {/* Animated Background */}
@@ -132,18 +128,34 @@ export const App: React.FC = () => {
               {/* Contest Browser */}
               <Route path="/contests" element={<ContestBrowser />} />
 
-              {/* Tokens Page */}
-              <Route path="/tokens" element={<TokensPage />} />
-
               {/* Contest Details */}
               <Route path="/contests/:id" element={<ContestDetails />} />
 
-              {/* Public Profile Page (A-B Testing) */}
-              <Route path="/profile/:identifier" element={<PublicProfileB />} />
+              {/* Contest Lobby */}
               <Route
-                path="/profile-alt/:identifier"
-                element={<PublicProfileA />}
+                path="/contests/:id/live"
+                element={
+                  <MaintenanceGuard>
+                    <ContestLobby />{" "}
+                  </MaintenanceGuard>
+                }
               />
+
+              {/* Contest Results */}
+              <Route
+                path="/contests/:id/results"
+                element={
+                  <MaintenanceGuard>
+                    <ContestResults />{" "}
+                  </MaintenanceGuard>
+                }
+              />
+
+              {/* Tokens Page */}
+              <Route path="/tokens" element={<TokensPage />} />
+
+              {/* Public Profile Page */}
+              <Route path="/profile/:identifier" element={<PublicProfile />} />
 
               {/* FAQ */}
               <Route
@@ -174,6 +186,9 @@ export const App: React.FC = () => {
                   </MaintenanceGuard>
                 }
               />
+
+              {/* Leaderboards Landing Page */}
+              <Route path="/leaderboards" element={<LeaderboardLanding />} />
 
               {/* "Degen Rankings" Leaderboard */}
               <Route
@@ -217,30 +232,6 @@ export const App: React.FC = () => {
                   <AuthenticatedRoute>
                     <MaintenanceGuard>
                       <TokenSelection />
-                    </MaintenanceGuard>
-                  </AuthenticatedRoute>
-                }
-              />
-
-              {/* Contest Live In-Game Lobby */}
-              <Route
-                path="/contests/:id/live"
-                element={
-                  <AuthenticatedRoute>
-                    <MaintenanceGuard>
-                      <ContestLobby />{" "}
-                    </MaintenanceGuard>
-                  </AuthenticatedRoute>
-                }
-              />
-
-              {/* Contest Results */}
-              <Route
-                path="/contests/:id/results"
-                element={
-                  <AuthenticatedRoute>
-                    <MaintenanceGuard>
-                      <ContestResults />{" "}
                     </MaintenanceGuard>
                   </AuthenticatedRoute>
                 }
@@ -366,11 +357,10 @@ export const App: React.FC = () => {
           {/* Footer */}
           <Footer />
 
-          {/* Debug Panel */}
-          {/* <DebugPanel /> */}
-
           {/* Modals and Overlays */}
           <ReferralWelcomeModal />
+
+          {/* Toast Notifications */}
           <Toaster position="top-right" />
           <ToastContainer
             position="top-right"
@@ -385,10 +375,10 @@ export const App: React.FC = () => {
             theme="dark"
           />
 
-          {/* Service Status Banner (consider deleting, moving, or reusing for general non-MM server issues) */}
+          {/* Service Status Banner (consider deleting or moving and reusing for general non-MM server issues) */}
           <ServiceStatusBanner />
 
-          {/* Global ServiceDebugPanel for superadmins */}
+          {/* Global ServiceDebugPanel for superadmins | NOTE: This does NOT work globally; only shows on the websocket-service controls testing page */}
           {user?.is_superadmin && <ServiceDebugPanel />}
 
           <AchievementNotification />

@@ -39,7 +39,7 @@ interface ErrorState {
   history: string | null;
 }
 
-export const PublicProfileB: React.FC = () => {
+export const PublicProfile: React.FC = () => {
   const { identifier } = useParams();
   const { maintenanceMode } = useStore();
   const [userData, setUserData] = useState<UserData | null>(null);

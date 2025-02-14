@@ -1,6 +1,8 @@
+// src/pages/public/leaderboards/LeaderboardLanding.tsx
+
 import { Link } from "react-router-dom";
 
-export const Leaderboard = () => {
+export const LeaderboardLanding = () => {
   return (
     <div className="max-w-7xl mx-auto p-8">
       {/* Header Section */}
