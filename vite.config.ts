@@ -10,8 +10,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
   const isDev = command === "serve" || mode === "development";
   console.log("Running in", isDev ? "development" : "production", "mode");
 
-  // Try to load SSL certs if they exist
-  const certPath = "/etc/letsencrypt/live/dev.degenduel.me";
+  // Determine build output directory based on mode
+  const outDir = mode === "development" ? "dist-dev" : "dist";
+  console.log("Building to", outDir);
+
+  // Try to load SSL certs - both domains use the same certificate
+  const certPath = "/etc/letsencrypt/live/degenduel.me";
+  const domain = isDev ? "dev.degenduel.me" : "degenduel.me";
   let hasCerts = false;
   let httpsConfig = undefined;
 
@@ -22,35 +27,44 @@ export default defineConfig(({ command, mode }): UserConfig => {
       if (key && cert) {
         hasCerts = true;
         httpsConfig = { key, cert };
+        console.log(`Loaded SSL certificates for ${domain} from ${certPath}`);
       }
+    } else {
+      console.warn(`SSL certificate path ${certPath} does not exist`);
     }
   } catch (error) {
-    console.warn("SSL certificates not accessible, falling back to HTTP only");
+    console.warn(
+      `SSL certificates not accessible at ${certPath}, falling back to HTTP only`
+    );
   }
 
   const config: UserConfig = {
     server: {
-      port: 3004,
+      port: isDev ? 3005 : 3004,
       host: true,
       strictPort: true,
       https: httpsConfig,
       hmr: {
-        clientPort: hasCerts ? 443 : 3004,
-        host: hasCerts ? "dev.degenduel.me" : "localhost",
+        clientPort: hasCerts ? 443 : isDev ? 3005 : 3004,
+        host: hasCerts ? domain : "localhost",
         protocol: "ws",
       },
       proxy: {
         "/api": {
-          target: "http://localhost:3003",
+          target: isDev
+            ? "https://dev.degenduel.me/api"
+            : "https://degenduel.me/api",
           changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/api/, "/api"),
+          secure: true,
+          rewrite: (path) => path.replace(/^\/api/, ""),
         },
         "/portfolio": {
-          target: "ws://localhost:3003",
+          target: isDev
+            ? "wss://dev.degenduel.me/api/v2/ws"
+            : "wss://degenduel.me/api/v2/ws",
           ws: true,
           changeOrigin: true,
-          secure: false,
+          secure: true,
         },
       },
       watch: {
@@ -81,6 +95,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       },
     },
     build: {
+      outDir,
       sourcemap: isDev,
       minify: isDev ? false : ("esbuild" as const),
       target: "esnext",

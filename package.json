@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:dev": "tsc && vite build --mode development",
+    "build:prod": "tsc && vite build --mode production",
+    "build:all": "npm run build:dev && npm run build:prod",
     "build:quick": "vite build --mode quick",
     "build:analyze": "node scripts/analyze-build.js",
     "preview": "vite preview",
