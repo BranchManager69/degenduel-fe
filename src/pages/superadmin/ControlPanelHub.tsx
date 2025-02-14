@@ -6,22 +6,22 @@ import { Link } from "react-router-dom";
 export const ControlPanelHub: React.FC = () => {
   const panels = [
     {
-      title: "Service Control Panel",
-      description: "Master control interface for all service management",
+      title: "Service Switchboard",
+      description: "Modern service control interface with real-time monitoring",
       icon: <FaServer className="w-12 h-12" />,
-      to: "/superadmin/services",
+      to: "/superadmin/switchboard",
       color:
         "from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30",
       borderColor: "border-emerald-500/30",
     },
     {
-      title: "Service Switchboard",
-      description: "Quick operational control for service toggling",
+      title: "Legacy Service Control",
+      description: "[DEPRECATED] Basic service management interface",
       icon: <FaToggleOn className="w-12 h-12" />,
-      to: "/superadmin/switchboard",
+      to: "/superadmin/services",
       color:
-        "from-blue-500/20 to-indigo-500/20 hover:from-blue-500/30 hover:to-indigo-500/30",
-      borderColor: "border-blue-500/30",
+        "from-red-500/20 to-orange-500/20 hover:from-red-500/30 hover:to-orange-500/30",
+      borderColor: "border-red-500/30",
     },
     {
       title: "Circuit Breaker Panel",

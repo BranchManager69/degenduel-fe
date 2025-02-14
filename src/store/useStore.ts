@@ -79,6 +79,49 @@ type StoreState = {
   maintenanceMode: boolean;
   serviceState: ServiceState | null;
   serviceAlerts: ServiceAlert[];
+  circuitBreaker: {
+    services: Array<{
+      name: string;
+      status: "healthy" | "degraded" | "failed";
+      circuit: {
+        state: "closed" | "open" | "half-open";
+        failureCount: number;
+        lastFailure: string | null;
+        recoveryAttempts: number;
+      };
+      config?: {
+        failureThreshold: number;
+        recoveryTimeout: number;
+        requestLimit: number;
+      };
+    }>;
+    systemHealth?: {
+      status: "operational" | "degraded" | "critical";
+      activeIncidents: number;
+      lastIncident: string | null;
+    };
+  };
+  services: Record<
+    string,
+    {
+      enabled: boolean;
+      status: string;
+      last_started: string | null;
+      last_check?: string;
+      stats?: {
+        operations: {
+          successful: number;
+          total: number;
+        };
+        performance: {
+          averageOperationTimeMs: number;
+        };
+        circuitBreaker?: {
+          isOpen: boolean;
+        };
+      };
+    }
+  >;
   setUser: (user: User | null) => void;
   setContests: (contests: Contest[]) => void;
   setTokens: (tokens: Token[]) => void;
@@ -95,6 +138,14 @@ type StoreState = {
     type: "info" | "warning" | "error",
     message: string
   ) => void;
+  setCircuitBreakerState: (state: StoreState["circuitBreaker"]) => void;
+  addCircuitAlert: (alert: {
+    type: string;
+    title: string;
+    message: string;
+    details?: any;
+  }) => void;
+  setServices: (services: StoreState["services"]) => void;
 };
 
 type StorePersist = PersistOptions<
@@ -106,6 +157,8 @@ type StorePersist = PersistOptions<
     | "maintenanceMode"
     | "serviceState"
     | "serviceAlerts"
+    | "circuitBreaker"
+    | "services"
   >
 >;
 
@@ -117,6 +170,8 @@ const persistConfig: StorePersist = {
     maintenanceMode: state.maintenanceMode,
     serviceState: state.serviceState,
     serviceAlerts: state.serviceAlerts,
+    circuitBreaker: state.circuitBreaker,
+    services: state.services,
   }),
 };
 
@@ -215,6 +270,10 @@ export const useStore = create<StoreState>()(
       maintenanceMode: false,
       serviceState: null,
       serviceAlerts: [],
+      circuitBreaker: {
+        services: [],
+      },
+      services: {},
 
       setDebugConfig: (config) =>
         set((state) => ({
@@ -532,6 +591,21 @@ export const useStore = create<StoreState>()(
           ],
         });
       },
+      setCircuitBreakerState: (state) => set({ circuitBreaker: state }),
+      addCircuitAlert: (alert) => {
+        set((state) => ({
+          serviceAlerts: [
+            {
+              id: crypto.randomUUID(),
+              type: alert.type as "info" | "warning" | "error",
+              message: alert.message,
+              timestamp: Date.now(),
+            },
+            ...state.serviceAlerts,
+          ],
+        }));
+      },
+      setServices: (services) => set({ services }),
     }),
     {
       ...persistConfig,

@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 /* Hooks */
 import { useAuth } from "./hooks/useAuth";
 /* Components */
-import { DebugPanel } from "./components/debug/DebugPanel";
+////import { DebugPanel } from "./components/debug/DebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { ServiceStatusBanner } from "./components/layout/ServiceStatusBanner";
@@ -48,8 +48,10 @@ import { AdminDashboard } from "./pages/admin/AdminDashboard";
 /* superadmin pages */
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
+import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage";
 import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub";
 import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
+import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
 /* themes */
@@ -266,12 +268,32 @@ export const App: React.FC = () => {
                 }
               />
 
-              {/* Services Control Panel*/}
+              {/* Services Control Panel - DEPRECATED: Use ServiceSwitchboard instead */}
               <Route
                 path="/superadmin/services"
                 element={
                   <SuperAdminRoute>
                     <ServiceControlPage />
+                  </SuperAdminRoute>
+                }
+              />
+
+              {/* Service Switchboard - New implementation */}
+              <Route
+                path="/superadmin/switchboard"
+                element={
+                  <SuperAdminRoute>
+                    <ServiceSwitchboard />
+                  </SuperAdminRoute>
+                }
+              />
+
+              {/* Circuit Breaker Panel */}
+              <Route
+                path="/superadmin/circuit-breaker"
+                element={
+                  <SuperAdminRoute>
+                    <CircuitBreakerPage />
                   </SuperAdminRoute>
                 }
               />
@@ -323,7 +345,7 @@ export const App: React.FC = () => {
           <Footer />
 
           {/* Debug Panel */}
-          <DebugPanel />
+          {/* <DebugPanel /> */}
 
           {/* Modals and Overlays */}
           <ReferralWelcomeModal />

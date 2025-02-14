@@ -125,7 +125,22 @@ export const ServiceControlPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
+    <div className="container mx-auto p-4">
+      <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 mb-6">
+        <h2 className="text-red-400 font-bold text-lg mb-2">
+          ⚠️ Deprecated Component
+        </h2>
+        <p className="text-gray-300">
+          This service control interface is deprecated. Please use the new{" "}
+          <a
+            href="/superadmin/switchboard"
+            className="text-brand-400 hover:text-brand-300 underline"
+          >
+            Service Switchboard
+          </a>{" "}
+          instead, which provides improved monitoring and real-time updates.
+        </p>
+      </div>
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-100">
           Service Control Panel

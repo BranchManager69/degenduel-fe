@@ -44,6 +44,6 @@
     "tsBuildInfoFile": "./node_modules/.cache/.tsbuildinfo",
     "esModuleInterop": true
   },
-  "include": ["src"],
+  "include": ["src", "DebugPanel.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
+import { FONT_PRESETS } from "../../constants/fonts";
 import { Particles } from "./Particles";
 
 export const HeroTitle: React.FC = () => {
@@ -57,13 +58,9 @@ export const HeroTitle: React.FC = () => {
           }
           className="text-9xl font-black tracking-tighter select-none"
           style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontWeight: 700,
-            textShadow: "0 0 40px rgba(59, 130, 246, 0.4)",
-            background: "linear-gradient(45deg, #2563EB 0%, #3B82F6 100%)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            fontFamily: FONT_PRESETS.pixelPerfect.heading,
+            textShadow: "0 0 40px rgba(147, 51, 234, 0.4)",
+            color: "#9333EA",
             letterSpacing: "-0.05em",
           }}
         >
@@ -86,9 +83,9 @@ export const HeroTitle: React.FC = () => {
           }}
           className="relative mx-6 text-8xl select-none"
           style={{
-            fontFamily: "'Syncopate', sans-serif",
-            fontWeight: 700,
+            fontFamily: FONT_PRESETS.pixelPerfect.heading,
             perspective: "1000px",
+            color: "#FFFFFF",
           }}
         >
           <motion.span
@@ -108,16 +105,8 @@ export const HeroTitle: React.FC = () => {
                 ease: "easeInOut",
               },
             }}
-            style={{
-              display: "block",
-              background: "linear-gradient(45deg, #F59E0B, #FBBF24)",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              filter: "drop-shadow(0 0 15px rgba(245, 158, 11, 0.4))",
-            }}
           >
-            X
+            x
           </motion.span>
         </motion.div>
 
@@ -143,13 +132,9 @@ export const HeroTitle: React.FC = () => {
           }}
           className="text-9xl font-black tracking-tighter select-none"
           style={{
-            fontFamily: "'Chivo', sans-serif",
-            fontWeight: 900,
+            fontFamily: FONT_PRESETS.pixelPerfect.heading,
             textShadow: "0 0 40px rgba(255, 255, 255, 0.4)",
-            background: "linear-gradient(-45deg, #FFFFFF 0%, #E2E8F0 100%)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            color: "#FFFFFF",
             letterSpacing: "-0.03em",
           }}
         >
@@ -157,29 +142,11 @@ export const HeroTitle: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* High-quality free fonts */}
+      {/* Font imports */}
       <link
+        href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
         rel="stylesheet"
-        href="https://api.fontshare.com/v2/css?f=clash-display@600&display=swap"
       />
-      <style>
-        {`
-        @font-face {
-          font-family: "Monument Extended";
-          src: url("/fonts/MonumentExtended-Regular.woff2") format("woff2");
-          font-weight: normal;
-          font-style: normal;
-          font-display: swap;
-        }
-        @font-face {
-          font-family: "Monument Extended";
-          src: url("/fonts/MonumentExtended-Black.woff2") format("woff2");
-          font-weight: 900;
-          font-style: normal;
-          font-display: swap;
-        }
-        `}
-      </style>
     </div>
   );
 };

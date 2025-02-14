@@ -163,12 +163,19 @@ export const AdminDashboard: React.FC = () => {
   // Listen for circuit breaker events
   useEffect(() => {
     const handleCircuitBreaker = (event: CustomEvent<any>) => {
+      const { service, state, details } = event.detail;
       addSystemAlert({
         type: "error",
         title: "Circuit Breaker Activated",
-        message:
-          "Service protection mechanism activated due to multiple failures",
-        details: event.detail,
+        message: `Service ${service} has been ${
+          state === "open" ? "suspended" : "degraded"
+        } due to multiple failures.`,
+        details: {
+          service,
+          state,
+          ...details,
+          timestamp: new Date().toISOString(),
+        },
       });
     };
 

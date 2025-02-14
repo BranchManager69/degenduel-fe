@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { BalanceManager } from "../../components/admin/BalanceManager";
-import { CircuitBreakerMonitor } from "../../components/admin/CircuitBreakerMonitor";
+import CircuitBreakerPanel from "../../components/admin/CircuitBreakerPanel";
 import { FaucetManager } from "../../components/admin/FaucetManager";
 import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap";
 import { LogViewer } from "../../components/admin/LogViewer";
@@ -339,7 +339,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     <span className="text-xl">⚡</span>
                     Circuit Breaker Monitor
                   </h2>
-                  <CircuitBreakerMonitor />
+                  <CircuitBreakerPanel />
                 </div>
               ) : activeTab === "contests" ? (
                 <div className="space-y-6">
