@@ -1,8 +1,8 @@
 import { Canvas } from "@react-three/fiber";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
-import { FONT_PRESETS } from "../../constants/fonts";
-import { Particles } from "./Particles";
+import { FONT_PRESETS } from "../../../constants/fonts";
+import { Particles } from "../../animated-background/Particles";
 
 export const HeroTitle: React.FC = () => {
   const [introComplete, setIntroComplete] = useState(false);
