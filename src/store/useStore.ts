@@ -146,6 +146,227 @@ type StoreState = {
     details?: any;
   }) => void;
   setServices: (services: StoreState["services"]) => void;
+
+  // Portfolio WebSocket Actions
+  updatePortfolio: (data: {
+    tokens: Array<{
+      symbol: string;
+      name: string;
+      amount: number;
+      value: number;
+    }>;
+    total_value: number;
+    performance_24h: number;
+  }) => void;
+  updateTokenPrice: (data: {
+    symbol: string;
+    price: number;
+    change_24h: number;
+    timestamp: string;
+  }) => void;
+  addTradeNotification: (data: {
+    trade_id: string;
+    wallet_address: string;
+    symbol: string;
+    amount: number;
+    price: number;
+    timestamp: string;
+    contest_id?: string;
+  }) => void;
+
+  // Contest WebSocket Actions
+  updateContest: (data: {
+    contest_id: string;
+    status: "active" | "completed" | "cancelled";
+    current_round?: number;
+    time_remaining?: number;
+    total_participants: number;
+    total_prize_pool: number;
+  }) => void;
+  updateLeaderboard: (data: {
+    contest_id: string;
+    leaderboard: Array<{
+      rank: number;
+      wallet_address: string;
+      username: string;
+      portfolio_value: number;
+      performance: number;
+      last_trade_time?: string;
+    }>;
+    timestamp: string;
+  }) => void;
+  addContestActivity: (data: {
+    contest_id: string;
+    wallet_address: string;
+    username: string;
+    activity_type: "join" | "leave" | "trade";
+    details?: {
+      symbol?: string;
+      amount?: number;
+      price?: number;
+    };
+    timestamp: string;
+  }) => void;
+
+  // Market Data WebSocket Actions
+  updateMarketPrice: (data: {
+    symbol: string;
+    price: number;
+    change_24h: number;
+    volume_24h: number;
+    high_24h: number;
+    low_24h: number;
+    timestamp: string;
+  }) => void;
+  updateMarketVolume: (data: {
+    symbol: string;
+    volume: number;
+    trades_count: number;
+    buy_volume: number;
+    sell_volume: number;
+    interval: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+    timestamp: string;
+  }) => void;
+  updateMarketSentiment: (data: {
+    symbol: string;
+    sentiment_score: number;
+    buy_pressure: number;
+    sell_pressure: number;
+    volume_trend: "increasing" | "decreasing" | "stable";
+    timestamp: string;
+  }) => void;
+
+  // Analytics State
+  analytics: {
+    userActivities: Record<
+      string,
+      {
+        wallet: string;
+        nickname: string;
+        avatar_url: string;
+        current_zone: string;
+        previous_zone: string | null;
+        wallet_balance: number;
+        last_action: string;
+        last_active: string;
+        session_duration: number;
+        is_whale: boolean;
+      }
+    >;
+    systemMetrics: {
+      active_users: number;
+      total_contests: number;
+      total_trades_24h: number;
+      total_volume_24h: number;
+      peak_concurrent_users: number;
+      average_response_time: number;
+      error_rate: number;
+      last_updated: string;
+    } | null;
+    userSegments: Record<
+      string,
+      {
+        user_count: number;
+        average_balance: number;
+        activity_score: number;
+        retention_rate: number;
+        last_updated: string;
+      }
+    >;
+  };
+
+  // Wallet State
+  wallet: {
+    status: {
+      type: "created" | "statusChanged" | "balanceChanged";
+      publicKey: string;
+      balance?: number;
+      status?: "active" | "inactive" | "locked";
+      last_updated: string;
+    } | null;
+    transfers: Record<
+      string,
+      {
+        transfer_id: string;
+        from: string;
+        to: string;
+        amount: number;
+        status: "pending" | "success" | "failed";
+        timestamp: string;
+        token?: string;
+        error?: string;
+      }
+    >;
+    activities: Array<{
+      wallet: string;
+      activity_type: "login" | "logout" | "connect" | "disconnect";
+      device_info?: string;
+      ip_address?: string;
+      location?: string;
+      timestamp: string;
+    }>;
+  };
+
+  // Analytics Actions
+  updateUserActivity: (
+    users: Array<{
+      wallet: string;
+      nickname: string;
+      avatar_url: string;
+      current_zone: string;
+      previous_zone: string | null;
+      wallet_balance: number;
+      last_action: string;
+      last_active: string;
+      session_duration: number;
+      is_whale: boolean;
+    }>
+  ) => void;
+  updateSystemMetrics: (metrics: {
+    active_users: number;
+    total_contests: number;
+    total_trades_24h: number;
+    total_volume_24h: number;
+    peak_concurrent_users: number;
+    average_response_time: number;
+    error_rate: number;
+    timestamp: string;
+  }) => void;
+  updateUserSegments: (segment: {
+    segment: string;
+    user_count: number;
+    average_balance: number;
+    activity_score: number;
+    retention_rate: number;
+    timestamp: string;
+  }) => void;
+
+  // Wallet Actions
+  updateWalletStatus: (status: {
+    type: "created" | "statusChanged" | "balanceChanged";
+    publicKey: string;
+    balance?: number;
+    status?: "active" | "inactive" | "locked";
+    timestamp: string;
+  }) => void;
+  trackTransfer: (transfer: {
+    transfer_id: string;
+    from: string;
+    to: string;
+    amount: number;
+    status?: "success" | "failed";
+    token?: string;
+    error?: string;
+    timestamp: string;
+  }) => void;
+  updateWalletActivity: (activity: {
+    wallet: string;
+    activity_type: "login" | "logout" | "connect" | "disconnect";
+    device_info?: string;
+    ip_address?: string;
+    location?: string;
+    timestamp: string;
+  }) => void;
 };
 
 type StorePersist = PersistOptions<
@@ -159,6 +380,8 @@ type StorePersist = PersistOptions<
     | "serviceAlerts"
     | "circuitBreaker"
     | "services"
+    | "analytics"
+    | "wallet"
   >
 >;
 
@@ -172,6 +395,8 @@ const persistConfig: StorePersist = {
     serviceAlerts: state.serviceAlerts,
     circuitBreaker: state.circuitBreaker,
     services: state.services,
+    analytics: state.analytics,
+    wallet: state.wallet,
   }),
 };
 
@@ -274,6 +499,20 @@ export const useStore = create<StoreState>()(
         services: [],
       },
       services: {},
+
+      // Initial Analytics State
+      analytics: {
+        userActivities: {},
+        systemMetrics: null,
+        userSegments: {},
+      },
+
+      // Initial Wallet State
+      wallet: {
+        status: null,
+        transfers: {},
+        activities: [],
+      },
 
       setDebugConfig: (config) =>
         set((state) => ({
@@ -606,6 +845,128 @@ export const useStore = create<StoreState>()(
         }));
       },
       setServices: (services) => set({ services }),
+
+      // Portfolio WebSocket Actions
+      updatePortfolio: (data) => {
+        // Implementation will update portfolio state
+        console.log("Portfolio updated:", data);
+      },
+      updateTokenPrice: (data) => {
+        // Implementation will update token price state
+        console.log("Token price updated:", data);
+      },
+      addTradeNotification: (data) => {
+        // Implementation will add trade notification
+        console.log("Trade notification added:", data);
+      },
+
+      // Contest WebSocket Actions
+      updateContest: (data) => {
+        // Implementation will update contest state
+        console.log("Contest updated:", data);
+      },
+      updateLeaderboard: (data) => {
+        // Implementation will update leaderboard state
+        console.log("Leaderboard updated:", data);
+      },
+      addContestActivity: (data) => {
+        // Implementation will add contest activity
+        console.log("Contest activity added:", data);
+      },
+
+      // Market Data WebSocket Actions
+      updateMarketPrice: (data) => {
+        // Implementation will update market price state
+        console.log("Market price updated:", data);
+      },
+      updateMarketVolume: (data) => {
+        // Implementation will update market volume state
+        console.log("Market volume updated:", data);
+      },
+      updateMarketSentiment: (data) => {
+        // Implementation will update market sentiment state
+        console.log("Market sentiment updated:", data);
+      },
+
+      // Analytics Actions Implementation
+      updateUserActivity: (users) => {
+        set((state) => ({
+          analytics: {
+            ...state.analytics,
+            userActivities: users.reduce((acc, user) => {
+              acc[user.wallet] = user;
+              return acc;
+            }, {} as Record<string, (typeof users)[0]>),
+          },
+        }));
+      },
+
+      updateSystemMetrics: (metrics) => {
+        set((state) => ({
+          analytics: {
+            ...state.analytics,
+            systemMetrics: {
+              ...metrics,
+              last_updated: metrics.timestamp,
+            },
+          },
+        }));
+      },
+
+      updateUserSegments: (segment) => {
+        set((state) => ({
+          analytics: {
+            ...state.analytics,
+            userSegments: {
+              ...state.analytics.userSegments,
+              [segment.segment]: {
+                user_count: segment.user_count,
+                average_balance: segment.average_balance,
+                activity_score: segment.activity_score,
+                retention_rate: segment.retention_rate,
+                last_updated: segment.timestamp,
+              },
+            },
+          },
+        }));
+      },
+
+      // Wallet Actions Implementation
+      updateWalletStatus: (status) => {
+        set((state) => ({
+          wallet: {
+            ...state.wallet,
+            status: {
+              ...status,
+              last_updated: status.timestamp,
+            },
+          },
+        }));
+      },
+
+      trackTransfer: (transfer) => {
+        set((state) => ({
+          wallet: {
+            ...state.wallet,
+            transfers: {
+              ...state.wallet.transfers,
+              [transfer.transfer_id]: {
+                ...transfer,
+                status: transfer.status || "pending",
+              },
+            },
+          },
+        }));
+      },
+
+      updateWalletActivity: (activity) => {
+        set((state) => ({
+          wallet: {
+            ...state.wallet,
+            activities: [activity, ...state.wallet.activities.slice(0, 99)], // Keep last 100 activities
+          },
+        }));
+      },
     }),
     {
       ...persistConfig,

@@ -1,0 +1,106 @@
+.websocket-monitor {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  font-family: monospace;
+  margin: 1rem;
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.monitor-header {
+  align-items: center;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
+.monitor-header h2 {
+  color: #fff;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.monitor-filter {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  padding: 0.5rem;
+}
+
+.events-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.event-item {
+  background-color: #2a2a2a;
+  border-left: 4px solid transparent;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+}
+
+.event-connection {
+  border-left-color: #4caf50;
+}
+.event-message {
+  border-left-color: #2196f3;
+}
+.event-error {
+  border-left-color: #f44336;
+}
+.event-reconnect {
+  border-left-color: #ff9800;
+}
+.event-heartbeat {
+  border-left-color: #9c27b0;
+}
+.event-close {
+  border-left-color: #795548;
+}
+
+.event-header {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.timestamp {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.socket-type {
+  background-color: #333;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.event-type {
+  background-color: #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.event-data {
+  background-color: #222;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

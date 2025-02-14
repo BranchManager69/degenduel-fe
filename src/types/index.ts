@@ -31,6 +31,7 @@ export interface User {
   is_admin?: boolean;
   jwt?: string; // JWT token for authentication
   session_token?: string; // Session token for WebSocket authentication
+  is_superadmin?: boolean;
 }
 
 export interface BaseToken {

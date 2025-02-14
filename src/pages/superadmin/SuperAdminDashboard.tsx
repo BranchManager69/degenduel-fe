@@ -27,7 +27,8 @@ type TabType =
   | "reseed"
   | "contests"
   | "circuit"
-  | "activity";
+  | "activity"
+  | "websocket";
 
 export const SuperAdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("activity");
@@ -280,6 +281,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 {/* Tabs */}
                 {[
                   { key: "activity", label: "Live Activity", icon: "👥" },
+                  { key: "websocket", label: "WebSocket Testing", icon: "🔌" },
                   { key: "system", label: "Sys. Logs", icon: "📋" },
                   { key: "circuit", label: "Circuit Monitor", icon: "⚡" },
                   { key: "spy", label: "User Spy", icon: "🔍" },
@@ -309,6 +311,20 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="p-6">
               {activeTab === "activity" ? (
                 <LiveUserActivityMap />
+              ) : activeTab === "websocket" ? (
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
+                    <span className="text-xl">🔌</span>
+                    WebSocket Testing
+                  </h2>
+                  <Link
+                    to="/websocket-test"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
+                  >
+                    <span>Open WebSocket Testing Panel</span>
+                    <span className="text-brand-400">→</span>
+                  </Link>
+                </div>
               ) : activeTab === "spy" ? (
                 <SpyPanel />
               ) : activeTab === "system" ? (

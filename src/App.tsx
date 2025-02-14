@@ -9,8 +9,10 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 /* Hooks */
 import { useAuth } from "./hooks/useAuth";
+import { useStore } from "./store/useStore";
 /* Components */
-////import { DebugPanel } from "./components/debug/DebugPanel";
+import { WebSocketManager } from "./components/core/WebSocketManager";
+import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { ServiceStatusBanner } from "./components/layout/ServiceStatusBanner";
@@ -45,6 +47,7 @@ import { NotFound } from "./pages/public/general/NotFound";
 import { PublicProfile } from "./pages/public/general/PublicProfile";
 /* admin pages */
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { WebSocketTesting } from "./pages/admin/WebSocketTesting";
 /* superadmin pages */
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
@@ -62,6 +65,7 @@ import "./styles/color-schemes.css";
 
 export const App: React.FC = () => {
   const { checkAuth } = useAuth();
+  const { user } = useStore();
 
   useEffect(() => {
     // (is the sheer amount of auth checks needed?)
@@ -101,8 +105,10 @@ export const App: React.FC = () => {
   return (
     <Router>
       <ReferralProvider>
-        {/* Parent Container */}
         <div className="min-h-screen flex flex-col relative">
+          {/* Add WebSocketManager at the root level */}
+          <WebSocketManager />
+
           {/* Animated Background */}
           <MovingBackground />
 
@@ -318,6 +324,16 @@ export const App: React.FC = () => {
                 }
               />
 
+              {/* WebSocket Testing */}
+              <Route
+                path="/websocket-test"
+                element={
+                  <SuperAdminRoute>
+                    <WebSocketTesting />
+                  </SuperAdminRoute>
+                }
+              />
+
               {/* AMM Simulation */}
               <Route
                 path="/amm-sim"
@@ -365,6 +381,9 @@ export const App: React.FC = () => {
 
           {/* Service Status Banner (consider deleting, moving, or reusing for general non-MM server issues) */}
           <ServiceStatusBanner />
+
+          {/* Global ServiceDebugPanel for superadmins */}
+          {user?.is_superadmin && <ServiceDebugPanel />}
         </div>
       </ReferralProvider>
     </Router>

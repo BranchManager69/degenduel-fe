@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useRef } from "react";
-import { toast } from "react-toastify";
-import { env } from "../config/env";
 import { useStore } from "../store/useStore";
+import { useBaseWebSocket } from "./useBaseWebSocket";
 
-interface ServiceEvent {
+interface ServiceMessage {
   type: "service:state" | "service:metrics" | "service:alert";
   service: string;
-  data: any;
+  data: {
+    status: string;
+    metrics?: {
+      uptime: number;
+      latency: number;
+      activeUsers: number;
+    };
+    alert?: {
+      type: "info" | "warning" | "error";
+      message: string;
+    };
+  };
   timestamp: string;
 }
 
@@ -35,44 +44,30 @@ interface ServiceState {
 
 // Map service status to store status
 const mapServiceStatus = (
-  status: "active" | "stopped" | "error"
+  status: ServiceState["status"]
 ): "online" | "offline" | "degraded" => {
-  const mapped = (() => {
-    switch (status) {
-      case "active":
-        return "online";
-      case "stopped":
-        return "offline";
-      case "error":
-        return "degraded";
-      default:
-        return "offline";
-    }
-  })();
-  console.log(
-    `[ServiceWebSocket] Mapped service status: ${status} -> ${mapped}`
-  );
-  return mapped;
+  switch (status) {
+    case "active":
+      return "online";
+    case "stopped":
+      return "offline";
+    case "error":
+      return "degraded";
+    default:
+      return "offline";
+  }
 };
 
 // Map alert severity to store alert type
 const mapAlertType = (severity: string): "info" | "warning" | "error" => {
-  const mapped = (() => {
-    switch (severity) {
-      case "critical":
-        return "error";
-      case "warning":
-        return "warning";
-      case "info":
-        return "info";
-      default:
-        return "info";
-    }
-  })();
-  console.log(
-    `[ServiceWebSocket] Mapped alert severity: ${severity} -> ${mapped}`
-  );
-  return mapped;
+  switch (severity) {
+    case "critical":
+      return "error";
+    case "warning":
+      return "warning";
+    default:
+      return "info";
+  }
 };
 
 // Add helper function for dispatching debug events
@@ -82,198 +77,74 @@ const dispatchDebugEvent = (
   data?: any
 ) => {
   window.dispatchEvent(
-    new CustomEvent("serviceWebSocket", {
-      detail: { type, message, data },
+    new CustomEvent("ws-debug", {
+      detail: {
+        type,
+        service: "service-websocket",
+        message,
+        data,
+        timestamp: new Date().toISOString(),
+      },
     })
   );
 };
 
 export const useServiceWebSocket = () => {
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectAttempts = useRef(0);
-  const { user, setServiceState, addServiceAlert } = useStore();
+  const { setServiceState, addServiceAlert } = useStore();
 
-  const handleServiceState = useCallback(
-    (service: string, state: ServiceState) => {
-      console.log(
-        `[ServiceWebSocket] Handling service state update for ${service}:`,
-        state
-      );
+  const handleMessage = (message: ServiceMessage) => {
+    dispatchDebugEvent("state", "Received service message", message);
 
-      const mappedStatus = mapServiceStatus(state.status);
-      const metrics = {
-        uptime: state.last_started
-          ? Date.now() - new Date(state.last_started).getTime()
-          : 0,
-        latency: state.stats.performance.averageOperationTimeMs,
-        activeUsers: state.stats.operations.total,
-      };
+    switch (message.type) {
+      case "service:state": {
+        const serviceState = message.data as ServiceState;
+        const mappedStatus = mapServiceStatus(serviceState.status);
 
-      console.log(`[ServiceWebSocket] Setting service state:`, {
-        status: mappedStatus,
-        metrics,
-      });
-
-      setServiceState(mappedStatus, metrics);
-
-      // Show toast for critical state changes
-      if (state.status === "error") {
-        console.log(
-          `[ServiceWebSocket] Service error detected:`,
-          state.last_error
+        dispatchDebugEvent(
+          "state",
+          `Service status mapped: ${serviceState.status} -> ${mappedStatus}`,
+          { original: serviceState.status, mapped: mappedStatus }
         );
-        toast.error(
-          `Service ${service} encountered an error: ${state.last_error}`
-        );
-      } else if (state.stats?.circuitBreaker?.isOpen) {
-        console.log(`[ServiceWebSocket] Circuit breaker opened for ${service}`);
-        toast.warning(`Circuit breaker opened for ${service}`);
-      }
-    },
-    [setServiceState]
-  );
 
-  const handleServiceAlert = useCallback(
-    (_service: string, alert: any) => {
-      console.log(`[ServiceWebSocket] Handling service alert:`, alert);
-
-      const mappedType = mapAlertType(alert.severity);
-      console.log(`[ServiceWebSocket] Adding service alert:`, {
-        type: mappedType,
-        message: alert.message,
-      });
-
-      addServiceAlert(mappedType, alert.message);
-
-      // Show toast for alerts based on severity
-      console.log(
-        `[ServiceWebSocket] Showing toast for severity: ${alert.severity}`
-      );
-      switch (alert.severity) {
-        case "critical":
-          toast.error(alert.message);
-          break;
-        case "warning":
-          toast.warning(alert.message);
-          break;
-        case "info":
-          toast.info(alert.message);
-          break;
-      }
-    },
-    [addServiceAlert]
-  );
-
-  useEffect(() => {
-    if (!user?.session_token) {
-      console.log(
-        "[ServiceWebSocket] No session token available, skipping connection"
-      );
-      dispatchDebugEvent("connection", "No session token available");
-      return;
-    }
-
-    const connect = () => {
-      const wsUrl = `${env.WS_URL}/api/admin/services`;
-      console.log(`[ServiceWebSocket] Attempting connection to ${wsUrl}`);
-      dispatchDebugEvent("connection", "Attempting connection", { url: wsUrl });
-
-      const ws = new WebSocket(wsUrl, user.session_token);
-
-      ws.onopen = () => {
-        console.log("[ServiceWebSocket] Connection established successfully");
-        dispatchDebugEvent("connection", "Connection established successfully");
-        reconnectAttempts.current = 0;
-        toast.info("Service monitoring connected", {
-          toastId: "service-ws-connected",
-        });
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          console.log("[ServiceWebSocket] Message received:", event.data);
-          const data: ServiceEvent = JSON.parse(event.data);
-          dispatchDebugEvent("metrics", "Message received", data);
-
-          switch (data.type) {
-            case "service:state":
-              handleServiceState(data.service, data.data);
-              break;
-            case "service:metrics":
-              const currentStatus = mapServiceStatus(
-                data.data.status || "active"
-              );
-              console.log("[ServiceWebSocket] Updating metrics:", {
-                status: currentStatus,
-                metrics: data.data,
-              });
-              dispatchDebugEvent("metrics", "Metrics updated", {
-                status: currentStatus,
-                metrics: data.data,
-              });
-              setServiceState(currentStatus, {
-                uptime: data.data.uptime || 0,
-                latency: data.data.latency || 0,
-                activeUsers: data.data.activeUsers || 0,
-              });
-              break;
-            case "service:alert":
-              handleServiceAlert(data.service, data.data);
-              break;
+        setServiceState(
+          mappedStatus,
+          message.data.metrics || {
+            uptime: 0,
+            latency: 0,
+            activeUsers: 0,
           }
-        } catch (error) {
-          console.error("[ServiceWebSocket] Failed to handle message:", error);
-          console.error("[ServiceWebSocket] Raw message data:", event.data);
-          dispatchDebugEvent("error", "Failed to handle message", {
-            error: error instanceof Error ? error.message : "Unknown error",
-            rawData: event.data,
-          });
-        }
-      };
-
-      ws.onclose = (event) => {
-        reconnectAttempts.current++;
-        const delay = Math.min(
-          1000 * Math.pow(2, reconnectAttempts.current),
-          30000
         );
-        const message = `Connection closed. Attempt ${reconnectAttempts.current}. Reconnecting in ${delay}ms...`;
-        console.log(`[ServiceWebSocket] ${message}`, event);
-        dispatchDebugEvent("connection", message, {
-          attempt: reconnectAttempts.current,
-          delay,
-          code: event.code,
-          reason: event.reason,
-        });
-        toast.warning("Service monitoring disconnected. Reconnecting...", {
-          toastId: "service-ws-disconnected",
-        });
-        setTimeout(connect, delay);
-      };
-
-      ws.onerror = (error) => {
-        console.error("[ServiceWebSocket] WebSocket error:", error);
-        dispatchDebugEvent("error", "WebSocket error occurred", error);
-      };
-
-      wsRef.current = ws;
-    };
-
-    connect();
-
-    return () => {
-      if (wsRef.current) {
-        console.log("[ServiceWebSocket] Cleaning up WebSocket connection");
-        dispatchDebugEvent("connection", "Cleaning up WebSocket connection");
-        wsRef.current.close();
+        break;
       }
-    };
-  }, [
-    user?.session_token,
-    handleServiceState,
-    handleServiceAlert,
-    setServiceState,
-  ]);
+      case "service:alert":
+        if (message.data.alert) {
+          const mappedType = mapAlertType(message.data.alert.type);
 
-  return wsRef.current;
+          dispatchDebugEvent(
+            "alert",
+            `Service alert mapped: ${message.data.alert.type} -> ${mappedType}`,
+            { original: message.data.alert.type, mapped: mappedType }
+          );
+
+          addServiceAlert(mappedType, message.data.alert.message);
+        }
+        break;
+      case "service:metrics":
+        dispatchDebugEvent(
+          "metrics",
+          "Received service metrics",
+          message.data.metrics
+        );
+        break;
+    }
+  };
+
+  return useBaseWebSocket({
+    url: import.meta.env.VITE_WS_URL,
+    endpoint: "/api/admin/services",
+    socketType: "service",
+    onMessage: handleMessage,
+    heartbeatInterval: 30000, // 30 second heartbeat
+    maxReconnectAttempts: 5,
+  });
 };

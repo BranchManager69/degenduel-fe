@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import { BalanceManager } from "../../components/admin/BalanceManager";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
@@ -13,7 +14,7 @@ import { CreateContestButton } from "../../components/contests/browser/CreateCon
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
-type TabType = "overview" | "contests" | "users" | "activity";
+type TabType = "overview" | "contests" | "users" | "activity" | "websocket";
 
 // Add new interface for system alerts
 interface SystemAlert {
@@ -193,6 +194,7 @@ export const AdminDashboard: React.FC = () => {
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: "overview", label: "Overview", icon: "📊" },
+    { id: "websocket", label: "WebSocket Testing", icon: "🔌" },
     { id: "contests", label: "Contests", icon: "🏆" },
     { id: "users", label: "Users", icon: "👥" },
     { id: "activity", label: "Activity", icon: "📈" },
@@ -616,6 +618,41 @@ export const AdminDashboard: React.FC = () => {
                     </h2>
                     <div className="relative z-10">
                       <BalanceManager />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* WebSocket Testing Tab */}
+          <div
+            className={`
+              relative z-10
+              transition-all duration-300 ease-in-out
+              ${activeTab === "websocket" ? "block" : "hidden"}
+            `}
+          >
+            {activeTab === "websocket" && (
+              <div className="p-6 relative">
+                <div className="space-y-6">
+                  <div className="relative z-10">
+                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
+                      <span className="text-xl">🔌</span>
+                      WebSocket Testing
+                    </h2>
+                    <div className="bg-dark-300/30 rounded-lg p-6">
+                      <p className="text-gray-400 mb-4">
+                        Access the WebSocket testing interface to monitor and
+                        test all WebSocket connections in real-time.
+                      </p>
+                      <Link
+                        to="/websocket-test"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
+                      >
+                        <span>Open WebSocket Testing Panel</span>
+                        <span className="text-brand-400">→</span>
+                      </Link>
                     </div>
                   </div>
                 </div>
