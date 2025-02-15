@@ -594,11 +594,11 @@ const initialState: StateData = {
       },
       tokenVerse: {
         enabled: true,
-        intensity: 100,
-        starIntensity: 50,
-        bloomStrength: 1.5,
-        particleCount: 1000,
-        updateFrequency: 100,
+        intensity: 75,
+        starIntensity: 80,
+        bloomStrength: 2.0,
+        particleCount: 1500,
+        updateFrequency: 50,
       },
       marketBrain: {
         enabled: true,

@@ -1,155 +1,145 @@
-# Background Stack Analysis
+# Background Stack Analysis - Current Working Implementation
 
-## Current DOM Structure & Render Order
+## DOM Structure & Render Order
 
 ```
 LandingPage
 ├── div.flex.flex-col.min-h-screen
-│   └── div.fixed.inset-0                          [Layer 1]
-│       ├── TokenVerse                             [Layer 2]
-│       │   └── div.absolute.inset-0.bg-black/90   [Layer 3]
-│       │       └── WebGLRenderer Canvas           [Layer 4]
+│   ├── div.fixed.inset-0.bg-black/40              [Shared Background]
+│   │
+│   └── div.fixed.inset-0.pointer-events-none      [Visual Layer Group]
+│       ├── div.absolute.inset-0                   [TokenVerse Container]
+│       │   └── TokenVerse                         [z-index: 1]
+│       │       └── WebGLRenderer Canvas
 │       │
-│       └── div.absolute.inset-0.overflow-hidden   [Layer 5]
-│           └── Scanning line effects              [Layer 6]
+│       ├── div.absolute.inset-0                   [MarketVerse Container]
+│       │   └── MarketVerse                        [z-index: 2]
+│       │       └── WebGLRenderer Canvas           [mixBlendMode: "lighten"]
+│       │
+│       └── div.absolute.inset-0                   [Cyberpunk Overlay]
+│           └── Scanning Effects                    [z-index: 3, opacity: 0.3]
 │
-├── MarketVerse                                    [Layer 7]
-│   └── div.fixed.inset-0.bg-black                [Layer 8]
-│       └── WebGLRenderer Canvas                   [Layer 9]
-│
-└── Other UI Components                            [Layer 10+]
+└── section.relative                               [Content Section]
+    └── UI Components                              [z-index: 10]
 ```
 
-## Layer-by-Layer Opacity Analysis
+## Layer Analysis
 
-### Layer 1: Fixed Container
+### Shared Background Layer
 
 - Position: `fixed inset-0`
-- Purpose: Contains TokenVerse and overlay effects
-- Problem: Creates a new stacking context
+- Style: `bg-black/40`
+- Purpose: Creates unified dark atmosphere
+- Opacity: 0.4 (40% black)
+- Key Feature: Single source of background darkness
 
-### Layer 2: TokenVerse Component
+### Visual Layer Group
 
-- Position: Within fixed container
-- Purpose: Renders 3D token visualization
-- Problem: Nested inside a container that may limit its visibility
+- Position: `fixed inset-0`
+- Style: `pointer-events-none`
+- Purpose: Contains all visual effects
+- Key Feature: Prevents interference with UI interactions
 
-### Layer 3: TokenVerse Background
-
-- Style: `absolute inset-0 bg-black/90`
-- Purpose: Creates dark atmosphere
-- Critical Issue: This background is blocking its own content
-- Current Opacity: 0.9 (90% black)
-
-### Layer 4: TokenVerse WebGL Canvas
-
-- Type: Three.js renderer
-- Content: Stars, nodes, and connections
-- Problem: Being obscured by its own background
-
-### Layer 5: Overlay Container
+### TokenVerse Layer
 
 - Position: `absolute inset-0`
-- Purpose: Contains scanning effects
-- Problem: Adds another layer between visual elements
+- Z-Index: 1
+- Content: Three.js scene with tokens and connections
+- Key Feature: Direct rendering without self-blocking background
 
-### Layer 6: Scanning Effects
+### MarketVerse Layer
 
-- Type: CSS animations
-- Purpose: Cyberpunk aesthetic
-- Problem: May be contributing to opacity issues
+- Position: `absolute inset-0`
+- Z-Index: 2
+- Blend Mode: `lighten`
+- Key Feature: Additive blending with TokenVerse
 
-### Layer 7: MarketVerse Component
+### Cyberpunk Overlay
 
-- Mount Point: Direct child of LandingPage
-- Problem: Competes with TokenVerse for space
+- Position: `absolute inset-0`
+- Z-Index: 3
+- Opacity: 0.3
+- Content: Scanning lines and glow effects
+- Key Feature: Subtle atmospheric enhancement
 
-### Layer 8: MarketVerse Background
+### Content Section
 
-- Style: `fixed inset-0 bg-black`
-- Critical Issue: Creates opaque barrier
-- Problem: Completely blocks lower layers
-
-### Layer 9: MarketVerse WebGL Canvas
-
-- Type: Three.js renderer
-- Problem: May have z-index conflicts with TokenVerse
+- Position: `relative`
+- Z-Index: 10
+- Purpose: Contains UI elements
+- Key Feature: Always renders above visual effects
 
 ## Visual Stack Representation
 
 ```
-┌─ UI Layer (10+) ─────────────────────────┐
-│  ┌─ MarketVerse Canvas (9) ─────────────┐│
-│  │  ┌─ MarketVerse BG (8) black ────────┤│
-│  │  │  ┌─ Scanning Effects (6) ─────────┤│
-│  │  │  │  ┌─ TokenVerse Canvas (4) ────┐││
-│  │  │  │  │    Stars & Nodes           │││
-│  │  │  │  │    ↑ Blocked by layers     │││
-│  │  │  │  └────────────────────────────┘││
+┌─ UI Layer (z-10) ──────────────────────────┐
+│  ┌─ Cyberpunk Overlay (z-3) ──────────────┐│
+│  │  ┌─ MarketVerse (z-2) ────────────────┐││
+│  │  │  ┌─ TokenVerse (z-1) ─────────────┐│││
+│  │  │  │  ┌─ Shared BG (40% black) ────┐││││
+│  │  │  │  │                            │││││
+│  │  │  │  │  All layers visible        │││││
+│  │  │  │  │  through transparency      │││││
+│  │  │  │  │                            │││││
+│  │  │  │  └────────────────────────────┘││││
 │  │  │  └──────────────────────────────┘│││
-│  │  └────────────────────────────────┘││││
-│  └──────────────────────────────────┘│││││
-└────────────────────────────────────┘││││││
+│  │  └────────────────────────────────┘││
+│  └──────────────────────────────────┘│
+└────────────────────────────────────┘
 ```
 
-## Identified Problems
+## Key Success Factors
 
-1. **Self-Occlusion**
+1. **Unified Background**
 
-   - TokenVerse's own background (Layer 3) is blocking its canvas
-   - The 90% black background is too opaque
+   - Single 40% black background
+   - No competing dark layers
+   - Perfect balance of visibility and atmosphere
 
-2. **Stacking Context Issues**
+2. **Layer Independence**
 
-   - Multiple fixed/absolute positioned elements
-   - Nested stacking contexts limiting z-index effectiveness
+   - Each visual layer exists independently
+   - No self-blocking backgrounds
+   - Clear z-index hierarchy
 
-3. **Competing Backgrounds**
+3. **Blend Mode Optimization**
 
-   - Both TokenVerse and MarketVerse have dark backgrounds
-   - Cumulative opacity exceeds usable transparency
+   - MarketVerse uses `lighten` blend mode
+   - Additive blending preserves bright elements
+   - Natural integration between layers
 
-4. **Container Hierarchy**
-   - TokenVerse is nested too deeply
-   - Extra wrapper divs creating unnecessary layers
+4. **Event Handling**
 
-## Recommended Solutions
+   - `pointer-events-none` on visual group
+   - UI remains fully interactive
+   - No interference between layers
 
-1. **Background Adjustment**
+5. **Performance Optimization**
+   - Flat DOM structure
+   - Minimal wrapper elements
+   - Efficient rendering chain
 
-   ```diff
-   - div.absolute.inset-0.bg-black/90
-   + div.absolute.inset-0.bg-black/40
-   ```
+## Implementation Benefits
 
-2. **Layer Restructuring**
+1. **Visual Clarity**
 
-   ```tsx
-   <div className="relative min-h-screen">
-     <div className="fixed inset-0 bg-black/40" />{" "}
-     {/* Single shared background */}
-     <TokenVerse />
-     <MarketVerse />
-     <div className="relative z-10">{/* UI Content */}</div>
-   </div>
-   ```
+   - All layers remain visible
+   - No unintended occlusion
+   - Proper depth perception
 
-3. **Stacking Context Optimization**
+2. **Interaction Quality**
 
-   - Move both Three.js renderers to the same stacking context
-   - Use z-index strategically only where needed
-   - Remove unnecessary wrapper divs
+   - Clean separation of visuals and UI
+   - No input interference
+   - Smooth user experience
 
-4. **Transparency Chain**
-   - Reduce individual layer opacity
-   - Use additive blending where possible
-   - Consider using blend modes for better visual integration
+3. **Maintenance Simplicity**
 
-## Implementation Priority
+   - Clear layer organization
+   - Easy to modify individual elements
+   - Predictable behavior
 
-1. Remove TokenVerse's self-blocking background
-2. Flatten component hierarchy
-3. Establish single shared background
-4. Adjust z-indices and blend modes
-
-Would you like me to proceed with creating specific code changes to implement these fixes?
+4. **Resource Efficiency**
+   - Minimal DOM complexity
+   - Optimized render pipeline
+   - Reduced memory footprint

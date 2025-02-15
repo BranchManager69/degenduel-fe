@@ -1,269 +1,170 @@
-# DegenDuel Background System Analysis
+# DegenDuel Background System Analysis - Current Implementation
 
 ## Component Hierarchy & Visual Stack
 
+### Base Layer: Shared Background
+
+- Fixed position, inset-0
+- 40% black opacity (`bg-black/40`)
+- Creates unified dark atmosphere
+- No self-blocking backgrounds
+
 ### 1. TokenVerse (`TokenVerse.tsx`)
 
-The deepest 3D visualization layer representing the token ecosystem.
+Primary 3D visualization layer (z-index: 1)
 
-#### Visual Expectations
+#### Visual Elements
 
-- **Primary Scene Elements**:
+- **Token Nodes**
 
-  - Token Nodes: Glowing icosahedrons (20-sided 3D shapes)
+  - Glowing icosahedrons
+  - Size: 0.2 to 2 units (based on log10(marketCap) \* 0.2)
+  - Colors:
+    - Positive change: Green (0x00ff88) with emissive (0x00aa44)
+    - Negative change: Red (0xff4444) with emissive (0xaa2222)
+  - 90% opacity for subtle transparency
+  - Dynamic rotation based on price changes
 
-    - Size range: 0.5 to 4 units based on log10(marketCap) \* 0.4
-    - Green glow for positive price change (0x00ff88 with 0x00aa44 emissive)
-    - Red glow for negative price change (0xff4444 with 0xaa2222 emissive)
-    - 90% opacity for slight transparency
-    - Should rotate based on price change direction
+- **Connection Lines**
 
-  - Connection Lines:
+  - Mint green (0x00ff88) at 20% opacity
+  - 2-4 dynamic connections per node
+  - Fluid movement and bending
+  - Responds to node positions
 
-    - Mint green (0x00ff88) at 20% opacity
-    - Dynamic, flowing between connected nodes
-    - 2-4 connections per node
-    - Should bend and flow based on node movement
+- **Background Stars**
+  - Light blue particles (0x88ccff)
+  - Size: 0.1 units
+  - Quantity: Controlled via debug panel
+  - Constant upward drift
 
-  - Background Stars:
+#### Lighting System
 
-    - Light blue (0x88ccff) particles
-    - Size: 0.1 units
-    - Quantity: Controlled by debug panel (default: several hundred)
-    - Constant upward drift motion
-    - Should create depth perception behind nodes
-
-  - Lighting System:
-
-    - Ambient base light (0x404040 at 2x intensity)
-    - Directional key light (white, 2x intensity)
-    - Three point lights:
-      - Blue (0x0088ff) at (50, 50, 50)
-      - Orange (0xff8800) at (-50, -50, -50)
-      - Green (0x00ff88) at (-50, 50, -50)
-    - Range: 200 units
-    - Intensity: Controlled by debug panel
-
-  - Post-Processing:
-    - Bloom effect on all glowing elements
-    - Strength controlled by debug panel
-    - Should create soft, ethereal glow
-
-#### Camera & Viewport
-
-- Camera Position: z=50 (default)
-- Field of View: 75 degrees
-- Viewport: Full screen with black background at 90% opacity
-- Should allow orbital camera movement
+- Ambient base light (0x404040, 3x intensity)
+- Three point lights:
+  - Blue (0x0088ff) at (50, 50, 50)
+  - Orange (0xff8800) at (-50, -50, -50)
+  - Green (0x00ff88) at (-50, 50, -50)
+- Range: 300 units
+- Intensity: Debug panel controlled
 
 ### 2. MarketVerse (`MarketVerse.tsx`)
 
-Market visualization using spherical representations.
+Secondary 3D visualization layer (z-index: 2)
 
-#### Visual Expectations
+#### Visual Elements
 
-- **Scene Elements**:
+- **Market Spheres**
+  - Circular arrangement
+  - Radius: 200 units from center
+  - Size: 20-50 units based on market cap
+  - Colors: HSL based on 24h change
+  - Individual rotation animations
 
-  - Token Spheres:
+#### Blend Mode Integration
 
-    - Arranged in circular pattern
-    - Radius: 200 units from center
-    - Size: Based on market cap (20-50 units)
-    - Color: HSL based on 24h change
-      - Green hue (0.3) for positive
-      - Red hue (0.0) for negative
-      - Saturation based on change magnitude
-    - Should rotate individually
+- Uses `mixBlendMode: "lighten"`
+- Additively blends with TokenVerse
+- Preserves bright elements from both layers
 
-  - Lighting:
-    - Ambient light (0x404040)
-    - Point light at (100, 100, 100)
-    - Should create dramatic shadows
+### 3. Cyberpunk Overlay
 
-#### Camera & Scene
+Atmospheric effects layer (z-index: 3)
 
-- Camera: z=400, y=100
-- Should allow smooth orbital controls
-- Background should be transparent
+#### Visual Elements
 
-### 3. MarketBrain (`MarketBrain.tsx`)
+- Scanning lines
+- Glowing accents
+- 30% opacity for subtle effect
+- Enhances depth perception
 
-Neural network-style market activity visualization.
+## Layer Interaction System
 
-#### Visual Expectations
+### Z-Index Hierarchy
 
-- **Canvas Elements**:
+1. Shared Background (z-index: 0)
+2. TokenVerse (z-index: 1)
+3. MarketVerse (z-index: 2)
+4. Cyberpunk Overlay (z-index: 3)
+5. UI Elements (z-index: 10)
 
-  - Market Nodes:
+### Event Handling
 
-    - Position: Dynamic based on forces
-    - Connected by gradient lines
-    - Should pulse with market activity
+- Visual group: `pointer-events-none`
+- Ensures UI interaction priority
+- No interference between layers
 
-  - Connection Lines:
+### Transparency Management
 
-    - Gradient from blue (0x3B82F6) to purple (0x8B5CF6)
-    - Opacity varies with connection strength
-    - Should curve based on nearby particle influence
-    - Animated data pulses along connections
-
-  - Particles:
-
-    - Price Change Particles:
-
-      - Green/Red based on direction
-      - Size: 1-3 units
-      - Should follow force-based paths
-
-    - Volume Particles:
-
-      - Purple color
-      - Larger size for volume spikes
-      - Should emit from active nodes
-
-    - Correlation Particles:
-      - Blue color
-      - Should flow between correlated pairs
-
-#### Interaction
-
-- Mouse influence on particle movement
-- Radius: 200 units from cursor
-- Should create dynamic flow patterns
-
-### 4. AmbientMarketData (`AmbientMarketData.tsx`)
-
-Floating market update notifications.
-
-#### Visual Expectations
-
-- **Update Cards**:
-
-  - Size: Dynamic based on content
-  - Background: Dark with 80% opacity and blur
-  - Border Types:
-
-    - Price Updates: brand-400/20 border
-    - Volume Spikes: purple-400/20 border
-    - Volatility: red-400/20 border
-    - Milestones: cyan-400/20 border
-
-  - Content Layout:
-    - Token icon with pulse animation
-    - Symbol text in gray-200
-    - Update message in color based on type
-    - Should float across screen smoothly
-
-- **Animation Behavior**:
-  - Entry: Fade in from edges
-  - Movement: Smooth cross-screen transit
-  - Exit: Fade out with rotation
-  - Duration: 8 seconds per card
-  - Maximum: 5 cards visible simultaneously
-
-### 5. ParticlesEffect (`ParticlesEffect.tsx`)
-
-Ambient particle system for atmospheric effect.
-
-#### Visual Expectations
-
-- **Particle System**:
-  - Quantity: 1000 particles
-  - Size: 0.05 units
-  - Color: White with 60% opacity
-  - Distribution: Random within (-5, 5) on all axes
-  - Movement: Smoke-like drift pattern
-  - Should reset when reaching boundaries
-
-## Layer Interaction Rules
-
-### Z-Index Stack (Back to Front):
-
-1. TokenVerse (z-index: 0)
-
-   - Full 3D scene with bloom
-   - Should be visible through all other layers
-
-2. MarketVerse (z-index: 0)
-
-   - Shares space with TokenVerse
-   - Should blend seamlessly
-
-3. MarketBrain (z-index: 0)
-
-   - Overlays 3D scenes
-   - Should add network effect without blocking
-
-4. ParticlesEffect
-
-   - Integrated into Three.js scenes
-   - Should provide atmospheric depth
-
-5. AmbientMarketData
-   - Floats above all backgrounds
-   - Should not interfere with UI
-
-### Transparency Handling
-
-- Each layer should contribute to depth
-- Cumulative opacity should not block lower layers
-- Bloom effects should penetrate through layers
+- Base background: 40% opacity
+- TokenVerse: Natural transparency
+- MarketVerse: Additive blending
+- Overlay: 30% opacity
 
 ## Debug Panel Integration
 
-### TokenVerse Controls:
+### TokenVerse Controls
 
-- Intensity: 0-100 (affects light strength)
-- Star Intensity: 0-100 (affects particle opacity)
-- Bloom Strength: 0-3 (affects glow intensity)
+- Intensity: 0-100 (light strength)
+- Star Intensity: 0-100 (particle opacity)
+- Bloom Strength: 0-3 (glow intensity)
 - Particle Count: 100-2000
 - Update Frequency: 0-200
 
-### MarketBrain Controls:
+### MarketVerse Controls
 
-- Intensity: 0-100 (affects connection visibility)
-- Particle Count: Affects system density
-- Energy Level: Affects movement speed
+- Intensity: 0-100 (sphere visibility)
+- Particle Count: System density
+- Energy Level: Movement speed
 
-### AmbientMarketData Controls:
+### Performance Monitoring
 
-- Intensity: 0-100 (affects update frequency)
-- Update Frequency: Controls data refresh rate
+- FPS counter
+- Memory usage
+- GPU utilization
 
-## Current Issues & Investigation Points
+## Current Features
 
-1. **Layer Visibility**
+### Visual Depth
 
-   - TokenVerse momentarily visible then obscured
-   - Potential z-index conflicts
-   - Background opacity stacking issues
+- Multiple transparent layers
+- Additive blending effects
+- Dynamic particle systems
+- Responsive animations
 
-2. **Performance Concerns**
+### Interactive Elements
 
-   - Multiple animation loops
-   - WebGL context sharing
-   - Particle system optimization
+- Orbital camera controls
+- Mouse influence on particles
+- Debug panel adjustments
+- Real-time market data integration
 
-3. **Visual Coherence**
-   - Layer blending
-   - Opacity calculations
-   - Color scheme coordination
+### Performance Optimizations
 
-## Required Investigation Steps
+- Efficient DOM structure
+- Optimized render pipeline
+- Managed memory usage
+- Controlled animation frames
 
-1. **Layer Audit**
+## Maintenance Guidelines
 
-   - Test each component in isolation
-   - Document actual render order
-   - Verify opacity calculations
+### Adding New Effects
 
-2. **Performance Analysis**
+1. Respect z-index hierarchy
+2. Use appropriate blend modes
+3. Implement pointer-events-none
+4. Consider performance impact
 
-   - Profile animation frames
-   - Monitor memory usage
-   - Measure GPU utilization
+### Debugging Tips
 
-3. **Visual Documentation**
-   - Capture expected states
-   - Document layer interactions
-   - Create visual test cases
+1. Use debug panel controls
+2. Monitor performance metrics
+3. Check layer visibility
+4. Verify event handling
+
+### Performance Considerations
+
+1. Limit particle counts
+2. Optimize animation loops
+3. Use appropriate opacity values
+4. Monitor GPU usage

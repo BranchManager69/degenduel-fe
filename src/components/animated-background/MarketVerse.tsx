@@ -208,6 +208,20 @@ export const MarketVerse: React.FC = () => {
       spheresRef.current.forEach((sphere) => scene.remove(sphere));
       spheresRef.current = [];
 
+      // Create renderer with transparency
+      if (!rendererRef.current) {
+        const renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          premultipliedAlpha: false,
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setClearColor(0x000000, 0); // Fully transparent
+        containerRef.current.appendChild(renderer.domElement);
+        rendererRef.current = renderer;
+      }
+
       // Create spheres based on market data
       marketData.forEach((token, index) => {
         try {
@@ -271,26 +285,14 @@ export const MarketVerse: React.FC = () => {
         cameraRef.current = camera;
       }
 
-      // Initialize renderer if not exists
-      if (!rendererRef.current) {
-        const renderer = new THREE.WebGLRenderer({
-          antialias: true,
-          alpha: true,
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        containerRef.current.appendChild(renderer.domElement);
-        rendererRef.current = renderer;
-
-        // Initialize controls
-        const controls = new OrbitControls(
-          cameraRef.current,
-          renderer.domElement
-        );
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controlsRef.current = controls;
-      }
+      // Initialize controls
+      const controls = new OrbitControls(
+        cameraRef.current,
+        rendererRef.current!.domElement
+      );
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controlsRef.current = controls;
 
       // Animation loop
       const animate = () => {
@@ -360,10 +362,10 @@ export const MarketVerse: React.FC = () => {
     <div
       ref={containerRef}
       className="fixed inset-0 pointer-events-auto"
-      style={{ zIndex: 0, background: "#000" }}
+      style={{ zIndex: 0 }}
     >
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center backdrop-blur-sm">
           <div className="text-brand-400 animate-pulse">
             Loading Market Visualization...
           </div>
