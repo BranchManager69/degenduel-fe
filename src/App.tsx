@@ -47,6 +47,7 @@ import { ContestPerformance } from "./pages/public/leaderboards/ContestPerforman
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
 import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding";
 import { TokensPage } from "./pages/public/tokens/TokensPage";
+import { TokenWhitelistPage } from "./pages/public/tokens/whitelist";
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
 import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage";
@@ -153,6 +154,10 @@ export const App: React.FC = () => {
 
               {/* Tokens Page */}
               <Route path="/tokens" element={<TokensPage />} />
+              <Route
+                path="/tokens/whitelist"
+                element={<TokenWhitelistPage />}
+              />
 
               {/* Public Profile Page */}
               <Route path="/profile/:identifier" element={<PublicProfile />} />

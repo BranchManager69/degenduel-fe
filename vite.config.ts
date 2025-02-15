@@ -8,14 +8,102 @@ import { defineConfig, LogLevel, UserConfig } from "vite";
 export default defineConfig(({ command, mode }): UserConfig => {
   // Force development mode when running dev server
   const isDev = command === "serve" || mode === "development";
-  console.log("Running in", isDev ? "development" : "production", "mode");
+  // Add local dev mode check
+  const isLocalDev = mode === "dev-local";
+  console.log(
+    "Running in",
+    isLocalDev ? "local development" : isDev ? "development" : "production",
+    "mode"
+  );
 
   // Determine build output directory based on mode
   const outDir = mode === "development" ? "dist-dev" : "dist";
   console.log("Building to", outDir);
 
+  // For local dev, use simplified config
+  if (isLocalDev) {
+    return {
+      server: {
+        port: 3006,
+        host: true,
+        strictPort: true,
+        https: undefined,
+        hmr: {
+          clientPort: 3006,
+          host: "localhost",
+          protocol: "ws",
+        },
+        proxy: {
+          "^/api/.*": {
+            target: "https://dev.degenduel.me",
+            changeOrigin: true,
+            secure: true,
+            cookieDomainRewrite: "localhost",
+            headers: {
+              "Access-Control-Allow-Credentials": "true",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods":
+                "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+              "Access-Control-Allow-Headers":
+                "X-Requested-With,content-type,Authorization",
+            },
+            configure: (proxy, _options) => {
+              proxy.on("error", (err, _req, _res) => {
+                console.log("proxy error", err);
+              });
+              proxy.on("proxyReq", (proxyReq, req, _res) => {
+                console.log("Sending Request:", req.method, req.url);
+              });
+              proxy.on("proxyRes", (proxyRes, req, _res) => {
+                console.log("Received Response:", proxyRes.statusCode, req.url);
+              });
+            },
+          },
+          "^/status": {
+            target: "https://dev.degenduel.me",
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/admin/.*": {
+            target: "https://dev.degenduel.me",
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/auth/.*": {
+            target: "https://dev.degenduel.me",
+            changeOrigin: true,
+            secure: true,
+            cookieDomainRewrite: "localhost",
+            headers: {
+              "Access-Control-Allow-Credentials": "true",
+              "Access-Control-Allow-Origin": "*",
+            },
+          },
+          "^/portfolio": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+        },
+      },
+      plugins: [react()],
+      optimizeDeps: {
+        include: ["react", "react-dom", "react-router-dom"],
+        exclude: ["@react-three/fiber", "@react-three/drei"],
+        esbuildOptions: {
+          target: "esnext",
+        },
+      },
+      build: {
+        minify: false,
+        sourcemap: true,
+      },
+    };
+  }
+
   // Try to load SSL certs - both domains use the same certificate
-  const certPath = "/etc/letsencrypt/live/degenduel.me";
+  const certPath = "/etc/letsencrypt/live/degenduel.me-0001";
   const domain = isDev ? "dev.degenduel.me" : "degenduel.me";
   let hasCerts = false;
   let httpsConfig = undefined;
@@ -56,6 +144,29 @@ export default defineConfig(({ command, mode }): UserConfig => {
             : "https://degenduel.me/api",
           changeOrigin: true,
           secure: true,
+          cookieDomainRewrite: "localhost",
+          headers: {
+            "Access-Control-Allow-Credentials": "true",
+          },
+          configure: (proxy, _options) => {
+            proxy.on("error", (err, _req, _res) => {
+              console.log("proxy error", err);
+            });
+            proxy.on("proxyReq", (proxyReq, req, _res) => {
+              console.log(
+                "Sending Request to the Target:",
+                req.method,
+                req.url
+              );
+            });
+            proxy.on("proxyRes", (proxyRes, req, _res) => {
+              console.log(
+                "Received Response from the Target:",
+                proxyRes.statusCode,
+                req.url
+              );
+            });
+          },
           rewrite: (path) => path.replace(/^\/api/, ""),
         },
         "/portfolio": {
@@ -65,6 +176,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
           ws: true,
           changeOrigin: true,
           secure: true,
+          cookieDomainRewrite: "localhost",
         },
       },
       watch: {

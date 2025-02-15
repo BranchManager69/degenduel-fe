@@ -3,7 +3,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
-import { DD_PLATFORM_FEE } from "../../constants/rates";
+import { DD_PLATFORM_FEE } from "../../config/config";
 import { ddApi } from "../../services/dd-api";
 import { Contest, ContestSettings } from "../../types/index";
 import { Button } from "../ui/Button";
@@ -92,9 +92,9 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   const [formData, setFormData] = React.useState({
     name: `Degen Dustup ${Math.floor(Math.random() * 100)}`,
-    description: `Degen for all the glory.`,
+    description: `May the best Degen win.`,
     entry_fee: "0.01", // Default 0.01 SOL
-    prize_pool: "5.00",
+    prize_pool: "9.99",
     current_prize_pool: "0.00", // = entry_fee * min_participants
     start_time: getNextHourDateTime(),
     end_time: new Date(
@@ -103,7 +103,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       .toISOString()
       .slice(0, 16),
     entry_deadline: getNextHourDateTime(),
-    participant_count: 0, // brand new contest
+    participant_count: 0, // New contest
     min_participants: 2, // Default 2
     max_participants: 20, // Default 20
     allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default All Buckets
@@ -161,20 +161,18 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             rules: [
               {
                 id: "1",
-                title: "Platform Rules",
-                description:
-                  "All platform rules must be followed at all times.",
+                title: "DegenDuel Rules",
+                description: "Be a good Degen.",
               },
               {
                 id: "2",
                 title: "Fair Play",
-                description: "No market manipulation or collusion is allowed.",
+                description: "No collusion is allowed. Don't do it.",
               },
               {
                 id: "3",
-                title: "Participation",
-                description:
-                  "Democrats are strictly forbidden from playing DegenDuel at all times.",
+                title: "No Hacking",
+                description: "Don't hack the game and take all the money.",
               },
             ],
           } as ContestSettings,
@@ -315,7 +313,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     //{ value: 10, label: "Bucket 10" },
   ];
 
-  // Handle SOL amount input with better decimal support
+  // Handle SOL amount input with simple decimal validation
   const handleSolInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, "");
     const parts = value.split(".");
@@ -323,11 +321,11 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     // Allow only one decimal point
     if (parts.length > 2) return;
 
-    // Limit decimal places to 9
-    if (parts[1] && parts[1].length > 9) return;
+    // Limit to 3 decimal places
+    if (parts[1] && parts[1].length > 3) return;
 
-    // Prevent more than 10 digits before decimal
-    if (parts[0] && parts[0].length > 10) return;
+    // Prevent more than 7 digits before decimal
+    if (parts[0] && parts[0].length > 7) return;
 
     setFormData((prev) => ({
       ...prev,
