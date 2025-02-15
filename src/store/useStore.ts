@@ -451,7 +451,6 @@ type StorePersist = PersistOptions<
     | "analytics"
     | "wallet"
     | "achievements"
-    | "uiDebug"
   >
 >;
 
@@ -468,7 +467,6 @@ const persistConfig: StorePersist = {
     analytics: state.analytics,
     wallet: state.wallet,
     achievements: state.achievements,
-    uiDebug: state.uiDebug,
   }),
 };
 
