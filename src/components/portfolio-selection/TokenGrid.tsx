@@ -1,11 +1,6 @@
 import React from "react";
-import {
-  FaCoins,
-  FaDiscord,
-  FaGlobe,
-  FaTelegram,
-  FaTwitter,
-} from "react-icons/fa";
+import { IconType } from "react-icons";
+import { FaCoins, FaDiscord, FaTelegram, FaTwitter } from "react-icons/fa";
 import { formatCurrency, formatMarketCap } from "../../lib/utils";
 import { Token } from "../../types/index";
 import { Card, CardContent, CardHeader } from "../ui/Card";
@@ -94,7 +89,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
         >
           {/* Background Pattern + Animated Logo */}
           <div className="absolute inset-0 bg-gradient-to-br from-dark-400/20 via-transparent to-transparent" />
-          {token.imageUrl && (
+          {token.images && (
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute inset-[-10%] flex items-center justify-center">
                 <div className="relative w-64 h-64 opacity-[0.06] hover:opacity-[0.09] transition-opacity duration-700">
@@ -104,8 +99,12 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                   {/* Animated logo */}
                   <div className="animate-float">
                     <img
-                      src={token.imageUrl}
-                      alt=""
+                      src={
+                        token.images.imageUrl ||
+                        token.images.headerImage ||
+                        token.images.openGraphImage
+                      }
+                      alt={token.name}
                       className="w-full h-full object-contain"
                     />
                   </div>
@@ -130,41 +129,36 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                     {token.name}
                   </span>
                 </div>
-
                 {/* Social Links - Moved to right side */}
-                {(token.websites?.length || token.socials?.length) && (
-                  <div className="flex gap-2 flex-shrink-0">
-                    {token.websites?.[0] && (
-                      <a
-                        href={token.websites[0].url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-gray-400 hover:text-brand-400 transition-colors"
-                        title={token.websites[0].label}
-                      >
-                        <FaGlobe size={14} />
-                      </a>
-                    )}
-                    {token.socials?.map((social) => {
-                      const Icon = {
-                        discord: FaDiscord,
-                        twitter: FaTwitter,
-                        telegram: FaTelegram,
-                      }[social.platform];
-                      return Icon ? (
-                        <a
-                          key={social.platform}
-                          href={social.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-gray-400 hover:text-brand-400 transition-colors"
-                        >
-                          <Icon size={14} />
-                        </a>
-                      ) : null;
-                    })}
+                {(token.websites?.length ||
+                  Object.keys(token.socials || {}).length) && (
+                  <div className="flex items-center gap-2">
+                    {/* Social Media Links */}
+                    {Object.entries(token.socials || {})
+                      .filter(([_, data]) => data?.url)
+                      .map(([platform, data]) => {
+                        const Icon: IconType =
+                          {
+                            discord: FaDiscord,
+                            twitter: FaTwitter,
+                            telegram: FaTelegram,
+                          }[platform as keyof typeof token.socials] ||
+                          FaDiscord;
+
+                        if (!data) return null;
+
+                        return (
+                          <a
+                            key={platform}
+                            href={data.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-400 hover:text-brand-400 transition-colors"
+                          >
+                            <Icon />
+                          </a>
+                        );
+                      })}
                   </div>
                 )}
               </div>
@@ -173,7 +167,9 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
               <div className="mt-2">
                 <TokenSparkline
                   tokenAddress={token.contractAddress}
-                  change24h={token.change_24h ?? null}
+                  change24h={
+                    token.change24h != null ? Number(token.change24h) : null
+                  }
                 />
               </div>
             </CardHeader>
@@ -194,13 +190,13 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                   <span className="text-gray-400">24h</span>
                   <div
                     className={`font-medium ${
-                      (token.change_24h || 0) >= 0
+                      (Number(token.change24h) || 0) >= 0
                         ? "text-green-400"
                         : "text-red-400"
                     }`}
                   >
-                    {token.change_24h != null
-                      ? `${(token.change_24h * 100).toFixed(1)}%`
+                    {token.change24h != null
+                      ? `${(Number(token.change24h) * 100).toFixed(1)}%`
                       : "N/A"}
                   </div>
                 </div>

@@ -1,10 +1,10 @@
 import React from "react";
 import { FaCheckCircle } from "react-icons/fa";
-import { formatCurrency } from "../../../lib/utils";
-import { Contest, ContestStatus } from "../../../types/index";
-import { ContestButton } from "../../landing/contests/ContestButton";
-import { ContestDifficulty } from "../../landing/contests/ContestDifficulty";
-import { CountdownTimer } from "../../ui/CountdownTimer";
+import { formatCurrency } from "../../lib/utils";
+import { Contest, ContestStatus } from "../../types/index";
+import { ContestButton } from "../landing/contests-preview/ContestButton";
+import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
+import { CountdownTimer } from "../ui/CountdownTimer";
 
 interface ContestCardProps {
   contest: Contest;

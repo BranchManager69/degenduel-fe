@@ -1,7 +1,7 @@
 import React from "react";
 import { formatCurrency } from "../../lib/utils";
 import { Contest } from "../../types/index";
-import { CreateContestButton } from "../contest-lobby/browser/CreateContestButton";
+import { CreateContestButton } from "../contest-browser/CreateContestButton";
 import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader } from "../ui/Card";
@@ -26,7 +26,7 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
           <h3 className="text-lg font-semibold text-gray-100">
             Contest Management
           </h3>
-          <CreateContestButton onContestCreated={onContestCreated} />
+          <CreateContestButton onCreateClick={onContestCreated} />
         </div>
       </CardHeader>
       <CardContent>

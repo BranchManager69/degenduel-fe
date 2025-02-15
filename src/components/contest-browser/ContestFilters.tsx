@@ -1,6 +1,6 @@
 import React from "react";
-import type { ContestSettings } from "../../../types/index";
-import type { SortDirection, SortField } from "../../../types/sort";
+import type { ContestSettings } from "../../types/index";
+import type { SortDirection, SortField } from "../../types/sort";
 import { ContestSort } from "./ContestSort";
 
 interface ContestFiltersProps {
