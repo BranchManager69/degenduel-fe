@@ -2,82 +2,80 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { FiMaximize2, FiMinimize2, FiTrash2, FiX } from "react-icons/fi";
 
-interface DebugLog {
+interface WebSocketLog {
   id: string;
   timestamp: string;
-  type: "connection" | "state" | "alert" | "error" | "metrics";
+  type: "connect" | "disconnect" | "message" | "error";
   message: string;
   details?: any;
 }
 
 const typeColors = {
-  connection: "text-blue-500",
-  state: "text-green-500",
-  alert: "text-yellow-500",
-  error: "text-red-500",
-  metrics: "text-purple-500",
+  connect: "text-green-500",
+  disconnect: "text-red-500",
+  message: "text-blue-500",
+  error: "text-yellow-500",
 };
 
-export const ServiceDebugPanel: React.FC = () => {
+export const WebSocketDebugPanel: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [logs, setLogs] = useState<DebugLog[]>([]);
+  const [logs, setLogs] = useState<WebSocketLog[]>([]);
 
   useEffect(() => {
-    const handleDebugEvent = (
+    const handleWebSocketEvent = (
       event: CustomEvent<{
-        type: DebugLog["type"];
+        type: WebSocketLog["type"];
         message: string;
         data?: any;
       }>
     ) => {
-      const { type, message, data } = event.detail;
       setLogs((prev) => [
         {
           id: Math.random().toString(36).substr(2, 9),
           timestamp: new Date().toISOString(),
-          type,
-          message,
-          details: data,
+          type: event.detail.type,
+          message: event.detail.message,
+          details: event.detail.data,
         },
         ...prev.slice(0, 99), // Keep last 100 logs
       ]);
     };
 
     window.addEventListener(
-      "serviceWebSocket",
-      handleDebugEvent as EventListener
+      "webSocketDebug",
+      handleWebSocketEvent as EventListener
     );
     return () =>
       window.removeEventListener(
-        "serviceWebSocket",
-        handleDebugEvent as EventListener
+        "webSocketDebug",
+        handleWebSocketEvent as EventListener
       );
   }, []);
 
   if (!isVisible) {
     return (
       <motion.button
-        className="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-md shadow-lg hover:bg-gray-700 z-50"
+        className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-md shadow-lg hover:bg-gray-700 z-50"
         onClick={() => setIsVisible(true)}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        Show Debug Panel
+        Show WebSocket Debug
       </motion.button>
     );
   }
 
   return (
     <motion.div
-      className={`fixed right-4 bg-gray-900 text-white rounded-lg shadow-xl overflow-hidden z-50 ${
+      className={`fixed left-4 bg-gray-900 text-white rounded-lg shadow-xl overflow-hidden z-50 ${
         isExpanded ? "top-4 bottom-4 w-[600px]" : "bottom-4 w-[400px] h-[300px]"
       }`}
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="flex items-center justify-between p-2 bg-gray-800 border-b border-gray-700">
-        <h3 className="font-semibold">Service Debug Panel</h3>
+        <h3 className="font-semibold">WebSocket Debug Panel</h3>
         <div className="flex gap-2">
           <button
             onClick={() => setLogs([])}

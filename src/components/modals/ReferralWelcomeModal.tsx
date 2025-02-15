@@ -74,12 +74,12 @@ export const ReferralWelcomeModal: React.FC = () => {
             <div className="space-y-6">
               <div className="text-center space-y-4">
                 <h2 className="text-3xl font-bold text-white">
-                  Welcome to DegenDuel!
+                  Welcome to DegenDuel.
                 </h2>
                 <p className="text-gray-400">
                   You've been invited to join the ultimate crypto portfolio
                   battle arena. Connect your wallet to start your journey and
-                  claim your rewards!
+                  claim your rewards.
                 </p>
               </div>
 

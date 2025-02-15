@@ -84,16 +84,13 @@ export const LandingPage: React.FC = () => {
       {/* TokenVerse Background with enhanced overlay effects */}
       <div className="fixed inset-0">
         <TokenVerse />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-transparent to-black/90 pointer-events-none" />
-        {/* Additional cosmic effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(127,0,255,0.1)_0%,transparent_70%)] animate-pulse-slow" />
         <div className="absolute inset-0 overflow-hidden">
           <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/20 to-transparent animate-scan-vertical"
+            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-scan-vertical"
             style={{ left: "20%" }}
           />
           <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/20 to-transparent animate-scan-vertical"
+            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-scan-vertical"
             style={{ left: "80%", animationDelay: "-2s" }}
           />
         </div>

@@ -69,7 +69,8 @@ interface DebugConfig {
   customFonts?: FontConfig;
 }
 
-interface StoreState {
+// Separate type for state data (without actions)
+interface StateData {
   isConnecting: boolean;
   user: User | null;
   error: WalletError | null;
@@ -122,121 +123,6 @@ interface StoreState {
       };
     }
   >;
-  setUser: (user: User | null) => void;
-  setContests: (contests: Contest[]) => void;
-  setTokens: (tokens: Token[]) => void;
-  setDebugConfig: (config: Partial<DebugConfig>) => void;
-  clearError: () => void;
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => void;
-  setMaintenanceMode: (enabled: boolean) => void;
-  setServiceState: (
-    status: "online" | "offline" | "degraded",
-    metrics: { uptime: number; latency: number; activeUsers: number }
-  ) => void;
-  addServiceAlert: (
-    type: "info" | "warning" | "error",
-    message: string
-  ) => void;
-  setCircuitBreakerState: (state: StoreState["circuitBreaker"]) => void;
-  addCircuitAlert: (alert: {
-    type: string;
-    title: string;
-    message: string;
-    details?: any;
-  }) => void;
-  setServices: (services: StoreState["services"]) => void;
-
-  // Portfolio WebSocket Actions
-  updatePortfolio: (data: {
-    tokens: Array<{
-      symbol: string;
-      name: string;
-      amount: number;
-      value: number;
-    }>;
-    total_value: number;
-    performance_24h: number;
-  }) => void;
-  updateTokenPrice: (data: {
-    symbol: string;
-    price: number;
-    change_24h: number;
-    timestamp: string;
-  }) => void;
-  addTradeNotification: (data: {
-    trade_id: string;
-    wallet_address: string;
-    symbol: string;
-    amount: number;
-    price: number;
-    timestamp: string;
-    contest_id?: string;
-  }) => void;
-
-  // Contest WebSocket Actions
-  updateContest: (data: {
-    contest_id: string;
-    status: "active" | "completed" | "cancelled";
-    current_round?: number;
-    time_remaining?: number;
-    total_participants: number;
-    total_prize_pool: number;
-  }) => void;
-  updateLeaderboard: (data: {
-    contest_id: string;
-    leaderboard: Array<{
-      rank: number;
-      wallet_address: string;
-      username: string;
-      portfolio_value: number;
-      performance: number;
-      last_trade_time?: string;
-    }>;
-    timestamp: string;
-  }) => void;
-  addContestActivity: (data: {
-    contest_id: string;
-    wallet_address: string;
-    username: string;
-    activity_type: "join" | "leave" | "trade";
-    details?: {
-      symbol?: string;
-      amount?: number;
-      price?: number;
-    };
-    timestamp: string;
-  }) => void;
-
-  // Market Data WebSocket Actions
-  updateMarketPrice: (data: {
-    symbol: string;
-    price: number;
-    change_24h: number;
-    volume_24h: number;
-    high_24h: number;
-    low_24h: number;
-    timestamp: string;
-  }) => void;
-  updateMarketVolume: (data: {
-    symbol: string;
-    volume: number;
-    trades_count: number;
-    buy_volume: number;
-    sell_volume: number;
-    interval: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
-    timestamp: string;
-  }) => void;
-  updateMarketSentiment: (data: {
-    symbol: string;
-    sentiment_score: number;
-    buy_pressure: number;
-    sell_pressure: number;
-    volume_trend: "increasing" | "decreasing" | "stable";
-    timestamp: string;
-  }) => void;
-
-  // Analytics State
   analytics: {
     userActivities: Record<
       string,
@@ -274,8 +160,6 @@ interface StoreState {
       }
     >;
   };
-
-  // Wallet State
   wallet: {
     status: {
       type: "created" | "statusChanged" | "balanceChanged";
@@ -306,8 +190,6 @@ interface StoreState {
       timestamp: string;
     }>;
   };
-
-  // Achievement System State
   achievements: {
     userProgress: {
       level: number;
@@ -342,20 +224,144 @@ interface StoreState {
       timestamp: string;
     }>;
   };
+  uiDebug: {
+    backgrounds: {
+      movingBackground: {
+        enabled: boolean;
+        intensity: number;
+      };
+      tokenVerse: {
+        enabled: boolean;
+        intensity: number;
+        starIntensity: number;
+        bloomStrength: number;
+        particleCount: number;
+        updateFrequency: number;
+      };
+      marketBrain: {
+        enabled: boolean;
+        intensity: number;
+        particleCount: number;
+        energyLevel: number;
+      };
+      ambientMarketData: {
+        enabled: boolean;
+        intensity: number;
+        updateFrequency: number;
+      };
+    };
+  };
+}
 
-  // Achievement Actions
-  updateUserProgress: (
-    progress: StoreState["achievements"]["userProgress"]
+// Full state type including actions
+interface State extends StateData {
+  setUser: (user: User | null) => void;
+  setContests: (contests: Contest[]) => void;
+  setTokens: (tokens: Token[]) => void;
+  setDebugConfig: (config: Partial<DebugConfig>) => void;
+  clearError: () => void;
+  connectWallet: () => Promise<void>;
+  disconnectWallet: () => void;
+  setMaintenanceMode: (enabled: boolean) => void;
+  setServiceState: (
+    status: "online" | "offline" | "degraded",
+    metrics: { uptime: number; latency: number; activeUsers: number }
   ) => void;
-  addAchievement: (
-    achievement: StoreState["achievements"]["unlockedAchievements"][0]
+  addServiceAlert: (
+    type: "info" | "warning" | "error",
+    message: string
   ) => void;
-  addCelebration: (
-    celebration: StoreState["achievements"]["pendingCelebrations"][0]
-  ) => void;
-  clearCelebration: (timestamp: string) => void;
-
-  // Analytics Actions
+  setCircuitBreakerState: (state: StateData["circuitBreaker"]) => void;
+  addCircuitAlert: (alert: {
+    type: string;
+    title: string;
+    message: string;
+    details?: any;
+  }) => void;
+  setServices: (services: StateData["services"]) => void;
+  updatePortfolio: (data: {
+    tokens: Array<{
+      symbol: string;
+      name: string;
+      amount: number;
+      value: number;
+    }>;
+    total_value: number;
+    performance_24h: number;
+  }) => void;
+  updateTokenPrice: (data: {
+    symbol: string;
+    price: number;
+    change_24h: number;
+    timestamp: string;
+  }) => void;
+  addTradeNotification: (data: {
+    trade_id: string;
+    wallet_address: string;
+    symbol: string;
+    amount: number;
+    price: number;
+    timestamp: string;
+    contest_id?: string;
+  }) => void;
+  updateContest: (data: {
+    contest_id: string;
+    status: "active" | "completed" | "cancelled";
+    current_round?: number;
+    time_remaining?: number;
+    total_participants: number;
+    total_prize_pool: number;
+  }) => void;
+  updateLeaderboard: (data: {
+    contest_id: string;
+    leaderboard: Array<{
+      rank: number;
+      wallet_address: string;
+      username: string;
+      portfolio_value: number;
+      performance: number;
+      last_trade_time?: string;
+    }>;
+    timestamp: string;
+  }) => void;
+  addContestActivity: (data: {
+    contest_id: string;
+    wallet_address: string;
+    username: string;
+    activity_type: "join" | "leave" | "trade";
+    details?: {
+      symbol?: string;
+      amount?: number;
+      price?: number;
+    };
+    timestamp: string;
+  }) => void;
+  updateMarketPrice: (data: {
+    symbol: string;
+    price: number;
+    change_24h: number;
+    volume_24h: number;
+    high_24h: number;
+    low_24h: number;
+    timestamp: string;
+  }) => void;
+  updateMarketVolume: (data: {
+    symbol: string;
+    volume: number;
+    trades_count: number;
+    buy_volume: number;
+    sell_volume: number;
+    interval: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+    timestamp: string;
+  }) => void;
+  updateMarketSentiment: (data: {
+    symbol: string;
+    sentiment_score: number;
+    buy_pressure: number;
+    sell_pressure: number;
+    volume_trend: "increasing" | "decreasing" | "stable";
+    timestamp: string;
+  }) => void;
   updateUserActivity: (
     users: Array<{
       wallet: string;
@@ -388,8 +394,6 @@ interface StoreState {
     retention_rate: number;
     timestamp: string;
   }) => void;
-
-  // Wallet Actions
   updateWalletStatus: (status: {
     type: "created" | "statusChanged" | "balanceChanged";
     publicKey: string;
@@ -415,12 +419,28 @@ interface StoreState {
     location?: string;
     timestamp: string;
   }) => void;
+  updateUserProgress: (
+    progress: StateData["achievements"]["userProgress"]
+  ) => void;
+  addAchievement: (
+    achievement: StateData["achievements"]["unlockedAchievements"][0]
+  ) => void;
+  addCelebration: (
+    celebration: StateData["achievements"]["pendingCelebrations"][0]
+  ) => void;
+  clearCelebration: (timestamp: string) => void;
+  toggleBackground: (name: keyof StateData["uiDebug"]["backgrounds"]) => void;
+  updateBackgroundSetting: (
+    name: keyof StateData["uiDebug"]["backgrounds"],
+    setting: string,
+    value: number
+  ) => void;
 }
 
 type StorePersist = PersistOptions<
-  StoreState,
+  State,
   Pick<
-    StoreState,
+    State,
     | "user"
     | "debugConfig"
     | "maintenanceMode"
@@ -431,11 +451,12 @@ type StorePersist = PersistOptions<
     | "analytics"
     | "wallet"
     | "achievements"
+    | "uiDebug"
   >
 >;
 
 const persistConfig: StorePersist = {
-  name: "degen-duel-storage",
+  name: "degenduel-storage",
   partialize: (state) => ({
     user: state.user,
     debugConfig: state.debugConfig,
@@ -447,6 +468,7 @@ const persistConfig: StorePersist = {
     analytics: state.analytics,
     wallet: state.wallet,
     achievements: state.achievements,
+    uiDebug: state.uiDebug,
   }),
 };
 
@@ -535,97 +557,76 @@ const getPhantomDeepLink = () => {
   return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
 };
 
-export const useStore = create<StoreState>()(
+const initialState: StateData = {
+  isConnecting: false,
+  user: null,
+  error: null,
+  debugConfig: {},
+  contests: [],
+  tokens: [],
+  maintenanceMode: false,
+  serviceState: null,
+  serviceAlerts: [],
+  circuitBreaker: {
+    services: [],
+  },
+  services: {},
+  analytics: {
+    userActivities: {},
+    systemMetrics: null,
+    userSegments: {},
+  },
+  wallet: {
+    status: null,
+    transfers: {},
+    activities: [],
+  },
+  achievements: {
+    userProgress: null,
+    unlockedAchievements: [],
+    pendingCelebrations: [],
+  },
+  uiDebug: {
+    backgrounds: {
+      movingBackground: {
+        enabled: true,
+        intensity: 100,
+      },
+      tokenVerse: {
+        enabled: true,
+        intensity: 100,
+        starIntensity: 50,
+        bloomStrength: 1.5,
+        particleCount: 1000,
+        updateFrequency: 100,
+      },
+      marketBrain: {
+        enabled: true,
+        intensity: 100,
+        particleCount: 1000,
+        energyLevel: 50,
+      },
+      ambientMarketData: {
+        enabled: true,
+        intensity: 100,
+        updateFrequency: 30,
+      },
+    },
+  },
+};
+
+export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      isConnecting: false,
-      user: null,
-      error: null,
-      debugConfig: {},
-      maintenanceMode: false,
-      serviceState: null,
-      serviceAlerts: [],
-      circuitBreaker: {
-        services: [],
-      },
-      services: {},
-
-      // Initial Analytics State
-      analytics: {
-        userActivities: {},
-        systemMetrics: null,
-        userSegments: {},
-      },
-
-      // Initial Wallet State
-      wallet: {
-        status: null,
-        transfers: {},
-        activities: [],
-      },
-
-      // Achievement System Initial State
-      achievements: {
-        userProgress: null,
-        unlockedAchievements: [],
-        pendingCelebrations: [],
-      },
-
+      ...initialState,
+      setUser: (user) => set({ user }),
+      setContests: (contests) => set({ contests }),
+      setTokens: (tokens) => set({ tokens }),
       setDebugConfig: (config) =>
         set((state) => ({
           debugConfig: { ...state.debugConfig, ...config },
         })),
-
       clearError: () => set({ error: null }),
-
-      contests: [],
-      tokens: [],
-
-      setUser: (user) => set({ user }),
-      setContests: (contests) => set({ contests }),
-      setTokens: (tokens) => set({ tokens }),
-
-      setMaintenanceMode: async (enabled: boolean) => {
-        try {
-          set({ maintenanceMode: enabled });
-
-          const response = await retryFetch(
-            `${API_URL}/admin/maintenance/status`,
-            {
-              method: "GET",
-              credentials: "include",
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to verify maintenance mode status");
-          }
-
-          const { enabled: backendStatus } = await response.json();
-
-          if (backendStatus !== enabled) {
-            console.warn(
-              "Maintenance mode state mismatch detected, syncing with backend"
-            );
-            set({ maintenanceMode: backendStatus });
-          }
-        } catch (error) {
-          console.error("Failed to sync maintenance mode:", error);
-          const response = await retryFetch(
-            `${API_URL}/admin/maintenance/status`,
-            {
-              method: "GET",
-              credentials: "include",
-            }
-          ).catch(() => null);
-
-          if (response) {
-            const { enabled: backendStatus } = await response.json();
-            set({ maintenanceMode: backendStatus });
-          }
-        }
-      },
-
       connectWallet: async () => {
         const { isConnecting, debugConfig } = get();
         if (isConnecting) {
@@ -781,7 +782,6 @@ export const useStore = create<StoreState>()(
           set({ isConnecting: false });
         }
       },
-
       disconnectWallet: async () => {
         try {
           const { user } = get();
@@ -865,7 +865,46 @@ export const useStore = create<StoreState>()(
           set({ user: null, isConnecting: false });
         }
       },
+      setMaintenanceMode: async (enabled: boolean) => {
+        try {
+          set({ maintenanceMode: enabled });
 
+          const response = await retryFetch(
+            `${API_URL}/admin/maintenance/status`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to verify maintenance mode status");
+          }
+
+          const { enabled: backendStatus } = await response.json();
+
+          if (backendStatus !== enabled) {
+            console.warn(
+              "Maintenance mode state mismatch detected, syncing with backend"
+            );
+            set({ maintenanceMode: backendStatus });
+          }
+        } catch (error) {
+          console.error("Failed to sync maintenance mode:", error);
+          const response = await retryFetch(
+            `${API_URL}/admin/maintenance/status`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          ).catch(() => null);
+
+          if (response) {
+            const { enabled: backendStatus } = await response.json();
+            set({ maintenanceMode: backendStatus });
+          }
+        }
+      },
       setServiceState: (status, metrics) =>
         set({
           serviceState: {
@@ -873,20 +912,13 @@ export const useStore = create<StoreState>()(
             metrics,
           },
         }),
-      addServiceAlert: (type, message) => {
-        const alerts = get().serviceAlerts || [];
-        set({
+      addServiceAlert: (type, message) =>
+        set((state) => ({
           serviceAlerts: [
-            ...alerts,
-            {
-              id: crypto.randomUUID(),
-              type,
-              message,
-              timestamp: Date.now(),
-            },
+            ...state.serviceAlerts,
+            { id: Date.now().toString(), type, message, timestamp: Date.now() },
           ],
-        });
-      },
+        })),
       setCircuitBreakerState: (state) => set({ circuitBreaker: state }),
       addCircuitAlert: (alert) => {
         set((state) => ({
@@ -902,8 +934,6 @@ export const useStore = create<StoreState>()(
         }));
       },
       setServices: (services) => set({ services }),
-
-      // Portfolio WebSocket Actions
       updatePortfolio: (data) => {
         // Implementation will update portfolio state
         console.log("Portfolio updated:", data);
@@ -916,8 +946,6 @@ export const useStore = create<StoreState>()(
         // Implementation will add trade notification
         console.log("Trade notification added:", data);
       },
-
-      // Contest WebSocket Actions
       updateContest: (data) => {
         // Implementation will update contest state
         console.log("Contest updated:", data);
@@ -930,8 +958,6 @@ export const useStore = create<StoreState>()(
         // Implementation will add contest activity
         console.log("Contest activity added:", data);
       },
-
-      // Market Data WebSocket Actions
       updateMarketPrice: (data) => {
         // Implementation will update market price state
         console.log("Market price updated:", data);
@@ -944,21 +970,20 @@ export const useStore = create<StoreState>()(
         // Implementation will update market sentiment state
         console.log("Market sentiment updated:", data);
       },
-
-      // Analytics Actions Implementation
-      updateUserActivity: (users) => {
+      updateUserActivity: (users) =>
         set((state) => ({
           analytics: {
             ...state.analytics,
-            userActivities: users.reduce((acc, user) => {
-              acc[user.wallet] = user;
-              return acc;
-            }, {} as Record<string, (typeof users)[0]>),
+            userActivities: users.reduce(
+              (acc, user) => ({
+                ...acc,
+                [user.wallet]: user,
+              }),
+              state.analytics.userActivities
+            ),
           },
-        }));
-      },
-
-      updateSystemMetrics: (metrics) => {
+        })),
+      updateSystemMetrics: (metrics) =>
         set((state) => ({
           analytics: {
             ...state.analytics,
@@ -967,10 +992,8 @@ export const useStore = create<StoreState>()(
               last_updated: metrics.timestamp,
             },
           },
-        }));
-      },
-
-      updateUserSegments: (segment) => {
+        })),
+      updateUserSegments: (segment) =>
         set((state) => ({
           analytics: {
             ...state.analytics,
@@ -985,11 +1008,8 @@ export const useStore = create<StoreState>()(
               },
             },
           },
-        }));
-      },
-
-      // Wallet Actions Implementation
-      updateWalletStatus: (status) => {
+        })),
+      updateWalletStatus: (status) =>
         set((state) => ({
           wallet: {
             ...state.wallet,
@@ -998,10 +1018,8 @@ export const useStore = create<StoreState>()(
               last_updated: status.timestamp,
             },
           },
-        }));
-      },
-
-      trackTransfer: (transfer) => {
+        })),
+      trackTransfer: (transfer) =>
         set((state) => ({
           wallet: {
             ...state.wallet,
@@ -1013,61 +1031,42 @@ export const useStore = create<StoreState>()(
               },
             },
           },
-        }));
-      },
-
-      updateWalletActivity: (activity) => {
+        })),
+      updateWalletActivity: (activity) =>
         set((state) => ({
           wallet: {
             ...state.wallet,
-            activities: [activity, ...state.wallet.activities.slice(0, 99)], // Keep last 100 activities
+            activities: [activity, ...state.wallet.activities],
           },
-        }));
-      },
-
-      // Achievement Actions Implementation
-      updateUserProgress: (progress) => {
+        })),
+      updateUserProgress: (progress) =>
         set((state) => ({
           achievements: {
             ...state.achievements,
             userProgress: progress,
           },
-        }));
-      },
-
-      addAchievement: (achievement) => {
+        })),
+      addAchievement: (achievement) =>
         set((state) => ({
           achievements: {
             ...state.achievements,
             unlockedAchievements: [
-              ...state.achievements.unlockedAchievements,
               achievement,
-            ],
-            pendingCelebrations: [
-              ...state.achievements.pendingCelebrations,
-              {
-                type: "achievement",
-                data: achievement,
-                timestamp: new Date().toISOString(),
-              },
+              ...state.achievements.unlockedAchievements,
             ],
           },
-        }));
-      },
-
-      addCelebration: (celebration) => {
+        })),
+      addCelebration: (celebration) =>
         set((state) => ({
           achievements: {
             ...state.achievements,
             pendingCelebrations: [
-              ...state.achievements.pendingCelebrations,
               celebration,
+              ...state.achievements.pendingCelebrations,
             ],
           },
-        }));
-      },
-
-      clearCelebration: (timestamp) => {
+        })),
+      clearCelebration: (timestamp) =>
         set((state) => ({
           achievements: {
             ...state.achievements,
@@ -1075,8 +1074,33 @@ export const useStore = create<StoreState>()(
               (c) => c.timestamp !== timestamp
             ),
           },
-        }));
-      },
+        })),
+      toggleBackground: (name) =>
+        set((state) => ({
+          uiDebug: {
+            ...state.uiDebug,
+            backgrounds: {
+              ...state.uiDebug.backgrounds,
+              [name]: {
+                ...state.uiDebug.backgrounds[name],
+                enabled: !state.uiDebug.backgrounds[name].enabled,
+              },
+            },
+          },
+        })),
+      updateBackgroundSetting: (name, setting, value) =>
+        set((state) => ({
+          uiDebug: {
+            ...state.uiDebug,
+            backgrounds: {
+              ...state.uiDebug.backgrounds,
+              [name]: {
+                ...state.uiDebug.backgrounds[name],
+                [setting]: value,
+              },
+            },
+          },
+        })),
     }),
     {
       ...persistConfig,

@@ -5,6 +5,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import { ddApi } from "../../services/dd-api";
+import { useStore } from "../../store/useStore";
 
 interface TokenNode {
   id: number;
@@ -18,9 +19,19 @@ interface TokenNode {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   connections: TokenNode[];
+  lines: THREE.Line[];
 }
 
 export const TokenVerse: React.FC = () => {
+  const { uiDebug } = useStore();
+  const {
+    enabled,
+    intensity,
+    starIntensity,
+    bloomStrength,
+    particleCount,
+    updateFrequency,
+  } = uiDebug.backgrounds.tokenVerse;
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const composerRef = useRef<EffectComposer | null>(null);
@@ -32,7 +43,7 @@ export const TokenVerse: React.FC = () => {
 
   // Initialize Three.js scene
   useEffect(() => {
-    if (!containerRef.current || isInitialized) return;
+    if (!containerRef.current || isInitialized || !enabled) return;
 
     const container = containerRef.current;
     const width = container.clientWidth;
@@ -44,14 +55,14 @@ export const TokenVerse: React.FC = () => {
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.z = 30;
+    camera.position.z = 50;
     cameraRef.current = camera;
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x000000, 0.1);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -62,7 +73,7 @@ export const TokenVerse: React.FC = () => {
 
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(width, height),
-      1.5, // Bloom strength
+      bloomStrength, // Use debug panel bloom strength
       0.4, // Radius
       0.85 // Threshold
     );
@@ -77,11 +88,16 @@ export const TokenVerse: React.FC = () => {
     controls.zoomSpeed = 0.5;
     controlsRef.current = controls;
 
-    // Add ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    // Add ambient light with higher intensity
+    const ambientLight = new THREE.AmbientLight(0x404040, 2);
     scene.add(ambientLight);
 
-    // Add point lights
+    // Add directional light for better visibility
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    // Add point lights with intensity from debug panel
     const lights = [
       { color: 0x0088ff, position: [50, 50, 50] as [number, number, number] },
       {
@@ -92,14 +108,13 @@ export const TokenVerse: React.FC = () => {
     ];
 
     lights.forEach(({ color, position }) => {
-      const light = new THREE.PointLight(color, 1, 100);
+      const light = new THREE.PointLight(color, intensity / 50, 200);
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     });
 
     // Background particles
     const particleGeometry = new THREE.BufferGeometry();
-    const particleCount = 1000;
     const positions = new Float32Array(particleCount * 3);
 
     for (let i = 0; i < particleCount * 3; i += 3) {
@@ -117,7 +132,7 @@ export const TokenVerse: React.FC = () => {
       size: 0.1,
       color: 0x88ccff,
       transparent: true,
-      opacity: 0.6,
+      opacity: starIntensity / 100,
       blending: THREE.AdditiveBlending,
     });
 
@@ -128,21 +143,21 @@ export const TokenVerse: React.FC = () => {
     const animate = () => {
       requestAnimationFrame(animate);
 
-      // Update particle positions
+      // Update particle positions with updateFrequency
       const positions = particles.geometry.attributes.position
         .array as Float32Array;
       for (let i = 0; i < positions.length; i += 3) {
-        positions[i + 1] += 0.01;
+        positions[i + 1] += 0.01 * (updateFrequency / 100);
         if (positions[i + 1] > 50) positions[i + 1] = -50;
       }
       particles.geometry.attributes.position.needsUpdate = true;
 
       // Update token nodes
       nodesRef.current.forEach((node) => {
-        if (!node.mesh) return;
+        if (!node.mesh || !node.lines) return;
 
         // Apply forces
-        node.connections.forEach((connectedNode) => {
+        node.connections.forEach((connectedNode, index) => {
           if (!connectedNode.mesh) return;
           const distance = node.position.distanceTo(connectedNode.position);
           const force = new THREE.Vector3()
@@ -150,6 +165,25 @@ export const TokenVerse: React.FC = () => {
             .normalize()
             .multiplyScalar(0.001 * distance);
           node.velocity.add(force);
+
+          // Update connection line positions
+          const line = node.lines[index];
+          if (line) {
+            const lineGeometry = line.geometry;
+            const positions = new Float32Array([
+              node.position.x,
+              node.position.y,
+              node.position.z,
+              connectedNode.position.x,
+              connectedNode.position.y,
+              connectedNode.position.z,
+            ]);
+            lineGeometry.setAttribute(
+              "position",
+              new THREE.BufferAttribute(positions, 3)
+            );
+            lineGeometry.attributes.position.needsUpdate = true;
+          }
         });
 
         // Apply center gravity
@@ -183,10 +217,20 @@ export const TokenVerse: React.FC = () => {
         renderer.dispose();
       }
     };
-  }, [isInitialized]);
+  }, [
+    isInitialized,
+    enabled,
+    intensity,
+    starIntensity,
+    bloomStrength,
+    particleCount,
+    updateFrequency,
+  ]);
 
   // Handle resize
   useEffect(() => {
+    if (!enabled) return;
+
     const handleResize = () => {
       if (
         !containerRef.current ||
@@ -208,10 +252,12 @@ export const TokenVerse: React.FC = () => {
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [enabled]);
 
   // Fetch and update token data
   useEffect(() => {
+    if (!enabled) return;
+
     const fetchTokenData = async () => {
       try {
         const response = await ddApi.fetch("/api/tokens");
@@ -230,17 +276,18 @@ export const TokenVerse: React.FC = () => {
           volume24h: parseFloat(token.volume_24h || "0"),
           change24h: parseFloat(token.change_24h || "0"),
           position: new THREE.Vector3(
-            (Math.random() - 0.5) * 50,
-            (Math.random() - 0.5) * 50,
-            (Math.random() - 0.5) * 50
+            (Math.random() - 0.5) * 80,
+            (Math.random() - 0.5) * 80,
+            (Math.random() - 0.5) * 80
           ),
           velocity: new THREE.Vector3(),
           connections: [],
+          lines: [],
         }));
 
         // Create connections based on correlations
         nodes.forEach((node) => {
-          const connectionCount = Math.floor(Math.random() * 3) + 1;
+          const connectionCount = Math.floor(Math.random() * 3) + 2;
           const otherNodes = nodes.filter((n) => n.id !== node.id);
           node.connections = otherNodes
             .sort(() => Math.random() - 0.5)
@@ -257,8 +304,8 @@ export const TokenVerse: React.FC = () => {
           // Create new meshes
           nodes.forEach((node) => {
             const size = Math.max(
-              0.2,
-              Math.min(2, Math.log10(node.marketCap) * 0.2)
+              0.5,
+              Math.min(4, Math.log10(node.marketCap) * 0.4)
             );
             const geometry = new THREE.IcosahedronGeometry(size, 1);
             const material = new THREE.MeshPhongMaterial({
@@ -273,6 +320,23 @@ export const TokenVerse: React.FC = () => {
             mesh.position.copy(node.position);
             sceneRef.current?.add(mesh);
             node.mesh = mesh;
+
+            // Create connection lines
+            node.lines = [];
+            node.connections.forEach((connectedNode) => {
+              const points = [node.position, connectedNode.position];
+              const lineGeometry = new THREE.BufferGeometry().setFromPoints(
+                points
+              );
+              const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0x00ff88,
+                transparent: true,
+                opacity: 0.2,
+              });
+              const line = new THREE.Line(lineGeometry, lineMaterial);
+              sceneRef.current?.add(line);
+              node.lines.push(line);
+            });
           });
 
           nodesRef.current = nodes;
@@ -285,10 +349,14 @@ export const TokenVerse: React.FC = () => {
     fetchTokenData();
     const interval = setInterval(fetchTokenData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [enabled]);
+
+  if (!enabled) {
+    return null;
+  }
 
   return (
-    <div ref={containerRef} className="absolute inset-0 bg-transparent">
+    <div ref={containerRef} className="absolute inset-0 bg-black/90">
       {/* Optional UI overlays can go here */}
     </div>
   );

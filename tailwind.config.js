@@ -7,12 +7,13 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-body, Pixelify Sans)", "system-ui", "sans-serif"],
-        display: ["var(--font-heading, Silkscreen)", "sans-serif"],
-        cyber: ["var(--font-cyber, Chakra Petch)", "sans-serif"],
-        mono: ["var(--font-mono, Source Code Pro)", "monospace"],
-        heading: ["var(--font-heading, Silkscreen)", "sans-serif"],
-        body: ["var(--font-body, Pixelify Sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-body, 'Inter')", "system-ui", "sans-serif"],
+        display: ["var(--font-heading, 'Clash Display')", "sans-serif"],
+        heading: ["var(--font-heading, 'Clash Display')", "sans-serif"],
+        body: ["var(--font-body, 'Inter')", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono, 'JetBrains Mono')", "monospace"],
+        numbers: ["var(--font-numbers, 'DM Mono')", "monospace"],
+        accent: ["var(--font-accent, 'Plus Jakarta Sans')", "sans-serif"],
         pressStart: ["'Press Start 2P'", "cursive"],
       },
       colors: {
@@ -391,6 +392,7 @@ export default {
         sparkle: "sparkle 4s ease-in-out infinite",
         "contest-card-entrance":
           "contestCardEntrance 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards",
+        "parallax-slow": "parallax 20s ease-in-out infinite",
       },
       keyframes: {
         shine: {
@@ -553,13 +555,6 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.8" },
         },
-        "glitch-text": {
-          "0%, 100%": { transform: "translate(0)" },
-          "20%": { transform: "translate(-2px, 2px)" },
-          "40%": { transform: "translate(-2px, -2px)" },
-          "60%": { transform: "translate(2px, 2px)" },
-          "80%": { transform: "translate(2px, -2px)" },
-        },
         "title-float": {
           "0%, 100%": {
             transform: "translateY(0) rotate3d(1, 1, 1, 0deg)",
@@ -581,6 +576,11 @@ export default {
         "contest-card-entrance": {
           "0%": { transform: "translateY(20px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        parallax: {
+          "0%": { transform: "translateX(0) scale(1.25)" },
+          "50%": { transform: "translateX(-10%) scale(1.25)" },
+          "100%": { transform: "translateX(0) scale(1.25)" },
         },
       },
       animationDelay: {

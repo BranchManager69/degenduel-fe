@@ -18,6 +18,8 @@ import { useStore } from "./store/useStore";
 /* Components */
 import { WebSocketManager } from "./components/core/WebSocketManager";
 import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
+import { UiDebugPanel } from "./components/debug/UiDebugPanel";
+import { WebSocketDebugPanel } from "./components/debug/WebSocketDebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { ServiceStatusBanner } from "./components/layout/ServiceStatusBanner";
@@ -124,11 +126,13 @@ export const App: React.FC = () => {
           {/* Add WebSocketManager at the root */}
           <WebSocketManager />
 
+          {/* Debug Panels */}
+          <ServiceDebugPanel />
+          <UiDebugPanel />
+          <WebSocketDebugPanel />
+
           {/* Animated Background */}
           <MovingBackground />
-
-          {/* Service Status Banner (Moved to Footer) */}
-          {/* <ServiceStatusBanner /> */}
 
           {/* Header */}
           <Header />
