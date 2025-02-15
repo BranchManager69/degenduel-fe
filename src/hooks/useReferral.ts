@@ -112,6 +112,12 @@ export const ReferralProvider = ({
     const ref = params.get("ref");
 
     if (ref) {
+      // Validate referral code format
+      if (!/^[A-Z0-9-_]{3,32}$/i.test(ref)) {
+        console.warn("[Referral] Invalid referral code format:", ref);
+        return;
+      }
+
       // Determine referral source
       const source = location.pathname.includes("/contests/")
         ? "contest"
@@ -120,30 +126,42 @@ export const ReferralProvider = ({
         : "direct";
 
       // Capture UTM parameters
-      const utmParams = {
-        source: params.get("utm_source") || undefined,
-        medium: params.get("utm_medium") || undefined,
-        campaign: params.get("utm_campaign") || undefined,
-      };
+      const utmSource = params.get("utm_source");
+      const utmMedium = params.get("utm_medium");
+      const utmCampaign = params.get("utm_campaign");
 
       // Generate session ID
       const newSessionId = uuidv4();
       setSessionId(newSessionId);
       localStorage.setItem("referral_session_id", newSessionId);
 
-      // Create metrics object
-      const metrics: ReferralMetrics = {
-        source,
-        landingPage: location.pathname,
-        timestamp: Date.now(),
-        utmParams,
-        device: getDeviceType(),
-        browser: getBrowserInfo(),
+      // Create request payload
+      const requestPayload = {
+        referralCode: ref,
+        sessionId: newSessionId,
+        clickData: {
+          source,
+          device: getDeviceType(),
+          browser: getBrowserInfo(),
+          landingPage: location.pathname,
+          ...(utmSource && { utmSource }),
+          ...(utmMedium && { utmMedium }),
+          ...(utmCampaign && { utmCampaign }),
+          timestamp: new Date().toISOString(),
+        },
       };
+
+      console.log(
+        "Referral Click Tracking - Request Payload:",
+        JSON.stringify(requestPayload, null, 2)
+      );
 
       // Save everything to localStorage
       localStorage.setItem("referral_code", ref);
-      localStorage.setItem("referral_metrics", JSON.stringify(metrics));
+      localStorage.setItem(
+        "referral_metrics",
+        JSON.stringify(requestPayload.clickData)
+      );
 
       // Update state
       setReferralCode(ref);
@@ -165,19 +183,30 @@ export const ReferralProvider = ({
 
       // Send initial referral event to backend
       ddApi
-        .fetch("/referrals/analytics/click", {
+        .fetch("/api/referrals/analytics/click", {
           method: "POST",
-          body: JSON.stringify({
-            referralCode: ref,
-            source,
-            landingPage: location.pathname,
-            utmParams,
-            device: getDeviceType(),
-            browser: getBrowserInfo(),
-            sessionId: newSessionId,
-          }),
+          body: JSON.stringify(requestPayload),
         })
-        .catch(console.error); // Non-blocking
+        .then(async (response) => {
+          const responseData = await response.json().catch(() => null);
+          console.log("Referral Click Tracking - Response:", {
+            status: response.status,
+            statusText: response.statusText,
+            data: responseData,
+          });
+          if (!response.ok) {
+            throw new Error(
+              `API Error: ${responseData?.error || response.statusText}`
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to track referral click:", {
+            error: error.message,
+            stack: error.stack,
+            requestPayload,
+          });
+        });
     }
   }, [location, navigate]);
 
@@ -187,8 +216,8 @@ export const ReferralProvider = ({
         await ddApi.fetch("/referrals/analytics/conversion", {
           method: "POST",
           body: JSON.stringify({
-            referralCode,
-            sessionId,
+            referralCode: referralCode,
+            sessionId: sessionId,
           }),
         });
         // Refresh analytics after conversion

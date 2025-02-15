@@ -1,8 +1,8 @@
 // src/hooks/useAuth.ts
 
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { useCallback, useEffect, useState } from "react";
-import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
+import axios from "axios";
+import React, { useCallback, useEffect, useState } from "react";
 import { useStore } from "../store/useStore";
 import { useDebounce } from "./useDebounce";
 
@@ -28,79 +28,94 @@ export function useAuth() {
     walletAddress: undefined,
   });
 
+  // Track if a check is in progress
+  const checkInProgress = React.useRef(false);
+  const lastCheckTime = React.useRef(0);
+  const MIN_CHECK_INTERVAL = 1000; // Minimum 1 second between checks
+
   // Check auth
   const checkAuth = useCallback(async () => {
-    try {
-      // If debug mode is enabled, log the request
-      if (DDAPI_DEBUG_MODE === "true") {
-        console.log("[Auth Debug] Starting auth check");
-      }
+    // Prevent multiple simultaneous checks and respect minimum interval
+    const now = Date.now();
+    if (
+      checkInProgress.current ||
+      authState.loading ||
+      now - lastCheckTime.current < MIN_CHECK_INTERVAL
+    ) {
+      console.log("[Auth] Skipping check - too soon or already in progress");
+      return;
+    }
 
-      // Set loading to true
+    try {
+      checkInProgress.current = true;
+      lastCheckTime.current = now;
+      console.log("[Auth] Checking session...");
       setAuthState((prev) => ({ ...prev, loading: true }));
 
-      // Check auth
-      const response = await fetch(`${API_URL}/auth/session`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
+      const response = await axios.get("/api/auth/session");
+      console.log("[Auth] Session response:", {
+        status: response.status,
+        data: response.data,
       });
 
-      // If auth check fails, just update local state
-      if (!response.ok) {
+      if (response.data?.user) {
         setAuthState((prev) => ({
           ...prev,
-          user: null,
-          loading: false,
-          error: new Error("Session expired"),
-        }));
-        return;
-      }
-
-      // Get the data
-      const data = await response.json();
-
-      // Update the auth state based on response
-      if (!data.authenticated) {
-        setAuthState((prev) => ({
-          ...prev,
-          user: null,
-          loading: false,
-          error: new Error("Session expired"),
-        }));
-      } else {
-        setAuthState((prev) => ({
-          ...prev,
-          user: data.user,
+          user: response.data.user,
           loading: false,
           error: null,
         }));
+        console.log("[Auth] Session valid - user:", response.data.user.email);
+        // Clear the should check flag since we have a user
+        setShouldCheck(false);
+      } else {
+        setAuthState((prev) => ({
+          ...prev,
+          user: null,
+          loading: false,
+          error: null,
+        }));
+        console.log("[Auth] No active session");
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Only log detailed error if it's not a 401
+      if (error?.response?.status !== 401) {
+        console.error("[Auth] Session check failed:", {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+        });
+      } else {
+        console.log("[Auth] No session available");
+      }
+
       setAuthState((prev) => ({
         ...prev,
         user: null,
         loading: false,
-        error: error instanceof Error ? error : new Error("Auth check failed"),
+        error: error?.message,
       }));
     } finally {
-      setShouldCheck(false);
+      checkInProgress.current = false;
     }
   }, []);
 
+  // Use a more aggressive debounce for the initial check
+  const debouncedInitialCheck = useDebounce(shouldCheck, 2000);
+
   // Run auth check when debounced flag changes
   useEffect(() => {
-    if (debouncedShouldCheck) {
+    if (debouncedInitialCheck && !checkInProgress.current && !authState.user) {
       checkAuth();
     }
-  }, [debouncedShouldCheck, checkAuth]);
+  }, [debouncedInitialCheck, checkAuth, authState.user]);
 
   // Initialize auth - only run once on mount
   useEffect(() => {
-    setShouldCheck(true);
+    // Only trigger initial check if we don't have a user and no check is in progress
+    if (!authState.user && !checkInProgress.current) {
+      setShouldCheck(true);
+    }
   }, []); // Empty dependency array for initialization
 
   // Update auth state when store user or wallet state changes

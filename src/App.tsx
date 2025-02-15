@@ -2,7 +2,12 @@
 
 import React, { useEffect } from "react";
 /* Router */
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+} from "react-router-dom";
 /* Toast */
 import { Toaster } from "react-hot-toast";
 import { ToastContainer } from "react-toastify";
@@ -66,40 +71,51 @@ export const App: React.FC = () => {
   const { user } = useStore();
 
   useEffect(() => {
-    // (is the sheer amount of auth checks needed?)
+    // Only set up auth checks if we don't have a user
+    if (!user) {
+      // Check auth every 60 seconds in production, 30 in development
+      const checkInterval = import.meta.env.PROD ? 60 * 1000 : 30 * 1000;
+      const authCheckInterval = setInterval(checkAuth, checkInterval);
 
-    // Check auth every 30 seconds in production, 10 in development
-    const checkInterval = import.meta.env.PROD ? 30 * 1000 : 10 * 1000;
-    const authCheckInterval = setInterval(checkAuth, checkInterval);
+      // Debounced handlers for visibility and online status
+      let visibilityTimeout: NodeJS.Timeout;
+      let onlineTimeout: NodeJS.Timeout;
 
-    // Check auth on page load
-    checkAuth();
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible" && !user) {
+          // Clear any existing timeout
+          clearTimeout(visibilityTimeout);
+          // Wait 2 seconds before checking auth
+          visibilityTimeout = setTimeout(checkAuth, 2000);
+        }
+      };
 
-    // Check when tab becomes visible
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        checkAuth();
-      }
-    };
+      const handleOnlineStatus = () => {
+        if (navigator.onLine && !user) {
+          // Clear any existing timeout
+          clearTimeout(onlineTimeout);
+          // Wait 2 seconds before checking auth
+          onlineTimeout = setTimeout(checkAuth, 2000);
+        }
+      };
 
-    // Check when online status changes
-    const handleOnlineStatus = () => {
-      if (navigator.onLine) {
-        checkAuth();
-      }
-    };
+      // Add event listeners for auth checks
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("online", handleOnlineStatus);
 
-    // Add event listeners for auth checks
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("online", handleOnlineStatus);
-
-    // Cleanup
-    return () => {
-      clearInterval(authCheckInterval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("online", handleOnlineStatus);
-    };
-  }, [checkAuth]);
+      // Cleanup
+      return () => {
+        clearInterval(authCheckInterval);
+        clearTimeout(visibilityTimeout);
+        clearTimeout(onlineTimeout);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange
+        );
+        window.removeEventListener("online", handleOnlineStatus);
+      };
+    }
+  }, [checkAuth, user]);
 
   return (
     <Router>
@@ -125,6 +141,16 @@ export const App: React.FC = () => {
 
               {/* Landing Page */}
               <Route path="/" element={<LandingPage />} />
+
+              {/* Referral Join Route */}
+              <Route
+                path="/join"
+                element={
+                  <MaintenanceGuard>
+                    <Navigate to="/" replace />
+                  </MaintenanceGuard>
+                }
+              />
 
               {/* Contest Browser */}
               <Route path="/contests" element={<ContestBrowser />} />
