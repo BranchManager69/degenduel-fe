@@ -4,39 +4,27 @@ import { formatNumber } from "../../utils/format";
 
 interface TokenCardProps {
   token: Token;
-  imageSource: "default" | "header" | "openGraph";
 }
 
-export const TokenCard: React.FC<TokenCardProps> = ({ token, imageSource }) => {
+export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleClick = () => {
     setIsFlipped(!isFlipped);
   };
 
-  // Get the best available image based on selected source with fallbacks
+  // Get the best available image with header image as priority
   const imageUrl = useMemo(() => {
     if (!token.images) return null;
 
-    // Try the selected source first
-    if (imageSource === "openGraph" && token.images.openGraphImage) {
-      return token.images.openGraphImage;
-    }
-    if (imageSource === "header" && token.images.headerImage) {
-      return token.images.headerImage;
-    }
-    if (imageSource === "default" && token.images.imageUrl) {
-      return token.images.imageUrl;
-    }
-
-    // Fallback chain: openGraph -> header -> default -> null
+    // Try header image first, then fall back to other options
     return (
-      token.images.openGraphImage ||
       token.images.headerImage ||
+      token.images.openGraphImage ||
       token.images.imageUrl ||
       null
     );
-  }, [token.images, imageSource]);
+  }, [token.images]);
 
   return (
     <div

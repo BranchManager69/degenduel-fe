@@ -248,12 +248,12 @@ const AnalyticsSection: React.FC = () => {
 
   if (!analytics) return null;
 
-  const totalClicks = Object.values(analytics.clicks.by_source).reduce(
+  const totalClicks = Object.values(analytics.clicks?.by_source || {}).reduce(
     (a, b) => a + b,
     0
   );
   const totalConversions = Object.values(
-    analytics.conversions.by_source
+    analytics.conversions?.by_source || {}
   ).reduce((a, b) => a + b, 0);
   const conversionRate = totalClicks
     ? ((totalConversions / totalClicks) * 100).toFixed(1)
@@ -313,93 +313,112 @@ const AnalyticsSection: React.FC = () => {
       </div>
 
       {/* Source Analysis */}
-      <div className="space-y-4">
-        <h4 className="text-md font-semibold text-gray-300">Traffic Sources</h4>
-        <div className="space-y-2">
-          {Object.entries(analytics.clicks.by_source).map(([source, count]) => {
-            const conversions = analytics.conversions.by_source[source] || 0;
-            const rate = count ? ((conversions / count) * 100).toFixed(1) : "0";
+      {analytics.clicks?.by_source && (
+        <div className="space-y-4">
+          <h4 className="text-md font-semibold text-gray-300">
+            Traffic Sources
+          </h4>
+          <div className="space-y-2">
+            {Object.entries(analytics.clicks.by_source).map(
+              ([source, count]) => {
+                const conversions =
+                  analytics.conversions?.by_source?.[source] || 0;
+                const rate = count
+                  ? ((conversions / count) * 100).toFixed(1)
+                  : "0";
 
-            return (
-              <div key={source} className="bg-dark-300/20 rounded-lg p-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-gray-200 capitalize">{source}</div>
-                    <div className="text-sm text-gray-400">
-                      {conversions} conversions ({rate}%)
+                return (
+                  <div key={source} className="bg-dark-300/20 rounded-lg p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-gray-200 capitalize">{source}</div>
+                        <div className="text-sm text-gray-400">
+                          {conversions} conversions ({rate}%)
+                        </div>
+                      </div>
+                      <div className="text-xl font-bold text-gray-200">
+                        {count}
+                      </div>
+                    </div>
+                    <div className="mt-2 h-1 bg-dark-300 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-brand-400 transition-all duration-500"
+                        style={{ width: `${(count / totalClicks) * 100}%` }}
+                      />
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-gray-200">{count}</div>
-                </div>
-                <div className="mt-2 h-1 bg-dark-300 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-brand-400 transition-all duration-500"
-                    style={{ width: `${(count / totalClicks) * 100}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+                );
+              }
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Device & Browser Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Device Distribution */}
-        <div className="space-y-4">
-          <h4 className="text-md font-semibold text-gray-300">Devices</h4>
-          <div className="space-y-2">
-            {Object.entries(analytics.clicks.by_device).map(
-              ([device, count]) => (
-                <div key={device} className="bg-dark-300/20 rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      {getDeviceIcon(device)}
-                      <div className="capitalize">{device}</div>
+        {analytics.clicks?.by_device && (
+          <div className="space-y-4">
+            <h4 className="text-md font-semibold text-gray-300">Devices</h4>
+            <div className="space-y-2">
+              {Object.entries(analytics.clicks.by_device).map(
+                ([device, count]) => (
+                  <div key={device} className="bg-dark-300/20 rounded-lg p-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        {getDeviceIcon(device)}
+                        <div className="capitalize">{device}</div>
+                      </div>
+                      <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
                     </div>
-                    <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
                   </div>
-                </div>
-              )
-            )}
+                )
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Browser Distribution */}
-        <div className="space-y-4">
-          <h4 className="text-md font-semibold text-gray-300">Browsers</h4>
-          <div className="space-y-2">
-            {Object.entries(analytics.clicks.by_browser).map(
-              ([browser, count]) => (
-                <div key={browser} className="bg-dark-300/20 rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      {getBrowserIcon(browser)}
-                      <div className="capitalize">{browser}</div>
+        {analytics.clicks?.by_browser && (
+          <div className="space-y-4">
+            <h4 className="text-md font-semibold text-gray-300">Browsers</h4>
+            <div className="space-y-2">
+              {Object.entries(analytics.clicks.by_browser).map(
+                ([browser, count]) => (
+                  <div key={browser} className="bg-dark-300/20 rounded-lg p-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        {getBrowserIcon(browser)}
+                        <div className="capitalize">{browser}</div>
+                      </div>
+                      <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
                     </div>
-                    <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
                   </div>
-                </div>
-              )
-            )}
+                )
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Reward Distribution */}
-      <div className="space-y-4">
-        <h4 className="text-md font-semibold text-gray-300">Rewards by Type</h4>
-        <div className="space-y-2">
-          {Object.entries(analytics.rewards.by_type).map(([type, amount]) => (
-            <div key={type} className="bg-dark-300/20 rounded-lg p-3">
-              <div className="flex justify-between items-center">
-                <div className="capitalize">{type.replace(/_/g, " ")}</div>
-                <div className="font-bold">{amount.toFixed(2)} SOL</div>
+      {analytics.rewards?.by_type && (
+        <div className="space-y-4">
+          <h4 className="text-md font-semibold text-gray-300">
+            Rewards by Type
+          </h4>
+          <div className="space-y-2">
+            {Object.entries(analytics.rewards.by_type).map(([type, amount]) => (
+              <div key={type} className="bg-dark-300/20 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <div className="capitalize">{type.replace(/_/g, " ")}</div>
+                  <div className="font-bold">{amount.toFixed(2)} SOL</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

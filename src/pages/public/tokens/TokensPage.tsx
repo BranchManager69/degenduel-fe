@@ -22,11 +22,11 @@ export const TokensPage: React.FC = () => {
   const [sortField, setSortField] = useState<keyof Token>("marketCap");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-  const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
   const [imageSource, setImageSource] = useState<
     "default" | "header" | "openGraph"
-  >("default");
+  >("header");
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
   const user = useStore((state) => state.user);
 
   useEffect(() => {
@@ -213,7 +213,7 @@ export const TokensPage: React.FC = () => {
         onImageSourceChange={setImageSource}
       />
 
-      <TokensGrid tokens={filteredAndSortedTokens} imageSource={imageSource} />
+      <TokensGrid tokens={filteredAndSortedTokens} />
 
       <AddTokenModal
         isOpen={isAddTokenModalOpen}
