@@ -1,17 +1,42 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Token } from "../../types";
 import { formatNumber } from "../../utils/format";
 
 interface TokenCardProps {
   token: Token;
+  imageSource: "default" | "header" | "openGraph";
 }
 
-export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
+export const TokenCard: React.FC<TokenCardProps> = ({ token, imageSource }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleClick = () => {
     setIsFlipped(!isFlipped);
   };
+
+  // Get the best available image based on selected source with fallbacks
+  const imageUrl = useMemo(() => {
+    if (!token.images) return null;
+
+    // Try the selected source first
+    if (imageSource === "openGraph" && token.images.openGraphImage) {
+      return token.images.openGraphImage;
+    }
+    if (imageSource === "header" && token.images.headerImage) {
+      return token.images.headerImage;
+    }
+    if (imageSource === "default" && token.images.imageUrl) {
+      return token.images.imageUrl;
+    }
+
+    // Fallback chain: openGraph -> header -> default -> null
+    return (
+      token.images.openGraphImage ||
+      token.images.headerImage ||
+      token.images.imageUrl ||
+      null
+    );
+  }, [token.images, imageSource]);
 
   return (
     <div
@@ -28,12 +53,18 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
           <div className="relative w-full h-full bg-dark-200/50 backdrop-blur-sm">
             {/* Image container with shine effect */}
             <div className="relative w-full h-full overflow-hidden">
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${token.images?.imageUrl})`,
-                }}
-              />
+              {imageUrl ? (
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${imageUrl})`,
+                  }}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-dark-300">
+                  <span className="text-4xl text-white/20">{token.symbol}</span>
+                </div>
+              )}
               {/* Shine effect overlay */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
                 <div className="absolute inset-[-100%] bg-gradient-to-r from-transparent via-white/20 to-transparent transform -rotate-45 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000" />

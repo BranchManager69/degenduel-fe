@@ -1,13 +1,18 @@
 import React from "react";
 import { Token } from "../../types";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { Select, SelectOption } from "../ui/Select";
 
 interface TokensControlsProps {
   searchQuery: string;
-  onSearchChange: (query: string) => void;
+  onSearchChange: (value: string) => void;
   sortField: keyof Token;
   onSortFieldChange: (field: keyof Token) => void;
   sortDirection: "asc" | "desc";
   onSortDirectionChange: () => void;
+  imageSource: "default" | "header" | "openGraph";
+  onImageSourceChange: (source: "default" | "header" | "openGraph") => void;
 }
 
 export const TokensControls: React.FC<TokensControlsProps> = ({
@@ -17,50 +22,52 @@ export const TokensControls: React.FC<TokensControlsProps> = ({
   onSortFieldChange,
   sortDirection,
   onSortDirectionChange,
+  imageSource,
+  onImageSourceChange,
 }) => {
+  const sortOptions: SelectOption<keyof Token>[] = [
+    { value: "marketCap", label: "Market Cap" },
+    { value: "volume24h", label: "Volume" },
+    { value: "change24h", label: "24h Change" },
+  ];
+
+  const imageSourceOptions: SelectOption<"default" | "header" | "openGraph">[] =
+    [
+      { value: "default", label: "Default Image" },
+      { value: "header", label: "Header Image" },
+      { value: "openGraph", label: "OpenGraph Image" },
+    ];
+
   return (
-    <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between gap-4">
-      <div className="w-full sm:max-w-md">
-        <input
+    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex-1">
+        <Input
           type="text"
           placeholder="Search tokens..."
-          className="w-full px-4 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
+          className="w-full bg-dark-200/50 border-dark-300"
         />
       </div>
-      <div className="flex items-center gap-2">
-        <select
+      <div className="flex gap-2">
+        <Select<keyof Token>
           value={sortField}
-          onChange={(e) => onSortFieldChange(e.target.value as keyof Token)}
-          className="px-3 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors text-sm"
-        >
-          <option value="marketCap">Market Cap</option>
-          <option value="volume24h">Volume</option>
-          <option value="change24h">24h Change</option>
-          <option value="liquidity">Liquidity</option>
-        </select>
-        <button
+          onChange={onSortFieldChange}
+          options={sortOptions}
+          className="bg-dark-200/50 border-dark-300"
+        />
+        <Button
           onClick={onSortDirectionChange}
-          className="px-3 py-2 bg-dark-300 border border-dark-400 rounded-lg text-gray-100 hover:bg-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 flex items-center gap-2 transition-colors text-sm"
+          className="px-3 bg-dark-200/50 hover:bg-dark-300/50"
         >
-          <span>{sortDirection === "asc" ? "Ascending" : "Descending"}</span>
-          <svg
-            className={`w-4 h-4 transform transition-transform ${
-              sortDirection === "asc" ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
+          {sortDirection === "asc" ? "↑" : "↓"}
+        </Button>
+        <Select<"default" | "header" | "openGraph">
+          value={imageSource}
+          onChange={onImageSourceChange}
+          options={imageSourceOptions}
+          className="bg-dark-200/50 border-dark-300"
+        />
       </div>
     </div>
   );

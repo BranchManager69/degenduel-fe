@@ -321,91 +321,81 @@ export default {
         "caution-flow-left": "caution-flow-left 20s linear infinite",
         "caution-flow-right": "caution-flow-right 25s linear infinite",
         "shine-slow": "shine-slow 3s ease-in-out infinite",
-        cyber: {
-          pulse: "cyber-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-          glitch: "glitch 1s linear infinite",
-          "matrix-rain": "matrix-rain 20s linear infinite",
-          hologram: "hologram 3s ease infinite",
-          "neon-flicker": "neon-flicker 2s linear infinite",
-          "data-stream": "data-stream 15s linear infinite",
-          "cyber-scan": "cyber-scan 4s ease-in-out infinite",
-          "scan-line": "scan-line 8s linear infinite",
-          "scan-vertical": "scan-vertical 12s linear infinite",
-          scanlines: "scanlines 1s linear infinite",
-          float: "float 6s ease-in-out infinite",
-          pulse: "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-          "cyber-scan": "cyber-scan 8s ease infinite",
-          "terminal-scan": "terminal-scan 3s ease-out infinite",
-          "value-flicker": "value-flicker 0.3s ease-in-out infinite",
-          "glitch-text-r":
-            "glitch-text 0.9s cubic-bezier(.25, .46, .45, .94) infinite",
-          "glitch-text-g":
-            "glitch-text 0.8s cubic-bezier(.25, .46, .45, .94) infinite reverse",
-          "glitch-text-b":
-            "glitch-text 1s cubic-bezier(.25, .46, .45, .94) infinite",
-          "title-float": "title-float 10s ease infinite",
-          gradientX: "gradientX 3s linear infinite",
-          scanner: "scanner 8s linear infinite",
-          spin: "spin 3s linear infinite",
-          ping: "ping 2s cubic-bezier(0, 0, 0.2, 1) infinite",
-          "slide-down": "slide-down 0.5s ease-out forwards",
-          "slide-in-left":
-            "slideInLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-          "slide-in-right":
-            "slideInRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-          "spin-fast": "spin-fast 1.5s cubic-bezier(0.23, 1, 0.32, 1) forwards",
-          "logo-shine": "logo-shine 2s ease-in-out infinite",
-          "logo-slam-left":
-            "logo-slam-left 1.2s cubic-bezier(0.6, 0.2, 0.1, 1) forwards",
-          "logo-slam-right":
-            "logo-slam-right 1.2s cubic-bezier(0.6, 0.2, 0.1, 1) forwards",
-          "logo-impact":
-            "logo-impact 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards",
-          "logo-shift":
-            "logo-shift 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards",
-          "logo-flash": "logo-flash 0.3s ease-out forwards",
-          "logo-shockwave": "logo-shockwave 0.5s ease-out forwards",
-          "matrix-glow": "matrix-glow 2s ease-in-out infinite",
-          "holo-shine": "holo-shine 3s ease-in-out infinite",
-          "cyber-distort": "cyber-distort 0.5s ease-in-out infinite",
-          "smoke-drift": "smoke 20s linear infinite",
-          "smoke-drift-reverse": "smoke 25s linear infinite reverse",
-          "fog-drift": "fog 30s linear infinite",
-          "fog-drift-reverse": "fog 35s linear infinite reverse",
-          "mist-flow": "mist 15s linear infinite",
-          "mist-flow-reverse": "mist 18s linear infinite reverse",
-          "mist-pulse": "mistPulse 4s ease-in-out infinite",
-          "mist-pulse-reverse": "mistPulse 4s ease-in-out infinite reverse",
-          "energy-pulse": "energyPulse 6s ease-in-out infinite",
-          "energy-pulse-slow": "energyPulse 8s ease-in-out infinite",
-          "energy-spin": "energySpin 10s linear infinite",
-          "title-slide-down": "slideDown 1s ease-out",
-          "fade-in-up": "fadeInUp 1s ease-out",
-          "slide-right": "slideRight 0.8s ease-out",
-          "emerge-center":
-            "emergeCenter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-          "energy-burst":
-            "energyBurst 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-          "energy-merge":
-            "energyMerge 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-          "spin-slow": "spin 8s linear infinite",
-          "pulse-slow": "pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-          "gradient-x": "gradient-x 20s linear infinite",
-          "gradient-y": "gradient-y 15s linear infinite",
-          "scan-fast": "scan-fast 3s linear infinite",
-          "scan-vertical": "scan-vertical 4s linear infinite",
-          "spin-occasional": "spinOccasional 8s ease-in-out infinite",
-          "random-slide": "randomSlide 10s linear infinite",
-          "random-slide-reverse": "randomSlide 10s linear infinite reverse",
-          sparkle: "sparkle 4s ease-in-out infinite",
-          "contest-card-entrance":
-            "contestCardEntrance 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards",
-        },
+        "cyber-pulse": "cyber-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "cyber-glitch": "glitch 1s linear infinite",
+        "matrix-rain": "matrix-rain 20s linear infinite",
+        hologram: "hologram 3s ease infinite",
+        "neon-flicker": "neon-flicker 2s linear infinite",
+        "data-stream": "data-stream 15s linear infinite",
+        "cyber-scan": "cyber-scan 4s ease-in-out infinite",
+        "scan-line": "scan-line 8s linear infinite",
+        "scan-vertical": "scan-vertical 12s linear infinite",
+        scanlines: "scanlines 1s linear infinite",
+        "cyber-float": "float 6s ease-in-out infinite",
+        "terminal-scan": "terminal-scan 3s ease-out infinite",
+        "value-flicker": "value-flicker 0.3s ease-in-out infinite",
+        "glitch-text-r":
+          "glitch-text 0.9s cubic-bezier(.25, .46, .45, .94) infinite",
+        "glitch-text-g":
+          "glitch-text 0.8s cubic-bezier(.25, .46, .45, .94) infinite reverse",
+        "glitch-text-b":
+          "glitch-text 1s cubic-bezier(.25, .46, .45, .94) infinite",
+        "title-float": "title-float 10s ease infinite",
+        gradientX: "gradientX 3s linear infinite",
+        scanner: "scanner 8s linear infinite",
+        "cyber-spin": "spin 3s linear infinite",
+        "cyber-ping": "ping 2s cubic-bezier(0, 0, 0.2, 1) infinite",
+        "slide-down": "slide-down 0.5s ease-out forwards",
+        "slide-in-left":
+          "slideInLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "slide-in-right":
+          "slideInRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "spin-fast": "spin-fast 1.5s cubic-bezier(0.23, 1, 0.32, 1) forwards",
+        "logo-shine": "logo-shine 2s ease-in-out infinite",
+        "logo-slam-left":
+          "logo-slam-left 1.2s cubic-bezier(0.6, 0.2, 0.1, 1) forwards",
+        "logo-slam-right":
+          "logo-slam-right 1.2s cubic-bezier(0.6, 0.2, 0.1, 1) forwards",
+        "logo-impact":
+          "logo-impact 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards",
+        "logo-shift": "logo-shift 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards",
+        "logo-flash": "logo-flash 0.3s ease-out forwards",
+        "logo-shockwave": "logo-shockwave 0.5s ease-out forwards",
+        "matrix-glow": "matrix-glow 2s ease-in-out infinite",
+        "holo-shine": "holo-shine 3s ease-in-out infinite",
+        "cyber-distort": "cyber-distort 0.5s ease-in-out infinite",
+        "smoke-drift": "smoke 20s linear infinite",
+        "smoke-drift-reverse": "smoke 25s linear infinite reverse",
+        "fog-drift": "fog 30s linear infinite",
+        "fog-drift-reverse": "fog 35s linear infinite reverse",
+        "mist-flow": "mist 15s linear infinite",
+        "mist-flow-reverse": "mist 18s linear infinite reverse",
+        "mist-pulse": "mistPulse 4s ease-in-out infinite",
+        "mist-pulse-reverse": "mistPulse 4s ease-in-out infinite reverse",
+        "energy-pulse": "energyPulse 6s ease-in-out infinite",
+        "energy-pulse-slow": "energyPulse 8s ease-in-out infinite",
+        "energy-spin": "energySpin 10s linear infinite",
+        "title-slide-down": "slideDown 1s ease-out",
+        "fade-in-up": "fadeInUp 1s ease-out",
+        "slide-right": "slideRight 0.8s ease-out",
+        "emerge-center":
+          "emergeCenter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+        "energy-burst": "energyBurst 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "energy-merge": "energyMerge 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "spin-slow": "spin 8s linear infinite",
+        "pulse-slow": "pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "scan-fast": "scan-fast 3s linear infinite",
+        "spin-occasional": "spinOccasional 8s ease-in-out infinite",
+        "random-slide": "randomSlide 10s linear infinite",
+        "random-slide-reverse": "randomSlide 10s linear infinite reverse",
+        sparkle: "sparkle 4s ease-in-out infinite",
+        "contest-card-entrance":
+          "contestCardEntrance 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards",
       },
       keyframes: {
         shine: {
-          "0%": { backgroundPosition: "300% center" },
-          "100%": { backgroundPosition: "0% center" },
+          "0%": { "background-position": "300% center" },
+          "100%": { "background-position": "0% center" },
         },
         "fade-in": {
           "0%": { opacity: "0", transform: "translateY(10px)" },
@@ -416,8 +406,8 @@ export default {
           "100%": { transform: "translateX(-50%)" },
         },
         float: {
-          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
-          "50%": { transform: "translateY(-20px) rotate(5deg)" },
+          "0%, 100%": { transform: "translateY(0) scale(1)" },
+          "50%": { transform: "translateY(-20px) scale(1.05)" },
         },
         blob: {
           "0%": {
@@ -438,25 +428,13 @@ export default {
           },
         },
         "blob-spin": {
-          "0%": {
-            transform: "rotate(0deg) scale(1)",
-          },
-          "50%": {
-            transform: "rotate(180deg) scale(1.2)",
-          },
-          "100%": {
-            transform: "rotate(360deg) scale(1)",
-          },
+          "0%": { transform: "rotate(0deg) scale(1)" },
+          "50%": { transform: "rotate(180deg) scale(1.2)" },
+          "100%": { transform: "rotate(360deg) scale(1)" },
         },
         pulse: {
-          "0%, 100%": {
-            opacity: "1",
-            transform: "scale(1)",
-          },
-          "50%": {
-            opacity: ".7",
-            transform: "scale(1.1)",
-          },
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: ".7", transform: "scale(1.1)" },
         },
         "gradient-y": {
           "0%, 100%": {
@@ -469,12 +447,8 @@ export default {
           },
         },
         "gradient-x": {
-          "0%, 100%": {
-            "background-position": "left center",
-          },
-          "50%": {
-            "background-position": "right center",
-          },
+          "0%, 100%": { "background-position": "left center" },
+          "50%": { "background-position": "right center" },
         },
         "gradient-xy": {
           "0%, 100%": {
@@ -487,12 +461,12 @@ export default {
           },
         },
         "caution-flow-left": {
-          "0%": { backgroundPosition: "0% 0%" },
-          "100%": { backgroundPosition: "-200% 0%" },
+          "0%": { "background-position": "0% 0%" },
+          "100%": { "background-position": "-200% 0%" },
         },
         "caution-flow-right": {
-          "0%": { backgroundPosition: "200% 0%" },
-          "100%": { backgroundPosition: "0% 0%" },
+          "0%": { "background-position": "200% 0%" },
+          "100%": { "background-position": "0% 0%" },
         },
         "shine-slow": {
           "0%": { transform: "translateX(-100%)" },
@@ -500,10 +474,10 @@ export default {
         },
         "cyber-pulse": {
           "0%, 100%": {
-            boxShadow: "0 0 20px 0 rgba(var(--color-cyber-500), 0.9)",
+            "box-shadow": "0 0 20px 0 rgba(var(--color-cyber-500), 0.9)",
           },
           "50%": {
-            boxShadow: "0 0 50px 20px rgba(var(--color-cyber-500), 0.4)",
+            "box-shadow": "0 0 50px 20px rgba(var(--color-cyber-500), 0.4)",
           },
         },
         glitch: {
@@ -516,12 +490,12 @@ export default {
         },
         "matrix-rain": {
           "0%": {
-            backgroundPosition: "0% 0%",
+            "background-position": "0% 0%",
             opacity: "0.8",
           },
           "50%": { opacity: "0.5" },
           "100%": {
-            backgroundPosition: "0% 100%",
+            "background-position": "0% 100%",
             opacity: "0.8",
           },
         },
@@ -537,25 +511,25 @@ export default {
         },
         "neon-flicker": {
           "0%, 18%, 22%, 25%, 53%, 57%, 100%": {
-            textShadow:
+            "text-shadow":
               "0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff, 0 0 42px var(--color-cyber-500), 0 0 82px var(--color-cyber-500)",
           },
           "20%, 24%, 55%": {
-            textShadow: "none",
+            "text-shadow": "none",
           },
         },
         "data-stream": {
-          "0%": { backgroundPosition: "0% 50%" },
-          "100%": { backgroundPosition: "100% 50%" },
+          "0%": { "background-position": "0% 50%" },
+          "100%": { "background-position": "100% 50%" },
         },
         "cyber-scan": {
           "0%": {
-            backgroundPosition: "-100% 0",
+            "background-position": "-100% 0",
             opacity: "0",
           },
           "40%, 60%": { opacity: "1" },
           "100%": {
-            backgroundPosition: "200% 0",
+            "background-position": "200% 0",
             opacity: "0",
           },
         },
@@ -564,24 +538,12 @@ export default {
           "100%": { transform: "translateX(100%)" },
         },
         "scan-vertical": {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(100%)" },
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100%)" },
         },
         scanlines: {
           "0%": { transform: "translateY(0)" },
           "100%": { transform: "translateY(4px)" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0) scale(1)" },
-          "50%": { transform: "translateY(-20px) scale(1.05)" },
-        },
-        pulse: {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: ".5" },
-        },
-        "cyber-scan": {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
         },
         "terminal-scan": {
           "0%": { transform: "translateX(-100%)" },
@@ -601,287 +563,24 @@ export default {
         "title-float": {
           "0%, 100%": {
             transform: "translateY(0) rotate3d(1, 1, 1, 0deg)",
-            textShadow: "0 0 10px rgba(127,0,255,0.5)",
+            "text-shadow": "0 0 10px rgba(127,0,255,0.5)",
           },
           "50%": {
             transform: "translateY(-10px) rotate3d(1, 1, 1, 2deg)",
-            textShadow: "0 0 20px rgba(127,0,255,0.7)",
+            "text-shadow": "0 0 20px rgba(127,0,255,0.7)",
           },
         },
-        gradientX: {
-          "0%": { backgroundPosition: "200% center" },
-          "100%": { backgroundPosition: "-200% center" },
-        },
-        scanner: {
+        "random-slide": {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
-        },
-        spin: {
-          from: { transform: "rotate(0deg)" },
-          to: { transform: "rotate(360deg)" },
-        },
-        ping: {
-          "75%, 100%": {
-            transform: "scale(2)",
-            opacity: "0",
-          },
-        },
-        "slide-down": {
-          "0%": { transform: "translateY(-100%)", opacity: "0" },
-          "100%": { transform: "translateY(0)", opacity: "1" },
-        },
-        "slide-in-left": {
-          "0%": { transform: "translateX(-200%)", opacity: "0" },
-          "50%": { transform: "translateX(-100%)", opacity: "1" },
-          "100%": { transform: "translateX(0)", opacity: "1" },
-        },
-        "slide-in-right": {
-          "0%": { transform: "translateX(200%)", opacity: "0" },
-          "50%": { transform: "translateX(100%)", opacity: "1" },
-          "100%": { transform: "translateX(0)", opacity: "1" },
-        },
-        "spin-fast": {
-          "0%": { transform: "rotate(0deg) scale(0.5)", opacity: "0" },
-          "50%": { transform: "rotate(720deg) scale(2)", opacity: "1" },
-          "100%": { transform: "rotate(1080deg) scale(1)", opacity: "1" },
-        },
-        "logo-shine": {
-          "0%": { opacity: "0", transform: "scale(0.7) rotate(-15deg)" },
-          "50%": { opacity: "1", transform: "scale(1.2) rotate(15deg)" },
-          "100%": { opacity: "0", transform: "scale(0.7) rotate(-15deg)" },
-        },
-        "logo-slam-left": {
-          "0%": { transform: "translateX(-200%) scale(0.5)", opacity: "0" },
-          "50%": { transform: "translateX(0) scale(1.2)", opacity: "1" },
-          "65%": { transform: "translateX(-10%) scale(0.95)" },
-          "80%": { transform: "translateX(5%) scale(1.1)" },
-          "100%": { transform: "translateX(0) scale(1)" },
-        },
-        "logo-slam-right": {
-          "0%": { transform: "translateX(200%) scale(0.5)", opacity: "0" },
-          "50%": { transform: "translateX(0) scale(1.2)", opacity: "1" },
-          "65%": { transform: "translateX(10%) scale(0.95)" },
-          "80%": { transform: "translateX(-5%) scale(1.1)" },
-          "100%": { transform: "translateX(0) scale(1)" },
-        },
-        "logo-impact": {
-          "0%": { transform: "scale(1) rotate(0deg)", opacity: "1" },
-          "20%": { transform: "scale(1.4) rotate(180deg)", opacity: "1" },
-          "40%": { transform: "scale(0.9) rotate(360deg)", opacity: "0.8" },
-          "60%": { transform: "scale(1.2) rotate(540deg)", opacity: "1" },
-          "80%": { transform: "scale(0.95) rotate(720deg)", opacity: "0.9" },
-          "100%": { transform: "scale(1) rotate(1080deg)", opacity: "1" },
-        },
-        "logo-shift": {
-          "0%": { transform: "translateX(0)" },
-          "30%": { transform: "translateX(-10%)" },
-          "100%": { transform: "translateX(-90%)" },
-        },
-        "logo-flash": {
-          "0%": { filter: "brightness(100%)" },
-          "20%": { filter: "brightness(300%)" },
-          "100%": { filter: "brightness(100%)" },
-        },
-        "logo-shockwave": {
-          "0%": {
-            boxShadow: "0 0 0 0 rgba(99, 102, 241, 0.4)",
-            transform: "scale(1)",
-          },
-          "50%": {
-            boxShadow: "0 0 50px 20px rgba(99, 102, 241, 0)",
-            transform: "scale(1.1)",
-          },
-          "100%": {
-            boxShadow: "0 0 100px 40px rgba(99, 102, 241, 0)",
-            transform: "scale(1)",
-          },
-        },
-        "matrix-glow": {
-          "0%, 100%": {
-            filter: "drop-shadow(0 0 2px #00ff00) drop-shadow(0 0 5px #00ff00)",
-            textShadow: "0 0 8px #00ff00",
-          },
-          "50%": {
-            filter: "drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff)",
-            textShadow: "0 0 12px #00ffff",
-          },
-        },
-        "holo-shine": {
-          "0%, 100%": {
-            opacity: "0.5",
-            filter: "hue-rotate(0deg) brightness(1)",
-          },
-          "50%": {
-            opacity: "1",
-            filter: "hue-rotate(180deg) brightness(1.5)",
-          },
-        },
-        "cyber-distort": {
-          "0%, 100%": { transform: "skewX(0deg) scale(1)" },
-          "25%": { transform: "skewX(3deg) scale(1.02)" },
-          "75%": { transform: "skewX(-3deg) scale(0.98)" },
-        },
-        smoke: {
-          "0%": { transform: "translate(0, 0) scale(1) rotate(0deg)" },
-          "33%": { transform: "translate(2%, -2%) scale(1.05) rotate(1deg)" },
-          "66%": { transform: "translate(-2%, 1%) scale(0.95) rotate(-1deg)" },
-          "100%": { transform: "translate(0, 0) scale(1) rotate(0deg)" },
-        },
-        fog: {
-          "0%": { transform: "translate(0, 0) scale(1.5)" },
-          "50%": { transform: "translate(-2%, 2%) scale(1.4)" },
-          "100%": { transform: "translate(0, 0) scale(1.5)" },
-        },
-        mist: {
-          "0%": { transform: "translateX(-10%) rotate(0deg)" },
-          "100%": { transform: "translateX(10%) rotate(360deg)" },
-        },
-        mistPulse: {
-          "0%, 100%": { opacity: "0.3", transform: "scale(1)" },
-          "50%": { opacity: "0.7", transform: "scale(1.1)" },
-        },
-        energyPulse: {
-          "0%, 100%": { opacity: "0.2", transform: "scale(0.95)" },
-          "50%": { opacity: "0.4", transform: "scale(1.05)" },
-        },
-        energySpin: {
-          "0%": { transform: "rotate(0deg)" },
-          "100%": { transform: "rotate(360deg)" },
-        },
-        slideDown: {
-          "0%": {
-            transform: "translateY(-100%)",
-            opacity: "0",
-          },
-          "100%": {
-            transform: "translateY(0)",
-            opacity: "1",
-          },
-        },
-        fadeInUp: {
-          "0%": {
-            transform: "translateY(20px)",
-            opacity: "0",
-          },
-          "100%": {
-            transform: "translateY(0)",
-            opacity: "1",
-          },
-        },
-        slideRight: {
-          "0%": {
-            transform: "scaleX(0)",
-            opacity: "0",
-          },
-          "100%": {
-            transform: "scaleX(1)",
-            opacity: "1",
-          },
-        },
-        slideInLeft: {
-          "0%": {
-            transform: "translateX(-200%)",
-            opacity: "0",
-          },
-          "50%": {
-            transform: "translateX(10%)",
-            opacity: "0.5",
-          },
-          "100%": {
-            transform: "translateX(0)",
-            opacity: "1",
-          },
-        },
-        slideInRight: {
-          "0%": {
-            transform: "translateX(200%)",
-            opacity: "0",
-          },
-          "50%": {
-            transform: "translateX(-10%)",
-            opacity: "0.5",
-          },
-          "100%": {
-            transform: "translateX(0)",
-            opacity: "1",
-          },
-        },
-        emergeCenter: {
-          "0%": {
-            transform: "scale(0) rotate(-180deg)",
-            opacity: "0",
-          },
-          "50%": {
-            transform: "scale(1.2) rotate(20deg)",
-            opacity: "0.7",
-          },
-          "100%": {
-            transform: "scale(1) rotate(0)",
-            opacity: "1",
-          },
-        },
-        energyBurst: {
-          "0%": {
-            transform: "scale(0)",
-            opacity: "0",
-          },
-          "50%": {
-            transform: "scale(2)",
-            opacity: "1",
-          },
-          "100%": {
-            transform: "scale(1)",
-            opacity: "0",
-          },
-        },
-        energyMerge: {
-          "0%": {
-            opacity: "0",
-            transform: "scale(1.5)",
-          },
-          "50%": {
-            opacity: "1",
-            transform: "scale(0.8)",
-          },
-          "100%": {
-            opacity: "0.5",
-            transform: "scale(1)",
-          },
-        },
-        "scan-fast": {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
-        },
-        "scan-vertical": {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(100%)" },
-        },
-        spinOccasional: {
-          "0%, 50%, 100%": {
-            transform: "rotate(0deg)",
-          },
-          "52%, 98%": {
-            transform: "rotate(360deg)",
-          },
-        },
-        randomSlide: {
-          "0%": { transform: "translateX(-100vw) translateY(50vh)" },
-          "50%": { transform: "translateX(50vw) translateY(-20vh)" },
-          "100%": { transform: "translateX(100vw) translateY(70vh)" },
         },
         sparkle: {
-          "0%, 100%": { opacity: 0, transform: "scale(0.5)" },
-          "50%": { opacity: 1, transform: "scale(1.2)" },
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.4", transform: "scale(0.8)" },
         },
-        contestCardEntrance: {
-          "0%": {
-            opacity: "0",
-            transform: "translateX(100%) rotateY(12deg) scale(0.9)",
-          },
-          "100%": {
-            opacity: "1",
-            transform: "translateX(0) rotateY(0) scale(1)",
-          },
+        "contest-card-entrance": {
+          "0%": { transform: "translateY(20px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
         },
       },
       animationDelay: {
@@ -916,3 +615,4 @@ export default {
     },
   ],
 };
+

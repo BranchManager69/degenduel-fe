@@ -24,6 +24,9 @@ export const TokensPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
+  const [imageSource, setImageSource] = useState<
+    "default" | "header" | "openGraph"
+  >("default");
   const user = useStore((state) => state.user);
 
   useEffect(() => {
@@ -206,9 +209,11 @@ export const TokensPage: React.FC = () => {
         onSortDirectionChange={() =>
           setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
         }
+        imageSource={imageSource}
+        onImageSourceChange={setImageSource}
       />
 
-      <TokensGrid tokens={filteredAndSortedTokens} />
+      <TokensGrid tokens={filteredAndSortedTokens} imageSource={imageSource} />
 
       <AddTokenModal
         isOpen={isAddTokenModalOpen}
