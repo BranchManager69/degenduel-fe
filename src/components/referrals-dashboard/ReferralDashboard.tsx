@@ -874,7 +874,9 @@ export const ReferralDashboard: React.FC = () => {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Reward: [TBA]</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Reward: 500 DUEL per referral
+              </p>
             </div>
 
             {/* Tier 2: 6-20 Referrals */}
@@ -896,7 +898,9 @@ export const ReferralDashboard: React.FC = () => {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Reward: [TBA]</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Reward: 750 DUEL per referral
+              </p>
             </div>
 
             {/* Tier 3: 21+ Referrals */}
@@ -915,7 +919,9 @@ export const ReferralDashboard: React.FC = () => {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">Reward: [TBA]</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Reward: 1000 DUEL per referral
+              </p>
             </div>
 
             {/* Additional Rewards Info */}
@@ -924,9 +930,14 @@ export const ReferralDashboard: React.FC = () => {
                 Additional Rewards
               </h4>
               <ul className="text-xs text-gray-400 space-y-1">
-                <li>• Contest Bonus: [TBA]</li>
-                <li>• Monthly Bonus: [TBA]</li>
-                <li>• Special Events: [TBA]</li>
+                <li>
+                  • Contest Bonus: Up to 5000 DUEL for top 3 referrers in
+                  contests
+                </li>
+                <li>• Monthly Bonus: 10000 DUEL for top referrer each month</li>
+                <li>
+                  • Special Events: Bonus rewards during promotional events
+                </li>
               </ul>
             </div>
           </div>

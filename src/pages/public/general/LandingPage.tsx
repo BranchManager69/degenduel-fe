@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { MarketVerse } from "../../../components/animated-background/MarketVerse";
-import { TokenVerse } from "../../../components/animated-background/TokenVerse";
+import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestSection } from "../../../components/landing/duplicates-to-delete/ContestSection";
 import { Features } from "../../../components/landing/duplicates-to-delete/Features";
 import { isContestLive } from "../../../lib/utils";
@@ -82,39 +81,7 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Single shared dark background */}
-      <div className="fixed inset-0 bg-black/40 z-0" />
-
-      {/* Background Layer Group - All visual effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* TokenVerse - Base layer */}
-        <div className="absolute inset-0" style={{ zIndex: 1 }}>
-          <TokenVerse />
-        </div>
-
-        {/* MarketVerse - Blended layer */}
-        <div
-          className="absolute inset-0"
-          style={{ zIndex: 2, mixBlendMode: "lighten" }}
-        >
-          <MarketVerse />
-        </div>
-
-        {/* Cyberpunk Overlay Effects */}
-        <div
-          className="absolute inset-0 overflow-hidden"
-          style={{ zIndex: 3, opacity: 0.3 }}
-        >
-          <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-scan-vertical"
-            style={{ left: "20%" }}
-          />
-          <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-scan-vertical"
-            style={{ left: "80%", animationDelay: "-2s" }}
-          />
-        </div>
-      </div>
+      <BackgroundEffects />
 
       {/* Content Section */}
       <section className="relative" style={{ zIndex: 10 }}>

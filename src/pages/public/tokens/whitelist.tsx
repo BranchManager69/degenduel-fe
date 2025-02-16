@@ -12,6 +12,7 @@ import {
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Input } from "../../../components/ui/Input";
@@ -118,113 +119,120 @@ export const TokenWhitelistPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="space-y-6">
-        {/* Header Section */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-white">List Your Token</h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Get your token listed on DegenDuel for immediate exposure and
-            inclusion in our games. Your token will be tracked and available for
-            all players to use in their portfolios.
-          </p>
-        </div>
+    <div className="flex flex-col min-h-screen">
+      <BackgroundEffects />
 
-        {/* Main Card */}
-        <Card className="bg-dark-200/50 backdrop-blur-sm p-6">
+      {/* Content Section */}
+      <div className="relative z-10">
+        <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="space-y-6">
-            {/* Benefits Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-dark-300/30 rounded-lg p-4">
-                <h3 className="text-brand-400 font-bold mb-2">
-                  Instant Listing
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Your token will be immediately added to our tracking system
-                  and available in games
-                </p>
-              </div>
-              <div className="bg-dark-300/30 rounded-lg p-4">
-                <h3 className="text-brand-400 font-bold mb-2">
-                  Increased Visibility
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Expose your token to active traders and gaming enthusiasts
-                </p>
-              </div>
-              <div className="bg-dark-300/30 rounded-lg p-4">
-                <h3 className="text-brand-400 font-bold mb-2">
-                  Real-time Tracking
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Get comprehensive market data and analytics for your token
-                </p>
-              </div>
+            {/* Header Section */}
+            <div className="text-center space-y-4">
+              <h1 className="text-4xl font-bold text-white">List Your Token</h1>
+              <p className="text-gray-400 max-w-2xl mx-auto">
+                Get your token listed on DegenDuel for immediate exposure and
+                inclusion in our games. Your token will be tracked and available
+                for all players to use in their portfolios.
+              </p>
             </div>
 
-            {/* Submission Form */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Token Contract Address
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter Solana token address..."
-                  value={contractAddress}
-                  onChange={(e) => setContractAddress(e.target.value)}
-                  className="w-full bg-dark-300/30 border-dark-300"
-                />
-              </div>
+            {/* Main Card */}
+            <Card className="bg-dark-200/50 backdrop-blur-sm p-6">
+              <div className="space-y-6">
+                {/* Benefits Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-dark-300/30 rounded-lg p-4">
+                    <h3 className="text-brand-400 font-bold mb-2">
+                      Instant Listing
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Your token will be immediately added to our tracking
+                      system and available in games
+                    </p>
+                  </div>
+                  <div className="bg-dark-300/30 rounded-lg p-4">
+                    <h3 className="text-brand-400 font-bold mb-2">
+                      Increased Visibility
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Expose your token to active traders and gaming enthusiasts
+                    </p>
+                  </div>
+                  <div className="bg-dark-300/30 rounded-lg p-4">
+                    <h3 className="text-brand-400 font-bold mb-2">
+                      Real-time Tracking
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Get comprehensive market data and analytics for your token
+                    </p>
+                  </div>
+                </div>
 
-              <div className="bg-dark-300/30 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Listing Fee</span>
-                  <span className="text-white font-bold">
-                    {SUBMISSION_COST} SOL
-                  </span>
+                {/* Submission Form */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                      Token Contract Address
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Enter Solana token address..."
+                      value={contractAddress}
+                      onChange={(e) => setContractAddress(e.target.value)}
+                      className="w-full bg-dark-300/30 border-dark-300"
+                    />
+                  </div>
+
+                  <div className="bg-dark-300/30 rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Listing Fee</span>
+                      <span className="text-white font-bold">
+                        {SUBMISSION_COST} SOL
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || !walletPublicKey}
+                    className="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-lg flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Processing...</span>
+                      </>
+                    ) : !walletPublicKey ? (
+                      "Connect Wallet to Submit"
+                    ) : (
+                      "Submit Token"
+                    )}
+                  </Button>
+                </div>
+
+                {/* Terms and Info */}
+                <div className="text-sm text-gray-500 space-y-2">
+                  <p>
+                    • Tokens are reviewed for basic compatibility but listing is
+                    not an endorsement
+                  </p>
+                  <p>
+                    • The {SUBMISSION_COST} SOL fee is non-refundable and helps
+                    maintain our services
+                  </p>
+                  <p>• Currently accepting Solana tokens only</p>
                 </div>
               </div>
-
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !walletPublicKey}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-lg flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Processing...</span>
-                  </>
-                ) : !walletPublicKey ? (
-                  "Connect Wallet to Submit"
-                ) : (
-                  "Submit Token"
-                )}
-              </Button>
-            </div>
-
-            {/* Terms and Info */}
-            <div className="text-sm text-gray-500 space-y-2">
-              <p>
-                • Tokens are reviewed for basic compatibility but listing is not
-                an endorsement
-              </p>
-              <p>
-                • The {SUBMISSION_COST} SOL fee is non-refundable and helps
-                maintain our services
-              </p>
-              <p>• Currently accepting Solana tokens only</p>
+            </Card>
+            <div className="mt-8">
+              <CharacterRoom
+                initAccessToken={UNSAFE_initAccessToken}
+                userName="Branch"
+                virtualId={1}
+                virtualName="Virtual Branch"
+              />
             </div>
           </div>
-        </Card>
-        <div className="mt-8">
-          <CharacterRoom
-            initAccessToken={UNSAFE_initAccessToken}
-            userName="Branch"
-            virtualId={1}
-            virtualName="Virtual Branch"
-          />
         </div>
       </div>
     </div>

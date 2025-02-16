@@ -127,9 +127,9 @@ export const App: React.FC = () => {
           <WebSocketManager />
 
           {/* Debug Panels */}
-          <ServiceDebugPanel />
-          <UiDebugPanel />
-          <WebSocketDebugPanel />
+          {user?.is_superadmin && <ServiceDebugPanel />}
+          {user?.is_superadmin && <UiDebugPanel />}
+          {user?.is_superadmin && <WebSocketDebugPanel />}
 
           {/* Animated Background */}
           <MovingBackground />
@@ -412,9 +412,6 @@ export const App: React.FC = () => {
 
           {/* Service Status Banner (consider deleting or moving and reusing for general non-MM server issues) */}
           <ServiceStatusBanner />
-
-          {/* Global ServiceDebugPanel for superadmins | NOTE: This does NOT work globally; only shows on the websocket-service controls testing page */}
-          {user?.is_superadmin && <ServiceDebugPanel />}
 
           <AchievementNotification />
         </div>

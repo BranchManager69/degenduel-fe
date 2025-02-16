@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../components/portfolio-selection/TokenFilters";
 import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
@@ -452,133 +453,145 @@ export const TokenSelection: React.FC = () => {
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative min-h-screen">
-        {/* Header Section */}
-        <div className="mb-4 sm:mb-8 text-center relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 group-hover:animate-glitch">
-            Select Your Portfolio
-          </h1>
-          <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto group-hover:animate-cyber-pulse">
-            Choose tokens and allocate weights to build your initial portfolio.
-          </p>
-        </div>
+      <div className="flex flex-col min-h-screen">
+        <BackgroundEffects />
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 pb-24 lg:pb-0">
-          {/* Token Selection Area */}
-          <div className="lg:col-span-2">
-            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
-              <div className="p-3 sm:p-6 relative">
-                {/* Filters */}
-                <div className="mb-4 sm:mb-6">
-                  <TokenFilters
-                    marketCapFilter={marketCapFilter}
-                    onMarketCapFilterChange={setMarketCapFilter}
-                  />
-                </div>
+        {/* Content Section */}
+        <div className="relative z-10">
+          <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
+            {/* Header Section */}
+            <div className="mb-4 sm:mb-8 text-center relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 group-hover:animate-glitch">
+                Select Your Portfolio
+              </h1>
+              <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto group-hover:animate-cyber-pulse">
+                Choose tokens and allocate weights to build your initial
+                portfolio.
+              </p>
+            </div>
 
-                {/* Token Grid */}
-                <div className="relative">
-                  {tokenListLoading ? (
-                    <div className="flex justify-center items-center h-48 sm:h-64">
-                      <div className="animate-cyber-pulse text-brand-400">
-                        Loading tokens...
+            {/* Main Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 pb-24 lg:pb-0">
+              {/* Token Selection Area */}
+              <div className="lg:col-span-2">
+                <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+                  <div className="p-3 sm:p-6 relative">
+                    {/* Filters */}
+                    <div className="mb-4 sm:mb-6">
+                      <TokenFilters
+                        marketCapFilter={marketCapFilter}
+                        onMarketCapFilterChange={setMarketCapFilter}
+                      />
+                    </div>
+
+                    {/* Token Grid */}
+                    <div className="relative">
+                      {tokenListLoading ? (
+                        <div className="flex justify-center items-center h-48 sm:h-64">
+                          <div className="animate-cyber-pulse text-brand-400">
+                            Loading tokens...
+                          </div>
+                        </div>
+                      ) : error ? (
+                        <div className="text-red-400 text-center animate-glitch">
+                          {error}
+                        </div>
+                      ) : (
+                        <TokenGrid
+                          tokens={tokens}
+                          selectedTokens={selectedTokens}
+                          onTokenSelect={handleTokenSelect}
+                          marketCapFilter={marketCapFilter}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Portfolio Summary - Hidden on mobile when floating button is shown */}
+              <div className="hidden lg:block">
+                <div className="sticky top-4">
+                  <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+                    <div className="p-4 sm:p-6 relative">
+                      <h2 className="text-lg sm:text-xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
+                        Confirm Entry
+                      </h2>
+                      <PortfolioSummary
+                        selectedTokens={selectedTokens}
+                        tokens={tokens}
+                      />
+
+                      <div className="mt-4 sm:mt-6">
+                        <Button
+                          onClick={handleSubmit}
+                          disabled={
+                            loadingEntryStatus ||
+                            portfolioValidation !== null ||
+                            isLoading
+                          }
+                          className="w-full relative group overflow-hidden text-sm sm:text-base py-3"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                          <span className="relative flex items-center justify-center font-medium group-hover:animate-glitch">
+                            {isLoading ? (
+                              <div className="animate-cyber-pulse">
+                                Entering...
+                              </div>
+                            ) : (
+                              "Enter Contest"
+                            )}
+                          </span>
+                        </Button>
+
+                        {portfolioValidation && (
+                          <p className="mt-2 text-xs sm:text-sm text-red-400 text-center animate-glitch">
+                            {portfolioValidation}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  ) : error ? (
-                    <div className="text-red-400 text-center animate-glitch">
-                      {error}
-                    </div>
-                  ) : (
-                    <TokenGrid
-                      tokens={tokens}
-                      selectedTokens={selectedTokens}
-                      onTokenSelect={handleTokenSelect}
-                      marketCapFilter={marketCapFilter}
-                    />
-                  )}
+                  </Card>
                 </div>
               </div>
-            </Card>
-          </div>
-
-          {/* Portfolio Summary - Hidden on mobile when floating button is shown */}
-          <div className="hidden lg:block">
-            <div className="sticky top-4">
-              <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
-                <div className="p-4 sm:p-6 relative">
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
-                    Confirm Entry
-                  </h2>
-                  <PortfolioSummary
-                    selectedTokens={selectedTokens}
-                    tokens={tokens}
-                  />
-
-                  <div className="mt-4 sm:mt-6">
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={
-                        loadingEntryStatus ||
-                        portfolioValidation !== null ||
-                        isLoading
-                      }
-                      className="w-full relative group overflow-hidden text-sm sm:text-base py-3"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                      <span className="relative flex items-center justify-center font-medium group-hover:animate-glitch">
-                        {isLoading ? (
-                          <div className="animate-cyber-pulse">Entering...</div>
-                        ) : (
-                          "Enter Contest"
-                        )}
-                      </span>
-                    </Button>
-
-                    {portfolioValidation && (
-                      <p className="mt-2 text-xs sm:text-sm text-red-400 text-center animate-glitch">
-                        {portfolioValidation}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </Card>
             </div>
-          </div>
-        </div>
 
-        {/* Floating Submit Button for Mobile */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent">
-          <div className="max-w-md mx-auto">
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                loadingEntryStatus || portfolioValidation !== null || isLoading
-              }
-              className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-              <span className="relative flex items-center justify-center gap-2">
-                {isLoading ? (
-                  <div className="animate-cyber-pulse">Entering...</div>
-                ) : (
-                  <>
-                    <span className="font-medium">Enter Contest</span>
-                    <span className="text-brand-400">{totalWeight}%</span>
-                  </>
+            {/* Floating Submit Button for Mobile */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent">
+              <div className="max-w-md mx-auto">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={
+                    loadingEntryStatus ||
+                    portfolioValidation !== null ||
+                    isLoading
+                  }
+                  className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                  <span className="relative flex items-center justify-center gap-2">
+                    {isLoading ? (
+                      <div className="animate-cyber-pulse">Entering...</div>
+                    ) : (
+                      <>
+                        <span className="font-medium">Enter Contest</span>
+                        <span className="text-brand-400">{totalWeight}%</span>
+                      </>
+                    )}
+                  </span>
+                </Button>
+                {portfolioValidation && (
+                  <p className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
+                    {portfolioValidation}
+                  </p>
                 )}
-              </span>
-            </Button>
-            {portfolioValidation && (
-              <p className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
-                {portfolioValidation}
-              </p>
-            )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

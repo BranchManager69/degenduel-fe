@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useParams } from "react-router-dom";
+import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
 import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
 import { PortfolioPerformance } from "../../../components/contest-lobby/PortfolioPerformance";
@@ -95,67 +96,74 @@ export const ContestLobby: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Enhanced Header Section */}
-      <div className="mb-8 relative group">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            {/* Contest Title */}
-            <h1 className="text-3xl font-bold text-gray-100 mb-2 relative group-hover:animate-glitch">
-              {contest.title}
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-            </h1>
-            <div className="flex items-center space-x-4">
-              {/* Contest Difficulty */}
-              <ContestDifficulty difficulty={contest.difficulty} />
-              <span className="text-gray-400 group-hover:text-brand-400 transition-colors">
-                {/* Prize Pool */}
-                Prize Pool:{" "}
-                <span className="text-brand-400 group-hover:animate-neon-flicker">
-                  {formatCurrency(contest.prizePool)}
-                </span>
-              </span>
+    <div className="flex flex-col min-h-screen">
+      <BackgroundEffects />
+
+      {/* Content Section */}
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Enhanced Header Section */}
+          <div className="mb-8 relative group">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                {/* Contest Title */}
+                <h1 className="text-3xl font-bold text-gray-100 mb-2 relative group-hover:animate-glitch">
+                  {contest.title}
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+                </h1>
+                <div className="flex items-center space-x-4">
+                  {/* Contest Difficulty */}
+                  <ContestDifficulty difficulty={contest.difficulty} />
+                  <span className="text-gray-400 group-hover:text-brand-400 transition-colors">
+                    {/* Prize Pool */}
+                    Prize Pool:{" "}
+                    <span className="text-brand-400 group-hover:animate-neon-flicker">
+                      {formatCurrency(contest.prizePool)}
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                {/* Contest Timer */}
+                <div className="relative group">
+                  <ContestTimer endTime={contest.endTime} />
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+                {/* Test Skip Button */}
+                <TestSkipButton contestId={id!} />
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            {/* Contest Timer */}
-            <div className="relative group">
-              <ContestTimer endTime={contest.endTime} />
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Enhanced Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              {/* Portfolio Performance with enhanced animations */}
+              <div className="relative group overflow-hidden rounded-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <PortfolioPerformance {...portfolioData} />
+              </div>
+
+              {/* Leaderboard with enhanced animations */}
+              <div className="relative group overflow-hidden rounded-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Leaderboard entries={leaderboardEntries} currentUserRank={2} />
+              </div>
             </div>
-            {/* Test Skip Button */}
-            <TestSkipButton contestId={id!} />
-          </div>
-        </div>
-      </div>
 
-      {/* Enhanced Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          {/* Portfolio Performance with enhanced animations */}
-          <div className="relative group overflow-hidden rounded-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <PortfolioPerformance {...portfolioData} />
-          </div>
-
-          {/* Leaderboard with enhanced animations */}
-          <div className="relative group overflow-hidden rounded-lg">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <Leaderboard entries={leaderboardEntries} currentUserRank={2} />
-          </div>
-        </div>
-
-        {/* Token Performance Cards with enhanced animations */}
-        <div className="space-y-8">
-          {portfolioData.tokens.map((tokenData) => (
-            <div
-              key={tokenData.token.symbol}
-              className="relative group overflow-hidden rounded-lg"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-              <TokenPerformance {...tokenData} />
+            {/* Token Performance Cards with enhanced animations */}
+            <div className="space-y-8">
+              {portfolioData.tokens.map((tokenData) => (
+                <div
+                  key={tokenData.token.symbol}
+                  className="relative group overflow-hidden rounded-lg"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                  <TokenPerformance {...tokenData} />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>

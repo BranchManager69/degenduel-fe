@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useStore } from "../../store/useStore";
 import { Token } from "../../types";
 import { formatNumber } from "../../utils/format";
@@ -14,6 +14,32 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const user = useStore((state) => state.user);
+
+  // Add debugging logs for socials
+  useEffect(() => {
+    if (token.socials) {
+      console.log("Token Socials Debug:", {
+        tokenSymbol: token.symbol,
+        socialsObject: token.socials,
+        twitter: {
+          exists: !!token.socials.twitter,
+          hasUrl: !!token.socials.twitter?.url,
+          fullObject: token.socials.twitter,
+        },
+        telegram: {
+          exists: !!token.socials.telegram,
+          hasUrl: !!token.socials.telegram?.url,
+          fullObject: token.socials.telegram,
+        },
+        discord: {
+          exists: !!token.socials.discord,
+          hasUrl: !!token.socials.discord?.url,
+          fullObject: token.socials.discord,
+        },
+        rawData: JSON.stringify(token.socials, null, 2),
+      });
+    }
+  }, [token.socials, token.symbol]);
 
   const handleClick = () => {
     setIsFlipped(!isFlipped);
@@ -38,17 +64,17 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
   return (
     <>
       <div
-        className="aspect-[3/4] w-full perspective-1000 cursor-pointer group"
+        className="aspect-[3/4] w-full perspective-1000 cursor-pointer"
         onClick={handleClick}
       >
         <div
-          className={`relative w-full h-full transition-all duration-500 transform-style-3d shadow-xl hover:scale-[1.02] ${
+          className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${
             isFlipped ? "rotate-y-180" : ""
           }`}
         >
           {/* Front of card */}
           <div className="absolute w-full h-full backface-hidden rounded-xl overflow-hidden shadow-lg">
-            <div className="relative w-full h-full bg-dark-200/50 backdrop-blur-sm">
+            <div className="relative w-full h-full bg-dark-200/50 backdrop-blur-sm hover:bg-dark-200/60 transition-colors duration-300">
               {/* Image container */}
               <div className="relative w-full h-full overflow-hidden">
                 {imageUrl ? (
@@ -67,10 +93,10 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                 )}
 
                 {/* Enhanced shine effects */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute inset-[-100%] bg-gradient-to-r from-transparent via-white/30 to-transparent transform -rotate-45 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="absolute inset-0 bg-gradient-radial from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                <div className="absolute inset-0">
+                  <div className="absolute inset-[-100%] bg-gradient-to-r from-transparent via-white/30 to-transparent transform -rotate-45 translate-x-[-100%] animate-shine-slow" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 animate-pulse-slow" />
+                  <div className="absolute inset-0 bg-gradient-radial from-white/10 via-transparent to-transparent opacity-0 animate-pulse-slow" />
                 </div>
 
                 {/* Enhanced gradient overlays */}
@@ -92,8 +118,8 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
 
                   {/* Enhanced Market Cap Display */}
                   <div className="relative">
-                    <div className="relative overflow-hidden bg-gradient-to-r from-dark-300/80 to-dark-300/40 backdrop-blur-md rounded-r-2xl pl-4 pr-6 py-3 group-hover:from-dark-300/90 group-hover:to-dark-300/50 transition-all duration-300">
-                      <div className="absolute inset-0 bg-gradient-to-r from-brand-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative overflow-hidden bg-gradient-to-r from-dark-300/80 to-dark-300/40 backdrop-blur-md rounded-r-2xl pl-4 pr-6 py-3 transition-all duration-300">
+                      <div className="absolute inset-0 bg-gradient-to-r from-brand-500/5 to-transparent opacity-0 transition-opacity duration-300" />
                       <div className="relative">
                         <span className="font-accent text-xs sm:text-sm text-white/50 uppercase tracking-wider font-medium">
                           Market Cap
@@ -126,115 +152,147 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
 
           {/* Back of card */}
           <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden shadow-lg">
-            <div className="w-full h-full bg-dark-200/50 backdrop-blur-sm p-3 sm:p-4">
-              <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <h3 className="font-display text-base sm:text-lg font-bold text-white/90 truncate mr-2 group-hover:text-white transition-colors duration-300">
-                    {token.name}
-                  </h3>
-                  <p className="font-accent text-xs sm:text-sm text-white/70 shrink-0 group-hover:text-white/90 transition-colors duration-300">
-                    {token.symbol}
-                  </p>
-                </div>
+            <div className="w-full h-full bg-dark-200/50 backdrop-blur-sm p-4 hover:bg-dark-200/60 transition-colors duration-300">
+              {/* Enhanced gradient overlays */}
+              <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-radial from-transparent to-black/20" />
+                <div className="absolute inset-[-100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transform -rotate-45 translate-x-[-100%] animate-shine-slow" />
+              </div>
 
-                <div className="space-y-2 sm:space-y-3 flex-1">
-                  {/* Stats with hover effects */}
-                  <div className="group/stat hover:bg-dark-300/30 p-2 rounded-lg transition-colors duration-300">
-                    <p className="font-accent text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/50 mb-0.5 group-hover/stat:text-white/70 transition-colors duration-300">
+              <div className="relative flex flex-col h-full">
+                {/* Token Name Only */}
+                <h3 className="font-display text-xl sm:text-2xl font-bold text-transparent bg-gradient-to-r from-white via-white to-white/80 bg-clip-text drop-shadow-lg tracking-wide mb-3">
+                  {token.name}
+                </h3>
+
+                {/* Compact Stats Grid */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {/* Price Card */}
+                  <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg p-2.5 border border-white/5 hover:border-brand-400/20 transition-all duration-300 group">
+                    <span className="font-accent text-xs text-white/40 uppercase tracking-wider group-hover:text-brand-400/60 transition-colors duration-300 whitespace-nowrap">
                       Price
-                    </p>
-                    <p className="font-numbers text-xs sm:text-sm font-medium text-white/90 group-hover/stat:text-white transition-colors duration-300">
+                    </span>
+                    <p className="font-numbers text-base font-bold text-white/90 mt-0.5 group-hover:text-white transition-colors duration-300">
                       ${formatNumber(token.price)}
                     </p>
                   </div>
-                  <div className="group/stat hover:bg-dark-300/30 p-2 rounded-lg transition-colors duration-300">
-                    <p className="font-accent text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/50 mb-0.5 group-hover/stat:text-white/70 transition-colors duration-300">
-                      Market Cap
-                    </p>
-                    <p className="font-numbers text-xs sm:text-sm font-medium text-white/90 group-hover/stat:text-white transition-colors duration-300">
-                      ${formatNumber(token.marketCap)}
-                    </p>
-                  </div>
-                  <div className="group/stat hover:bg-dark-300/30 p-2 rounded-lg transition-colors duration-300">
-                    <p className="font-accent text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/50 mb-0.5 group-hover/stat:text-white/70 transition-colors duration-300">
-                      24h Volume
-                    </p>
-                    <p className="font-numbers text-xs sm:text-sm font-medium text-white/90 group-hover/stat:text-white transition-colors duration-300">
+
+                  {/* Volume Card */}
+                  <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg p-2.5 border border-white/5 hover:border-brand-400/20 transition-all duration-300 group">
+                    <span className="font-accent text-xs text-white/40 uppercase tracking-wider group-hover:text-brand-400/60 transition-colors duration-300 whitespace-nowrap">
+                      24h Vol
+                    </span>
+                    <p className="font-numbers text-base font-bold text-white/90 mt-0.5 group-hover:text-white transition-colors duration-300">
                       ${formatNumber(token.volume24h)}
                     </p>
                   </div>
-                  <div className="group/stat hover:bg-dark-300/30 p-2 rounded-lg transition-colors duration-300">
-                    <p className="font-accent text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/50 mb-0.5 group-hover/stat:text-white/70 transition-colors duration-300">
-                      Contract
-                    </p>
-                    <CopyToClipboard text={token.contractAddress}>
-                      <div className="flex items-center gap-1 sm:gap-2 group/copy cursor-pointer">
-                        <p className="font-mono text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/70 truncate max-w-[150px] sm:max-w-full group-hover/copy:text-white transition-colors duration-300">
-                          {token.contractAddress}
-                        </p>
-                        <span className="text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/30 group-hover/copy:text-white/50 shrink-0 transition-colors duration-300">
+                </div>
+
+                {/* Contract Address */}
+                <div className="mb-4">
+                  <CopyToClipboard text={token.contractAddress}>
+                    <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg p-2.5 border border-white/5 hover:border-brand-400/20 transition-all duration-300 group cursor-pointer">
+                      <div className="flex items-center justify-between">
+                        <span className="font-accent text-xs text-white/40 uppercase tracking-wider group-hover:text-brand-400/60 transition-colors duration-300 whitespace-nowrap">
+                          Contract
+                        </span>
+                        <span className="text-white/30 group-hover:text-brand-400 transition-colors duration-300">
                           📋
                         </span>
                       </div>
-                    </CopyToClipboard>
-                  </div>
+                      <p className="font-mono text-sm text-white/70 truncate mt-0.5 group-hover:text-white transition-colors duration-300">
+                        {`${token.contractAddress.slice(
+                          0,
+                          8
+                        )}...${token.contractAddress.slice(-6)}`}
+                      </p>
+                    </div>
+                  </CopyToClipboard>
                 </div>
 
-                {/* Admin Controls */}
-                {user?.is_admin && (
-                  <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-white/10">
-                    <Button
-                      onClick={handleDeleteClick}
-                      variant="primary"
-                      size="sm"
-                      className="w-full bg-red-500 hover:bg-red-600 text-xs sm:text-sm py-1.5 sm:py-2 group-hover:shadow-lg group-hover:shadow-red-500/20 transition-shadow duration-300 font-accent"
-                    >
-                      Remove Token
-                    </Button>
+                {/* Social Links - More Compact with Debug Info */}
+                {token.socials && (
+                  <div className="flex gap-2 mb-4">
+                    {token.socials?.twitter?.url && (
+                      <a
+                        href={token.socials?.twitter?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (token.socials?.twitter) {
+                            console.log("Twitter link clicked:", {
+                              url: token.socials.twitter.url,
+                              fullObject: token.socials.twitter,
+                            });
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center py-2 bg-dark-300/30 rounded-lg border border-white/5 hover:border-brand-400/20 hover:bg-dark-300/50 transition-all duration-300 group"
+                      >
+                        <span className="text-white/50 group-hover:text-brand-400 transition-colors duration-300">
+                          𝕏
+                        </span>
+                      </a>
+                    )}
+                    {token.socials?.telegram?.url && (
+                      <a
+                        href={token.socials?.telegram?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (token.socials?.telegram) {
+                            console.log("Telegram link clicked:", {
+                              url: token.socials.telegram.url,
+                              fullObject: token.socials.telegram,
+                            });
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center py-2 bg-dark-300/30 rounded-lg border border-white/5 hover:border-brand-400/20 hover:bg-dark-300/50 transition-all duration-300 group"
+                      >
+                        <span className="text-white/50 group-hover:text-brand-400 transition-colors duration-300">
+                          ✈️
+                        </span>
+                      </a>
+                    )}
+                    {token.socials?.discord?.url && (
+                      <a
+                        href={token.socials?.discord?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (token.socials?.discord) {
+                            console.log("Discord link clicked:", {
+                              url: token.socials.discord.url,
+                              fullObject: token.socials.discord,
+                            });
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center py-2 bg-dark-300/30 rounded-lg border border-white/5 hover:border-brand-400/20 hover:bg-dark-300/50 transition-all duration-300 group"
+                      >
+                        <span className="text-white/50 group-hover:text-brand-400 transition-colors duration-300">
+                          💬
+                        </span>
+                      </a>
+                    )}
                   </div>
                 )}
 
-                {/* Social links */}
-                {token.socials &&
-                  Object.values(token.socials).some((s) => s?.url) && (
-                    <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-white/10">
-                      <div className="flex gap-2 sm:gap-3">
-                        {token.socials.twitter?.url && (
-                          <a
-                            href={token.socials.twitter.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="font-accent text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/50 hover:text-brand-400 transition-all duration-300 hover:scale-110"
-                          >
-                            Twitter
-                          </a>
-                        )}
-                        {token.socials.telegram?.url && (
-                          <a
-                            href={token.socials.telegram.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="font-accent text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/50 hover:text-brand-400 transition-all duration-300 hover:scale-110"
-                          >
-                            Telegram
-                          </a>
-                        )}
-                        {token.socials.discord?.url && (
-                          <a
-                            href={token.socials.discord.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="font-accent text-[clamp(0.65rem,2vw,0.75rem)] sm:text-sm text-white/50 hover:text-brand-400 transition-all duration-300 hover:scale-110"
-                          >
-                            Discord
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                {/* Admin Controls - More Compact */}
+                {user?.is_admin && (
+                  <Button
+                    onClick={handleDeleteClick}
+                    variant="primary"
+                    size="sm"
+                    className="w-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 py-1.5 transition-all duration-300 font-accent relative group overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/10 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shine-slow" />
+                    <span className="relative">Remove Token</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>

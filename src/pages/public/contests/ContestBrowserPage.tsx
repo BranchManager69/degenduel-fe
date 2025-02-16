@@ -1,6 +1,7 @@
 // src/pages/public/ContestBrowserPage.tsx
 
 import React, { useEffect, useMemo, useState } from "react";
+import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
 import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
@@ -218,244 +219,251 @@ export const ContestBrowser: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Enhanced Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative group">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
-          <span className="relative z-10 group-hover:animate-glitch">
-            Duel Explorer
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-        </h1>
-        {isAdmin() && (
-          <CreateContestButton
-            onCreateClick={() => setIsCreateModalOpen(true)}
-          />
-        )}
-      </div>
+    <div className="flex flex-col min-h-screen">
+      <BackgroundEffects />
 
-      {/* Enhanced Filter Toggle Button (Mobile) */}
-      <button
-        onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
-        className="md:hidden w-full mb-4 px-4 py-2 bg-dark-200 rounded-lg text-gray-100 flex items-center justify-between relative group hover:bg-dark-300/50 transition-colors"
-      >
-        <span className="flex items-center space-x-2 group-hover:animate-cyber-pulse">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+      {/* Content Section */}
+      <div className="relative flex-1" style={{ zIndex: 10 }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Enhanced Header Section */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative group">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
+              <span className="relative z-10 group-hover:animate-glitch">
+                Duel Explorer
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            </h1>
+            {isAdmin() && (
+              <CreateContestButton
+                onCreateClick={() => setIsCreateModalOpen(true)}
+              />
+            )}
+          </div>
+
+          {/* Enhanced Filter Toggle Button (Mobile) */}
+          <button
+            onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+            className="md:hidden w-full mb-4 px-4 py-2 bg-dark-200 rounded-lg text-gray-100 flex items-center justify-between relative group hover:bg-dark-300/50 transition-colors"
           >
-            <path
-              fillRule="evenodd"
-              d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>Sort/Filter</span>
-        </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-5 w-5 transform transition-transform duration-300 ${
-            isFilterMenuOpen ? "rotate-180" : ""
-          }`}
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
+            <span className="flex items-center space-x-2 group-hover:animate-cyber-pulse">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>Sort/Filter</span>
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-5 w-5 transform transition-transform duration-300 ${
+                isFilterMenuOpen ? "rotate-180" : ""
+              }`}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
 
-      {/* Enhanced Filters Section */}
-      <div
-        className={`${
-          isFilterMenuOpen ? "block" : "hidden"
-        } md:block mb-8 space-y-4 bg-dark-200/50 backdrop-blur-sm p-4 rounded-lg border border-dark-300 relative group animate-fade-in`}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream rounded-lg" />
-        <div className="relative z-10">
-          {/* Filter Controls */}
-          <div className="flex flex-wrap gap-4 mb-4">
-            {/* Status Filter - Now as buttons */}
-            <div className="flex-1 min-w-[200px] max-w-[300px]">
-              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
-                Status
-              </label>
-              <div className="flex gap-2">
-                {[
-                  { value: "all", label: "All" },
-                  { value: "upcoming", label: "Open" },
-                  { value: "live", label: "Live" },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setActiveStatusFilter(value)}
-                    className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
-                      activeStatusFilter === value
-                        ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
-                        : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Enhanced Filters Section */}
+          <div
+            className={`${
+              isFilterMenuOpen ? "block" : "hidden"
+            } md:block mb-8 space-y-4 bg-dark-200/50 backdrop-blur-sm p-4 rounded-lg border border-dark-300 relative group animate-fade-in`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream rounded-lg" />
+            <div className="relative z-10">
+              {/* Filter Controls */}
+              <div className="flex flex-wrap gap-4 mb-4">
+                {/* Status Filter - Now as buttons */}
+                <div className="flex-1 min-w-[200px] max-w-[300px]">
+                  <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
+                    Status
+                  </label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: "all", label: "All" },
+                      { value: "upcoming", label: "Open" },
+                      { value: "live", label: "Live" },
+                    ].map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => setActiveStatusFilter(value)}
+                        className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
+                          activeStatusFilter === value
+                            ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+                            : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Duel Style Filter - Compact dropdown */}
-            <div className="flex-1 min-w-[200px] max-w-[300px]">
-              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
-                Duel Style
-              </label>
-              <div className="relative">
-                <select
-                  className="w-full bg-dark-300/50 text-gray-100 rounded-lg px-4 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors appearance-none"
-                  value={activeDifficultyFilter}
-                  onChange={(e) =>
-                    setActiveDifficultyFilter(
-                      e.target.value as ContestSettings["difficulty"] | ""
-                    )
-                  }
-                >
-                  <option value="">All Styles</option>
-                  <option value="guppy">Guppy</option>
-                  <option value="tadpole">Tadpole</option>
-                  <option value="squid">Squid</option>
-                  <option value="dolphin">Dolphin</option>
-                  <option value="shark">Shark</option>
-                  <option value="whale">Whale</option>
-                </select>
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                {/* Duel Style Filter - Compact dropdown */}
+                <div className="flex-1 min-w-[200px] max-w-[300px]">
+                  <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
+                    Duel Style
+                  </label>
+                  <div className="relative">
+                    <select
+                      className="w-full bg-dark-300/50 text-gray-100 rounded-lg px-4 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors appearance-none"
+                      value={activeDifficultyFilter}
+                      onChange={(e) =>
+                        setActiveDifficultyFilter(
+                          e.target.value as ContestSettings["difficulty"] | ""
+                        )
+                      }
+                    >
+                      <option value="">All Styles</option>
+                      <option value="guppy">Guppy</option>
+                      <option value="tadpole">Tadpole</option>
+                      <option value="squid">Squid</option>
+                      <option value="dolphin">Dolphin</option>
+                      <option value="shark">Shark</option>
+                      <option value="whale">Whale</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg
+                        className="w-4 h-4 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Include Finished Duels - Now as toggle buttons */}
+                <div className="flex-1 min-w-[200px] max-w-[300px]">
+                  <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
+                    Include Finished
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowCompleted(!showCompleted)}
+                      className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
+                        showCompleted
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                          : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        {showCompleted ? "✓" : ""} Completed
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setShowCancelled(!showCancelled)}
+                      className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
+                        showCancelled
+                          ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                          : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        {showCancelled ? "✓" : ""} Cancelled
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Include Finished Duels - Now as toggle buttons */}
-            <div className="flex-1 min-w-[200px] max-w-[300px]">
-              <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
-                Include Finished
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowCompleted(!showCompleted)}
-                  className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
-                    showCompleted
-                      ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                      : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    {showCompleted ? "✓" : ""} Completed
-                  </span>
-                </button>
-                <button
-                  onClick={() => setShowCancelled(!showCancelled)}
-                  className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
-                    showCancelled
-                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                      : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    {showCancelled ? "✓" : ""} Cancelled
-                  </span>
-                </button>
+              {/* Sort Controls - Keep as is since it looks good */}
+              <div className="pt-4 border-t border-dark-400">
+                <ContestSort
+                  currentField={sortField}
+                  direction={sortDirection}
+                  onSort={(field: SortField, direction: SortDirection) => {
+                    setSortField(field);
+                    setSortDirection(direction);
+                    fetchContests();
+                  }}
+                />
               </div>
             </div>
           </div>
 
-          {/* Sort Controls - Keep as is since it looks good */}
-          <div className="pt-4 border-t border-dark-400">
-            <ContestSort
-              currentField={sortField}
-              direction={sortDirection}
-              onSort={(field: SortField, direction: SortDirection) => {
-                setSortField(field);
-                setSortDirection(direction);
-                fetchContests();
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Active Filters Display */}
-      {(activeStatusFilter !== "all" || activeDifficultyFilter !== "") && (
-        <div className="flex flex-wrap gap-2 mb-4 animate-fade-in">
-          {activeStatusFilter !== "all" && (
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
-              <span className="group-hover:animate-glitch">
-                {activeStatusFilter}
-              </span>
-              <button
-                onClick={() => setActiveStatusFilter("all")}
-                className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
-              >
-                ×
-              </button>
+          {/* Enhanced Active Filters Display */}
+          {(activeStatusFilter !== "all" || activeDifficultyFilter !== "") && (
+            <div className="flex flex-wrap gap-2 mb-4 animate-fade-in">
+              {activeStatusFilter !== "all" && (
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
+                  <span className="group-hover:animate-glitch">
+                    {activeStatusFilter}
+                  </span>
+                  <button
+                    onClick={() => setActiveStatusFilter("all")}
+                    className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              {activeDifficultyFilter && (
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
+                  <span className="group-hover:animate-glitch">
+                    {activeDifficultyFilter}
+                  </span>
+                  <button
+                    onClick={() => setActiveDifficultyFilter("")}
+                    className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
           )}
-          {activeDifficultyFilter && (
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
-              <span className="group-hover:animate-glitch">
-                {activeDifficultyFilter}
-              </span>
-              <button
-                onClick={() => setActiveDifficultyFilter("")}
-                className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
-              >
-                ×
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Enhanced Contest Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredAndSortedContests.length === 0 ? (
-          <div className="col-span-full text-center text-gray-400 py-12 bg-dark-200/50 rounded-lg animate-fade-in">
-            No duels matching these filters
+          {/* Enhanced Contest Grid */}
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredAndSortedContests.length === 0 ? (
+              <div className="col-span-full text-center text-gray-400 py-12 bg-dark-200/50 rounded-lg animate-fade-in">
+                No duels matching these filters
+              </div>
+            ) : (
+              filteredAndSortedContests.map((contest) => (
+                <div
+                  key={contest.id}
+                  className="transform hover:scale-102 transition-transform duration-300"
+                >
+                  <ContestCard
+                    contest={contest}
+                    onClick={() =>
+                      (window.location.href = `/contests/${contest.id}`)
+                    }
+                  />
+                </div>
+              ))
+            )}
           </div>
-        ) : (
-          filteredAndSortedContests.map((contest) => (
-            <div
-              key={contest.id}
-              className="transform hover:scale-102 transition-transform duration-300"
-            >
-              <ContestCard
-                contest={contest}
-                onClick={() =>
-                  (window.location.href = `/contests/${contest.id}`)
-                }
-              />
-            </div>
-          ))
-        )}
-      </div>
 
-      {/* Create Contest Modal */}
-      <CreateContestModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-      />
+          {/* Create Contest Modal */}
+          <CreateContestModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+          />
+        </div>
+      </div>
     </div>
   );
 };

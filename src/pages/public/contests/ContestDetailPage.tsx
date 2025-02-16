@@ -3,6 +3,7 @@
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestDetailHeader } from "../../../components/contest-detail/ContestDetailHeader";
 import { ContestRules } from "../../../components/contest-detail/ContestRules";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
@@ -255,36 +256,43 @@ export const ContestDetails: React.FC = () => {
 
   if (isLoading)
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[...Array(4)].map((_, i) => (
-            <Card
-              key={i}
-              className="bg-dark-200/50 backdrop-blur-sm border-dark-300 relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
-              <CardContent className="p-6 relative">
-                <div className="animate-pulse space-y-2">
-                  <div className="h-4 bg-dark-300 rounded w-1/2"></div>
-                  <div className="h-6 bg-dark-300 rounded w-3/4"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="flex flex-col min-h-screen">
+        <BackgroundEffects />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <Card
+                key={i}
+                className="bg-dark-200/50 backdrop-blur-sm border-dark-300 relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+                <CardContent className="p-6 relative">
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-4 bg-dark-300 rounded w-1/2"></div>
+                    <div className="h-6 bg-dark-300 rounded w-3/4"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
 
   if (isMaintenanceMode) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-          <div className="flex items-center justify-center gap-2 text-yellow-400">
-            <span className="animate-pulse">⚠</span>
-            <span>
-              DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.
-            </span>
-            <span className="animate-pulse">⚠</span>
+      <div className="flex flex-col min-h-screen">
+        <BackgroundEffects />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+            <div className="flex items-center justify-center gap-2 text-yellow-400">
+              <span className="animate-pulse">⚠</span>
+              <span>
+                DegenDuel is undergoing scheduled maintenance ⚙️ Try again
+                later.
+              </span>
+              <span className="animate-pulse">⚠</span>
+            </div>
           </div>
         </div>
       </div>
@@ -293,248 +301,269 @@ export const ContestDetails: React.FC = () => {
 
   if (error || !contest) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-          <span className="relative z-10">{error || "Contest not found"}</span>
+      <div className="flex flex-col min-h-screen">
+        <BackgroundEffects />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <span className="relative z-10">
+              {error || "Contest not found"}
+            </span>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <ContestDetailHeader
-        contest={contest}
-        isParticipating={isParticipating}
-        isWalletConnected={isWalletConnected}
-        onJoinContest={handleJoinContest}
-        onCountdownComplete={handleCountdownComplete}
-        isContestLive={isContestLive}
-      />
+    <div className="flex flex-col min-h-screen">
+      <BackgroundEffects />
 
-      {/* Enhanced Stats Grid with Cyberpunk Theme */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        {/* Entry Fee Card */}
-        <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="p-6 relative">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mb-2">
-                Entry Fee
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
-                  {formatCurrency(Number(contest.entry_fee))}
-                </span>
-                <span className="text-sm text-gray-400">per entry</span>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                Max {contest.max_participants} entries per contest
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Content Section */}
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <ContestDetailHeader
+            contest={contest}
+            isParticipating={isParticipating}
+            isWalletConnected={isWalletConnected}
+            onJoinContest={handleJoinContest}
+            onCountdownComplete={handleCountdownComplete}
+            isContestLive={isContestLive}
+          />
 
-        {/* Prize Pool Card */}
-        <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="p-6 relative">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mb-2">
-                Estimated Prize Pool
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
-                  {formatCurrency(Number(contest?.max_prize_pool || 0))}
-                </span>
-                <div className="flex items-center gap-1">
-                  <div className="w-20 h-1 bg-dark-300 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-300"
-                      style={{
-                        width: `${
-                          (contest.participant_count /
-                            contest.max_participants) *
-                          100
-                        }%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm text-gray-400">
-                    {contest.participant_count}/{contest.max_participants}
+          {/* Enhanced Stats Grid with Cyberpunk Theme */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {/* Entry Fee Card */}
+            <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="p-6 relative">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mb-2">
+                    Entry Fee
                   </span>
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                Prize pool grows as more players join
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        {/* Left Column - Rules and Tokens in Parent Container */}
-        <div className="lg:col-span-2">
-          <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 p-6">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-            {/* Rules Section */}
-            <div className="mb-8">
-              <h3 className="text-xl font-bold text-gray-100 mb-4">
-                Rules of the Duel
-              </h3>
-              {contest?.settings?.rules && contest.settings.rules.length > 0 ? (
-                <ContestRules rules={contest.settings.rules} />
-              ) : (
-                <p className="text-gray-400">
-                  No rules in this duel; anything goes. It's every degen for
-                  himself.
-                </p>
-              )}
-            </div>
-
-            {/* Token Whitelist Section */}
-            <div>
-              <h3 className="text-xl font-bold text-gray-100 mb-4">
-                Token Whitelist
-              </h3>
-              {contest?.settings?.token_types &&
-              contest.settings.token_types.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {contest.settings.token_types.map((token: string) => (
-                    <span
-                      key={token}
-                      className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
-                    >
-                      {token}
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
+                      {formatCurrency(Number(contest.entry_fee))}
                     </span>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <p className="text-gray-400">Selection Restrictions: N/A</p>
-                  <p className="text-gray-400">Allocation Constraints: N/A</p>
-                  <p className="text-gray-400">Whitelisted Token List: All</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Prize Structure and Participants */}
-        <div className="space-y-8">
-          {/* Prize Structure */}
-          <div className="group relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
-            <PrizeStructure prizePool={Number(contest?.prize_pool || 0)} />
-          </div>
-
-          {/* Participants List */}
-          <div className="group relative">
-            {Number(contest.participant_count) > 0 &&
-            Array.isArray(contest.participants) ? (
-              contest.participants.length > 0 ? (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
-                  <ParticipantsList
-                    participants={contest.participants}
-                    contestStatus={mapContestStatus(contest.status)}
-                  />
-                </div>
-              ) : (
-                <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-100 mb-4">
-                      Duelers
-                    </h3>
-                    <p className="text-gray-400">
-                      No duelers have entered yet.
-                    </p>
+                    <span className="text-sm text-gray-400">per entry</span>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Max {contest.max_participants} entries per contest
                   </div>
                 </div>
-              )
-            ) : (
-              <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-100 mb-4">
-                    Duelers
-                  </h3>
-                  <p className="text-gray-400">No duelers yet.</p>
+              </div>
+            </div>
+
+            {/* Prize Pool Card */}
+            <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="p-6 relative">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mb-2">
+                    Estimated Prize Pool
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
+                      {formatCurrency(Number(contest?.max_prize_pool || 0))}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-20 h-1 bg-dark-300 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-300"
+                          style={{
+                            width: `${
+                              (contest.participant_count /
+                                contest.max_participants) *
+                              100
+                            }%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-400">
+                        {contest.participant_count}/{contest.max_participants}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Prize pool grows as more players join
+                  </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Left Column - Rules and Tokens in Parent Container */}
+            <div className="lg:col-span-2">
+              <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 p-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                {/* Rules Section */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold text-gray-100 mb-4">
+                    Rules of the Duel
+                  </h3>
+                  {contest?.settings?.rules &&
+                  contest.settings.rules.length > 0 ? (
+                    <ContestRules rules={contest.settings.rules} />
+                  ) : (
+                    <p className="text-gray-400">
+                      No rules in this duel; anything goes. It's every degen for
+                      himself.
+                    </p>
+                  )}
+                </div>
+
+                {/* Token Whitelist Section */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-100 mb-4">
+                    Token Whitelist
+                  </h3>
+                  {contest?.settings?.token_types &&
+                  contest.settings.token_types.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {contest.settings.token_types.map((token: string) => (
+                        <span
+                          key={token}
+                          className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
+                        >
+                          {token}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-gray-400">
+                        Selection Restrictions: N/A
+                      </p>
+                      <p className="text-gray-400">
+                        Allocation Constraints: N/A
+                      </p>
+                      <p className="text-gray-400">
+                        Whitelisted Token List: All
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Prize Structure and Participants */}
+            <div className="space-y-8">
+              {/* Prize Structure */}
+              <div className="group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
+                <PrizeStructure prizePool={Number(contest?.prize_pool || 0)} />
+              </div>
+
+              {/* Participants List */}
+              <div className="group relative">
+                {Number(contest.participant_count) > 0 &&
+                Array.isArray(contest.participants) ? (
+                  contest.participants.length > 0 ? (
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
+                      <ParticipantsList
+                        participants={contest.participants}
+                        contestStatus={mapContestStatus(contest.status)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-gray-100 mb-4">
+                          Duelers
+                        </h3>
+                        <p className="text-gray-400">
+                          No duelers have entered yet.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-gray-100 mb-4">
+                        Duelers
+                      </h3>
+                      <p className="text-gray-400">No duelers yet.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Floating Action Button */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent z-20">
+          <div className="max-w-md mx-auto">
+            {wallet && !connected ? (
+              <button
+                onClick={() => connect(wallet.name)}
+                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-dark-300/90 backdrop-blur-sm"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <span className="relative flex items-center justify-center gap-2">
+                  <span className="font-medium">Connect Wallet</span>
+                  <span className="text-brand-400">to Enter</span>
+                </span>
+              </button>
+            ) : isParticipating ? (
+              <button
+                onClick={handleJoinContest}
+                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-dark-300/90 backdrop-blur-sm"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <span className="relative flex items-center justify-center gap-2">
+                  <span className="font-medium">Modify Portfolio</span>
+                  <span className="text-brand-400">
+                    {isContestLive(contest) ? "Ends" : "Starts"} in{" "}
+                    <CountdownTimer
+                      targetDate={
+                        isContestLive(contest)
+                          ? contest.end_time
+                          : contest.start_time
+                      }
+                      onComplete={handleCountdownComplete}
+                      showSeconds={true}
+                    />
+                  </span>
+                </span>
+              </button>
+            ) : isWalletConnected ? (
+              <button
+                onClick={handleJoinContest}
+                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-brand-500/20 backdrop-blur-sm"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <span className="relative flex items-center justify-center gap-2">
+                  <span className="font-medium">
+                    Draft Tokens for Portfolio
+                  </span>
+                  <span className="text-brand-400">
+                    {isContestLive(contest) ? "Ends" : "Starts"} in{" "}
+                    <CountdownTimer
+                      targetDate={
+                        isContestLive(contest)
+                          ? contest.end_time
+                          : contest.start_time
+                      }
+                      onComplete={handleCountdownComplete}
+                      showSeconds={true}
+                    />
+                  </span>
+                </span>
+              </button>
+            ) : null}
+            {error && (
+              <div className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
+                {error}
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Mobile Floating Action Button */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent">
-        <div className="max-w-md mx-auto">
-          {wallet && !connected ? (
-            <button
-              onClick={() => connect(wallet.name)}
-              className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-dark-300/90 backdrop-blur-sm"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-              <span className="relative flex items-center justify-center gap-2">
-                <span className="font-medium">Connect Wallet</span>
-                <span className="text-brand-400">to Enter</span>
-              </span>
-            </button>
-          ) : isParticipating ? (
-            <button
-              onClick={handleJoinContest}
-              className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-dark-300/90 backdrop-blur-sm"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-              <span className="relative flex items-center justify-center gap-2">
-                <span className="font-medium">Modify Portfolio</span>
-                <span className="text-brand-400">
-                  {isContestLive(contest) ? "Ends" : "Starts"} in{" "}
-                  <CountdownTimer
-                    targetDate={
-                      isContestLive(contest)
-                        ? contest.end_time
-                        : contest.start_time
-                    }
-                    onComplete={handleCountdownComplete}
-                    showSeconds={true}
-                  />
-                </span>
-              </span>
-            </button>
-          ) : isWalletConnected ? (
-            <button
-              onClick={handleJoinContest}
-              className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-brand-500/20 backdrop-blur-sm"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-              <span className="relative flex items-center justify-center gap-2">
-                <span className="font-medium">Draft Tokens for Portfolio</span>
-                <span className="text-brand-400">
-                  {isContestLive(contest) ? "Ends" : "Starts"} in{" "}
-                  <CountdownTimer
-                    targetDate={
-                      isContestLive(contest)
-                        ? contest.end_time
-                        : contest.start_time
-                    }
-                    onComplete={handleCountdownComplete}
-                    showSeconds={true}
-                  />
-                </span>
-              </span>
-            </button>
-          ) : null}
-          {error && (
-            <div className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
-              {error}
-            </div>
-          )}
         </div>
       </div>
     </div>

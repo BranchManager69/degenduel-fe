@@ -19,7 +19,6 @@ export function useAuth() {
   const store = useStore();
   const { account, connected } = useWallet();
   const [shouldCheck, setShouldCheck] = useState<boolean>(true);
-  const debouncedShouldCheck = useDebounce(shouldCheck, 5000);
   const [authState, setAuthState] = useState<AuthState>({
     user: store.user,
     loading: false,

@@ -2,33 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { ddApi } from "../services/dd-api";
-
-interface ReferralMetrics {
-  source: string; // 'direct' | 'contest' | 'profile' etc
-  landingPage: string; // Which page they landed on
-  timestamp: number;
-  utmParams: {
-    source?: string;
-    medium?: string;
-    campaign?: string;
-  };
-  device: string;
-  browser: string;
-}
-
-interface ReferralAnalytics {
-  clicks: {
-    by_source: Record<string, number>;
-    by_device: Record<string, number>;
-    by_browser: Record<string, number>;
-  };
-  conversions: {
-    by_source: Record<string, number>;
-  };
-  rewards: {
-    by_type: Record<string, number>;
-  };
-}
+import { ReferralAnalytics } from "../types/referral.types";
 
 interface ReferralContextType {
   referralCode: string | null;
@@ -213,17 +187,50 @@ export const ReferralProvider = ({
   const trackConversion = async () => {
     if (referralCode && sessionId) {
       try {
-        await ddApi.fetch("/referrals/analytics/conversion", {
+        // Get stored metrics from localStorage
+        const storedMetrics = localStorage.getItem("referral_metrics");
+        const clickData = storedMetrics ? JSON.parse(storedMetrics) : null;
+
+        // Calculate time to convert if we have original click timestamp
+        const timeToConvert = clickData?.timestamp
+          ? Date.now() - new Date(clickData.timestamp).getTime()
+          : null;
+
+        // Prepare conversion payload
+        const conversionPayload = {
+          referralCode,
+          sessionId,
+          conversionData: {
+            timeToConvert,
+            completedSteps: ["signup"], // Add more steps as needed
+            qualificationStatus: "pending",
+            convertedAt: new Date().toISOString(),
+            originalClickData: clickData,
+          },
+        };
+
+        // Track conversion
+        const response = await ddApi.fetch("/referrals/analytics/conversion", {
           method: "POST",
-          body: JSON.stringify({
-            referralCode: referralCode,
-            sessionId: sessionId,
-          }),
+          body: JSON.stringify(conversionPayload),
         });
-        // Refresh analytics after conversion
+
+        if (!response.ok) {
+          throw new Error("Failed to track conversion");
+        }
+
+        // Refresh analytics after successful conversion
         await refreshAnalytics();
+
+        // Clear stored metrics after successful conversion
+        localStorage.removeItem("referral_metrics");
       } catch (error) {
-        console.error("Failed to track referral conversion:", error);
+        console.error("Failed to track referral conversion:", {
+          error,
+          referralCode,
+          sessionId,
+        });
+        throw error;
       }
     }
   };
