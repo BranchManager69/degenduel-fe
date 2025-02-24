@@ -200,7 +200,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
       }),
     ],
     optimizeDeps: {
-      include: ["react", "react-dom", "react-router-dom"],
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "@aptos-labs/wallet-adapter-react",
+        "@aptos-labs/wallet-adapter-core",
+      ],
       exclude: ["@react-three/fiber", "@react-three/drei"],
       esbuildOptions: {
         target: "esnext",
@@ -215,12 +221,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         cache: true,
-        external: [
-          "aptos",
-          "@mizuwallet-sdk/core",
-          "@mizuwallet-sdk/aptos-wallet-adapter",
-          "@aptos-labs/wallet-adapter-core",
-        ],
+        external: ["aptos", "@telegram-apps/bridge", "graphql"],
         output: {
           manualChunks: {
             "react-vendor": ["react", "react-dom", "react-router-dom"],
@@ -230,6 +231,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
               "@react-three/drei",
             ],
             "ui-vendor": ["framer-motion", "react-icons", "styled-components"],
+            "wallet-vendor": [
+              "@aptos-labs/wallet-adapter-react",
+              "@mizuwallet-sdk/core",
+              "@mizuwallet-sdk/aptos-wallet-adapter",
+              "graphql-request",
+            ],
           },
           entryFileNames: isDev
             ? "assets/[name].js"
