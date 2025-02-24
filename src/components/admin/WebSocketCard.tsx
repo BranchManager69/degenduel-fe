@@ -7,6 +7,7 @@ import { KernelSize } from "postprocessing";
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { FaPowerOff } from "react-icons/fa";
 import * as THREE from "three";
+import { User } from "types";
 
 export interface WebSocketCardProps {
   service: {
@@ -42,6 +43,167 @@ export interface WebSocketCardProps {
     | "failing"
     | "healing";
 }
+
+type EffectTier =
+  | "SUPERADMIN_DESKTOP" // Unique effects, not just maxed settings
+  | "SUPERADMIN_MOBILE" // Mobile-optimized special effects
+  | "DESKTOP_HIGH" // The max-performance tier
+  | "DESKTOP_BALANCED" // Sweet spot for regular desktops
+  | "DESKTOP_LITE" // Basic desktop/older laptops
+  | "MOBILE_HIGH" // Flagship phones/tablets
+  | "MOBILE_BALANCED" // Sweet spot for decent phones
+  | "MOBILE_LITE"; // Basic/budget phones
+
+const detectEffectTier = (user: User | null): EffectTier => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const dpr = window.devicePixelRatio;
+  const isMobile = width < 1024;
+
+  // Super admin gets special effects based on device
+  if (user?.is_superadmin) {
+    return isMobile ? "SUPERADMIN_MOBILE" : "SUPERADMIN_DESKTOP";
+  }
+
+  // Mobile tiers
+  if (isMobile) {
+    if (dpr >= 3 && height >= 800) return "MOBILE_HIGH";
+    if (dpr >= 2 && height >= 700) return "MOBILE_BALANCED";
+    return "MOBILE_LITE";
+  }
+
+  // Desktop tiers
+  if (width >= 1920 && height >= 1080 && dpr <= 2) return "DESKTOP_HIGH";
+  if (width >= 1440 && height >= 900) return "DESKTOP_BALANCED";
+  return "DESKTOP_LITE";
+};
+
+interface ShaderConfig {
+  scanLines: number;
+  noiseIntensity: number;
+  specialEffects?: boolean;
+}
+
+interface TierConfig {
+  particles: {
+    primary: number;
+    secondary: number;
+  };
+  bloom: {
+    intensity: number;
+    kernelSize: KernelSize;
+  };
+  dpr: number;
+  height: number;
+  shader: ShaderConfig;
+  animations: string;
+}
+
+const effectConfigs: Record<EffectTier, TierConfig> = {
+  SUPERADMIN_DESKTOP: {
+    particles: { primary: 24, secondary: 0 },
+    bloom: { intensity: 0.7, kernelSize: KernelSize.MEDIUM },
+    dpr: 1.5,
+    height: 36,
+    shader: {
+      scanLines: 30,
+      noiseIntensity: 0.25,
+      specialEffects: true, // Enables unique super admin effects
+    },
+    animations: "special",
+  },
+
+  SUPERADMIN_MOBILE: {
+    particles: { primary: 16, secondary: 0 },
+    bloom: { intensity: 0.4, kernelSize: KernelSize.SMALL },
+    dpr: 1,
+    height: 32,
+    shader: {
+      scanLines: 20,
+      noiseIntensity: 0.2,
+      specialEffects: true, // Mobile-optimized special effects
+    },
+    animations: "special-mobile",
+  },
+
+  DESKTOP_HIGH: {
+    particles: { primary: 32, secondary: 24 },
+    bloom: { intensity: 1.0, kernelSize: KernelSize.LARGE },
+    dpr: 2,
+    height: 40,
+    shader: {
+      scanLines: 50,
+      noiseIntensity: 0.35,
+      specialEffects: false,
+    },
+    animations: "ultra",
+  },
+
+  DESKTOP_BALANCED: {
+    particles: { primary: 24, secondary: 0 },
+    bloom: { intensity: 0.6, kernelSize: KernelSize.MEDIUM },
+    dpr: 1.25,
+    height: 32,
+    shader: {
+      scanLines: 30,
+      noiseIntensity: 0.25,
+      specialEffects: false,
+    },
+    animations: "balanced",
+  },
+
+  DESKTOP_LITE: {
+    particles: { primary: 16, secondary: 0 },
+    bloom: { intensity: 0.4, kernelSize: KernelSize.SMALL },
+    dpr: 1,
+    height: 28,
+    shader: {
+      scanLines: 20,
+      noiseIntensity: 0.2,
+      specialEffects: false,
+    },
+    animations: "lite",
+  },
+
+  MOBILE_HIGH: {
+    particles: { primary: 16, secondary: 0 },
+    bloom: { intensity: 0.4, kernelSize: KernelSize.SMALL },
+    dpr: 1,
+    height: 32,
+    shader: {
+      scanLines: 20,
+      noiseIntensity: 0.2,
+      specialEffects: false,
+    },
+    animations: "mobile-high",
+  },
+
+  MOBILE_BALANCED: {
+    particles: { primary: 12, secondary: 0 },
+    bloom: { intensity: 0.3, kernelSize: KernelSize.SMALL },
+    dpr: 1,
+    height: 28,
+    shader: {
+      scanLines: 15,
+      noiseIntensity: 0.15,
+      specialEffects: false,
+    },
+    animations: "mobile-balanced",
+  },
+
+  MOBILE_LITE: {
+    particles: { primary: 8, secondary: 0 },
+    bloom: { intensity: 0.2, kernelSize: KernelSize.SMALL },
+    dpr: 1,
+    height: 24,
+    shader: {
+      scanLines: 10,
+      noiseIntensity: 0.1,
+      specialEffects: false,
+    },
+    animations: "mobile-lite",
+  },
+};
 
 const ParticleField: React.FC<{ status: string; intensity: number }> = ({
   status,
@@ -305,12 +467,75 @@ const OrbitingParticles: React.FC<{ color: string; count: number }> = ({
   );
 };
 
-// Performance-monitored scene
+// Enhanced shader for super admin special effects
+const SuperAdminHologramShader = {
+  ...HologramShader,
+  uniforms: {
+    ...HologramShader.uniforms,
+    pulseTime: { value: 0 },
+    dataFlow: { value: 0 },
+  },
+  fragmentShader: `
+    uniform float time;
+    uniform float pulseTime;
+    uniform float dataFlow;
+    uniform vec3 color;
+    uniform float scanLineWidth;
+    uniform float scanLineSpeed;
+    uniform float noiseIntensity;
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    float random(vec2 st) {
+      return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+    }
+
+    void main() {
+      // Enhanced holographic base with data flow effect
+      float opacity = 0.3 + 0.2 * sin(vPosition.y * 10.0 + time);
+      opacity += 0.1 * sin(vPosition.x * 15.0 + dataFlow * time);
+      
+      // Advanced scan lines with pulse
+      float scanLine = step(scanLineWidth, fract(vUv.y * 50.0 + time * scanLineSpeed));
+      scanLine *= 1.0 + 0.2 * sin(pulseTime + vUv.y * 20.0);
+      
+      // Enhanced edge glow
+      float edge = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
+      edge *= 1.0 + 0.3 * sin(time * 2.0);
+      
+      // Reactive noise
+      float noise = random(vUv + time * 0.1) * noiseIntensity;
+      noise *= 1.0 + 0.5 * sin(pulseTime);
+      
+      // Enhanced fresnel
+      float fresnel = pow(1.0 + dot(normalize(vNormal), normalize(vPosition)), 2.0);
+      fresnel *= 1.0 + 0.2 * sin(time * 3.0);
+      
+      vec3 finalColor = mix(color, color * 2.0, edge);
+      finalColor += vec3(noise);
+      finalColor *= 1.0 + 0.1 * sin(dataFlow * time);
+      
+      gl_FragColor = vec4(finalColor, opacity * scanLine * (1.0 + fresnel * 0.5));
+    }
+  `,
+};
+
+// Register the enhanced shader
+extend({
+  SuperAdminHologramMaterial: THREE.ShaderMaterial.bind(
+    null,
+    SuperAdminHologramShader
+  ),
+});
+
+// Update HologramScene to handle special effects
 const HologramScene: React.FC<{
   label: string;
   value: string | number;
   color: string;
-}> = ({ label, value, color }) => {
+  config: TierConfig;
+}> = ({ label, value, color, config }) => {
   const {} = useThree();
   const hologramRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
@@ -318,39 +543,66 @@ const HologramScene: React.FC<{
   useFrame(({ clock }) => {
     if (materialRef.current) {
       materialRef.current.uniforms.time.value = clock.getElapsedTime();
+
+      // Special effects for super admin
+      if (config.shader.specialEffects) {
+        materialRef.current.uniforms.pulseTime.value =
+          clock.getElapsedTime() * 2;
+        materialRef.current.uniforms.dataFlow.value = Math.sin(
+          clock.getElapsedTime() * 0.5
+        );
+      }
     }
     if (hologramRef.current) {
-      // More dramatic rotation
-      hologramRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.2;
-      hologramRef.current.rotation.z = Math.cos(clock.getElapsedTime() * 0.3) * 0.1;
+      const t = clock.getElapsedTime();
+      hologramRef.current.rotation.y = Math.sin(t * 0.5) * 0.2;
+      hologramRef.current.rotation.z = Math.cos(t * 0.3) * 0.1;
+
+      // Special rotation for super admin
+      if (config.shader.specialEffects) {
+        hologramRef.current.rotation.x = Math.sin(t * 0.2) * 0.05;
+      }
     }
   });
 
   return (
     <>
       <Float
-        speed={3}
-        rotationIntensity={1}
-        floatIntensity={2}
-        floatingRange={[-0.2, 0.2]}
+        speed={config.shader.specialEffects ? 3 : 2}
+        rotationIntensity={config.shader.specialEffects ? 1 : 0.5}
+        floatIntensity={config.shader.specialEffects ? 2 : 1}
+        floatingRange={config.shader.specialEffects ? [-0.2, 0.2] : [-0.1, 0.1]}
       >
         <group ref={hologramRef}>
-          {/* Base hologram cylinder */}
           <mesh>
-            <cylinderGeometry args={[1, 1, 0.1, 64, 1, true]} />
-            {/* @ts-ignore - Custom shader material */}
-            <hologramMaterial
-              ref={materialRef}
-              transparent
-              side={THREE.DoubleSide}
-              uniforms-color-value={new THREE.Color(color)}
-              uniforms-scanLineWidth-value={0.5}
-              uniforms-scanLineSpeed-value={2.0}
-              uniforms-noiseIntensity-value={0.35}
+            <cylinderGeometry
+              args={[1, 1, 0.1, config.shader.scanLines, 1, true]}
             />
+            {config.shader.specialEffects ? (
+              // @ts-ignore - Custom shader material
+              <superAdminHologramMaterial
+                ref={materialRef}
+                transparent
+                side={THREE.DoubleSide}
+                uniforms-color-value={new THREE.Color(color)}
+                uniforms-scanLineWidth-value={0.5}
+                uniforms-scanLineSpeed-value={2.0}
+                uniforms-noiseIntensity-value={config.shader.noiseIntensity}
+              />
+            ) : (
+              // @ts-ignore - Custom shader material
+              <hologramMaterial
+                ref={materialRef}
+                transparent
+                side={THREE.DoubleSide}
+                uniforms-color-value={new THREE.Color(color)}
+                uniforms-scanLineWidth-value={0.5}
+                uniforms-scanLineSpeed-value={2.0}
+                uniforms-noiseIntensity-value={config.shader.noiseIntensity}
+              />
+            )}
           </mesh>
 
-          {/* Value display with optimized text */}
           <Text
             position={[0, 0, 0]}
             fontSize={0.5}
@@ -358,13 +610,12 @@ const HologramScene: React.FC<{
             anchorX="center"
             anchorY="middle"
             maxWidth={2}
-            outlineWidth={0.05}
+            outlineWidth={config.shader.specialEffects ? 0.05 : 0.02}
             outlineColor="#000000"
           >
             {value.toString()}
           </Text>
 
-          {/* Label */}
           <Text
             position={[0, -0.4, 0]}
             fontSize={0.2}
@@ -378,21 +629,23 @@ const HologramScene: React.FC<{
             {label}
           </Text>
 
-          {/* Cranked up particle system */}
-          <OrbitingParticles color={color} count={32} />
-          
-          {/* Additional inner ring of particles */}
-          <group rotation={[Math.PI / 4, 0, 0]}>
-            <OrbitingParticles color={color} count={24} />
-          </group>
+          <OrbitingParticles color={color} count={config.particles.primary} />
+
+          {config.particles.secondary > 0 && (
+            <group rotation={[Math.PI / 4, 0, 0]}>
+              <OrbitingParticles
+                color={color}
+                count={config.particles.secondary}
+              />
+            </group>
+          )}
         </group>
       </Float>
 
-      {/* Enhanced post-processing effects */}
       <EffectComposer>
         <Bloom
-          intensity={1.0}
-          kernelSize={KernelSize.LARGE}
+          intensity={config.bloom.intensity}
+          kernelSize={config.bloom.kernelSize}
           luminanceThreshold={0.2}
           luminanceSmoothing={0.4}
         />
@@ -401,15 +654,17 @@ const HologramScene: React.FC<{
   );
 };
 
-// Enhanced HolographicMetric with fallback
+// Update HolographicMetric to use new config system
 const HolographicMetric: React.FC<{
   label: string;
   value: string | number;
   color: string;
-}> = ({ label, value, color }) => {
+  user: User | null;
+}> = ({ label, value, color, user }) => {
   const [hasWebGL, setHasWebGL] = useState(true);
+  const tier = detectEffectTier(user);
+  const config = effectConfigs[tier];
 
-  // Check WebGL support
   useEffect(() => {
     try {
       const canvas = document.createElement("canvas");
@@ -425,15 +680,17 @@ const HolographicMetric: React.FC<{
   }
 
   return (
-    <div className="relative w-full h-40"> {/* Increased height for more dramatic effect */}
-      <Canvas
-        camera={{ position: [0, 0, 5], fov: 45 }} {/* Tighter FOV for more dramatic perspective */}
-        dpr={2} // Force high DPR
-      >
+    <div className={`relative w-full h-${config.height}`}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={config.dpr}>
         <Suspense fallback={null}>
           <ambientLight intensity={0.7} />
           <pointLight position={[10, 10, 10]} intensity={1.5} />
-          <HologramScene label={label} value={value} color={color} />
+          <HologramScene
+            label={label}
+            value={value}
+            color={color}
+            config={config}
+          />
         </Suspense>
       </Canvas>
     </div>
@@ -577,6 +834,7 @@ const WebSocketCard: React.FC<WebSocketCardProps> = ({
             label="Msg/s"
             value={service.performance.messageRate}
             color={getStatusColor(service.status)}
+            user={null}
           />
           <HolographicMetric
             label="Error %"
@@ -586,6 +844,7 @@ const WebSocketCard: React.FC<WebSocketCardProps> = ({
                 ? getStatusColor("error")
                 : getStatusColor(service.status)
             }
+            user={null}
           />
           <HolographicMetric
             label="Latency"
@@ -595,6 +854,7 @@ const WebSocketCard: React.FC<WebSocketCardProps> = ({
                 ? getStatusColor("error")
                 : getStatusColor(service.status)
             }
+            user={null}
           />
         </div>
 

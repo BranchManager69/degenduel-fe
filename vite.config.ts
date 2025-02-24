@@ -215,6 +215,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         cache: true,
+        external: [
+          "aptos",
+          "@mizuwallet-sdk/core",
+          "@mizuwallet-sdk/aptos-wallet-adapter",
+          "@aptos-labs/wallet-adapter-core",
+        ],
         output: {
           manualChunks: {
             "react-vendor": ["react", "react-dom", "react-router-dom"],

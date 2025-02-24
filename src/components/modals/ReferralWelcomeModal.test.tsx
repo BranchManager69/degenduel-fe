@@ -1,5 +1,7 @@
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useAuth } from "../../hooks/useAuth";
 import { useReferral } from "../../hooks/useReferral";
 import { ReferralWelcomeModal } from "./ReferralWelcomeModal";
@@ -50,7 +52,7 @@ describe("ReferralWelcomeModal", () => {
     render(<ReferralWelcomeModal />);
 
     const closeButton = screen.getByText("×");
-    fireEvent.click(closeButton);
+    userEvent.click(closeButton);
 
     expect(mockSetShowWelcomeModal).toHaveBeenCalledWith(false);
   });
@@ -59,7 +61,7 @@ describe("ReferralWelcomeModal", () => {
     render(<ReferralWelcomeModal />);
 
     const getStartedButton = screen.getByText(/Get Started/i);
-    fireEvent.click(getStartedButton);
+    userEvent.click(getStartedButton);
 
     expect(mockConnect).toHaveBeenCalledWith("Petra");
   });
@@ -73,7 +75,7 @@ describe("ReferralWelcomeModal", () => {
     render(<ReferralWelcomeModal />);
 
     const getStartedButton = screen.getByText(/Get Started/i);
-    fireEvent.click(getStartedButton);
+    userEvent.click(getStartedButton);
 
     expect(mockSetShowWelcomeModal).toHaveBeenCalledWith(false);
   });
