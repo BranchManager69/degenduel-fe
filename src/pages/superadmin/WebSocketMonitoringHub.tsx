@@ -1,5 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { FaNetworkWired, FaTimes } from "react-icons/fa";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  FaNetworkWired,
+  FaPlay,
+  FaPowerOff,
+  FaProjectDiagram,
+  FaStop,
+  FaSync,
+  FaTimes,
+} from "react-icons/fa";
+import ReactFlow, {
+  Background,
+  Controls,
+  Edge,
+  Handle,
+  Node,
+  Position,
+  ReactFlowProvider,
+} from "reactflow";
+import "reactflow/dist/style.css";
 import WebSocketCard from "../../components/admin/WebSocketCard";
 import { WebSocketDebugPanel } from "../../components/debug/WebSocketDebugPanel";
 
@@ -27,12 +45,41 @@ interface WebSocketService {
   };
 }
 
+// Add type for ServiceNode props
+interface ServiceNodeProps {
+  data: {
+    label: string;
+    status: "operational" | "degraded" | "error";
+    metrics: string;
+  };
+}
+
+// Update ServiceNode component with proper typing
+const ServiceNode = ({ data }: ServiceNodeProps) => (
+  <div
+    className={`px-4 py-2 rounded-lg shadow-lg ${
+      data.status === "operational"
+        ? "bg-green-500/20 border-green-500/30"
+        : data.status === "degraded"
+        ? "bg-yellow-500/20 border-yellow-500/30"
+        : "bg-red-500/20 border-red-500/30"
+    } border`}
+  >
+    <Handle type="target" position={Position.Top} />
+    <div className="font-semibold text-gray-100">{data.label}</div>
+    <div className="text-xs text-gray-400">{data.metrics}</div>
+    <Handle type="source" position={Position.Bottom} />
+  </div>
+);
+
 export const WebSocketMonitoringHub: React.FC = () => {
   const [services, setServices] = useState<WebSocketService[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [pendingOperation, setPendingOperation] = useState<string | null>(null);
+  const [showDependencies, setShowDependencies] = useState(false);
 
   // Define our WebSocket services
   const webSocketServices = [
@@ -45,6 +92,62 @@ export const WebSocketMonitoringHub: React.FC = () => {
     { id: "wallet", name: "Wallet WebSocket" },
     { id: "portfolio", name: "Portfolio WebSocket" },
   ];
+
+  // Define known service dependencies
+  const serviceDependencies = {
+    market: ["base"],
+    contest: ["market", "base"],
+    portfolio: ["market", "wallet"],
+    wallet: ["base"],
+    analytics: ["market", "contest", "wallet"],
+    monitor: ["base"],
+    "circuit-breaker": ["base"],
+  };
+
+  // Create flow elements from services with proper typing
+  const flowElements = useMemo(() => {
+    if (!services.length) return { nodes: [], edges: [] };
+
+    const nodes: Node[] = webSocketServices.map((service, index) => {
+      const serviceData = services.find((s) =>
+        s.name.toLowerCase().includes(service.id)
+      ) || {
+        status: "error" as const,
+        metrics: { averageLatency: 0 },
+      };
+
+      return {
+        id: service.id,
+        type: "serviceNode",
+        position: {
+          x: (index % 4) * 250 + 100,
+          y: Math.floor(index / 4) * 150 + 100,
+        },
+        data: {
+          label: service.name,
+          status: serviceData.status,
+          metrics: `${serviceData.metrics?.averageLatency}ms`,
+        },
+      };
+    });
+
+    const edges: Edge[] = Object.entries(serviceDependencies).flatMap(
+      ([source, targets]) =>
+        targets.map((target) => ({
+          id: `${source}-${target}`,
+          source,
+          target,
+          type: "smoothstep",
+          animated: true,
+          style: { stroke: "#4f46e5", strokeWidth: 2, opacity: 0.5 },
+        }))
+    );
+
+    return { nodes, edges };
+  }, [services]);
+
+  // Add nodeTypes for ReactFlow
+  const nodeTypes = useMemo(() => ({ serviceNode: ServiceNode }), []);
 
   useEffect(() => {
     const fetchServicesStatus = async () => {
@@ -121,6 +224,111 @@ export const WebSocketMonitoringHub: React.FC = () => {
       )
     : null;
 
+  const handleServiceControl = async (
+    serviceId: string,
+    action: "start" | "stop" | "restart"
+  ) => {
+    try {
+      setPendingOperation(serviceId);
+      const response = await fetch(
+        `/api/superadmin/websocket/${serviceId}/${action}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} service: ${response.statusText}`);
+      }
+
+      // Update local state optimistically
+      setServices((prev) =>
+        prev.map((service) => {
+          if (service.name.toLowerCase().includes(serviceId)) {
+            return {
+              ...service,
+              status: action === "stop" ? "error" : "operational",
+            };
+          }
+          return service;
+        })
+      );
+
+      // Show success message (you could add a toast notification here)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to control service"
+      );
+    } finally {
+      setPendingOperation(null);
+    }
+  };
+
+  // Update the detail view to include controls
+  const renderServiceControls = (service: WebSocketService) => (
+    <div className="flex items-center space-x-4 mt-4 p-4 bg-dark-300/50 rounded-lg">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleServiceControl(
+            service.name.toLowerCase().split(" ")[0],
+            "start"
+          );
+        }}
+        disabled={pendingOperation === service.name.toLowerCase().split(" ")[0]}
+        className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
+          service.status === "operational"
+            ? "bg-green-500/20 text-green-300 cursor-not-allowed"
+            : "bg-green-500/20 hover:bg-green-500/30 text-green-300"
+        }`}
+      >
+        <FaPlay className="w-4 h-4" />
+        <span>Start</span>
+      </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleServiceControl(
+            service.name.toLowerCase().split(" ")[0],
+            "stop"
+          );
+        }}
+        disabled={pendingOperation === service.name.toLowerCase().split(" ")[0]}
+        className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
+          service.status === "error"
+            ? "bg-red-500/20 text-red-300 cursor-not-allowed"
+            : "bg-red-500/20 hover:bg-red-500/30 text-red-300"
+        }`}
+      >
+        <FaStop className="w-4 h-4" />
+        <span>Stop</span>
+      </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleServiceControl(
+            service.name.toLowerCase().split(" ")[0],
+            "restart"
+          );
+        }}
+        disabled={pendingOperation === service.name.toLowerCase().split(" ")[0]}
+        className="flex items-center space-x-2 px-4 py-2 rounded-md bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300"
+      >
+        <FaSync className="w-4 h-4" />
+        <span>Restart</span>
+      </button>
+
+      {pendingOperation === service.name.toLowerCase().split(" ")[0] && (
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500" />
+      )}
+    </div>
+  );
+
   return (
     <div className="container mx-auto p-8">
       <div className="flex items-center justify-between mb-8">
@@ -158,6 +366,40 @@ export const WebSocketMonitoringHub: React.FC = () => {
         </div>
       )}
 
+      {/* Add Dependencies View Toggle */}
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={() => setShowDependencies(!showDependencies)}
+          className="flex items-center space-x-2 px-4 py-2 rounded-md bg-brand-500/20 hover:bg-brand-500/30 text-brand-300"
+        >
+          <FaProjectDiagram className="w-4 h-4" />
+          <span>{showDependencies ? "Hide" : "Show"} Dependencies</span>
+        </button>
+      </div>
+
+      {/* Dependencies View */}
+      {showDependencies && (
+        <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
+          <h2 className="text-xl font-bold text-gray-100 mb-4">
+            Service Dependencies
+          </h2>
+          <div className="h-[500px]">
+            <ReactFlowProvider>
+              <ReactFlow
+                nodes={flowElements.nodes}
+                edges={flowElements.edges}
+                nodeTypes={nodeTypes}
+                fitView
+                className="bg-dark-300/30"
+              >
+                <Background />
+                <Controls />
+              </ReactFlow>
+            </ReactFlowProvider>
+          </div>
+        </div>
+      )}
+
       {/* Selected Service Detail View */}
       {selectedServiceData && (
         <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
@@ -190,6 +432,9 @@ export const WebSocketMonitoringHub: React.FC = () => {
               <FaTimes className="w-6 h-6" />
             </button>
           </div>
+
+          {/* Service Controls */}
+          {renderServiceControls(selectedServiceData)}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Performance Metrics */}
@@ -460,6 +705,25 @@ export const WebSocketMonitoringHub: React.FC = () => {
               }}
             >
               <WebSocketCard service={serviceData} />
+              <div className="mt-2 px-4 pb-4 flex justify-end">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleServiceControl(
+                      service.id,
+                      serviceData.status === "operational" ? "stop" : "start"
+                    );
+                  }}
+                  disabled={pendingOperation === service.id}
+                  className={`p-2 rounded-full transition-colors ${
+                    serviceData.status === "operational"
+                      ? "bg-green-500/20 text-green-300 hover:bg-green-500/30"
+                      : "bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                  }`}
+                >
+                  <FaPowerOff className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           );
         })}
