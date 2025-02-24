@@ -32,6 +32,7 @@ import { MovingBackground } from "./components/ui/MovingBackground";
 import { ReferralProvider } from "./hooks/useReferral";
 /* Pages */
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
+import { ContestChatManager } from "./components/contest/ContestChatManager";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { WebSocketTesting } from "./pages/admin/WebSocketTesting";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
@@ -408,6 +409,9 @@ export const App: React.FC = () => {
 
           {/* Footer */}
           <Footer />
+
+          {/* Contest Chat Manager - Only show for authenticated users */}
+          {user && <ContestChatManager />}
 
           {/* Modals and Overlays */}
           <ReferralWelcomeModal />

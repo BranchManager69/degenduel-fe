@@ -421,3 +421,137 @@ git push origin feature/your-feature
   <p>Sharpen your trading skills while competing to win real prizes. Ape and jeet with zero risk.</p>
   <p><b>DEGENDUEL</b> is a Branch Manager production. All rights reserved.</p>
 </div>
+
+## 💬 Contest Chat System
+
+The Contest Chat system enables real-time communication between contest participants, enhancing the social and competitive aspects of DegenDuel.
+
+### Key Components
+
+#### ContestChat Component
+
+- Real-time messaging between contest participants
+- User presence indicators
+- Message timestamps
+- Profile pictures for participants
+- Admin message highlighting
+- Rate limiting protection
+
+#### FloatingContestChat Component
+
+- Minimizable chat interface
+- Unread message notifications
+- Contest status indicators
+- Ability to participate in multiple contest chats simultaneously
+- Visual styling based on user role (regular user, admin, superadmin)
+
+#### ContestChatManager Component
+
+- Manages multiple chat instances
+- Provides a unified interface for accessing all active contest chats
+- Animated notification badge for unread messages
+- Visually appealing toggle button with hover effects
+
+#### AdminChatManager Component
+
+- Admin-only interface for monitoring all contest chats
+- Ability to join any contest chat without being visible to participants
+- Distinctive red styling for admin identification
+- Real-time monitoring of multiple chats
+- Filter and search contests by name and status
+
+#### SuperAdminChatManager Component
+
+- SuperAdmin-only interface with enhanced capabilities
+- Gold-themed styling for visual distinction
+- Ability to send broadcast messages to selected contests or all contests
+- Advanced monitoring capabilities
+- Complete contest management from a single interface
+
+### Role-Based Chat Features
+
+The chat system provides different capabilities based on user roles:
+
+1. **Regular Users**
+
+   - Can only access chats for contests they're participating in
+   - Messages appear with purple styling for admins
+   - Standard chat interface with brand colors
+
+2. **Admins**
+
+   - Can monitor any contest chat without being visible to participants
+   - Red-themed interface for visual distinction
+   - Messages appear with red styling in the chat
+   - Can view all contest chats simultaneously
+
+3. **SuperAdmins**
+   - All admin capabilities plus:
+   - Gold-themed interface for visual distinction
+   - Can send broadcast messages to selected contests
+   - Can send global broadcasts to all contests
+   - Messages appear with gold styling in the chat
+
+### WebSocket Implementation
+
+The chat system uses WebSockets for real-time communication:
+
+```typescript
+// Sample WebSocket message types
+interface ChatMessage {
+  type: "chat";
+  messageId: string;
+  userId: string;
+  nickname: string;
+  text: string;
+  timestamp: string;
+  isAdmin: boolean;
+  profilePicture?: string;
+}
+
+interface RoomStateMessage {
+  type: "room_state";
+  participants: Participant[];
+  messages: ChatMessage[];
+}
+```
+
+### Usage Example
+
+```tsx
+// Basic usage of ContestChat
+<ContestChat contestId="123" />
+
+// Using the floating chat system
+<FloatingContestChat
+  contest={contestData}
+  onClose={() => handleClose()}
+  position={0}
+  isActive={true}
+  onActivate={() => setActiveChat(contestData.contestId)}
+/>
+
+// For administrators
+<AdminChatManager />
+
+// For super administrators
+<SuperAdminChatManager />
+```
+
+### Security Features
+
+- WebSocket authentication using JWT tokens
+- Rate limiting to prevent spam
+- Admin message verification
+- Secure participant tracking
+- Role-based access control for admin features
+- Invisible monitoring for admins and superadmins
+
+### UI/UX Considerations
+
+- Responsive design works on all devices
+- Keyboard accessibility
+- Unread message indicators
+- Visual differentiation between user and admin messages
+- Role-specific color schemes (purple for regular admins, red for admins, gold for superadmins)
+- Smooth animations and transitions

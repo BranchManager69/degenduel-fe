@@ -503,12 +503,12 @@ export const ContestDetails: React.FC = () => {
             {wallet && !connected ? (
               <button
                 onClick={() => connect(wallet.name)}
-                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-dark-300/90 backdrop-blur-sm"
+                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold animate-pulse-slow"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
                 <span className="relative flex items-center justify-center gap-2">
                   <span className="font-medium">Connect Wallet</span>
-                  <span className="text-brand-400">to Enter</span>
+                  <span>to Enter</span>
                 </span>
               </button>
             ) : isParticipating ? (
@@ -536,14 +536,14 @@ export const ContestDetails: React.FC = () => {
             ) : isWalletConnected ? (
               <button
                 onClick={handleJoinContest}
-                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-brand-500/20 backdrop-blur-sm"
+                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
                 <span className="relative flex items-center justify-center gap-2">
                   <span className="font-medium">
                     Draft Tokens for Portfolio
                   </span>
-                  <span className="text-brand-400">
+                  <span>
                     {isContestLive(contest) ? "Ends" : "Starts"} in{" "}
                     <CountdownTimer
                       targetDate={
@@ -557,13 +557,107 @@ export const ContestDetails: React.FC = () => {
                   </span>
                 </span>
               </button>
-            ) : null}
+            ) : (
+              <button
+                onClick={handleJoinContest}
+                className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/30 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold animate-pulse-slow"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <span className="relative flex items-center justify-center gap-2">
+                  <span className="font-medium">Connect Wallet to Enter</span>
+                </span>
+              </button>
+            )}
             {error && (
               <div className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
                 {error}
               </div>
             )}
           </div>
+        </div>
+        
+        {/* Floating Action Button (FAB) */}
+        <div className="fixed top-24 md:top-32 right-6 md:right-10 z-40">
+          {wallet && !connected ? (
+            <button
+              onClick={() => connect(wallet.name)}
+              className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-2xl shadow-brand-500/40 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold text-lg md:text-xl rounded-lg animate-pulse-slow transform hover:scale-105 transition-all duration-300 border-2 border-white/10"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+              <span className="relative flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 animate-bounce-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Connect Wallet to Enter</span>
+                <svg
+                  className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </span>
+            </button>
+          ) : isParticipating ? (
+            <button
+              onClick={handleJoinContest}
+              className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-brand-500/30 bg-gradient-to-r from-brand-400 to-brand-500 text-white font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-white/10"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+              <span className="relative flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Modify Portfolio</span>
+                <svg
+                  className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </span>
+            </button>
+          ) : isWalletConnected ? (
+            <div className="relative group">
+              {/* Animated glow effect */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-400 to-cyber-400 rounded-lg blur opacity-75 group-hover:opacity-100 animate-pulse-slow"></div>
+              <button
+                onClick={handleJoinContest}
+                className="relative flex items-center gap-2 px-6 md:px-8 py-4 md:py-5 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-white/10 shadow-2xl"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 animate-bounce-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Draft Your Portfolio</span>
+                <svg
+                  className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -100,7 +100,30 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
                   </svg>
                 </span>
               </button>
-            ) : null}
+            ) : (
+              <button
+                onClick={onJoinContest}
+                className="relative group px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-600 border-l-2 border-brand-400/50 hover:border-brand-400 text-white font-bold text-lg overflow-hidden shadow-lg shadow-brand-500/30 animate-pulse-slow"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <span className="relative flex items-center gap-2">
+                  <span>Connect Wallet to Enter</span>
+                  <svg
+                    className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
+                  </svg>
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
