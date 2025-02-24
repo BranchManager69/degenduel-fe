@@ -22,7 +22,7 @@ import { UiDebugPanel } from "./components/debug/UiDebugPanel";
 import { WebSocketDebugPanel } from "./components/debug/WebSocketDebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
-import { ServiceStatusBanner } from "./components/layout/ServiceStatusBanner";
+import { ServerDownBanner } from "./components/layout/ServerDownBanner";
 import { ReferralWelcomeModal } from "./components/modals/ReferralWelcomeModal";
 import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
@@ -134,6 +134,12 @@ export const App: React.FC = () => {
 
           {/* Animated Background */}
           <MovingBackground />
+
+          {/* Service Status Banner (consider deleting or moving and reusing for general non-MM server issues) */}
+          {/* <ServiceStatusBanner /> */}
+
+          {/* Server Down Banner */}
+          <ServerDownBanner />
 
           {/* Header */}
           <Header />
@@ -420,9 +426,6 @@ export const App: React.FC = () => {
             pauseOnHover
             theme="dark"
           />
-
-          {/* Service Status Banner (consider deleting or moving and reusing for general non-MM server issues) */}
-          <ServiceStatusBanner />
 
           <AchievementNotification />
         </div>

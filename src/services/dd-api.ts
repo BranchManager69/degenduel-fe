@@ -235,10 +235,56 @@ const handleFailure = (endpoint: string, error: any) => {
   }
 };
 
+// Add server status tracking
+let serverDownSince: number | null = null;
+let serverDownChecks = 0;
+const SERVER_DOWN_THRESHOLD = 3; // Number of 502 errors before considering server down
+
+const isServerDown = () => {
+  return serverDownSince !== null && serverDownChecks >= SERVER_DOWN_THRESHOLD;
+};
+
+const handleServerStatus = (status: number) => {
+  if (status === 502) {
+    if (!serverDownSince) {
+      serverDownSince = Date.now();
+    }
+    serverDownChecks++;
+
+    if (serverDownChecks >= SERVER_DOWN_THRESHOLD) {
+      // Dispatch a global event that components can listen to
+      window.dispatchEvent(
+        new CustomEvent("server-down", {
+          detail: {
+            status: 502,
+            since: serverDownSince,
+            checks: serverDownChecks,
+            lastCheck: Date.now(),
+          },
+        })
+      );
+    }
+  } else {
+    // Reset server down tracking if we get a non-502 response
+    if (serverDownSince) {
+      window.dispatchEvent(new CustomEvent("server-up"));
+    }
+    serverDownSince = null;
+    serverDownChecks = 0;
+  }
+};
+
 // Create a consistent API client
 const createApiClient = () => {
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
+      // Check if server is already known to be down
+      if (isServerDown()) {
+        throw new Error(
+          "Server is currently unavailable. Please try again later."
+        );
+      }
+
       const breaker = getOrCreateBreaker(endpoint);
 
       // Check if circuit breaker is open
@@ -272,10 +318,20 @@ const createApiClient = () => {
         },
       });
 
+      // Track server status
+      handleServerStatus(response.status);
+
       // Check for ban status
       checkAndUpdateBanStatus(response);
 
       if (!response.ok) {
+        // Handle 502 specifically
+        if (response.status === 502) {
+          throw new Error(
+            "Server is currently unavailable. Please try again later."
+          );
+        }
+
         // Check if this is an expected unauthorized response
         if (isExpectedUnauthorized(normalizedPath, response.status)) {
           // Log as info instead of error for expected unauthorized responses
