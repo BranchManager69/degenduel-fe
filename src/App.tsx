@@ -62,6 +62,7 @@ import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub";
 import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
+import { WebSocketMonitoringHub } from "./pages/superadmin/WebSocketMonitoringHub";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
 import "./styles/color-schemes.css";
 
@@ -332,6 +333,16 @@ export const App: React.FC = () => {
                 element={
                   <SuperAdminRoute>
                     <CircuitBreakerPage />
+                  </SuperAdminRoute>
+                }
+              />
+
+              {/* WebSocket Monitoring Hub */}
+              <Route
+                path="/superadmin/websocket-monitor"
+                element={
+                  <SuperAdminRoute>
+                    <WebSocketMonitoringHub />
                   </SuperAdminRoute>
                 }
               />

@@ -3,7 +3,14 @@
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
+import { WebSocketState } from "../hooks/useWebSocketMonitor";
 import { Contest, Token, User, WalletError } from "../types/index";
+
+interface WebSocketAlert {
+  type: "error" | "warning" | "info";
+  title: string;
+  message: string;
+}
 
 export type ColorScheme =
   | "default"
@@ -251,6 +258,8 @@ interface StateData {
       };
     };
   };
+  webSocket: WebSocketState;
+  webSocketAlerts: WebSocketAlert[];
 }
 
 // Full state type including actions
@@ -435,6 +444,10 @@ interface State extends StateData {
     setting: string,
     value: number
   ) => void;
+  setWebSocketState: (
+    state: WebSocketState | ((prev: WebSocketState) => WebSocketState)
+  ) => void;
+  addWebSocketAlert: (alert: WebSocketAlert) => void;
 }
 
 type StorePersist = PersistOptions<
@@ -451,6 +464,8 @@ type StorePersist = PersistOptions<
     | "analytics"
     | "wallet"
     | "achievements"
+    | "webSocket"
+    | "webSocketAlerts"
   >
 >;
 
@@ -467,6 +482,8 @@ const persistConfig: StorePersist = {
     analytics: state.analytics,
     wallet: state.wallet,
     achievements: state.achievements,
+    webSocket: state.webSocket,
+    webSocketAlerts: state.webSocketAlerts,
   }),
 };
 
@@ -611,6 +628,17 @@ const initialState: StateData = {
       },
     },
   },
+  webSocket: {
+    systemHealth: {
+      status: "operational",
+      activeConnections: 0,
+      messageRate: 0,
+      activeIncidents: 0,
+      lastUpdate: new Date().toISOString(),
+    },
+    services: [],
+  },
+  webSocketAlerts: [],
 };
 
 export const useStore = create<State>()(
@@ -1098,6 +1126,17 @@ export const useStore = create<State>()(
               },
             },
           },
+        })),
+      setWebSocketState: (state) =>
+        set((prev) => ({
+          ...prev,
+          webSocket:
+            typeof state === "function" ? state(prev.webSocket) : state,
+        })),
+      addWebSocketAlert: (alert) =>
+        set((prev) => ({
+          ...prev,
+          webSocketAlerts: [...prev.webSocketAlerts, alert],
         })),
     }),
     {
