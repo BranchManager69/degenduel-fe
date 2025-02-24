@@ -1,7 +1,6 @@
 // src/pages/superadmin/WssPlayground.tsx
 
 import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { useStore } from "../../store/useStore";
 
 interface Message {
@@ -59,53 +58,13 @@ export const WssPlayground: React.FC = () => {
     connectionDuration: 0,
   });
   
-  const [activeTab, setActiveTab] = useState<"logs" | "test-messages">("logs");
-  const [customMessage, setCustomMessage] = useState<string>("");
-  const [customMessageValid, setCustomMessageValid] = useState<boolean>(true);
-  const [pingInterval, setPingInterval] = useState<number>(5000);
-  const [autoPing, setAutoPing] = useState<boolean>(true);
+  const [pingInterval] = useState<number>(5000);
+  const [autoPing] = useState<boolean>(true);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const connectionStartTimeRef = useRef<number | null>(null);
   const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Predefined test messages
-  const testMessages: TestMessage[] = [
-    {
-      name: "Ping",
-      type: "ping",
-      data: {},
-    },
-    {
-      name: "Test Portfolio Update",
-      type: "PORTFOLIO_UPDATE_REQUEST",
-      data: {
-        tokens: [
-          { symbol: "DUEL", amount: 1420069 },
-          { symbol: "BONKFA", amount: 696969 },
-          { symbol: "ASS", amount: 420420 },
-          { symbol: "TITS", amount: 8008135 },
-          { symbol: "SOL", amount: 0.69 },
-        ],
-        total_value: 169,
-        performance_24h: 69.0,
-      }
-    },
-    {
-      name: "Get Connected Clients",
-      type: "GET_CONNECTED_CLIENTS",
-      data: {},
-    },
-    {
-      name: "Request Portfolio",
-      type: "GET_PORTFOLIO",
-      data: {},
-    },
-    {
-      name: "Subscription Test",
-      type: "SUBSCRIBE",
-      data: { channel: "portfolio_updates" },
-    },
-  ];
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -475,32 +434,6 @@ export const WssPlayground: React.FC = () => {
     return sendMessage("PORTFOLIO_UPDATE_REQUEST", testPortfolio);
   };
   
-  const sendTestMessage = (testMessage: TestMessage) => {
-    return sendMessage(testMessage.type, testMessage.data);
-  };
-  
-  const sendCustomJsonMessage = () => {
-    try {
-      const parsed = JSON.parse(customMessage);
-      const { type, data } = parsed;
-      
-      if (!type) {
-        setError("Message must include a 'type' field");
-        setCustomMessageValid(false);
-        return false;
-      }
-      
-      const success = sendMessage(type, data || {});
-      if (success) {
-        setCustomMessageValid(true);
-      }
-      return success;
-    } catch (err) {
-      setError(`Invalid JSON: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setCustomMessageValid(false);
-      return false;
-    }
-  };
 
   const clearMessages = () => {
     setMessages([]);
