@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FaNetworkWired,
   FaPlay,
@@ -160,6 +160,15 @@ export const WebSocketMonitoringHub: React.FC = () => {
   const [transitionTest, setTransitionTest] = useState<TransitionTest | null>(
     null
   );
+  const [hasWebGLError, setHasWebGLError] = useState(false);
+  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connecting" | "connected" | "disconnected" | "error"
+  >("disconnected");
+  const messageQueue = useRef<any[]>([]);
+  const lastMessageTime = useRef<number>(0);
+  const RATE_LIMIT = 60; // messages per minute
+  const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
 
   // Define our WebSocket services
   const webSocketServices = [
@@ -232,6 +241,9 @@ export const WebSocketMonitoringHub: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
     let retryTimeout: NodeJS.Timeout;
+    let failedAttempts = 0;
+    const MAX_RETRY_ATTEMPTS = 3;
+    const BASE_RETRY_DELAY = 5000;
 
     const fetchServicesStatus = async () => {
       try {
@@ -243,12 +255,15 @@ export const WebSocketMonitoringHub: React.FC = () => {
 
         if (!isMounted) return;
 
+        if (response.status === 404) {
+          setError(
+            "WebSocket monitoring is not available. Please check server configuration."
+          );
+          // Stop retrying on 404
+          return;
+        }
+
         if (!response.ok) {
-          if (response.status === 502) {
-            throw new Error(
-              "WebSocket monitoring server is currently unavailable"
-            );
-          }
           throw new Error(
             `Server error: ${response.status} ${response.statusText}`
           );
@@ -266,7 +281,7 @@ export const WebSocketMonitoringHub: React.FC = () => {
           });
           setLastUpdate(new Date());
           setError(null);
-          setRetryCount(0);
+          failedAttempts = 0;
         } else {
           throw new Error(data.message || "Failed to fetch services status");
         }
@@ -277,15 +292,15 @@ export const WebSocketMonitoringHub: React.FC = () => {
           err instanceof Error ? err.message : "An unexpected error occurred";
         setError(errorMessage);
 
-        // Implement exponential backoff for retries
-        const nextRetryDelay = Math.min(1000 * Math.pow(2, retryCount), 30000);
-        setRetryCount((prev) => prev + 1);
-
-        retryTimeout = setTimeout(() => {
-          if (isMounted) {
-            fetchServicesStatus();
-          }
-        }, nextRetryDelay);
+        failedAttempts++;
+        if (failedAttempts < MAX_RETRY_ATTEMPTS) {
+          const nextRetryDelay = BASE_RETRY_DELAY * Math.pow(2, failedAttempts);
+          retryTimeout = setTimeout(() => {
+            if (isMounted) {
+              fetchServicesStatus();
+            }
+          }, nextRetryDelay);
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -301,7 +316,107 @@ export const WebSocketMonitoringHub: React.FC = () => {
       clearInterval(interval);
       clearTimeout(retryTimeout);
     };
-  }, [retryCount]);
+  }, []);
+
+  // Add error handler for WebGL context loss
+  useEffect(() => {
+    const handleWebGLContextLost = () => {
+      setHasWebGLError(true);
+      console.warn("WebGL context lost - disabling 3D visualizations");
+    };
+
+    window.addEventListener("webglcontextlost", handleWebGLContextLost);
+    return () =>
+      window.removeEventListener("webglcontextlost", handleWebGLContextLost);
+  }, []);
+
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout;
+    let messageProcessorInterval: NodeJS.Timeout;
+
+    const connect = () => {
+      try {
+        ws = new WebSocket(
+          `wss://${window.location.host}/api/superadmin/ws/monitor`
+        );
+        setConnectionStatus("connecting");
+
+        ws.onopen = () => {
+          console.info("[WebSocket Monitor] Connected successfully");
+          setConnectionStatus("connected");
+          setError(null);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "services_status") {
+              setServices(data.services);
+              setLastUpdate(new Date());
+            } else if (data.type === "alert") {
+              // Handle alerts
+              setError(data.message);
+            }
+          } catch (err) {
+            console.error("[WebSocket Monitor] Failed to parse message:", err);
+          }
+        };
+
+        ws.onclose = (event) => {
+          setConnectionStatus("disconnected");
+          if (event.code === 4003) {
+            setError("Unauthorized access. Please check your permissions.");
+          } else {
+            setError("Connection closed. Attempting to reconnect...");
+            // Attempt to reconnect after 5 seconds
+            reconnectTimeout = setTimeout(connect, 5000);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("[WebSocket Monitor] WebSocket error:", error);
+          setConnectionStatus("error");
+          setError("Failed to connect to monitoring service");
+        };
+
+        setWsConnection(ws);
+      } catch (err) {
+        console.error("[WebSocket Monitor] Connection error:", err);
+        setConnectionStatus("error");
+        setError("Failed to establish WebSocket connection");
+      }
+    };
+
+    // Rate-limited message sender
+    const processMessageQueue = () => {
+      const now = Date.now();
+      if (
+        messageQueue.current.length > 0 &&
+        now - lastMessageTime.current >= RATE_LIMIT_WINDOW / RATE_LIMIT
+      ) {
+        const message = messageQueue.current.shift();
+        if (wsConnection?.readyState === WebSocket.OPEN && message) {
+          wsConnection.send(JSON.stringify(message));
+          lastMessageTime.current = now;
+        }
+      }
+    };
+
+    connect();
+    messageProcessorInterval = setInterval(
+      processMessageQueue,
+      1000 / RATE_LIMIT
+    );
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+      clearTimeout(reconnectTimeout);
+      clearInterval(messageProcessorInterval);
+    };
+  }, []);
 
   const handleServiceClick = (serviceId: string) => {
     setSelectedService((prev) => (prev === serviceId ? null : serviceId));
@@ -319,21 +434,19 @@ export const WebSocketMonitoringHub: React.FC = () => {
   ) => {
     try {
       setPendingOperation(serviceId);
-      const response = await fetch(
-        `/api/superadmin/websocket/${serviceId}/${action}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
 
-      if (!response.ok) {
-        throw new Error(`Failed to ${action} service: ${response.statusText}`);
+      if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
+        throw new Error("WebSocket connection not available");
       }
 
-      // Update local state optimistically
+      // Add to message queue instead of sending directly
+      messageQueue.current.push({
+        type: "service_control",
+        service: serviceId,
+        action: action,
+      });
+
+      // Optimistically update UI
       setServices((prev) =>
         prev.map((service) => {
           if (service.name.toLowerCase().includes(serviceId)) {
@@ -345,8 +458,6 @@ export const WebSocketMonitoringHub: React.FC = () => {
           return service;
         })
       );
-
-      // Show success message (you could add a toast notification here)
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to control service"
@@ -550,7 +661,33 @@ export const WebSocketMonitoringHub: React.FC = () => {
               )}
             </p>
           </div>
-          <FaNetworkWired className="w-12 h-12 text-brand-400" />
+          <div className="flex items-center gap-4">
+            <div
+              className={`flex items-center gap-2 px-3 py-1 rounded-full 
+              ${
+                connectionStatus === "connected"
+                  ? "bg-green-500/10 text-green-400"
+                  : connectionStatus === "connecting"
+                  ? "bg-yellow-500/10 text-yellow-400"
+                  : "bg-red-500/10 text-red-400"
+              }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full 
+                ${
+                  connectionStatus === "connected"
+                    ? "bg-green-500 animate-pulse"
+                    : connectionStatus === "connecting"
+                    ? "bg-yellow-500"
+                    : "bg-red-500"
+                }`}
+              />
+              <span className="text-xs font-mono">
+                {connectionStatus.toUpperCase()}
+              </span>
+            </div>
+            <FaNetworkWired className="w-12 h-12 text-brand-400" />
+          </div>
         </div>
 
         {error && (
@@ -592,8 +729,8 @@ export const WebSocketMonitoringHub: React.FC = () => {
           </button>
         </div>
 
-        {/* Dependencies View */}
-        {showDependencies && (
+        {/* Only show dependencies view if no WebGL errors */}
+        {showDependencies && !hasWebGLError && (
           <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
             <h2 className="text-xl font-bold text-gray-100 mb-4">
               Service Dependencies
@@ -612,6 +749,16 @@ export const WebSocketMonitoringHub: React.FC = () => {
                 </ReactFlow>
               </ReactFlowProvider>
             </div>
+          </div>
+        )}
+
+        {/* Show fallback message if WebGL errors occur */}
+        {hasWebGLError && showDependencies && (
+          <div className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <p className="text-yellow-400">
+              3D visualization is currently unavailable due to WebGL context
+              issues. Please refresh the page to try again.
+            </p>
           </div>
         )}
 

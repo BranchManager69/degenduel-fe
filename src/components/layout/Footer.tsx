@@ -36,6 +36,8 @@ export const Footer: React.FC = () => {
         } else {
           setServerStatus("offline");
         }
+        // Log all errors as this endpoint shouldn't be failing
+        console.error("Failed to check server status:", err);
       }
     };
 
