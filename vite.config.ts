@@ -206,6 +206,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "react-router-dom",
         "@aptos-labs/wallet-adapter-react",
         "@aptos-labs/wallet-adapter-core",
+        "aptos",
       ],
       exclude: ["@react-three/fiber", "@react-three/drei"],
       esbuildOptions: {
@@ -221,7 +222,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         cache: true,
-        external: ["aptos", "@telegram-apps/bridge", "graphql"],
+        external: ["@telegram-apps/bridge", "graphql"],
         output: {
           manualChunks: {
             "react-vendor": ["react", "react-dom", "react-router-dom"],
