@@ -32,11 +32,6 @@ interface PortfolioData {
   performance_24h: number;
 }
 
-interface TestMessage {
-  name: string;
-  type: string;
-  data: any;
-}
 
 export const WssPlayground: React.FC = () => {
   const { user } = useStore();
