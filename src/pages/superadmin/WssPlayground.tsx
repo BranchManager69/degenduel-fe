@@ -433,7 +433,6 @@ export const WssPlayground: React.FC = () => {
 
     return sendMessage("PORTFOLIO_UPDATE_REQUEST", testPortfolio);
   };
-  
 
   const clearMessages = () => {
     setMessages([]);
@@ -445,15 +444,6 @@ export const WssPlayground: React.FC = () => {
       outgoingCount: 0
     }));
   };
-  
-  const validateCustomMessage = (input: string) => {
-    try {
-      const parsed = JSON.parse(input);
-      return typeof parsed === 'object' && parsed !== null && 'type' in parsed;
-    } catch (e) {
-      return false;
-    }
-  };
 
   // Setup autoPing when settings change
   useEffect(() => {
@@ -464,15 +454,6 @@ export const WssPlayground: React.FC = () => {
       }
     };
   }, [autoPing, pingInterval, status]);
-  
-  // Validate custom message as user types
-  useEffect(() => {
-    if (customMessage) {
-      setCustomMessageValid(validateCustomMessage(customMessage));
-    } else {
-      setCustomMessageValid(true);
-    }
-  }, [customMessage]);
   
   // Cleanup on component unmount
   useEffect(() => {
