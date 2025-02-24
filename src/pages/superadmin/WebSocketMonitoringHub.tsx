@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   FaNetworkWired,
   FaPlay,
-  FaPowerOff,
   FaProjectDiagram,
   FaStop,
   FaSync,
@@ -72,6 +71,36 @@ const ServiceNode = ({ data }: ServiceNodeProps) => (
   </div>
 );
 
+// Add this after the imports
+interface TransitionTest {
+  serviceId: string;
+  transitionType:
+    | "powerUp"
+    | "powerDown"
+    | "degrading"
+    | "recovering"
+    | "failing"
+    | "healing";
+}
+
+// Add this at the top of the file after imports
+const WsLogo: React.FC = () => (
+  <div className="flex items-center space-x-2">
+    <div
+      className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-brand-600 font-display"
+      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+    >
+      ws://
+    </div>
+    <h1
+      className="text-3xl font-bold text-gray-100"
+      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+    >
+      monitoring
+    </h1>
+  </div>
+);
+
 export const WebSocketMonitoringHub: React.FC = () => {
   const [services, setServices] = useState<WebSocketService[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -80,6 +109,13 @@ export const WebSocketMonitoringHub: React.FC = () => {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [pendingOperation, setPendingOperation] = useState<string | null>(null);
   const [showDependencies, setShowDependencies] = useState(false);
+  const [sortBy, setSortBy] = useState<{
+    field: "status" | "lastUpdate" | "errorRate" | "latency";
+    direction: "asc" | "desc";
+  }>({ field: "status", direction: "desc" });
+  const [transitionTest, setTransitionTest] = useState<TransitionTest | null>(
+    null
+  );
 
   // Define our WebSocket services
   const webSocketServices = [
@@ -329,18 +365,133 @@ export const WebSocketMonitoringHub: React.FC = () => {
     </div>
   );
 
+  // Update the getSortedServices function and modify how we use it
+  const getSortedServices = (services: WebSocketService[]) => {
+    const servicesWithDefaults = webSocketServices.map((service) => {
+      return (
+        services.find((s) => s.name.toLowerCase().includes(service.id)) || {
+          name: service.name,
+          status: "error" as const,
+          metrics: {
+            totalConnections: 0,
+            activeSubscriptions: 0,
+            messageCount: 0,
+            errorCount: 0,
+            cacheHitRate: 0,
+            averageLatency: 0,
+            lastUpdate: new Date().toISOString(),
+          },
+          performance: {
+            messageRate: 0,
+            errorRate: 0,
+            latencyTrend: [],
+          },
+        }
+      );
+    });
+
+    return [...servicesWithDefaults].sort((a, b) => {
+      const direction = sortBy.direction === "asc" ? 1 : -1;
+
+      switch (sortBy.field) {
+        case "status":
+          const statusOrder = { operational: 0, degraded: 1, error: 2 };
+          return (statusOrder[a.status] - statusOrder[b.status]) * direction;
+        case "lastUpdate":
+          return (
+            (new Date(b.metrics.lastUpdate).getTime() -
+              new Date(a.metrics.lastUpdate).getTime()) *
+            direction
+          );
+        case "errorRate":
+          return (
+            (a.performance.errorRate - b.performance.errorRate) * direction
+          );
+        case "latency":
+          return (
+            (a.metrics.averageLatency - b.metrics.averageLatency) * direction
+          );
+        default:
+          return 0;
+      }
+    });
+  };
+
+  // Add this before the return statement
+  const triggerTransition = (type: TransitionTest["transitionType"]) => {
+    // Pick a random service or all services
+    const serviceIds = webSocketServices.map((s) => s.id);
+    const targetService =
+      Math.random() > 0.5
+        ? serviceIds[Math.floor(Math.random() * serviceIds.length)]
+        : "all";
+
+    setTransitionTest({
+      serviceId: targetService,
+      transitionType: type,
+    });
+
+    // Reset after animation
+    setTimeout(() => setTransitionTest(null), 3000);
+  };
+
+  // Add this before the Services Grid section in the return statement
+  const testControlPanel = (
+    <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-brand-500/20">
+      <h2 className="text-xl font-bold text-gray-100 mb-4">
+        Transition Test Lab 🧪
+      </h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <button
+          onClick={() => triggerTransition("powerUp")}
+          className="px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 transition-colors"
+        >
+          Power Up 🚀
+        </button>
+        <button
+          onClick={() => triggerTransition("powerDown")}
+          className="px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 transition-colors"
+        >
+          Power Down 💤
+        </button>
+        <button
+          onClick={() => triggerTransition("degrading")}
+          className="px-4 py-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 transition-colors"
+        >
+          Degrading 📉
+        </button>
+        <button
+          onClick={() => triggerTransition("recovering")}
+          className="px-4 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-colors"
+        >
+          Recovering 🔄
+        </button>
+        <button
+          onClick={() => triggerTransition("failing")}
+          className="px-4 py-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 transition-colors"
+        >
+          Failing 💥
+        </button>
+        <button
+          onClick={() => triggerTransition("healing")}
+          className="px-4 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition-colors"
+        >
+          Healing ✨
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="container mx-auto p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-100">
-            WebSocket Monitoring Hub
-          </h1>
+          <WsLogo />
           <p className="text-gray-400 mt-2">
-            Unified monitoring interface for all WebSocket services
+            Unified interface for all services
             {!error && (
               <span className="ml-2 text-sm">
-                (Last update: {lastUpdate.toLocaleTimeString()})
+                ({lastUpdate.toLocaleTimeString()})
               </span>
             )}
           </p>
@@ -349,7 +500,7 @@ export const WebSocketMonitoringHub: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between">
+        <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between backdrop-blur-lg">
           <p className="text-red-400">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -663,66 +814,68 @@ export const WebSocketMonitoringHub: React.FC = () => {
         </div>
       )}
 
+      {/* Add Sort Controls */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <span className="text-gray-400">Sort by:</span>
+          <select
+            value={`${sortBy.field}-${sortBy.direction}`}
+            onChange={(e) => {
+              const [field, direction] = e.target.value.split("-") as [
+                "status" | "lastUpdate" | "errorRate" | "latency",
+                "asc" | "desc"
+              ];
+              setSortBy({ field, direction });
+            }}
+            className="bg-dark-300/30 border border-brand-500/20 rounded px-3 py-1 text-gray-200 focus:outline-none focus:border-brand-500/40"
+          >
+            <option value="status-desc">Status (Critical First)</option>
+            <option value="status-asc">Status (Healthy First)</option>
+            <option value="lastUpdate-desc">Recently Updated</option>
+            <option value="lastUpdate-asc">Least Recently Updated</option>
+            <option value="errorRate-desc">Highest Error Rate</option>
+            <option value="errorRate-asc">Lowest Error Rate</option>
+            <option value="latency-desc">Highest Latency</option>
+            <option value="latency-asc">Lowest Latency</option>
+          </select>
+        </div>
+      </div>
+
+      {testControlPanel}
+
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {webSocketServices.map((service) => {
-          const serviceData = services.find((s) =>
-            s.name.toLowerCase().includes(service.id)
-          ) || {
-            name: service.name,
-            status: "error" as const,
-            metrics: {
-              totalConnections: 0,
-              activeSubscriptions: 0,
-              messageCount: 0,
-              errorCount: 0,
-              cacheHitRate: 0,
-              averageLatency: 0,
-              lastUpdate: new Date().toISOString(),
-            },
-            performance: {
-              messageRate: 0,
-              errorRate: 0,
-              latencyTrend: [],
-            },
-          };
+        {getSortedServices(services).map((serviceData) => {
+          const service = webSocketServices.find(
+            (s) => s.name === serviceData.name
+          );
+          if (!service) return null;
 
           return (
             <div
               key={service.id}
               onClick={() => handleServiceClick(service.id)}
-              className={`cursor-pointer transition-all duration-200 transform hover:scale-102 hover:opacity-80 active:opacity-70 ${
-                selectedService === service.id
-                  ? "ring-2 ring-brand-500 rounded-lg"
-                  : ""
+              className={`group cursor-pointer transition-all duration-500 ${
+                selectedService === service.id ? "ring-2 ring-brand-500" : ""
               }`}
-              role="button"
-              tabIndex={0}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  handleServiceClick(service.id);
-                }
-              }}
             >
-              <WebSocketCard service={serviceData} />
-              <div className="mt-2 px-4 pb-4 flex justify-end">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
+              <div className="transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
+                <WebSocketCard
+                  service={serviceData}
+                  onPowerAction={() =>
                     handleServiceControl(
                       service.id,
                       serviceData.status === "operational" ? "stop" : "start"
-                    );
-                  }}
-                  disabled={pendingOperation === service.id}
-                  className={`p-2 rounded-full transition-colors ${
-                    serviceData.status === "operational"
-                      ? "bg-green-500/20 text-green-300 hover:bg-green-500/30"
-                      : "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-                  }`}
-                >
-                  <FaPowerOff className="w-4 h-4" />
-                </button>
+                    )
+                  }
+                  isDisabled={pendingOperation === service.id}
+                  transitionType={
+                    transitionTest?.serviceId === "all" ||
+                    transitionTest?.serviceId === service.id
+                      ? transitionTest.transitionType
+                      : undefined
+                  }
+                />
               </div>
             </div>
           );
