@@ -1,9 +1,43 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useStore } from "../../store/useStore";
 
 export const MovingBackground: React.FC = () => {
   const { uiDebug } = useStore();
   const { enabled, intensity } = uiDebug.backgrounds.movingBackground;
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !enabled) return;
+
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      console.warn("[MovingBackground] WebGL context lost");
+    };
+
+    const handleContextRestored = () => {
+      console.log("[MovingBackground] WebGL context restored");
+      // Force a re-render of the component
+      if (container) {
+        const parent = container.parentElement;
+        if (parent) {
+          parent.removeChild(container);
+          parent.appendChild(container);
+        }
+      }
+    };
+
+    container.addEventListener("webglcontextlost", handleContextLost);
+    container.addEventListener("webglcontextrestored", handleContextRestored);
+
+    return () => {
+      container.removeEventListener("webglcontextlost", handleContextLost);
+      container.removeEventListener(
+        "webglcontextrestored",
+        handleContextRestored
+      );
+    };
+  }, [enabled]);
 
   if (!enabled) {
     return null;
@@ -12,7 +46,10 @@ export const MovingBackground: React.FC = () => {
   const opacityValue = intensity / 100;
 
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none"
+    >
       {/* Dark base with subtle noise texture */}
       <div className="absolute inset-0 bg-dark-100">
         {/* Circuit grid pattern - more subtle */}

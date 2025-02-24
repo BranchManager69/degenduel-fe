@@ -87,38 +87,57 @@ export const TokenVerse: React.FC = () => {
   useEffect(() => {
     if (!containerRef.current || isInitialized || !enabled) return;
 
-    console.log("[TokenVerse] Initializing scene...");
-    const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    console.log("[TokenVerse] Initializing");
+    setIsInitialized(true);
 
     try {
       // Scene setup with fog for depth
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x000000, 0.001);
       sceneRef.current = scene;
+      scene.fog = new THREE.FogExp2(0x000000, 0.01);
 
-      // Camera setup with wider view
-      const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-      camera.position.z = 50;
-      camera.position.y = 20;
-      camera.lookAt(0, 0, 0);
+      // Camera setup
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
       cameraRef.current = camera;
+      camera.position.z = 50;
 
-      // Renderer setup with transparency
+      // Renderer setup with context loss handling
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
-        premultipliedAlpha: false,
-        logarithmicDepthBuffer: true,
+        powerPreference: "high-performance",
       });
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setClearColor(0x000000, 0);
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1;
-      container.appendChild(renderer.domElement);
       rendererRef.current = renderer;
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      containerRef.current.appendChild(renderer.domElement);
+
+      // Add context loss handling
+      const canvas = renderer.domElement;
+      canvas.addEventListener(
+        "webglcontextlost",
+        (event) => {
+          event.preventDefault();
+          console.warn("[TokenVerse] WebGL context lost");
+          cleanup();
+        },
+        false
+      );
+
+      canvas.addEventListener(
+        "webglcontextrestored",
+        () => {
+          console.log("[TokenVerse] WebGL context restored");
+          cleanup();
+          setIsInitialized(false); // This will trigger a re-initialization
+        },
+        false
+      );
 
       // Post-processing with adjusted bloom
       const composer = new EffectComposer(renderer);
@@ -126,7 +145,7 @@ export const TokenVerse: React.FC = () => {
       composer.addPass(renderPass);
 
       const bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(width, height),
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
         bloomStrength,
         0.75,
         0.9
@@ -253,7 +272,6 @@ export const TokenVerse: React.FC = () => {
 
       animate();
       console.log("[TokenVerse] Scene initialized successfully");
-      setIsInitialized(true);
     } catch (error) {
       console.error("[TokenVerse] Initialization error:", error);
       cleanup();
