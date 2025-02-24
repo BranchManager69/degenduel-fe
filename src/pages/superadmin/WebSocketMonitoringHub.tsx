@@ -17,6 +17,7 @@ import ReactFlow, {
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import styled from "styled-components";
 import { WebSocketCard } from "../../components/admin/WebSocketCard";
 import { WebSocketDebugPanel } from "../../components/debug/WebSocketDebugPanel";
 
@@ -144,6 +145,54 @@ class WebSocketErrorBoundary extends React.Component<
   }
 }
 
+// Add these styled components
+const ServiceGroup = styled.div`
+  background: rgba(26, 32, 44, 0.5);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(127, 0, 255, 0.2);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const GroupTitle = styled.h3`
+  color: #e2e8f0;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const GroupDescription = styled.p`
+  color: #a0aec0;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+`;
+
+const SERVICE_GROUPS = {
+  CORE: {
+    title: "Core WebSocket Services",
+    description: "Essential real-time communication services",
+    services: ["base", "circuit-breaker", "monitor"],
+  },
+  TRADING: {
+    title: "Trading Services",
+    description: "Market and contest real-time updates",
+    services: ["market", "contest", "portfolio"],
+  },
+  USER: {
+    title: "User Services",
+    description: "User-specific real-time features",
+    services: ["wallet", "analytics"],
+  },
+};
+
 export const WebSocketMonitoringHub: React.FC = () => {
   const [services, setServices] = useState<WebSocketService[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -239,104 +288,16 @@ export const WebSocketMonitoringHub: React.FC = () => {
   const nodeTypes = useMemo(() => ({ serviceNode: ServiceNode }), []);
 
   useEffect(() => {
-    let isMounted = true;
-    let retryTimeout: NodeJS.Timeout;
-    let failedAttempts = 0;
-    const MAX_RETRY_ATTEMPTS = 3;
-    const BASE_RETRY_DELAY = 5000;
-
-    const fetchServicesStatus = async () => {
-      try {
-        if (!services.length) {
-          setIsLoading(true);
-        }
-
-        const response = await fetch("/api/superadmin/websocket/status");
-
-        if (!isMounted) return;
-
-        if (response.status === 404) {
-          setError(
-            "WebSocket monitoring is not available. Please check server configuration."
-          );
-          // Stop retrying on 404
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            `Server error: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
-
-        if (!isMounted) return;
-
-        if (data.success) {
-          setServices((prev) => {
-            const hasChanged =
-              JSON.stringify(prev) !== JSON.stringify(data.services);
-            return hasChanged ? data.services : prev;
-          });
-          setLastUpdate(new Date());
-          setError(null);
-          failedAttempts = 0;
-        } else {
-          throw new Error(data.message || "Failed to fetch services status");
-        }
-      } catch (err) {
-        if (!isMounted) return;
-
-        const errorMessage =
-          err instanceof Error ? err.message : "An unexpected error occurred";
-        setError(errorMessage);
-
-        failedAttempts++;
-        if (failedAttempts < MAX_RETRY_ATTEMPTS) {
-          const nextRetryDelay = BASE_RETRY_DELAY * Math.pow(2, failedAttempts);
-          retryTimeout = setTimeout(() => {
-            if (isMounted) {
-              fetchServicesStatus();
-            }
-          }, nextRetryDelay);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchServicesStatus();
-    const interval = setInterval(fetchServicesStatus, 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-      clearTimeout(retryTimeout);
-    };
-  }, []);
-
-  // Add error handler for WebGL context loss
-  useEffect(() => {
-    const handleWebGLContextLost = () => {
-      setHasWebGLError(true);
-      console.warn("WebGL context lost - disabling 3D visualizations");
-    };
-
-    window.addEventListener("webglcontextlost", handleWebGLContextLost);
-    return () =>
-      window.removeEventListener("webglcontextlost", handleWebGLContextLost);
-  }, []);
-
-  useEffect(() => {
     let ws: WebSocket | null = null;
     let reconnectTimeout: NodeJS.Timeout;
     let messageProcessorInterval: NodeJS.Timeout;
 
     const connect = () => {
       try {
+        if (!services.length) {
+          setIsLoading(true);
+        }
+
         ws = new WebSocket(
           `wss://${window.location.host}/api/superadmin/ws/monitor`
         );
@@ -346,6 +307,10 @@ export const WebSocketMonitoringHub: React.FC = () => {
           console.info("[WebSocket Monitor] Connected successfully");
           setConnectionStatus("connected");
           setError(null);
+          // Request initial state
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "get_initial_state" }));
+          }
         };
 
         ws.onmessage = (event) => {
@@ -354,9 +319,18 @@ export const WebSocketMonitoringHub: React.FC = () => {
             if (data.type === "services_status") {
               setServices(data.services);
               setLastUpdate(new Date());
+              setIsLoading(false);
             } else if (data.type === "alert") {
-              // Handle alerts
               setError(data.message);
+            } else if (data.type === "service_update") {
+              setServices((prev) =>
+                prev.map((service) =>
+                  service.name === data.service
+                    ? { ...service, ...data.updates }
+                    : service
+                )
+              );
+              setLastUpdate(new Date());
             }
           } catch (err) {
             console.error("[WebSocket Monitor] Failed to parse message:", err);
@@ -369,7 +343,6 @@ export const WebSocketMonitoringHub: React.FC = () => {
             setError("Unauthorized access. Please check your permissions.");
           } else {
             setError("Connection closed. Attempting to reconnect...");
-            // Attempt to reconnect after 5 seconds
             reconnectTimeout = setTimeout(connect, 5000);
           }
         };
@@ -378,6 +351,7 @@ export const WebSocketMonitoringHub: React.FC = () => {
           console.error("[WebSocket Monitor] WebSocket error:", error);
           setConnectionStatus("error");
           setError("Failed to connect to monitoring service");
+          setIsLoading(false);
         };
 
         setWsConnection(ws);
@@ -385,6 +359,7 @@ export const WebSocketMonitoringHub: React.FC = () => {
         console.error("[WebSocket Monitor] Connection error:", err);
         setConnectionStatus("error");
         setError("Failed to establish WebSocket connection");
+        setIsLoading(false);
       }
     };
 
@@ -416,6 +391,18 @@ export const WebSocketMonitoringHub: React.FC = () => {
       clearTimeout(reconnectTimeout);
       clearInterval(messageProcessorInterval);
     };
+  }, []);
+
+  // Add error handler for WebGL context loss
+  useEffect(() => {
+    const handleWebGLContextLost = () => {
+      setHasWebGLError(true);
+      console.warn("WebGL context lost - disabling 3D visualizations");
+    };
+
+    window.addEventListener("webglcontextlost", handleWebGLContextLost);
+    return () =>
+      window.removeEventListener("webglcontextlost", handleWebGLContextLost);
   }, []);
 
   const handleServiceClick = (serviceId: string) => {
@@ -531,36 +518,14 @@ export const WebSocketMonitoringHub: React.FC = () => {
 
   // Update the getSortedServices function and modify how we use it
   const getSortedServices = (services: WebSocketService[]) => {
-    const servicesWithDefaults = webSocketServices.map((service) => {
-      return (
-        services.find((s) => s.name.toLowerCase().includes(service.id)) || {
-          name: service.name,
-          status: "error" as const,
-          metrics: {
-            totalConnections: 0,
-            activeSubscriptions: 0,
-            messageCount: 0,
-            errorCount: 0,
-            cacheHitRate: 0,
-            averageLatency: 0,
-            lastUpdate: new Date().toISOString(),
-          },
-          performance: {
-            messageRate: 0,
-            errorRate: 0,
-            latencyTrend: [],
-          },
-        }
-      );
-    });
-
-    return [...servicesWithDefaults].sort((a, b) => {
+    return [...services].sort((a, b) => {
       const direction = sortBy.direction === "asc" ? 1 : -1;
 
       switch (sortBy.field) {
-        case "status":
+        case "status": {
           const statusOrder = { operational: 0, degraded: 1, error: 2 };
           return (statusOrder[a.status] - statusOrder[b.status]) * direction;
+        }
         case "lastUpdate":
           return (
             (new Date(b.metrics.lastUpdate).getTime() -
@@ -645,6 +610,33 @@ export const WebSocketMonitoringHub: React.FC = () => {
       </div>
     </div>
   );
+
+  // Add group status calculation
+  const getGroupStatus = (
+    groupServices: string[]
+  ): "operational" | "degraded" | "error" => {
+    const serviceStates = groupServices.map(
+      (serviceId) =>
+        services.find((s) => s.name.toLowerCase().includes(serviceId))
+          ?.status || "error"
+    );
+
+    if (serviceStates.includes("error")) return "error";
+    if (serviceStates.includes("degraded")) return "degraded";
+    return "operational";
+  };
+
+  // Add system-wide metrics calculation
+  const getSystemMetrics = () => ({
+    total: services.length,
+    operational: services.filter((s) => s.status === "operational").length,
+    degraded: services.filter((s) => s.status === "degraded").length,
+    error: services.filter((s) => s.status === "error").length,
+    avgLatency:
+      services.reduce((acc, s) => acc + s.metrics.averageLatency, 0) /
+      services.length,
+    totalMessages: services.reduce((acc, s) => acc + s.metrics.messageCount, 0),
+  });
 
   return (
     <WebSocketErrorBoundary>
@@ -1054,96 +1046,97 @@ export const WebSocketMonitoringHub: React.FC = () => {
 
         {testControlPanel}
 
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {getSortedServices(services).map((serviceData) => {
-            const service = webSocketServices.find(
-              (s) => s.name === serviceData.name
-            );
-            if (!service) return null;
+        {/* System-wide Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {Object.entries(getSystemMetrics()).map(([key, value]) => (
+            <div
+              key={key}
+              className="bg-dark-300/30 rounded-lg p-6 border border-brand-500/20"
+            >
+              <h3 className="text-sm text-gray-400 mb-2">
+                {key.replace(/([A-Z])/g, " $1").toUpperCase()}
+              </h3>
+              <div className="text-2xl font-bold text-brand-400">
+                {typeof value === "number"
+                  ? key.includes("Latency")
+                    ? `${value.toFixed(2)}ms`
+                    : value.toLocaleString()
+                  : value}
+              </div>
+            </div>
+          ))}
+        </div>
 
-            return (
-              <div
-                key={service.id}
-                onClick={() => handleServiceClick(service.id)}
-                className={`group cursor-pointer transition-all duration-500 ${
-                  selectedService === service.id ? "ring-2 ring-brand-500" : ""
-                }`}
-              >
-                <div className="transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
+        {/* Service Groups */}
+        {Object.entries(SERVICE_GROUPS).map(([groupKey, group]) => {
+          const groupStatus = getGroupStatus(group.services);
+          const groupServices = getSortedServices(
+            services.filter((s) =>
+              group.services.some((groupService) =>
+                s.name.toLowerCase().includes(groupService)
+              )
+            )
+          );
+
+          return (
+            <ServiceGroup key={groupKey}>
+              <GroupTitle>
+                {group.title}
+                <div
+                  className={`ml-auto flex items-center gap-2 px-3 py-1 rounded-full 
+                  ${
+                    groupStatus === "operational"
+                      ? "bg-green-500/10 text-green-400"
+                      : groupStatus === "degraded"
+                      ? "bg-yellow-500/10 text-yellow-400"
+                      : "bg-red-500/10 text-red-400"
+                  }`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full 
+                    ${
+                      groupStatus === "operational"
+                        ? "bg-green-500 animate-pulse"
+                        : groupStatus === "degraded"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+                  <span className="text-xs font-mono">
+                    {groupStatus.toUpperCase()}
+                  </span>
+                </div>
+              </GroupTitle>
+              <GroupDescription>{group.description}</GroupDescription>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {groupServices.map((service) => (
                   <WebSocketCard
-                    service={serviceData}
+                    key={service.name}
+                    service={service}
                     onPowerAction={() =>
                       handleServiceControl(
-                        service.id,
-                        serviceData.status === "operational" ? "stop" : "start"
+                        service.name.toLowerCase().split(" ")[0],
+                        service.status === "operational" ? "stop" : "start"
                       )
                     }
-                    isDisabled={pendingOperation === service.id}
+                    isDisabled={
+                      pendingOperation ===
+                      service.name.toLowerCase().split(" ")[0]
+                    }
                     transitionType={
                       transitionTest?.serviceId === "all" ||
-                      transitionTest?.serviceId === service.id
+                      transitionTest?.serviceId ===
+                        service.name.toLowerCase().split(" ")[0]
                         ? transitionTest.transitionType
                         : undefined
                     }
                   />
-                </div>
+                ))}
               </div>
-            );
-          })}
-        </div>
-
-        {/* System-wide Metrics */}
-        <div className="mt-8 bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-brand-400/20">
-          <h2 className="text-xl font-bold text-gray-100 mb-4">
-            System-wide Metrics
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-dark-300/30 rounded-lg p-4">
-              <div className="text-sm text-gray-400">
-                Total Active Connections
-              </div>
-              <div className="text-2xl font-bold text-gray-100">
-                {services.reduce(
-                  (sum, service) => sum + service.metrics.totalConnections,
-                  0
-                )}
-              </div>
-            </div>
-            <div className="bg-dark-300/30 rounded-lg p-4">
-              <div className="text-sm text-gray-400">Total Messages/sec</div>
-              <div className="text-2xl font-bold text-gray-100">
-                {services.reduce(
-                  (sum, service) => sum + service.performance.messageRate,
-                  0
-                )}
-              </div>
-            </div>
-            <div className="bg-dark-300/30 rounded-lg p-4">
-              <div className="text-sm text-gray-400">Average Latency</div>
-              <div className="text-2xl font-bold text-gray-100">
-                {services.length
-                  ? (
-                      services.reduce(
-                        (sum, service) => sum + service.metrics.averageLatency,
-                        0
-                      ) / services.length
-                    ).toFixed(2)
-                  : 0}
-                ms
-              </div>
-            </div>
-            <div className="bg-dark-300/30 rounded-lg p-4">
-              <div className="text-sm text-gray-400">Total Errors (24h)</div>
-              <div className="text-2xl font-bold text-gray-100">
-                {services.reduce(
-                  (sum, service) => sum + service.metrics.errorCount,
-                  0
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+            </ServiceGroup>
+          );
+        })}
 
         {/* Debug Panel */}
         <WebSocketDebugPanel />
