@@ -17,7 +17,7 @@ import ReactFlow, {
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import WebSocketCard from "../../components/admin/WebSocketCard";
+import { WebSocketCard } from "../../components/admin/WebSocketCard";
 import { WebSocketDebugPanel } from "../../components/debug/WebSocketDebugPanel";
 
 interface WebSocketService {
@@ -101,11 +101,55 @@ const WsLogo: React.FC = () => (
   </div>
 );
 
+// Add ErrorBoundary component
+class WebSocketErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("[WebSocketMonitoringHub] Error caught by boundary:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-red-400 mb-4">
+            An error occurred while rendering the WebSocket monitoring
+            interface.
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false });
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-md text-red-300 text-sm transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export const WebSocketMonitoringHub: React.FC = () => {
   const [services, setServices] = useState<WebSocketService[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [pendingOperation, setPendingOperation] = useState<string | null>(null);
   const [showDependencies, setShowDependencies] = useState(false);
@@ -186,16 +230,19 @@ export const WebSocketMonitoringHub: React.FC = () => {
   const nodeTypes = useMemo(() => ({ serviceNode: ServiceNode }), []);
 
   useEffect(() => {
+    let isMounted = true;
+    let retryTimeout: NodeJS.Timeout;
+
     const fetchServicesStatus = async () => {
       try {
-        // Only show loading on first load
         if (!services.length) {
           setIsLoading(true);
         }
 
         const response = await fetch("/api/superadmin/websocket/status");
 
-        // Handle specific error cases
+        if (!isMounted) return;
+
         if (!response.ok) {
           if (response.status === 502) {
             throw new Error(
@@ -207,48 +254,54 @@ export const WebSocketMonitoringHub: React.FC = () => {
           );
         }
 
-        const data = await response.json().catch(() => {
-          throw new Error("Invalid response format from server");
-        });
+        const data = await response.json();
+
+        if (!isMounted) return;
 
         if (data.success) {
-          // Use functional update to prevent race conditions
           setServices((prev) => {
-            // Only update if data has changed
             const hasChanged =
               JSON.stringify(prev) !== JSON.stringify(data.services);
-            if (hasChanged) {
-              return data.services;
-            }
-            return prev;
+            return hasChanged ? data.services : prev;
           });
           setLastUpdate(new Date());
           setError(null);
+          setRetryCount(0);
         } else {
           throw new Error(data.message || "Failed to fetch services status");
         }
       } catch (err) {
-        if (err instanceof Error) {
-          if (err.message.includes("Failed to fetch")) {
-            setError(
-              "Unable to connect to monitoring server. Please check your connection."
-            );
-          } else {
-            setError(err.message);
+        if (!isMounted) return;
+
+        const errorMessage =
+          err instanceof Error ? err.message : "An unexpected error occurred";
+        setError(errorMessage);
+
+        // Implement exponential backoff for retries
+        const nextRetryDelay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+        setRetryCount((prev) => prev + 1);
+
+        retryTimeout = setTimeout(() => {
+          if (isMounted) {
+            fetchServicesStatus();
           }
-        } else {
-          setError("An unexpected error occurred");
-        }
+        }, nextRetryDelay);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchServicesStatus();
     const interval = setInterval(fetchServicesStatus, 5000);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      clearTimeout(retryTimeout);
+    };
+  }, [retryCount]);
 
   const handleServiceClick = (serviceId: string) => {
     setSelectedService((prev) => (prev === serviceId ? null : serviceId));
@@ -483,460 +536,472 @@ export const WebSocketMonitoringHub: React.FC = () => {
   );
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <WsLogo />
-          <p className="text-gray-400 mt-2">
-            Unified interface for all services
-            {!error && (
-              <span className="ml-2 text-sm">
-                ({lastUpdate.toLocaleTimeString()})
-              </span>
-            )}
-          </p>
-        </div>
-        <FaNetworkWired className="w-12 h-12 text-brand-400" />
-      </div>
-
-      {error && (
-        <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between backdrop-blur-lg">
-          <p className="text-red-400">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-md text-red-300 text-sm transition-colors"
-          >
-            Retry Connection
-          </button>
-        </div>
-      )}
-
-      {isLoading && !services.length && (
-        <div className="flex items-center justify-center p-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
-        </div>
-      )}
-
-      {/* Add Dependencies View Toggle */}
-      <div className="mb-4 flex justify-end">
-        <button
-          onClick={() => setShowDependencies(!showDependencies)}
-          className="flex items-center space-x-2 px-4 py-2 rounded-md bg-brand-500/20 hover:bg-brand-500/30 text-brand-300"
-        >
-          <FaProjectDiagram className="w-4 h-4" />
-          <span>{showDependencies ? "Hide" : "Show"} Dependencies</span>
-        </button>
-      </div>
-
-      {/* Dependencies View */}
-      {showDependencies && (
-        <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-          <h2 className="text-xl font-bold text-gray-100 mb-4">
-            Service Dependencies
-          </h2>
-          <div className="h-[500px]">
-            <ReactFlowProvider>
-              <ReactFlow
-                nodes={flowElements.nodes}
-                edges={flowElements.edges}
-                nodeTypes={nodeTypes}
-                fitView
-                className="bg-dark-300/30"
-              >
-                <Background />
-                <Controls />
-              </ReactFlow>
-            </ReactFlowProvider>
+    <WebSocketErrorBoundary>
+      <div className="container mx-auto p-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <WsLogo />
+            <p className="text-gray-400 mt-2">
+              Unified interface for all services
+              {!error && (
+                <span className="ml-2 text-sm">
+                  ({lastUpdate.toLocaleTimeString()})
+                </span>
+              )}
+            </p>
           </div>
+          <FaNetworkWired className="w-12 h-12 text-brand-400" />
         </div>
-      )}
 
-      {/* Selected Service Detail View */}
-      {selectedServiceData && (
-        <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-          <div className="flex items-center justify-between mb-4">
+        {error && (
+          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between backdrop-blur-lg">
             <div>
-              <h2 className="text-2xl font-bold text-gray-100">
-                {selectedServiceData.name} Details
-              </h2>
-              <p
-                className={`text-sm mt-1 ${
-                  selectedServiceData.status === "operational"
-                    ? "text-green-400"
-                    : selectedServiceData.status === "degraded"
-                    ? "text-yellow-400"
-                    : "text-red-400"
-                }`}
-              >
-                Status:{" "}
-                {selectedServiceData.status.charAt(0).toUpperCase() +
-                  selectedServiceData.status.slice(1)}
-              </p>
+              <p className="text-red-400">{error}</p>
+              {retryCount > 0 && (
+                <p className="text-red-400/70 text-sm mt-1">
+                  Retrying in {Math.min(Math.pow(2, retryCount), 30)} seconds...
+                </p>
+              )}
             </div>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleServiceClick(selectedServiceData.name);
+              onClick={() => {
+                setRetryCount(0);
+                window.location.reload();
               }}
-              className="text-gray-400 hover:text-gray-300 transition-colors"
+              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-md text-red-300 text-sm transition-colors"
             >
-              <FaTimes className="w-6 h-6" />
+              Retry Now
             </button>
           </div>
+        )}
 
-          {/* Service Controls */}
-          {renderServiceControls(selectedServiceData)}
+        {isLoading && !services.length && (
+          <div className="flex items-center justify-center p-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+          </div>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Performance Metrics */}
-            <div className="bg-dark-300/30 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-brand-400 mb-3">
-                Performance
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Message Rate</span>
-                  <span className="text-gray-200">
-                    {selectedServiceData.performance.messageRate}/s
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Error Rate</span>
-                  <span
-                    className={`${
-                      selectedServiceData.performance.errorRate > 5
-                        ? "text-red-400"
-                        : selectedServiceData.performance.errorRate > 1
-                        ? "text-yellow-400"
-                        : "text-green-400"
-                    }`}
-                  >
-                    {selectedServiceData.performance.errorRate}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Average Latency</span>
-                  <span
-                    className={`${
-                      selectedServiceData.metrics.averageLatency > 1000
-                        ? "text-red-400"
-                        : selectedServiceData.metrics.averageLatency > 500
-                        ? "text-yellow-400"
-                        : "text-green-400"
-                    }`}
-                  >
-                    {selectedServiceData.metrics.averageLatency}ms
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Messages</span>
-                  <span className="text-gray-200">
-                    {selectedServiceData.metrics.messageCount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Errors</span>
-                  <span className="text-gray-200">
-                    {selectedServiceData.metrics.errorCount.toLocaleString()}
-                  </span>
-                </div>
+        {/* Add Dependencies View Toggle */}
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={() => setShowDependencies(!showDependencies)}
+            className="flex items-center space-x-2 px-4 py-2 rounded-md bg-brand-500/20 hover:bg-brand-500/30 text-brand-300"
+          >
+            <FaProjectDiagram className="w-4 h-4" />
+            <span>{showDependencies ? "Hide" : "Show"} Dependencies</span>
+          </button>
+        </div>
+
+        {/* Dependencies View */}
+        {showDependencies && (
+          <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
+            <h2 className="text-xl font-bold text-gray-100 mb-4">
+              Service Dependencies
+            </h2>
+            <div className="h-[500px]">
+              <ReactFlowProvider>
+                <ReactFlow
+                  nodes={flowElements.nodes}
+                  edges={flowElements.edges}
+                  nodeTypes={nodeTypes}
+                  fitView
+                  className="bg-dark-300/30"
+                >
+                  <Background />
+                  <Controls />
+                </ReactFlow>
+              </ReactFlowProvider>
+            </div>
+          </div>
+        )}
+
+        {/* Selected Service Detail View */}
+        {selectedServiceData && (
+          <div className="mb-8 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-100">
+                  {selectedServiceData.name} Details
+                </h2>
+                <p
+                  className={`text-sm mt-1 ${
+                    selectedServiceData.status === "operational"
+                      ? "text-green-400"
+                      : selectedServiceData.status === "degraded"
+                      ? "text-yellow-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  Status:{" "}
+                  {selectedServiceData.status.charAt(0).toUpperCase() +
+                    selectedServiceData.status.slice(1)}
+                </p>
               </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleServiceClick(selectedServiceData.name);
+                }}
+                className="text-gray-400 hover:text-gray-300 transition-colors"
+              >
+                <FaTimes className="w-6 h-6" />
+              </button>
             </div>
 
-            {/* Connection Stats */}
-            <div className="bg-dark-300/30 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-brand-400 mb-3">
-                Connections
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Connections</span>
-                  <span className="text-gray-200">
-                    {selectedServiceData.metrics.totalConnections.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Active Subscriptions</span>
-                  <span className="text-gray-200">
-                    {selectedServiceData.metrics.activeSubscriptions.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Cache Hit Rate</span>
-                  <span
-                    className={`${
-                      selectedServiceData.metrics.cacheHitRate > 90
-                        ? "text-green-400"
-                        : selectedServiceData.metrics.cacheHitRate > 70
-                        ? "text-yellow-400"
-                        : "text-red-400"
-                    }`}
-                  >
-                    {selectedServiceData.metrics.cacheHitRate}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Last Update</span>
-                  <span className="text-gray-200">
-                    {new Date(
-                      selectedServiceData.metrics.lastUpdate
-                    ).toLocaleTimeString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Connection Rate</span>
-                  <span className="text-gray-200">
-                    {(
-                      (selectedServiceData.metrics.totalConnections /
-                        (selectedServiceData.metrics.activeSubscriptions ||
-                          1)) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </span>
-                </div>
-              </div>
-            </div>
+            {/* Service Controls */}
+            {renderServiceControls(selectedServiceData)}
 
-            {/* Service Health */}
-            <div className="bg-dark-300/30 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-brand-400 mb-3">
-                Service Health
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Message Success Rate</span>
-                  <span
-                    className={`${
-                      100 - selectedServiceData.performance.errorRate > 99
-                        ? "text-green-400"
-                        : 100 - selectedServiceData.performance.errorRate > 95
-                        ? "text-yellow-400"
-                        : "text-red-400"
-                    }`}
-                  >
-                    {(100 - selectedServiceData.performance.errorRate).toFixed(
-                      2
-                    )}
-                    %
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Performance Score</span>
-                  <span
-                    className={`${
-                      selectedServiceData.metrics.averageLatency < 100 &&
-                      selectedServiceData.performance.errorRate < 1
-                        ? "text-green-400"
-                        : "text-yellow-400"
-                    }`}
-                  >
-                    {Math.max(
-                      0,
-                      100 -
-                        selectedServiceData.metrics.averageLatency / 10 -
-                        selectedServiceData.performance.errorRate * 10
-                    ).toFixed(0)}
-                    %
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Load Factor</span>
-                  <span
-                    className={`${
-                      selectedServiceData.metrics.activeSubscriptions /
-                        selectedServiceData.metrics.totalConnections >
-                      0.8
-                        ? "text-red-400"
-                        : "text-green-400"
-                    }`}
-                  >
-                    {(
-                      (selectedServiceData.metrics.activeSubscriptions /
-                        (selectedServiceData.metrics.totalConnections || 1)) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </span>
-                </div>
-                {selectedServiceData.performance.latencyTrend.length > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Latency Trend</span>
-                    <span className="text-gray-200">
-                      {selectedServiceData.performance.latencyTrend
-                        .slice(-5)
-                        .join(" → ")}
-                      ms
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Configuration */}
-            {selectedServiceData.config && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Performance Metrics */}
               <div className="bg-dark-300/30 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-brand-400 mb-3">
-                  Configuration
+                  Performance
                 </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Max Message Size</span>
+                    <span className="text-gray-400">Message Rate</span>
                     <span className="text-gray-200">
-                      {(
-                        selectedServiceData.config.maxMessageSize / 1024
-                      ).toFixed(2)}{" "}
-                      KB
+                      {selectedServiceData.performance.messageRate}/s
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Rate Limit</span>
-                    <span className="text-gray-200">
-                      {selectedServiceData.config.rateLimit}/s
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Auth Required</span>
+                    <span className="text-gray-400">Error Rate</span>
                     <span
                       className={`${
-                        selectedServiceData.config.requireAuth
+                        selectedServiceData.performance.errorRate > 5
+                          ? "text-red-400"
+                          : selectedServiceData.performance.errorRate > 1
+                          ? "text-yellow-400"
+                          : "text-green-400"
+                      }`}
+                    >
+                      {selectedServiceData.performance.errorRate}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Average Latency</span>
+                    <span
+                      className={`${
+                        selectedServiceData.metrics.averageLatency > 1000
+                          ? "text-red-400"
+                          : selectedServiceData.metrics.averageLatency > 500
+                          ? "text-yellow-400"
+                          : "text-green-400"
+                      }`}
+                    >
+                      {selectedServiceData.metrics.averageLatency}ms
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Total Messages</span>
+                    <span className="text-gray-200">
+                      {selectedServiceData.metrics.messageCount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Total Errors</span>
+                    <span className="text-gray-200">
+                      {selectedServiceData.metrics.errorCount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Connection Stats */}
+              <div className="bg-dark-300/30 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-brand-400 mb-3">
+                  Connections
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Total Connections</span>
+                    <span className="text-gray-200">
+                      {selectedServiceData.metrics.totalConnections.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Active Subscriptions</span>
+                    <span className="text-gray-200">
+                      {selectedServiceData.metrics.activeSubscriptions.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Cache Hit Rate</span>
+                    <span
+                      className={`${
+                        selectedServiceData.metrics.cacheHitRate > 90
+                          ? "text-green-400"
+                          : selectedServiceData.metrics.cacheHitRate > 70
+                          ? "text-yellow-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {selectedServiceData.metrics.cacheHitRate}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Last Update</span>
+                    <span className="text-gray-200">
+                      {new Date(
+                        selectedServiceData.metrics.lastUpdate
+                      ).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Connection Rate</span>
+                    <span className="text-gray-200">
+                      {(
+                        (selectedServiceData.metrics.totalConnections /
+                          (selectedServiceData.metrics.activeSubscriptions ||
+                            1)) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Health */}
+              <div className="bg-dark-300/30 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-brand-400 mb-3">
+                  Service Health
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Message Success Rate</span>
+                    <span
+                      className={`${
+                        100 - selectedServiceData.performance.errorRate > 99
+                          ? "text-green-400"
+                          : 100 - selectedServiceData.performance.errorRate > 95
+                          ? "text-yellow-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {(
+                        100 - selectedServiceData.performance.errorRate
+                      ).toFixed(2)}
+                      %
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Performance Score</span>
+                    <span
+                      className={`${
+                        selectedServiceData.metrics.averageLatency < 100 &&
+                        selectedServiceData.performance.errorRate < 1
                           ? "text-green-400"
                           : "text-yellow-400"
                       }`}
                     >
-                      {selectedServiceData.config.requireAuth ? "Yes" : "No"}
+                      {Math.max(
+                        0,
+                        100 -
+                          selectedServiceData.metrics.averageLatency / 10 -
+                          selectedServiceData.performance.errorRate * 10
+                      ).toFixed(0)}
+                      %
                     </span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Load Factor</span>
+                    <span
+                      className={`${
+                        selectedServiceData.metrics.activeSubscriptions /
+                          selectedServiceData.metrics.totalConnections >
+                        0.8
+                          ? "text-red-400"
+                          : "text-green-400"
+                      }`}
+                    >
+                      {(
+                        (selectedServiceData.metrics.activeSubscriptions /
+                          (selectedServiceData.metrics.totalConnections || 1)) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </span>
+                  </div>
+                  {selectedServiceData.performance.latencyTrend.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Latency Trend</span>
+                      <span className="text-gray-200">
+                        {selectedServiceData.performance.latencyTrend
+                          .slice(-5)
+                          .join(" → ")}
+                        ms
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+
+              {/* Configuration */}
+              {selectedServiceData.config && (
+                <div className="bg-dark-300/30 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-brand-400 mb-3">
+                    Configuration
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Max Message Size</span>
+                      <span className="text-gray-200">
+                        {(
+                          selectedServiceData.config.maxMessageSize / 1024
+                        ).toFixed(2)}{" "}
+                        KB
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Rate Limit</span>
+                      <span className="text-gray-200">
+                        {selectedServiceData.config.rateLimit}/s
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Auth Required</span>
+                      <span
+                        className={`${
+                          selectedServiceData.config.requireAuth
+                            ? "text-green-400"
+                            : "text-yellow-400"
+                        }`}
+                      >
+                        {selectedServiceData.config.requireAuth ? "Yes" : "No"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Add Sort Controls */}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-400">Sort by:</span>
+            <select
+              value={`${sortBy.field}-${sortBy.direction}`}
+              onChange={(e) => {
+                const [field, direction] = e.target.value.split("-") as [
+                  "status" | "lastUpdate" | "errorRate" | "latency",
+                  "asc" | "desc"
+                ];
+                setSortBy({ field, direction });
+              }}
+              className="bg-dark-300/30 border border-brand-500/20 rounded px-3 py-1 text-gray-200 focus:outline-none focus:border-brand-500/40"
+            >
+              <option value="status-desc">Status (Critical First)</option>
+              <option value="status-asc">Status (Healthy First)</option>
+              <option value="lastUpdate-desc">Recently Updated</option>
+              <option value="lastUpdate-asc">Least Recently Updated</option>
+              <option value="errorRate-desc">Highest Error Rate</option>
+              <option value="errorRate-asc">Lowest Error Rate</option>
+              <option value="latency-desc">Highest Latency</option>
+              <option value="latency-asc">Lowest Latency</option>
+            </select>
           </div>
         </div>
-      )}
 
-      {/* Add Sort Controls */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <span className="text-gray-400">Sort by:</span>
-          <select
-            value={`${sortBy.field}-${sortBy.direction}`}
-            onChange={(e) => {
-              const [field, direction] = e.target.value.split("-") as [
-                "status" | "lastUpdate" | "errorRate" | "latency",
-                "asc" | "desc"
-              ];
-              setSortBy({ field, direction });
-            }}
-            className="bg-dark-300/30 border border-brand-500/20 rounded px-3 py-1 text-gray-200 focus:outline-none focus:border-brand-500/40"
-          >
-            <option value="status-desc">Status (Critical First)</option>
-            <option value="status-asc">Status (Healthy First)</option>
-            <option value="lastUpdate-desc">Recently Updated</option>
-            <option value="lastUpdate-asc">Least Recently Updated</option>
-            <option value="errorRate-desc">Highest Error Rate</option>
-            <option value="errorRate-asc">Lowest Error Rate</option>
-            <option value="latency-desc">Highest Latency</option>
-            <option value="latency-asc">Lowest Latency</option>
-          </select>
+        {testControlPanel}
+
+        {/* Services Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {getSortedServices(services).map((serviceData) => {
+            const service = webSocketServices.find(
+              (s) => s.name === serviceData.name
+            );
+            if (!service) return null;
+
+            return (
+              <div
+                key={service.id}
+                onClick={() => handleServiceClick(service.id)}
+                className={`group cursor-pointer transition-all duration-500 ${
+                  selectedService === service.id ? "ring-2 ring-brand-500" : ""
+                }`}
+              >
+                <div className="transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
+                  <WebSocketCard
+                    service={serviceData}
+                    onPowerAction={() =>
+                      handleServiceControl(
+                        service.id,
+                        serviceData.status === "operational" ? "stop" : "start"
+                      )
+                    }
+                    isDisabled={pendingOperation === service.id}
+                    transitionType={
+                      transitionTest?.serviceId === "all" ||
+                      transitionTest?.serviceId === service.id
+                        ? transitionTest.transitionType
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
 
-      {testControlPanel}
-
-      {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {getSortedServices(services).map((serviceData) => {
-          const service = webSocketServices.find(
-            (s) => s.name === serviceData.name
-          );
-          if (!service) return null;
-
-          return (
-            <div
-              key={service.id}
-              onClick={() => handleServiceClick(service.id)}
-              className={`group cursor-pointer transition-all duration-500 ${
-                selectedService === service.id ? "ring-2 ring-brand-500" : ""
-              }`}
-            >
-              <div className="transform transition-all duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1">
-                <WebSocketCard
-                  service={serviceData}
-                  onPowerAction={() =>
-                    handleServiceControl(
-                      service.id,
-                      serviceData.status === "operational" ? "stop" : "start"
-                    )
-                  }
-                  isDisabled={pendingOperation === service.id}
-                  transitionType={
-                    transitionTest?.serviceId === "all" ||
-                    transitionTest?.serviceId === service.id
-                      ? transitionTest.transitionType
-                      : undefined
-                  }
-                />
+        {/* System-wide Metrics */}
+        <div className="mt-8 bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-brand-400/20">
+          <h2 className="text-xl font-bold text-gray-100 mb-4">
+            System-wide Metrics
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <div className="text-sm text-gray-400">
+                Total Active Connections
+              </div>
+              <div className="text-2xl font-bold text-gray-100">
+                {services.reduce(
+                  (sum, service) => sum + service.metrics.totalConnections,
+                  0
+                )}
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* System-wide Metrics */}
-      <div className="mt-8 bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-brand-400/20">
-        <h2 className="text-xl font-bold text-gray-100 mb-4">
-          System-wide Metrics
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-dark-300/30 rounded-lg p-4">
-            <div className="text-sm text-gray-400">
-              Total Active Connections
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <div className="text-sm text-gray-400">Total Messages/sec</div>
+              <div className="text-2xl font-bold text-gray-100">
+                {services.reduce(
+                  (sum, service) => sum + service.performance.messageRate,
+                  0
+                )}
+              </div>
             </div>
-            <div className="text-2xl font-bold text-gray-100">
-              {services.reduce(
-                (sum, service) => sum + service.metrics.totalConnections,
-                0
-              )}
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <div className="text-sm text-gray-400">Average Latency</div>
+              <div className="text-2xl font-bold text-gray-100">
+                {services.length
+                  ? (
+                      services.reduce(
+                        (sum, service) => sum + service.metrics.averageLatency,
+                        0
+                      ) / services.length
+                    ).toFixed(2)
+                  : 0}
+                ms
+              </div>
             </div>
-          </div>
-          <div className="bg-dark-300/30 rounded-lg p-4">
-            <div className="text-sm text-gray-400">Total Messages/sec</div>
-            <div className="text-2xl font-bold text-gray-100">
-              {services.reduce(
-                (sum, service) => sum + service.performance.messageRate,
-                0
-              )}
-            </div>
-          </div>
-          <div className="bg-dark-300/30 rounded-lg p-4">
-            <div className="text-sm text-gray-400">Average Latency</div>
-            <div className="text-2xl font-bold text-gray-100">
-              {services.length
-                ? (
-                    services.reduce(
-                      (sum, service) => sum + service.metrics.averageLatency,
-                      0
-                    ) / services.length
-                  ).toFixed(2)
-                : 0}
-              ms
-            </div>
-          </div>
-          <div className="bg-dark-300/30 rounded-lg p-4">
-            <div className="text-sm text-gray-400">Total Errors (24h)</div>
-            <div className="text-2xl font-bold text-gray-100">
-              {services.reduce(
-                (sum, service) => sum + service.metrics.errorCount,
-                0
-              )}
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <div className="text-sm text-gray-400">Total Errors (24h)</div>
+              <div className="text-2xl font-bold text-gray-100">
+                {services.reduce(
+                  (sum, service) => sum + service.metrics.errorCount,
+                  0
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Debug Panel */}
-      <WebSocketDebugPanel />
-    </div>
+        {/* Debug Panel */}
+        <WebSocketDebugPanel />
+      </div>
+    </WebSocketErrorBoundary>
   );
 };
 

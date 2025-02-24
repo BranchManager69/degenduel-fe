@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { BalanceManager } from "../../components/admin/BalanceManager";
 import CircuitBreakerPanel from "../../components/admin/CircuitBreakerPanel";
 import { FaucetManager } from "../../components/admin/FaucetManager";
 import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap";
@@ -18,27 +17,18 @@ import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
-type TabType =
-  | "system"
-  | "spy"
-  | "faucet-mgr"
-  | "wallet-gen"
-  | "vanity"
-  | "reseed"
-  | "contests"
-  | "circuit"
-  | "activity"
-  | "websocket";
-
 export const SuperAdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>("activity");
   const { maintenanceMode, setMaintenanceMode, user } = useStore();
   const [maintenanceDuration, setMaintenanceDuration] = useState<number>(15);
   const [error, setError] = useState<string | null>(null);
   const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
+  //const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  //const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
+  //const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
 
   const toggleMaintenanceMode = async () => {
     try {
@@ -118,287 +108,382 @@ export const SuperAdminDashboard: React.FC = () => {
     }
   };
 
+  // Define superadmin sections with enhanced capabilities
+  const superadminSections = [
+    {
+      id: "control-hub",
+      title: "Control Hub",
+      icon: "🎛️",
+      description: "Master control panel for all system operations",
+      link: "/superadmin/control-hub",
+      color: "brand",
+      badge: "MASTER",
+    },
+    {
+      id: "websocket",
+      title: "WebSocket Monitor",
+      icon: "🔌",
+      description: "Advanced WebSocket monitoring and debugging",
+      link: "/superadmin/websocket-monitor",
+      color: "cyber",
+      badge: "LIVE",
+    },
+    {
+      id: "circuit-breaker",
+      title: "Circuit Monitor",
+      icon: "⚡",
+      description: "Monitor and manage system circuit breakers",
+      component: <CircuitBreakerPanel />,
+      color: "yellow",
+      badge: "SYSTEM",
+    },
+    {
+      id: "activity",
+      title: "Live Activity",
+      icon: "👥",
+      description: "Real-time user activity monitoring",
+      component: <LiveUserActivityMap />,
+      color: "emerald",
+      badge: "REAL-TIME",
+    },
+    {
+      id: "spy",
+      title: "User Spy",
+      icon: "🔍",
+      description: "Advanced user monitoring and debugging",
+      component: <SpyPanel />,
+      color: "purple",
+      badge: "ADMIN",
+    },
+    {
+      id: "logs",
+      title: "System Logs",
+      icon: "📋",
+      description: "View and analyze system logs",
+      component: <LogViewer />,
+      color: "blue",
+      badge: "DEBUG",
+    },
+    {
+      id: "faucet",
+      title: "Faucet Manager",
+      icon: "💧",
+      description: "Manage test token distribution",
+      component: <FaucetManager />,
+      color: "cyan",
+      badge: "TOKENS",
+    },
+    {
+      id: "wallet",
+      title: "Wallet Generator",
+      icon: "🔑",
+      description: "Generate and manage system wallets",
+      component: <WalletManagement />,
+      color: "pink",
+      badge: "SECURE",
+    },
+    {
+      id: "vanity",
+      title: "Vanity Pool",
+      icon: "✨",
+      description: "Manage vanity address generation",
+      component: <VanityPool />,
+      color: "indigo",
+      badge: "POOL",
+    },
+    {
+      id: "contests",
+      title: "Contest Control",
+      icon: "🏆",
+      description: "Advanced contest management",
+      component: (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <StartContest />
+            </div>
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <EndContest />
+            </div>
+          </div>
+          <ContestsList />
+        </div>
+      ),
+      color: "amber",
+      badge: "MANAGE",
+    },
+  ];
+
   return (
     <ContestProvider>
-      <div className="min-h-screen bg-dark-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Control Panel Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Control Panel Hub Link */}
-            <Link
-              to="/superadmin/control-hub"
-              className="group relative overflow-hidden bg-dark-200/50 backdrop-blur-lg rounded-lg border border-brand-500/20 hover:bg-dark-200/70 transition-all duration-300"
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold font-cyber tracking-wider bg-gradient-to-r from-brand-400 to-brand-600 bg-clip-text text-transparent">
+              SUPERADMIN CONTROL CENTER
+            </h1>
+            <p className="text-gray-400 mt-2 font-mono">
+              AUTHORIZATION_LEVEL: SUPERADMIN_CLEARANCE
+            </p>
+          </div>
+          <div className="text-brand-400 text-4xl animate-pulse">⚡</div>
+        </div>
+
+        {/* Maintenance Mode Control */}
+        <div className="bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/20 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
+                MAINTENANCE MODE
+              </h2>
+              <p className="text-sm text-gray-400 font-mono mt-1">
+                SYSTEM_MAINTENANCE_CONTROL_INTERFACE
+              </p>
+            </div>
+            <div
+              className={`h-3 w-3 rounded-full ${
+                maintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
+              }`}
+            />
+          </div>
+
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-4"
+              >
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Duration Setting (only shown when system is live) */}
+          <AnimatePresence>
+            {!maintenanceMode && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden mb-4"
+              >
+                <label className="text-sm text-gray-400 block mb-2 font-mono">
+                  ESTIMATED DURATION (MIN)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={maintenanceDuration}
+                  onChange={(e) =>
+                    setMaintenanceDuration(
+                      Math.max(1, parseInt(e.target.value) || 1)
+                    )
+                  }
+                  className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
+                />
+                <div className="text-xs text-gray-500 mt-1 font-mono">
+                  ({Math.floor(maintenanceDuration / 60)}h{" "}
+                  {maintenanceDuration % 60}m)
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={toggleMaintenanceMode}
+            disabled={isTogglingMaintenance}
+            className={`
+              w-full relative overflow-hidden rounded-lg border-2 
+              ${
+                maintenanceMode
+                  ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
+                  : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
+              }
+              ${isTogglingMaintenance ? "opacity-75" : ""}
+              transition-all duration-300 py-3 px-4 font-cyber tracking-wider
+            `}
+          >
+            {isTogglingMaintenance ? (
+              <span className="text-brand-400 animate-pulse">
+                {maintenanceMode ? "DEACTIVATING..." : "INITIATING..."}
+              </span>
+            ) : maintenanceMode ? (
+              <span className="text-red-400">DEACTIVATE MAINTENANCE</span>
+            ) : (
+              <span className="text-green-400">INITIATE MAINTENANCE</span>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
+          </button>
+        </div>
+
+        {/* Quick Actions Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link
+            to="/superadmin/switchboard"
+            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-brand-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-2xl">🔄</span>
+              <span className="text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-gray-200 mt-2">
+              Service Switchboard
+            </h3>
+          </Link>
+          <Link
+            to="/superadmin/circuit-breaker"
+            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-2xl">⚡</span>
+              <span className="text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-gray-200 mt-2">
+              Circuit Monitor
+            </h3>
+          </Link>
+          <Link
+            to="/api-playground"
+            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-cyber-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-2xl">🧪</span>
+              <span className="text-cyber-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-gray-200 mt-2">
+              API Playground
+            </h3>
+          </Link>
+          <Link
+            to="/wss-playground"
+            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-emerald-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-2xl">🔌</span>
+              <span className="text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-gray-200 mt-2">
+              WSS Playground
+            </h3>
+          </Link>
+        </div>
+
+        {/* Main Sections Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {superadminSections.map((section) => (
+            <motion.div
+              key={section.id}
+              className={`
+                bg-dark-200/50 backdrop-blur-lg rounded-lg border
+                border-${section.color}-500/20 hover:border-${
+                section.color
+              }-500/40
+                transition-all duration-300 group relative
+                ${
+                  selectedSection === section.id
+                    ? `ring-2 ring-${section.color}-500/50`
+                    : ""
+                }
+              `}
+              whileHover={{ scale: 1.02, y: -4 }}
             >
-              <div className="p-6">
-                <div className="flex items-center gap-4">
-                  <span className="text-3xl">🎛️</span>
-                  <div>
-                    <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
-                      CONTROL HUB
-                    </h2>
-                    <p className="text-sm text-gray-400 font-mono mt-1">
-                      MASTER_CONTROL_PANEL_ACCESS
-                    </p>
-                  </div>
-                </div>
-                <div className="absolute bottom-0 right-0 p-4">
-                  <span className="text-brand-400 text-lg group-hover:translate-x-1 transition-transform">
-                    →
-                  </span>
-                </div>
-                {/* Animated gradient border */}
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-500/0 via-brand-500/10 to-brand-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              </div>
-            </Link>
-
-            {/* Service Control Panel Link */}
-            <Link
-              to="/superadmin/services"
-              className="group relative overflow-hidden bg-dark-200/50 backdrop-blur-lg rounded-lg border border-brand-500/20 hover:bg-dark-200/70 transition-all duration-300"
-            >
-              <div className="p-6">
-                <div className="flex items-center gap-4">
-                  <span className="text-3xl">💻</span>
-                  <div>
-                    <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
-                      SERVICE CONTROL
-                    </h2>
-                    <p className="text-sm text-gray-400 font-mono mt-1">
-                      SYSTEM_SERVICES_MANAGEMENT_INTERFACE
-                    </p>
-                  </div>
-                </div>
-                <div className="absolute bottom-0 right-0 p-4">
-                  <span className="text-brand-400 text-lg group-hover:translate-x-1 transition-transform">
-                    →
-                  </span>
-                </div>
-                {/* Animated gradient border */}
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-500/0 via-brand-500/10 to-brand-500/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              </div>
-            </Link>
-
-            {/* Maintenance Mode Control */}
-            <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-brand-500/20">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
-                      MAINTENANCE MODE
-                    </h2>
-                    <p className="text-sm text-gray-400 font-mono mt-1">
-                      SYSTEM_MAINTENANCE_CONTROL_INTERFACE
-                    </p>
-                  </div>
-                  <div
-                    className={`h-3 w-3 rounded-full ${
-                      maintenanceMode
-                        ? "bg-red-500 animate-pulse"
-                        : "bg-green-500"
-                    }`}
-                  />
-                </div>
-
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="mb-4"
-                    >
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                        <p className="text-red-400 text-sm">{error}</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Duration Setting (only shown when system is live) */}
-                <AnimatePresence>
-                  {!maintenanceMode && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden mb-4"
-                    >
-                      <label className="text-sm text-gray-400 block mb-2 font-mono">
-                        ESTIMATED DURATION (MIN)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={maintenanceDuration}
-                        onChange={(e) =>
-                          setMaintenanceDuration(
-                            Math.max(1, parseInt(e.target.value) || 1)
-                          )
-                        }
-                        className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
-                      />
-                      <div className="text-xs text-gray-500 mt-1 font-mono">
-                        ({Math.floor(maintenanceDuration / 60)}h{" "}
-                        {maintenanceDuration % 60}m)
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <button
-                  onClick={toggleMaintenanceMode}
-                  disabled={isTogglingMaintenance}
+              {/* Badge */}
+              <div className="absolute -top-2 -right-2">
+                <div
                   className={`
-                    w-full relative overflow-hidden rounded-lg border-2 
-                    ${
-                      maintenanceMode
-                        ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
-                        : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
-                    }
-                    ${isTogglingMaintenance ? "opacity-75" : ""}
-                    transition-all duration-300 py-3 px-4 font-cyber tracking-wider
-                  `}
+                  px-2 py-1 text-xs font-bold rounded-full
+                  bg-${section.color}-500/20 text-${section.color}-400
+                  border border-${section.color}-500/30
+                  font-mono tracking-wider
+                `}
                 >
-                  {isTogglingMaintenance ? (
-                    <span className="text-brand-400 animate-pulse">
-                      {maintenanceMode ? "DEACTIVATING..." : "INITIATING..."}
-                    </span>
-                  ) : maintenanceMode ? (
-                    <span className="text-red-400">DEACTIVATE MAINTENANCE</span>
-                  ) : (
-                    <span className="text-green-400">INITIATE MAINTENANCE</span>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
-                </button>
+                  {section.badge}
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden">
-            {/* Tab Navigation */}
-            <div className="border-b border-dark-300">
-              <nav className="-mb-px flex flex-wrap">
-                {/* Tabs */}
-                {[
-                  { key: "activity", label: "Live Activity", icon: "👥" },
-                  { key: "websocket", label: "WebSocket Testing", icon: "🔌" },
-                  { key: "system", label: "Sys. Logs", icon: "📋" },
-                  { key: "circuit", label: "Circuit Monitor", icon: "⚡" },
-                  { key: "spy", label: "User Spy", icon: "🔍" },
-                  { key: "contests", label: "Contests", icon: "🏆" },
-                  { key: "faucet-mgr", label: "Faucet Mgr.", icon: "💧" },
-                  { key: "wallet-gen", label: "Wallet Gen.", icon: "🔑" },
-                  { key: "vanity", label: "Vanity Pool", icon: "✨" },
-                  { key: "reseed", label: "Reseed DB", icon: "🌱" },
-                ].map(({ key, label, icon }) => (
-                  <button
-                    key={key}
-                    onClick={() => setActiveTab(key as TabType)}
-                    className={`${
-                      activeTab === key
-                        ? "border-brand-500 text-brand-400"
-                        : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
-                    } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm focus:outline-none transition-colors duration-200 flex items-center gap-2`}
-                  >
-                    <span className="text-base">{icon}</span>
-                    {label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {/* Tab Content */}
-            <div className="p-6">
-              {activeTab === "activity" ? (
-                <LiveUserActivityMap />
-              ) : activeTab === "websocket" ? (
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                    <span className="text-xl">🔌</span>
-                    WebSocket Testing
-                  </h2>
-                  <Link
-                    to="/websocket-test"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
-                  >
-                    <span>Open WebSocket Testing Panel</span>
-                    <span className="text-brand-400">→</span>
-                  </Link>
-                </div>
-              ) : activeTab === "spy" ? (
-                <SpyPanel />
-              ) : activeTab === "system" ? (
-                <div className="space-y-6">
-                  {/* System Logs */}
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                      <span className="text-xl">📋</span>
-                      System Logs
-                    </h2>
-                    <div className="bg-dark-300/30 rounded-lg">
-                      <LogViewer />
-                    </div>
-                  </div>
-
-                  {/* Balance Manager */}
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                      <span className="text-xl">💰</span>
-                      Balance Management
-                    </h2>
-                    <BalanceManager />
-                  </div>
-                </div>
-              ) : activeTab === "circuit" ? (
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                    <span className="text-xl">⚡</span>
-                    Circuit Breaker Monitor
-                  </h2>
-                  <CircuitBreakerPanel />
-                </div>
-              ) : activeTab === "contests" ? (
-                <div className="space-y-6">
-                  {/* Contest Management */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-dark-300/30 rounded-lg p-4">
-                      <h3 className="text-lg font-medium text-gray-100 mb-4">
-                        Start Contest
+              {section.link ? (
+                <Link to={section.link} className="block p-6 h-full">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <h3
+                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
+                      >
+                        {section.title}
                       </h3>
-                      <StartContest />
+                      <p className="text-gray-400 text-sm">
+                        {section.description}
+                      </p>
                     </div>
-                    <div className="bg-dark-300/30 rounded-lg p-4">
-                      <h3 className="text-lg font-medium text-gray-100 mb-4">
-                        End Contest
+                    <div
+                      className={`text-${section.color}-400 opacity-0 group-hover:opacity-100 transition-opacity`}
+                    >
+                      →
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <button
+                  onClick={() =>
+                    setSelectedSection(
+                      selectedSection === section.id ? null : section.id
+                    )
+                  }
+                  className="block w-full p-6 text-left"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <h3
+                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
+                      >
+                        {section.title}
                       </h3>
-                      <EndContest />
+                      <p className="text-gray-400 text-sm">
+                        {section.description}
+                      </p>
+                    </div>
+                    <div
+                      className={`text-${
+                        section.color
+                      }-400 transform transition-transform ${
+                        selectedSection === section.id ? "rotate-180" : ""
+                      }`}
+                    >
+                      ↓
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-100 mb-4">
-                      Contest Overview
-                    </h3>
-                    <ContestsList />
+                </button>
+              )}
+
+              {/* Expandable Content */}
+              {selectedSection === section.id && section.component && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="px-6 pb-6"
+                >
+                  <div className="pt-4 border-t border-dark-300">
+                    {section.component}
                   </div>
-                </div>
-              ) : activeTab === "vanity" ? (
-                <VanityPool />
-              ) : activeTab === "wallet-gen" ? (
-                <WalletManagement />
-              ) : activeTab === "faucet-mgr" ? (
-                <FaucetManager />
-              ) : activeTab === "reseed" ? (
-                <div className="p-4">
-                  <h2 className="text-xl font-semibold text-gray-100 mb-4">
-                    Database Reseed
-                  </h2>
-                  <p className="text-gray-400">
-                    Database reseed interface coming soon...
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </div>
+                </motion.div>
+              )}
+            </motion.div>
+          ))}
         </div>
       </div>
     </ContestProvider>

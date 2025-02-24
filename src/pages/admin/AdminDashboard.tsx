@@ -13,15 +13,6 @@ import { UserDetail } from "../../components/ApiPlaygroundParts/UserDetail";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
-type TabType =
-  | "overview"
-  | "contests"
-  | "users"
-  | "activity"
-  | "websocket"
-  | "transactions"
-  | "achievements";
-
 // Add new interface for system alerts
 interface SystemAlert {
   id: string;
@@ -34,14 +25,16 @@ interface SystemAlert {
 
 export const AdminDashboard: React.FC = () => {
   const { maintenanceMode, setMaintenanceMode, user } = useStore();
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [maintenanceDuration, setMaintenanceDuration] = useState<number>(15); // Default 15 minutes
+  const [maintenanceDuration, setMaintenanceDuration] = useState<number>(15);
   const [error, setError] = useState<string | null>(null);
   const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
+  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
+
+  // Constants for retry logic
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000; // 2 seconds between retries
-  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
 
   const toggleMaintenanceMode = async () => {
     try {
@@ -198,27 +191,101 @@ export const AdminDashboard: React.FC = () => {
     };
   }, []);
 
-  const tabs: { id: TabType; label: string; icon: string }[] = [
-    { id: "overview", label: "Overview", icon: "📊" },
-    { id: "websocket", label: "WebSocket Testing", icon: "🔌" },
-    { id: "contests", label: "Contests", icon: "🏆" },
-    { id: "users", label: "Users", icon: "👥" },
-    { id: "activity", label: "Activity", icon: "📈" },
-    { id: "transactions", label: "Transactions", icon: "💰" },
-    { id: "achievements", label: "Achievements", icon: "🎯" },
+  // Define admin sections
+  const adminSections = [
+    {
+      id: "balance",
+      title: "Balance Management",
+      icon: "💰",
+      description: "Manage user balances and transactions",
+      component: <BalanceManager />,
+      color: "brand",
+    },
+    {
+      id: "websocket",
+      title: "WebSocket Testing",
+      icon: "🔌",
+      description: "Monitor and test WebSocket connections",
+      link: "/websocket-test",
+      color: "cyber",
+    },
+    {
+      id: "contests",
+      title: "Contest Management",
+      icon: "🏆",
+      description: "Create and manage contests",
+      component: (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <StartContest />
+            </div>
+            <div className="bg-dark-300/30 rounded-lg p-4">
+              <EndContest />
+            </div>
+          </div>
+          <ContestsList />
+        </div>
+      ),
+      color: "yellow",
+    },
+    {
+      id: "users",
+      title: "User Management",
+      icon: "👥",
+      description: "View and manage user accounts",
+      component: <UserDetail />,
+      color: "purple",
+    },
+    {
+      id: "activity",
+      title: "Activity Monitor",
+      icon: "📈",
+      description: "Track system activities and events",
+      component: <ActivityMonitor limit={10} />,
+      color: "emerald",
+    },
+    {
+      id: "transactions",
+      title: "Transaction History",
+      icon: "💸",
+      description: "View and manage transactions",
+      link: "/transactions",
+      color: "blue",
+    },
+    {
+      id: "achievements",
+      title: "Achievement Testing",
+      icon: "🎯",
+      description: "Test and manage achievements",
+      link: "/achievement-test",
+      color: "pink",
+    },
   ];
 
   return (
     <ContestProvider>
-      <div className="container mx-auto p-6">
-        {/* System Alerts Section */}
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-100">
+              Admin Control Center
+            </h1>
+            <p className="text-gray-400 mt-2">
+              System management and monitoring interface
+            </p>
+          </div>
+          <div className="text-brand-400 text-4xl">⚡</div>
+        </div>
+
+        {/* System Alerts */}
         <AnimatePresence>
           {systemAlerts.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mb-8"
             >
               <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-brand-500/20">
                 <div className="flex items-center justify-between mb-4">
@@ -321,15 +388,8 @@ export const AdminDashboard: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-100 mb-4">Admin Panel</h1>
-          <p className="text-gray-400">
-            Manage user balances, contests, and monitor system activities.
-          </p>
-        </div>
-
-        {/* Maintenance Mode Control Center */}
-        <div className="bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/20 mb-8 relative overflow-hidden">
+        {/* Maintenance Mode Control */}
+        <div className="bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/20 relative overflow-hidden">
           {/* Background Effects */}
           <div className="absolute inset-0">
             <div className="absolute inset-0 bg-gradient-to-r from-dark-300/50 via-dark-200/50 to-dark-300/50" />
@@ -550,272 +610,95 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="mb-6">
-          <div className="flex space-x-1 relative">
-            <div className="absolute bottom-0 w-full h-px bg-gradient-to-r from-dark-300/0 via-dark-300 to-dark-300/0" />
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  relative z-20 px-6 py-3 text-sm font-medium 
-                  transition-all duration-300 ease-in-out
-                  group
-                  ${
-                    activeTab === tab.id
-                      ? "text-brand-400 bg-dark-200/50 border-x border-t border-dark-300"
-                      : "text-gray-400 hover:text-gray-300"
-                  }
-                  rounded-t-lg
-                  hover:bg-dark-200/30
-                  focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-dark-100
-                `}
-              >
-                <div className="flex items-center gap-3 relative z-10">
-                  <span
-                    className={`text-lg transition-transform duration-300 ${
-                      activeTab === tab.id
-                        ? "transform scale-110"
-                        : "group-hover:scale-110"
-                    }`}
-                  >
-                    {tab.icon}
-                  </span>
-                  <span className="relative">
-                    {tab.label}
+        {/* Admin Sections Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {adminSections.map((section) => (
+            <motion.div
+              key={section.id}
+              className={`
+                bg-dark-200/50 backdrop-blur-lg rounded-lg border
+                border-${section.color}-500/20 hover:border-${
+                section.color
+              }-500/40
+                transition-all duration-300 group
+                ${
+                  selectedSection === section.id
+                    ? `ring-2 ring-${section.color}-500/50`
+                    : ""
+                }
+              `}
+              whileHover={{ scale: 1.02, y: -4 }}
+            >
+              {section.link ? (
+                <Link to={section.link} className="block p-6 h-full">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <h3
+                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
+                      >
+                        {section.title}
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        {section.description}
+                      </p>
+                    </div>
                     <div
-                      className={`
-                      absolute -bottom-1 left-0 w-full h-0.5
-                      bg-brand-400 transform origin-left
-                      transition-transform duration-300
-                      ${activeTab === tab.id ? "scale-x-100" : "scale-x-0"}
-                    `}
-                    />
-                  </span>
-                </div>
-                {activeTab === tab.id && (
-                  <>
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 animate-gradient-x" />
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-400/0 via-brand-400 to-brand-400/0" />
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab Content Container */}
-        <div className="bg-dark-200 border border-dark-300 rounded-lg relative">
-          {/* Overview Tab */}
-          <div
-            className={`
-              relative z-10
-              transition-all duration-300 ease-in-out
-              ${activeTab === "overview" ? "block" : "hidden"}
-            `}
-          >
-            {activeTab === "overview" && (
-              <div className="p-6 relative">
-                <div className="space-y-6">
-                  {/* Balance Manager */}
-                  <div className="relative z-10">
-                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                      <span className="text-xl">💰</span>
-                      Balance Management
-                    </h2>
-                    <div className="relative z-10">
-                      <BalanceManager />
+                      className={`text-${section.color}-400 opacity-0 group-hover:opacity-100 transition-opacity`}
+                    >
+                      →
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* WebSocket Testing Tab */}
-          <div
-            className={`
-              relative z-10
-              transition-all duration-300 ease-in-out
-              ${activeTab === "websocket" ? "block" : "hidden"}
-            `}
-          >
-            {activeTab === "websocket" && (
-              <div className="p-6 relative">
-                <div className="space-y-6">
-                  <div className="relative z-10">
-                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                      <span className="text-xl">🔌</span>
-                      WebSocket Testing
-                    </h2>
-                    <div className="bg-dark-300/30 rounded-lg p-6">
-                      <p className="text-gray-400 mb-4">
-                        Access the WebSocket testing interface to monitor and
-                        test all WebSocket connections in real-time.
-                      </p>
-                      <Link
-                        to="/websocket-test"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
+                </Link>
+              ) : (
+                <button
+                  onClick={() =>
+                    setSelectedSection(
+                      selectedSection === section.id ? null : section.id
+                    )
+                  }
+                  className="block w-full p-6 text-left"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <h3
+                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
                       >
-                        <span>Open WebSocket Testing Panel</span>
-                        <span className="text-brand-400">→</span>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Contests Tab */}
-          <div
-            className={`
-              relative z-10
-              transition-all duration-300 ease-in-out
-              ${activeTab === "contests" ? "block" : "hidden"}
-            `}
-          >
-            {activeTab === "contests" && (
-              <div className="p-6 relative">
-                <div className="space-y-6">
-                  {/* Contest Actions */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-dark-300/30 rounded-lg p-4 relative z-10">
-                      <StartContest />
-                    </div>
-                    <div className="bg-dark-300/30 rounded-lg p-4 relative z-10">
-                      <EndContest />
-                    </div>
-                  </div>
-
-                  {/* Contest List */}
-                  <div className="relative z-10">
-                    <h3 className="text-lg font-medium text-gray-100 mb-4">
-                      Contest Overview
-                    </h3>
-                    <ContestsList />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Users Tab */}
-          <div
-            className={`
-              relative z-10
-              transition-all duration-300 ease-in-out
-              ${activeTab === "users" ? "block" : "hidden"}
-            `}
-          >
-            {activeTab === "users" && (
-              <div className="p-6 relative">
-                <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                    <span className="text-xl">👥</span>
-                    User Management
-                  </h2>
-                  <div className="relative z-10">
-                    <UserDetail />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Activity Tab */}
-          <div
-            className={`
-              relative z-10
-              transition-all duration-300 ease-in-out
-              ${activeTab === "activity" ? "block" : "hidden"}
-            `}
-          >
-            {activeTab === "activity" && (
-              <div className="p-6 relative">
-                <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                    <span className="text-xl">📈</span>
-                    Activity Monitor
-                  </h2>
-                  <div className="relative z-10">
-                    <ActivityMonitor limit={10} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Transactions Tab */}
-          <div
-            className={`
-              relative z-10
-              transition-all duration-300 ease-in-out
-              ${activeTab === "transactions" ? "block" : "hidden"}
-            `}
-          >
-            {activeTab === "transactions" && (
-              <div className="p-6 relative">
-                <div className="space-y-6">
-                  <div className="relative z-10">
-                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                      <span className="text-xl">💰</span>
-                      Transactions
-                    </h2>
-                    <div className="bg-dark-300/30 rounded-lg p-6">
-                      <p className="text-gray-400 mb-4">
-                        Access the transactions interface to manage and view all
-                        transactions.
+                        {section.title}
+                      </h3>
+                      <p className="text-gray-400 text-sm">
+                        {section.description}
                       </p>
-                      <Link
-                        to="/transactions"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
-                      >
-                        <span>Open Transactions Panel</span>
-                        <span className="text-brand-400">→</span>
-                      </Link>
+                    </div>
+                    <div
+                      className={`text-${
+                        section.color
+                      }-400 transform transition-transform ${
+                        selectedSection === section.id ? "rotate-180" : ""
+                      }`}
+                    >
+                      ↓
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
+                </button>
+              )}
 
-          {/* Achievements Tab */}
-          <div
-            className={`
-              relative z-10
-              transition-all duration-300 ease-in-out
-              ${activeTab === "achievements" ? "block" : "hidden"}
-            `}
-          >
-            {activeTab === "achievements" && (
-              <div className="p-6 relative">
-                <div className="space-y-6">
-                  <div className="relative z-10">
-                    <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                      <span className="text-xl">🎯</span>
-                      Achievement Testing
-                    </h2>
-                    <div className="bg-dark-300/30 rounded-lg p-6">
-                      <p className="text-gray-400 mb-4">
-                        Access the achievement testing interface to manage and
-                        test achievements.
-                      </p>
-                      <Link
-                        to="/achievement-test"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg transition-colors duration-200"
-                      >
-                        <span>Open Achievement Testing Panel</span>
-                        <span className="text-brand-400">→</span>
-                      </Link>
-                    </div>
+              {/* Expandable Content */}
+              {selectedSection === section.id && section.component && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="px-6 pb-6"
+                >
+                  <div className="pt-4 border-t border-dark-300">
+                    {section.component}
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
+                </motion.div>
+              )}
+            </motion.div>
+          ))}
         </div>
       </div>
     </ContestProvider>

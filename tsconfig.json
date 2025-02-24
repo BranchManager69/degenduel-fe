@@ -23,10 +23,10 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ES2022",
+    "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -34,16 +34,13 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["vite/client", "react", "react-dom", "three", "jest", "node"],
-    "typeRoots": ["./node_modules/@types"],
+    "downlevelIteration": true,
+    "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "*": ["src/*"]
-    },
-    "incremental": true,
-    "tsBuildInfoFile": "./node_modules/.cache/.tsbuildinfo",
-    "esModuleInterop": true
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src", "DebugPanel.tsx"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

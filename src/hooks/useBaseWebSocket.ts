@@ -1,15 +1,19 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "../store/useStore";
 
-interface WebSocketConfig {
+export interface WebSocketConfig {
   url: string;
   endpoint: string;
   socketType: string;
-  reconnectAttempts?: number;
-  maxReconnectAttempts?: number;
+  onMessage: (message: any) => void;
+  onError?: (error: Error) => void;
+  onReconnect?: () => void;
   heartbeatInterval?: number;
-  onMessage?: (message: any) => void;
+  maxReconnectAttempts?: number;
+  reconnectBackoff?: boolean;
 }
+
+export type ServiceStatus = "online" | "offline" | "degraded" | "error";
 
 export const useBaseWebSocket = (config: WebSocketConfig) => {
   const wsRef = useRef<WebSocket | null>(null);

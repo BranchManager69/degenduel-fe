@@ -1,38 +1,39 @@
 import { Float, Text } from "@react-three/drei";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import { formatDistanceToNow } from "date-fns";
 import { AnimatePresence, motion, useAnimation } from "framer-motion";
 import { KernelSize } from "postprocessing";
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { FaPowerOff } from "react-icons/fa";
 import * as THREE from "three";
-import { User } from "types";
+import { User } from "../../types";
 
-export interface WebSocketCardProps {
-  service: {
-    name: string;
-    status: "operational" | "degraded" | "error";
-    metrics: {
-      totalConnections: number;
-      activeSubscriptions: number;
-      messageCount: number;
-      errorCount: number;
-      cacheHitRate: number;
-      averageLatency: number;
-      lastUpdate: string;
-    };
-    performance: {
-      messageRate: number;
-      errorRate: number;
-      latencyTrend: number[];
-    };
-    config?: {
-      maxMessageSize: number;
-      rateLimit: number;
-      requireAuth: boolean;
-    };
+interface WebSocketService {
+  name: string;
+  status: "operational" | "degraded" | "error";
+  metrics: {
+    totalConnections: number;
+    activeSubscriptions: number;
+    messageCount: number;
+    errorCount: number;
+    cacheHitRate: number;
+    averageLatency: number;
+    lastUpdate: string;
   };
+  performance: {
+    messageRate: number;
+    errorRate: number;
+    latencyTrend: number[];
+  };
+  config?: {
+    maxMessageSize: number;
+    rateLimit: number;
+    requireAuth: boolean;
+  };
+}
+
+interface WebSocketCardProps {
+  service: WebSocketService;
   onPowerAction?: () => void;
   isDisabled?: boolean;
   transitionType?:
@@ -697,7 +698,32 @@ const HolographicMetric: React.FC<{
   );
 };
 
-const WebSocketCard: React.FC<WebSocketCardProps> = ({
+// Helper function to format time difference
+const formatTimeDiff = (dateStr: string): string => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+
+  if (minutes > 0) {
+    return `${minutes}m ago`;
+  }
+  return `${seconds}s ago`;
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "operational":
+      return "rgb(34, 197, 94)";
+    case "degraded":
+      return "rgb(234, 179, 8)";
+    case "error":
+      return "rgb(239, 68, 68)";
+    default:
+      return "rgb(148, 163, 184)";
+  }
+};
+
+export const WebSocketCard: React.FC<WebSocketCardProps> = ({
   service,
   onPowerAction,
   isDisabled,
@@ -740,19 +766,6 @@ const WebSocketCard: React.FC<WebSocketCardProps> = ({
       });
     }
   }, [transitionType, controls]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "operational":
-        return "rgb(34, 197, 94)";
-      case "degraded":
-        return "rgb(234, 179, 8)";
-      case "error":
-        return "rgb(239, 68, 68)";
-      default:
-        return "rgb(148, 163, 184)";
-    }
-  };
 
   const cardVariants = {
     initial: { scale: 0.95, opacity: 0 },
@@ -820,12 +833,7 @@ const WebSocketCard: React.FC<WebSocketCardProps> = ({
             </motion.h3>
           </div>
           <span className="text-xs text-gray-400 whitespace-nowrap">
-            {formatDistanceToNow(new Date(service.metrics.lastUpdate), {
-              addSuffix: true,
-            })
-              .replace("less than ", "")
-              .replace(" minutes", "m")
-              .replace(" minute", "m")}
+            {formatTimeDiff(service.metrics.lastUpdate)}
           </span>
         </div>
 
@@ -881,5 +889,3 @@ const WebSocketCard: React.FC<WebSocketCardProps> = ({
     </motion.div>
   );
 };
-
-export default WebSocketCard;

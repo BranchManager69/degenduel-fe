@@ -7,14 +7,14 @@ console.log("API_URL configuration in use:", {
 });
 
 // Import all API modules
-import { admin } from "./admin.ts";
-import { balance } from "./balance.ts";
-import { contests } from "./contests.ts";
-import { portfolio } from "./portfolio.ts";
-import { stats } from "./stats.ts";
-import { tokens } from "./tokens.ts";
-import { transactions } from "./transactions.ts";
-import { users } from "./users.ts";
+import { admin } from "./admin";
+import { balance } from "./balance";
+import { contests } from "./contests";
+import { portfolio } from "./portfolio";
+import { stats } from "./stats";
+import { tokens } from "./tokens";
+import { transactions } from "./transactions";
+import { users } from "./users";
 
 // Export the combined API interface
 export const ddApi = {
@@ -29,4 +29,4 @@ export const ddApi = {
 };
 
 // Export utility functions
-export * from "./utils.ts";
+export * from "./utils";

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useDebounce } from "../../hooks/useDebounce.ts";
-import type { User } from "../../services/userService.ts";
-import { userService } from "../../services/userService.ts";
+import { useDebounce } from "../../hooks/useDebounce";
+import type { User } from "../../services/userService";
+import { userService } from "../../services/userService";
 
 interface UserSearchProps {
   onSearch: (query: string) => void;
