@@ -103,7 +103,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                 <MenuItem to="/tokens" onClick={() => setIsOpen(false)}>
                   Tokens
                 </MenuItem>
-                <MenuItem to="/rankings" onClick={() => setIsOpen(false)}>
+                <MenuItem to="/leaderboards" onClick={() => setIsOpen(false)}>
                   Rankings
                 </MenuItem>
 

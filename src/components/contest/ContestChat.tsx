@@ -157,7 +157,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
       className={`contest-chat flex flex-col h-full bg-gray-900 rounded-lg shadow-lg overflow-hidden ${className}`}
     >
       {/* Header with room info */}
-      <div className="chat-header bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center">
+      <div className="chat-header bg-gray-800/90 p-3 border-b border-gray-700/80 flex justify-between items-center backdrop-blur-sm">
         <h3 className="text-lg font-bold text-white">Contest Chat</h3>
         <div className="text-sm text-gray-400 flex items-center">
           <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
@@ -169,27 +169,30 @@ export const ContestChat: React.FC<ContestChatProps> = ({
               {getAdminBadgeText()}
             </span>
           )}
-          {isMobile && (
-            <button
-              onClick={() => setShowParticipants(!showParticipants)}
-              className="ml-2 p-1 bg-gray-700 rounded hover:bg-gray-600 transition-colors"
+          <button
+            onClick={() => setShowParticipants(!showParticipants)}
+            className={`ml-2 p-1 rounded transition-colors ${
+              showParticipants 
+                ? "bg-brand-600 text-white" 
+                : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+            }`}
+            title="Toggle participants list"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-gray-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -270,16 +273,14 @@ export const ContestChat: React.FC<ContestChatProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Participants list - hidden on mobile unless toggled */}
-        {(!isMobile || showParticipants) && (
+        {/* Participants list - hidden by default, shown only when toggled */}
+        {showParticipants && (
           <div
             className={`participants ${
               isMobile
-                ? "absolute right-0 top-16 z-10 w-64 h-[calc(100%-120px)]"
-                : "w-64"
-            } bg-gray-800 p-4 border-l border-gray-700 hidden md:block overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 ${
-              isMobile ? "!block" : ""
-            }`}
+                ? "absolute right-0 top-16 z-10 w-56 h-[calc(100%-120px)]"
+                : "w-56"
+            } bg-gray-800/90 p-3 border-l border-gray-700/80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800 backdrop-blur-sm`}
           >
             <div className="flex justify-between items-center mb-4">
               <h4 className="text-sm font-bold text-gray-400 uppercase flex items-center">

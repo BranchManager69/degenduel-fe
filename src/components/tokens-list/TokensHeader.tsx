@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { TokenResponseMetadata } from "../../types";
 import { DataStatus } from "./DataStatus";
 
@@ -17,14 +18,12 @@ export const TokensHeader: React.FC<TokensHeaderProps> = ({ metadata }) => {
       </div>
       <p className="text-sm sm:text-base text-gray-400">
         Tokens in your portfolio must be on the{" "}
-        <a
-          href="https://degenduel.me/whitelist"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          to="/tokens/whitelist"
           className="text-brand-400 hover:text-brand-300"
         >
           Add Token to Whitelist
-        </a>
+        </Link>
       </p>
     </div>
   );

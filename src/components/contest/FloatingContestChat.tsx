@@ -46,8 +46,11 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
     setIsMinimized(!isMinimized);
   };
 
-  // Calculate position from right
-  const rightPosition = `${position * 320 + 20}px`;
+  // Calculate position from right with increased spacing
+  const rightPosition = `${position * 340 + 20}px`;
+  
+  // Calculate vertical position - place higher on page
+  const bottomPosition = "calc(33.33vh + 56px)";
 
   // Get status color based on contest status
   const getStatusColor = () => {
@@ -67,16 +70,16 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
   const getHeaderGradient = () => {
     if (adminType === "superadmin") {
       return isActive
-        ? "bg-gradient-to-r from-yellow-700 to-amber-600"
-        : "bg-gray-800 hover:bg-gray-700 border-l-2 border-yellow-600";
+        ? "bg-gradient-to-r from-yellow-700/95 to-amber-600/95 backdrop-blur-sm"
+        : "bg-gray-800/90 hover:bg-gray-700/95 border-l-2 border-yellow-600/80 backdrop-blur-sm";
     } else if (adminType === "admin") {
       return isActive
-        ? "bg-gradient-to-r from-red-700 to-red-600"
-        : "bg-gray-800 hover:bg-gray-700 border-l-2 border-red-600";
+        ? "bg-gradient-to-r from-red-700/95 to-red-600/95 backdrop-blur-sm"
+        : "bg-gray-800/90 hover:bg-gray-700/95 border-l-2 border-red-600/80 backdrop-blur-sm";
     } else {
       return isActive
-        ? "bg-gradient-to-r from-brand-600 to-cyber-600"
-        : "bg-gray-800 hover:bg-gray-700";
+        ? "bg-gradient-to-r from-brand-600/95 to-cyber-600/95 backdrop-blur-sm shadow-brand-500/20 shadow-inner"
+        : "bg-gray-800/90 hover:bg-gray-700/95 backdrop-blur-sm";
     }
   };
 
@@ -104,13 +107,15 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
 
   return (
     <div
-      className={`fixed bottom-0 z-50 transition-all duration-300 shadow-xl ${className}`}
+      className={`fixed z-50 transition-all duration-300 shadow-xl ${className}`}
       style={{
         right: className?.includes("w-full") ? "0" : rightPosition,
+        bottom: className?.includes("w-full") ? "0" : bottomPosition,
         width: className?.includes("w-full") ? "100%" : "300px",
-        height: isMinimized ? "48px" : "500px",
-        opacity: isActive ? 1 : 0.7,
+        height: isMinimized ? "48px" : "450px",
+        opacity: isActive ? 0.95 : 0.7,
         maxWidth: className?.includes("w-full") ? "100%" : "300px",
+        backdropFilter: "blur(4px)",
       }}
     >
       {/* Chat header - always visible */}
@@ -220,8 +225,8 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
           className={`${
             className?.includes("w-full")
               ? "h-[calc(100vh-120px)]"
-              : "h-[452px]"
-          } bg-gray-900 rounded-b-lg overflow-hidden shadow-lg`}
+              : "h-[402px]"
+          } bg-gray-900/95 rounded-b-lg overflow-hidden shadow-lg border border-brand-500/30`}
         >
           <ContestChat
             contestId={contest.contestId}

@@ -1,6 +1,7 @@
 // src/pages/superadmin/WssPlayground.tsx
 
 import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { useStore } from "../../store/useStore";
 
 interface Message {
@@ -9,6 +10,7 @@ interface Message {
   data?: any;
   error?: string;
   latency?: number;
+  direction?: "incoming" | "outgoing";
 }
 
 interface Stats {
@@ -17,6 +19,9 @@ interface Stats {
   errorCount: number;
   lastReconnect: Date | null;
   connectedClients?: number;
+  outgoingCount: number;
+  incomingCount: number;
+  connectionDuration: number;
 }
 
 interface PortfolioData {
@@ -26,6 +31,12 @@ interface PortfolioData {
   }>;
   total_value: number;
   performance_24h: number;
+}
+
+interface TestMessage {
+  name: string;
+  type: string;
+  data: any;
 }
 
 export const WssPlayground: React.FC = () => {
@@ -43,12 +54,92 @@ export const WssPlayground: React.FC = () => {
     errorCount: 0,
     lastReconnect: null,
     connectedClients: 0,
+    outgoingCount: 0,
+    incomingCount: 0,
+    connectionDuration: 0,
   });
+  
+  const [activeTab, setActiveTab] = useState<"logs" | "test-messages">("logs");
+  const [customMessage, setCustomMessage] = useState<string>("");
+  const [customMessageValid, setCustomMessageValid] = useState<boolean>(true);
+  const [pingInterval, setPingInterval] = useState<number>(5000);
+  const [autoPing, setAutoPing] = useState<boolean>(true);
+  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connectionStartTimeRef = useRef<number | null>(null);
+  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Predefined test messages
+  const testMessages: TestMessage[] = [
+    {
+      name: "Ping",
+      type: "ping",
+      data: {},
+    },
+    {
+      name: "Test Portfolio Update",
+      type: "PORTFOLIO_UPDATE_REQUEST",
+      data: {
+        tokens: [
+          { symbol: "DUEL", amount: 1420069 },
+          { symbol: "BONKFA", amount: 696969 },
+          { symbol: "ASS", amount: 420420 },
+          { symbol: "TITS", amount: 8008135 },
+          { symbol: "SOL", amount: 0.69 },
+        ],
+        total_value: 169,
+        performance_24h: 69.0,
+      }
+    },
+    {
+      name: "Get Connected Clients",
+      type: "GET_CONNECTED_CLIENTS",
+      data: {},
+    },
+    {
+      name: "Request Portfolio",
+      type: "GET_PORTFOLIO",
+      data: {},
+    },
+    {
+      name: "Subscription Test",
+      type: "SUBSCRIBE",
+      data: { channel: "portfolio_updates" },
+    },
+  ];
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+
+  const setupAutoPing = () => {
+    // Clear existing interval if any
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+
+    if (autoPing && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      pingIntervalRef.current = setInterval(() => {
+        sendMessage("ping", {});
+      }, pingInterval);
+    }
+  };
+
+  const setupConnectionDurationTimer = () => {
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+    }
+
+    connectionStartTimeRef.current = Date.now();
+    
+    durationIntervalRef.current = setInterval(() => {
+      if (connectionStartTimeRef.current) {
+        const duration = Math.floor((Date.now() - connectionStartTimeRef.current) / 1000);
+        setStats(prev => ({ ...prev, connectionDuration: duration }));
+      }
+    }, 1000);
+  };
 
   const connectWebSocket = () => {
     try {
@@ -58,6 +149,25 @@ export const WssPlayground: React.FC = () => {
       }
 
       setStatus("connecting");
+
+      // Clear any existing timers
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = null;
+      }
+      
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+        durationIntervalRef.current = null;
+      }
+
+      // Reset connection stats
+      connectionStartTimeRef.current = null;
+      setStats(prev => ({
+        ...prev,
+        connectionDuration: 0,
+        lastReconnect: new Date()
+      }));
 
       // Close existing connection if any
       if (wsRef.current) {
@@ -79,20 +189,37 @@ export const WssPlayground: React.FC = () => {
         console.log("WebSocket Connected");
         setStatus("connected");
         setError(null);
-        setStats((prev) => ({ ...prev, lastReconnect: new Date() }));
+        
+        // Start tracking connection duration
+        setupConnectionDurationTimer();
+        
+        // Setup auto-ping if enabled
+        setupAutoPing();
+        
+        // Add connection message to the log
+        const connectionMsg: Message = {
+          type: "CONNECTION_ESTABLISHED",
+          timestamp: new Date().toISOString(),
+          data: { status: "connected" },
+          direction: "incoming"
+        };
+        
+        setMessages(prev => [connectionMsg, ...prev]);
+        setStats((prev) => ({ 
+          ...prev, 
+          lastReconnect: new Date(),
+          incomingCount: prev.incomingCount + 1,
+          messageCount: prev.messageCount + 1
+        }));
 
         // Send initial ping
-        ws.send(
-          JSON.stringify({
-            type: "ping",
-            timestamp: new Date().toISOString(),
-          })
-        );
+        sendMessage("ping", {});
       };
 
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data) as Message;
+          message.direction = "incoming";
           console.log("Received message:", message);
 
           // Calculate latency for ping/pong
@@ -103,6 +230,7 @@ export const WssPlayground: React.FC = () => {
             setStats((prev) => ({
               ...prev,
               messageCount: prev.messageCount + 1,
+              incomingCount: prev.incomingCount + 1,
               avgLatency:
                 (prev.avgLatency * prev.messageCount + latency) /
                 (prev.messageCount + 1),
@@ -111,6 +239,7 @@ export const WssPlayground: React.FC = () => {
             setStats((prev) => ({
               ...prev,
               messageCount: prev.messageCount + 1,
+              incomingCount: prev.incomingCount + 1,
             }));
           }
 
@@ -129,13 +258,36 @@ export const WssPlayground: React.FC = () => {
                 errorCount: prev.errorCount + 1,
               }));
               break;
+            case "CONNECTED_CLIENTS":
+              if (message.data && typeof message.data.count === 'number') {
+                setStats(prev => ({
+                  ...prev,
+                  connectedClients: message.data.count
+                }));
+              }
+              break;
           }
 
-          setMessages((prev) => [...prev, message]);
+          setMessages((prev) => [message, ...prev]);
         } catch (err) {
           console.error("Error parsing message:", err);
           setError("Failed to parse message");
-          setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
+          setStats((prev) => ({ 
+            ...prev, 
+            errorCount: prev.errorCount + 1,
+            messageCount: prev.messageCount + 1,
+            incomingCount: prev.incomingCount + 1
+          }));
+          
+          // Add error message to the log
+          const errorMsg: Message = {
+            type: "PARSE_ERROR",
+            timestamp: new Date().toISOString(),
+            error: `Failed to parse: ${event.data}`,
+            direction: "incoming"
+          };
+          
+          setMessages(prev => [errorMsg, ...prev]);
         }
       };
 
@@ -146,6 +298,36 @@ export const WssPlayground: React.FC = () => {
           wasClean: event.wasClean,
         });
         setStatus("disconnected");
+        
+        // Stop all timers
+        if (pingIntervalRef.current) {
+          clearInterval(pingIntervalRef.current);
+          pingIntervalRef.current = null;
+        }
+        
+        if (durationIntervalRef.current) {
+          clearInterval(durationIntervalRef.current);
+          durationIntervalRef.current = null;
+        }
+        
+        // Add disconnect message to the log
+        const disconnectMsg: Message = {
+          type: "CONNECTION_CLOSED",
+          timestamp: new Date().toISOString(),
+          data: { 
+            code: event.code,
+            reason: event.reason,
+            wasClean: event.wasClean
+          },
+          direction: "incoming"
+        };
+        
+        setMessages(prev => [disconnectMsg, ...prev]);
+        setStats(prev => ({
+          ...prev,
+          incomingCount: prev.incomingCount + 1,
+          messageCount: prev.messageCount + 1
+        }));
 
         // Auto reconnect logic
         if (autoReconnect) {
@@ -157,21 +339,47 @@ export const WssPlayground: React.FC = () => {
 
       ws.onerror = (event) => {
         console.error("WebSocket Error:", event);
-        setError(
-          `WebSocket error: ${(event as ErrorEvent).message || "Unknown error"}`
-        );
+        const errorMessage = (event as ErrorEvent).message || "Unknown error";
+        setError(`WebSocket error: ${errorMessage}`);
         setStatus("disconnected");
-        setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
+        
+        // Add error message to the log
+        const errorMsg: Message = {
+          type: "CONNECTION_ERROR",
+          timestamp: new Date().toISOString(),
+          error: errorMessage,
+          direction: "incoming"
+        };
+        
+        setMessages(prev => [errorMsg, ...prev]);
+        setStats((prev) => ({ 
+          ...prev, 
+          errorCount: prev.errorCount + 1,
+          messageCount: prev.messageCount + 1,
+          incomingCount: prev.incomingCount + 1
+        }));
       };
     } catch (err) {
       console.error("Failed to create WebSocket:", err);
-      setError(
-        `Failed to create WebSocket: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to create WebSocket: ${errorMessage}`);
       setStatus("disconnected");
-      setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
+      
+      // Add error message to the log
+      const errorMsg: Message = {
+        type: "INITIALIZATION_ERROR",
+        timestamp: new Date().toISOString(),
+        error: errorMessage,
+        direction: "incoming"
+      };
+      
+      setMessages(prev => [errorMsg, ...prev]);
+      setStats((prev) => ({ 
+        ...prev, 
+        errorCount: prev.errorCount + 1,
+        messageCount: prev.messageCount + 1,
+        incomingCount: prev.incomingCount + 1
+      }));
     }
   };
 
@@ -180,17 +388,78 @@ export const WssPlayground: React.FC = () => {
       wsRef.current.close();
       wsRef.current = null;
     }
+    
+    // Clear all timeouts and intervals
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+    
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+  };
+  
+  const sendMessage = (type: string, data: any = {}) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      setError("WebSocket not connected");
+      return false;
+    }
+    
+    try {
+      const message = {
+        type,
+        data,
+        timestamp: new Date().toISOString(),
+      };
+      
+      wsRef.current.send(JSON.stringify(message));
+      
+      // Add to message log
+      const logMessage: Message = {
+        ...message,
+        direction: "outgoing"
+      };
+      
+      setMessages(prev => [logMessage, ...prev]);
+      setStats(prev => ({
+        ...prev,
+        messageCount: prev.messageCount + 1,
+        outgoingCount: prev.outgoingCount + 1
+      }));
+      
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to send message: ${errorMessage}`);
+      
+      // Add error to message log
+      const errorMsg: Message = {
+        type: "SEND_ERROR",
+        timestamp: new Date().toISOString(),
+        error: errorMessage,
+        direction: "outgoing"
+      };
+      
+      setMessages(prev => [errorMsg, ...prev]);
+      setStats(prev => ({
+        ...prev,
+        errorCount: prev.errorCount + 1,
+        messageCount: prev.messageCount + 1,
+        outgoingCount: prev.outgoingCount + 1
+      }));
+      
+      return false;
     }
   };
 
   const sendTestPortfolio = () => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      setError("WebSocket not connected");
-      return;
-    }
-
     const testPortfolio: PortfolioData = {
       tokens: [
         { symbol: "DUEL", amount: 1420069 },
@@ -203,23 +472,88 @@ export const WssPlayground: React.FC = () => {
       performance_24h: 69.0,
     };
 
-    wsRef.current.send(
-      JSON.stringify({
-        type: "PORTFOLIO_UPDATE_REQUEST",
-        data: testPortfolio,
-        timestamp: new Date().toISOString(),
-      })
-    );
+    return sendMessage("PORTFOLIO_UPDATE_REQUEST", testPortfolio);
+  };
+  
+  const sendTestMessage = (testMessage: TestMessage) => {
+    return sendMessage(testMessage.type, testMessage.data);
+  };
+  
+  const sendCustomJsonMessage = () => {
+    try {
+      const parsed = JSON.parse(customMessage);
+      const { type, data } = parsed;
+      
+      if (!type) {
+        setError("Message must include a 'type' field");
+        setCustomMessageValid(false);
+        return false;
+      }
+      
+      const success = sendMessage(type, data || {});
+      if (success) {
+        setCustomMessageValid(true);
+      }
+      return success;
+    } catch (err) {
+      setError(`Invalid JSON: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setCustomMessageValid(false);
+      return false;
+    }
   };
 
   const clearMessages = () => {
     setMessages([]);
-    setStats((prev) => ({ ...prev, messageCount: 0, avgLatency: 0 }));
+    setStats((prev) => ({ 
+      ...prev, 
+      messageCount: 0, 
+      avgLatency: 0,
+      incomingCount: 0,
+      outgoingCount: 0
+    }));
+  };
+  
+  const validateCustomMessage = (input: string) => {
+    try {
+      const parsed = JSON.parse(input);
+      return typeof parsed === 'object' && parsed !== null && 'type' in parsed;
+    } catch (e) {
+      return false;
+    }
   };
 
+  // Setup autoPing when settings change
+  useEffect(() => {
+    setupAutoPing();
+    return () => {
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+    };
+  }, [autoPing, pingInterval, status]);
+  
+  // Validate custom message as user types
+  useEffect(() => {
+    if (customMessage) {
+      setCustomMessageValid(validateCustomMessage(customMessage));
+    } else {
+      setCustomMessageValid(true);
+    }
+  }, [customMessage]);
+  
+  // Cleanup on component unmount
   useEffect(() => {
     return () => {
       disconnectWebSocket();
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
   }, []);
 

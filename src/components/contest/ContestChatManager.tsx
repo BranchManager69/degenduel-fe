@@ -27,21 +27,15 @@ export const ContestChatManager: React.FC = () => {
     };
   }, []);
 
-  // When contests change, update open chats
+  // When contests change, don't auto-open chats - just update state
   useEffect(() => {
     if (!loading && contests.length > 0) {
-      // On mobile, don't auto-open all chats
-      if (!isMobile) {
-        // Auto-open chats for all contests the user is in
-        setOpenChats(contests.map((contest) => contest.contestId));
-      }
-
-      // If no active chat is set and we have contests, set the first one as active
+      // No longer auto-open chats - only initialize active chat if needed
       if (!activeChat && contests.length > 0) {
         setActiveChat(contests[0].contestId);
       }
     }
-  }, [contests, loading, activeChat, isMobile]);
+  }, [contests, loading, activeChat]);
 
   // Update total unread count
   useEffect(() => {
@@ -113,6 +107,8 @@ export const ContestChatManager: React.FC = () => {
   };
 
   const handleActivateChat = (contestId: string) => {
+    // When activating a chat, make sure it's the only one open
+    setOpenChats([contestId]);
     setActiveChat(contestId);
   };
 
@@ -135,29 +131,25 @@ export const ContestChatManager: React.FC = () => {
         </div>
       )}
 
-      {/* Chat toggle button */}
-      <div className="fixed bottom-4 right-4 z-50">
+      {/* Chat toggle button - positioned higher on the page */}
+      <div className="fixed bottom-1/3 right-4 z-50">
         <button
           className={`group relative flex items-center ${
             isButtonExpanded ? "pr-4" : "pr-3"
           } pl-3 py-3 
-            bg-gradient-to-r from-brand-600 to-cyber-600 hover:from-brand-500 hover:to-cyber-500
+            bg-gradient-to-r from-brand-600/90 to-cyber-600/90 hover:from-brand-500 hover:to-cyber-500
             text-white rounded-full shadow-lg transition-all duration-300 ease-in-out
             hover:shadow-xl hover:shadow-brand-500/20 transform hover:-translate-y-0.5`}
           onClick={() => {
-            // Toggle all chats open/closed
+            // Toggle chats open/closed
             if (openChats.length === 0) {
-              // On mobile, only open one chat at a time
-              if (isMobile && contests.length > 0) {
+              // Only open first contest chat
+              if (contests.length > 0) {
                 setOpenChats([contests[0].contestId]);
                 setActiveChat(contests[0].contestId);
-              } else {
-                setOpenChats(contests.map((contest) => contest.contestId));
-                if (contests.length > 0) {
-                  setActiveChat(contests[0].contestId);
-                }
               }
             } else {
+              // Close all chats
               setOpenChats([]);
               setActiveChat(null);
             }

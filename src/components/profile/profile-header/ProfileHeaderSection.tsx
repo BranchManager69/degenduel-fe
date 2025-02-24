@@ -110,7 +110,7 @@ export const ProfileHeaderSection: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="relative">
         <Link
-          to={`/by-username/${userData.nickname || userData.wallet_address}`}
+          to={`/profile/${userData.nickname || userData.wallet_address}`}
           className="absolute top-2 right-2 px-3 py-1.5 bg-dark-200 border border-brand-500/50 hover:border-brand-500 rounded-lg flex items-center gap-2 transition-all duration-200 group/link z-10 hover:bg-dark-300"
         >
           <span className="text-sm text-brand-200 group-hover/link:text-brand-400 transition-colors font-medium">

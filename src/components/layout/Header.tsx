@@ -302,7 +302,7 @@ export const Header: React.FC = () => {
                   Tokens
                 </Link>
                 <Link
-                  to="/rankings"
+                  to="/leaderboards"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   Rankings
