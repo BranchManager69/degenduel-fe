@@ -36,7 +36,7 @@ export const DeleteTokenModal: React.FC<DeleteTokenModalProps> = ({
     setLoading(true);
 
     try {
-      const response = await ddApi.fetch(`/api/v2/tokens/${tokenAddress}`, {
+      const response = await ddApi.fetch(`/v2/tokens/${tokenAddress}`, {
         method: "DELETE",
         body: JSON.stringify({ reason: reason.trim() }),
       });

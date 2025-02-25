@@ -61,7 +61,7 @@ export const useMarketDataWebSocket = (symbols: string[]) => {
 
   return useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
-    endpoint: `/api/v2/ws/market?symbols=${symbols.join(",")}`,
+    endpoint: `/v2/ws/market?symbols=${symbols.join(",")}`,
     socketType: "market",
     onMessage: handleMessage,
     heartbeatInterval: 15000, // 15 second heartbeat for market data

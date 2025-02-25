@@ -50,8 +50,9 @@ export const checkContestParticipation = async (
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
+    // Use the new dedicated endpoint for checking participation
     const response = await fetch(
-      `${API_URL}/contests/${contestId}/portfolio/${userWallet}`,
+      `${API_URL}/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(userWallet)}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -61,25 +62,51 @@ export const checkContestParticipation = async (
       }
     ).finally(() => clearTimeout(timeoutId));
 
-    // If we get a 404 or any error status, user is not participating
+    // If we get a 404 or any error status, log detailed information before assuming non-participation
     if (!response.ok) {
+      try {
+        const errorText = await response.text();
+        console.warn(`Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`, {
+          endpoint: `${API_URL}/contests/${contestId}/check-participation`,
+          statusText: response.statusText,
+          responseText: errorText.substring(0, 200), // Truncate large responses
+          headers: Object.fromEntries(response.headers),
+        });
+      } catch (e) {
+        // If we can't read the response, just log the status
+        console.warn(`Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`);
+      }
+      
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
 
     try {
       const data = await response.json();
-      const result = !!(data?.tokens?.length > 0);
+      // Validate that response has the expected format
+      if (data.is_participating === undefined) {
+        console.warn(`Invalid participation response format for contest ${contestId}:`, data);
+        participationCache.set(cacheKey, { result: false, timestamp: now });
+        return false;
+      }
+      
+      const result = Boolean(data.is_participating);
       participationCache.set(cacheKey, { result, timestamp: now });
       return result;
     } catch (e) {
+      console.error(`Failed to parse participation response for contest ${contestId}:`, e);
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
   } catch (error: unknown) {
     // Don't log timeout errors
     if (error instanceof Error && error.name !== "AbortError") {
-      console.error("Error checking participation:", error);
+      console.error(`Error checking participation for contest ${contestId}, wallet ${userWallet}:`, {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        endpoint: `${API_URL}/contests/${contestId}/check-participation`
+      });
     }
     participationCache.set(cacheKey, { result: false, timestamp: now });
     return false;

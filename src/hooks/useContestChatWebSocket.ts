@@ -145,7 +145,7 @@ export const useContestChatWebSocket = (contestId: string) => {
 
   const ws = useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
-    endpoint: `/api/v2/ws/contest`,
+    endpoint: `/v2/ws/contest`,
     socketType: "contest-chat",
     onMessage: handleMessage,
     heartbeatInterval: 30000, // 30 second heartbeat

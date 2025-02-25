@@ -148,15 +148,9 @@ export const ContestDetails: React.FC = () => {
         sanitizedContest.participants
       );
 
-      // Check if current user is already participating
-      if (walletAddress && Array.isArray(data.contest_participants)) {
-        const userIsParticipating = data.contest_participants.some(
-          (p: ContestParticipant) =>
-            (p.wallet_address || p.address)?.toLowerCase() ===
-            walletAddress.toLowerCase()
-        );
-        setIsParticipating(userIsParticipating);
-      }
+      // Use the is_participating flag from the API response
+      // This is set by the dedicated /check-participation endpoint in the backend
+      setIsParticipating(data.is_participating || false);
 
       setContest(sanitizedContest);
     } catch (err) {

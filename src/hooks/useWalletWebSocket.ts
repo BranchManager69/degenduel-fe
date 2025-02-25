@@ -96,7 +96,7 @@ export const useWalletWebSocket = () => {
 
   return useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
-    endpoint: "/api/v2/ws/wallet",
+    endpoint: "/v2/ws/wallet",
     socketType: "wallet",
     onMessage: handleMessage,
     heartbeatInterval: 30000, // 30 second heartbeat

@@ -4,10 +4,6 @@ import {
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
-import {
-  CharacterRoom,
-  UNSAFE_initAccessToken,
-} from "@virtual-protocol/react-virtual-ai";
 import React, { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -320,13 +316,16 @@ export const TokenWhitelistPage: React.FC = () => {
                 </div>
               </div>
             </Card>
-            <div className="mt-8">
-              <CharacterRoom
-                initAccessToken={UNSAFE_initAccessToken}
-                userName="Branch"
-                virtualId={1}
-                virtualName="Virtual Branch"
-              />
+            
+            {/* Link to Virtual Agent Page */}
+            <div className="mt-8 text-center">
+              <p className="text-gray-400 mb-4">Need help with tokens or have questions?</p>
+              <a 
+                href="/game/virtual-agent" 
+                className="inline-block bg-brand-500 hover:bg-brand-600 text-white py-2 px-6 rounded-lg transition-colors"
+              >
+                Chat with our Virtual Game Agent
+              </a>
             </div>
           </div>
         </div>

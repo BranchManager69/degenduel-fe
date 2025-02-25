@@ -29,7 +29,7 @@ export const useAchievementWebSocket = () => {
 
   return useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
-    endpoint: "/api/v2/ws/achievements",
+    endpoint: "/v2/ws/achievements",
     socketType: "achievements",
     onMessage: handleMessage,
     heartbeatInterval: 30000, // 30 second heartbeat
