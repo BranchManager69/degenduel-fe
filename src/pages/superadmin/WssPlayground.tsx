@@ -32,7 +32,6 @@ interface PortfolioData {
   performance_24h: number;
 }
 
-
 export const WssPlayground: React.FC = () => {
   const { user } = useStore();
   const [status, setStatus] = useState<

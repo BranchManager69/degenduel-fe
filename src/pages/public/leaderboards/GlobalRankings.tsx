@@ -19,34 +19,50 @@ export const GlobalRankings = () => {
       setError(null);
 
       // First check maintenance mode
-      const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-      setIsMaintenanceMode(isInMaintenance);
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
 
-      // If in maintenance mode, don't fetch rankings
-      if (isInMaintenance) {
-        setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
-        );
-        return;
+        // If in maintenance mode, don't fetch rankings
+        if (isInMaintenance) {
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+          setLoading(false);
+          return;
+        }
+      } catch (maintenanceErr) {
+        console.error("Error checking maintenance mode:", maintenanceErr);
+        // Continue anyway, as this is just a check
       }
 
-      const data = await ddApi.leaderboard.getGlobalRankings(
-        PAGE_SIZE,
-        page * PAGE_SIZE
-      );
-      setRankings(data.rankings);
-      setTotal(data.total);
+      try {
+        const data = await ddApi.leaderboard.getGlobalRankings(
+          PAGE_SIZE,
+          page * PAGE_SIZE
+        );
+        
+        if (!data || !data.rankings) {
+          throw new Error("Invalid data format received from API");
+        }
+        
+        setRankings(data.rankings);
+        setTotal(data.total || 0);
+      } catch (dataErr) {
+        if (dataErr instanceof Error && dataErr.message.includes("503")) {
+          setIsMaintenanceMode(true);
+          setError(
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          );
+        } else {
+          setError("Failed to load rankings. Please try again later.");
+          console.error("Error fetching rankings data:", dataErr);
+        }
+      }
     } catch (err) {
-      // Check if the error is a 503 (maintenance mode)
-      if (err instanceof Error && err.message.includes("503")) {
-        setIsMaintenanceMode(true);
-        setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
-        );
-      } else {
-        setError("Failed to load rankings. Please try again later.");
-      }
-      console.error("Error fetching rankings:", err);
+      // Catch-all error handler
+      setError("Failed to load rankings. Please try again later.");
+      console.error("Fatal error in fetchRankings:", err);
     } finally {
       setLoading(false);
     }
@@ -89,16 +105,16 @@ export const GlobalRankings = () => {
     return avg.toFixed(1);
   };
 
-  if (loading && rankings.length === 0) {
+  if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-8">
         <h1 className="text-3xl font-bold text-gray-100 mb-4 relative group">
-          <span className="relative z-10 group-hover:animate-glitch">
+          <span className="relative z-10">
             Global Rankings
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </h1>
-        <div className="text-center py-8 text-gray-400 animate-cyber-pulse">
+        <div className="text-center py-8 text-gray-400">
           Loading rankings...
         </div>
       </div>
@@ -148,18 +164,42 @@ export const GlobalRankings = () => {
     );
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Handle the case where rankings is empty but there's no error
+  if (rankings.length === 0 && !loading && !error) {
+    return (
+      <div className="max-w-7xl mx-auto p-8">
+        <div className="mb-8 relative group">
+          <h1 className="text-3xl font-bold text-gray-100 mb-4 relative">
+            <span className="relative z-10">
+              Global Rankings
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </h1>
+          <p className="text-gray-400">
+            View the top traders ranked by their performance across all contests.
+          </p>
+        </div>
+        
+        <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-8 text-center">
+          <p className="text-gray-400 text-lg">No ranking data available yet.</p>
+          <p className="text-sm text-gray-500 mt-2">Check back soon as players complete more contests!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-8">
       <div className="mb-8 relative group">
         <h1 className="text-3xl font-bold text-gray-100 mb-4 relative">
-          <span className="relative z-10 group-hover:animate-glitch">
+          <span className="relative z-10">
             Global Rankings
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </h1>
-        <p className="text-gray-400 group-hover:animate-cyber-pulse">
+        <p className="text-gray-400">
           View the top traders ranked by their performance across all contests.
         </p>
       </div>
@@ -197,45 +237,45 @@ export const GlobalRankings = () => {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <span className="text-gray-100 group-hover/row:animate-cyber-pulse">
+                      <span className="text-gray-100">
                         #{entry.rank}
                       </span>
                       <span className="text-sm text-gray-400 group-hover/row:text-brand-400 transition-colors">
-                        (Top {entry.percentile.toFixed(1)}%)
+                        (Top {entry.percentile?.toFixed(1) || '0.0'}%)
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col group-hover/row:animate-cyber-scan">
-                      <span className="text-gray-100">{entry.nickname}</span>
+                    <div className="flex flex-col">
+                      <span className="text-gray-100">{entry.nickname || 'Anonymous'}</span>
                       <span className="text-sm text-gray-400">
-                        {entry.wallet_address.slice(0, 6)}...
-                        {entry.wallet_address.slice(-4)}
+                        {entry.wallet_address?.slice(0, 6) || ''}...
+                        {entry.wallet_address?.slice(-4) || ''}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right text-gray-100 group-hover/row:animate-neon-flicker">
-                    {formatBonusPoints(entry.rank_score)}
+                  <td className="px-6 py-4 text-right text-gray-100">
+                    {formatBonusPoints(entry.rank_score || 0)}
                   </td>
-                  <td className="px-6 py-4 text-right text-gray-100 group-hover/row:animate-neon-flicker">
-                    {formatBonusPoints(entry.highest_rank_score)}
+                  <td className="px-6 py-4 text-right text-gray-100">
+                    {formatBonusPoints(entry.highest_rank_score || 0)}
                   </td>
                   <td
                     className={`px-6 py-4 text-right ${getTrendColor(
-                      entry.trend
-                    )} group-hover/row:animate-glitch`}
+                      entry.trend || "→"
+                    )}`}
                   >
-                    {entry.trend}
+                    {entry.trend || "→"}
                   </td>
-                  <td className="px-6 py-4 text-right text-gray-100 group-hover/row:animate-cyber-pulse">
+                  <td className="px-6 py-4 text-right text-gray-100">
                     {formatAvgPosition(entry.avg_position)}
                   </td>
-                  <td className="px-6 py-4 text-right text-gray-100 group-hover/row:animate-cyber-pulse">
-                    {entry.total_contests}
+                  <td className="px-6 py-4 text-right text-gray-100">
+                    {entry.total_contests || 0}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <span className="text-brand-400 font-medium group-hover/row:animate-neon-flicker">
-                      {parseInt(entry.total_earnings).toLocaleString()} pts
+                    <span className="text-brand-400 font-medium">
+                      {parseInt(entry.total_earnings || '0').toLocaleString()} pts
                     </span>
                   </td>
                 </tr>
@@ -256,10 +296,10 @@ export const GlobalRankings = () => {
               : "bg-brand-500 text-white hover:bg-brand-600"
           }`}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-          <span className="relative group-hover:animate-glitch">Previous</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <span className="relative">Previous</span>
         </button>
-        <span className="text-gray-400 group-hover:animate-cyber-pulse">
+        <span className="text-gray-400">
           Page {page + 1} of {totalPages}
         </span>
         <button
@@ -271,8 +311,8 @@ export const GlobalRankings = () => {
               : "bg-brand-500 text-white hover:bg-brand-600"
           }`}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-          <span className="relative group-hover:animate-glitch">Next</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <span className="relative">Next</span>
         </button>
       </div>
     </div>

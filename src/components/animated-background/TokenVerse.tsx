@@ -4,6 +4,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
@@ -16,9 +17,11 @@ interface TokenNode {
   volume24h: number;
   change24h: number;
   mesh?: THREE.Mesh;
+  highlightBeam?: THREE.Object3D;
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   connections: TokenNode[];
+  isHovered?: boolean;
 }
 
 export const TokenVerse: React.FC = () => {
@@ -40,6 +43,9 @@ export const TokenVerse: React.FC = () => {
   const controlsRef = useRef<OrbitControls | null>(null);
   const nodesRef = useRef<TokenNode[]>([]);
   const animationFrameRef = useRef<number>();
+  const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
+  const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2(-1000, -1000));
+  const targetCameraPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 50));
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Cleanup function
@@ -48,6 +54,17 @@ export const TokenVerse: React.FC = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
+
+    // Remove event listeners
+    if (rendererRef.current?.domElement) {
+      const canvas = rendererRef.current.domElement;
+      canvas.removeEventListener("mousemove", () => {});
+      canvas.removeEventListener("webglcontextlost", () => {});
+      canvas.removeEventListener("webglcontextrestored", () => {});
+    }
+    
+    // Remove scroll listener
+    window.removeEventListener("scroll", () => {});
 
     if (rendererRef.current && containerRef.current) {
       containerRef.current.removeChild(rendererRef.current.domElement);
@@ -67,7 +84,7 @@ export const TokenVerse: React.FC = () => {
 
     if (composerRef.current) {
       composerRef.current.passes.forEach((pass) => {
-        if (pass instanceof UnrealBloomPass) {
+        if (pass instanceof UnrealBloomPass || pass instanceof BokehPass) {
           pass.dispose();
         }
       });
@@ -105,6 +122,9 @@ export const TokenVerse: React.FC = () => {
       );
       cameraRef.current = camera;
       camera.position.z = 50;
+      
+      // Store initial camera position
+      targetCameraPositionRef.current.copy(camera.position);
 
       // Renderer setup with context loss handling
       const renderer = new THREE.WebGLRenderer({
@@ -139,7 +159,35 @@ export const TokenVerse: React.FC = () => {
         false
       );
 
-      // Post-processing with adjusted bloom
+      // Mouse move handler for raycasting and camera focus
+      canvas.addEventListener("mousemove", (event) => {
+        // Calculate mouse position in normalized device coordinates (-1 to +1)
+        const rect = canvas.getBoundingClientRect();
+        mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      });
+      
+      // Scroll handler for camera motion
+      window.addEventListener("scroll", () => {
+        if (cameraRef.current) {
+          // Calculate how far down the page we've scrolled (0 to 1)
+          const scrollY = window.scrollY;
+          const maxScroll = document.body.scrollHeight - window.innerHeight;
+          const scrollFraction = Math.min(1, Math.max(0, scrollY / maxScroll));
+          
+          // Adjust camera position based on scroll
+          const scrollPosition = new THREE.Vector3(
+            0,
+            -20 * scrollFraction, // Move camera down as we scroll
+            50 + (20 * scrollFraction) // Move camera away as we scroll
+          );
+          
+          // Blend with current target (for hover effects)
+          targetCameraPositionRef.current.lerp(scrollPosition, 0.5);
+        }
+      });
+
+      // Post-processing with adjusted bloom and depth of field
       const composer = new EffectComposer(renderer);
       const renderPass = new RenderPass(scene, camera);
       composer.addPass(renderPass);
@@ -151,6 +199,15 @@ export const TokenVerse: React.FC = () => {
         0.9
       );
       composer.addPass(bloomPass);
+      
+      // Add depth-of-field effect using BokehPass
+      const bokehPass = new BokehPass(scene, camera, {
+        focus: 50,
+        aperture: 0.0025,
+        maxblur: 0.01
+      });
+      composer.addPass(bokehPass);
+      
       composerRef.current = composer;
 
       // Controls
@@ -235,6 +292,80 @@ export const TokenVerse: React.FC = () => {
         }
         particles.geometry.attributes.position.needsUpdate = true;
 
+        // Perform raycasting to detect hover
+        if (nodesRef.current.length > 0) {
+          raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+          const meshes = nodesRef.current
+            .filter(node => node.mesh)
+            .map(node => node.mesh!);
+          
+          const intersects = raycasterRef.current.intersectObjects(meshes);
+          
+          // Reset all hover states
+          nodesRef.current.forEach(node => {
+            if (node.isHovered && node.mesh) {
+              node.isHovered = false;
+              // Remove highlight beam if it exists
+              if (node.highlightBeam && sceneRef.current) {
+                sceneRef.current.remove(node.highlightBeam);
+                node.highlightBeam = undefined;
+              }
+              
+              // Restore original scale
+              node.mesh.scale.set(1, 1, 1);
+            }
+          });
+          
+          // Handle new intersections
+          if (intersects.length > 0) {
+            const hoveredNode = nodesRef.current.find(
+              node => node.mesh === intersects[0].object
+            );
+            
+            if (hoveredNode) {
+              hoveredNode.isHovered = true;
+              
+              // Make hovered token slightly larger
+              if (hoveredNode.mesh) {
+                hoveredNode.mesh.scale.set(1.3, 1.3, 1.3);
+              }
+              
+              // Create neon light beam for highlighted token
+              if (!hoveredNode.highlightBeam && sceneRef.current) {
+                // Create cylinder that points upward from the token
+                const beamGeometry = new THREE.CylinderGeometry(0.2, 2, 40, 16, 1, true);
+                const beamMaterial = new THREE.MeshBasicMaterial({
+                  color: hoveredNode.change24h >= 0 ? 0x00ff88 : 0xff4444,
+                  transparent: true,
+                  opacity: 0.3,
+                  side: THREE.DoubleSide
+                });
+                
+                const beam = new THREE.Mesh(beamGeometry, beamMaterial);
+                beam.position.copy(hoveredNode.position);
+                beam.position.y += 20; // Position the beam above the token
+                beam.rotation.x = Math.PI / 2; // Rotate to point upward
+                
+                sceneRef.current.add(beam);
+                hoveredNode.highlightBeam = beam;
+                
+                // Update camera target to focus on hovered node
+                const targetPosition = new THREE.Vector3().copy(hoveredNode.position);
+                targetPosition.z += 30; // Keep some distance
+                targetCameraPositionRef.current.copy(targetPosition);
+              }
+            }
+          } else {
+            // If no hover, gradually return to original position
+            targetCameraPositionRef.current.lerp(new THREE.Vector3(0, 0, 50), 0.05);
+          }
+          
+          // Smoothly move camera toward target position
+          if (cameraRef.current) {
+            cameraRef.current.position.lerp(targetCameraPositionRef.current, 0.02);
+          }
+        }
+
         // Update token nodes
         nodesRef.current.forEach((node) => {
           if (!node.mesh) return;
@@ -261,6 +392,15 @@ export const TokenVerse: React.FC = () => {
           node.velocity.multiplyScalar(0.95); // Damping
           node.position.add(node.velocity);
           node.mesh.position.copy(node.position);
+          
+          // Update highlight beam position if it exists
+          if (node.highlightBeam) {
+            node.highlightBeam.position.copy(node.position);
+            node.highlightBeam.position.y += 20;
+            
+            // Add subtle animation to the beam
+            node.highlightBeam.rotation.z += 0.01;
+          }
 
           // Rotate based on price change
           node.mesh.rotation.x += 0.01 * Math.sign(node.change24h);
@@ -358,23 +498,51 @@ export const TokenVerse: React.FC = () => {
             if (node.mesh) sceneRef.current?.remove(node.mesh);
           });
 
-          // Create new meshes
+          // Create new meshes with varied geometry for better depth-of-field visualization
           nodes.forEach((node) => {
             const size = Math.max(
               0.2,
               Math.min(2, Math.log10(node.marketCap) * 0.2)
             );
-            const geometry = new THREE.IcosahedronGeometry(size, 1);
+            
+            // Use different geometries based on market cap for visual variety
+            let geometry;
+            if (node.marketCap > 1000000000) {
+              // Large market cap - complex geometry
+              geometry = new THREE.IcosahedronGeometry(size, 2);
+            } else if (node.marketCap > 100000000) {
+              // Medium market cap - dodecahedron
+              geometry = new THREE.DodecahedronGeometry(size, 1);
+            } else if (node.marketCap > 10000000) {
+              // Small market cap - octahedron
+              geometry = new THREE.OctahedronGeometry(size, 1);
+            } else {
+              // Tiny market cap - tetrahedron
+              geometry = new THREE.TetrahedronGeometry(size, 0);
+            }
+            
+            // Create more interesting materials with emissive glow
+            const positiveChange = node.change24h >= 0;
+            const changeIntensity = Math.min(1, Math.abs(node.change24h) / 10);
+            
             const material = new THREE.MeshPhongMaterial({
-              color: node.change24h >= 0 ? 0x00ff88 : 0xff4444,
-              emissive: node.change24h >= 0 ? 0x00aa44 : 0xaa2222,
+              color: positiveChange ? 0x00ff88 : 0xff4444,
+              emissive: positiveChange ? 0x00aa44 : 0xaa2222,
+              emissiveIntensity: 0.5 + changeIntensity,
               shininess: 100,
               transparent: true,
               opacity: 0.9,
+              specular: 0xffffff
             });
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.copy(node.position);
+            
+            // Add slight random rotation for more visual interest
+            mesh.rotation.x = Math.random() * Math.PI;
+            mesh.rotation.y = Math.random() * Math.PI;
+            mesh.rotation.z = Math.random() * Math.PI;
+            
             sceneRef.current?.add(mesh);
             node.mesh = mesh;
           });
