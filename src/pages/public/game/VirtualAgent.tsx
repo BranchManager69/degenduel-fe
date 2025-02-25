@@ -17,7 +17,7 @@ export const VirtualAgentPage: React.FC = () => {
   const userName = user?.nickname || 'Trader';
   
   // Custom token fetching function for CharacterRoom
-  const initAccessToken = useCallback(async (virtualId: number) => {
+  const initAccessToken = useCallback(async (virtualId: string | number, forceRefetchToken?: boolean, metadata?: { [id: string]: any }) => {
     try {
       // Make request to our secure backend endpoint
       const response = await fetch(`${API_URL}/virtual-agent/token`, {
@@ -28,7 +28,9 @@ export const VirtualAgentPage: React.FC = () => {
         body: JSON.stringify({
           virtualId,
           userUid: user?.wallet_address || 'guest-user',
-          userName: userName
+          userName: userName,
+          forceRefetch: forceRefetchToken,
+          metadata
         }),
         credentials: 'include'
       });
