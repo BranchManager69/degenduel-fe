@@ -42,6 +42,7 @@ import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
 import { ContestResults } from "./pages/public/contests/ContestResultsPage";
+import { VirtualAgentPage } from "./pages/public/game/VirtualAgent";
 import { BannedIP } from "./pages/public/general/BannedIP";
 import { BannedUser } from "./pages/public/general/BannedUser";
 import { Contact } from "./pages/public/general/Contact";
@@ -56,7 +57,6 @@ import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
 import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding";
 import { TokensPage } from "./pages/public/tokens/TokensPage";
 import { TokenWhitelistPage } from "./pages/public/tokens/whitelist";
-import { VirtualAgentPage } from "./pages/public/game/VirtualAgent";
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
 import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage";
@@ -193,12 +193,14 @@ export const App: React.FC = () => {
 
               {/* Tokens Page */}
               <Route path="/tokens" element={<TokensPage />} />
+
+              {/* Token Whitelist Page */}
               <Route
                 path="/tokens/whitelist"
                 element={<TokenWhitelistPage />}
               />
-              
-              {/* Virtual Game Agent */}
+
+              {/* Virtual Game Agent Page */}
               <Route
                 path="/game/virtual-agent"
                 element={<VirtualAgentPage />}
