@@ -2,7 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 import { FONT_PRESETS } from "../../../constants/fonts";
-import { Particles } from "../../animated-background/Particles";
+import { ParticlesEffect } from "../../animated-background/ParticlesEffect";
 
 export const HeroTitle: React.FC = () => {
   const [introComplete, setIntroComplete] = useState(false);
@@ -15,7 +15,7 @@ export const HeroTitle: React.FC = () => {
       {/* Atmospheric effect */}
       <div className="absolute inset-0 z-10 opacity-80">
         <Canvas>
-          <Particles />
+          <ParticlesEffect />
         </Canvas>
       </div>
 

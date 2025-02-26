@@ -113,6 +113,8 @@ export const MarketVerse: React.FC = () => {
         volume24h: wsToken.volume24h,
         changesJson: {
           h24: parseFloat(wsToken.change24h || "0"),
+          h1: parseFloat(wsToken.change1h || "0"),
+          m5: parseFloat(wsToken.change5m || "0"),
         },
         transactionsJson: {
           h24: {
@@ -298,8 +300,11 @@ export const MarketVerse: React.FC = () => {
           }
 
           // Color based on 24h change with more distinctive coloring
-          const change24h = token.changesJson?.h24 || 0;
-          const isPositive = change24h > 0;
+          // Prefer 5-minute change for more dynamic visuals
+          // Only use 5-minute changes
+          const change5m = token.changesJson?.m5 || 0;
+          const change = change5m;
+          const isPositive = change > 0;
 
           // More distinctive coloring system:
           // - Highly positive: Bright green
@@ -310,36 +315,40 @@ export const MarketVerse: React.FC = () => {
 
           let color, emissiveColor;
 
-          if (change24h > 20) {
-            // Explosive growth (>20%)
+          // Adjust thresholds for 5-minute changes (which are naturally smaller)
+          // Ensure we'll get color variation even with small 5m changes
+          if (change > 2) {
+            // Explosive growth (>2% in 5m / >20% in 24h)
             color = new THREE.Color(0x00ff00);
             emissiveColor = new THREE.Color(0x00ff66);
-          } else if (change24h > 5) {
-            // Strong positive (5-20%)
+          } else if (change > 0.5) {
+            // Strong positive (0.5-2% in 5m / 5-20% in 24h)
             color = new THREE.Color(0x33ff33);
             emissiveColor = new THREE.Color(0x22dd44);
-          } else if (change24h > 0) {
-            // Slight positive (0-5%)
+          } else if (change > 0) {
+            // Slight positive (0-0.5% in 5m / 0-5% in 24h)
             color = new THREE.Color(0x66ffcc);
             emissiveColor = new THREE.Color(0x44ddaa);
-          } else if (change24h > -5) {
-            // Slight negative (0 to -5%)
+          } else if (change > -0.5) {
+            // Slight negative (0 to -0.5% in 5m / 0 to -5% in 24h)
             color = new THREE.Color(0xdd66ff);
             emissiveColor = new THREE.Color(0xbb44dd);
-          } else if (change24h > -20) {
-            // Strong negative (-5 to -20%)
+          } else if (change > -2) {
+            // Strong negative (-0.5 to -2% in 5m / -5 to -20% in 24h)
             color = new THREE.Color(0xff3366);
             emissiveColor = new THREE.Color(0xdd2244);
           } else {
-            // Severe drop (< -20%)
+            // Severe drop (< -2% in 5m / < -20% in 24h)
             color = new THREE.Color(0xff0000);
             emissiveColor = new THREE.Color(0xdd0000);
           }
 
           // Add texture or pattern based on token symbol's first letter
+          // Use 5m change with appropriate scaling for intensity
+          const intensityValue = Math.abs(change5m) * 10;
           const intensity = Math.max(
             0.5,
-            Math.min(1, Math.abs(change24h) / 15)
+            Math.min(1, intensityValue / 15)
           );
 
           // Create material with more visual distinctiveness
@@ -366,7 +375,7 @@ export const MarketVerse: React.FC = () => {
             token: token.symbol,
             name: token.name,
             price: token.price,
-            change24h: change24h,
+            change: change,
             marketCap: marketCap,
           };
 

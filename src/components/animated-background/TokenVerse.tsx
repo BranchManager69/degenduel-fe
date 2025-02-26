@@ -492,7 +492,8 @@ export const TokenVerse: React.FC = () => {
       price: parseFloat(token.price || "0"),
       marketCap: parseFloat(token.marketCap || "0"),
       volume24h: parseFloat(token.volume24h || "0"),
-      change24h: parseFloat(token.change24h || "0"),
+      // Only use 5-minute change for animations (using field name for compatibility)
+      change24h: parseFloat(token.change5m || "0"),
       position: new THREE.Vector3(
         (Math.random() - 0.5) * 50,
         (Math.random() - 0.5) * 50,
