@@ -9,7 +9,7 @@ import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap"
 import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
 import { VanityPool } from "../../components/admin/VanityPool";
-import { WalletManagement } from "../../components/admin/WalletManagement";
+import { SuperAdminWalletManagement } from "../../components/admin/SuperAdminWalletManagement";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -24,6 +24,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [expandedView, setExpandedView] = useState<boolean>(false);
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
   //const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -175,10 +176,10 @@ export const SuperAdminDashboard: React.FC = () => {
     },
     {
       id: "wallet",
-      title: "Wallet Generator",
+      title: "Wallet Management",
       icon: "🔑",
       description: "Generate and manage system wallets",
-      component: <WalletManagement />,
+      component: <SuperAdminWalletManagement />,
       color: "pink",
       badge: "SECURE",
     },
@@ -322,7 +323,7 @@ export const SuperAdminDashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Link
             to="/superadmin/switchboard"
             className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-brand-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
@@ -349,6 +350,20 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
             <h3 className="text-sm font-bold text-gray-200 mt-2">
               Circuit Monitor
+            </h3>
+          </Link>
+          <Link
+            to="/superadmin/wallet-monitoring"
+            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-2xl">👁️</span>
+              <span className="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-gray-200 mt-2">
+              Wallet Monitoring
             </h3>
           </Link>
           <Link
@@ -396,6 +411,11 @@ export const SuperAdminDashboard: React.FC = () => {
                   selectedSection === section.id
                     ? `ring-2 ring-${section.color}-500/50`
                     : ""
+                }
+                ${
+                  selectedSection === section.id && section.id === 'wallet' && expandedView
+                    ? 'col-span-full md:col-span-full lg:col-span-full'
+                    : ''
                 }
               `}
               whileHover={{ scale: 1.02, y: -4 }}
@@ -456,14 +476,27 @@ export const SuperAdminDashboard: React.FC = () => {
                         {section.description}
                       </p>
                     </div>
-                    <div
-                      className={`text-${
-                        section.color
-                      }-400 transform transition-transform ${
-                        selectedSection === section.id ? "rotate-180" : ""
-                      }`}
-                    >
-                      ↓
+                    <div className="flex items-center gap-2">
+                      {selectedSection === section.id && section.id === 'wallet' && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedView(!expandedView);
+                          }}
+                          className={`text-${section.color}-400 px-2 py-1 text-xs rounded-md border border-${section.color}-500/30 bg-dark-300/50 hover:bg-dark-300/80`}
+                        >
+                          {expandedView ? 'Compact View' : 'Expand View'}
+                        </button>
+                      )}
+                      <div
+                        className={`text-${
+                          section.color
+                        }-400 transform transition-transform ${
+                          selectedSection === section.id ? "rotate-180" : ""
+                        }`}
+                      >
+                        ↓
+                      </div>
                     </div>
                   </div>
                 </button>

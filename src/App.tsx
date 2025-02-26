@@ -64,6 +64,7 @@ import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub";
 import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
+import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring";
 import { WebSocketMonitoringHub } from "./pages/superadmin/WebSocketMonitoringHub";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
 import "./styles/color-schemes.css";
@@ -309,6 +310,16 @@ export const App: React.FC = () => {
                 element={
                   <SuperAdminRoute>
                     <SuperAdminDashboard />
+                  </SuperAdminRoute>
+                }
+              />
+              
+              {/* Wallet Monitoring */}
+              <Route
+                path="/superadmin/wallet-monitoring"
+                element={
+                  <SuperAdminRoute>
+                    <WalletMonitoring />
                   </SuperAdminRoute>
                 }
               />
