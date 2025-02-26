@@ -10,6 +10,7 @@ import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
 import { VanityPool } from "../../components/admin/VanityPool";
 import { SuperAdminWalletManagement } from "../../components/admin/SuperAdminWalletManagement";
+import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -131,12 +132,19 @@ export const SuperAdminDashboard: React.FC = () => {
     },
     {
       id: "circuit-breaker",
-      title: "Circuit Monitor",
+      title: "Circuit Monitor (Deprecated)",
       icon: "⚡",
-      description: "Monitor and manage system circuit breakers",
-      component: <CircuitBreakerPanel />,
+      description: "Monitor and manage system circuit breakers - Use SkyDuel instead",
+      component: (
+        <div>
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4 text-red-400">
+            This component is deprecated. Please use the SkyDuel Console with Circuit View instead.
+          </div>
+          <CircuitBreakerPanel />
+        </div>
+      ),
       color: "yellow",
-      badge: "SYSTEM",
+      badge: "DEPRECATED",
     },
     {
       id: "activity",
@@ -217,7 +225,10 @@ export const SuperAdminDashboard: React.FC = () => {
 
   return (
     <ContestProvider>
-      <div className="container mx-auto p-6 space-y-8">
+      {/* Add BackgroundEffects for visual consistency with other pages */}
+      <BackgroundEffects />
+      
+      <div className="container mx-auto p-6 space-y-8 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -323,76 +334,124 @@ export const SuperAdminDashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link
+            to="/admin/skyduel"
+            className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-purple-500/30 hover:bg-dark-300/50 hover:border-purple-500/50 transition-all duration-300 group relative overflow-hidden shadow-lg"
+          >
+            <div className="absolute -top-1 -right-1">
+              <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-purple-500/30 text-purple-200 font-mono">
+                NEW
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-3xl">⚡</span>
+              <span className="text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                →
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-purple-200 mt-2">
+              SkyDuel Console
+            </h3>
+            <p className="text-xs text-purple-300/80 mt-1">Unified service management</p>
+          </Link>
+          
+          <Link
+            to="/superadmin/wallet-monitoring"
+            className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-blue-500/30 hover:bg-dark-300/50 hover:border-blue-500/50 transition-all duration-300 group shadow-lg"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-3xl">👁️</span>
+              <span className="text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                →
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-blue-200 mt-2">
+              Wallet Monitoring
+            </h3>
+            <p className="text-xs text-blue-300/80 mt-1">Transaction tracking</p>
+          </Link>
+          
+          <Link
+            to="/api-playground"
+            className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-cyan-500/30 hover:bg-dark-300/50 hover:border-cyan-500/50 transition-all duration-300 group shadow-lg"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-3xl">🧪</span>
+              <span className="text-cyan-300 opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                →
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-cyan-200 mt-2">
+              API Playground
+            </h3>
+            <p className="text-xs text-cyan-300/80 mt-1">API testing environment</p>
+          </Link>
+          
+          <Link
+            to="/wss-playground"
+            className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-emerald-500/30 hover:bg-dark-300/50 hover:border-emerald-500/50 transition-all duration-300 group shadow-lg"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-3xl">🔌</span>
+              <span className="text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                →
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-emerald-200 mt-2">
+              WSS Playground
+            </h3>
+            <p className="text-xs text-emerald-300/80 mt-1">WebSocket testing</p>
+          </Link>
+        </div>
+        
+        {/* Secondary Actions */}
+        <div className="grid grid-cols-3 gap-4">
+          <Link
+            to="/amm-sim"
+            className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-pink-500/30 hover:bg-dark-300/50 hover:border-pink-500/50 transition-all duration-300 group shadow-lg"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-2xl">📊</span>
+              <span className="text-pink-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-pink-200 mt-2">
+              AMM Simulator
+            </h3>
+          </Link>
+          
           <Link
             to="/superadmin/switchboard"
-            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-brand-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
+            className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30 hover:bg-dark-300/70 transition-all duration-300 group relative opacity-60 grayscale"
           >
             <div className="flex items-center justify-between">
               <span className="text-2xl">🔄</span>
-              <span className="text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity line-through">
                 →
               </span>
             </div>
-            <h3 className="text-sm font-bold text-gray-200 mt-2">
+            <h3 className="text-sm font-bold text-gray-400 mt-2 line-through">
               Service Switchboard
             </h3>
+            <div className="text-xs text-red-400/80 mt-1">Deprecated</div>
           </Link>
+          
           <Link
             to="/superadmin/circuit-breaker"
-            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
+            className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30 hover:bg-dark-300/70 transition-all duration-300 group relative opacity-60 grayscale"
           >
             <div className="flex items-center justify-between">
               <span className="text-2xl">⚡</span>
-              <span className="text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity line-through">
                 →
               </span>
             </div>
-            <h3 className="text-sm font-bold text-gray-200 mt-2">
+            <h3 className="text-sm font-bold text-gray-400 mt-2 line-through">
               Circuit Monitor
             </h3>
-          </Link>
-          <Link
-            to="/superadmin/wallet-monitoring"
-            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xl">👁️</span>
-              <span className="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </span>
-            </div>
-            <h3 className="text-sm font-bold text-gray-200 mt-2">
-              Wallet Monitoring
-            </h3>
-          </Link>
-          <Link
-            to="/api-playground"
-            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-cyber-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xl">🧪</span>
-              <span className="text-cyber-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </span>
-            </div>
-            <h3 className="text-sm font-bold text-gray-200 mt-2">
-              API Playground
-            </h3>
-          </Link>
-          <Link
-            to="/wss-playground"
-            className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-emerald-500/20 hover:bg-dark-200/70 transition-all duration-300 group"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xl">🔌</span>
-              <span className="text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </span>
-            </div>
-            <h3 className="text-sm font-bold text-gray-200 mt-2">
-              WSS Playground
-            </h3>
+            <div className="text-xs text-red-400/80 mt-1">Deprecated</div>
           </Link>
         </div>
 
@@ -402,16 +461,11 @@ export const SuperAdminDashboard: React.FC = () => {
             <motion.div
               key={section.id}
               className={`
-                bg-dark-200/50 backdrop-blur-lg rounded-lg border
-                border-${section.color}-500/20 hover:border-${
-                section.color
-              }-500/40
+                bg-dark-200/70 backdrop-blur-lg rounded-xl border-2 shadow-lg
+                ${selectedSection === section.id 
+                  ? `border-${section.color}-500/50 shadow-${section.color}-500/10` 
+                  : `border-${section.color}-500/30 hover:border-${section.color}-500/50`}
                 transition-all duration-300 group relative
-                ${
-                  selectedSection === section.id
-                    ? `ring-2 ring-${section.color}-500/50`
-                    : ""
-                }
                 ${
                   selectedSection === section.id && section.id === 'wallet' && expandedView
                     ? 'col-span-full md:col-span-full lg:col-span-full'
@@ -420,27 +474,28 @@ export const SuperAdminDashboard: React.FC = () => {
               `}
               whileHover={{ scale: 1.02, y: -4 }}
             >
-              {/* Badge */}
-              <div className="absolute -top-2 -right-2">
-                <div
-                  className={`
-                  px-2 py-1 text-xs font-bold rounded-full
-                  bg-${section.color}-500/20 text-${section.color}-400
-                  border border-${section.color}-500/30
-                  font-mono tracking-wider
-                `}
-                >
-                  {section.badge}
+              {/* Badge - Only show for non-deprecated items */}
+              {section.badge && section.badge !== "DEPRECATED" && (
+                <div className="absolute -top-1 -right-1">
+                  <div
+                    className={`
+                    px-2 py-0.5 text-xs font-bold rounded-md
+                    bg-${section.color}-500/30 text-${section.color}-200
+                    font-mono
+                  `}
+                  >
+                    {section.badge}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {section.link ? (
                 <Link to={section.link} className="block p-6 h-full">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <div className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}>{section.icon}</div>
                       <h3
-                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
+                        className={`text-xl font-bold text-${section.color}-200 mb-2`}
                       >
                         {section.title}
                       </h3>
@@ -449,7 +504,7 @@ export const SuperAdminDashboard: React.FC = () => {
                       </p>
                     </div>
                     <div
-                      className={`text-${section.color}-400 opacity-0 group-hover:opacity-100 transition-opacity`}
+                      className={`text-${section.color}-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity`}
                     >
                       →
                     </div>
@@ -466,9 +521,9 @@ export const SuperAdminDashboard: React.FC = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <div className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}>{section.icon}</div>
                       <h3
-                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
+                        className={`text-xl font-bold text-${section.color}-200 mb-2`}
                       >
                         {section.title}
                       </h3>
@@ -483,15 +538,13 @@ export const SuperAdminDashboard: React.FC = () => {
                             e.stopPropagation();
                             setExpandedView(!expandedView);
                           }}
-                          className={`text-${section.color}-400 px-2 py-1 text-xs rounded-md border border-${section.color}-500/30 bg-dark-300/50 hover:bg-dark-300/80`}
+                          className={`text-${section.color}-200 px-2 py-1 text-xs rounded-md border-2 border-${section.color}-500/30 bg-dark-300/80 hover:bg-dark-300/90`}
                         >
                           {expandedView ? 'Compact View' : 'Expand View'}
                         </button>
                       )}
                       <div
-                        className={`text-${
-                          section.color
-                        }-400 transform transition-transform ${
+                        className={`text-${section.color}-300 text-lg transform transition-all ${
                           selectedSection === section.id ? "rotate-180" : ""
                         }`}
                       >

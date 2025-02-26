@@ -35,9 +35,9 @@ export const BackgroundEffects: React.FC = () => {
   const experimentalMode = true; // Master switch for all experimental visualizations
 
   // Individual experimental layers - only active if experimentalMode is true
-  const gradientWavesEnabled = false; // Flowing gradient waves based on token volume
+  const gradientWavesEnabled = true; // Flowing gradient waves based on token volume - ENABLED!
   const fluidTokensEnabled = true; // Fluid dynamics simulation using token data - WOW EFFECT!
-  const abstractPatternsEnabled = false; // Abstract geometric patterns driven by market trends
+  const abstractPatternsEnabled = true; // Abstract geometric patterns driven by market trends - ENABLED!
   const neonGridEnabled = true; // Retro-futuristic neon grid with token data nodes - IMPRESSIVE!
 
   // === BLEND MODES ===
@@ -49,10 +49,10 @@ export const BackgroundEffects: React.FC = () => {
   const marketVerseBlendMode = "lighten";
   const marketBrainBlendMode = "normal";
   const particlesBlendMode = "screen";
-  const gradientWavesBlendMode = "overlay";
-  const fluidTokensBlendMode = "screen"; // Adjusted for better blending with NeonGrid
-  const abstractPatternsBlendMode = "difference";
-  const neonGridBlendMode = "lighten"; // Adjusted to create dramatic neon effect
+  const gradientWavesBlendMode = "color-dodge"; // Enhanced for more vivid waves
+  const fluidTokensBlendMode = "lighten";      // Better fluid effect
+  const abstractPatternsBlendMode = "screen";  // More vivid patterns
+  const neonGridBlendMode = "screen";          // Maximum neon glow effect
 
   return (
     <>

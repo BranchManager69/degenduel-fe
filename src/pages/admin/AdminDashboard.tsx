@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import { BalanceManager } from "../../components/admin/BalanceManager";
+import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -265,7 +266,10 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <ContestProvider>
-      <div className="container mx-auto p-6 space-y-8">
+      {/* Add BackgroundEffects for visual consistency with other pages */}
+      <BackgroundEffects />
+      
+      <div className="container mx-auto p-6 space-y-8 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -276,7 +280,19 @@ export const AdminDashboard: React.FC = () => {
               System management and monitoring interface
             </p>
           </div>
-          <div className="text-brand-400 text-4xl">⚡</div>
+          <Link 
+            to="/admin/skyduel" 
+            className="flex items-center gap-2 bg-purple-500/30 px-4 py-2.5 rounded-xl hover:bg-purple-500/40 transition-all border-2 border-purple-500/40 shadow-lg hover:shadow-purple-500/20 group relative"
+          >
+            <div className="absolute -top-2 -left-2">
+              <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-purple-500/30 text-purple-100 font-mono">
+                NEW
+              </div>
+            </div>
+            <div className="text-purple-300 text-xl group-hover:scale-110 transition-transform">⚡</div>
+            <span className="text-purple-100 font-semibold group-hover:text-white transition-colors">SkyDuel Console</span>
+            <div className="ml-2 text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity">→</div>
+          </Link>
         </div>
 
         {/* System Alerts */}
@@ -616,16 +632,11 @@ export const AdminDashboard: React.FC = () => {
             <motion.div
               key={section.id}
               className={`
-                bg-dark-200/50 backdrop-blur-lg rounded-lg border
-                border-${section.color}-500/20 hover:border-${
-                section.color
-              }-500/40
+                bg-dark-200/70 backdrop-blur-lg rounded-xl border-2
+                ${selectedSection === section.id 
+                  ? `border-${section.color}-500/50 shadow-lg shadow-${section.color}-500/10` 
+                  : `border-${section.color}-500/30 hover:border-${section.color}-500/50`}
                 transition-all duration-300 group
-                ${
-                  selectedSection === section.id
-                    ? `ring-2 ring-${section.color}-500/50`
-                    : ""
-                }
               `}
               whileHover={{ scale: 1.02, y: -4 }}
             >
@@ -633,9 +644,9 @@ export const AdminDashboard: React.FC = () => {
                 <Link to={section.link} className="block p-6 h-full">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <div className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}>{section.icon}</div>
                       <h3
-                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
+                        className={`text-xl font-bold text-${section.color}-200 mb-2`}
                       >
                         {section.title}
                       </h3>
@@ -644,7 +655,7 @@ export const AdminDashboard: React.FC = () => {
                       </p>
                     </div>
                     <div
-                      className={`text-${section.color}-400 opacity-0 group-hover:opacity-100 transition-opacity`}
+                      className={`text-${section.color}-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity`}
                     >
                       →
                     </div>
@@ -661,9 +672,9 @@ export const AdminDashboard: React.FC = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="text-2xl mb-2">{section.icon}</div>
+                      <div className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}>{section.icon}</div>
                       <h3
-                        className={`text-xl font-bold text-${section.color}-400 mb-2`}
+                        className={`text-xl font-bold text-${section.color}-200 mb-2`}
                       >
                         {section.title}
                       </h3>
@@ -672,9 +683,7 @@ export const AdminDashboard: React.FC = () => {
                       </p>
                     </div>
                     <div
-                      className={`text-${
-                        section.color
-                      }-400 transform transition-transform ${
+                      className={`text-${section.color}-300 text-lg transform transition-all ${
                         selectedSection === section.id ? "rotate-180" : ""
                       }`}
                     >

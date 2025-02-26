@@ -69,6 +69,7 @@ import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring";
 import { WebSocketMonitoringHub } from "./pages/superadmin/WebSocketMonitoringHub";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
+import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import "./styles/color-schemes.css";
 
 // Test HMR
@@ -308,6 +309,18 @@ export const App: React.FC = () => {
                   }
                 />
 
+                {/* SkyDuel Service Management */}
+                <Route
+                  path="/admin/skyduel"
+                  element={
+                    <AdminRoute>
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <SkyDuelPage />
+                      </React.Suspense>
+                    </AdminRoute>
+                  }
+                />
+
                 {/* SUPERADMIN ROUTES*/}
 
                 {/* Superadmin Dashboard */}
@@ -340,7 +353,7 @@ export const App: React.FC = () => {
                   }
                 />
 
-                {/* Services Control Panel - DEPRECATED: Use ServiceSwitchboard instead */}
+                {/* Services Control Panel - DEPRECATED: Use SkyDuel instead */}
                 <Route
                   path="/superadmin/services"
                   element={
@@ -350,7 +363,7 @@ export const App: React.FC = () => {
                   }
                 />
 
-                {/* Service Switchboard - New implementation */}
+                {/* Service Switchboard - DEPRECATED: Use SkyDuel instead */}
                 <Route
                   path="/superadmin/switchboard"
                   element={
@@ -360,7 +373,7 @@ export const App: React.FC = () => {
                   }
                 />
 
-                {/* Circuit Breaker Panel */}
+                {/* Circuit Breaker Panel - DEPRECATED: Use SkyDuel Circuit View instead */}
                 <Route
                   path="/superadmin/circuit-breaker"
                   element={

@@ -76,6 +76,23 @@ interface DebugConfig {
   customFonts?: FontConfig;
 }
 
+// Import SkyDuel types
+import { ServiceNode, ServiceConnection, ServiceAlert as SkyDuelServiceAlert } from "../hooks/useSkyDuelWebSocket";
+
+// SkyDuel system state
+interface SkyDuelState {
+  nodes: ServiceNode[];
+  connections: ServiceConnection[];
+  systemStatus: {
+    overall: "operational" | "degraded" | "outage";
+    timestamp: string;
+    message: string;
+  };
+  selectedNode: string | null;
+  viewMode: "graph" | "list" | "grid" | "circuit";
+  lastUpdated: string;
+}
+
 // Separate type for state data (without actions)
 interface StateData {
   isConnecting: boolean;
@@ -87,6 +104,8 @@ interface StateData {
   maintenanceMode: boolean;
   serviceState: ServiceState | null;
   serviceAlerts: ServiceAlert[];
+  // SkyDuel state
+  skyDuel: SkyDuelState;
   circuitBreaker: {
     services: Array<{
       name: string;
@@ -280,6 +299,11 @@ interface State extends StateData {
     type: "info" | "warning" | "error",
     message: string
   ) => void;
+  setSkyDuelState: (state: Partial<SkyDuelState>) => void;
+  updateSkyDuelNode: (nodeId: string, updates: Partial<ServiceNode>) => void;
+  updateSkyDuelConnection: (sourceId: string, targetId: string, updates: Partial<ServiceConnection>) => void;
+  setSkyDuelSelectedNode: (nodeId: string | null) => void;
+  setSkyDuelViewMode: (mode: SkyDuelState["viewMode"]) => void;
   setCircuitBreakerState: (state: StateData["circuitBreaker"]) => void;
   addCircuitAlert: (alert: {
     type: string;
@@ -459,6 +483,7 @@ type StorePersist = PersistOptions<
     | "maintenanceMode"
     | "serviceState"
     | "serviceAlerts"
+    | "skyDuel"
     | "circuitBreaker"
     | "services"
     | "analytics"
@@ -477,6 +502,7 @@ const persistConfig: StorePersist = {
     maintenanceMode: state.maintenanceMode,
     serviceState: state.serviceState,
     serviceAlerts: state.serviceAlerts,
+    skyDuel: state.skyDuel,
     circuitBreaker: state.circuitBreaker,
     services: state.services,
     analytics: state.analytics,
@@ -582,6 +608,19 @@ const initialState: StateData = {
   maintenanceMode: false,
   serviceState: null,
   serviceAlerts: [],
+  // Initialize SkyDuel state
+  skyDuel: {
+    nodes: [],
+    connections: [],
+    systemStatus: {
+      overall: "operational",
+      timestamp: new Date().toISOString(),
+      message: "System initialization",
+    },
+    selectedNode: null,
+    viewMode: "graph",
+    lastUpdated: new Date().toISOString(),
+  },
   circuitBreaker: {
     services: [],
   },
@@ -960,6 +999,69 @@ export const useStore = create<State>()(
         }));
       },
       setServices: (services) => set({ services }),
+      // SkyDuel actions
+      setSkyDuelState: (state) => 
+        set((prevState) => ({
+          skyDuel: {
+            ...prevState.skyDuel,
+            ...state,
+            lastUpdated: new Date().toISOString(),
+          },
+        })),
+      updateSkyDuelNode: (nodeId, updates) => 
+        set((prevState) => {
+          const nodeIndex = prevState.skyDuel.nodes.findIndex(node => node.id === nodeId);
+          if (nodeIndex === -1) return prevState;
+          
+          const updatedNodes = [...prevState.skyDuel.nodes];
+          updatedNodes[nodeIndex] = { 
+            ...updatedNodes[nodeIndex], 
+            ...updates 
+          };
+          
+          return {
+            skyDuel: {
+              ...prevState.skyDuel,
+              nodes: updatedNodes,
+              lastUpdated: new Date().toISOString(),
+            }
+          };
+        }),
+      updateSkyDuelConnection: (sourceId, targetId, updates) => 
+        set((prevState) => {
+          const connectionIndex = prevState.skyDuel.connections.findIndex(
+            conn => conn.source === sourceId && conn.target === targetId
+          );
+          if (connectionIndex === -1) return prevState;
+          
+          const updatedConnections = [...prevState.skyDuel.connections];
+          updatedConnections[connectionIndex] = {
+            ...updatedConnections[connectionIndex],
+            ...updates
+          };
+          
+          return {
+            skyDuel: {
+              ...prevState.skyDuel,
+              connections: updatedConnections,
+              lastUpdated: new Date().toISOString(),
+            }
+          };
+        }),
+      setSkyDuelSelectedNode: (nodeId) => 
+        set((prevState) => ({
+          skyDuel: {
+            ...prevState.skyDuel,
+            selectedNode: nodeId,
+          },
+        })),
+      setSkyDuelViewMode: (mode) => 
+        set((prevState) => ({
+          skyDuel: {
+            ...prevState.skyDuel,
+            viewMode: mode,
+          },
+        })),
       updatePortfolio: (data) => {
         // Implementation will update portfolio state
         console.log("Portfolio updated:", data);
