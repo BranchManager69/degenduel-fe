@@ -144,9 +144,21 @@ export const useSkyDuelWebSocket = () => {
     }
   };
 
+  const webSocket = useBaseWebSocket({
+    url: import.meta.env.VITE_WS_URL,
+    endpoint: "/api/admin/skyduel",
+    socketType: "skyduel",
+    onMessage: handleMessage,
+    onError: handleConnectionError,
+    onReconnect: handleReconnect,
+    heartbeatInterval: 15000, // 15 second heartbeat
+    maxReconnectAttempts: 10,
+    reconnectBackoff: true,
+  });
+
   // Send a command to the SkyDuel system
   const sendCommand = (command: string, params: Record<string, any> = {}) => {
-    const socket = websocket.current;
+    const socket = webSocket.wsRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       console.error("[SkyDuelWebSocket] Cannot send command: socket not connected");
       return false;
@@ -170,20 +182,8 @@ export const useSkyDuelWebSocket = () => {
     }
   };
 
-  const websocket = useBaseWebSocket({
-    url: import.meta.env.VITE_WS_URL,
-    endpoint: "/api/admin/skyduel",
-    socketType: "skyduel",
-    onMessage: handleMessage,
-    onError: handleConnectionError,
-    onReconnect: handleReconnect,
-    heartbeatInterval: 15000, // 15 second heartbeat
-    maxReconnectAttempts: 10,
-    reconnectBackoff: true,
-  });
-
   return {
-    ...websocket,
+    ...webSocket,
     sendCommand,
   };
 };

@@ -85,6 +85,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
             changeOrigin: true,
             secure: true,
           },
+          "^/api/v2/ws": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
         },
       },
       plugins: [react()],
@@ -173,6 +179,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
           target: isDev
             ? "wss://dev.degenduel.me/api/v2/ws"
             : "wss://degenduel.me/api/v2/ws",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/api/v2/ws": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,

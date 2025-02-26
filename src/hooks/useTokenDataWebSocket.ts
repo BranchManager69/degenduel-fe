@@ -106,8 +106,14 @@ export function useTokenDataWebSocket(
       // Just skipping the authentication part, but keeping the function call for compatibility
       const token = await getAccessToken().catch(() => null);
       
-      // Create WebSocket connection
-      const wsUrl = `wss://${window.location.host}/api/v2/ws/tokenData`;
+      // Create WebSocket connection with environment-aware URL
+      // Use environment variables for the WebSocket URL
+      const baseWsUrl = import.meta.env.VITE_WS_URL || `wss://${window.location.host}`;
+      console.log(`[TokenDataWebSocket] Using base WebSocket URL: ${baseWsUrl}`);
+      
+      const wsUrl = `${baseWsUrl}/api/v2/ws/tokenData`;
+      console.log(`[TokenDataWebSocket] Connecting to: ${wsUrl}`);
+      
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {

@@ -77,7 +77,7 @@ interface DebugConfig {
 }
 
 // Import SkyDuel types
-import { ServiceNode, ServiceConnection, ServiceAlert as SkyDuelServiceAlert } from "../hooks/useSkyDuelWebSocket";
+import { ServiceNode, ServiceConnection } from "../hooks/useSkyDuelWebSocket";
 
 // SkyDuel system state
 interface SkyDuelState {

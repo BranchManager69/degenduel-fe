@@ -153,22 +153,24 @@ export const useContestChatWebSocket = (contestId: string) => {
   });
 
   const joinRoom = useCallback(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    const socket = ws.wsRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
       const message: JoinRoomMessage = {
         type: "JOIN_ROOM",
         contestId: contestId.toString(),
       };
-      ws.send(JSON.stringify(message));
+      socket.send(JSON.stringify(message));
     }
   }, [ws, contestId]);
 
   const leaveRoom = useCallback(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    const socket = ws.wsRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
       const message: LeaveRoomMessage = {
         type: "LEAVE_ROOM",
         contestId: contestId.toString(),
       };
-      ws.send(JSON.stringify(message));
+      socket.send(JSON.stringify(message));
     }
   }, [ws, contestId]);
 
@@ -184,13 +186,14 @@ export const useContestChatWebSocket = (contestId: string) => {
         return;
       }
 
-      if (ws && ws.readyState === WebSocket.OPEN) {
+      const socket = ws.wsRef.current;
+      if (socket && socket.readyState === WebSocket.OPEN) {
         const message: SendChatMessage = {
           type: "SEND_CHAT_MESSAGE",
           contestId: contestId.toString(),
           text,
         };
-        ws.send(JSON.stringify(message));
+        socket.send(JSON.stringify(message));
       }
     },
     [ws, contestId, isRateLimited]
@@ -198,13 +201,15 @@ export const useContestChatWebSocket = (contestId: string) => {
 
   // Join room when component mounts and WebSocket is ready
   useEffect(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    const socket = ws.wsRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
       joinRoom();
     }
 
     // Leave room when component unmounts
     return () => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
+      const socket = ws.wsRef.current;
+      if (socket && socket.readyState === WebSocket.OPEN) {
         leaveRoom();
       }
     };

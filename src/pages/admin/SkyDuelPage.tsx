@@ -24,9 +24,11 @@ export const SkyDuelPage: React.FC = () => {
     
     // Cleanup on unmount
     return () => {
-      skyDuelSocket.close();
+      if (skyDuelSocket && skyDuelSocket.close) {
+        skyDuelSocket.close();
+      }
     };
-  }, [user]);
+  }, [user, skyDuelSocket]);
 
   if (loading) {
     return (

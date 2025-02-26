@@ -125,5 +125,40 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
     return () => clearInterval(interval);
   }, [config.heartbeatInterval]);
 
-  return wsRef.current;
+  // Public API
+  const connect = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    reconnectAttempts.current = 0;
+    // Implementation is handled in the useEffect
+  };
+
+  const close = () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  };
+
+  const getStatus = (): ServiceStatus => {
+    if (!wsRef.current) return "offline";
+    
+    switch (wsRef.current.readyState) {
+      case WebSocket.CONNECTING: return "degraded";
+      case WebSocket.OPEN: return "online";
+      case WebSocket.CLOSING: 
+      case WebSocket.CLOSED:
+      default:
+        return "offline";
+    }
+  };
+
+  return {
+    wsRef,
+    status: getStatus(),
+    connect,
+    close
+  };
 };

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -131,7 +131,7 @@ export const ServiceGraph: React.FC = () => {
   }, [skyDuel.nodes, skyDuel.connections, skyDuel.selectedNode, setNodes, setEdges]);
   
   // Handle node click to show details
-  const onNodeClick = useCallback((_, node) => {
+  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSkyDuelSelectedNode(node.id);
   }, [setSkyDuelSelectedNode]);
 
