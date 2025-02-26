@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
-import { ddApi } from "../../services/dd-api";
+import React, { useEffect, useRef, useState } from "react";
+import { useTokenData } from "../../contexts/TokenDataContext";
 
 interface TokenUpdate {
   id: string;
@@ -33,54 +33,99 @@ export const AmbientMarketData: React.FC = () => {
   const [lastMetrics, setLastMetrics] = useState<Record<string, TokenMetrics>>(
     {}
   );
+  const { tokens, isConnected, lastUpdate } = useTokenData();
+  const prevTokensRef = useRef<{
+    [symbol: string]: { price: string; volume24h: string };
+  }>({});
+  const checkIntervalRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const checkForSignificantUpdates = (
-    newData: Record<string, TokenMetrics>
-  ) => {
+  const checkForSignificantUpdates = () => {
+    if (!tokens.length) return;
+
+    const newData: Record<string, TokenMetrics> = {};
     const significantUpdates: TokenUpdate[] = [];
 
-    Object.entries(newData).forEach(([symbol, metrics]) => {
-      const lastMetric = lastMetrics[symbol];
+    // Process token data into metrics format
+    tokens.forEach((token) => {
+      const currentPrice = parseFloat(token.price || "0");
+      const currentVolume = parseFloat(token.volume24h || "0");
+      const prevToken = prevTokensRef.current[token.symbol];
+      const prevPrice = prevToken
+        ? parseFloat(prevToken.price || "0")
+        : currentPrice;
+      const prevVolume = prevToken
+        ? parseFloat(prevToken.volume24h || "0")
+        : currentVolume;
+
+      // Calculate metrics
+      const priceChange5m = prevPrice
+        ? ((currentPrice - prevPrice) / prevPrice) * 100
+        : 0;
+      const volumeChange = prevVolume
+        ? ((currentVolume - prevVolume) / prevVolume) * 100
+        : 0;
+
+      // Store calculated metrics
+      newData[token.symbol] = {
+        price: currentPrice,
+        priceChange: {
+          "5m": priceChange5m,
+          "15m": 0, // We don't have this from WebSocket yet
+          "30m": 0, // We don't have this from WebSocket yet
+        },
+        volume: {
+          "5m": currentVolume,
+          previous5m: prevVolume,
+          change: volumeChange,
+        },
+        volatility: Math.abs(priceChange5m), // Simple volatility metric
+      };
 
       // Price Change Detection (5m)
-      if (Math.abs(metrics.priceChange["5m"]) >= 2) {
+      if (Math.abs(priceChange5m) >= 2) {
         significantUpdates.push({
-          id: `${symbol}-price-${Date.now()}`,
-          symbol,
-          name: symbol,
-          logo: `/assets/tokens/${symbol.toLowerCase()}.png`,
-          price: metrics.price,
-          priceChange: metrics.priceChange["5m"],
+          id: `${token.symbol}-price-${Date.now()}`,
+          symbol: token.symbol,
+          name: token.name,
+          logo:
+            token.imageUrl ||
+            `/assets/tokens/${token.symbol.toLowerCase()}.png`,
+          price: currentPrice,
+          priceChange: priceChange5m,
           updateType: "price",
-          description: `${Math.abs(metrics.priceChange["5m"]).toFixed(1)}% ${
-            metrics.priceChange["5m"] > 0 ? "surge" : "drop"
+          description: `${Math.abs(priceChange5m).toFixed(1)}% ${
+            priceChange5m > 0 ? "surge" : "drop"
           } in 5min`,
         });
       }
 
-      // Volume Spike Detection (>200% increase in 5m volume compared to previous 5m)
-      if (metrics.volume.change > 200) {
+      // Volume Spike Detection (>200% increase in volume)
+      if (volumeChange > 200) {
         significantUpdates.push({
-          id: `${symbol}-volume-${Date.now()}`,
-          symbol,
-          name: symbol,
-          logo: `/assets/tokens/${symbol.toLowerCase()}.png`,
-          price: metrics.price,
-          priceChange: metrics.volume.change,
+          id: `${token.symbol}-volume-${Date.now()}`,
+          symbol: token.symbol,
+          name: token.name,
+          logo:
+            token.imageUrl ||
+            `/assets/tokens/${token.symbol.toLowerCase()}.png`,
+          price: currentPrice,
+          priceChange: volumeChange,
           updateType: "volume",
-          description: `${metrics.volume.change.toFixed(0)}% volume spike`,
+          description: `${volumeChange.toFixed(0)}% volume spike`,
         });
       }
 
-      // Volatility Alert (if available)
-      if (metrics.volatility && metrics.volatility > 50) {
+      // Volatility Alert
+      if (Math.abs(priceChange5m) > 50) {
         significantUpdates.push({
-          id: `${symbol}-volatility-${Date.now()}`,
-          symbol,
-          name: symbol,
-          logo: `/assets/tokens/${symbol.toLowerCase()}.png`,
-          price: metrics.price,
-          priceChange: metrics.volatility,
+          id: `${token.symbol}-volatility-${Date.now()}`,
+          symbol: token.symbol,
+          name: token.name,
+          logo:
+            token.imageUrl ||
+            `/assets/tokens/${token.symbol.toLowerCase()}.png`,
+          price: currentPrice,
+          priceChange: Math.abs(priceChange5m),
           updateType: "volatility",
           description: "High volatility detected",
         });
@@ -88,24 +133,27 @@ export const AmbientMarketData: React.FC = () => {
 
       // Price Milestone Detection
       const milestones = [1, 10, 100, 1000, 10000];
+      const lastMetric = lastMetrics[token.symbol];
       if (lastMetric) {
         const crossedMilestone = milestones.find(
           (m) =>
-            (lastMetric.price < m && metrics.price >= m) ||
-            (lastMetric.price >= m && metrics.price < m)
+            (lastMetric.price < m && currentPrice >= m) ||
+            (lastMetric.price >= m && currentPrice < m)
         );
 
         if (crossedMilestone) {
           significantUpdates.push({
-            id: `${symbol}-milestone-${Date.now()}`,
-            symbol,
-            name: symbol,
-            logo: `/assets/tokens/${symbol.toLowerCase()}.png`,
-            price: metrics.price,
+            id: `${token.symbol}-milestone-${Date.now()}`,
+            symbol: token.symbol,
+            name: token.name,
+            logo:
+              token.imageUrl ||
+              `/assets/tokens/${token.symbol.toLowerCase()}.png`,
+            price: currentPrice,
             priceChange: 0,
             updateType: "milestone",
             description: `${
-              metrics.price >= crossedMilestone
+              currentPrice >= crossedMilestone
                 ? "crossed above"
                 : "dropped below"
             } $${crossedMilestone}`,
@@ -114,41 +162,43 @@ export const AmbientMarketData: React.FC = () => {
       }
     });
 
+    // Update references for next comparison
+    tokens.forEach((token) => {
+      prevTokensRef.current[token.symbol] = {
+        price: token.price,
+        volume24h: token.volume24h,
+      };
+    });
+
     setLastMetrics(newData);
-    return significantUpdates;
+
+    // Add significant updates to the queue
+    if (significantUpdates.length > 0) {
+      setUpdates((prev) => [...prev, ...significantUpdates].slice(-5));
+    }
   };
 
+  // Effect to process token data when received
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-
-    const fetchTokenData = async () => {
-      try {
-        const response = await ddApi.fetch("/api/tokens/metrics");
-        const data = await response.json();
-
-        if (data.success) {
-          const newUpdates = checkForSignificantUpdates(data.metrics);
-          if (newUpdates.length > 0) {
-            setUpdates((prev) => [...prev, ...newUpdates].slice(-5));
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch token metrics:", err);
+    if (isConnected && tokens.length > 0 && lastUpdate) {
+      // Clear any existing check interval
+      if (checkIntervalRef.current) {
+        clearTimeout(checkIntervalRef.current);
       }
-    };
 
-    // Initial fetch after 5 second buffer
-    const initialTimeout = setTimeout(() => {
-      fetchTokenData();
-      // Then start the 30-second interval
-      interval = setInterval(fetchTokenData, 30000);
-    }, 5000);
+      // Process updates on token data changes
+      checkForSignificantUpdates();
+
+      // Schedule periodic checks (can be more frequent now that we're not fetching)
+      checkIntervalRef.current = setInterval(checkForSignificantUpdates, 15000);
+    }
 
     return () => {
-      clearTimeout(initialTimeout);
-      if (interval) clearInterval(interval);
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+      }
     };
-  }, []);
+  }, [tokens, isConnected, lastUpdate]);
 
   const getUpdateStyles = (updateType: string) => {
     switch (updateType) {

@@ -152,6 +152,18 @@ export function useAuth() {
     setShouldCheck(true);
   }, []);
 
+  // Function to get an access token for WebSocket authentication
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
+    try {
+      // Try to get the token from the session
+      const response = await axios.get("/api/auth/token");
+      return response.data?.token || null;
+    } catch (error) {
+      console.error("[Auth] Failed to get access token:", error);
+      return null;
+    }
+  }, []);
+
   return {
     user: authState.user,
     loading: authState.loading,
@@ -162,5 +174,6 @@ export function useAuth() {
     isAdmin,
     isFullyConnected,
     checkAuth: triggerAuthCheck, // Replace checkAuth with the debounced version
+    getAccessToken, // Add the getAccessToken function
   };
 }

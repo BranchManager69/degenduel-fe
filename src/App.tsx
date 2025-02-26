@@ -30,6 +30,8 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { MovingBackground } from "./components/ui/MovingBackground";
 import { ReferralProvider } from "./hooks/useReferral";
+/* Contexts */
+import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* Pages */
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { ContestChatManager } from "./components/contest/ContestChatManager";
@@ -126,333 +128,338 @@ export const App: React.FC = () => {
   return (
     <Router>
       <ReferralProvider>
-        <div className="min-h-screen flex flex-col relative">
-          {/* Add WebSocketManager at the root */}
-          <WebSocketManager />
+        <TokenDataProvider>
+          <div className="min-h-screen flex flex-col relative">
+            {/* Add WebSocketManager at the root */}
+            <WebSocketManager />
 
-          {/* Debug Panels */}
-          {user?.is_superadmin && <ServiceDebugPanel />}
-          {user?.is_superadmin && <UiDebugPanel />}
-          {user?.is_superadmin && <WebSocketDebugPanel />}
+            {/* Debug Panels */}
+            {user?.is_superadmin && <ServiceDebugPanel />}
+            {user?.is_superadmin && <UiDebugPanel />}
+            {user?.is_superadmin && <WebSocketDebugPanel />}
 
-          {/* Animated Background */}
-          <MovingBackground />
+            {/* Animated Background */}
+            <MovingBackground />
 
-          {/* Service Status Banner (consider deleting or moving and reusing for general non-MM server issues) */}
-          {/* <ServiceStatusBanner /> */}
+            {/* Service Status Banner (consider deleting or moving and reusing for general non-MM server issues) */}
+            {/* <ServiceStatusBanner /> */}
 
-          {/* Server Down Banner */}
-          <ServerDownBanner />
+            {/* Server Down Banner */}
+            <ServerDownBanner />
 
-          {/* Header */}
-          <Header />
+            {/* Header */}
+            <Header />
 
-          {/* Main Content */}
-          <main className="flex-1 relative">
-            {/* Routes */}
-            <Routes>
-              {/* PUBLIC ROUTES */}
+            {/* Main Content */}
+            <main className="flex-1 relative">
+              {/* Routes */}
+              <Routes>
+                {/* PUBLIC ROUTES */}
 
-              {/* Landing Page */}
-              <Route path="/" element={<LandingPage />} />
+                {/* Landing Page */}
+                <Route path="/" element={<LandingPage />} />
 
-              {/* Referral Join Route */}
-              <Route
-                path="/join"
-                element={
-                  <MaintenanceGuard>
-                    <Navigate to="/" replace />
-                  </MaintenanceGuard>
-                }
-              />
-
-              {/* Contest Browser */}
-              <Route path="/contests" element={<ContestBrowser />} />
-
-              {/* Contest Details */}
-              <Route path="/contests/:id" element={<ContestDetails />} />
-
-              {/* Contest Lobby */}
-              <Route
-                path="/contests/:id/live"
-                element={
-                  <MaintenanceGuard>
-                    <ContestLobby />{" "}
-                  </MaintenanceGuard>
-                }
-              />
-
-              {/* Contest Results */}
-              <Route
-                path="/contests/:id/results"
-                element={
-                  <MaintenanceGuard>
-                    <ContestResults />{" "}
-                  </MaintenanceGuard>
-                }
-              />
-
-              {/* Tokens Page */}
-              <Route path="/tokens" element={<TokensPage />} />
-
-              {/* Token Whitelist Page */}
-              <Route
-                path="/tokens/whitelist"
-                element={<TokenWhitelistPage />}
-              />
-
-              {/* Virtual Game Agent Page */}
-              <Route
-                path="/game/virtual-agent"
-                element={<VirtualAgentPage />}
-              />
-
-              {/* Public Profile Page */}
-              <Route path="/profile/:identifier" element={<PublicProfile />} />
-
-              {/* FAQ */}
-              <Route
-                path="/faq"
-                element={
-                  <MaintenanceGuard>
-                    <FAQ />
-                  </MaintenanceGuard>
-                }
-              />
-
-              {/* How It Works */}
-              <Route
-                path="/how-it-works"
-                element={
-                  <MaintenanceGuard>
-                    <HowItWorks />
-                  </MaintenanceGuard>
-                }
-              />
-
-              {/* Contact */}
-              <Route
-                path="/contact"
-                element={
-                  <MaintenanceGuard>
-                    <Contact />
-                  </MaintenanceGuard>
-                }
-              />
-
-              {/* Leaderboards Landing Page */}
-              <Route path="/leaderboards" element={<LeaderboardLanding />} />
-
-              {/* "Degen Rankings" Leaderboard */}
-              <Route
-                path="/rankings/performance"
-                element={<ContestPerformance />}
-              />
-
-              {/* "Global Rankings" Leaderboard */}
-              <Route path="/rankings/global" element={<GlobalRankings />} />
-
-              {/* AUTHENTICATED ROUTES */}
-
-              {/* Profile (own profile) */}
-              <Route
-                path="/me"
-                element={
-                  <AuthenticatedRoute>
+                {/* Referral Join Route */}
+                <Route
+                  path="/join"
+                  element={
                     <MaintenanceGuard>
-                      <Profile />
+                      <Navigate to="/" replace />
                     </MaintenanceGuard>
-                  </AuthenticatedRoute>
-                }
-              />
+                  }
+                />
 
-              {/* Referrals */}
-              <Route
-                path="/referrals"
-                element={
-                  <AuthenticatedRoute>
+                {/* Contest Browser */}
+                <Route path="/contests" element={<ContestBrowser />} />
+
+                {/* Contest Details */}
+                <Route path="/contests/:id" element={<ContestDetails />} />
+
+                {/* Contest Lobby */}
+                <Route
+                  path="/contests/:id/live"
+                  element={
                     <MaintenanceGuard>
-                      <ReferralPage />
+                      <ContestLobby />{" "}
                     </MaintenanceGuard>
-                  </AuthenticatedRoute>
-                }
-              />
+                  }
+                />
 
-              {/* Portfolio Token Selection */}
-              <Route
-                path="/contests/:id/select-tokens"
-                element={
-                  <AuthenticatedRoute>
+                {/* Contest Results */}
+                <Route
+                  path="/contests/:id/results"
+                  element={
                     <MaintenanceGuard>
-                      <TokenSelection />
+                      <ContestResults />{" "}
                     </MaintenanceGuard>
-                  </AuthenticatedRoute>
-                }
-              />
+                  }
+                />
 
-              {/* ADMIN ROUTES */}
+                {/* Tokens Page */}
+                <Route path="/tokens" element={<TokensPage />} />
 
-              {/* Admin Dashboard */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                }
-              />
+                {/* Token Whitelist Page */}
+                <Route
+                  path="/tokens/whitelist"
+                  element={<TokenWhitelistPage />}
+                />
 
-              {/* SUPERADMIN ROUTES*/}
+                {/* Virtual Game Agent Page */}
+                <Route
+                  path="/game/virtual-agent"
+                  element={<VirtualAgentPage />}
+                />
 
-              {/* Superadmin Dashboard */}
-              <Route
-                path="/superadmin"
-                element={
-                  <SuperAdminRoute>
-                    <SuperAdminDashboard />
-                  </SuperAdminRoute>
-                }
-              />
-              
-              {/* Wallet Monitoring */}
-              <Route
-                path="/superadmin/wallet-monitoring"
-                element={
-                  <SuperAdminRoute>
-                    <WalletMonitoring />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* Public Profile Page */}
+                <Route
+                  path="/profile/:identifier"
+                  element={<PublicProfile />}
+                />
 
-              {/* Control Panel Hub */}
-              <Route
-                path="/superadmin/control-hub"
-                element={
-                  <SuperAdminRoute>
-                    <ControlPanelHub />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* FAQ */}
+                <Route
+                  path="/faq"
+                  element={
+                    <MaintenanceGuard>
+                      <FAQ />
+                    </MaintenanceGuard>
+                  }
+                />
 
-              {/* Services Control Panel - DEPRECATED: Use ServiceSwitchboard instead */}
-              <Route
-                path="/superadmin/services"
-                element={
-                  <SuperAdminRoute>
-                    <ServiceControlPage />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* How It Works */}
+                <Route
+                  path="/how-it-works"
+                  element={
+                    <MaintenanceGuard>
+                      <HowItWorks />
+                    </MaintenanceGuard>
+                  }
+                />
 
-              {/* Service Switchboard - New implementation */}
-              <Route
-                path="/superadmin/switchboard"
-                element={
-                  <SuperAdminRoute>
-                    <ServiceSwitchboard />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* Contact */}
+                <Route
+                  path="/contact"
+                  element={
+                    <MaintenanceGuard>
+                      <Contact />
+                    </MaintenanceGuard>
+                  }
+                />
 
-              {/* Circuit Breaker Panel */}
-              <Route
-                path="/superadmin/circuit-breaker"
-                element={
-                  <SuperAdminRoute>
-                    <CircuitBreakerPage />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* Leaderboards Landing Page */}
+                <Route path="/leaderboards" element={<LeaderboardLanding />} />
 
-              {/* WebSocket Monitoring Hub */}
-              <Route
-                path="/superadmin/websocket-monitor"
-                element={
-                  <SuperAdminRoute>
-                    <WebSocketMonitoringHub />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* "Degen Rankings" Leaderboard */}
+                <Route
+                  path="/rankings/performance"
+                  element={<ContestPerformance />}
+                />
 
-              {/* API Playground */}
-              <Route
-                path="/api-playground"
-                element={
-                  <SuperAdminRoute>
-                    <ApiPlayground />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* "Global Rankings" Leaderboard */}
+                <Route path="/rankings/global" element={<GlobalRankings />} />
 
-              {/* WSS Playground */}
-              <Route
-                path="/wss-playground"
-                element={
-                  <SuperAdminRoute>
-                    <WssPlayground />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* AUTHENTICATED ROUTES */}
 
-              {/* WebSocket Testing */}
-              <Route
-                path="/websocket-test"
-                element={
-                  <SuperAdminRoute>
-                    <WebSocketTesting />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* Profile (own profile) */}
+                <Route
+                  path="/me"
+                  element={
+                    <AuthenticatedRoute>
+                      <MaintenanceGuard>
+                        <Profile />
+                      </MaintenanceGuard>
+                    </AuthenticatedRoute>
+                  }
+                />
 
-              {/* AMM Simulation */}
-              <Route
-                path="/amm-sim"
-                element={
-                  <SuperAdminRoute>
-                    <AmmSim />
-                  </SuperAdminRoute>
-                }
-              />
+                {/* Referrals */}
+                <Route
+                  path="/referrals"
+                  element={
+                    <AuthenticatedRoute>
+                      <MaintenanceGuard>
+                        <ReferralPage />
+                      </MaintenanceGuard>
+                    </AuthenticatedRoute>
+                  }
+                />
 
-              {/* MISC ROUTES */}
+                {/* Portfolio Token Selection */}
+                <Route
+                  path="/contests/:id/select-tokens"
+                  element={
+                    <AuthenticatedRoute>
+                      <MaintenanceGuard>
+                        <TokenSelection />
+                      </MaintenanceGuard>
+                    </AuthenticatedRoute>
+                  }
+                />
 
-              {/* 404 Page */}
-              <Route path="*" element={<NotFound />} />
-              {/* Banned User */}
-              <Route path="/banned" element={<BannedUser />} />
-              {/* Banned IP */}
-              <Route path="/banned-ip" element={<BannedIP />} />
-              {/* Maintenance Mode */}
-              <Route path="/maintenance" element={<Maintenance />} />
-            </Routes>
-          </main>
+                {/* ADMIN ROUTES */}
 
-          {/* Footer */}
-          <Footer />
+                {/* Admin Dashboard */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  }
+                />
 
-          {/* Contest Chat Manager - Only show for authenticated users */}
-          {user && <ContestChatManager />}
+                {/* SUPERADMIN ROUTES*/}
 
-          {/* Modals and Overlays */}
-          <ReferralWelcomeModal />
+                {/* Superadmin Dashboard */}
+                <Route
+                  path="/superadmin"
+                  element={
+                    <SuperAdminRoute>
+                      <SuperAdminDashboard />
+                    </SuperAdminRoute>
+                  }
+                />
 
-          {/* Toast Notifications */}
-          <Toaster position="top-right" />
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-          />
+                {/* Wallet Monitoring */}
+                <Route
+                  path="/superadmin/wallet-monitoring"
+                  element={
+                    <SuperAdminRoute>
+                      <WalletMonitoring />
+                    </SuperAdminRoute>
+                  }
+                />
 
-          <AchievementNotification />
-        </div>
+                {/* Control Panel Hub */}
+                <Route
+                  path="/superadmin/control-hub"
+                  element={
+                    <SuperAdminRoute>
+                      <ControlPanelHub />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* Services Control Panel - DEPRECATED: Use ServiceSwitchboard instead */}
+                <Route
+                  path="/superadmin/services"
+                  element={
+                    <SuperAdminRoute>
+                      <ServiceControlPage />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* Service Switchboard - New implementation */}
+                <Route
+                  path="/superadmin/switchboard"
+                  element={
+                    <SuperAdminRoute>
+                      <ServiceSwitchboard />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* Circuit Breaker Panel */}
+                <Route
+                  path="/superadmin/circuit-breaker"
+                  element={
+                    <SuperAdminRoute>
+                      <CircuitBreakerPage />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* WebSocket Monitoring Hub */}
+                <Route
+                  path="/superadmin/websocket-monitor"
+                  element={
+                    <SuperAdminRoute>
+                      <WebSocketMonitoringHub />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* API Playground */}
+                <Route
+                  path="/api-playground"
+                  element={
+                    <SuperAdminRoute>
+                      <ApiPlayground />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* WSS Playground */}
+                <Route
+                  path="/wss-playground"
+                  element={
+                    <SuperAdminRoute>
+                      <WssPlayground />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* WebSocket Testing */}
+                <Route
+                  path="/websocket-test"
+                  element={
+                    <SuperAdminRoute>
+                      <WebSocketTesting />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* AMM Simulation */}
+                <Route
+                  path="/amm-sim"
+                  element={
+                    <SuperAdminRoute>
+                      <AmmSim />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* MISC ROUTES */}
+
+                {/* 404 Page */}
+                <Route path="*" element={<NotFound />} />
+                {/* Banned User */}
+                <Route path="/banned" element={<BannedUser />} />
+                {/* Banned IP */}
+                <Route path="/banned-ip" element={<BannedIP />} />
+                {/* Maintenance Mode */}
+                <Route path="/maintenance" element={<Maintenance />} />
+              </Routes>
+            </main>
+
+            {/* Footer */}
+            <Footer />
+
+            {/* Contest Chat Manager - Only show for authenticated users */}
+            {user && <ContestChatManager />}
+
+            {/* Modals and Overlays */}
+            <ReferralWelcomeModal />
+
+            {/* Toast Notifications */}
+            <Toaster position="top-right" />
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="dark"
+            />
+
+            <AchievementNotification />
+          </div>
+        </TokenDataProvider>
       </ReferralProvider>
     </Router>
   );

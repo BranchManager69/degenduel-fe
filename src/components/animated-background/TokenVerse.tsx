@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
-import { ddApi } from "../../services/dd-api";
+import { useTokenData } from "../../contexts/TokenDataContext";
 import { useStore } from "../../store/useStore";
 
 interface TokenNode {
@@ -26,6 +26,7 @@ interface TokenNode {
 
 export const TokenVerse: React.FC = () => {
   const { uiDebug } = useStore();
+  const { tokens, isConnected, lastUpdate } = useTokenData();
   const {
     enabled,
     intensity,
@@ -45,7 +46,9 @@ export const TokenVerse: React.FC = () => {
   const animationFrameRef = useRef<number>();
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2(-1000, -1000));
-  const targetCameraPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 50));
+  const targetCameraPositionRef = useRef<THREE.Vector3>(
+    new THREE.Vector3(0, 0, 50)
+  );
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Cleanup function
@@ -62,7 +65,7 @@ export const TokenVerse: React.FC = () => {
       canvas.removeEventListener("webglcontextlost", () => {});
       canvas.removeEventListener("webglcontextrestored", () => {});
     }
-    
+
     // Remove scroll listener
     window.removeEventListener("scroll", () => {});
 
@@ -122,7 +125,7 @@ export const TokenVerse: React.FC = () => {
       );
       cameraRef.current = camera;
       camera.position.z = 50;
-      
+
       // Store initial camera position
       targetCameraPositionRef.current.copy(camera.position);
 
@@ -164,9 +167,10 @@ export const TokenVerse: React.FC = () => {
         // Calculate mouse position in normalized device coordinates (-1 to +1)
         const rect = canvas.getBoundingClientRect();
         mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        mouseRef.current.y =
+          -((event.clientY - rect.top) / rect.height) * 2 + 1;
       });
-      
+
       // Scroll handler for camera motion
       window.addEventListener("scroll", () => {
         if (cameraRef.current) {
@@ -174,14 +178,14 @@ export const TokenVerse: React.FC = () => {
           const scrollY = window.scrollY;
           const maxScroll = document.body.scrollHeight - window.innerHeight;
           const scrollFraction = Math.min(1, Math.max(0, scrollY / maxScroll));
-          
+
           // Adjust camera position based on scroll
           const scrollPosition = new THREE.Vector3(
             0,
             -20 * scrollFraction, // Move camera down as we scroll
-            50 + (20 * scrollFraction) // Move camera away as we scroll
+            50 + 20 * scrollFraction // Move camera away as we scroll
           );
-          
+
           // Blend with current target (for hover effects)
           targetCameraPositionRef.current.lerp(scrollPosition, 0.5);
         }
@@ -199,15 +203,15 @@ export const TokenVerse: React.FC = () => {
         0.9
       );
       composer.addPass(bloomPass);
-      
+
       // Add depth-of-field effect using BokehPass
       const bokehPass = new BokehPass(scene, camera, {
         focus: 50,
         aperture: 0.0025,
-        maxblur: 0.01
+        maxblur: 0.01,
       });
       composer.addPass(bokehPass);
-      
+
       composerRef.current = composer;
 
       // Controls
@@ -294,15 +298,18 @@ export const TokenVerse: React.FC = () => {
 
         // Perform raycasting to detect hover
         if (nodesRef.current.length > 0) {
-          raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+          raycasterRef.current.setFromCamera(
+            mouseRef.current,
+            cameraRef.current
+          );
           const meshes = nodesRef.current
-            .filter(node => node.mesh)
-            .map(node => node.mesh!);
-          
+            .filter((node) => node.mesh)
+            .map((node) => node.mesh!);
+
           const intersects = raycasterRef.current.intersectObjects(meshes);
-          
+
           // Reset all hover states
-          nodesRef.current.forEach(node => {
+          nodesRef.current.forEach((node) => {
             if (node.isHovered && node.mesh) {
               node.isHovered = false;
               // Remove highlight beam if it exists
@@ -310,59 +317,74 @@ export const TokenVerse: React.FC = () => {
                 sceneRef.current.remove(node.highlightBeam);
                 node.highlightBeam = undefined;
               }
-              
+
               // Restore original scale
               node.mesh.scale.set(1, 1, 1);
             }
           });
-          
+
           // Handle new intersections
           if (intersects.length > 0) {
             const hoveredNode = nodesRef.current.find(
-              node => node.mesh === intersects[0].object
+              (node) => node.mesh === intersects[0].object
             );
-            
+
             if (hoveredNode) {
               hoveredNode.isHovered = true;
-              
+
               // Make hovered token slightly larger
               if (hoveredNode.mesh) {
                 hoveredNode.mesh.scale.set(1.3, 1.3, 1.3);
               }
-              
+
               // Create neon light beam for highlighted token
               if (!hoveredNode.highlightBeam && sceneRef.current) {
                 // Create cylinder that points upward from the token
-                const beamGeometry = new THREE.CylinderGeometry(0.2, 2, 40, 16, 1, true);
+                const beamGeometry = new THREE.CylinderGeometry(
+                  0.2,
+                  2,
+                  40,
+                  16,
+                  1,
+                  true
+                );
                 const beamMaterial = new THREE.MeshBasicMaterial({
                   color: hoveredNode.change24h >= 0 ? 0x00ff88 : 0xff4444,
                   transparent: true,
                   opacity: 0.3,
-                  side: THREE.DoubleSide
+                  side: THREE.DoubleSide,
                 });
-                
+
                 const beam = new THREE.Mesh(beamGeometry, beamMaterial);
                 beam.position.copy(hoveredNode.position);
                 beam.position.y += 20; // Position the beam above the token
                 beam.rotation.x = Math.PI / 2; // Rotate to point upward
-                
+
                 sceneRef.current.add(beam);
                 hoveredNode.highlightBeam = beam;
-                
+
                 // Update camera target to focus on hovered node
-                const targetPosition = new THREE.Vector3().copy(hoveredNode.position);
+                const targetPosition = new THREE.Vector3().copy(
+                  hoveredNode.position
+                );
                 targetPosition.z += 30; // Keep some distance
                 targetCameraPositionRef.current.copy(targetPosition);
               }
             }
           } else {
             // If no hover, gradually return to original position
-            targetCameraPositionRef.current.lerp(new THREE.Vector3(0, 0, 50), 0.05);
+            targetCameraPositionRef.current.lerp(
+              new THREE.Vector3(0, 0, 50),
+              0.05
+            );
           }
-          
+
           // Smoothly move camera toward target position
           if (cameraRef.current) {
-            cameraRef.current.position.lerp(targetCameraPositionRef.current, 0.02);
+            cameraRef.current.position.lerp(
+              targetCameraPositionRef.current,
+              0.02
+            );
           }
         }
 
@@ -392,12 +414,12 @@ export const TokenVerse: React.FC = () => {
           node.velocity.multiplyScalar(0.95); // Damping
           node.position.add(node.velocity);
           node.mesh.position.copy(node.position);
-          
+
           // Update highlight beam position if it exists
           if (node.highlightBeam) {
             node.highlightBeam.position.copy(node.position);
             node.highlightBeam.position.y += 20;
-            
+
             // Add subtle animation to the beam
             node.highlightBeam.rotation.z += 0.01;
           }
@@ -454,110 +476,100 @@ export const TokenVerse: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, [enabled, isInitialized]);
 
-  // Fetch and update token data
+  // Replace fetchTokenData with useEffect that processes token data from context
   useEffect(() => {
-    const fetchTokenData = async () => {
-      try {
-        const response = await ddApi.fetch("/api/tokens");
-        if (!response.ok) throw new Error("Failed to fetch token data");
+    if (!isConnected || !tokens.length || !sceneRef.current) return;
 
-        const data = await response.json();
-        const tokens = Array.isArray(data) ? data : data.data;
+    console.log(
+      `[TokenVerse] Processing ${tokens.length} tokens from WebSocket`
+    );
 
-        // Process token data
-        const nodes: TokenNode[] = tokens.map((token: any) => ({
-          id: token.id,
-          symbol: token.symbol,
-          name: token.name,
-          price: parseFloat(token.token_prices?.price || "0"),
-          marketCap: parseFloat(token.market_cap || "0"),
-          volume24h: parseFloat(token.volume_24h || "0"),
-          change24h: parseFloat(token.change_24h || "0"),
-          position: new THREE.Vector3(
-            (Math.random() - 0.5) * 50,
-            (Math.random() - 0.5) * 50,
-            (Math.random() - 0.5) * 50
-          ),
-          velocity: new THREE.Vector3(),
-          connections: [],
-        }));
+    // Process token data from the shared context
+    const nodes: TokenNode[] = tokens.map((token, index) => ({
+      id: index, // Use index as ID if no ID is available
+      symbol: token.symbol,
+      name: token.name,
+      price: parseFloat(token.price || "0"),
+      marketCap: parseFloat(token.marketCap || "0"),
+      volume24h: parseFloat(token.volume24h || "0"),
+      change24h: parseFloat(token.change24h || "0"),
+      position: new THREE.Vector3(
+        (Math.random() - 0.5) * 50,
+        (Math.random() - 0.5) * 50,
+        (Math.random() - 0.5) * 50
+      ),
+      velocity: new THREE.Vector3(),
+      connections: [],
+    }));
 
-        // Create connections based on correlations
-        nodes.forEach((node) => {
-          const connectionCount = Math.floor(Math.random() * 3) + 1;
-          const otherNodes = nodes.filter((n) => n.id !== node.id);
-          node.connections = otherNodes
-            .sort(() => Math.random() - 0.5)
-            .slice(0, connectionCount);
+    // Create connections based on correlations
+    nodes.forEach((node) => {
+      const connectionCount = Math.floor(Math.random() * 3) + 1;
+      const otherNodes = nodes.filter((n) => n.id !== node.id);
+      node.connections = otherNodes
+        .sort(() => Math.random() - 0.5)
+        .slice(0, connectionCount);
+    });
+
+    // Create or update meshes
+    if (sceneRef.current) {
+      // Remove old meshes
+      nodesRef.current.forEach((node) => {
+        if (node.mesh) sceneRef.current?.remove(node.mesh);
+      });
+
+      // Create new meshes with varied geometry for better depth-of-field visualization
+      nodes.forEach((node) => {
+        const size = Math.max(
+          0.2,
+          Math.min(2, Math.log10(node.marketCap) * 0.2)
+        );
+
+        // Use different geometries based on market cap for visual variety
+        let geometry;
+        if (node.marketCap > 1000000000) {
+          // Large market cap - complex geometry
+          geometry = new THREE.IcosahedronGeometry(size, 2);
+        } else if (node.marketCap > 100000000) {
+          // Medium market cap - dodecahedron
+          geometry = new THREE.DodecahedronGeometry(size, 1);
+        } else if (node.marketCap > 10000000) {
+          // Small market cap - octahedron
+          geometry = new THREE.OctahedronGeometry(size, 1);
+        } else {
+          // Tiny market cap - tetrahedron
+          geometry = new THREE.TetrahedronGeometry(size, 0);
+        }
+
+        // Create more interesting materials with emissive glow
+        const positiveChange = node.change24h >= 0;
+        const changeIntensity = Math.min(1, Math.abs(node.change24h) / 10);
+
+        const material = new THREE.MeshPhongMaterial({
+          color: positiveChange ? 0x00ff88 : 0xff4444,
+          emissive: positiveChange ? 0x00aa44 : 0xaa2222,
+          emissiveIntensity: 0.5 + changeIntensity,
+          shininess: 100,
+          transparent: true,
+          opacity: 0.9,
+          specular: 0xffffff,
         });
 
-        // Create or update meshes
-        if (sceneRef.current) {
-          // Remove old meshes
-          nodesRef.current.forEach((node) => {
-            if (node.mesh) sceneRef.current?.remove(node.mesh);
-          });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(node.position);
 
-          // Create new meshes with varied geometry for better depth-of-field visualization
-          nodes.forEach((node) => {
-            const size = Math.max(
-              0.2,
-              Math.min(2, Math.log10(node.marketCap) * 0.2)
-            );
-            
-            // Use different geometries based on market cap for visual variety
-            let geometry;
-            if (node.marketCap > 1000000000) {
-              // Large market cap - complex geometry
-              geometry = new THREE.IcosahedronGeometry(size, 2);
-            } else if (node.marketCap > 100000000) {
-              // Medium market cap - dodecahedron
-              geometry = new THREE.DodecahedronGeometry(size, 1);
-            } else if (node.marketCap > 10000000) {
-              // Small market cap - octahedron
-              geometry = new THREE.OctahedronGeometry(size, 1);
-            } else {
-              // Tiny market cap - tetrahedron
-              geometry = new THREE.TetrahedronGeometry(size, 0);
-            }
-            
-            // Create more interesting materials with emissive glow
-            const positiveChange = node.change24h >= 0;
-            const changeIntensity = Math.min(1, Math.abs(node.change24h) / 10);
-            
-            const material = new THREE.MeshPhongMaterial({
-              color: positiveChange ? 0x00ff88 : 0xff4444,
-              emissive: positiveChange ? 0x00aa44 : 0xaa2222,
-              emissiveIntensity: 0.5 + changeIntensity,
-              shininess: 100,
-              transparent: true,
-              opacity: 0.9,
-              specular: 0xffffff
-            });
+        // Add slight random rotation for more visual interest
+        mesh.rotation.x = Math.random() * Math.PI;
+        mesh.rotation.y = Math.random() * Math.PI;
+        mesh.rotation.z = Math.random() * Math.PI;
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.copy(node.position);
-            
-            // Add slight random rotation for more visual interest
-            mesh.rotation.x = Math.random() * Math.PI;
-            mesh.rotation.y = Math.random() * Math.PI;
-            mesh.rotation.z = Math.random() * Math.PI;
-            
-            sceneRef.current?.add(mesh);
-            node.mesh = mesh;
-          });
+        sceneRef.current?.add(mesh);
+        node.mesh = mesh;
+      });
 
-          nodesRef.current = nodes;
-        }
-      } catch (error) {
-        console.error("Failed to update token data:", error);
-      }
-    };
-
-    fetchTokenData();
-    const interval = setInterval(fetchTokenData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+      nodesRef.current = nodes;
+    }
+  }, [tokens, isConnected, lastUpdate]);
 
   if (!enabled) {
     return null;

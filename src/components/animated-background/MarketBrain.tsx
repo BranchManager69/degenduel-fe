@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ddApi } from "../../services/dd-api";
+import { useTokenData } from "../../contexts/TokenDataContext";
 
 interface MarketNode {
   symbol: string;
@@ -37,6 +37,10 @@ export const MarketBrain: React.FC = () => {
   const [connections] = useState<Connection[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const mousePosition = useRef({ x: 0, y: 0 });
+  const { tokens, isConnected, lastUpdate } = useTokenData();
+  const prevTokensRef = useRef<
+    Record<string, { price: string; volume24h: string }>
+  >({});
 
   const createParticle = useCallback(
     (node: MarketNode, type: "price" | "volume" | "correlation") => {
@@ -253,8 +257,8 @@ export const MarketBrain: React.FC = () => {
     };
   }, [animate]);
 
-  useEffect(() => {
-    const handleMarketUpdate = (update: any) => {
+  const handleMarketUpdate = useCallback(
+    (update: any) => {
       setNodes((prevNodes) => {
         const node = prevNodes.find((n) => n.symbol === update.symbol);
         if (!node) return prevNodes;
@@ -287,32 +291,48 @@ export const MarketBrain: React.FC = () => {
             : n
         );
       });
-    };
+    },
+    [createParticle]
+  );
 
-    // Set up market data subscription
-    const interval = setInterval(async () => {
-      try {
-        const response = await ddApi.fetch("/api/tokens/metrics");
-        const data = await response.json();
-        if (data.success) {
-          Object.entries(data.metrics).forEach(
-            ([symbol, metrics]: [string, any]) => {
-              handleMarketUpdate({
-                symbol,
-                price: metrics.price,
-                priceChange: metrics.priceChange["5m"],
-                volumeChange: metrics.volume.change,
-              });
-            }
-          );
-        }
-      } catch (err) {
-        console.error("Failed to fetch market data:", err);
-      }
-    }, 30000);
+  useEffect(() => {
+    if (isConnected && tokens.length > 0) {
+      // Process tokens
+      tokens.forEach((token) => {
+        const currentPrice = parseFloat(token.price || "0");
+        const currentVolume = parseFloat(token.volume24h || "0");
+        const prevToken = prevTokensRef.current[token.symbol];
+        const prevPrice = prevToken
+          ? parseFloat(prevToken.price || "0")
+          : currentPrice;
+        const prevVolume = prevToken
+          ? parseFloat(prevToken.volume24h || "0")
+          : currentVolume;
 
-    return () => clearInterval(interval);
-  }, [createParticle]);
+        // Calculate changes
+        const priceChange = prevPrice
+          ? ((currentPrice - prevPrice) / prevPrice) * 100
+          : 0;
+        const volumeChange = prevVolume
+          ? ((currentVolume - prevVolume) / prevVolume) * 100
+          : 0;
+
+        // Update the brain with this token's data
+        handleMarketUpdate({
+          symbol: token.symbol,
+          price: currentPrice,
+          priceChange: priceChange,
+          volumeChange: volumeChange,
+        });
+
+        // Save current values for next comparison
+        prevTokensRef.current[token.symbol] = {
+          price: token.price,
+          volume24h: token.volume24h,
+        };
+      });
+    }
+  }, [tokens, isConnected, lastUpdate, handleMarketUpdate]);
 
   return (
     <canvas
