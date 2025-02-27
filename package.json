@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "vite",
     "dev:local": "vite --mode dev-local",
-    "build": "tsc && vite build",
-    "build:dev": "tsc && vite build --mode development",
+    "build": "npm run build:prod",
+    "build:dev": "tsc && vite build --mode development --minify false",
     "build:prod": "tsc && vite build --mode production",
     "build:all": "npm run build:dev && npm run build:prod",
     "build:quick": "vite build --mode quick",
     "build:analyze": "node scripts/analyze-build.js",
     "preview": "vite preview",
+    "build:local": "npm run build:dev && vite preview --port 3010 --strictPort",
     "type-check": "tsc --noEmit",
     "test": "jest --config jest.config.ts --verbose"
   },
