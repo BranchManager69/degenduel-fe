@@ -1,4 +1,6 @@
-# Token Data WebSocket Integration Guide
+# [DEPRECATED] Token Data WebSocket Integration Guide
+
+> **DEPRECATED**: This document is outdated. Please refer to the new [WebSocket System Guide](./WebSockets/WEBSOCKET_SYSTEM_GUIDE.md) for comprehensive WebSocket documentation.
 
 ## Overview
 

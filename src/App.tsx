@@ -17,9 +17,9 @@ import { useAuth } from "./hooks/useAuth";
 import { useStore } from "./store/useStore";
 /* Components */
 import { WebSocketManager } from "./components/core/WebSocketManager";
+import { GameDebugPanel } from "./components/debug/game/GameDebugPanel";
 import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
-import { UiDebugPanel } from "./components/debug/UiDebugPanel";
-import { WebSocketDebugPanel } from "./components/debug/WebSocketDebugPanel";
+import { UiDebugPanel } from "./components/debug/ui/UiDebugPanel";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { ServerDownBanner } from "./components/layout/ServerDownBanner";
@@ -36,7 +36,8 @@ import { TokenDataProvider } from "./contexts/TokenDataContext";
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { ContestChatManager } from "./components/contest/ContestChatManager";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { WebSocketTesting } from "./pages/admin/WebSocketTesting";
+import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
+import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/PrivateProfilePage";
 import { ReferralPage } from "./pages/authenticated/ReferralPage";
@@ -63,13 +64,12 @@ import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
 import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage";
 import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub";
+import ServiceCommandCenter from "./pages/superadmin/ServiceCommandCenter";
 import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring";
-import { WebSocketMonitoringHub } from "./pages/superadmin/WebSocketMonitoringHub";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
-import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import "./styles/color-schemes.css";
 
 // Test HMR
@@ -135,18 +135,17 @@ export const App: React.FC = () => {
             <WebSocketManager />
 
             {/* Debug Panels */}
-            {user?.is_superadmin && <ServiceDebugPanel />}
             {user?.is_superadmin && <UiDebugPanel />}
-            {user?.is_superadmin && <WebSocketDebugPanel />}
+            {user?.is_superadmin && <ServiceDebugPanel />}
+            {user?.is_superadmin && <GameDebugPanel />}
 
             {/* Animated Background */}
             <MovingBackground />
 
-            {/* Service Status Banner (consider deleting or moving and reusing for general non-MM server issues) */}
-            {/* <ServiceStatusBanner /> */}
-
             {/* Server Down Banner */}
             <ServerDownBanner />
+            {/* Service Status Banner (MOVED) */}
+            {/* <ServiceStatusBanner /> */}
 
             {/* Header */}
             <Header />
@@ -161,22 +160,30 @@ export const App: React.FC = () => {
                 <Route path="/" element={<LandingPage />} />
 
                 {/* Referral Join Route */}
+                {/*     Redirects to landing page; this is part of referral links before stripping the referral code and /join from the URL. When the user clicks on a referral link and accesses /join (as opposed to navigating to the landing page directly), the user will be presented with a Welcome modal atop the landing page in which they are given the opportunity to connect their wallet (a.k.a. register) which immediately credits the referrer with the appropriate referral benefits. */}
+                <Route path="/join" element={<Navigate to="/" replace />} />
+
+                {/* Contest Browser */}
                 <Route
-                  path="/join"
+                  path="/contests"
                   element={
                     <MaintenanceGuard>
-                      <Navigate to="/" replace />
+                      <ContestBrowser />
                     </MaintenanceGuard>
                   }
                 />
 
-                {/* Contest Browser */}
-                <Route path="/contests" element={<ContestBrowser />} />
-
                 {/* Contest Details */}
-                <Route path="/contests/:id" element={<ContestDetails />} />
+                <Route
+                  path="/contests/:id"
+                  element={
+                    <MaintenanceGuard>
+                      <ContestDetails />
+                    </MaintenanceGuard>
+                  }
+                />
 
-                {/* Contest Lobby */}
+                {/* Contest Lobby (Live Game) */}
                 <Route
                   path="/contests/:id/live"
                   element={
@@ -197,55 +204,55 @@ export const App: React.FC = () => {
                 />
 
                 {/* Tokens Page */}
-                <Route path="/tokens" element={<TokensPage />} />
+                <Route
+                  path="/tokens"
+                  element={
+                    <MaintenanceGuard>
+                      <TokensPage />
+                    </MaintenanceGuard>
+                  }
+                />
 
                 {/* Token Whitelist Page */}
                 <Route
                   path="/tokens/whitelist"
-                  element={<TokenWhitelistPage />}
+                  element={
+                    <MaintenanceGuard>
+                      <TokenWhitelistPage />
+                    </MaintenanceGuard>
+                  }
                 />
 
                 {/* Virtual Game Agent Page */}
                 <Route
                   path="/game/virtual-agent"
-                  element={<VirtualAgentPage />}
+                  element={
+                    <MaintenanceGuard>
+                      <VirtualAgentPage />
+                    </MaintenanceGuard>
+                  }
                 />
 
                 {/* Public Profile Page */}
                 <Route
                   path="/profile/:identifier"
-                  element={<PublicProfile />}
+                  element={
+                    <MaintenanceGuard>
+                      <PublicProfile />
+                    </MaintenanceGuard>
+                  }
                 />
 
                 {/* FAQ */}
-                <Route
-                  path="/faq"
-                  element={
-                    <MaintenanceGuard>
-                      <FAQ />
-                    </MaintenanceGuard>
-                  }
-                />
+                <Route path="/faq" element={<FAQ />} />
 
                 {/* How It Works */}
-                <Route
-                  path="/how-it-works"
-                  element={
-                    <MaintenanceGuard>
-                      <HowItWorks />
-                    </MaintenanceGuard>
-                  }
-                />
+                <Route path="/how-it-works" element={<HowItWorks />} />
 
                 {/* Contact */}
-                <Route
-                  path="/contact"
-                  element={
-                    <MaintenanceGuard>
-                      <Contact />
-                    </MaintenanceGuard>
-                  }
-                />
+                <Route path="/contact" element={<Contact />} />
+
+                {/* NOTE: We need to overhaul Leaderboards. We totally ignore the LEVEL SYSTEM!!! XP!!! ACHIEVEMENTS!!! */}
 
                 {/* Leaderboards Landing Page */}
                 <Route path="/leaderboards" element={<LeaderboardLanding />} />
@@ -274,6 +281,7 @@ export const App: React.FC = () => {
                 />
 
                 {/* Referrals */}
+                {/* NOTE: I really want to change the path to /refer ... but I'm afraid of breaking existing links. */}
                 <Route
                   path="/referrals"
                   element={
@@ -299,17 +307,8 @@ export const App: React.FC = () => {
 
                 {/* ADMIN ROUTES */}
 
-                {/* Admin Dashboard */}
-                <Route
-                  path="/admin"
-                  element={
-                    <AdminRoute>
-                      <AdminDashboard />
-                    </AdminRoute>
-                  }
-                />
-
                 {/* SkyDuel Service Management */}
+                {/* NOTE: I really want to change the path to /skyduel ... Shouldn't be too hard... */}
                 <Route
                   path="/admin/skyduel"
                   element={
@@ -317,6 +316,16 @@ export const App: React.FC = () => {
                       <React.Suspense fallback={<div>Loading...</div>}>
                         <SkyDuelPage />
                       </React.Suspense>
+                    </AdminRoute>
+                  }
+                />
+
+                {/* Admin Dashboard */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
                     </AdminRoute>
                   }
                 />
@@ -383,13 +392,21 @@ export const App: React.FC = () => {
                   }
                 />
 
-                {/* WebSocket Monitoring Hub */}
+                {/* Service Command Center */}
+                <Route
+                  path="/superadmin/service-command-center"
+                  element={
+                    <SuperAdminRoute>
+                      <ServiceCommandCenter />
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* Legacy route for backward compatibility */}
                 <Route
                   path="/superadmin/websocket-monitor"
                   element={
-                    <SuperAdminRoute>
-                      <WebSocketMonitoringHub />
-                    </SuperAdminRoute>
+                    <Navigate to="/superadmin/service-command-center" replace />
                   }
                 />
 
@@ -413,14 +430,24 @@ export const App: React.FC = () => {
                   }
                 />
 
-                {/* WebSocket Testing */}
+                {/* Connection Debugger */}
+                <Route
+                  path="/connection-debugger"
+                  element={
+                    <AdminRoute>
+                      <ConnectionDebugger />
+                    </AdminRoute>
+                  }
+                />
+
+                {/* Legacy route for backward compatibility */}
                 <Route
                   path="/websocket-test"
-                  element={
-                    <SuperAdminRoute>
-                      <WebSocketTesting />
-                    </SuperAdminRoute>
-                  }
+                  element={<Navigate to="/connection-debugger" replace />}
+                />
+                <Route
+                  path="/websocket-dashboard"
+                  element={<Navigate to="/connection-debugger" replace />}
                 />
 
                 {/* AMM Simulation */}

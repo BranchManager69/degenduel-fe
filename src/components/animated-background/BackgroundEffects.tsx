@@ -35,10 +35,12 @@ export const BackgroundEffects: React.FC = () => {
   const experimentalMode = true; // Master switch for all experimental visualizations
 
   // Individual experimental layers - only active if experimentalMode is true
-  const gradientWavesEnabled = true; // Flowing gradient waves based on token volume - ENABLED!
-  const fluidTokensEnabled = true; // Fluid dynamics simulation using token data - WOW EFFECT!
-  const abstractPatternsEnabled = true; // Abstract geometric patterns driven by market trends - ENABLED!
-  const neonGridEnabled = true; // Retro-futuristic neon grid with token data nodes - IMPRESSIVE!
+  const gradientWavesEnabled =
+    uiDebug.backgrounds.gradientWaves?.enabled ?? false; // Flowing gradient waves based on token volume
+  const fluidTokensEnabled = uiDebug.backgrounds.fluidTokens?.enabled ?? false; // Fluid dynamics simulation using token data
+  const abstractPatternsEnabled =
+    uiDebug.backgrounds.abstractPatterns?.enabled ?? false; // Abstract geometric patterns driven by market trends
+  const neonGridEnabled = uiDebug.backgrounds.neonGrid?.enabled ?? false; // Retro-futuristic neon grid with token data nodes
 
   // === BLEND MODES ===
   // Customize how layers blend together by changing these values
@@ -50,9 +52,9 @@ export const BackgroundEffects: React.FC = () => {
   const marketBrainBlendMode = "normal";
   const particlesBlendMode = "screen";
   const gradientWavesBlendMode = "color-dodge"; // Enhanced for more vivid waves
-  const fluidTokensBlendMode = "lighten";      // Better fluid effect
-  const abstractPatternsBlendMode = "screen";  // More vivid patterns
-  const neonGridBlendMode = "screen";          // Maximum neon glow effect
+  const fluidTokensBlendMode = "lighten"; // Better fluid effect
+  const abstractPatternsBlendMode = "screen"; // More vivid patterns
+  const neonGridBlendMode = "screen"; // Maximum neon glow effect
 
   return (
     <>

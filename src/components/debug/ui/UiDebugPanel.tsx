@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 import { FiMaximize2, FiMinimize2, FiX } from "react-icons/fi";
-import { useStore } from "../../store/useStore";
-import { Label } from "../ui/Label";
-import { Slider } from "../ui/Slider";
-import { Switch } from "../ui/Switch";
+import { useStore } from "../../../store/useStore";
+import { Label } from "../../ui/Label";
+import { Slider } from "../../ui/Slider";
+import { Switch } from "../../ui/Switch";
 
 export const UiDebugPanel: React.FC = () => {
   const { uiDebug, toggleBackground, updateBackgroundSetting } = useStore();
@@ -227,6 +227,137 @@ export const UiDebugPanel: React.FC = () => {
                   )}
                 />
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* EXPERIMENTAL ANIMATIONS SECTION */}
+        <div className="pt-4 border-t border-gray-700">
+          <h4 className="text-white/70 font-semibold mb-4">
+            Experimental Animations
+          </h4>
+
+          {/* Gradient Waves */}
+          {uiDebug.backgrounds.gradientWaves && (
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-between">
+                <Label className="text-white/70">Gradient Waves</Label>
+                <Switch
+                  checked={uiDebug.backgrounds.gradientWaves.enabled}
+                  onCheckedChange={() =>
+                    handleToggleBackground("gradientWaves")
+                  }
+                />
+              </div>
+              {uiDebug.backgrounds.gradientWaves.enabled && (
+                <div className="space-y-4 pl-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-white/50">Intensity</Label>
+                    <Slider
+                      value={[uiDebug.backgrounds.gradientWaves.intensity]}
+                      min={0}
+                      max={100}
+                      step={1}
+                      onValueChange={handleSliderChange(
+                        "gradientWaves",
+                        "intensity"
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fluid Tokens */}
+          {uiDebug.backgrounds.fluidTokens && (
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-between">
+                <Label className="text-white/70">Fluid Tokens</Label>
+                <Switch
+                  checked={uiDebug.backgrounds.fluidTokens.enabled}
+                  onCheckedChange={() => handleToggleBackground("fluidTokens")}
+                />
+              </div>
+              {uiDebug.backgrounds.fluidTokens.enabled && (
+                <div className="space-y-4 pl-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-white/50">Intensity</Label>
+                    <Slider
+                      value={[uiDebug.backgrounds.fluidTokens.intensity]}
+                      min={0}
+                      max={100}
+                      step={1}
+                      onValueChange={handleSliderChange(
+                        "fluidTokens",
+                        "intensity"
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Abstract Patterns */}
+          {uiDebug.backgrounds.abstractPatterns && (
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-between">
+                <Label className="text-white/70">Abstract Patterns</Label>
+                <Switch
+                  checked={uiDebug.backgrounds.abstractPatterns.enabled}
+                  onCheckedChange={() =>
+                    handleToggleBackground("abstractPatterns")
+                  }
+                />
+              </div>
+              {uiDebug.backgrounds.abstractPatterns.enabled && (
+                <div className="space-y-4 pl-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-white/50">Intensity</Label>
+                    <Slider
+                      value={[uiDebug.backgrounds.abstractPatterns.intensity]}
+                      min={0}
+                      max={100}
+                      step={1}
+                      onValueChange={handleSliderChange(
+                        "abstractPatterns",
+                        "intensity"
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Neon Grid */}
+          {uiDebug.backgrounds.neonGrid && (
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-between">
+                <Label className="text-white/70">Neon Grid</Label>
+                <Switch
+                  checked={uiDebug.backgrounds.neonGrid.enabled}
+                  onCheckedChange={() => handleToggleBackground("neonGrid")}
+                />
+              </div>
+              {uiDebug.backgrounds.neonGrid.enabled && (
+                <div className="space-y-4 pl-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-white/50">Intensity</Label>
+                    <Slider
+                      value={[uiDebug.backgrounds.neonGrid.intensity]}
+                      min={0}
+                      max={100}
+                      step={1}
+                      onValueChange={handleSliderChange(
+                        "neonGrid",
+                        "intensity"
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

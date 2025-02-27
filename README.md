@@ -13,6 +13,9 @@
     <br>
     Sharpen your trading skills while competing for big bragging rights and <b>even bigger top payouts.</b>
   </p>
+  
+  <h3>🚀 Quick Start - Development</h3>
+  <code>npm run build:local</code> - Build unminified dev version and serve on port 3010
 </div>
 
 </br>
