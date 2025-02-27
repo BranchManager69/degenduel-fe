@@ -10,6 +10,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
   const isDev = command === "serve" || mode === "development";
   // Add local dev mode check
   const isLocalDev = mode === "dev-local";
+  // Check for forced disable of minification
+  const forceDisableMinify = process.env.VITE_FORCE_DISABLE_MINIFY === "true";
+  
+  if (forceDisableMinify) {
+    console.log("⚠️ MINIFICATION FORCED DISABLED via VITE_FORCE_DISABLE_MINIFY");
+  }
+  
   console.log(
     "Running in",
     isLocalDev ? "local development" : isDev ? "development" : "production",
@@ -24,12 +31,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
   if (isLocalDev) {
     return {
       server: {
-        port: 3006,
+        port: 3010,
         host: true,
         strictPort: true,
         https: undefined,
         hmr: {
-          clientPort: 3006,
+          clientPort: 3010,
           host: "localhost",
           protocol: "ws",
         },
@@ -86,6 +93,66 @@ export default defineConfig(({ command, mode }): UserConfig => {
             secure: true,
           },
           "^/api/v2/ws": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/v2/ws/contest": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/api/admin/skyduel": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/v2/ws/wallet": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/v2/ws/market": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/v2/ws/achievements": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/v2/ws/portfolio": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/api/admin/circuit-breaker": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/api/admin/services": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/analytics": {
+            target: "wss://dev.degenduel.me",
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/api/v2/ws/tokenData": {
             target: "wss://dev.degenduel.me",
             ws: true,
             changeOrigin: true,
@@ -193,6 +260,96 @@ export default defineConfig(({ command, mode }): UserConfig => {
           secure: true,
           cookieDomainRewrite: "localhost",
         },
+        "/v2/ws/contest": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/api/admin/skyduel": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/v2/ws/wallet": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/v2/ws/market": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/v2/ws/achievements": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/v2/ws/portfolio": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/api/admin/circuit-breaker": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/api/admin/services": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/analytics": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/api/v2/ws/tokenData": {
+          target: isDev
+            ? "wss://dev.degenduel.me"
+            : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
       },
       watch: {
         usePolling: false,
@@ -233,7 +390,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
     build: {
       outDir,
       sourcemap: true,
-      minify: isDev ? false : "esbuild",
+      minify: forceDisableMinify ? false : isDev ? false : "esbuild",
       target: "esnext",
       cssCodeSplit: true,
       chunkSizeWarningLimit: 1000,
@@ -274,7 +431,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
           minifyInternalExports: false,
         },
       },
-      terserOptions: isDev
+      terserOptions: (isDev || forceDisableMinify)
         ? undefined
         : {
             compress: {
@@ -294,10 +451,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
           },
     },
     esbuild: {
-      keepNames: isDev,
-      minifyIdentifiers: !isDev,
-      minifySyntax: !isDev,
-      minifyWhitespace: !isDev,
+      keepNames: isDev || forceDisableMinify,
+      minifyIdentifiers: !isDev && !forceDisableMinify,
+      minifySyntax: !isDev && !forceDisableMinify,
+      minifyWhitespace: !isDev && !forceDisableMinify,
       sourcemap: true,
     },
     logLevel: "info" as LogLevel,

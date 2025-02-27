@@ -1,4 +1,6 @@
-# WebSocket Monitoring Hub Documentation
+# [DEPRECATED] WebSocket Monitoring Hub Documentation
+
+> **DEPRECATED**: This document is outdated. Please refer to the new [WebSocket System Guide](./WEBSOCKET_SYSTEM_GUIDE.md) for comprehensive WebSocket documentation.
 
 ## Overview
 

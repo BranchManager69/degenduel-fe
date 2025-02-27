@@ -183,7 +183,7 @@ const SERVICE_GROUPS = {
   TRADING: {
     title: "Trading Services",
     description: "Market and contest real-time updates",
-    services: ["market", "contest", "portfolio"],
+    services: ["market", "contest", "portfolio", "token-data"],
   },
   USER: {
     title: "User Services",
@@ -228,6 +228,7 @@ export const ServiceCommandCenter: React.FC = () => {
     { id: "monitor", name: "Monitor WebSocket" },
     { id: "wallet", name: "Wallet WebSocket" },
     { id: "portfolio", name: "Portfolio WebSocket" },
+    { id: "token-data", name: "Token Data WebSocket" },
   ];
 
   // Define known service dependencies
@@ -239,6 +240,7 @@ export const ServiceCommandCenter: React.FC = () => {
     analytics: ["market", "contest", "wallet"],
     monitor: ["base"],
     "circuit-breaker": ["base"],
+    "token-data": ["market", "base"],
   };
 
   // Create flow elements from services with proper typing

@@ -44,7 +44,7 @@ const ConnectionStatus: React.FC<{
         setLastChecked(new Date());
       });
 
-    // Production code should rely on actual connection status checks
+    // Production code should rely on actual connection status
     // No mock statuses
   };
 
@@ -186,6 +186,11 @@ const WebSocketDashboard: React.FC = () => {
       type: "analytics",
       url: import.meta.env.VITE_WS_URL,
       endpoint: "/analytics",
+    },
+    {
+      type: "token-data",
+      url: import.meta.env.VITE_WS_URL,
+      endpoint: "/api/v2/ws/tokenData",
     },
   ];
 
@@ -366,6 +371,74 @@ const EXAMPLE_PAYLOADS: Record<string, Record<string, any>> = {
         price: 110.25,
         timestamp: new Date().toISOString(),
         contest_id: "contest_" + crypto.randomUUID(),
+      },
+    },
+  },
+  tokenData: {
+    subscribe: {
+      type: "subscribe",
+      tokens: "all", // Can also be an array like ["SOL", "BONK", "JTO"]
+    },
+    token_update: {
+      type: "token_update",
+      tokens: [
+        {
+          symbol: "SOL",
+          name: "Solana",
+          price: "112.50",
+          marketCap: "50000000000",
+          volume24h: "3500000000",
+          volume5m: "75000000",
+          change24h: "2.5",
+          change5m: "0.75",
+          change1h: "1.2",
+          imageUrl: "https://solana.com/src/img/branding/solanaLogoMark.svg",
+          status: "active",
+        },
+        {
+          symbol: "BONK",
+          name: "Bonk",
+          price: "0.00002156",
+          marketCap: "1250000000",
+          volume24h: "450000000",
+          volume5m: "25000000",
+          change24h: "5.2",
+          change5m: "1.8",
+          change1h: "3.1",
+          status: "active",
+        },
+      ],
+      timestamp: new Date().toISOString(),
+    },
+    token_price: {
+      type: "token_price",
+      token: "SOL",
+      data: {
+        price: "113.75",
+        change24h: "3.5",
+        change1h: "1.5",
+        timestamp: new Date().toISOString(),
+      },
+    },
+    token_metadata: {
+      type: "token_metadata",
+      token: "BONK",
+      data: {
+        name: "Bonk",
+        imageUrl: "https://example.com/bonk.png",
+        description: "Solana's first community-driven dog coin",
+        website: "https://bonkcoin.com",
+        twitter: "@bonk_inu",
+      },
+    },
+    token_liquidity: {
+      type: "token_liquidity",
+      token: "JTO",
+      data: {
+        liquidity: 75000000,
+        liquidity24h: 72000000,
+        change24h: "4.16",
+        timestamp: new Date().toISOString(),
       },
     },
   },
@@ -559,13 +632,22 @@ const SOCKET_TYPES = {
     endpoint: "/api/admin/circuit-breaker",
     messageTypes: ["health:update", "breaker:trip"],
   },
+  tokenData: {
+    endpoint: "/api/v2/ws/tokenData",
+    messageTypes: [
+      "subscribe",
+      "token_update",
+      "token_price",
+      "token_metadata",
+      "token_liquidity",
+    ],
+  },
 } as const;
 
 type SocketType = keyof typeof SOCKET_TYPES;
 
 // This component is now used as a tab inside WebSocketDashboard
 const WebSocketTesting: React.FC = () => {
-  ////const { user } = useStore();
   const [selectedSocket, setSelectedSocket] = useState<SocketType | "">("");
   const [selectedMessageType, setSelectedMessageType] = useState<string>("");
   const [messagePayload, setMessagePayload] = useState<string>("");

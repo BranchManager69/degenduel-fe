@@ -77,7 +77,7 @@ interface DebugConfig {
 }
 
 // Import SkyDuel types
-import { ServiceNode, ServiceConnection } from "../hooks/useSkyDuelWebSocket";
+import { ServiceConnection, ServiceNode } from "../hooks/useSkyDuelWebSocket";
 
 // SkyDuel system state
 interface SkyDuelState {
@@ -275,6 +275,22 @@ interface StateData {
         intensity: number;
         updateFrequency: number;
       };
+      gradientWaves: {
+        enabled: boolean;
+        intensity: number;
+      };
+      fluidTokens: {
+        enabled: boolean;
+        intensity: number;
+      };
+      abstractPatterns: {
+        enabled: boolean;
+        intensity: number;
+      };
+      neonGrid: {
+        enabled: boolean;
+        intensity: number;
+      };
     };
   };
   webSocket: WebSocketState;
@@ -301,7 +317,11 @@ interface State extends StateData {
   ) => void;
   setSkyDuelState: (state: Partial<SkyDuelState>) => void;
   updateSkyDuelNode: (nodeId: string, updates: Partial<ServiceNode>) => void;
-  updateSkyDuelConnection: (sourceId: string, targetId: string, updates: Partial<ServiceConnection>) => void;
+  updateSkyDuelConnection: (
+    sourceId: string,
+    targetId: string,
+    updates: Partial<ServiceConnection>
+  ) => void;
   setSkyDuelSelectedNode: (nodeId: string | null) => void;
   setSkyDuelViewMode: (mode: SkyDuelState["viewMode"]) => void;
   setCircuitBreakerState: (state: StateData["circuitBreaker"]) => void;
@@ -665,6 +685,22 @@ const initialState: StateData = {
         intensity: 100,
         updateFrequency: 30,
       },
+      gradientWaves: {
+        enabled: true,
+        intensity: 100,
+      },
+      fluidTokens: {
+        enabled: false,
+        intensity: 100,
+      },
+      abstractPatterns: {
+        enabled: true,
+        intensity: 100,
+      },
+      neonGrid: {
+        enabled: false,
+        intensity: 100,
+      },
     },
   },
   webSocket: {
@@ -1000,7 +1036,7 @@ export const useStore = create<State>()(
       },
       setServices: (services) => set({ services }),
       // SkyDuel actions
-      setSkyDuelState: (state) => 
+      setSkyDuelState: (state) =>
         set((prevState) => ({
           skyDuel: {
             ...prevState.skyDuel,
@@ -1008,54 +1044,56 @@ export const useStore = create<State>()(
             lastUpdated: new Date().toISOString(),
           },
         })),
-      updateSkyDuelNode: (nodeId, updates) => 
+      updateSkyDuelNode: (nodeId, updates) =>
         set((prevState) => {
-          const nodeIndex = prevState.skyDuel.nodes.findIndex(node => node.id === nodeId);
+          const nodeIndex = prevState.skyDuel.nodes.findIndex(
+            (node) => node.id === nodeId
+          );
           if (nodeIndex === -1) return prevState;
-          
+
           const updatedNodes = [...prevState.skyDuel.nodes];
-          updatedNodes[nodeIndex] = { 
-            ...updatedNodes[nodeIndex], 
-            ...updates 
+          updatedNodes[nodeIndex] = {
+            ...updatedNodes[nodeIndex],
+            ...updates,
           };
-          
+
           return {
             skyDuel: {
               ...prevState.skyDuel,
               nodes: updatedNodes,
               lastUpdated: new Date().toISOString(),
-            }
+            },
           };
         }),
-      updateSkyDuelConnection: (sourceId, targetId, updates) => 
+      updateSkyDuelConnection: (sourceId, targetId, updates) =>
         set((prevState) => {
           const connectionIndex = prevState.skyDuel.connections.findIndex(
-            conn => conn.source === sourceId && conn.target === targetId
+            (conn) => conn.source === sourceId && conn.target === targetId
           );
           if (connectionIndex === -1) return prevState;
-          
+
           const updatedConnections = [...prevState.skyDuel.connections];
           updatedConnections[connectionIndex] = {
             ...updatedConnections[connectionIndex],
-            ...updates
+            ...updates,
           };
-          
+
           return {
             skyDuel: {
               ...prevState.skyDuel,
               connections: updatedConnections,
               lastUpdated: new Date().toISOString(),
-            }
+            },
           };
         }),
-      setSkyDuelSelectedNode: (nodeId) => 
+      setSkyDuelSelectedNode: (nodeId) =>
         set((prevState) => ({
           skyDuel: {
             ...prevState.skyDuel,
             selectedNode: nodeId,
           },
         })),
-      setSkyDuelViewMode: (mode) => 
+      setSkyDuelViewMode: (mode) =>
         set((prevState) => ({
           skyDuel: {
             ...prevState.skyDuel,
