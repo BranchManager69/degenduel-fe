@@ -1,34 +1,74 @@
 import React from "react";
-import { cn } from "../../lib/utils";
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn("rounded-lg border bg-white shadow-sm", className)}
-        {...props}
-      />
-    );
-  }
-);
+export const Card: React.FC<CardProps> = ({ children, className = "" }) => {
+  return (
+    <div className={`rounded-lg border bg-white shadow-sm ${className}`}>
+      {children}
+    </div>
+  );
+};
 
-export const CardHeader = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn("flex flex-col space-y-1.5 p-6", className)}
-        {...props}
-      />
-    );
-  }
-);
+interface CardHeaderProps {
+  children: React.ReactNode;
+  className?: string;
+}
 
-export const CardContent = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, ...props }, ref) => {
-    return <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />;
-  }
-);
+export const CardHeader: React.FC<CardHeaderProps> = ({
+  children,
+  className = "",
+}) => {
+  return (
+    <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+interface CardTitleProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const CardTitle: React.FC<CardTitleProps> = ({
+  children,
+  className = "",
+}) => {
+  return (
+    <h3
+      className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
+    >
+      {children}
+    </h3>
+  );
+};
+
+interface CardContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const CardContent: React.FC<CardContentProps> = ({
+  children,
+  className = "",
+}) => {
+  return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
+};
+
+interface CardFooterProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const CardFooter: React.FC<CardFooterProps> = ({
+  children,
+  className = "",
+}) => {
+  return (
+    <div className={`flex items-center p-6 pt-0 ${className}`}>{children}</div>
+  );
+};

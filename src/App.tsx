@@ -38,6 +38,7 @@ import { ContestChatManager } from "./components/contest/ContestChatManager";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
+import { SystemReports } from "./pages/admin/SystemReports";
 import WebSocketHub from "./pages/admin/WebSocketHub";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/PrivateProfilePage";
@@ -317,6 +318,16 @@ export const App: React.FC = () => {
                       <React.Suspense fallback={<div>Loading...</div>}>
                         <SkyDuelPage />
                       </React.Suspense>
+                    </AdminRoute>
+                  }
+                />
+
+                {/* System Reports */}
+                <Route
+                  path="/admin/system-reports"
+                  element={
+                    <AdminRoute>
+                      <SystemReports />
                     </AdminRoute>
                   }
                 />

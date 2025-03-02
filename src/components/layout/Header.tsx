@@ -47,9 +47,15 @@ export const Header: React.FC = () => {
         const response = await ddApi.contests.getAll();
         const contests = Array.isArray(response) ? response : [];
 
-        // Filter to only include live contests
-        // TODO: Why not include pending contests too?
-        setActiveContests(contests.filter(isContestLive) || []);
+        // TEMPORARY FIX: Including ALL contests regardless of status
+        // We're temporarily disabling all filtering because:
+        // 1. The contest evaluation service is not currently functional
+        // 2. This ensures the LiveContestTicker displays content for all contest states
+        // 3. The LiveContestTicker component already has formatting for all four status types
+        //    (active, pending, completed, and cancelled)
+        // 4. This is an easy temporary solution until the evaluation service is fixed
+        // Original code: setActiveContests(contests.filter(isContestLive) || []);
+        setActiveContests(contests || []);
       } catch (err: any) {
         if (err?.status === 503 || err?.message?.includes("503")) {
           handleMaintenanceTransition();
