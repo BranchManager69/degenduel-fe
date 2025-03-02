@@ -1,237 +1,271 @@
+# DegenDuel API Database Schema
+
+This document is meant to help with frontend implementation. However, it can become outdated and broken at any time.
+
+## WARNING!
+
+This guide is now _quite_ old.
+
+In fact, it may be outdated and broken right now!
+
+Some might be right. Some might be wrong. I don't know. I'm not a doctor.
+
 ## Achievement System
 
 ### Achievement Categories (`achievement_categories`)
+
 Categories for user achievements.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Category ID | Primary Key, Auto-increment |
-| name | VARCHAR(50) | Category name | Unique |
-| description | TEXT | Category description | |
-| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP |
+| Column      | Type        | Description          | Constraints                 |
+| ----------- | ----------- | -------------------- | --------------------------- |
+| id          | INTEGER     | Category ID          | Primary Key, Auto-increment |
+| name        | VARCHAR(50) | Category name        | Unique                      |
+| description | TEXT        | Category description |                             |
+| created_at  | TIMESTAMPTZ | Creation timestamp   | Default: CURRENT_TIMESTAMP  |
 
 ### Achievement Tiers (`achievement_tiers`)
+
 Tier levels for achievements.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Tier ID | Primary Key, Auto-increment |
-| name | VARCHAR(20) | Tier name | Not Null |
-| color_hex | VARCHAR(7) | Display color | Not Null |
-| points | INTEGER | Points awarded | Not Null |
-| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP |
+| Column     | Type        | Description        | Constraints                 |
+| ---------- | ----------- | ------------------ | --------------------------- |
+| id         | INTEGER     | Tier ID            | Primary Key, Auto-increment |
+| name       | VARCHAR(20) | Tier name          | Not Null                    |
+| color_hex  | VARCHAR(7)  | Display color      | Not Null                    |
+| points     | INTEGER     | Points awarded     | Not Null                    |
+| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP  |
 
 ### Achievement Tier Requirements (`achievement_tier_requirements`)
+
 Requirements for each achievement tier.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Requirement ID | Primary Key, Auto-increment |
-| achievement_type | TEXT | Achievement type | Not Null |
-| tier_id | INTEGER | Reference to tier | Not Null |
-| requirement_value | JSONB | Requirement criteria | Not Null |
-| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP |
+| Column            | Type        | Description          | Constraints                 |
+| ----------------- | ----------- | -------------------- | --------------------------- |
+| id                | INTEGER     | Requirement ID       | Primary Key, Auto-increment |
+| achievement_type  | TEXT        | Achievement type     | Not Null                    |
+| tier_id           | INTEGER     | Reference to tier    | Not Null                    |
+| requirement_value | JSONB       | Requirement criteria | Not Null                    |
+| created_at        | TIMESTAMPTZ | Creation timestamp   | Default: CURRENT_TIMESTAMP  |
 
 #### Indexes
+
 - `idx_achievement_tier_requirements_lookup` (achievement_type, tier_id)
 
 ## User Progression
 
 ### User Levels (`user_levels`)
+
 User level progression system.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Level ID | Primary Key, Auto-increment |
-| level_number | INTEGER | Level number | Not Null |
-| class_name | VARCHAR(20) | Level class | Not Null |
-| title | VARCHAR(50) | Level title | Not Null |
-| min_exp | INTEGER | Required experience | Not Null |
-| bronze_achievements_required | INTEGER | Required bronze achievements | Not Null |
-| silver_achievements_required | INTEGER | Required silver achievements | Not Null |
-| gold_achievements_required | INTEGER | Required gold achievements | Not Null |
-| platinum_achievements_required | INTEGER | Required platinum achievements | Not Null |
-| diamond_achievements_required | INTEGER | Required diamond achievements | Not Null |
-| icon_url | VARCHAR(255) | Level icon URL | |
-| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP |
+| Column                         | Type         | Description                    | Constraints                 |
+| ------------------------------ | ------------ | ------------------------------ | --------------------------- |
+| id                             | INTEGER      | Level ID                       | Primary Key, Auto-increment |
+| level_number                   | INTEGER      | Level number                   | Not Null                    |
+| class_name                     | VARCHAR(20)  | Level class                    | Not Null                    |
+| title                          | VARCHAR(50)  | Level title                    | Not Null                    |
+| min_exp                        | INTEGER      | Required experience            | Not Null                    |
+| bronze_achievements_required   | INTEGER      | Required bronze achievements   | Not Null                    |
+| silver_achievements_required   | INTEGER      | Required silver achievements   | Not Null                    |
+| gold_achievements_required     | INTEGER      | Required gold achievements     | Not Null                    |
+| platinum_achievements_required | INTEGER      | Required platinum achievements | Not Null                    |
+| diamond_achievements_required  | INTEGER      | Required diamond achievements  | Not Null                    |
+| icon_url                       | VARCHAR(255) | Level icon URL                 |                             |
+| created_at                     | TIMESTAMPTZ  | Creation timestamp             | Default: CURRENT_TIMESTAMP  |
 
 ### Level Rewards (`level_rewards`)
+
 Rewards for reaching user levels.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Reward ID | Primary Key, Auto-increment |
-| level_id | INTEGER | Reference to level | Not Null |
-| reward_type | VARCHAR(50) | Type of reward | Not Null |
-| reward_value | JSONB | Reward details | Not Null |
-| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP |
+| Column       | Type        | Description        | Constraints                 |
+| ------------ | ----------- | ------------------ | --------------------------- |
+| id           | INTEGER     | Reward ID          | Primary Key, Auto-increment |
+| level_id     | INTEGER     | Reference to level | Not Null                    |
+| reward_type  | VARCHAR(50) | Type of reward     | Not Null                    |
+| reward_value | JSONB       | Reward details     | Not Null                    |
+| created_at   | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP  |
 
 ## AI Integration
 
 ### AI Agents (`ai_agents`)
+
 AI trading agents configuration.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Agent ID | Primary Key, Auto-increment |
-| name | VARCHAR | Agent name | Not Null |
-| personality | VARCHAR | Agent personality | Not Null |
-| risk_tolerance | INTEGER | Risk level | Not Null |
-| expertise | VARCHAR[] | Areas of expertise | Not Null |
-| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP |
-| is_active | BOOLEAN | Active status | Default: true |
+| Column         | Type        | Description        | Constraints                 |
+| -------------- | ----------- | ------------------ | --------------------------- |
+| id             | INTEGER     | Agent ID           | Primary Key, Auto-increment |
+| name           | VARCHAR     | Agent name         | Not Null                    |
+| personality    | VARCHAR     | Agent personality  | Not Null                    |
+| risk_tolerance | INTEGER     | Risk level         | Not Null                    |
+| expertise      | VARCHAR[]   | Areas of expertise | Not Null                    |
+| created_at     | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP  |
+| is_active      | BOOLEAN     | Active status      | Default: true               |
 
 ### AI Decisions (`ai_decisions`)
+
 Trading decisions made by AI agents.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Decision ID | Primary Key, Auto-increment |
-| agent_id | INTEGER | Reference to agent | Foreign Key |
-| contest_id | INTEGER | Reference to contest | Foreign Key |
-| decision_type | AIDecisionType | Type of decision | Not Null |
-| token_id | INTEGER | Token affected | Foreign Key |
-| amount | DECIMAL(20,0) | Decision amount | Not Null |
-| reasoning | VARCHAR | Decision rationale | Not Null |
-| market_context | JSONB | Market conditions | Default: '{}' |
-| external_factors | JSONB | External influences | Default: '{}' |
-| timestamp | TIMESTAMPTZ | Decision time | Default: CURRENT_TIMESTAMP |
-| success_score | INTEGER | Performance score | |
-| price_impact | DECIMAL(10,2) | Price impact % | |
+| Column           | Type           | Description          | Constraints                 |
+| ---------------- | -------------- | -------------------- | --------------------------- |
+| id               | INTEGER        | Decision ID          | Primary Key, Auto-increment |
+| agent_id         | INTEGER        | Reference to agent   | Foreign Key                 |
+| contest_id       | INTEGER        | Reference to contest | Foreign Key                 |
+| decision_type    | AIDecisionType | Type of decision     | Not Null                    |
+| token_id         | INTEGER        | Token affected       | Foreign Key                 |
+| amount           | DECIMAL(20,0)  | Decision amount      | Not Null                    |
+| reasoning        | VARCHAR        | Decision rationale   | Not Null                    |
+| market_context   | JSONB          | Market conditions    | Default: '{}'               |
+| external_factors | JSONB          | External influences  | Default: '{}'               |
+| timestamp        | TIMESTAMPTZ    | Decision time        | Default: CURRENT_TIMESTAMP  |
+| success_score    | INTEGER        | Performance score    |                             |
+| price_impact     | DECIMAL(10,2)  | Price impact %       |                             |
 
 #### Indexes
+
 - `idx_ai_decisions_contest_time` (contest_id, timestamp)
 - `idx_ai_decisions_token_time` (token_id, timestamp)
 
 ### Participant Influences (`participant_influences`)
+
 User influence on AI decisions.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Influence ID | Primary Key, Auto-increment |
-| decision_id | INTEGER | Reference to decision | Foreign Key |
-| wallet_address | VARCHAR(44) | User's wallet | Foreign Key |
-| persuasion_score | INTEGER | Influence score | Not Null |
-| contribution_weight | DECIMAL(5,2) | Weight of influence | Not Null |
-| timestamp | TIMESTAMPTZ | Record time | Default: CURRENT_TIMESTAMP |
+| Column              | Type         | Description           | Constraints                 |
+| ------------------- | ------------ | --------------------- | --------------------------- |
+| id                  | INTEGER      | Influence ID          | Primary Key, Auto-increment |
+| decision_id         | INTEGER      | Reference to decision | Foreign Key                 |
+| wallet_address      | VARCHAR(44)  | User's wallet         | Foreign Key                 |
+| persuasion_score    | INTEGER      | Influence score       | Not Null                    |
+| contribution_weight | DECIMAL(5,2) | Weight of influence   | Not Null                    |
+| timestamp           | TIMESTAMPTZ  | Record time           | Default: CURRENT_TIMESTAMP  |
 
 #### Indexes
+
 - `idx_participant_influences_lookup` (wallet_address, decision_id)
 
 ## System Security
 
 ### Auth Challenges (`auth_challenges`)
+
 Authentication challenge tracking.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| wallet_address | VARCHAR(44) | User's wallet | Primary Key |
-| nonce | TEXT | Challenge nonce | Not Null |
-| expires_at | TIMESTAMPTZ | Expiration time | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
+| Column         | Type        | Description     | Constraints                |
+| -------------- | ----------- | --------------- | -------------------------- |
+| wallet_address | VARCHAR(44) | User's wallet   | Primary Key                |
+| nonce          | TEXT        | Challenge nonce | Not Null                   |
+| expires_at     | TIMESTAMPTZ | Expiration time | Not Null                   |
+| created_at     | TIMESTAMPTZ | Creation time   | Default: CURRENT_TIMESTAMP |
 
 #### Indexes
+
 - `idx_auth_challenges_expires` (expires_at)
 
 ### Admin Logs (`admin_logs`)
+
 Administrative action audit log.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Log ID | Primary Key, Auto-increment |
-| admin_address | VARCHAR | Admin's wallet | Not Null |
-| action | VARCHAR | Action taken | Not Null |
-| details | JSONB | Action details | Default: '{}' |
-| created_at | TIMESTAMPTZ | Action time | Default: CURRENT_TIMESTAMP |
-| ip_address | VARCHAR | Admin's IP | |
-| user_agent | VARCHAR | Admin's browser | |
+| Column        | Type        | Description     | Constraints                 |
+| ------------- | ----------- | --------------- | --------------------------- |
+| id            | INTEGER     | Log ID          | Primary Key, Auto-increment |
+| admin_address | VARCHAR     | Admin's wallet  | Not Null                    |
+| action        | VARCHAR     | Action taken    | Not Null                    |
+| details       | JSONB       | Action details  | Default: '{}'               |
+| created_at    | TIMESTAMPTZ | Action time     | Default: CURRENT_TIMESTAMP  |
+| ip_address    | VARCHAR     | Admin's IP      |                             |
+| user_agent    | VARCHAR     | Admin's browser |                             |
 
 #### Indexes
+
 - `idx_admin_logs_admin` (admin_address)
 - `idx_admin_logs_created` (created_at)
 
 ## Real-time Communication
 
 ### Websocket Messages (`websocket_messages`)
+
 Real-time message queue.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Message ID | Primary Key, Auto-increment |
-| type | TEXT | Message type | Not Null |
-| data | JSONB | Message content | Not Null |
-| wallet_address | TEXT | Recipient wallet | Foreign Key |
-| timestamp | TIMESTAMPTZ | Message time | Default: CURRENT_TIMESTAMP |
-| delivered | BOOLEAN | Delivery status | Default: false |
+| Column         | Type        | Description      | Constraints                 |
+| -------------- | ----------- | ---------------- | --------------------------- |
+| id             | INTEGER     | Message ID       | Primary Key, Auto-increment |
+| type           | TEXT        | Message type     | Not Null                    |
+| data           | JSONB       | Message content  | Not Null                    |
+| wallet_address | TEXT        | Recipient wallet | Foreign Key                 |
+| timestamp      | TIMESTAMPTZ | Message time     | Default: CURRENT_TIMESTAMP  |
+| delivered      | BOOLEAN     | Delivery status  | Default: false              |
 
 #### Indexes
+
 - `idx_websocket_messages_wallet_type` (wallet_address, type)
 - `idx_websocket_messages_timestamp` (timestamp)
 
 ## Wallet Management
 
 ### Seed Wallets (`seed_wallets`)
+
 System seed wallet management.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| wallet_address | TEXT | Wallet address | Primary Key |
-| private_key | TEXT | Encrypted key | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
-| is_active | BOOLEAN | Active status | Default: true |
-| purpose | TEXT | Usage purpose | |
-| metadata | JSONB | Additional data | |
+| Column         | Type        | Description     | Constraints                |
+| -------------- | ----------- | --------------- | -------------------------- |
+| wallet_address | TEXT        | Wallet address  | Primary Key                |
+| private_key    | TEXT        | Encrypted key   | Not Null                   |
+| created_at     | TIMESTAMPTZ | Creation time   | Default: CURRENT_TIMESTAMP |
+| updated_at     | TIMESTAMPTZ | Last update     |                            |
+| is_active      | BOOLEAN     | Active status   | Default: true              |
+| purpose        | TEXT        | Usage purpose   |                            |
+| metadata       | JSONB       | Additional data |                            |
 
 ### Vanity Wallet Pool (`vanity_wallet_pool`)
+
 Custom pattern wallet management.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Pool ID | Primary Key, Auto-increment |
-| wallet_address | TEXT | Wallet address | Unique |
-| private_key | TEXT | Encrypted key | Not Null |
-| pattern | TEXT | Address pattern | Not Null |
-| is_used | BOOLEAN | Usage status | Default: false |
-| used_at | TIMESTAMPTZ | Assignment time | |
-| used_by_contest | INTEGER | Contest reference | Unique, Foreign Key |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
+| Column          | Type        | Description       | Constraints                 |
+| --------------- | ----------- | ----------------- | --------------------------- |
+| id              | INTEGER     | Pool ID           | Primary Key, Auto-increment |
+| wallet_address  | TEXT        | Wallet address    | Unique                      |
+| private_key     | TEXT        | Encrypted key     | Not Null                    |
+| pattern         | TEXT        | Address pattern   | Not Null                    |
+| is_used         | BOOLEAN     | Usage status      | Default: false              |
+| used_at         | TIMESTAMPTZ | Assignment time   |                             |
+| used_by_contest | INTEGER     | Contest reference | Unique, Foreign Key         |
+| created_at      | TIMESTAMPTZ | Creation time     | Default: CURRENT_TIMESTAMP  |
+| updated_at      | TIMESTAMPTZ | Last update       |                             |
 
 #### Indexes
+
 - `idx_vanity_wallet_pool_is_used` (is_used)
 - `idx_vanity_wallet_pool_pattern` (pattern)
 
 ## Referral System
 
 ### Referrals (`referrals`)
+
 Core referral tracking table.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Referral ID | Primary Key, Auto-increment |
-| referrer_id | VARCHAR(44) | Referrer's wallet | Foreign Key (users) |
-| referred_id | VARCHAR(44) | Referred user's wallet | Foreign Key (users) |
-| referral_code | VARCHAR(20) | Unique referral code | Not Null |
-| status | ReferralStatus | Current status | Default: 'pending' |
-| source | VARCHAR(20) | Traffic source | Nullable |
-| landing_page | TEXT | Landing page URL | Nullable |
-| utm_source | VARCHAR(100) | UTM source | Nullable |
-| utm_medium | VARCHAR(100) | UTM medium | Nullable |
-| utm_campaign | VARCHAR(100) | UTM campaign | Nullable |
-| device | VARCHAR(20) | User device | Nullable |
-| browser | VARCHAR(20) | User browser | Nullable |
-| ip_address | VARCHAR(45) | IP address | Nullable |
-| user_agent | TEXT | Browser user agent | Nullable |
-| click_timestamp | TIMESTAMPTZ | Initial click time | Nullable |
-| session_id | UUID | Session identifier | Nullable |
-| metadata | JSONB | Additional data | Default: '{}' |
-| created_at | TIMESTAMPTZ | Creation timestamp | Default: CURRENT_TIMESTAMP |
-| qualified_at | TIMESTAMPTZ | Qualification time | Nullable |
-| reward_paid_at | TIMESTAMPTZ | Reward payment time | Nullable |
-| reward_amount | DECIMAL(20,0) | Reward amount | Nullable |
+| Column          | Type           | Description            | Constraints                 |
+| --------------- | -------------- | ---------------------- | --------------------------- |
+| id              | INTEGER        | Referral ID            | Primary Key, Auto-increment |
+| referrer_id     | VARCHAR(44)    | Referrer's wallet      | Foreign Key (users)         |
+| referred_id     | VARCHAR(44)    | Referred user's wallet | Foreign Key (users)         |
+| referral_code   | VARCHAR(20)    | Unique referral code   | Not Null                    |
+| status          | ReferralStatus | Current status         | Default: 'pending'          |
+| source          | VARCHAR(20)    | Traffic source         | Nullable                    |
+| landing_page    | TEXT           | Landing page URL       | Nullable                    |
+| utm_source      | VARCHAR(100)   | UTM source             | Nullable                    |
+| utm_medium      | VARCHAR(100)   | UTM medium             | Nullable                    |
+| utm_campaign    | VARCHAR(100)   | UTM campaign           | Nullable                    |
+| device          | VARCHAR(20)    | User device            | Nullable                    |
+| browser         | VARCHAR(20)    | User browser           | Nullable                    |
+| ip_address      | VARCHAR(45)    | IP address             | Nullable                    |
+| user_agent      | TEXT           | Browser user agent     | Nullable                    |
+| click_timestamp | TIMESTAMPTZ    | Initial click time     | Nullable                    |
+| session_id      | UUID           | Session identifier     | Nullable                    |
+| metadata        | JSONB          | Additional data        | Default: '{}'               |
+| created_at      | TIMESTAMPTZ    | Creation timestamp     | Default: CURRENT_TIMESTAMP  |
+| qualified_at    | TIMESTAMPTZ    | Qualification time     | Nullable                    |
+| reward_paid_at  | TIMESTAMPTZ    | Reward payment time    | Nullable                    |
+| reward_amount   | DECIMAL(20,0)  | Reward amount          | Nullable                    |
 
 #### Indexes
+
 - `referrals_pkey` (id)
 - `referrals_referrer_referred_unique` (referrer_id, referred_id)
 - `idx_referrals_code` (referral_code)
@@ -239,13 +273,13 @@ Core referral tracking table.
 
 #### Example Queries
 
-```sql
+````sql
 -- Create a new referral
 INSERT INTO referrals (
-    referrer_id, 
-    referred_id, 
-    referral_code, 
-    source, 
+    referrer_id,
+    referred_id,
+    referral_code,
+    source,
     landing_page
 ) VALUES (
     'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp',
@@ -264,7 +298,7 @@ AND r.status = 'pending'
 ORDER BY r.created_at DESC;
 
 -- Get referral conversion rate by source
-SELECT 
+SELECT
     source,
     COUNT(*) as total_referrals,
     COUNT(CASE WHEN status = 'qualified' THEN 1 END) as conversions,
@@ -329,14 +363,14 @@ INSERT INTO referral_clicks (
 
 -- Get click-to-signup conversion rate
 WITH click_stats AS (
-    SELECT 
+    SELECT
         referral_code,
         COUNT(*) as total_clicks,
         COUNT(CASE WHEN converted = true THEN 1 END) as conversions
     FROM referral_clicks
     GROUP BY referral_code
 )
-SELECT 
+SELECT
     c.*,
     u.username as referrer_username,
     ROUND(c.conversions::numeric / c.total_clicks * 100, 2) as conversion_rate
@@ -345,7 +379,7 @@ JOIN users u ON u.referral_code = c.referral_code
 ORDER BY conversion_rate DESC;
 
 -- Get device distribution for clicks
-SELECT 
+SELECT
     device,
     COUNT(*) as click_count,
     ROUND(COUNT(*)::numeric / SUM(COUNT(*)) OVER() * 100, 2) as percentage
@@ -389,7 +423,7 @@ INSERT INTO referral_rewards (
 );
 
 -- Get total rewards by type for a user
-SELECT 
+SELECT
     reward_type,
     COUNT(*) as reward_count,
     SUM(amount) as total_amount,
@@ -401,7 +435,7 @@ GROUP BY reward_type
 ORDER BY total_amount DESC;
 
 -- Find unpaid rewards
-SELECT 
+SELECT
     rr.*,
     u.username
 FROM referral_rewards rr
@@ -521,7 +555,7 @@ INSERT INTO contests (
 );
 
 -- Find active contests with available slots
-SELECT 
+SELECT
     c.*,
     COUNT(cp.id) as current_participants,
     c.max_participants - COUNT(cp.id) as slots_remaining,
@@ -536,7 +570,7 @@ ORDER BY c.start_time ASC;
 
 -- Get contest performance metrics
 WITH contest_stats AS (
-    SELECT 
+    SELECT
         c.id,
         c.name,
         COUNT(cp.id) as total_participants,
@@ -549,7 +583,7 @@ WITH contest_stats AS (
     WHERE c.status = 'completed'
     GROUP BY c.id, c.name
 )
-SELECT 
+SELECT
     cs.*,
     ROUND(cs.total_prizes_paid::numeric / cs.total_participants, 2) as avg_prize_per_player,
     EXTRACT(EPOCH FROM (cs.last_join - cs.first_join))/3600 as signup_window_hours
@@ -594,14 +628,14 @@ INSERT INTO contest_participants (
 );
 
 -- Get user's contest history with performance
-SELECT 
+SELECT
     c.name as contest_name,
     cp.joined_at,
     cp.initial_dxd_points,
     cp.current_dxd_points,
     cp.final_rank,
     cp.prize_amount,
-    ROUND((cp.current_dxd_points - cp.initial_dxd_points)::numeric / 
+    ROUND((cp.current_dxd_points - cp.initial_dxd_points)::numeric /
           NULLIF(cp.initial_dxd_points, 0) * 100, 2) as roi_percentage
 FROM contest_participants cp
 JOIN contests c ON c.id = cp.contest_id
@@ -610,24 +644,24 @@ ORDER BY cp.joined_at DESC;
 
 -- Get contest leaderboard
 WITH participant_stats AS (
-    SELECT 
+    SELECT
         cp.contest_id,
         cp.wallet_address,
         u.username,
         cp.current_dxd_points,
         cp.initial_dxd_points,
-        ROUND((cp.current_dxd_points - cp.initial_dxd_points)::numeric / 
+        ROUND((cp.current_dxd_points - cp.initial_dxd_points)::numeric /
               NULLIF(cp.initial_dxd_points, 0) * 100, 2) as roi_percentage,
         ROW_NUMBER() OVER (
-            PARTITION BY cp.contest_id 
+            PARTITION BY cp.contest_id
             ORDER BY cp.current_dxd_points DESC
         ) as current_rank
     FROM contest_participants cp
     JOIN users u ON u.wallet_address = cp.wallet_address
 )
-SELECT 
+SELECT
     ps.*,
-    CASE 
+    CASE
         WHEN current_rank = 1 THEN '🥇'
         WHEN current_rank = 2 THEN '🥈'
         WHEN current_rank = 3 THEN '🥉'
@@ -659,7 +693,7 @@ Participant portfolio tracking.
 ```sql
 -- Get portfolio composition
 WITH portfolio_value AS (
-    SELECT 
+    SELECT
         cp.contest_id,
         cp.wallet_address,
         SUM(cp.weight * t.current_price) as total_value
@@ -667,7 +701,7 @@ WITH portfolio_value AS (
     JOIN tokens t ON t.id = cp.token_id
     GROUP BY cp.contest_id, cp.wallet_address
 )
-SELECT 
+SELECT
     t.symbol,
     cp.weight,
     t.current_price as token_price,
@@ -675,7 +709,7 @@ SELECT
     ROUND((cp.weight * t.current_price / pv.total_value) * 100, 2) as portfolio_percentage
 FROM contest_portfolios cp
 JOIN tokens t ON t.id = cp.token_id
-JOIN portfolio_value pv ON pv.contest_id = cp.contest_id 
+JOIN portfolio_value pv ON pv.contest_id = cp.contest_id
     AND pv.wallet_address = cp.wallet_address
 WHERE cp.contest_id = 123
 AND cp.wallet_address = 'BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp'
@@ -683,19 +717,19 @@ ORDER BY position_value DESC;
 
 -- Track portfolio performance over time
 WITH hourly_snapshots AS (
-    SELECT 
+    SELECT
         cp.contest_id,
         cp.wallet_address,
         DATE_TRUNC('hour', ctp.timestamp) as snapshot_time,
         SUM(ctp.profit_loss) as hourly_pnl
     FROM contest_portfolios cp
-    JOIN contest_token_performance ctp ON 
+    JOIN contest_token_performance ctp ON
         ctp.contest_id = cp.contest_id AND
         ctp.wallet_address = cp.wallet_address AND
         ctp.token_id = cp.token_id
     GROUP BY cp.contest_id, cp.wallet_address, DATE_TRUNC('hour', ctp.timestamp)
 )
-SELECT 
+SELECT
     snapshot_time,
     hourly_pnl,
     SUM(hourly_pnl) OVER (
@@ -732,7 +766,7 @@ Trading activity within contests.
 #### Example Queries
 ```sql
 -- Get recent trades with performance impact
-SELECT 
+SELECT
     cpt.executed_at,
     t.symbol as token_symbol,
     cpt.type as trade_type,
@@ -740,10 +774,10 @@ SELECT
     cpt.new_weight as weight_after,
     cpt.price_at_trade,
     t.current_price,
-    CASE 
-        WHEN cpt.type = 'BUY' THEN 
+    CASE
+        WHEN cpt.type = 'BUY' THEN
             ROUND((t.current_price - cpt.price_at_trade) / cpt.price_at_trade * 100, 2)
-        ELSE 
+        ELSE
             ROUND((cpt.price_at_trade - t.current_price) / cpt.price_at_trade * 100, 2)
     END as trade_roi
 FROM contest_portfolio_trades cpt
@@ -754,7 +788,7 @@ ORDER BY cpt.executed_at DESC;
 
 -- Get trading statistics
 WITH trade_metrics AS (
-    SELECT 
+    SELECT
         wallet_address,
         type as trade_type,
         COUNT(*) as trade_count,
@@ -764,7 +798,7 @@ WITH trade_metrics AS (
     WHERE contest_id = 123
     GROUP BY wallet_address, type
 )
-SELECT 
+SELECT
     u.username,
     tm.trade_type,
     tm.trade_count,
@@ -774,169 +808,186 @@ SELECT
 FROM trade_metrics tm
 JOIN users u ON u.wallet_address = tm.wallet_address
 ORDER BY tm.total_volume DESC;
-```
+````
 
 ## Token System
 
 ### Tokens (`tokens`)
+
 Supported trading tokens.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Token ID | Primary Key, Auto-increment |
-| symbol | TEXT | Token symbol | Not Null, Unique |
-| name | TEXT | Token name | Not Null |
-| decimals | INTEGER | Token decimals | Not Null |
-| contract_address | TEXT | Token contract | Not Null |
-| chain_id | INTEGER | Blockchain ID | Not Null |
-| is_active | BOOLEAN | Trading status | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
-| metadata | JSONB | Additional data | Default: '{}' |
+| Column           | Type        | Description     | Constraints                 |
+| ---------------- | ----------- | --------------- | --------------------------- |
+| id               | INTEGER     | Token ID        | Primary Key, Auto-increment |
+| symbol           | TEXT        | Token symbol    | Not Null, Unique            |
+| name             | TEXT        | Token name      | Not Null                    |
+| decimals         | INTEGER     | Token decimals  | Not Null                    |
+| contract_address | TEXT        | Token contract  | Not Null                    |
+| chain_id         | INTEGER     | Blockchain ID   | Not Null                    |
+| is_active        | BOOLEAN     | Trading status  | Not Null                    |
+| created_at       | TIMESTAMPTZ | Creation time   | Default: CURRENT_TIMESTAMP  |
+| updated_at       | TIMESTAMPTZ | Last update     |                             |
+| metadata         | JSONB       | Additional data | Default: '{}'               |
 
 #### Indexes
+
 - `idx_tokens_symbol` (symbol)
 - `idx_tokens_contract` (contract_address, chain_id)
 - `idx_tokens_active` (is_active)
 
 ### Token Prices (`token_prices`)
+
 Historical token price data.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Price ID | Primary Key, Auto-increment |
-| token_id | INTEGER | Reference to token | Not Null, Foreign Key |
-| price | DECIMAL(20,0) | Token price | Not Null |
-| timestamp | TIMESTAMPTZ | Price timestamp | Not Null |
-| source | TEXT | Price source | Not Null |
+| Column    | Type          | Description        | Constraints                 |
+| --------- | ------------- | ------------------ | --------------------------- |
+| id        | INTEGER       | Price ID           | Primary Key, Auto-increment |
+| token_id  | INTEGER       | Reference to token | Not Null, Foreign Key       |
+| price     | DECIMAL(20,0) | Token price        | Not Null                    |
+| timestamp | TIMESTAMPTZ   | Price timestamp    | Not Null                    |
+| source    | TEXT          | Price source       | Not Null                    |
 
 #### Indexes
+
 - `idx_token_prices_token_time` (token_id, timestamp)
 - `idx_token_prices_source` (source)
 
 ### Token Buckets (`token_buckets`)
+
 Token grouping categories.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Bucket ID | Primary Key, Auto-increment |
-| name | TEXT | Bucket name | Not Null |
-| description | TEXT | Bucket description | |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
-| metadata | JSONB | Additional data | Default: '{}' |
+| Column      | Type        | Description        | Constraints                 |
+| ----------- | ----------- | ------------------ | --------------------------- |
+| id          | INTEGER     | Bucket ID          | Primary Key, Auto-increment |
+| name        | TEXT        | Bucket name        | Not Null                    |
+| description | TEXT        | Bucket description |                             |
+| created_at  | TIMESTAMPTZ | Creation time      | Default: CURRENT_TIMESTAMP  |
+| updated_at  | TIMESTAMPTZ | Last update        |                             |
+| metadata    | JSONB       | Additional data    | Default: '{}'               |
 
 ### Token Bucket Memberships (`token_bucket_memberships`)
+
 Token bucket assignments.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Membership ID | Primary Key, Auto-increment |
-| bucket_id | INTEGER | Reference to bucket | Not Null, Foreign Key |
-| token_id | INTEGER | Reference to token | Not Null, Foreign Key |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
+| Column     | Type        | Description         | Constraints                 |
+| ---------- | ----------- | ------------------- | --------------------------- |
+| id         | INTEGER     | Membership ID       | Primary Key, Auto-increment |
+| bucket_id  | INTEGER     | Reference to bucket | Not Null, Foreign Key       |
+| token_id   | INTEGER     | Reference to token  | Not Null, Foreign Key       |
+| created_at | TIMESTAMPTZ | Creation time       | Default: CURRENT_TIMESTAMP  |
 
 #### Indexes
+
 - `idx_token_bucket_memberships_bucket` (bucket_id)
 - `idx_token_bucket_memberships_token` (token_id)
 
 ## User System
 
 ### Users (`users`)
+
 User account information.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| wallet_address | VARCHAR(44) | User's wallet | Primary Key |
-| username | TEXT | Display name | Unique |
-| email | TEXT | Email address | Unique |
-| avatar_url | TEXT | Profile image | |
-| is_active | BOOLEAN | Account status | Not Null |
-| role | TEXT | User role | Not Null |
-| exp_points | INTEGER | Experience points | Not Null |
-| current_level | INTEGER | User level | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
-| metadata | JSONB | Additional data | Default: '{}' |
+| Column         | Type        | Description       | Constraints                |
+| -------------- | ----------- | ----------------- | -------------------------- |
+| wallet_address | VARCHAR(44) | User's wallet     | Primary Key                |
+| username       | TEXT        | Display name      | Unique                     |
+| email          | TEXT        | Email address     | Unique                     |
+| avatar_url     | TEXT        | Profile image     |                            |
+| is_active      | BOOLEAN     | Account status    | Not Null                   |
+| role           | TEXT        | User role         | Not Null                   |
+| exp_points     | INTEGER     | Experience points | Not Null                   |
+| current_level  | INTEGER     | User level        | Not Null                   |
+| created_at     | TIMESTAMPTZ | Creation time     | Default: CURRENT_TIMESTAMP |
+| updated_at     | TIMESTAMPTZ | Last update       |                            |
+| metadata       | JSONB       | Additional data   | Default: '{}'              |
 
 #### Indexes
+
 - `idx_users_username` (username)
 - `idx_users_email` (email)
 - `idx_users_level` (current_level)
 
 ### User Social Profiles (`user_social_profiles`)
+
 User social media links.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Profile ID | Primary Key, Auto-increment |
-| wallet_address | VARCHAR(44) | User's wallet | Not Null, Foreign Key |
-| platform | TEXT | Social platform | Not Null |
-| username | TEXT | Platform username | Not Null |
-| profile_url | TEXT | Profile URL | Not Null |
-| verified | BOOLEAN | Verification status | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
-| metadata | JSONB | Additional data | Default: '{}' |
+| Column         | Type        | Description         | Constraints                 |
+| -------------- | ----------- | ------------------- | --------------------------- |
+| id             | INTEGER     | Profile ID          | Primary Key, Auto-increment |
+| wallet_address | VARCHAR(44) | User's wallet       | Not Null, Foreign Key       |
+| platform       | TEXT        | Social platform     | Not Null                    |
+| username       | TEXT        | Platform username   | Not Null                    |
+| profile_url    | TEXT        | Profile URL         | Not Null                    |
+| verified       | BOOLEAN     | Verification status | Not Null                    |
+| created_at     | TIMESTAMPTZ | Creation time       | Default: CURRENT_TIMESTAMP  |
+| updated_at     | TIMESTAMPTZ | Last update         |                             |
+| metadata       | JSONB       | Additional data     | Default: '{}'               |
 
 #### Indexes
+
 - `idx_user_social_profiles_wallet` (wallet_address)
 - `idx_user_social_profiles_platform` (platform)
 
 ### User Stats (`user_stats`)
+
 User performance statistics.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| wallet_address | VARCHAR(44) | User's wallet | Primary Key |
-| contests_entered | INTEGER | Total contests | Not Null |
-| contests_won | INTEGER | Winning contests | Not Null |
-| total_winnings | DECIMAL(20,0) | Total earnings | Not Null |
-| win_rate | DECIMAL(5,2) | Win percentage | Not Null |
-| avg_rank | DECIMAL(5,2) | Average ranking | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
-| metadata | JSONB | Additional data | Default: '{}' |
+| Column           | Type          | Description      | Constraints                |
+| ---------------- | ------------- | ---------------- | -------------------------- |
+| wallet_address   | VARCHAR(44)   | User's wallet    | Primary Key                |
+| contests_entered | INTEGER       | Total contests   | Not Null                   |
+| contests_won     | INTEGER       | Winning contests | Not Null                   |
+| total_winnings   | DECIMAL(20,0) | Total earnings   | Not Null                   |
+| win_rate         | DECIMAL(5,2)  | Win percentage   | Not Null                   |
+| avg_rank         | DECIMAL(5,2)  | Average ranking  | Not Null                   |
+| created_at       | TIMESTAMPTZ   | Creation time    | Default: CURRENT_TIMESTAMP |
+| updated_at       | TIMESTAMPTZ   | Last update      |                            |
+| metadata         | JSONB         | Additional data  | Default: '{}'              |
 
 #### Indexes
+
 - `idx_user_stats_winnings` (total_winnings)
 - `idx_user_stats_win_rate` (win_rate)
 
 ### User Token Stats (`user_token_stats`)
+
 Token-specific performance stats.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Stat ID | Primary Key, Auto-increment |
-| wallet_address | VARCHAR(44) | User's wallet | Not Null, Foreign Key |
-| token_id | INTEGER | Reference to token | Not Null, Foreign Key |
-| trades_count | INTEGER | Total trades | Not Null |
-| profitable_trades | INTEGER | Winning trades | Not Null |
-| total_profit_loss | DECIMAL(20,0) | Net P/L | Not Null |
-| avg_hold_time | INTEGER | Avg hold duration | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| updated_at | TIMESTAMPTZ | Last update | |
-| metadata | JSONB | Additional data | Default: '{}' |
+| Column            | Type          | Description        | Constraints                 |
+| ----------------- | ------------- | ------------------ | --------------------------- |
+| id                | INTEGER       | Stat ID            | Primary Key, Auto-increment |
+| wallet_address    | VARCHAR(44)   | User's wallet      | Not Null, Foreign Key       |
+| token_id          | INTEGER       | Reference to token | Not Null, Foreign Key       |
+| trades_count      | INTEGER       | Total trades       | Not Null                    |
+| profitable_trades | INTEGER       | Winning trades     | Not Null                    |
+| total_profit_loss | DECIMAL(20,0) | Net P/L            | Not Null                    |
+| avg_hold_time     | INTEGER       | Avg hold duration  | Not Null                    |
+| created_at        | TIMESTAMPTZ   | Creation time      | Default: CURRENT_TIMESTAMP  |
+| updated_at        | TIMESTAMPTZ   | Last update        |                             |
+| metadata          | JSONB         | Additional data    | Default: '{}'               |
 
 #### Indexes
+
 - `idx_user_token_stats_wallet` (wallet_address)
 - `idx_user_token_stats_token` (token_id)
 - `idx_user_token_stats_profit` (total_profit_loss)
 
 ### User Achievements (`user_achievements`)
+
 User achievement tracking.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Achievement ID | Primary Key, Auto-increment |
-| wallet_address | VARCHAR(44) | User's wallet | Not Null, Foreign Key |
-| achievement_type | TEXT | Achievement type | Not Null |
-| tier_id | INTEGER | Reference to tier | Not Null, Foreign Key |
-| achieved_at | TIMESTAMPTZ | Completion time | Not Null |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| metadata | JSONB | Additional data | Default: '{}' |
+| Column           | Type        | Description       | Constraints                 |
+| ---------------- | ----------- | ----------------- | --------------------------- |
+| id               | INTEGER     | Achievement ID    | Primary Key, Auto-increment |
+| wallet_address   | VARCHAR(44) | User's wallet     | Not Null, Foreign Key       |
+| achievement_type | TEXT        | Achievement type  | Not Null                    |
+| tier_id          | INTEGER     | Reference to tier | Not Null, Foreign Key       |
+| achieved_at      | TIMESTAMPTZ | Completion time   | Not Null                    |
+| created_at       | TIMESTAMPTZ | Creation time     | Default: CURRENT_TIMESTAMP  |
+| metadata         | JSONB       | Additional data   | Default: '{}'               |
 
 #### Indexes
+
 - `idx_user_achievements_wallet` (wallet_address)
 - `idx_user_achievements_type` (achievement_type)
 - `idx_user_achievements_tier` (tier_id)
@@ -944,29 +995,32 @@ User achievement tracking.
 ## Transaction System
 
 ### Transactions (`transactions`)
+
 Platform financial transaction records.
 
-| Column | Type | Description | Constraints |
-|--------|------|-------------|-------------|
-| id | INTEGER | Transaction ID | Primary Key, Auto-increment |
-| wallet_address | VARCHAR(44) | User's wallet | Foreign Key |
-| type | transaction_type | Transaction type | Not Null |
-| amount | DECIMAL(20,0) | Transaction amount | Not Null |
-| balance_before | DECIMAL(20,0) | Previous balance | Not Null |
-| balance_after | DECIMAL(20,0) | New balance | Not Null |
-| contest_id | INTEGER | Related contest | Foreign Key |
-| description | TEXT | Transaction details | |
-| status | transaction_status | Processing status | Default: completed |
-| metadata | JSONB | Additional data | Default: '{}' |
-| created_at | TIMESTAMPTZ | Creation time | Default: CURRENT_TIMESTAMP |
-| processed_at | TIMESTAMPTZ | Processing time | |
+| Column         | Type               | Description         | Constraints                 |
+| -------------- | ------------------ | ------------------- | --------------------------- |
+| id             | INTEGER            | Transaction ID      | Primary Key, Auto-increment |
+| wallet_address | VARCHAR(44)        | User's wallet       | Foreign Key                 |
+| type           | transaction_type   | Transaction type    | Not Null                    |
+| amount         | DECIMAL(20,0)      | Transaction amount  | Not Null                    |
+| balance_before | DECIMAL(20,0)      | Previous balance    | Not Null                    |
+| balance_after  | DECIMAL(20,0)      | New balance         | Not Null                    |
+| contest_id     | INTEGER            | Related contest     | Foreign Key                 |
+| description    | TEXT               | Transaction details |                             |
+| status         | transaction_status | Processing status   | Default: completed          |
+| metadata       | JSONB              | Additional data     | Default: '{}'               |
+| created_at     | TIMESTAMPTZ        | Creation time       | Default: CURRENT_TIMESTAMP  |
+| processed_at   | TIMESTAMPTZ        | Processing time     |                             |
 
 #### Indexes
+
 - `idx_transactions_wallet` (wallet_address)
 - `idx_transactions_contest` (contest_id)
 - `idx_transactions_type_created` (type, created_at)
 
 #### Transaction Types
+
 - `CONTEST_ENTRY`: Contest participation fee
 - `PRIZE_PAYOUT`: Contest winnings
 - `DEPOSIT`: User deposits
@@ -975,6 +1029,7 @@ Platform financial transaction records.
 - `PROMOTION`: Promotional credits
 
 #### Transaction Status
+
 - `pending`: Being processed
 - `completed`: Successfully processed
 - `failed`: Processing failed
@@ -1013,12 +1068,12 @@ FROM funnel
 ORDER BY total_clicks DESC;
 
 -- Get top referrers with their stats
-SELECT 
+SELECT
     u.username,
     COUNT(r.id) as total_referrals,
     COUNT(DISTINCT CASE WHEN r.status = 'qualified' THEN r.id END) as successful_referrals,
     SUM(rr.amount) as total_rewards,
-    ROUND(COUNT(DISTINCT CASE WHEN r.status = 'qualified' THEN r.id END)::numeric / 
+    ROUND(COUNT(DISTINCT CASE WHEN r.status = 'qualified' THEN r.id END)::numeric /
           NULLIF(COUNT(r.id), 0) * 100, 2) as success_rate,
     MIN(r.created_at) as first_referral,
     MAX(r.created_at) as last_referral
@@ -1057,7 +1112,7 @@ FROM timeline;
 
 ### Contest Analytics
 
-```sql
+````sql
 -- Get contest participation trends
 WITH monthly_stats AS (
     SELECT
@@ -1164,8 +1219,8 @@ WITH token_metrics AS (
     FROM contests c
     JOIN contest_token_performance ctp ON ctp.contest_id = c.id
     JOIN tokens t ON t.id = ctp.token_id
-    JOIN contest_portfolios cp ON 
-        cp.contest_id = c.id AND 
+    JOIN contest_portfolios cp ON
+        cp.contest_id = c.id AND
         cp.token_id = t.id
     WHERE c.status = 'completed'
     GROUP BY c.id, c.name, t.symbol
@@ -1192,8 +1247,8 @@ WITH portfolio_metrics AS (
         cp2.final_rank,
         cp2.prize_amount
     FROM contest_portfolios cp
-    JOIN contest_participants cp2 ON 
-        cp2.contest_id = cp.contest_id AND 
+    JOIN contest_participants cp2 ON
+        cp2.contest_id = cp.contest_id AND
         cp2.wallet_address = cp.wallet_address
     GROUP BY cp.contest_id, cp.wallet_address, cp2.final_rank, cp2.prize_amount
 )
@@ -1219,8 +1274,8 @@ WITH trade_patterns AS (
         cp.final_rank,
         cp.prize_amount
     FROM contest_portfolio_trades cpt
-    JOIN contest_participants cp ON 
-        cp.contest_id = cpt.contest_id AND 
+    JOIN contest_participants cp ON
+        cp.contest_id = cpt.contest_id AND
         cp.wallet_address = cpt.wallet_address
     GROUP BY cpt.wallet_address, cpt.contest_id, cp.final_rank, cp.prize_amount
 )
@@ -1339,6 +1394,6 @@ SELECT
 FROM social_metrics
 GROUP BY connected_platforms
 ORDER BY connected_platforms;
-```
+````
 
-[Continue with more cookbook examples...] 
+[Continue with more cookbook examples...]
