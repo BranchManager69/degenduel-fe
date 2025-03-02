@@ -38,6 +38,7 @@ import { ContestChatManager } from "./components/contest/ContestChatManager";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
+import WebSocketHub from "./pages/admin/WebSocketHub";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/PrivateProfilePage";
 import { ReferralPage } from "./pages/authenticated/ReferralPage";
@@ -440,7 +441,19 @@ export const App: React.FC = () => {
                   }
                 />
 
-                {/* Legacy route for backward compatibility */}
+                {/* WebSocket Hub - central access point for all WebSocket tools */}
+                <Route
+                  path="/websocket-hub"
+                  element={
+                    <AdminRoute>
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <WebSocketHub />
+                      </React.Suspense>
+                    </AdminRoute>
+                  }
+                />
+
+                {/* Legacy routes for backward compatibility */}
                 <Route
                   path="/websocket-test"
                   element={<Navigate to="/connection-debugger" replace />}

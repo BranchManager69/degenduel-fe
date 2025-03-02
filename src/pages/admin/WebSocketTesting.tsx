@@ -738,5 +738,9 @@ const WebSocketTesting: React.FC = () => {
 // Export the dashboard as the main component
 export default WebSocketDashboard;
 
+// export a page version of this component
+// (i have no idea how to do this)
+
 // For clarity in imports, also export as ConnectionDebugger
+// TODO: This is NOT clear, in fact it's very confusing. This explains why the connection debugger page doesn't exist when I try to go to it.
 export { WebSocketDashboard as ConnectionDebugger };

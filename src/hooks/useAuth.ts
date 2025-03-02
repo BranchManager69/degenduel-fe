@@ -155,37 +155,40 @@ export function useAuth() {
   // Function to get an access token for WebSocket authentication
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     try {
-      console.log("[Auth] Requesting access token for WebSocket authentication");
-      
+      console.log(
+        "[Auth] Requesting access token for WebSocket authentication"
+      );
+
       // Append timestamp to prevent caching
       const timestamp = new Date().getTime();
       const url = `/api/auth/token?_t=${timestamp}`;
-      
+      // TODO: THIS LEADS TO 404 !!
+
       // Try to get the token from the session with detailed logging
       const response = await axios.get(url, {
         headers: {
           // Ensure credentials are sent
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
         },
         withCredentials: true,
-        timeout: 5000 // 5 second timeout
+        timeout: 5000, // 5 second timeout
       });
-      
+
       console.log("[Auth] Token response:", {
         status: response.status,
-        hasToken: !!response.data?.token
+        hasToken: !!response.data?.token,
       });
-      
+
       return response.data?.token || null;
     } catch (error: any) {
       console.error("[Auth] Failed to get access token:", {
         message: error?.message,
         status: error?.response?.status,
         data: error?.response?.data,
-        config: error?.config?.url
+        config: error?.config?.url,
       });
-      
+
       return null;
     }
   }, []);

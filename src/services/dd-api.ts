@@ -421,6 +421,7 @@ const CACHE_DURATION = 30000; // 30 seconds
 const FETCH_TIMEOUT = 5000; // 5 second timeout for fetch requests
 
 // Check contest participation using dedicated participation check endpoint
+// TODO: Ensure this is not duplicative
 const checkContestParticipation = async (
   contestId: number | string,
   userWallet?: string
@@ -444,56 +445,78 @@ const checkContestParticipation = async (
 
     const api = createApiClient();
     const response = await api
-      .fetch(`/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(userWallet)}`, {
-        signal: controller.signal,
-      })
+      .fetch(
+        `/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(
+          userWallet
+        )}`,
+        {
+          signal: controller.signal,
+        }
+      )
       .finally(() => clearTimeout(timeoutId));
 
     if (!response.ok) {
       // Log detailed error information for non-200 responses
       try {
         const errorText = await response.text();
-        console.warn(`[DD-API] Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`, {
-          endpoint: `/contests/${contestId}/check-participation`,
-          statusText: response.statusText,
-          errorText: errorText.substring(0, 200) // Limit long responses
-        });
+        console.warn(
+          `[DD-API] Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`,
+          {
+            endpoint: `/contests/${contestId}/check-participation`,
+            statusText: response.statusText,
+            errorText: errorText.substring(0, 200), // Limit long responses
+          }
+        );
       } catch (e) {
-        console.warn(`[DD-API] Participation check failed: HTTP ${response.status}`);
+        console.warn(
+          `[DD-API] Participation check failed: HTTP ${response.status}`
+        );
       }
-      
+
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
 
     try {
       const data = await response.json();
-      
+
       // Validate response format
       if (data.is_participating === undefined) {
-        console.warn(`[DD-API] Invalid participation check response format for contest ${contestId}:`, data);
+        console.warn(
+          `[DD-API] Invalid participation check response format for contest ${contestId}:`,
+          data
+        );
         participationCache.set(cacheKey, { result: false, timestamp: now });
         return false;
       }
-      
+
       // The dedicated endpoint returns is_participating boolean
       const result = Boolean(data.is_participating);
-      
+
       // Store participant data in the global store if available
       if (data.is_participating && data.participant_data) {
         try {
           // This is where we could potentially update the store with participant data
           // for use in other parts of the application
-          console.debug(`[DD-API] Contest ${contestId} participation data:`, data.participant_data);
+          console.debug(
+            `[DD-API] Contest ${contestId} participation data:`,
+            data.participant_data
+          );
         } catch (storeError) {
-          console.warn('[DD-API] Failed to store participant data in global state:', storeError);
+          console.warn(
+            "[DD-API] Failed to store participant data in global state:",
+            storeError
+          );
         }
       }
-      
+
       participationCache.set(cacheKey, { result, timestamp: now });
       return result;
     } catch (parseError) {
-      console.error(`[DD-API] Failed to parse participation response for contest ${contestId}:`, parseError);
+      console.error(
+        `[DD-API] Failed to parse participation response for contest ${contestId}:`,
+        parseError
+      );
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
@@ -504,7 +527,8 @@ const checkContestParticipation = async (
         `[DD-API] Error checking participation for contest ${contestId}, wallet ${userWallet}:`,
         {
           error,
-          errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+          errorType:
+            error instanceof Error ? error.constructor.name : "Unknown",
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
         }
@@ -581,6 +605,8 @@ const checkMaintenanceMode = async () => {
     return false;
   }
 };
+
+// -------------------------------------------------------
 
 /* DegenDuel API Endpoints (client-side) */
 
@@ -1280,50 +1306,62 @@ export const ddApi = {
         throw error;
       }
     },
-    
+
     // Get all contests a user is participating in
     getUserParticipations: async (walletAddress: string) => {
       try {
         if (!walletAddress) {
           throw new Error("Wallet address is required");
         }
-        
+
         const api = createApiClient();
-        const response = await api.fetch(`/contests/participations/${encodeURIComponent(walletAddress)}`);
-        
+        const response = await api.fetch(
+          `/contests/participations/${encodeURIComponent(walletAddress)}`
+        );
+
         const data = await response.json();
-        
+
         if (!data.participations || !Array.isArray(data.participations)) {
-          throw new Error("Invalid response format: participations array not found");
+          throw new Error(
+            "Invalid response format: participations array not found"
+          );
         }
-        
+
         return data.participations;
       } catch (error: any) {
         logError("contests.getUserParticipations", error, { walletAddress });
         throw error;
       }
     },
-    
+
     // Get detailed participation data for a specific contest
-    getParticipationDetails: async (contestId: string | number, walletAddress: string) => {
+    getParticipationDetails: async (
+      contestId: string | number,
+      walletAddress: string
+    ) => {
       try {
         if (!contestId || !walletAddress) {
           throw new Error("Contest ID and wallet address are required");
         }
-        
+
         const api = createApiClient();
         const response = await api.fetch(
-          `/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(walletAddress)}`
+          `/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(
+            walletAddress
+          )}`
         );
-        
+
         const data = await response.json();
-        
+
         return {
           isParticipating: Boolean(data.is_participating),
-          participantData: data.participant_data || null
+          participantData: data.participant_data || null,
         };
       } catch (error: any) {
-        logError("contests.getParticipationDetails", error, { contestId, walletAddress });
+        logError("contests.getParticipationDetails", error, {
+          contestId,
+          walletAddress,
+        });
         throw error;
       }
     },
@@ -1584,6 +1622,9 @@ export const ddApi = {
   },
 };
 
+// -------------------------------------------------------
+
+// Create a new DD API client
 export const createDDApi = () => {
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {

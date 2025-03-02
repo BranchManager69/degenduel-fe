@@ -1,6 +1,19 @@
 import { API_URL } from "../../config/config";
 import { useStore } from "../../store/useStore";
 
+/**
+ * WARNING:
+ * This file is a mess.
+ * I have suspicions that it is causing duplicative api clients
+ * Not to mention it seems it could be causing contest participation checks to trigger on every page load for every contest to ever exist.
+ * Refer to getUserParticipations in src/services/dd-api.ts for a more efficient way to check contest participation.
+ *
+ * PURPOSE:
+ * This file contains utility functions for the API.
+ * It is used to check if a user is participating in a contest, and to create an API client.
+ *
+ */
+
 export const logError = (
   endpoint: string,
   error: any,
@@ -52,7 +65,9 @@ export const checkContestParticipation = async (
 
     // Use the new dedicated endpoint for checking participation
     const response = await fetch(
-      `${API_URL}/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(userWallet)}`,
+      `${API_URL}/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(
+        userWallet
+      )}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -66,17 +81,22 @@ export const checkContestParticipation = async (
     if (!response.ok) {
       try {
         const errorText = await response.text();
-        console.warn(`Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`, {
-          endpoint: `${API_URL}/contests/${contestId}/check-participation`,
-          statusText: response.statusText,
-          responseText: errorText.substring(0, 200), // Truncate large responses
-          headers: Object.fromEntries(response.headers),
-        });
+        console.warn(
+          `Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`,
+          {
+            endpoint: `${API_URL}/contests/${contestId}/check-participation`,
+            statusText: response.statusText,
+            responseText: errorText.substring(0, 200), // Truncate large responses
+            headers: Object.fromEntries(response.headers),
+          }
+        );
       } catch (e) {
         // If we can't read the response, just log the status
-        console.warn(`Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`);
+        console.warn(
+          `Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`
+        );
       }
-      
+
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
@@ -85,28 +105,38 @@ export const checkContestParticipation = async (
       const data = await response.json();
       // Validate that response has the expected format
       if (data.is_participating === undefined) {
-        console.warn(`Invalid participation response format for contest ${contestId}:`, data);
+        console.warn(
+          `Invalid participation response format for contest ${contestId}:`,
+          data
+        );
         participationCache.set(cacheKey, { result: false, timestamp: now });
         return false;
       }
-      
+
       const result = Boolean(data.is_participating);
       participationCache.set(cacheKey, { result, timestamp: now });
       return result;
     } catch (e) {
-      console.error(`Failed to parse participation response for contest ${contestId}:`, e);
+      console.error(
+        `Failed to parse participation response for contest ${contestId}:`,
+        e
+      );
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
   } catch (error: unknown) {
     // Don't log timeout errors
     if (error instanceof Error && error.name !== "AbortError") {
-      console.error(`Error checking participation for contest ${contestId}, wallet ${userWallet}:`, {
-        error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        endpoint: `${API_URL}/contests/${contestId}/check-participation`
-      });
+      console.error(
+        `Error checking participation for contest ${contestId}, wallet ${userWallet}:`,
+        {
+          error,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+          endpoint: `${API_URL}/contests/${contestId}/check-participation`,
+        }
+      );
     }
     participationCache.set(cacheKey, { result: false, timestamp: now });
     return false;
