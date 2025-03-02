@@ -332,6 +332,55 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
           </button>
         </div>
+        
+        {/* System Reports Button */}
+        <Link to="/admin/system-reports"
+              className="block bg-dark-200/70 backdrop-blur-lg p-6 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15)_0%,transparent_60%)]" />
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-4xl text-purple-400 group-hover:scale-110 transition-transform duration-300">📊</div>
+              <div>
+                <h3 className="text-xl font-bold text-purple-200 mb-1 font-heading">System Reports</h3>
+                <p className="text-purple-300/80">View service health and database metrics</p>
+              </div>
+            </div>
+            
+            <div className="bg-purple-500/20 p-3 rounded-full group-hover:bg-purple-500/30 transition-colors">
+              <svg className="w-6 h-6 text-purple-300 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </div>
+          </div>
+          
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+              <div className="text-xs text-purple-300/70 mb-1">Service Health</div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                <span className="text-green-300 text-sm">Monitoring</span>
+              </div>
+            </div>
+            
+            <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+              <div className="text-xs text-purple-300/70 mb-1">Database</div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                <span className="text-blue-300 text-sm">Metrics</span>
+              </div>
+            </div>
+            
+            <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+              <div className="text-xs text-purple-300/70 mb-1">AI Analysis</div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-amber-500 mr-2"></div>
+                <span className="text-amber-300 text-sm">Available</span>
+              </div>
+            </div>
+          </div>
+        </Link>
 
         {/* Quick Actions Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

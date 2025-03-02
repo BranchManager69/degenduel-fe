@@ -2,7 +2,7 @@ import React from "react";
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: "default" | "secondary" | "destructive" | "gold";
+  variant?: "default" | "secondary" | "destructive" | "gold" | "success" | "warning" | "error";
   className?: string;
 }
 
@@ -12,10 +12,13 @@ export const Badge: React.FC<BadgeProps> = ({
   className = "",
 }) => {
   const variantClasses = {
-    default: "bg-blue-600 text-white",
-    secondary: "bg-yellow-500 text-white",
+    default: "bg-brand-500 text-white",
+    secondary: "bg-cyber-500 text-white",
     destructive: "bg-red-500 text-white",
-    gold: "bg-yellow-400 text-black",
+    gold: "bg-yellow-400 text-dark-300",
+    success: "bg-green-500 text-dark-300",
+    warning: "bg-yellow-500 text-dark-300",
+    error: "bg-red-500 text-dark-300",
   };
 
   return (

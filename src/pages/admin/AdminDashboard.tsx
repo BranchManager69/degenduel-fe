@@ -208,7 +208,7 @@ export const AdminDashboard: React.FC = () => {
       icon: "📊",
       description: "View and generate system health reports",
       link: "/admin/system-reports",
-      color: "blue",
+      color: "purple",
     },
     {
       id: "websocket",
@@ -420,35 +420,21 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Maintenance Mode Control */}
         <div className="bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/20 relative overflow-hidden">
-          {/* Background Effects */}
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/50 via-dark-200/50 to-dark-300/50" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.1)_0%,transparent_70%)] animate-pulse-slow" />
-            {maintenanceMode && (
-              <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-red-500/5 animate-pulse-slow" />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage:
-                      "repeating-linear-gradient(-45deg, transparent 0, transparent 20px, rgba(239,68,68,0.1) 20px, rgba(239,68,68,0.1) 40px)",
-                    backgroundSize: "200% 200%",
-                    animation: "gradient-shift 10s linear infinite",
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
           <div className="relative">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold font-cyber tracking-wider text-gray-200 mb-2">
-                SYSTEM CONTROL CENTER
-              </h2>
-              <div className="text-sm text-gray-400 font-mono">
-                AUTHORIZATION LEVEL: ADMIN_CLEARANCE
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
+                  MAINTENANCE MODE
+                </h2>
+                <p className="text-sm text-gray-400 font-mono mt-1">
+                  SYSTEM_MAINTENANCE_CONTROL_INTERFACE
+                </p>
               </div>
+              <div
+                className={`h-3 w-3 rounded-full ${
+                  maintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
+                }`}
+              />
             </div>
 
             {/* Error Display */}
@@ -458,187 +444,178 @@ export const AdminDashboard: React.FC = () => {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="mb-6"
+                  className="mb-4"
                 >
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                    <div className="flex items-start gap-2">
-                      <div className="text-red-400 mt-0.5">⚠</div>
-                      <div className="flex-1">
-                        <div className="text-red-400 font-medium">
-                          Control Center Error
-                        </div>
-                        <div className="text-red-400/90 text-sm">{error}</div>
-                      </div>
-                      <button
-                        onClick={() => setError(null)}
-                        className="text-red-400/50 hover:text-red-400"
-                      >
-                        ×
-                      </button>
-                    </div>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                    <p className="text-red-400 text-sm">{error}</p>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Main Control Panel */}
-            <div className="flex items-stretch gap-8">
-              {/* Status Panel */}
-              <div className="flex-1 bg-dark-300/50 rounded-lg p-6 border border-brand-500/20">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-3 w-3 rounded-full ${
-                        maintenanceMode
-                          ? "bg-red-500 animate-pulse"
-                          : "bg-green-500"
-                      }`}
-                    />
-                    <span className="font-mono text-sm text-gray-300">
-                      SYSTEM STATUS:{" "}
-                      {maintenanceMode ? "MAINTENANCE_MODE" : "OPERATIONAL"}
-                    </span>
+            {/* Duration Setting (only shown when system is live) */}
+            <AnimatePresence>
+              {!maintenanceMode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden mb-4"
+                >
+                  <label className="text-sm text-gray-400 block mb-2 font-mono">
+                    ESTIMATED DURATION (MIN)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={maintenanceDuration}
+                    onChange={(e) =>
+                      setMaintenanceDuration(
+                        Math.max(1, parseInt(e.target.value) || 1)
+                      )
+                    }
+                    className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
+                  />
+                  <div className="text-xs text-gray-500 mt-1 font-mono">
+                    ({Math.floor(maintenanceDuration / 60)}h{" "}
+                    {maintenanceDuration % 60}m)
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                  <div className="font-mono text-xs text-gray-400 leading-relaxed">
-                    {maintenanceMode ? (
-                      <>
-                        <div>⚠ All non-admin access restricted</div>
-                        <div>⚠ Trading operations suspended</div>
-                        <div>⚠ Contest entries blocked</div>
-                      </>
-                    ) : (
-                      <>
-                        <div>✓ All systems operational</div>
-                        <div>✓ Trading enabled</div>
-                        <div>✓ Contest entries allowed</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Control Switch */}
-              <div className="w-96 bg-dark-300/50 rounded-lg p-6 border border-brand-500/20">
-                <div className="text-center space-y-6">
-                  {/* Duration Setting (only shown when system is live) */}
-                  <AnimatePresence>
-                    {!maintenanceMode && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <label className="text-sm text-gray-400 block mb-2 font-mono">
-                          ESTIMATED DURATION (MIN)
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={maintenanceDuration}
-                          onChange={(e) =>
-                            setMaintenanceDuration(
-                              Math.max(1, parseInt(e.target.value) || 1)
-                            )
-                          }
-                          className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
-                        />
-                        <div className="text-xs text-gray-500 mt-1 font-mono">
-                          ({Math.floor(maintenanceDuration / 60)}h{" "}
-                          {maintenanceDuration % 60}m)
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* The Epic Switch */}
-                  <button
-                    onClick={toggleMaintenanceMode}
-                    disabled={isTogglingMaintenance}
-                    className="w-full group relative"
+            <button
+              onClick={toggleMaintenanceMode}
+              disabled={isTogglingMaintenance}
+              className="w-full group relative"
+            >
+              <motion.div
+                className={`
+                  relative overflow-hidden rounded-lg border-2 
+                  ${
+                    maintenanceMode
+                      ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
+                      : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
+                  }
+                  ${isTogglingMaintenance ? "opacity-75" : ""}
+                  transition-all duration-300
+                `}
+              >
+                {/* Key Lock Effect */}
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  <div
+                    className={`
+                    w-6 h-6 rounded-full border-2 
+                    ${
+                      maintenanceMode
+                        ? "border-red-500"
+                        : "border-green-500"
+                    }
+                    transition-colors duration-300
+                  `}
                   >
-                    <motion.div
+                    <div
                       className={`
-                        relative overflow-hidden rounded-lg border-2 
-                        ${
-                          maintenanceMode
-                            ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
-                            : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
-                        }
-                        ${isTogglingMaintenance ? "opacity-75" : ""}
-                        transition-all duration-300
-                      `}
-                    >
-                      {/* Key Lock Effect */}
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                        <div
-                          className={`
-                          w-6 h-6 rounded-full border-2 
-                          ${
-                            maintenanceMode
-                              ? "border-red-500"
-                              : "border-green-500"
-                          }
-                          transition-colors duration-300
-                        `}
-                        >
-                          <div
-                            className={`
-                            w-1 h-3 
-                            ${maintenanceMode ? "bg-red-500" : "bg-green-500"}
-                            transition-colors duration-300
-                            absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
-                          `}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Button Content */}
-                      <div className="px-6 py-4 pl-12">
-                        <div className="font-cyber tracking-wider text-lg">
-                          {isTogglingMaintenance ? (
-                            <span className="text-brand-400 animate-pulse">
-                              {maintenanceMode
-                                ? "DEACTIVATING..."
-                                : "INITIATING..."}
-                            </span>
-                          ) : maintenanceMode ? (
-                            <span className="text-red-400 group-hover:text-red-300">
-                              DEACTIVATE MAINTENANCE
-                            </span>
-                          ) : (
-                            <span className="text-green-400 group-hover:text-green-300">
-                              INITIATE MAINTENANCE
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Scan Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    </motion.div>
-
-                    {/* Power Indicator */}
-                    <div className="absolute -right-3 top-1/2 -translate-y-1/2">
-                      <div
-                        className={`
-                        w-6 h-6 rounded-full 
-                        ${
-                          maintenanceMode
-                            ? "bg-red-500 animate-pulse shadow-lg shadow-red-500/50"
-                            : "bg-green-500 shadow-lg shadow-green-500/50"
-                        }
-                        transition-colors duration-300
-                      `}
-                      />
-                    </div>
-                  </button>
+                      w-1 h-3 
+                      ${maintenanceMode ? "bg-red-500" : "bg-green-500"}
+                      transition-colors duration-300
+                      absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
+                    `}
+                    />
+                  </div>
                 </div>
+
+                {/* Button Content */}
+                <div className="px-6 py-4 pl-12">
+                  <div className="font-cyber tracking-wider text-lg">
+                    {isTogglingMaintenance ? (
+                      <span className="text-brand-400 animate-pulse">
+                        {maintenanceMode
+                          ? "DEACTIVATING..."
+                          : "INITIATING..."}
+                      </span>
+                    ) : maintenanceMode ? (
+                      <span className="text-red-400 group-hover:text-red-300">
+                        DEACTIVATE MAINTENANCE
+                      </span>
+                    ) : (
+                      <span className="text-green-400 group-hover:text-green-300">
+                        INITIATE MAINTENANCE
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Scan Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              </motion.div>
+
+              {/* Power Indicator */}
+              <div className="absolute -right-3 top-1/2 -translate-y-1/2">
+                <div
+                  className={`
+                  w-6 h-6 rounded-full 
+                  ${
+                    maintenanceMode
+                      ? "bg-red-500 animate-pulse shadow-lg shadow-red-500/50"
+                      : "bg-green-500 shadow-lg shadow-green-500/50"
+                  }
+                  transition-colors duration-300
+                `}
+                />
+              </div>
+            </button>
+          </div>
+        </div>
+        
+        {/* System Reports Button */}
+        <Link to="/admin/system-reports"
+              className="block bg-dark-200/70 backdrop-blur-lg p-6 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15)_0%,transparent_60%)]" />
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-4xl text-purple-400 group-hover:scale-110 transition-transform duration-300">📊</div>
+              <div>
+                <h3 className="text-xl font-bold text-purple-200 mb-1 font-heading">System Reports</h3>
+                <p className="text-purple-300/80">View service health and database metrics</p>
+              </div>
+            </div>
+            
+            <div className="bg-purple-500/20 p-3 rounded-full group-hover:bg-purple-500/30 transition-colors">
+              <svg className="w-6 h-6 text-purple-300 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </div>
+          </div>
+          
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+              <div className="text-xs text-purple-300/70 mb-1">Service Health</div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                <span className="text-green-300 text-sm">Monitoring</span>
+              </div>
+            </div>
+            
+            <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+              <div className="text-xs text-purple-300/70 mb-1">Database</div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                <span className="text-blue-300 text-sm">Metrics</span>
+              </div>
+            </div>
+            
+            <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+              <div className="text-xs text-purple-300/70 mb-1">AI Analysis</div>
+              <div className="flex items-center">
+                <div className="h-2 w-2 rounded-full bg-amber-500 mr-2"></div>
+                <span className="text-amber-300 text-sm">Available</span>
               </div>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Admin Sections Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

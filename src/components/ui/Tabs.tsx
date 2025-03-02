@@ -52,7 +52,7 @@ export const TabsList: React.FC<TabsListProps> = ({
 }) => {
   return (
     <div
-      className={`inline-flex h-10 items-center justify-center rounded-lg bg-gray-100 p-1 ${className}`}
+      className={`inline-flex h-10 items-center justify-center rounded-lg bg-dark-300/50 p-1 ${className}`}
     >
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
@@ -89,8 +89,8 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
       className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all
         ${
           isActive
-            ? "bg-white text-black shadow-sm"
-            : "text-gray-600 hover:text-black"
+            ? "bg-brand-500 text-white shadow-sm"
+            : "text-gray-300 hover:text-gray-100"
         } ${className}`}
       onClick={() => onTabChange && onTabChange(value)}
       data-state={isActive ? "active" : "inactive"}
