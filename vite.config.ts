@@ -12,11 +12,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
   const isLocalDev = mode === "dev-local";
   // Check for forced disable of minification
   const forceDisableMinify = process.env.VITE_FORCE_DISABLE_MINIFY === "true";
-  
+
   if (forceDisableMinify) {
-    console.log("⚠️ MINIFICATION FORCED DISABLED via VITE_FORCE_DISABLE_MINIFY");
+    console.log(
+      "⚠️ MINIFICATION FORCED DISABLED via VITE_FORCE_DISABLE_MINIFY"
+    );
   }
-  
+
   console.log(
     "Running in",
     isLocalDev ? "local development" : isDev ? "development" : "production",
@@ -42,7 +44,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         },
         proxy: {
           "^/api/.*": {
-            target: "https://dev.degenduel.me",
+            target: "https://degenduel.me", // MANUAL OVERRIDE
             changeOrigin: true,
             secure: true,
             cookieDomainRewrite: "localhost",
@@ -67,17 +69,17 @@ export default defineConfig(({ command, mode }): UserConfig => {
             },
           },
           "^/status": {
-            target: "https://dev.degenduel.me",
+            target: "https://degenduel.me", // MANUAL OVERRIDE
             changeOrigin: true,
             secure: true,
           },
           "^/admin/.*": {
-            target: "https://dev.degenduel.me",
+            target: "https://degenduel.me", // MANUAL OVERRIDE
             changeOrigin: true,
             secure: true,
           },
           "^/auth/.*": {
-            target: "https://dev.degenduel.me",
+            target: "https://degenduel.me", // MANUAL OVERRIDE
             changeOrigin: true,
             secure: true,
             cookieDomainRewrite: "localhost",
@@ -87,73 +89,73 @@ export default defineConfig(({ command, mode }): UserConfig => {
             },
           },
           "^/portfolio": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/api/v2/ws": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/v2/ws/contest": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/api/admin/skyduel": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/v2/ws/wallet": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/v2/ws/market": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/v2/ws/achievements": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/v2/ws/portfolio": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/api/admin/circuit-breaker": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/api/admin/services": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/analytics": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
           "^/api/v2/ws/tokenData": {
-            target: "wss://dev.degenduel.me",
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
@@ -177,7 +179,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
 
   // Try to load SSL certs - both domains use the same certificate
   const certPath = "/etc/letsencrypt/live/degenduel.me-0001";
-  const domain = isDev ? "dev.degenduel.me" : "degenduel.me";
+  const domain = isDev ? "degenduel.me" : "degenduel.me"; // MANUAL OVERRIDE
   let hasCerts = false;
   let httpsConfig = undefined;
 
@@ -213,7 +215,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       proxy: {
         "/api": {
           target: isDev
-            ? "https://dev.degenduel.me/api"
+            ? "https://degenduel.me/api" // MANUAL OVERRIDE
             : "https://degenduel.me/api",
           changeOrigin: true,
           secure: true,
@@ -244,7 +246,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         },
         "/portfolio": {
           target: isDev
-            ? "wss://dev.degenduel.me/api/v2/ws"
+            ? "wss://degenduel.me/api/v2/ws" // MANUAL OVERRIDE
             : "wss://degenduel.me/api/v2/ws",
           ws: true,
           changeOrigin: true,
@@ -252,99 +254,77 @@ export default defineConfig(({ command, mode }): UserConfig => {
           cookieDomainRewrite: "localhost",
         },
         "/api/v2/ws": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/contest": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/admin/skyduel": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/wallet": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/market": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/achievements": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/portfolio": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/admin/circuit-breaker": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/admin/services": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/analytics": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/v2/ws/tokenData": {
-          target: isDev
-            ? "wss://dev.degenduel.me"
-            : "wss://degenduel.me",
+          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
           ws: true,
           changeOrigin: true,
           secure: true,
@@ -431,24 +411,25 @@ export default defineConfig(({ command, mode }): UserConfig => {
           minifyInternalExports: false,
         },
       },
-      terserOptions: (isDev || forceDisableMinify)
-        ? undefined
-        : {
-            compress: {
-              drop_console: true,
-              drop_debugger: true,
-              pure_funcs: [
-                "console.log",
-                "console.info",
-                "console.debug",
-                "console.trace",
-              ],
+      terserOptions:
+        isDev || forceDisableMinify
+          ? undefined
+          : {
+              compress: {
+                drop_console: true,
+                drop_debugger: true,
+                pure_funcs: [
+                  "console.log",
+                  "console.info",
+                  "console.debug",
+                  "console.trace",
+                ],
+              },
+              mangle: true,
+              format: {
+                comments: false,
+              },
             },
-            mangle: true,
-            format: {
-              comments: false,
-            },
-          },
     },
     esbuild: {
       keepNames: isDev || forceDisableMinify,

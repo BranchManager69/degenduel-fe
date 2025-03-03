@@ -304,7 +304,7 @@ const WebSocketDashboard: React.FC = () => {
                   <pre className="text-xs text-gray-400 overflow-auto max-h-40">
                     {`// In vite.config.ts
 "/api/v2/ws": {
-  target: "wss://dev.degenduel.me",
+  target: "wss://degenduel.me", // MANUAL OVERRIDE
   ws: true,
   changeOrigin: true,
   secure: true,

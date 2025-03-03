@@ -107,8 +107,22 @@ export function useTokenDataWebSocket(
       const token = await getAccessToken().catch(() => null);
       
       // Create WebSocket connection with environment-aware URL
-      // Use environment variables for the WebSocket URL
-      const baseWsUrl = import.meta.env.VITE_WS_URL || `wss://${window.location.host}`;
+      // Determine the WebSocket URL based on the current domain in production
+      let baseWsUrl;
+      const isProduction = import.meta.env.VITE_NODE_ENV === 'production' && 
+                         window.location.hostname === 'degenduel.me';
+      
+      if (isProduction) {
+        // In production on the main domain, use the same domain for WebSockets
+        baseWsUrl = `wss://${window.location.hostname}`;
+      } else if (import.meta.env.VITE_WS_URL) {
+        // Use the environment variable if set (for dev environments)
+        baseWsUrl = import.meta.env.VITE_WS_URL;
+      } else {
+        // Fallback to current host
+        baseWsUrl = `wss://${window.location.host}`;
+      }
+      
       console.log(`[TokenDataWebSocket] Using base WebSocket URL: ${baseWsUrl}`);
       
       const wsUrl = `${baseWsUrl}/api/v2/ws/tokenData`;

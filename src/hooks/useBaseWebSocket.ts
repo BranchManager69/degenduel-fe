@@ -40,8 +40,26 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
     }
 
     const connect = () => {
+      // Determine the WebSocket URL based on the current domain in production
+      let baseWsUrl;
+      const isProduction = import.meta.env.VITE_NODE_ENV === 'production' && 
+                         window.location.hostname === 'degenduel.me';
+      
+      if (isProduction) {
+        // In production on the main domain, always use the production domain
+        baseWsUrl = `wss://${window.location.hostname}`;
+      } else if (config.url) {
+        // Use the provided URL from config (for dev environments)
+        baseWsUrl = config.url;
+      } else {
+        // Fallback to current host
+        baseWsUrl = `wss://${window.location.host}`;
+      }
+      
+      console.log(`[${config.socketType}] Using WebSocket URL: ${baseWsUrl}${config.endpoint}`);
+      
       const ws = new WebSocket(
-        `${config.url}${config.endpoint}`,
+        `${baseWsUrl}${config.endpoint}`,
         user.session_token
       );
 

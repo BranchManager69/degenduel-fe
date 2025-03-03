@@ -1,6 +1,19 @@
+// src/hooks/useMarketDataWebSocket.ts
+
+/**
+ * This hook is used to connect to the market data WebSocket.
+ * It is used to receive market data for a given symbol.
+ *
+ * @param symbols - An array of symbols to subscribe to.
+ * @returns An object containing the market price, volume, and sentiment functions.
+ */
+
 import { useStore } from "../store/useStore";
 import { useBaseWebSocket } from "./useBaseWebSocket";
 
+/* Market data WebSocket */
+
+// Data structure for a market price message
 interface MarketPrice {
   type: "MARKET_PRICE";
   data: {
@@ -14,6 +27,7 @@ interface MarketPrice {
   };
 }
 
+// Data structure for a market volume message
 interface MarketVolume {
   type: "MARKET_VOLUME";
   data: {
@@ -27,6 +41,7 @@ interface MarketVolume {
   };
 }
 
+// Data structure for a market sentiment message
 interface MarketSentiment {
   type: "MARKET_SENTIMENT";
   data: {
@@ -39,12 +54,14 @@ interface MarketSentiment {
   };
 }
 
+// Data structure for a market data message
 type MarketDataMessage = MarketPrice | MarketVolume | MarketSentiment;
 
 export const useMarketDataWebSocket = (symbols: string[]) => {
   const { updateMarketPrice, updateMarketVolume, updateMarketSentiment } =
     useStore();
 
+  // Handle incoming messages from the server
   const handleMessage = (message: MarketDataMessage) => {
     switch (message.type) {
       case "MARKET_PRICE":
@@ -59,6 +76,7 @@ export const useMarketDataWebSocket = (symbols: string[]) => {
     }
   };
 
+  // Initialize the WebSocket connection
   return useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
     endpoint: `/v2/ws/market?symbols=${symbols.join(",")}`,

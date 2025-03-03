@@ -179,10 +179,7 @@ const webSocket = useBaseWebSocket({
 WebSocket connections are authenticated using the session token as the WebSocket protocol:
 
 ```typescript
-const ws = new WebSocket(
-  `${config.url}${config.endpoint}`,
-  user.session_token
-);
+const ws = new WebSocket(`${config.url}${config.endpoint}`, user.session_token);
 ```
 
 ### Reconnection Strategy
@@ -214,7 +211,7 @@ if (config.heartbeatInterval) {
       );
     }
   }, config.heartbeatInterval);
-  
+
   return () => clearInterval(interval);
 }
 ```
@@ -304,7 +301,7 @@ useEffect(() => {
   const handleDebugEvent = (event: CustomEvent) => {
     console.log("WebSocket Debug:", event.detail);
   };
-  
+
   window.addEventListener("ws-debug", handleDebugEvent as EventListener);
   return () => {
     window.removeEventListener("ws-debug", handleDebugEvent as EventListener);
@@ -360,7 +357,7 @@ For admin users, the `ServiceCommandCenter` provides advanced service monitoring
 
 1. **Service Status**: Visual representation of service health and metrics
 2. **Service Control**: Start, stop, and restart service capabilities
-3. **Dependency Visualization**: Interactive graph of service dependencies 
+3. **Dependency Visualization**: Interactive graph of service dependencies
 4. **Performance Metrics**: Real-time service performance monitoring
 
 ![ServiceCommandCenter](https://via.placeholder.com/800x400?text=ServiceCommandCenter)
@@ -375,7 +372,7 @@ import { WebSocketMonitor } from "../components/debug/WebSocketMonitor";
 // In your component:
 <div className="debug-panel">
   <WebSocketMonitor />
-</div>
+</div>;
 ```
 
 ## Frontend Proxy Configuration
@@ -388,13 +385,13 @@ For local development, all WebSocket endpoints must be properly configured in `v
 // Proxy configuration in vite.config.ts
 {
   "/api/v2/ws": {
-    target: "wss://dev.degenduel.me",
+    target: "wss://degenduel.me", // MANUAL OVERRIDE
     ws: true,
     changeOrigin: true,
     secure: true,
   },
   "/v2/ws/contest": {
-    target: "wss://dev.degenduel.me",
+    target: "wss://degenduel.me", // MANUAL OVERRIDE
     ws: true,
     changeOrigin: true,
     secure: true,
@@ -414,8 +411,12 @@ WebSocket URLs are configured through environment variables:
 The main WebSocket URL is specified using:
 
 ```
-VITE_WS_URL=wss://dev.degenduel.me
+VITE_WS_URL=wss://degenduel.me
 ```
+
+The development WebSocket URL will eventually be wss://dev.degenduel.me
+
+However, for now, the development server will use the production WSS instead
 
 ## Common Patterns
 
@@ -434,16 +435,20 @@ Some WebSockets support topic subscription:
 
 ```typescript
 // Subscribe to specific topics
-webSocket.send(JSON.stringify({
-  type: "subscribe",
-  topics: ["BTC", "ETH", "SOL"],
-}));
+webSocket.send(
+  JSON.stringify({
+    type: "subscribe",
+    topics: ["BTC", "ETH", "SOL"],
+  })
+);
 
 // Unsubscribe from topics
-webSocket.send(JSON.stringify({
-  type: "unsubscribe",
-  topics: ["BTC"],
-}));
+webSocket.send(
+  JSON.stringify({
+    type: "unsubscribe",
+    topics: ["BTC"],
+  })
+);
 ```
 
 ### Error Handling
@@ -456,7 +461,7 @@ try {
 } catch (error) {
   // Log error
   console.error("[WebSocket] Error:", error);
-  
+
   // Dispatch debug event
   window.dispatchEvent(
     new CustomEvent("ws-debug", {
@@ -468,7 +473,7 @@ try {
       },
     })
   );
-  
+
   // Update UI
   addAlert("error", "WebSocket connection failed");
 }
@@ -483,6 +488,7 @@ try {
 **Symptoms**: WebSocket fails to connect, `status` remains "offline"
 
 **Possible Causes and Solutions**:
+
 - **Authentication Issue**: Ensure user is logged in and has a valid session
 - **Network Issue**: Check internet connection
 - **Backend Issue**: Verify backend services are running
@@ -494,6 +500,7 @@ try {
 **Symptoms**: Actions on the server don't update the client state
 
 **Possible Causes and Solutions**:
+
 - **Connection Lost**: Check WebSocket connection status
 - **Message Processing Error**: Inspect debug events for parsing errors
 - **Permission Issue**: Verify user has permission to receive the data
@@ -504,6 +511,7 @@ try {
 **Symptoms**: WebSocket repeatedly disconnects and reconnects
 
 **Possible Causes and Solutions**:
+
 - **Network Instability**: Check network connection
 - **Server Overload**: Backend may be dropping connections
 - **Heartbeat Issue**: Check heartbeat mechanism and timing
@@ -514,6 +522,7 @@ try {
 **Symptoms**: WebSockets work in production but not in development
 
 **Possible Causes and Solutions**:
+
 - **Missing Proxy Config**: Ensure all endpoints are correctly configured in vite.config.ts
 - **HTTPS/WSS**: Development may be using HTTP instead of HTTPS
 - **Environment Variables**: Verify correct environment variables
@@ -534,4 +543,4 @@ try {
 **Last Updated**: February 27, 2025  
 **Version**: 1.0.0
 
-*All other WebSocket documentation should be considered deprecated in favor of this comprehensive guide.*
+_All other WebSocket documentation should be considered deprecated in favor of this comprehensive guide._

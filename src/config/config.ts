@@ -4,10 +4,10 @@
 const isDev =
   window.location.hostname === "localhost" ||
   window.location.hostname.startsWith("127.0.0.1") ||
-  window.location.hostname === "dev.degenduel.me";
+  window.location.hostname === "degenduel.me"; // MANUAL OVERRIDE
 
 const PROD_URL = "https://degenduel.me";
-const DEV_URL = "https://dev.degenduel.me";
+const DEV_URL = "https://degenduel.me"; // MANUAL OVERRIDE
 
 // Use correct ports for each environment
 const PROD_PORT = "3004";
@@ -23,7 +23,7 @@ export const DDAPI_DEBUG_MODE = isDev ? "true" : "false";
 export const PORT_CONFIG = isDev
   ? window.location.hostname === "localhost"
     ? LOCAL_PORT // Use 3006 for local development
-    : DEV_PORT // Use 3005 for dev.degenduel.me
+    : DEV_PORT // Use 3005 for deve
   : PROD_PORT;
 
 export const PROD_URL_CONFIG = PROD_URL;
@@ -34,7 +34,7 @@ export const API_URL = isDev
   ? window.location.hostname === "localhost" ||
     window.location.hostname.startsWith("127.0.0.1")
     ? `${window.location.protocol}//${window.location.host}/api` // Use full URL with current host/port
-    : `${DEV_URL}/api` // Use dev.degenduel.me in dev
+    : `${DEV_URL}/api`
   : `${PROD_URL}/api`;
 
 /* WebSocket URL */
@@ -44,7 +44,7 @@ export const WS_URL = isDev
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
         window.location.host
       }/portfolio`
-    : `wss://dev.degenduel.me/portfolio`
+    : `wss://degenduel.me/portfolio` // MANUAL OVERRIDE
   : `wss://degenduel.me/portfolio`;
 
 /* Rates */

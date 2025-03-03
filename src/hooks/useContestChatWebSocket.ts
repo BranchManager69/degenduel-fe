@@ -1,6 +1,19 @@
+// src/hooks/useContestChatWebSocket.ts
+
+/**
+ * This hook is used to connect to the contest chat WebSocket.
+ * It is used to send and receive messages to and from the contest chat.
+ * It is also used to join and leave the contest chat.
+ *
+ * @param contestId - The ID of the contest to connect to.
+ * @returns An object containing the participants, messages, isRateLimited, error, sendMessage, joinRoom, and leaveRoom functions.
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import { useStore } from "../store/useStore";
 import { useBaseWebSocket } from "./useBaseWebSocket";
+
+/* Contest chat WebSocket */
 
 // Message types from server
 interface RoomStateMessage {
@@ -39,6 +52,7 @@ interface ParticipantLeftMessage {
   userId: string;
 }
 
+// Error message from server
 interface ErrorMessage {
   type: "ERROR";
   error: string;
@@ -51,17 +65,20 @@ interface JoinRoomMessage {
   contestId: string;
 }
 
+// Leave room message to server
 interface LeaveRoomMessage {
   type: "LEAVE_ROOM";
   contestId: string;
 }
 
+// Send chat message to server
 interface SendChatMessage {
   type: "SEND_CHAT_MESSAGE";
   contestId: string;
   text: string;
 }
 
+// Participant activity message from server
 // interface ParticipantActivityMessage {
 //   type: "PARTICIPANT_ACTIVITY";
 //   contestId: string;
@@ -69,6 +86,7 @@ interface SendChatMessage {
 //   details?: Record<string, any>;
 // }
 
+// Data structure for a server message
 type ServerMessage =
   | RoomStateMessage
   | ChatMessage
@@ -81,6 +99,7 @@ type ServerMessage =
 // | SendChatMessage
 // | ParticipantActivityMessage
 
+// Data structure for a chat participant
 export interface ChatParticipant {
   userId: string;
   nickname: string;
@@ -88,6 +107,7 @@ export interface ChatParticipant {
   profilePicture?: string;
 }
 
+// Data structure for a chat message
 export interface ChatMessageData {
   messageId: string;
   userId: string;
@@ -98,6 +118,7 @@ export interface ChatMessageData {
   profilePicture?: string;
 }
 
+// Custom hook for the contest chat WebSocket connection
 export const useContestChatWebSocket = (contestId: string) => {
   const { user } = useStore();
   const [participants, setParticipants] = useState<ChatParticipant[]>([]);
@@ -105,6 +126,7 @@ export const useContestChatWebSocket = (contestId: string) => {
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Handle incoming messages from the server
   const handleMessage = useCallback((message: ServerMessage) => {
     switch (message.type) {
       case "ROOM_STATE":
@@ -143,6 +165,7 @@ export const useContestChatWebSocket = (contestId: string) => {
     }
   }, []);
 
+  // Initialize the WebSocket connection
   const ws = useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
     endpoint: `/v2/ws/contest`,
@@ -152,6 +175,7 @@ export const useContestChatWebSocket = (contestId: string) => {
     maxReconnectAttempts: 5,
   });
 
+  // Join the room
   const joinRoom = useCallback(() => {
     const socket = ws.wsRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -163,6 +187,7 @@ export const useContestChatWebSocket = (contestId: string) => {
     }
   }, [ws, contestId]);
 
+  // Leave the room
   const leaveRoom = useCallback(() => {
     const socket = ws.wsRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -174,6 +199,7 @@ export const useContestChatWebSocket = (contestId: string) => {
     }
   }, [ws, contestId]);
 
+  // Send a message to the room
   const sendMessage = useCallback(
     (text: string) => {
       if (isRateLimited) {
