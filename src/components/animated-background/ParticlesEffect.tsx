@@ -238,7 +238,7 @@ export const ParticlesEffect: React.FC = () => {
       // Position dodgeballs in a line at center court
       const lineWidth = 10; // Width of the center line of balls
       const segments = Math.ceil(Math.sqrt(particleCount.blueBalls));
-      const row = Math.floor(i / segments);
+      // const row = Math.floor(i / segments); // Not used in this 1D layout
       const col = i % segments;
       
       // Create a line of balls down the center court
