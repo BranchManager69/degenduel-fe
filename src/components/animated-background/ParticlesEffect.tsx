@@ -84,17 +84,21 @@ export const ParticlesEffect: React.FC = () => {
     }
     
     // Game state tracking
+    type PlayerStatus = "active" | "eliminated" | "carrying";
+    type BallOwner = -1 | 0 | 1; // -1 = no owner, 0 = red team, 1 = green team
+    type GamePhase = "ready" | "rush" | "battle" | "endgame";
+    
     const gameState = {
-      phase: "ready", // Phases: "ready", "rush", "battle", "endgame"
+      phase: "ready" as GamePhase, 
       phaseStartTime: 0,
       redTeamActive: particleCount.red, // Number of active players
       greenTeamActive: particleCount.green,
       redTeamBalls: 0, // Number of dodgeballs held by team
       greenTeamBalls: 0,
-      ballOwnership: new Array(particleCount.blueBalls).fill(null), // Track which team owns each ball: "red", "green" or null
+      ballOwnership: new Array(particleCount.blueBalls).fill(-1) as BallOwner[], 
       playerStatus: {
-        red: new Array(particleCount.red).fill("active"), // "active", "eliminated", "carrying"
-        green: new Array(particleCount.green).fill("active")
+        red: new Array(particleCount.red).fill("active") as PlayerStatus[],
+        green: new Array(particleCount.green).fill("active") as PlayerStatus[]
       },
       lastHitTime: 0, // To control hit frequency
       rushComplete: false
@@ -229,7 +233,6 @@ export const ParticlesEffect: React.FC = () => {
     const blueBallsPositions = new Float32Array(particleCount.blueBalls * 3);
     const blueBallsSizes = new Float32Array(particleCount.blueBalls);
     const blueBallsVelocities = new Float32Array(particleCount.blueBalls * 3);
-    const blueBallsOwners = new Float32Array(particleCount.blueBalls); // -1 for no owner, 0 for red team, 1 for green team
 
     for (let i = 0; i < particleCount.blueBalls; i++) {
       // Position dodgeballs in a line at center court
@@ -260,8 +263,7 @@ export const ParticlesEffect: React.FC = () => {
       blueBallsVelocities[i * 3 + 1] = 0;
       blueBallsVelocities[i * 3 + 2] = 0;
       
-      // No owner initially (-1)
-      blueBallsOwners[i] = -1;
+      // No owner initially (handled in gameState)
     }
 
     blueBallsGeometry.setAttribute(
@@ -903,7 +905,7 @@ export const ParticlesEffect: React.FC = () => {
         if (gameState.phase === "ready") {
           // Balls are stationary at center
           blueBallsPos[idx + 1] = 0 + Math.sin(time * 5 + i) * 0.05; // Slight hovering
-        }
+        } 
         else if (gameState.phase === "rush") {
           // During rush, balls get pushed around by players rushing in
           blueBallsPos[idx] += blueBallsVelocities[idx];
@@ -921,10 +923,10 @@ export const ParticlesEffect: React.FC = () => {
           
           // Ball size pulsates slightly
           blueBallsSize[i] = 0.6 + Math.sin(time * 10 + i) * 0.05;
-        }
+        } 
         else if (gameState.phase === "battle") {
           // During battle, balls are either held by players or thrown
-          const ballOwner = blueBallsOwners[i];
+          const ballOwner = gameState.ballOwnership[i];
           
           if (ballOwner === -1) {
             // Ball is on the ground
