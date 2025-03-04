@@ -28,7 +28,7 @@ export const BackgroundEffects: React.FC = () => {
     uiDebug.backgrounds.ambientMarketData?.enabled ?? false;
   // For backward compatibility, assume these are enabled if not explicitly disabled
   const marketVerseEnabled = true; // MarketVerse is always enabled until we add a control
-  const particlesEffectEnabled = false; // ParticlesEffect disabled by default until we add a control
+  const particlesEffectEnabled = true; // Enable enhanced particles effect for landing page
 
   // === EXPERIMENTAL VISUALIZATIONS ===
   // To test these, set to true and recompile - each uses the same token data as other visualizations
@@ -100,7 +100,7 @@ export const BackgroundEffects: React.FC = () => {
         {/* (4) PARTICLE EFFECTS - Particle effects based on token data */}
         {particlesEffectEnabled && (
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 pointer-events-none"
             style={{ zIndex: 4, mixBlendMode: particlesBlendMode }}
           >
             <ParticlesEffect />
