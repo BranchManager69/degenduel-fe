@@ -1,5 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { Card, CardContent } from "../../ui/Card";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import useDebounce from "../../../hooks/useDebounce";
 
 interface Feature {
   title: string;
@@ -347,121 +349,315 @@ export const Features: React.FC = () => {
     []
   );
 
-  // Memoize the feature cards
+  // State to track the flipped card
+  const [flippedCard, setFlippedCard] = useState<string | null>(null);
+  const [revealedCard, setRevealedCard] = useState<string | null>(null);
+  
+  // Debounce reveal state to prevent accidental triggers
+  const debouncedReveal = useDebounce(revealedCard, 300);
+  
+  // Track drag position for the cover reveal animation
+  const dragEndHandler = (title: string, info: any) => {
+    const velocity = Math.abs(info.velocity.y);
+    if (velocity > 500) {
+      setRevealedCard(title);
+      
+      // Auto-reset after animation completes
+      setTimeout(() => {
+        setRevealedCard(null);
+      }, 3000);
+    }
+  };
+  
+  // Enhanced FeatureCard component
   const FeatureCard = useMemo(
     () =>
       ({
         feature,
         isUpcoming = false,
+        index,
       }: {
         feature: Feature;
         isUpcoming?: boolean;
-      }) =>
-        (
+        index: number;
+      }) => {
+        // Create ref to check if card is in view
+        const ref = useRef(null);
+        const isInView = useInView(ref, { once: true, amount: 0.3 });
+        
+        // Card entrance animation variants
+        const cardVariants = {
+          hidden: { opacity: 0, y: 50 },
+          visible: (i: number) => ({
+            opacity: 1,
+            y: 0,
+            transition: {
+              delay: 0.1 + i * 0.1,
+              duration: 0.5,
+              ease: [0.22, 1, 0.36, 1]
+            }
+          })
+        };
+        
+        return (
+        <motion.div
+          ref={ref}
+          custom={index}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={cardVariants}
+        >
           <Card
             key={feature.title}
-            className={`group relative backdrop-blur-sm border-dark-300/20 hover:border-purple-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10 overflow-hidden ${
-              isUpcoming ? "bg-[#1e1a42]/80" : "bg-[#1a1333]/80"
+            className={`group relative backdrop-blur-sm border transform transition-all duration-500 hover:scale-[1.03] hover:shadow-xl overflow-hidden h-full ${
+              isUpcoming
+                ? "bg-gradient-to-br from-[#1e1a42]/90 to-[#1a1333]/90 border-blue-500/10 hover:border-blue-400/30 hover:shadow-blue-500/10"
+                : "bg-gradient-to-br from-[#1a1333]/90 to-[#120d24]/90 border-purple-500/10 hover:border-purple-400/30 hover:shadow-purple-500/10"
             }`}
+            onClick={() => setFlippedCard(flippedCard === feature.title ? null : feature.title)}
           >
             {isUpcoming && (
-              <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-blue-400/10 border border-blue-400/20 z-20">
-                <span className="text-xs font-cyber text-blue-400/90 tracking-wider flex items-center gap-1">
+              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-blue-400/10 border border-blue-400/30 z-20 backdrop-blur-sm">
+                <span className="text-xs font-cyber text-blue-400 tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                   COMING SOON
                 </span>
               </div>
             )}
 
-            {/* Animated gradient background */}
+            {/* Animated gradient overlay */}
             <div
-              className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-${
-                isUpcoming ? "15" : "10"
-              } transition-opacity duration-500 ${feature.gradient}`}
+              className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700 ${feature.gradient}`}
             />
 
             {/* Animated border glow */}
             <div
-              className={`absolute -inset-[1px] rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+              className={`absolute -inset-[1px] rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${
                 isUpcoming
-                  ? "bg-gradient-to-r from-blue-400/10 via-indigo-400/10 to-blue-400/10"
-                  : "bg-gradient-to-r from-purple-400/10 via-brand-500/10 to-purple-400/10"
+                  ? "bg-gradient-to-r from-blue-400/20 via-indigo-400/20 to-blue-400/20"
+                  : "bg-gradient-to-r from-purple-400/20 via-brand-500/20 to-purple-400/20"
               }`}
             />
 
             {/* Scan line effect */}
             <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(99,102,241,0.03)_50%,transparent_100%)] bg-[length:100%_8px] animate-scan" />
 
-            <CardContent className="relative p-6">
-              <div className="flex items-start space-x-4">
+            {/* Digital Cover Animation */}
+            <AnimatePresence>
+              {revealedCard !== feature.title && (
+                <motion.div 
+                  className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing"
+                  drag="y"
+                  dragConstraints={{ top: 0, bottom: 0 }}
+                  dragElastic={0.6}
+                  onDragEnd={(e, info) => dragEndHandler(feature.title, info)}
+                  initial={{ y: 0 }}
+                  exit={{ 
+                    y: -400, 
+                    opacity: 0,
+                    transition: { 
+                      type: "spring", 
+                      damping: 12, 
+                      stiffness: 100 
+                    } 
+                  }}
+                >
+                  <div className={`
+                    absolute inset-0 backdrop-blur-sm
+                    ${isUpcoming
+                      ? "bg-gradient-to-br from-[#1e1a42]/95 to-[#1a1333]/95 border-blue-500/30"
+                      : "bg-gradient-to-br from-[#1a1333]/95 to-[#120d24]/95 border-purple-500/30"
+                    }
+                  `}>
+                    <div 
+                      className="absolute inset-0 opacity-5"
+                      style={{ backgroundImage: noiseTexture ? `url(${noiseTexture})` : 'none' }}
+                    ></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-brand-500/20 to-transparent"></div>
+                    
+                    {/* Pull indicator */}
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+                      <motion.div 
+                        className="text-white/50 text-sm"
+                        animate={{ y: [0, 5, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      >
+                        Swipe up to reveal
+                      </motion.div>
+                      <motion.div 
+                        className="w-8 h-8 mt-2 text-white/50"
+                        animate={{ y: [0, 5, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 19V5M5 12l7-7 7 7" />
+                        </svg>
+                      </motion.div>
+                    </div>
+                    
+                    {/* Corner fold effect */}
+                    <div className="absolute top-0 right-0 w-0 h-0 border-t-[30px] border-r-[30px] border-b-0 border-l-0 border-transparent border-t-white/5 border-r-white/5"></div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <CardContent className="relative p-8">
+              {/* Icon with animated background - optimized animations */}
+              <div className="mb-6 relative">
                 <div
-                  className={`${
-                    isUpcoming ? "text-blue-400/80" : "text-purple-400/80"
-                  } group-hover:text-brand-400 transition-colors duration-300`}
+                  className={`
+                  relative z-10 inline-flex items-center justify-center w-14 h-14 rounded-lg
+                  ${
+                    isUpcoming
+                      ? "bg-blue-500/10 text-blue-400 group-hover:text-blue-300"
+                      : "bg-purple-500/10 text-purple-400 group-hover:text-purple-300"
+                  } transition-colors duration-500
+                `}
                 >
                   {feature.icon}
                 </div>
-                <div>
-                  <h3
-                    className={`text-lg font-bold text-gray-100 mb-2 ${
-                      isUpcoming
-                        ? "group-hover:text-blue-400"
-                        : "group-hover:text-purple-400"
-                    } transition-colors duration-300 font-cyber tracking-wide`}
-                  >
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-400/90 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                    {feature.description}
-                  </p>
-                </div>
+                <div
+                  className={`
+                  absolute inset-0 rounded-lg blur-md opacity-40 group-hover:opacity-70 transition-opacity duration-500
+                  ${isUpcoming ? "bg-blue-500/20" : "bg-purple-500/20"}
+                `}
+                ></div>
               </div>
 
-              {/* Inner glow effect */}
-              <div
-                className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+              {/* Title with animated underline */}
+              <h3
+                className={`
+                text-xl font-bold mb-3 font-cyber tracking-wide relative inline-block
+                ${
                   isUpcoming
-                    ? "bg-gradient-to-t from-blue-500/5 via-transparent to-transparent"
-                    : "bg-gradient-to-t from-purple-500/5 via-transparent to-transparent"
-                }`}
-              />
+                    ? "text-blue-300 group-hover:text-blue-200"
+                    : "text-purple-300 group-hover:text-purple-200"
+                } transition-colors duration-500
+              `}
+              >
+                {feature.title}
+                <span
+                  className={`
+                  absolute -bottom-1 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ease-out
+                  ${
+                    isUpcoming
+                      ? "bg-gradient-to-r from-blue-400 to-indigo-400"
+                      : "bg-gradient-to-r from-purple-400 to-brand-500"
+                  }
+                `}
+                ></span>
+              </h3>
+
+              {/* Description with improved readability */}
+              <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-500">
+                {feature.description}
+              </p>
+
+              {/* Hover indicator */}
+              <div
+                className={`
+                absolute bottom-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                ${
+                  isUpcoming
+                    ? "bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"
+                    : "bg-gradient-to-r from-transparent via-purple-400/50 to-transparent"
+                }
+              `}
+              ></div>
+              
+              {/* Click/swipe hint */}
+              <div className="absolute bottom-4 right-4 text-xs text-white/30">
+                {revealedCard === feature.title ? "Revealed" : "Swipe to reveal"}
+              </div>
             </CardContent>
           </Card>
         ),
     []
   );
 
+  // Fix SVG animations to be more performant - create optimized versions of the icons
+  const optimizeAnimation = (element: JSX.Element): JSX.Element => {
+    // This will clone element and modify any animation classes to use transform-based animations
+    // that are more performant (CPU → GPU)
+    return React.cloneElement(element, {
+      className: (element.props.className || '').replace('animate-pulse', 'animate-pulse-gpu')
+                                               .replace('animate-ping', 'animate-pulse-gpu')
+    });
+  };
+  
+  // Create a noise texture effect for the card covers
+  const [noiseTexture, setNoiseTexture] = useState<string | null>(null);
+  
+  React.useEffect(() => {
+    // Create a canvas noise texture for better performance than image loading
+    const canvas = document.createElement('canvas');
+    canvas.width = 200; 
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx) {
+      const imageData = ctx.createImageData(200, 200);
+      const data = imageData.data;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const value = Math.floor(Math.random() * 255);
+        data[i] = data[i + 1] = data[i + 2] = value;
+        data[i + 3] = 15; // Very transparent
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      setNoiseTexture(canvas.toDataURL("image/png"));
+    }
+  }, []);
+
   return (
-    <div className="relative py-16 overflow-hidden">
+    <div className="relative py-20 overflow-hidden">
       {CosmicEffects}
 
       {/* Content Container */}
-      <div className="relative">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative">
+      <motion.div 
+        className="relative"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative inline-block">
             <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
             Platform Features
+            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500"></div>
           </h2>
-          <p className="mt-4 text-gray-400 max-w-2xl mx-auto text-lg font-cyber tracking-wide">
+          <p className="mt-6 text-gray-400 max-w-2xl mx-auto text-lg font-cyber tracking-wide">
             Experience the future of competitive token trading with our
             innovative platform
           </p>
-        </div>
+        </motion.div>
 
-        {/* Feature Cards Grid */}
+        {/* Feature Cards Grid with improved spacing */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 relative z-10">
-          {existingFeatures.map((feature) => (
-            <FeatureCard key={feature.title} feature={feature} />
+          {existingFeatures.map((feature, index) => (
+            <FeatureCard 
+              key={feature.title} 
+              feature={feature} 
+              index={index} 
+            />
           ))}
-          {upcomingFeatures.map((feature) => (
+          {upcomingFeatures.map((feature, index) => (
             <FeatureCard
               key={feature.title}
               feature={feature}
               isUpcoming={true}
+              index={existingFeatures.length + index}
             />
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -605,7 +605,17 @@ export default {
     },
   },
   plugins: [
-    require("tailwind-scrollbar")({ nocompatible: true }),
+    // require("tailwind-scrollbar")({ nocompatible: true }),
+    function({ addUtilities, theme, addComponents }) {
+      // Add custom animations that are more GPU-friendly
+      addUtilities({
+        '.animate-pulse-gpu': {
+          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          transform: 'translateZ(0)', // Force GPU acceleration
+          willChange: 'opacity',
+        },
+      });
+    },
     function ({ addUtilities }) {
       addUtilities({
         ".perspective-1000": {
