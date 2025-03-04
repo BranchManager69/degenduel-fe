@@ -82,26 +82,26 @@ export const ParticlesEffect: React.FC = () => {
         blueBalls: 100,
       };
     }
-    
+
     // Game state tracking
     type PlayerStatus = "active" | "eliminated" | "carrying";
     type BallOwner = -1 | 0 | 1; // -1 = no owner, 0 = red team, 1 = green team
     type GamePhase = "ready" | "rush" | "battle" | "endgame";
-    
+
     const gameState = {
-      phase: "ready" as GamePhase, 
+      phase: "ready" as GamePhase,
       phaseStartTime: 0,
       redTeamActive: particleCount.red, // Number of active players
       greenTeamActive: particleCount.green,
       redTeamBalls: 0, // Number of dodgeballs held by team
       greenTeamBalls: 0,
-      ballOwnership: new Array(particleCount.blueBalls).fill(-1) as BallOwner[], 
+      ballOwnership: new Array(particleCount.blueBalls).fill(-1) as BallOwner[],
       playerStatus: {
         red: new Array(particleCount.red).fill("active") as PlayerStatus[],
-        green: new Array(particleCount.green).fill("active") as PlayerStatus[]
+        green: new Array(particleCount.green).fill("active") as PlayerStatus[],
       },
       lastHitTime: 0, // To control hit frequency
-      rushComplete: false
+      rushComplete: false,
     };
 
     // Create particle textures with more vibrant colors for the teams
@@ -115,32 +115,32 @@ export const ParticlesEffect: React.FC = () => {
     const redSizes = new Float32Array(particleCount.red);
     const redVelocities = new Float32Array(particleCount.red * 3);
     const redEnergies = new Float32Array(particleCount.red);
-    
+
     for (let i = 0; i < particleCount.red; i++) {
       // Position in formation at the left side of the arena, ready to rush
       const rowSize = Math.ceil(Math.sqrt(particleCount.red));
       const row = Math.floor(i / rowSize);
       const col = i % rowSize;
-      
+
       // Create a grid formation on the left side
       const xSpread = 8; // Width of formation
       const zSpread = 8; // Depth of formation
-      const x = -20 + (col / rowSize) * xSpread - (xSpread/2); // Left side starting position
-      const z = -zSpread/2 + (row / rowSize) * zSpread;
+      const x = -20 + (col / rowSize) * xSpread - xSpread / 2; // Left side starting position
+      const z = -zSpread / 2 + (row / rowSize) * zSpread;
       const y = 0; // All players on the ground plane
-      
+
       redPositions[i * 3] = x;
       redPositions[i * 3 + 1] = y;
       redPositions[i * 3 + 2] = z;
-      
+
       // Players are uniform size initially
       redSizes[i] = 0.5;
-      
+
       // Initial velocities zero - they'll start moving on whistle
       redVelocities[i * 3] = 0;
       redVelocities[i * 3 + 1] = 0;
       redVelocities[i * 3 + 2] = 0;
-      
+
       // Energy/speed level varies by player
       redEnergies[i] = 0.7 + Math.random() * 0.3; // 0.7-1.0 range for energy
     }
@@ -179,26 +179,26 @@ export const ParticlesEffect: React.FC = () => {
       const rowSize = Math.ceil(Math.sqrt(particleCount.green));
       const row = Math.floor(i / rowSize);
       const col = i % rowSize;
-      
+
       // Create a grid formation on the right side
       const xSpread = 8; // Width of formation
       const zSpread = 8; // Depth of formation
-      const x = 20 - (col / rowSize) * xSpread + (xSpread/2); // Right side starting position
-      const z = -zSpread/2 + (row / rowSize) * zSpread;
+      const x = 20 - (col / rowSize) * xSpread + xSpread / 2; // Right side starting position
+      const z = -zSpread / 2 + (row / rowSize) * zSpread;
       const y = 0; // All players on the ground plane
-      
+
       greenPositions[i * 3] = x;
       greenPositions[i * 3 + 1] = y;
       greenPositions[i * 3 + 2] = z;
-      
+
       // Players are uniform size initially
       greenSizes[i] = 0.5;
-      
+
       // Initial velocities zero - they'll start moving on whistle
       greenVelocities[i * 3] = 0;
       greenVelocities[i * 3 + 1] = 0;
       greenVelocities[i * 3 + 2] = 0;
-      
+
       // Energy/speed level varies by player
       greenEnergies[i] = 0.7 + Math.random() * 0.3; // 0.7-1.0 range for energy
     }
@@ -240,17 +240,17 @@ export const ParticlesEffect: React.FC = () => {
       const segments = Math.ceil(Math.sqrt(particleCount.blueBalls));
       // const row = Math.floor(i / segments); // Not used in this 1D layout
       const col = i % segments;
-      
+
       // Create a line of balls down the center court
       const x = 0; // Center court
-      const z = -lineWidth/2 + (col / segments) * lineWidth;
+      const z = -lineWidth / 2 + (col / segments) * lineWidth;
       const y = 0; // All balls on the ground
-      
+
       // Add slight random offset for more natural look
       const jitter = 0.5;
       const xJitter = (Math.random() - 0.5) * jitter;
       const zJitter = (Math.random() - 0.5) * jitter;
-      
+
       blueBallsPositions[i * 3] = x + xJitter;
       blueBallsPositions[i * 3 + 1] = y;
       blueBallsPositions[i * 3 + 2] = z + zJitter;
@@ -262,7 +262,7 @@ export const ParticlesEffect: React.FC = () => {
       blueBallsVelocities[i * 3] = 0;
       blueBallsVelocities[i * 3 + 1] = 0;
       blueBallsVelocities[i * 3 + 2] = 0;
-      
+
       // No owner initially (handled in gameState)
     }
 
@@ -287,7 +287,10 @@ export const ParticlesEffect: React.FC = () => {
     });
 
     blueBallsMaterial.color.set(0x4488ff); // Bright blue for dodgeballs
-    const blueBallsParticles = new THREE.Points(blueBallsGeometry, blueBallsMaterial);
+    const blueBallsParticles = new THREE.Points(
+      blueBallsGeometry,
+      blueBallsMaterial
+    );
     blueBallsParticles.name = "blueBallsParticles";
     scene.add(blueBallsParticles);
 
@@ -300,27 +303,21 @@ export const ParticlesEffect: React.FC = () => {
       opacity: 0.1,
       side: THREE.DoubleSide,
     });
-    
+
     // Add center dividing line
     const centerLineGeometry = new THREE.PlaneGeometry(0.5, 30);
     const centerLineMaterial = new THREE.MeshBasicMaterial({
-      color: 0xFFFFFF, // White line
+      color: 0xffffff, // White line
       transparent: true,
       opacity: 0.2,
       side: THREE.DoubleSide,
     });
-    const court = new THREE.Mesh(
-      courtGeometry,
-      courtMaterial
-    );
+    const court = new THREE.Mesh(courtGeometry, courtMaterial);
     court.rotation.x = Math.PI / 2;
     court.position.y = -0.5; // Just below players
     scene.add(court);
-    
-    const centerLine = new THREE.Mesh(
-      centerLineGeometry,
-      centerLineMaterial
-    );
+
+    const centerLine = new THREE.Mesh(centerLineGeometry, centerLineMaterial);
     centerLine.rotation.x = Math.PI / 2;
     centerLine.position.y = -0.4; // Slightly above court
     scene.add(centerLine);
@@ -333,7 +330,7 @@ export const ParticlesEffect: React.FC = () => {
     const greenLight = new THREE.PointLight(0x33ff33, 0.4, 30); // Green team light
     greenLight.position.set(15, 5, 0);
     scene.add(greenLight);
-    
+
     // Add spotlight in center for dodgeballs
     const centerLight = new THREE.PointLight(0x4488ff, 0.3, 15); // Blue light for center
     centerLight.position.set(0, 5, 0);
@@ -586,7 +583,8 @@ export const ParticlesEffect: React.FC = () => {
             // Randomly sample from all particles
             const idx = Math.floor(Math.random() * particleCount.red) * 3;
             const gIdx = Math.floor(Math.random() * particleCount.green) * 3;
-            const bIdx = Math.floor(Math.random() * particleCount.blueBalls) * 3;
+            const bIdx =
+              Math.floor(Math.random() * particleCount.blueBalls) * 3;
 
             // Calculate distance to pulse center for each particle type
             const distanceRed = Math.sqrt(
@@ -621,8 +619,9 @@ export const ParticlesEffect: React.FC = () => {
                 2
               ) +
                 Math.pow(
-                  blueBallsParticles.geometry.attributes.position.array[bIdx + 1] -
-                    pulse.y,
+                  blueBallsParticles.geometry.attributes.position.array[
+                    bIdx + 1
+                  ] - pulse.y,
                   2
                 )
             );
@@ -696,7 +695,8 @@ export const ParticlesEffect: React.FC = () => {
             // Blue dodgeballs - more responsive to pulses
             if (Math.abs(distanceBlueBalls - pulseRadius) < pulseWidth * 1.5) {
               const force =
-                ((pulseWidth * 1.5 - Math.abs(distanceBlueBalls - pulseRadius)) /
+                ((pulseWidth * 1.5 -
+                  Math.abs(distanceBlueBalls - pulseRadius)) /
                   (pulseWidth * 1.5)) *
                 pulseStrength *
                 2.5;
@@ -706,8 +706,9 @@ export const ParticlesEffect: React.FC = () => {
                 blueBallsParticles.geometry.attributes.position.array[bIdx] -
                 pulse.x;
               const dy =
-                blueBallsParticles.geometry.attributes.position.array[bIdx + 1] -
-                pulse.y;
+                blueBallsParticles.geometry.attributes.position.array[
+                  bIdx + 1
+                ] - pulse.y;
               const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
 
               // Apply both outward force and attraction depending on distance
@@ -715,14 +716,16 @@ export const ParticlesEffect: React.FC = () => {
                 // Inside pulse - push outward
                 blueBallsParticles.geometry.attributes.position.array[bIdx] +=
                   (dx / normalizer) * force * 0.1;
-                blueBallsParticles.geometry.attributes.position.array[bIdx + 1] +=
-                  (dy / normalizer) * force * 0.1;
+                blueBallsParticles.geometry.attributes.position.array[
+                  bIdx + 1
+                ] += (dy / normalizer) * force * 0.1;
               } else {
                 // Outside pulse - pull inward to the wave
                 blueBallsParticles.geometry.attributes.position.array[bIdx] -=
                   (dx / normalizer) * force * 0.07;
-                blueBallsParticles.geometry.attributes.position.array[bIdx + 1] -=
-                  (dy / normalizer) * force * 0.07;
+                blueBallsParticles.geometry.attributes.position.array[
+                  bIdx + 1
+                ] -= (dy / normalizer) * force * 0.07;
               }
 
               // Increase size temporarily
@@ -745,55 +748,60 @@ export const ParticlesEffect: React.FC = () => {
         // Start the game after 2 seconds - the rush to center
         gameState.phase = "rush";
         gameState.phaseStartTime = time;
-        
+
         // Give initial velocity toward center for all players
         for (let i = 0; i < particleCount.red; i++) {
           const idx = i * 3;
           redVelocities[idx] = 0.1 + Math.random() * 0.05; // Rush toward center (right)
           redVelocities[idx + 2] = (Math.random() - 0.5) * 0.02; // Slight z variation
         }
-        
+
         for (let i = 0; i < particleCount.green; i++) {
           const idx = i * 3;
           greenVelocities[idx] = -0.1 - Math.random() * 0.05; // Rush toward center (left)
           greenVelocities[idx + 2] = (Math.random() - 0.5) * 0.02; // Slight z variation
         }
       }
-      
+
       // Transition from rush to battle phase when enough time has passed
-      else if (gameState.phase === "rush" && time - gameState.phaseStartTime > 3) {
+      else if (
+        gameState.phase === "rush" &&
+        time - gameState.phaseStartTime > 3
+      ) {
         gameState.phase = "battle";
         gameState.phaseStartTime = time;
         gameState.rushComplete = true;
-        
+
         // Slow down players after the rush
         for (let i = 0; i < particleCount.red; i++) {
           const idx = i * 3;
           redVelocities[idx] *= 0.3;
           redVelocities[idx + 2] *= 0.3;
         }
-        
+
         for (let i = 0; i < particleCount.green; i++) {
           const idx = i * 3;
           greenVelocities[idx] *= 0.3;
-          greenVelocities[idx + 2] *= 0.3; 
+          greenVelocities[idx + 2] *= 0.3;
         }
       }
 
       // 1. Update Red Team Players
-      const redPos = redParticles.geometry.attributes.position.array as Float32Array;
-      const redSize = redParticles.geometry.attributes.size.array as Float32Array;
+      const redPos = redParticles.geometry.attributes.position
+        .array as Float32Array;
+      const redSize = redParticles.geometry.attributes.size
+        .array as Float32Array;
 
       for (let i = 0; i < particleCount.red; i++) {
         if (gameState.playerStatus.red[i] === "eliminated") continue; // Skip eliminated players
-        
+
         const idx = i * 3;
-        
+
         // Apply velocity - more directed during rush phase
         redPos[idx] += redVelocities[idx];
         redPos[idx + 1] += redVelocities[idx + 1];
         redPos[idx + 2] += redVelocities[idx + 2];
-        
+
         // Add slight jitter for more natural movement during battle
         if (gameState.phase === "battle") {
           redPos[idx] += (Math.random() - 0.5) * 0.02;
@@ -809,7 +817,7 @@ export const ParticlesEffect: React.FC = () => {
         // Court boundaries with bounce effect - keep players in bounds
         const courtWidth = 25;
         const courtDepth = 15;
-        
+
         if (Math.abs(redPos[idx]) > courtWidth) {
           redVelocities[idx] *= -0.5; // Bounce with energy loss
           redPos[idx] = Math.sign(redPos[idx]) * courtWidth;
@@ -819,7 +827,7 @@ export const ParticlesEffect: React.FC = () => {
           redVelocities[idx + 2] *= -0.5; // Bounce with energy loss
           redPos[idx + 2] = Math.sign(redPos[idx + 2]) * courtDepth;
         }
-        
+
         // During battle phase, players may pick up dodgeballs or throw them
         if (gameState.phase === "battle") {
           // Players size based on status
@@ -830,27 +838,32 @@ export const ParticlesEffect: React.FC = () => {
           }
         } else {
           // During rush, size indicates speed
-          redSize[i] = 0.4 + Math.sqrt(
-            redVelocities[idx] * redVelocities[idx] + 
-            redVelocities[idx+2] * redVelocities[idx+2]
-          ) * 2;
+          redSize[i] =
+            0.4 +
+            Math.sqrt(
+              redVelocities[idx] * redVelocities[idx] +
+                redVelocities[idx + 2] * redVelocities[idx + 2]
+            ) *
+              2;
         }
       }
 
       // 2. Update Green Team Players
-      const greenPos = greenParticles.geometry.attributes.position.array as Float32Array;
-      const greenSize = greenParticles.geometry.attributes.size.array as Float32Array;
+      const greenPos = greenParticles.geometry.attributes.position
+        .array as Float32Array;
+      const greenSize = greenParticles.geometry.attributes.size
+        .array as Float32Array;
 
       for (let i = 0; i < particleCount.green; i++) {
         if (gameState.playerStatus.green[i] === "eliminated") continue; // Skip eliminated players
-        
+
         const idx = i * 3;
-        
+
         // Apply velocity - more directed during rush phase
         greenPos[idx] += greenVelocities[idx];
         greenPos[idx + 1] += greenVelocities[idx + 1];
         greenPos[idx + 2] += greenVelocities[idx + 2];
-        
+
         // Add slight jitter for more natural movement during battle
         if (gameState.phase === "battle") {
           greenPos[idx] += (Math.random() - 0.5) * 0.02;
@@ -866,7 +879,7 @@ export const ParticlesEffect: React.FC = () => {
         // Court boundaries with bounce effect - keep players in bounds
         const courtWidth = 25;
         const courtDepth = 15;
-        
+
         if (Math.abs(greenPos[idx]) > courtWidth) {
           greenVelocities[idx] *= -0.5; // Bounce with energy loss
           greenPos[idx] = Math.sign(greenPos[idx]) * courtWidth;
@@ -876,7 +889,7 @@ export const ParticlesEffect: React.FC = () => {
           greenVelocities[idx + 2] *= -0.5; // Bounce with energy loss
           greenPos[idx + 2] = Math.sign(greenPos[idx + 2]) * courtDepth;
         }
-        
+
         // During battle phase, players may pick up dodgeballs or throw them
         if (gameState.phase === "battle") {
           // Players size based on status
@@ -887,47 +900,50 @@ export const ParticlesEffect: React.FC = () => {
           }
         } else {
           // During rush, size indicates speed
-          greenSize[i] = 0.4 + Math.sqrt(
-            greenVelocities[idx] * greenVelocities[idx] + 
-            greenVelocities[idx+2] * greenVelocities[idx+2]
-          ) * 2;
+          greenSize[i] =
+            0.4 +
+            Math.sqrt(
+              greenVelocities[idx] * greenVelocities[idx] +
+                greenVelocities[idx + 2] * greenVelocities[idx + 2]
+            ) *
+              2;
         }
       }
 
       // 3. Update Blue Dodgeballs
-      const blueBallsPos = blueBallsParticles.geometry.attributes.position.array as Float32Array;
-      const blueBallsSize = blueBallsParticles.geometry.attributes.size.array as Float32Array;
+      const blueBallsPos = blueBallsParticles.geometry.attributes.position
+        .array as Float32Array;
+      const blueBallsSize = blueBallsParticles.geometry.attributes.size
+        .array as Float32Array;
 
       for (let i = 0; i < particleCount.blueBalls; i++) {
         const idx = i * 3;
-        
+
         // Update ball positions based on rush/battle phase
         if (gameState.phase === "ready") {
           // Balls are stationary at center
           blueBallsPos[idx + 1] = 0 + Math.sin(time * 5 + i) * 0.05; // Slight hovering
-        } 
-        else if (gameState.phase === "rush") {
+        } else if (gameState.phase === "rush") {
           // During rush, balls get pushed around by players rushing in
           blueBallsPos[idx] += blueBallsVelocities[idx];
           blueBallsPos[idx + 1] += blueBallsVelocities[idx + 1];
           blueBallsPos[idx + 2] += blueBallsVelocities[idx + 2];
-          
+
           // Apply gravity, so balls fall back down
           if (blueBallsPos[idx + 1] > 0) {
             blueBallsVelocities[idx + 1] -= 0.002;
           }
-          
+
           // Friction slows balls
           blueBallsVelocities[idx] *= 0.98;
           blueBallsVelocities[idx + 2] *= 0.98;
-          
+
           // Ball size pulsates slightly
           blueBallsSize[i] = 0.6 + Math.sin(time * 10 + i) * 0.05;
-        } 
-        else if (gameState.phase === "battle") {
+        } else if (gameState.phase === "battle") {
           // During battle, balls are either held by players or thrown
           const ballOwner = gameState.ballOwnership[i];
-          
+
           if (ballOwner === -1) {
             // Ball is on the ground
             if (blueBallsPos[idx + 1] > 0) {
@@ -936,16 +952,16 @@ export const ParticlesEffect: React.FC = () => {
             } else {
               blueBallsPos[idx + 1] = 0; // Rest on ground
               blueBallsVelocities[idx + 1] = 0;
-              
+
               // Ball rolling friction
               blueBallsVelocities[idx] *= 0.95;
               blueBallsVelocities[idx + 2] *= 0.95;
             }
-            
+
             // Apply remaining velocity
             blueBallsPos[idx] += blueBallsVelocities[idx];
             blueBallsPos[idx + 2] += blueBallsVelocities[idx + 2];
-            
+
             // Size pulsates for visibility
             blueBallsSize[i] = 0.6 + Math.sin(time * 5 + i) * 0.1;
           } else {
@@ -954,16 +970,16 @@ export const ParticlesEffect: React.FC = () => {
             blueBallsSize[i] = 0.7; // Larger when actively in play
           }
         }
-        
+
         // Keep balls within court bounds
         const courtWidth = 25;
         const courtDepth = 15;
-        
+
         if (Math.abs(blueBallsPos[idx]) > courtWidth) {
           blueBallsVelocities[idx] *= -0.7; // Bounce with energy loss
           blueBallsPos[idx] = Math.sign(blueBallsPos[idx]) * courtWidth;
         }
-        
+
         if (Math.abs(blueBallsPos[idx + 2]) > courtDepth) {
           blueBallsVelocities[idx + 2] *= -0.7; // Bounce with energy loss
           blueBallsPos[idx + 2] = Math.sign(blueBallsPos[idx + 2]) * courtDepth;
@@ -1100,8 +1116,8 @@ export const ParticlesEffect: React.FC = () => {
       greenParticles.geometry.attributes.position.needsUpdate = true;
       greenParticles.geometry.attributes.size.needsUpdate = true;
 
-      marketParticles.geometry.attributes.position.needsUpdate = true;
-      marketParticles.geometry.attributes.size.needsUpdate = true;
+      blueBallsParticles.geometry.attributes.position.needsUpdate = true;
+      blueBallsParticles.geometry.attributes.size.needsUpdate = true;
 
       collisionParticles.geometry.attributes.position.needsUpdate = true;
       collisionParticles.geometry.attributes.size.needsUpdate = true;
@@ -1158,21 +1174,21 @@ export const ParticlesEffect: React.FC = () => {
       redMaterial.dispose();
       greenGeometry.dispose();
       greenMaterial.dispose();
-      marketGeometry.dispose();
-      marketMaterial.dispose();
+      blueBallsGeometry.dispose();
+      blueBallsMaterial.dispose();
       collisionGeometry.dispose();
       collisionMaterial.dispose();
-      battlePlaneGeometry.dispose();
-      battlePlaneMaterial.dispose();
+      courtGeometry.dispose();
+      courtMaterial.dispose();
       redGlow.dispose();
       greenGlow.dispose();
       blueGlow.dispose();
 
       scene.remove(redParticles);
       scene.remove(greenParticles);
-      scene.remove(marketParticles);
+      scene.remove(blueBallsParticles);
       scene.remove(collisionParticles);
-      scene.remove(battlePlane);
+      scene.remove(court);
       scene.remove(redLight);
       scene.remove(greenLight);
 
