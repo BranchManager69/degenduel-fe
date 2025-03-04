@@ -1,9 +1,22 @@
+// src/components/animated-background/ParticlesEffect.tsx
+
+/**
+ * This component is a modified version of the ParticlesEffect component from the
+ * react-three/drei library. It is used to create an animated background for the
+ * app. The component creates a 3D scene with particles that represent the crypto
+ * market playing dodgeball. The particles are animated to move and change color
+ * based on the market data. The component also includes a market pulse effect that
+ * simulates the pulse of the market. Enjoy!
+ */
+
 import React from "react";
 import * as THREE from "three";
 import { useStore } from "../../store/useStore";
 
-// Graphics quality
+// Graphics quality and performance settings
 const GRAPHICS_QUALITY = "min"; // options: 'max', 'mid', 'min'
+const OPACITY_MAGNITUDE = 0.7; // opacity reduction factor (0.4-0.7 recommended)
+const MOBILE_OPTIMIZED = true; // special handling for mobile browsers
 
 // Define the type for graphics quality
 type GraphicsQualityType = "high-performance" | "default" | "low-power";
@@ -71,9 +84,9 @@ export const ParticlesEffect: React.FC = () => {
       };
     } else if (graphicsQuality === "low-power") {
       particleCount = {
-        red: 200,
-        green: 200,
-        blueBalls: 50,
+        red: 100,
+        green: 100,
+        blueBalls: 25,
       };
     } else {
       particleCount = {
@@ -159,7 +172,7 @@ export const ParticlesEffect: React.FC = () => {
       transparent: true,
       vertexColors: false,
       sizeAttenuation: true,
-      opacity: 0.3, // Further reduced opacity for more subtlety
+      opacity: OPACITY_MAGNITUDE * 0.3, // Further reduced opacity for more subtlety
     });
 
     redMaterial.color.set(0xff2200); // Intense red color
@@ -220,7 +233,7 @@ export const ParticlesEffect: React.FC = () => {
       transparent: true,
       vertexColors: false,
       sizeAttenuation: true,
-      opacity: 0.3, // Further reduced opacity for more subtlety
+      opacity: OPACITY_MAGNITUDE * 0.3, // Further reduced opacity for more subtlety
     });
 
     greenMaterial.color.set(0x00ff44); // Intense green color
@@ -283,7 +296,7 @@ export const ParticlesEffect: React.FC = () => {
       transparent: true,
       vertexColors: false,
       sizeAttenuation: true,
-      opacity: 0.5, // More visible for the dodgeballs
+      opacity: OPACITY_MAGNITUDE * 0.5, // More visible for the dodgeballs
     });
 
     blueBallsMaterial.color.set(0x4488ff); // Bright blue for dodgeballs
@@ -300,7 +313,7 @@ export const ParticlesEffect: React.FC = () => {
     const courtMaterial = new THREE.MeshBasicMaterial({
       color: 0x222266, // Dark blue court
       transparent: true,
-      opacity: 0.1,
+      opacity: OPACITY_MAGNITUDE * 0.1,
       side: THREE.DoubleSide,
     });
 
@@ -309,7 +322,7 @@ export const ParticlesEffect: React.FC = () => {
     const centerLineMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff, // White line
       transparent: true,
-      opacity: 0.2,
+      opacity: OPACITY_MAGNITUDE * 0.2,
       side: THREE.DoubleSide,
     });
     const court = new THREE.Mesh(courtGeometry, courtMaterial);
@@ -1103,11 +1116,14 @@ export const ParticlesEffect: React.FC = () => {
       redLight.intensity = 0.3 + 0.1 * Math.sin(time * 2);
       greenLight.intensity = 0.3 + 0.1 * Math.sin(time * 2 + Math.PI);
 
-      // Make camera slowly orbit the scene
-      camera.position.x = 15 * Math.sin(time * 0.1);
-      camera.position.z = 15 * Math.cos(time * 0.1);
-      camera.position.y = 3 + Math.sin(time * 0.2) * 2;
-      camera.lookAt(0, 0, 0);
+      // Make camera slowly orbit the scene - more optimized for mobile
+      if (!MOBILE_OPTIMIZED) {
+        // Only do camera animation on desktop for better performance
+        camera.position.x = 15 * Math.sin(time * 0.1);
+        camera.position.z = 15 * Math.cos(time * 0.1);
+        camera.position.y = 3 + Math.sin(time * 0.2) * 2;
+        camera.lookAt(0, 0, 0);
+      }
 
       // Update geometries
       redParticles.geometry.attributes.position.needsUpdate = true;
@@ -1130,13 +1146,52 @@ export const ParticlesEffect: React.FC = () => {
 
     animate();
 
-    // Handle window resize
+    // Handle window resize with debouncing and mobile optimizations
+    let resizeTimeout: number | undefined;
+    const initialHeight = window.innerHeight;
+    let lastWidth = window.innerWidth;
+    
     const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      // Clear previous timeout to debounce rapid resize events
+      if (resizeTimeout !== undefined) {
+        window.clearTimeout(resizeTimeout);
+      }
+      
+      // Delay execution to avoid thrashing during scroll on mobile 
+      resizeTimeout = window.setTimeout(() => {
+        const currentWidth = window.innerWidth;
+        const widthChanged = Math.abs(currentWidth - lastWidth) > 20;
+        
+        // Only update if meaningful width change (avoid chrome menu triggers)
+        if (widthChanged || !MOBILE_OPTIMIZED) {
+          // Use fixed height on mobile to prevent jumping during browser UI changes
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          const targetHeight = isMobile && MOBILE_OPTIMIZED ? initialHeight : window.innerHeight;
+          
+          // Update renderer and camera
+          camera.aspect = window.innerWidth / targetHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, targetHeight);
+          
+          // Update camera position based on aspect ratio
+          if (camera.aspect < 1) { // Portrait mode
+            camera.position.z = 35; // Further back
+            camera.position.y = 20; // Higher position
+          } else {
+            camera.position.z = 25;
+            camera.position.y = 15;
+          }
+          
+          // Remember current width for comparison
+          lastWidth = currentWidth;
+        }
+      }, 250); // 250ms debounce
     };
 
+    // Initial resize to set correct viewport
+    handleResize();
+    
+    // Listen for resize events
     window.addEventListener("resize", handleResize);
 
     // Note: We've already added the renderer to the DOM earlier.
@@ -1146,6 +1201,11 @@ export const ParticlesEffect: React.FC = () => {
     // Cleanup function
     return () => {
       window.removeEventListener("resize", handleResize);
+      
+      // Clear resize timeout if exists
+      if (resizeTimeout !== undefined) {
+        window.clearTimeout(resizeTimeout);
+      }
 
       // Run all cleanup functions
       cleanupFunctions.forEach((cleanup) => cleanup());
@@ -1208,29 +1268,49 @@ export const ParticlesEffect: React.FC = () => {
   React.useEffect(() => {
     setIsMounted(true);
 
-    // Add event listener for mouse movement to create pulse waves
-    const handleMouseMove = (e: MouseEvent) => {
-      // Only create pulse waves occasionally (1 in 15 movements) to avoid overloading
-      if (Math.random() > 0.07) return;
+    // Add event listener for mouse/touch movement to create pulse waves
+    const handleInteraction = (e: MouseEvent | TouchEvent) => {
+      // Only create pulse waves occasionally to avoid overloading
+      // Increase chance on mobile for better responsiveness
+      const isMobile = 'ontouchstart' in window;
+      const threshold = isMobile ? 0.15 : 0.07;
+      if (Math.random() > threshold) return;
+
+      let clientX, clientY;
+      
+      // Handle both mouse and touch events
+      if ('touches' in e) {
+        // Touch event
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        // Mouse event
+        clientX = (e as MouseEvent).clientX;
+        clientY = (e as MouseEvent).clientY;
+      }
 
       // Calculate relative position in scene
-      const x = (e.clientX / window.innerWidth) * 2 - 1;
-      const y = -((e.clientY / window.innerHeight) * 2 - 1);
-
-      // We don't need to store pulse waves in React state anymore
-      // as they're managed directly in the THREE.js system
+      const x = (clientX / window.innerWidth) * 2 - 1;
+      const y = -((clientY / window.innerHeight) * 2 - 1);
 
       // Communicate pulse with the THREE.js scene via a custom event
+      const pulseStrength = isMobile ? 0.7 + Math.random() * 0.3 : 0.5 + Math.random() * 0.5;
       const event = new CustomEvent("market-pulse", {
-        detail: { x, y, strength: 0.5 + Math.random() * 0.5 },
+        detail: { x, y, strength: pulseStrength },
       });
       window.dispatchEvent(event);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    // Add both mouse and touch event listeners
+    window.addEventListener("mousemove", handleInteraction);
+    window.addEventListener("touchmove", handleInteraction);
+    window.addEventListener("touchstart", handleInteraction);
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
+      // Clean up all event listeners
+      window.removeEventListener("mousemove", handleInteraction);
+      window.removeEventListener("touchmove", handleInteraction);
+      window.removeEventListener("touchstart", handleInteraction);
     };
   }, []);
 
@@ -1244,12 +1324,14 @@ export const ParticlesEffect: React.FC = () => {
         position: "absolute",
         top: 0,
         left: 0,
-        width: "100%",
+        width: "100%", 
         height: "100%",
-        pointerEvents: "none",
+        pointerEvents: "none", // Don't capture clicks/taps
         zIndex: 10,
-        opacity: isMounted ? 0.3 : 0.7, // Start brighter, then fade to subtle
+        opacity: isMounted ? OPACITY_MAGNITUDE * 0.3 : OPACITY_MAGNITUDE * 0.7, // Start brighter, then fade to subtle
         transition: "opacity 3s ease-out", // Smooth transition over 3 seconds
+        transform: "translateZ(0)", // Force GPU acceleration
+        willChange: "opacity", // Hint for browser optimization
       }}
     ></div>
   );
