@@ -14,15 +14,12 @@ export const ParticlesEffect: React.FC = () => {
     return null;
   }
 
-  // Get the graphics quality from the config
-  let graphicsQuality = GRAPHICS_QUALITY;
-  if (GRAPHICS_QUALITY === "max") {
-    graphicsQuality = "high-performance";
-  } else if (GRAPHICS_QUALITY === "min") {
-    graphicsQuality = "low-power";
-  } else {
-    graphicsQuality = "default";
-  }
+  // Map our quality setting to WebGL powerPreference values
+  const graphicsQuality = {
+    "max": "high-performance",
+    "mid": "default", 
+    "min": "low-power"
+  }[GRAPHICS_QUALITY] || "default";
 
   // Create an epic scene
   React.useEffect(() => {
@@ -37,7 +34,7 @@ export const ParticlesEffect: React.FC = () => {
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
       antialias: true, // Smoother edges
-      powerPreference: `${graphicsQuality}`, // Push graphics quality? (options: 'high-performance', 'low-power', 'default')
+      powerPreference: graphicsQuality, // Graphics quality setting
     });
 
     // Setup renderer with high quality settings
