@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from "react";
 import { Card, CardContent } from "../../ui/Card";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import useDebounce from "../../../hooks/useDebounce";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 interface Feature {
   title: string;
@@ -357,7 +357,7 @@ export const Features: React.FC = () => {
   const debouncedReveal = useDebounce(revealedCard, 300);
   
   // Track drag position for the cover reveal animation
-  const dragEndHandler = (title: string, info: any) => {
+  const dragEndHandler = (title: string, info: { velocity: { y: number } }) => {
     const velocity = Math.abs(info.velocity.y);
     if (velocity > 500) {
       setRevealedCard(title);
@@ -400,13 +400,13 @@ export const Features: React.FC = () => {
         };
         
         return (
-        <motion.div
-          ref={ref}
-          custom={index}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={cardVariants}
-        >
+          <motion.div
+            ref={ref}
+            custom={index}
+            initial="hidden"
+            animate={isInView ? "visible" : "hidden"}
+            variants={cardVariants}
+          >
           <Card
             key={feature.title}
             className={`group relative backdrop-blur-sm border transform transition-all duration-500 hover:scale-[1.03] hover:shadow-xl overflow-hidden h-full ${
@@ -572,17 +572,19 @@ export const Features: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        ),
+          </motion.div>
+        );
+      },
     []
   );
 
   // Fix SVG animations to be more performant - create optimized versions of the icons
   const optimizeAnimation = (element: JSX.Element): JSX.Element => {
     // This will clone element and modify any animation classes to use transform-based animations
-    // that are more performant (CPU → GPU)
+    // that are more performant (CPU to GPU)
     return React.cloneElement(element, {
-      className: (element.props.className || '').replace('animate-pulse', 'animate-pulse-gpu')
-                                               .replace('animate-ping', 'animate-pulse-gpu')
+      className: (element.props.className || "").replace("animate-pulse", "animate-pulse-gpu")
+        .replace("animate-ping", "animate-pulse-gpu")
     });
   };
   
@@ -591,10 +593,10 @@ export const Features: React.FC = () => {
   
   React.useEffect(() => {
     // Create a canvas noise texture for better performance than image loading
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 200; 
     canvas.height = 200;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     
     if (ctx) {
       const imageData = ctx.createImageData(200, 200);
@@ -602,7 +604,9 @@ export const Features: React.FC = () => {
       
       for (let i = 0; i < data.length; i += 4) {
         const value = Math.floor(Math.random() * 255);
-        data[i] = data[i + 1] = data[i + 2] = value;
+        data[i] = value;
+        data[i + 1] = value;
+        data[i + 2] = value;
         data[i + 3] = 15; // Very transparent
       }
       
