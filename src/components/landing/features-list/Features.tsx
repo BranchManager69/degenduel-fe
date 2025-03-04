@@ -353,8 +353,8 @@ export const Features: React.FC = () => {
   const [flippedCard, setFlippedCard] = useState<string | null>(null);
   const [revealedCard, setRevealedCard] = useState<string | null>(null);
   
-  // Debounce reveal state to prevent accidental triggers
-  const debouncedReveal = useDebounce(revealedCard, 300);
+  // Debounce reveal state to prevent accidental triggers (not currently used but kept for future implementations)
+  // const debouncedReveal = useDebounce(revealedCard, 300);
   
   // Track drag position for the cover reveal animation
   const dragEndHandler = (title: string, info: { velocity: { y: number } }) => {
@@ -450,7 +450,7 @@ export const Features: React.FC = () => {
                   drag="y"
                   dragConstraints={{ top: 0, bottom: 0 }}
                   dragElastic={0.6}
-                  onDragEnd={(e, info) => dragEndHandler(feature.title, info)}
+                  onDragEnd={(_, info) => dragEndHandler(feature.title, info)}
                   initial={{ y: 0 }}
                   exit={{ 
                     y: -400, 
@@ -579,6 +579,7 @@ export const Features: React.FC = () => {
   );
 
   // Fix SVG animations to be more performant - create optimized versions of the icons
+  /* Optimization function ready for use when animating SVG elements
   const optimizeAnimation = (element: JSX.Element): JSX.Element => {
     // This will clone element and modify any animation classes to use transform-based animations
     // that are more performant (CPU to GPU)
@@ -587,6 +588,7 @@ export const Features: React.FC = () => {
         .replace("animate-ping", "animate-pulse-gpu")
     });
   };
+  */
   
   // Create a noise texture effect for the card covers
   const [noiseTexture, setNoiseTexture] = useState<string | null>(null);
