@@ -16,10 +16,10 @@ export const ParticlesEffect: React.FC = () => {
 
   // Map our quality setting to WebGL powerPreference values
   const graphicsQuality = {
-    "max": "high-performance",
-    "mid": "default", 
-    "min": "low-power"
-  }[GRAPHICS_QUALITY] || "default";
+    "max": "high-performance" as const,
+    "mid": "default" as const, 
+    "min": "low-power" as const
+  }[GRAPHICS_QUALITY] || ("default" as const);
 
   // Create an epic scene
   React.useEffect(() => {
@@ -41,7 +41,11 @@ export const ParticlesEffect: React.FC = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(window.devicePixelRatio); // Sharper rendering
-    // We'll add this to the DOM later after storing references
+    // Create a container element to add the renderer to
+    const containerElement = document.getElementById('particles-container');
+    if (containerElement) {
+      containerElement.appendChild(renderer.domElement);
+    }
 
     // ==== PARTICLE SYSTEM CREATION ====
     // Create multiple particle systems for dynamic effect
@@ -926,14 +930,9 @@ export const ParticlesEffect: React.FC = () => {
 
     window.addEventListener("resize", handleResize);
 
-    // Store reference to container element for safer unmounting
-    const containerElement = document.getElementById("particles-container");
-    let rendererElement: HTMLCanvasElement | null = null;
-
-    if (containerElement) {
-      rendererElement = renderer.domElement;
-      containerElement.appendChild(rendererElement);
-    }
+    // Note: We've already added the renderer to the DOM earlier.
+    // This variable is just used for cleanup reference
+    let rendererElement: HTMLCanvasElement | null = renderer.domElement;
 
     // Cleanup function
     return () => {
