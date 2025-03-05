@@ -4,6 +4,8 @@
 
 The DegenDuel Background Scene System is a multi-layered, configurable animation system that renders dynamic visual effects behind the application's UI. The system supports multiple concurrent scenes with configurable properties, allowing for rich visual experiences without compromising performance.
 
+> **Latest Update**: All background scenes now use the ThreeManager singleton pattern for improved performance. The MarketVerse and TokenVerse components have been refactored to use this pattern, resulting in a single shared WebGL context across the entire application.
+
 ## Architecture
 
 ### Core Components
@@ -12,6 +14,8 @@ The DegenDuel Background Scene System is a multi-layered, configurable animation
    - Singleton class that manages the WebGL context
    - Provides a shared Three.js renderer to optimize performance
    - Handles resize events and animation loops
+   - Manages shared geometries, materials, and textures for memory efficiency
+   - Centralizes animation timing to improve consistency
 
 2. **BackgroundEffects** (`/src/components/animated-background/BackgroundEffects.tsx`)
    - React component that orchestrates multiple background scenes
@@ -19,10 +23,10 @@ The DegenDuel Background Scene System is a multi-layered, configurable animation
    - Manages the mounting and unmounting of scenes
 
 3. **Scene Implementations**
-   - `ParticlesEffect.tsx`: Particle-based animation with configurable parameters
    - `DodgeballScene.ts`: Efficient 3D particle system using instanced meshes
-   - `TokenVerse.tsx`: Token-themed visualization (legacy)
-   - `MarketVerse.tsx`: Market data visualization (legacy)
+   - `MarketVerseScene.ts`: Market data visualization
+   - `TokenVerseScene.ts`: Token network visualization
+   - `ParticlesEffect.tsx`: Particle-based animation with configurable parameters
 
 4. **Configuration** (`/src/config/config.ts`)
    - Defines which scenes are active
@@ -186,6 +190,61 @@ interface BackgroundScene {
   mount: (container: HTMLElement) => void;  // Setup and attach to DOM
   unmount: () => void;                      // Cleanup and detach
   update?: (time: number) => void;          // Animation frame update
+}
+```
+
+### Three.js Scene Classes
+
+Scene classes follow a common pattern:
+
+```typescript
+class ExampleScene {
+  // Component ID for ThreeManager
+  private readonly COMPONENT_ID = 'example-scene';
+  
+  // Three.js objects
+  private scene: THREE.Scene;
+  private camera: THREE.PerspectiveCamera;
+  
+  constructor(container: HTMLElement) {
+    // Get ThreeManager instance
+    const threeManager = ThreeManager.getInstance();
+    
+    // Create scene with camera
+    const { scene, camera } = threeManager.createScene(
+      this.COMPONENT_ID,
+      {
+        fov: 60,
+        near: 0.1,
+        far: 1000,
+        position: new THREE.Vector3(0, 0, 50),
+        lookAt: new THREE.Vector3(0, 0, 0)
+      }
+    );
+    
+    this.scene = scene;
+    this.camera = camera as THREE.PerspectiveCamera;
+    
+    // Setup scene contents
+    this.setupScene();
+    
+    // Register for animation updates
+    threeManager.registerScene(this.COMPONENT_ID, this.update.bind(this));
+    
+    // Attach to container DOM element
+    threeManager.attachToContainer(this.COMPONENT_ID, container);
+  }
+  
+  // Animation update callback
+  private update(deltaTime: number): void {
+    // Update scene animations
+  }
+  
+  // Clean up resources
+  public dispose(): void {
+    // Unregister from ThreeManager
+    ThreeManager.getInstance().removeScene(this.COMPONENT_ID);
+  }
 }
 ```
 
