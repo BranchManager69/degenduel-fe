@@ -1,6 +1,12 @@
 import { motion } from "framer-motion";
 import React from "react";
-import { FaBolt, FaNetworkWired, FaServer, FaToggleOn } from "react-icons/fa";
+import {
+  FaBolt,
+  FaBrain,
+  FaNetworkWired,
+  FaServer,
+  FaToggleOn,
+} from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 export const ControlPanelHub: React.FC = () => {
@@ -22,6 +28,15 @@ export const ControlPanelHub: React.FC = () => {
       color:
         "from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30",
       borderColor: "border-cyan-500/30",
+    },
+    {
+      title: "AI Testing Panel",
+      description: "Test and debug AI responses with different models",
+      icon: <FaBrain className="w-12 h-12" />,
+      to: "/superadmin/ai-testing",
+      color:
+        "from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30",
+      borderColor: "border-indigo-500/30",
     },
     {
       title: "Circuit Breaker Panel",

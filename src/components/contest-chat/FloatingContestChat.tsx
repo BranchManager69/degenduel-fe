@@ -38,6 +38,25 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
     }
   }, [isActive, isMinimized]);
 
+  // Listen for "mark all as read" event
+  useEffect(() => {
+    const handleMarkAllAsRead = () => {
+      setUnreadCount(0);
+    };
+
+    window.addEventListener(
+      "contest-chat-mark-all-read" as any,
+      handleMarkAllAsRead as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "contest-chat-mark-all-read" as any,
+        handleMarkAllAsRead as EventListener
+      );
+    };
+  }, []);
+
   const handleToggleMinimize = () => {
     if (isMinimized) {
       // When expanding, make this chat active
@@ -48,7 +67,7 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
 
   // Calculate position from right with increased spacing
   const rightPosition = `${position * 340 + 20}px`;
-  
+
   // Calculate vertical position - place higher on page
   const bottomPosition = "calc(33.33vh + 56px)";
 

@@ -122,6 +122,16 @@ export const SuperAdminDashboard: React.FC = () => {
       badge: "MASTER",
     },
     {
+      id: "ai-testing",
+      title: "AI Testing Panel",
+      icon: "🧠",
+      description:
+        "Test and debug AI responses with different prompts and models",
+      link: "/superadmin/ai-testing",
+      color: "indigo",
+      badge: "AI",
+    },
+    {
       id: "chat-dashboard",
       title: "Chat Dashboard",
       icon: "💬",
@@ -437,6 +447,27 @@ export const SuperAdminDashboard: React.FC = () => {
             <p className="text-xs text-purple-300/80 mt-1">
               Unified service management
             </p>
+          </Link>
+
+          <Link
+            to="/superadmin/ai-testing"
+            className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-indigo-500/30 hover:bg-dark-300/50 hover:border-indigo-500/50 transition-all duration-300 group relative overflow-hidden shadow-lg"
+          >
+            <div className="absolute -top-1 -right-1">
+              <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-500/30 text-indigo-200 font-mono">
+                AI
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-3xl">🧠</span>
+              <span className="text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                →
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-indigo-200 mt-2">
+              AI Testing Panel
+            </h3>
+            <p className="text-xs text-indigo-300/80 mt-1">Test AI responses</p>
           </Link>
 
           <Link

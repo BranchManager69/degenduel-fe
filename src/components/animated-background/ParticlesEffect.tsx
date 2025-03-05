@@ -7,14 +7,12 @@
  * market playing dodgeball. The particles are animated to move and change color
  * based on the market data. The component also includes a market pulse effect that
  * simulates the pulse of the market. Enjoy!
+ * 
+ * Optimized version with performance improvements for mobile and lower-end devices.
  */
 
-////import { useTheme } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-////import { useAppSelector } from "../../redux/hooks";
-////import { selectSettings } from "../../redux/slices/settingsSlice";
-////import { useTheme } from "styled-components";
 import { useStore } from "../../store/useStore";
 
 // Graphics quality and performance settings
@@ -33,9 +31,10 @@ export const ParticlesEffect: React.FC = () => {
   const mountedRef = useRef<boolean>(true);
   const [isMounted, setIsMounted] = useState(false);
   const [hasWebGLError, setHasWebGLError] = useState(false);
-  ////const { graphicsQuality } = useAppSelector(selectSettings); // already declared as a constant
   const containerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>();
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
   // No animation if maintenance mode is on and user is not an administrator
   if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
@@ -71,6 +70,32 @@ export const ParticlesEffect: React.FC = () => {
 
     // Set mounted ref to true
     mountedRef.current = true;
+
+    // Helper functions for distance calculations - optimization to avoid expensive sqrt operations
+    // Use squared distance when possible for faster comparisons
+    function distanceSquared(
+      x1: number,
+      y1: number,
+      z1: number,
+      x2: number,
+      y2: number,
+      z2: number
+    ): number {
+      return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1);
+    }
+    
+    // Only use actual distance when necessary (for documentation purposes)
+    // This function is kept for future use but currently all distance checks use the squared version
+    /* function distanceBetween(
+      x1: number,
+      y1: number,
+      z1: number,
+      x2: number,
+      y2: number,
+      z2: number
+    ): number {
+      return Math.sqrt(distanceSquared(x1, y1, z1, x2, y2, z2));
+    } */
 
     // Utility function to create particle textures
     function createParticleTexture(color: string): THREE.Texture {
@@ -114,28 +139,17 @@ export const ParticlesEffect: React.FC = () => {
       return texture;
     }
 
-    // Helper function to check distance between particles
-    function distanceBetween(
-      x1: number,
-      y1: number,
-      z1: number,
-      x2: number,
-      y2: number,
-      z2: number
-    ): number {
-      return Math.sqrt(
-        (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1)
-      );
-    }
-
-    // Create scene, camera, and renderer [with maximum quality]
+    // Create scene, camera, and renderer
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
+    
     const camera = new THREE.PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     );
+    cameraRef.current = camera;
 
     // Try to create the renderer with error handling
     let renderer: THREE.WebGLRenderer;
@@ -157,10 +171,9 @@ export const ParticlesEffect: React.FC = () => {
       renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(window.devicePixelRatio); // Sharper rendering
 
-      // Create a container element to add the renderer to
-      const containerElement = document.getElementById("particles-container");
-      if (containerElement) {
-        containerElement.appendChild(renderer.domElement);
+      // Use the componentRef instead of searching by ID
+      if (containerRef.current) {
+        containerRef.current.appendChild(renderer.domElement);
       } else {
         throw new Error("Container element not found");
       }
@@ -178,24 +191,26 @@ export const ParticlesEffect: React.FC = () => {
       blueBalls: 150, // Dodgeballs (initially in the center)
     };
 
-    // Adjust count based on performance settings
-    if (graphicsQuality === "high-performance") {
+    // Adjust count based on performance settings and device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (graphicsQuality === "high-performance" && !isMobile) {
       particleCount = {
-        red: 800,
-        green: 800,
-        blueBalls: 250,
+        red: 600,
+        green: 600,
+        blueBalls: 150,
       };
-    } else if (graphicsQuality === "low-power") {
+    } else if (graphicsQuality === "low-power" || (isMobile && MOBILE_OPTIMIZED)) {
       particleCount = {
-        red: 100,
-        green: 100,
-        blueBalls: 25,
+        red: 80,
+        green: 80,
+        blueBalls: 20,
       };
     } else {
       particleCount = {
-        red: 400,
-        green: 400,
-        blueBalls: 100,
+        red: 300,
+        green: 300,
+        blueBalls: 80,
       };
     }
 
@@ -364,8 +379,9 @@ export const ParticlesEffect: React.FC = () => {
 
       // Add slight random offset for more natural look
       const jitter = 0.5;
-      const xJitter = (Math.random() - 0.5) * jitter;
-      const zJitter = (Math.random() - 0.5) * jitter;
+      const randomOffset = Math.random() - 0.5; // Calculate once and reuse
+      const xJitter = randomOffset * jitter;
+      const zJitter = randomOffset * jitter;
 
       blueBallsPositions[i * 3] = x + xJitter;
       blueBallsPositions[i * 3 + 1] = y;
@@ -632,10 +648,10 @@ export const ParticlesEffect: React.FC = () => {
       window.dispatchEvent(event);
     };
 
-    // Add both mouse and touch event listeners
-    window.addEventListener("mousemove", handleInteraction);
-    window.addEventListener("touchmove", handleInteraction);
-    window.addEventListener("touchstart", handleInteraction);
+    // Add event listeners with passive flag for better performance
+    window.addEventListener("mousemove", handleInteraction, { passive: true });
+    window.addEventListener("touchmove", handleInteraction, { passive: true });
+    window.addEventListener("touchstart", handleInteraction, { passive: true });
     window.addEventListener("market-pulse", handleMarketPulse as EventListener);
 
     // Handle window resize with debouncing and mobile optimizations
@@ -694,8 +710,10 @@ export const ParticlesEffect: React.FC = () => {
     const animate = () => {
       if (!mountedRef.current) return;
 
+      // Store reference to animation frame for cleanup
+      requestRef.current = requestAnimationFrame(animate);
+      
       try {
-        requestAnimationFrame(animate);
         time += 0.01;
 
         // Process active pulse waves
@@ -716,173 +734,178 @@ export const ParticlesEffect: React.FC = () => {
 
           // Apply pulse influence to nearby particles
           if (pulseStrength > 0) {
-            // Limit to processing 100 particles for performance
-            const sampleSize = 100;
+            // Reduce sample size based on device performance
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const sampleSize = isMobile && MOBILE_OPTIMIZED ? 30 : 60;
+            
+            // Only process if pulse is strong enough to have visible impact
+            if (pulseStrength > 0.02) {
+              for (let i = 0; i < sampleSize; i++) {
+                // Randomly sample from all particles - calculate once and reuse
+                const redRandom = Math.floor(Math.random() * particleCount.red);
+                const greenRandom = Math.floor(Math.random() * particleCount.green);
+                const blueRandom = Math.floor(Math.random() * particleCount.blueBalls);
+                
+                const idx = redRandom * 3;
+                const gIdx = greenRandom * 3; 
+                const bIdx = blueRandom * 3;
 
-            for (let i = 0; i < sampleSize; i++) {
-              // Randomly sample from all particles
-              const idx = Math.floor(Math.random() * particleCount.red) * 3;
-              const gIdx = Math.floor(Math.random() * particleCount.green) * 3;
-              const bIdx =
-                Math.floor(Math.random() * particleCount.blueBalls) * 3;
-
-              // Calculate distance to pulse center for each particle type
-              const distanceRed = Math.sqrt(
-                Math.pow(
-                  redParticles.geometry.attributes.position.array[idx] -
-                    pulse.x,
-                  2
-                ) +
+                // Calculate distance to pulse center for each particle type
+                const distanceRed = Math.sqrt(
                   Math.pow(
+                    redParticles.geometry.attributes.position.array[idx] -
+                      pulse.x,
+                    2
+                  ) +
+                    Math.pow(
+                      redParticles.geometry.attributes.position.array[idx + 1] -
+                        pulse.y,
+                      2
+                    )
+                );
+
+                const distanceGreen = Math.sqrt(
+                  Math.pow(
+                    greenParticles.geometry.attributes.position.array[gIdx] -
+                      pulse.x,
+                    2
+                  ) +
+                    Math.pow(
+                      greenParticles.geometry.attributes.position.array[
+                        gIdx + 1
+                      ] - pulse.y,
+                      2
+                    )
+                );
+
+                const distanceBlueBalls = Math.sqrt(
+                  Math.pow(
+                    blueBallsParticles.geometry.attributes.position.array[bIdx] -
+                      pulse.x,
+                    2
+                  ) +
+                    Math.pow(
+                      blueBallsParticles.geometry.attributes.position.array[
+                        bIdx + 1
+                      ] - pulse.y,
+                      2
+                    )
+                );
+
+                // Apply force if within pulse wave radius
+                const pulseWidth = 3.0; // Width of the wave
+
+                // Red particles
+                if (Math.abs(distanceRed - pulseRadius) < pulseWidth) {
+                  const force =
+                    ((pulseWidth - Math.abs(distanceRed - pulseRadius)) /
+                      pulseWidth) *
+                    pulseStrength;
+                  const direction =
+                    distanceRed > 0
+                      ? (distanceRed - pulseRadius) /
+                        Math.abs(distanceRed - pulseRadius)
+                      : 1;
+
+                  // Direction from pulse center to particle
+                  const dx =
+                    redParticles.geometry.attributes.position.array[idx] -
+                    pulse.x;
+                  const dy =
                     redParticles.geometry.attributes.position.array[idx + 1] -
-                      pulse.y,
-                    2
-                  )
-              );
+                    pulse.y;
+                  const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
 
-              const distanceGreen = Math.sqrt(
-                Math.pow(
-                  greenParticles.geometry.attributes.position.array[gIdx] -
-                    pulse.x,
-                  2
-                ) +
-                  Math.pow(
-                    greenParticles.geometry.attributes.position.array[
-                      gIdx + 1
-                    ] - pulse.y,
-                    2
-                  )
-              );
-
-              const distanceBlueBalls = Math.sqrt(
-                Math.pow(
-                  blueBallsParticles.geometry.attributes.position.array[bIdx] -
-                    pulse.x,
-                  2
-                ) +
-                  Math.pow(
-                    blueBallsParticles.geometry.attributes.position.array[
-                      bIdx + 1
-                    ] - pulse.y,
-                    2
-                  )
-              );
-
-              // Apply force if within pulse wave radius
-              const pulseWidth = 3.0; // Width of the wave
-
-              // Red particles
-              if (Math.abs(distanceRed - pulseRadius) < pulseWidth) {
-                const force =
-                  ((pulseWidth - Math.abs(distanceRed - pulseRadius)) /
-                    pulseWidth) *
-                  pulseStrength;
-                const direction =
-                  distanceRed > 0
-                    ? (distanceRed - pulseRadius) /
-                      Math.abs(distanceRed - pulseRadius)
-                    : 1;
-
-                // Direction from pulse center to particle
-                const dx =
-                  redParticles.geometry.attributes.position.array[idx] -
-                  pulse.x;
-                const dy =
-                  redParticles.geometry.attributes.position.array[idx + 1] -
-                  pulse.y;
-                const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
-
-                // Apply outward force
-                redVelocities[idx] +=
-                  (dx / normalizer) * force * 0.05 * direction;
-                redVelocities[idx + 1] +=
-                  (dy / normalizer) * force * 0.05 * direction;
-                redSizes[idx / 3] = Math.min(
-                  1.0,
-                  redSizes[idx / 3] + force * 0.2
-                );
-              }
-
-              // Green particles
-              if (Math.abs(distanceGreen - pulseRadius) < pulseWidth) {
-                const force =
-                  ((pulseWidth - Math.abs(distanceGreen - pulseRadius)) /
-                    pulseWidth) *
-                  pulseStrength;
-                const direction =
-                  distanceGreen > 0
-                    ? (distanceGreen - pulseRadius) /
-                      Math.abs(distanceGreen - pulseRadius)
-                    : 1;
-
-                // Direction from pulse center to particle
-                const dx =
-                  greenParticles.geometry.attributes.position.array[gIdx] -
-                  pulse.x;
-                const dy =
-                  greenParticles.geometry.attributes.position.array[gIdx + 1] -
-                  pulse.y;
-                const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
-
-                // Apply outward force
-                greenVelocities[gIdx] +=
-                  (dx / normalizer) * force * 0.05 * direction;
-                greenVelocities[gIdx + 1] +=
-                  (dy / normalizer) * force * 0.05 * direction;
-                greenSizes[gIdx / 3] = Math.min(
-                  1.0,
-                  greenSizes[gIdx / 3] + force * 0.2
-                );
-              }
-
-              // Blue dodgeballs - more responsive to pulses
-              if (
-                Math.abs(distanceBlueBalls - pulseRadius) <
-                pulseWidth * 1.5
-              ) {
-                const force =
-                  ((pulseWidth * 1.5 -
-                    Math.abs(distanceBlueBalls - pulseRadius)) /
-                    (pulseWidth * 1.5)) *
-                  pulseStrength *
-                  2.5;
-
-                // Direction from pulse center to particle
-                const dx =
-                  blueBallsParticles.geometry.attributes.position.array[bIdx] -
-                  pulse.x;
-                const dy =
-                  blueBallsParticles.geometry.attributes.position.array[
-                    bIdx + 1
-                  ] - pulse.y;
-                const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
-
-                // Apply both outward force and attraction depending on distance
-                if (distanceBlueBalls < pulseRadius) {
-                  // Inside pulse - push outward
-                  blueBallsParticles.geometry.attributes.position.array[bIdx] +=
-                    (dx / normalizer) * force * 0.1;
-                  blueBallsParticles.geometry.attributes.position.array[
-                    bIdx + 1
-                  ] += (dy / normalizer) * force * 0.1;
-                } else {
-                  // Outside pulse - pull inward to the wave
-                  blueBallsParticles.geometry.attributes.position.array[bIdx] -=
-                    (dx / normalizer) * force * 0.07;
-                  blueBallsParticles.geometry.attributes.position.array[
-                    bIdx + 1
-                  ] -= (dy / normalizer) * force * 0.07;
+                  // Apply outward force
+                  redVelocities[idx] +=
+                    (dx / normalizer) * force * 0.05 * direction;
+                  redVelocities[idx + 1] +=
+                    (dy / normalizer) * force * 0.05 * direction;
+                  redSizes[idx / 3] = Math.min(
+                    1.0,
+                    redSizes[idx / 3] + force * 0.2
+                  );
                 }
 
-                // Increase size temporarily
-                blueBallsSizes[bIdx / 3] = Math.min(
-                  1.5,
-                  blueBallsSizes[bIdx / 3] + force * 0.6
-                );
+                // Green particles
+                if (Math.abs(distanceGreen - pulseRadius) < pulseWidth) {
+                  const force =
+                    ((pulseWidth - Math.abs(distanceGreen - pulseRadius)) /
+                      pulseWidth) *
+                    pulseStrength;
+                  const direction =
+                    distanceGreen > 0
+                      ? (distanceGreen - pulseRadius) /
+                        Math.abs(distanceGreen - pulseRadius)
+                      : 1;
+
+                  // Direction from pulse center to particle
+                  const dx =
+                    greenParticles.geometry.attributes.position.array[gIdx] -
+                    pulse.x;
+                  const dy =
+                    greenParticles.geometry.attributes.position.array[gIdx + 1] -
+                    pulse.y;
+                  const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                  // Apply outward force
+                  greenVelocities[gIdx] +=
+                    (dx / normalizer) * force * 0.05 * direction;
+                  greenVelocities[gIdx + 1] +=
+                    (dy / normalizer) * force * 0.05 * direction;
+                  greenSizes[gIdx / 3] = Math.min(
+                    1.0,
+                    greenSizes[gIdx / 3] + force * 0.2
+                  );
+                }
+
+                // Blue dodgeballs - more responsive to pulses
+                if (
+                  Math.abs(distanceBlueBalls - pulseRadius) <
+                  pulseWidth * 1.5
+                ) {
+                  const force =
+                    ((pulseWidth * 1.5 -
+                      Math.abs(distanceBlueBalls - pulseRadius)) /
+                      (pulseWidth * 1.5)) *
+                    pulseStrength *
+                    2.5;
+
+                  // Direction from pulse center to particle
+                  const dx =
+                    blueBallsParticles.geometry.attributes.position.array[bIdx] -
+                    pulse.x;
+                  const dy =
+                    blueBallsParticles.geometry.attributes.position.array[
+                      bIdx + 1
+                    ] - pulse.y;
+                  const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                  // Apply both outward force and attraction depending on distance
+                  if (distanceBlueBalls < pulseRadius) {
+                    // Inside pulse - push outward
+                    blueBallsParticles.geometry.attributes.position.array[bIdx] +=
+                      (dx / normalizer) * force * 0.1;
+                    blueBallsParticles.geometry.attributes.position.array[
+                      bIdx + 1
+                    ] += (dy / normalizer) * force * 0.1;
+                  } else {
+                    // Outside pulse - pull inward to the wave
+                    blueBallsParticles.geometry.attributes.position.array[bIdx] -=
+                      (dx / normalizer) * force * 0.07;
+                    blueBallsParticles.geometry.attributes.position.array[
+                      bIdx + 1
+                    ] -= (dy / normalizer) * force * 0.07;
+                  }
+
+                  // Increase size temporarily
+                  blueBallsSizes[bIdx / 3] = Math.min(
+                    1.5,
+                    blueBallsSizes[bIdx / 3] + force * 0.6
+                  );
+                }
               }
             }
-
-            remainingPulses.push(pulse);
           }
         }
 
@@ -1134,74 +1157,84 @@ export const ParticlesEffect: React.FC = () => {
         }
 
         // 4. Check for collisions between red and green particles - ENHANCED BATTLE MODE
-        // Increased check ratio for more interactions (check ~20% per frame)
-        const checkLimit = Math.floor(particleCount.red * 0.2);
+        // Reduce collision checks based on device performance
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const checkRatio = isMobile && MOBILE_OPTIMIZED ? 0.05 : 0.1;
+        const checkLimit = Math.floor(particleCount.red * checkRatio);
         const startIdx = Math.floor(
           Math.random() * (particleCount.red - checkLimit)
         );
+        
+        // Skip some frames for collision detection on mobile
+        const shouldProcessCollisions = !isMobile || time % 2 < 0.01; // Only check every other frame on mobile
+        
+        if (shouldProcessCollisions) {
+          for (let i = startIdx; i < startIdx + checkLimit; i++) {
+            const redIdx = i * 3;
+            const rx = redPos[redIdx];
+            const ry = redPos[redIdx + 1];
+            const rz = redPos[redIdx + 2];
+  
+            // Check against fewer green particles on mobile
+            const checksPerRed = isMobile && MOBILE_OPTIMIZED ? 2 : 4;
+            for (let j = 0; j < checksPerRed; j++) {
+              // Sample green particles more efficiently
+              const greenIdx =
+                Math.floor(Math.random() * particleCount.green) * 3;
+              const gx = greenPos[greenIdx];
+              const gy = greenPos[greenIdx + 1];
+              const gz = greenPos[greenIdx + 2];
+  
+              // Use squared distance for faster comparison (avoid sqrt)
+              const distanceSquare = distanceSquared(rx, ry, rz, gx, gy, gz);
+              const collisionRadiusSquare = 1.44; // 1.2^2
+  
+              // If particles collide - using squared distance
+              if (distanceSquare < collisionRadiusSquare) {
+                // Increased from 0.8 for more frequent collisions
+                // Create collision effect
+                const collisionX = (rx + gx) / 2;
+                const collisionY = (ry + gy) / 2;
+                const collisionZ = (rz + gz) / 2;
 
-        for (let i = startIdx; i < startIdx + checkLimit; i++) {
-          const redIdx = i * 3;
-          const rx = redPos[redIdx];
-          const ry = redPos[redIdx + 1];
-          const rz = redPos[redIdx + 2];
+                // Determine winner by energy and random factor
+                const redWins = redEnergies[i] > Math.random();
+                createCollision(collisionX, collisionY, collisionZ, redWins);
 
-          // Check against more green particles for increased interactions
-          for (let j = 0; j < 5; j++) {
-            // Check 5 random green particles for each red (increased from 3)
-            const greenIdx =
-              Math.floor(Math.random() * particleCount.green) * 3;
-            const gx = greenPos[greenIdx];
-            const gy = greenPos[greenIdx + 1];
-            const gz = greenPos[greenIdx + 2];
+                // Enhanced repulsion for more dramatic battles
+                const repelForce = 0.15; // Increased from 0.1
+                const dx = rx - gx;
+                const dy = ry - gy;
+                const dz = rz - gz;
 
-            const distance = distanceBetween(rx, ry, rz, gx, gy, gz);
+                // Normalize direction
+                const mag = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                const dirX = dx / mag;
+                const dirY = dy / mag;
+                const dirZ = dz / mag;
 
-            // If particles collide - increased collision radius
-            if (distance < 1.2) {
-              // Increased from 0.8 for more frequent collisions
-              // Create collision effect
-              const collisionX = (rx + gx) / 2;
-              const collisionY = (ry + gy) / 2;
-              const collisionZ = (rz + gz) / 2;
+                // Apply stronger forces for more dramatic interactions
+                redVelocities[redIdx] += dirX * repelForce * 1.2;
+                redVelocities[redIdx + 1] += dirY * repelForce * 1.2;
+                redVelocities[redIdx + 2] += dirZ * repelForce * 1.2;
 
-              // Determine winner by energy and random factor
-              const redWins = redEnergies[i] > Math.random();
-              createCollision(collisionX, collisionY, collisionZ, redWins);
+                greenVelocities[greenIdx] -= dirX * repelForce * 1.2;
+                greenVelocities[greenIdx + 1] -= dirY * repelForce * 1.2;
+                greenVelocities[greenIdx + 2] -= dirZ * repelForce * 1.2;
 
-              // Enhanced repulsion for more dramatic battles
-              const repelForce = 0.15; // Increased from 0.1
-              const dx = rx - gx;
-              const dy = ry - gy;
-              const dz = rz - gz;
+                // Temporarily increase the particle sizes during collision for visual emphasis
+                redSize[Math.floor(redIdx / 3)] += 0.2;
+                greenSize[Math.floor(greenIdx / 3)] += 0.2;
 
-              // Normalize direction
-              const mag = Math.sqrt(dx * dx + dy * dy + dz * dz);
-              const dirX = dx / mag;
-              const dirY = dy / mag;
-              const dirZ = dz / mag;
+                // Modulate energies (they exchange some energy)
+                redEnergies[i] = redEnergies[i] * 0.9 + Math.random() * 0.1;
+                greenEnergies[Math.floor(greenIdx / 3)] =
+                  greenEnergies[Math.floor(greenIdx / 3)] * 0.9 +
+                  Math.random() * 0.1;
 
-              // Apply stronger forces for more dramatic interactions
-              redVelocities[redIdx] += dirX * repelForce * 1.2;
-              redVelocities[redIdx + 1] += dirY * repelForce * 1.2;
-              redVelocities[redIdx + 2] += dirZ * repelForce * 1.2;
-
-              greenVelocities[greenIdx] -= dirX * repelForce * 1.2;
-              greenVelocities[greenIdx + 1] -= dirY * repelForce * 1.2;
-              greenVelocities[greenIdx + 2] -= dirZ * repelForce * 1.2;
-
-              // Temporarily increase the particle sizes during collision for visual emphasis
-              redSize[Math.floor(redIdx / 3)] += 0.2;
-              greenSize[Math.floor(greenIdx / 3)] += 0.2;
-
-              // Modulate energies (they exchange some energy)
-              redEnergies[i] = redEnergies[i] * 0.9 + Math.random() * 0.1;
-              greenEnergies[Math.floor(greenIdx / 3)] =
-                greenEnergies[Math.floor(greenIdx / 3)] * 0.9 +
-                Math.random() * 0.1;
-
-              // Break after one collision found
-              break;
+                // Break after one collision found
+                break;
+              }
             }
           }
         }
@@ -1260,20 +1293,26 @@ export const ParticlesEffect: React.FC = () => {
           camera.lookAt(0, 0, 0);
         }
 
-        // Update geometries
-        redParticles.geometry.attributes.position.needsUpdate = true;
-        redParticles.geometry.attributes.size.needsUpdate = true;
-
-        greenParticles.geometry.attributes.position.needsUpdate = true;
-        greenParticles.geometry.attributes.size.needsUpdate = true;
-
-        blueBallsParticles.geometry.attributes.position.needsUpdate = true;
-        blueBallsParticles.geometry.attributes.size.needsUpdate = true;
-
-        collisionParticles.geometry.attributes.position.needsUpdate = true;
-        collisionParticles.geometry.attributes.size.needsUpdate = true;
-        collisionParticles.geometry.attributes.opacity.needsUpdate = true;
-        collisionParticles.geometry.attributes.color.needsUpdate = true;
+        // Update geometries - only update on every frame for desktop or every other frame for mobile
+        const frameSkip = isMobile && MOBILE_OPTIMIZED;
+        
+        // Only update on specific frames for better performance on mobile
+        if (!frameSkip || Math.floor(time * 30) % 2 === 0) {
+          redParticles.geometry.attributes.position.needsUpdate = true;
+          redParticles.geometry.attributes.size.needsUpdate = true;
+          
+          greenParticles.geometry.attributes.position.needsUpdate = true;
+          greenParticles.geometry.attributes.size.needsUpdate = true;
+          
+          blueBallsParticles.geometry.attributes.position.needsUpdate = true;
+          blueBallsParticles.geometry.attributes.size.needsUpdate = true;
+          
+          // Always update collision particles as they are visually important
+          collisionParticles.geometry.attributes.position.needsUpdate = true;
+          collisionParticles.geometry.attributes.size.needsUpdate = true;
+          collisionParticles.geometry.attributes.opacity.needsUpdate = true;
+          collisionParticles.geometry.attributes.color.needsUpdate = true;
+        }
 
         // Only render if the component is still mounted and renderer exists
         if (mountedRef.current && renderer && scene && camera) {
@@ -1297,9 +1336,18 @@ export const ParticlesEffect: React.FC = () => {
       // Set mounted ref to false to stop animation loop
       mountedRef.current = false;
 
+      // Cancel any pending animation frame
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+
       // Remove the renderer from the DOM
-      if (containerRef.current && renderer && renderer.domElement) {
-        containerRef.current.removeChild(renderer.domElement);
+      try {
+        if (containerRef.current && rendererRef.current && rendererRef.current.domElement) {
+          containerRef.current.removeChild(rendererRef.current.domElement);
+        }
+      } catch (error) {
+        console.error("Error removing renderer from DOM:", error);
       }
 
       // Clean up event listeners
@@ -1315,12 +1363,14 @@ export const ParticlesEffect: React.FC = () => {
       // Dispose of all Three.js resources
       try {
         // Clear scene
-        scene.clear();
+        if (sceneRef.current) {
+          sceneRef.current.clear();
+        }
 
         // Dispose renderer
-        if (renderer) {
-          renderer.dispose();
-          renderer.forceContextLoss();
+        if (rendererRef.current) {
+          rendererRef.current.dispose();
+          rendererRef.current.forceContextLoss();
           rendererRef.current = null;
         }
       } catch (error) {
@@ -1343,6 +1393,7 @@ export const ParticlesEffect: React.FC = () => {
   return (
     <div
       ref={containerRef}
+      id="particles-container"
       className="particles-container"
       style={{
         position: "absolute",

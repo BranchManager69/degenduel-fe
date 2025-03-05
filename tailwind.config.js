@@ -384,7 +384,7 @@ export default {
         "energy-burst": "energyBurst 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "energy-merge": "energyMerge 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "spin-slow": "spin 8s linear infinite",
-        "pulse-slow": "pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "scan-fast": "scan-fast 3s linear infinite",
         "spin-occasional": "spinOccasional 8s ease-in-out infinite",
         "random-slide": "randomSlide 10s linear infinite",
@@ -394,7 +394,12 @@ export default {
           "contestCardEntrance 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards",
         "parallax-slow": "parallax 20s ease-in-out infinite",
         "scroll-slow": "scroll 20s linear infinite",
-        "scan": "scan-line 8s linear infinite",
+        scan: "scan-line 8s linear infinite",
+        "fade-in": "fadeIn 0.3s ease-in-out",
+        "slide-in-right": "slideInRight 0.3s ease-in-out",
+        "slide-in-bottom": "slideInBottom 0.3s ease-in-out",
+        "slide-out-bottom": "slideOutBottom 0.3s ease-in-out",
+        "bounce-in": "bounceIn 0.5s ease-in-out",
       },
       keyframes: {
         shine: {
@@ -592,6 +597,27 @@ export default {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-100%)" },
         },
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        slideInRight: {
+          "0%": { transform: "translateX(100%)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        slideInBottom: {
+          "0%": { transform: "translateY(100%)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        slideOutBottom: {
+          "0%": { transform: "translateY(0)", opacity: "1" },
+          "100%": { transform: "translateY(100%)", opacity: "0" },
+        },
+        bounceIn: {
+          "0%": { transform: "scale(0.8)", opacity: "0" },
+          "70%": { transform: "scale(1.05)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
       animationDelay: {
         100: "100ms",
@@ -616,13 +642,23 @@ export default {
   },
   plugins: [
     // require("tailwind-scrollbar")({ nocompatible: true }),
-    function({ addUtilities, theme, addComponents }) {
+    function ({ addUtilities, theme, addComponents }) {
       // Add custom animations that are more GPU-friendly
       addUtilities({
-        '.animate-pulse-gpu': {
-          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          transform: 'translateZ(0)', // Force GPU acceleration
-          willChange: 'opacity',
+        ".animate-pulse-gpu": {
+          animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+          transform: "translateZ(0)", // Force GPU acceleration
+          willChange: "opacity",
+        },
+        ".candles-gpu": {
+          transform: "translateZ(0)", // Force GPU acceleration
+          willChange: "transform, opacity",
+        },
+        ".optimized-animation": {
+          backfaceVisibility: "hidden",
+          perspective: 1000,
+          transform: "translateZ(0)",
+          willChange: "transform, opacity",
         },
       });
     },

@@ -220,11 +220,19 @@ export const AdminDashboard: React.FC = () => {
       color: "purple",
     },
     {
+      id: "websocket-hub",
+      title: "WebSocket Hub",
+      icon: "🌐",
+      description: "Central access point for all WebSocket tools",
+      link: "/websocket-hub",
+      color: "blue",
+    },
+    {
       id: "websocket",
       title: "WebSocket Testing",
       icon: "🔌",
       description: "Monitor and test WebSocket connections",
-      link: "/websocket-test",
+      link: "/connection-debugger",
       color: "cyber",
     },
     {
@@ -318,6 +326,34 @@ export const AdminDashboard: React.FC = () => {
                 Chat Dashboard
               </span>
               <div className="ml-2 text-red-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
+            <Link
+              to="/websocket-hub"
+              className="flex items-center gap-2 bg-blue-500/30 px-4 py-2.5 rounded-xl hover:bg-blue-500/40 transition-all border-2 border-blue-500/40 shadow-lg hover:shadow-blue-500/20 group relative"
+            >
+              <div className="text-blue-300 text-xl group-hover:scale-110 transition-transform">
+                🔌
+              </div>
+              <span className="text-blue-100 font-semibold group-hover:text-white transition-colors">
+                WebSocket Hub
+              </span>
+              <div className="ml-2 text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
+            <Link
+              to="/connection-debugger"
+              className="flex items-center gap-2 bg-cyber-500/30 px-4 py-2.5 rounded-xl hover:bg-cyber-500/40 transition-all border-2 border-cyber-500/40 shadow-lg hover:shadow-cyber-500/20 group relative"
+            >
+              <div className="text-cyber-300 text-xl group-hover:scale-110 transition-transform">
+                🔌
+              </div>
+              <span className="text-cyber-100 font-semibold group-hover:text-white transition-colors">
+                Connection Debugger
+              </span>
+              <div className="ml-2 text-cyber-300 opacity-0 group-hover:opacity-100 transition-opacity">
                 →
               </div>
             </Link>

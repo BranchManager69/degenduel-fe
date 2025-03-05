@@ -20,7 +20,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   const seed = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Draw candlestick chart
+  // Draw candlestick chart with animated scrolling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -31,30 +31,33 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Chart config
-    const chartHeight = canvas.height - 4; // Leave small margins
-    const candleWidth = 3;
-    const padding = 2;
+    // Chart config - increased size for prominence
+    const chartHeight = canvas.height - 2; // Larger chart area
+    const candleWidth = 6; // Even wider candles
+    const padding = 2; // Spacing between candles
     
     // Generate candlestick data
     const generatePattern = () => {
+      // Optimized random function
       const random = (min: number, max: number, index: number) => {
         // Deterministic random based on seed and index
         const x = Math.sin(seed + index) * 10000;
         return ((x - Math.floor(x)) * (max - min)) + min;
       };
       
-      const points: number[] = [];
+      // Generate more candles to allow for animation
+      const points: number[] = new Array(36); // More points for scrolling animation
       let price = 100 + random(-20, 20, 0);
       
-      for (let i = 0; i < 30; i++) {
-        const volatility = title.includes('Real-Time') ? 8 : 
-                          title.includes('Prize') ? 5 : 4;
+      for (let i = 0; i < 36; i++) {
+        // Higher volatility for more dramatic visuals
+        const volatility = title.includes('Real-Time') ? 15 : 
+                           title.includes('Prize') ? 12 : 10;
         
         const change = random(-volatility, volatility, i + 1);
         price += change;
         if (price < 50) price = 50; // Prevent negative prices
-        points.push(price);
+        points[i] = price;
       }
       
       return points;
@@ -71,54 +74,85 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     // Function to scale a price to canvas height
     const scaleY = (price: number) => chartHeight - ((price - min) / range) * chartHeight + 2;
     
-    // Draw the candlesticks
-    let prevPrice = patterns[0];
-    let x = 0;
+    // Animation variables
+    let offset = 0;
+    let animationFrameId: number;
+    const candleCount = Math.floor(canvas.width / (candleWidth + padding)); // Visible candles
     
-    patterns.forEach((price, i) => {
-      if (i === 0) return;
+    // Animation function
+    const animate = () => {
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Determine if candle is up or down
-      const isUp = price >= prevPrice;
+      // Calculate starting index based on offset
+      const startIdx = Math.floor(offset) % (patterns.length - candleCount);
       
-      // Set color based on direction
-      const upColor = isUpcoming ? 'rgba(59, 130, 246, 0.5)' : 'rgba(34, 197, 94, 0.5)';
-      const downColor = isUpcoming ? 'rgba(99, 102, 241, 0.5)' : 'rgba(220, 38, 38, 0.5)';
-      
-      ctx.fillStyle = isUp ? upColor : downColor;
-      
-      // Draw rectangle from previous price to current price
-      const y1 = scaleY(prevPrice);
-      const y2 = scaleY(price);
-      const height = Math.abs(y2 - y1);
-      
-      ctx.fillRect(x, Math.min(y1, y2), candleWidth, height);
-      
-      // Add wicks to some candles
-      if (i % 3 === 0) {
-        const wickTop = Math.min(y1, y2) - 2;
-        const wickBottom = Math.max(y1, y2) + 2;
+      // Draw the candlesticks
+      for (let i = 0; i < candleCount; i++) {
+        const patternIdx = (startIdx + i) % patterns.length;
+        const nextIdx = (patternIdx + 1) % patterns.length;
+        
+        const prevPrice = patterns[patternIdx];
+        const price = patterns[nextIdx];
+        
+        // X position for this candle
+        const x = i * (candleWidth + padding);
+        
+        // Determine if candle is up or down
+        const isUp = price >= prevPrice;
+        
+        // Set color based on direction - fully opaque vibrant colors
+        const upColor = isUpcoming ? 'rgba(59, 130, 246, 1)' : 'rgba(34, 197, 94, 1)';
+        const downColor = isUpcoming ? 'rgba(99, 102, 241, 1)' : 'rgba(220, 38, 38, 1)';
+        
+        ctx.fillStyle = isUp ? upColor : downColor;
+        
+        // Draw rectangle from previous price to current price
+        const y1 = scaleY(prevPrice);
+        const y2 = scaleY(price);
+        const height = Math.max(Math.abs(y2 - y1), 2); // Ensure minimum height for visibility
+        
+        // Draw candle body with rounded corners for a modern look
+        const radius = candleWidth / 3; // More rounded corners
+        const y = Math.min(y1, y2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + candleWidth - radius, y);
+        ctx.arcTo(x + candleWidth, y, x + candleWidth, y + radius, radius);
+        ctx.lineTo(x + candleWidth, y + height - radius);
+        ctx.arcTo(x + candleWidth, y + height, x + candleWidth - radius, y + height, radius);
+        ctx.lineTo(x + radius, y + height);
+        ctx.arcTo(x, y + height, x, y + height - radius, radius);
+        ctx.lineTo(x, y + radius);
+        ctx.arcTo(x, y, x + radius, y, radius);
+        ctx.fill();
+        
+        // Add prominent wicks to all candles
+        const wickTop = Math.min(y1, y2) - 5; // Longer wicks
+        const wickBottom = Math.max(y1, y2) + 5;
         
         ctx.beginPath();
         ctx.moveTo(x + candleWidth/2, wickTop);
         ctx.lineTo(x + candleWidth/2, wickBottom);
+        ctx.lineWidth = 2; // Thicker wicks
         ctx.strokeStyle = isUp ? upColor : downColor;
         ctx.stroke();
       }
       
-      // Move to next candle position
-      x += candleWidth + padding;
-      prevPrice = price;
-    });
+      // Update offset for animation
+      offset += 0.05; // Slow scrolling speed
+      
+      // Continue animation
+      animationFrameId = requestAnimationFrame(animate);
+    };
     
-    // Add a subtle gradient overlay
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    gradient.addColorStop(0, 'rgba(0,0,0,0.2)');
-    gradient.addColorStop(0.4, 'rgba(0,0,0,0)');
-    gradient.addColorStop(0.6, 'rgba(0,0,0,0)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.2)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Start animation
+    animate();
+    
+    // Clean up animation on unmount
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [title, seed, isUpcoming]);
   
   return (
@@ -165,14 +199,14 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           </div>
         </div>
         
-        {/* Candlestick chart at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-8 overflow-hidden opacity-60">
-          <div className="animate-scroll-slow w-[800px]">
+        {/* Candlestick chart as a more prominent feature - GPU optimized and enlarged */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 overflow-hidden candles-gpu">
+          <div className="w-full optimized-animation">
             <canvas 
               ref={canvasRef} 
-              width={400} 
-              height={20} 
-              className="transform translate-y-2"
+              width={480} 
+              height={60} 
+              className="transform translate-y-1 opacity-100"
             />
           </div>
         </div>

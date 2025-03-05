@@ -36,6 +36,7 @@ import { TokenDataProvider } from "./contexts/TokenDataContext";
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { ContestChatManager } from "./components/contest-chat/ContestChatManager";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AiTesting } from "./pages/admin/AiTesting";
 import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import { SystemReports } from "./pages/admin/SystemReports";
@@ -76,11 +77,6 @@ import "./styles/color-schemes.css";
 
 // Test HMR
 //console.log("[Debug] Testing HMR - " + new Date().toISOString());
-
-// Lazy-loaded components
-const SuperAdminChatExample = lazy(
-  () => import("./pages/examples/SuperAdminChatExample")
-);
 const AdminChatDashboard = lazy(
   () => import("./pages/admin/AdminChatDashboard")
 );
@@ -493,6 +489,18 @@ export const App: React.FC = () => {
                         <WebSocketHub />
                       </React.Suspense>
                     </AdminRoute>
+                  }
+                />
+
+                {/* AI Testing Panel */}
+                <Route
+                  path="/superadmin/ai-testing"
+                  element={
+                    <SuperAdminRoute>
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <AiTesting />
+                      </React.Suspense>
+                    </SuperAdminRoute>
                   }
                 />
 
