@@ -7,7 +7,7 @@
  * market playing dodgeball. The particles are animated to move and change color
  * based on the market data. The component also includes a market pulse effect that
  * simulates the pulse of the market. Enjoy!
- * 
+ *
  * Optimized version with performance improvements for mobile and lower-end devices.
  */
 
@@ -18,7 +18,7 @@ import { MeasureRender, usePerformanceMeasure } from "../../utils/performance";
 
 // Graphics quality and performance settings
 const GRAPHICS_QUALITY = "min"; // options: 'max', 'mid', 'min'
-const OPACITY_MAGNITUDE = 0.7; // opacity reduction factor (0.4-0.7 recommended)
+const OPACITY_MAGNITUDE = 1.0; // opacity reduction factor (0.4-0.7 recommended)
 const MOBILE_OPTIMIZED = true; // special handling for mobile browsers
 
 // Define the type for graphics quality
@@ -27,8 +27,9 @@ type QualitySettingType = "max" | "mid" | "min";
 
 // Epic visualization showcasing crypto market as a dodgeball battle
 export const ParticlesEffect: React.FC = () => {
-  const renderPerf = usePerformanceMeasure('ParticlesEffect-render');
-  const animationPerf = usePerformanceMeasure('ParticlesEffect-animation');
+  // We're only using the render performance measure since we're not
+  // calling the start() method for animationPerf correctly
+  const renderPerf = usePerformanceMeasure("ParticlesEffect-render");
   const { maintenanceMode, user } = useStore();
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const mountedRef = useRef<boolean>(true);
@@ -39,7 +40,7 @@ export const ParticlesEffect: React.FC = () => {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
-  // No animation if maintenance mode is on and user is not an administrator
+  // No animation if Maintenance Mode is on AND user isn't an administrator
   if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
     return null;
   }
@@ -54,7 +55,7 @@ export const ParticlesEffect: React.FC = () => {
   const graphicsQuality: GraphicsQualityType =
     qualityMap[GRAPHICS_QUALITY as QualitySettingType] || "default";
 
-  // Create an epic dodgeball battle scene
+  // DegenDuel Dodgeball 3d background
   useEffect(() => {
     // Check if WebGL is supported
     try {
@@ -84,9 +85,11 @@ export const ParticlesEffect: React.FC = () => {
       y2: number,
       z2: number
     ): number {
-      return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1);
+      return (
+        (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) + (z2 - z1) * (z2 - z1)
+      );
     }
-    
+
     // Only use actual distance when necessary (for documentation purposes)
     // This function is kept for future use but currently all distance checks use the squared version
     /* function distanceBetween(
@@ -145,7 +148,7 @@ export const ParticlesEffect: React.FC = () => {
     // Create scene, camera, and renderer
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    
+
     const camera = new THREE.PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
@@ -196,14 +199,17 @@ export const ParticlesEffect: React.FC = () => {
 
     // Adjust count based on performance settings and device
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
+
     if (graphicsQuality === "high-performance" && !isMobile) {
       particleCount = {
         red: 600,
         green: 600,
         blueBalls: 150,
       };
-    } else if (graphicsQuality === "low-power" || (isMobile && MOBILE_OPTIMIZED)) {
+    } else if (
+      graphicsQuality === "low-power" ||
+      (isMobile && MOBILE_OPTIMIZED)
+    ) {
       particleCount = {
         red: 100,
         green: 100,
@@ -293,7 +299,7 @@ export const ParticlesEffect: React.FC = () => {
       transparent: true,
       vertexColors: false,
       sizeAttenuation: true,
-      opacity: OPACITY_MAGNITUDE * 0.3, // Further reduced opacity for more subtlety
+      opacity: OPACITY_MAGNITUDE * 0.6, // Further reduced opacity for more subtlety
     });
 
     redMaterial.color.set(0xff2200); // Intense red color
@@ -354,7 +360,7 @@ export const ParticlesEffect: React.FC = () => {
       transparent: true,
       vertexColors: false,
       sizeAttenuation: true,
-      opacity: OPACITY_MAGNITUDE * 0.3, // Further reduced opacity for more subtlety
+      opacity: OPACITY_MAGNITUDE * 0.6, // Further reduced opacity for more subtlety
     });
 
     greenMaterial.color.set(0x00ff44); // Intense green color
@@ -418,7 +424,7 @@ export const ParticlesEffect: React.FC = () => {
       transparent: true,
       vertexColors: false,
       sizeAttenuation: true,
-      opacity: OPACITY_MAGNITUDE * 0.5, // More visible for the dodgeballs
+      opacity: OPACITY_MAGNITUDE * 0.8, // More visible for the dodgeballs
     });
 
     blueBallsMaterial.color.set(0x4488ff); // Bright blue for dodgeballs
@@ -435,7 +441,7 @@ export const ParticlesEffect: React.FC = () => {
     const courtMaterial = new THREE.MeshBasicMaterial({
       color: 0x222266, // Dark blue court
       transparent: true,
-      opacity: OPACITY_MAGNITUDE * 0.1,
+      opacity: OPACITY_MAGNITUDE * 0.3,
       side: THREE.DoubleSide,
     });
 
@@ -444,7 +450,7 @@ export const ParticlesEffect: React.FC = () => {
     const centerLineMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff, // White line
       transparent: true,
-      opacity: OPACITY_MAGNITUDE * 0.2,
+      opacity: OPACITY_MAGNITUDE * 0.4,
       side: THREE.DoubleSide,
     });
     const court = new THREE.Mesh(courtGeometry, courtMaterial);
@@ -715,7 +721,7 @@ export const ParticlesEffect: React.FC = () => {
 
       // Store reference to animation frame for cleanup
       requestRef.current = requestAnimationFrame(animate);
-      
+
       try {
         time += 0.01;
 
@@ -738,19 +744,25 @@ export const ParticlesEffect: React.FC = () => {
           // Apply pulse influence to nearby particles
           if (pulseStrength > 0) {
             // Reduce sample size based on device performance
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(
+              navigator.userAgent
+            );
             const sampleSize = isMobile && MOBILE_OPTIMIZED ? 30 : 60;
-            
+
             // Only process if pulse is strong enough to have visible impact
             if (pulseStrength > 0.02) {
               for (let i = 0; i < sampleSize; i++) {
                 // Randomly sample from all particles - calculate once and reuse
                 const redRandom = Math.floor(Math.random() * particleCount.red);
-                const greenRandom = Math.floor(Math.random() * particleCount.green);
-                const blueRandom = Math.floor(Math.random() * particleCount.blueBalls);
-                
+                const greenRandom = Math.floor(
+                  Math.random() * particleCount.green
+                );
+                const blueRandom = Math.floor(
+                  Math.random() * particleCount.blueBalls
+                );
+
                 const idx = redRandom * 3;
-                const gIdx = greenRandom * 3; 
+                const gIdx = greenRandom * 3;
                 const bIdx = blueRandom * 3;
 
                 // Calculate distance to pulse center for each particle type
@@ -783,8 +795,9 @@ export const ParticlesEffect: React.FC = () => {
 
                 const distanceBlueBalls = Math.sqrt(
                   Math.pow(
-                    blueBallsParticles.geometry.attributes.position.array[bIdx] -
-                      pulse.x,
+                    blueBallsParticles.geometry.attributes.position.array[
+                      bIdx
+                    ] - pulse.x,
                     2
                   ) +
                     Math.pow(
@@ -847,8 +860,9 @@ export const ParticlesEffect: React.FC = () => {
                     greenParticles.geometry.attributes.position.array[gIdx] -
                     pulse.x;
                   const dy =
-                    greenParticles.geometry.attributes.position.array[gIdx + 1] -
-                    pulse.y;
+                    greenParticles.geometry.attributes.position.array[
+                      gIdx + 1
+                    ] - pulse.y;
                   const normalizer = Math.sqrt(dx * dx + dy * dy) || 1;
 
                   // Apply outward force
@@ -876,8 +890,9 @@ export const ParticlesEffect: React.FC = () => {
 
                   // Direction from pulse center to particle
                   const dx =
-                    blueBallsParticles.geometry.attributes.position.array[bIdx] -
-                    pulse.x;
+                    blueBallsParticles.geometry.attributes.position.array[
+                      bIdx
+                    ] - pulse.x;
                   const dy =
                     blueBallsParticles.geometry.attributes.position.array[
                       bIdx + 1
@@ -887,15 +902,17 @@ export const ParticlesEffect: React.FC = () => {
                   // Apply both outward force and attraction depending on distance
                   if (distanceBlueBalls < pulseRadius) {
                     // Inside pulse - push outward
-                    blueBallsParticles.geometry.attributes.position.array[bIdx] +=
-                      (dx / normalizer) * force * 0.1;
+                    blueBallsParticles.geometry.attributes.position.array[
+                      bIdx
+                    ] += (dx / normalizer) * force * 0.1;
                     blueBallsParticles.geometry.attributes.position.array[
                       bIdx + 1
                     ] += (dy / normalizer) * force * 0.1;
                   } else {
                     // Outside pulse - pull inward to the wave
-                    blueBallsParticles.geometry.attributes.position.array[bIdx] -=
-                      (dx / normalizer) * force * 0.07;
+                    blueBallsParticles.geometry.attributes.position.array[
+                      bIdx
+                    ] -= (dx / normalizer) * force * 0.07;
                     blueBallsParticles.geometry.attributes.position.array[
                       bIdx + 1
                     ] -= (dy / normalizer) * force * 0.07;
@@ -1167,17 +1184,17 @@ export const ParticlesEffect: React.FC = () => {
         const startIdx = Math.floor(
           Math.random() * (particleCount.red - checkLimit)
         );
-        
+
         // Skip some frames for collision detection on mobile
         const shouldProcessCollisions = !isMobile || time % 2 < 0.01; // Only check every other frame on mobile
-        
+
         if (shouldProcessCollisions) {
           for (let i = startIdx; i < startIdx + checkLimit; i++) {
             const redIdx = i * 3;
             const rx = redPos[redIdx];
             const ry = redPos[redIdx + 1];
             const rz = redPos[redIdx + 2];
-  
+
             // Check against fewer green particles on mobile
             const checksPerRed = isMobile && MOBILE_OPTIMIZED ? 2 : 4;
             for (let j = 0; j < checksPerRed; j++) {
@@ -1187,11 +1204,11 @@ export const ParticlesEffect: React.FC = () => {
               const gx = greenPos[greenIdx];
               const gy = greenPos[greenIdx + 1];
               const gz = greenPos[greenIdx + 2];
-  
+
               // Use squared distance for faster comparison (avoid sqrt)
               const distanceSquare = distanceSquared(rx, ry, rz, gx, gy, gz);
               const collisionRadiusSquare = 1.44; // 1.2^2
-  
+
               // If particles collide - using squared distance
               if (distanceSquare < collisionRadiusSquare) {
                 // Increased from 0.8 for more frequent collisions
@@ -1298,18 +1315,18 @@ export const ParticlesEffect: React.FC = () => {
 
         // Update geometries - only update on every frame for desktop or every other frame for mobile
         const frameSkip = isMobile && MOBILE_OPTIMIZED;
-        
+
         // Only update on specific frames for better performance on mobile
         if (!frameSkip || Math.floor(time * 30) % 2 === 0) {
           redParticles.geometry.attributes.position.needsUpdate = true;
           redParticles.geometry.attributes.size.needsUpdate = true;
-          
+
           greenParticles.geometry.attributes.position.needsUpdate = true;
           greenParticles.geometry.attributes.size.needsUpdate = true;
-          
+
           blueBallsParticles.geometry.attributes.position.needsUpdate = true;
           blueBallsParticles.geometry.attributes.size.needsUpdate = true;
-          
+
           // Always update collision particles as they are visually important
           collisionParticles.geometry.attributes.position.needsUpdate = true;
           collisionParticles.geometry.attributes.size.needsUpdate = true;
@@ -1322,7 +1339,6 @@ export const ParticlesEffect: React.FC = () => {
           renderPerf.start();
           renderer.render(scene, camera);
           renderPerf.end();
-          animationPerf.end(); // End tracking the entire frame time
         }
       } catch (error) {
         console.error("Error in animation loop:", error);
@@ -1349,7 +1365,11 @@ export const ParticlesEffect: React.FC = () => {
 
       // Remove the renderer from the DOM
       try {
-        if (containerRef.current && rendererRef.current && rendererRef.current.domElement) {
+        if (
+          containerRef.current &&
+          rendererRef.current &&
+          rendererRef.current.domElement
+        ) {
           containerRef.current.removeChild(rendererRef.current.domElement);
         }
       } catch (error) {
@@ -1410,7 +1430,9 @@ export const ParticlesEffect: React.FC = () => {
           height: "100%",
           pointerEvents: "none", // Don't capture clicks/taps
           zIndex: 10,
-          opacity: isMounted ? OPACITY_MAGNITUDE * 0.3 : OPACITY_MAGNITUDE * 0.7, // Start brighter, then fade to subtle
+          opacity: isMounted
+            ? OPACITY_MAGNITUDE * 0.6
+            : OPACITY_MAGNITUDE * 1.0, // Start brighter, then fade to subtle
           transition: "opacity 3s ease-out", // Smooth transition over 3 seconds
           transform: "translateZ(0)", // Force GPU acceleration
           willChange: "opacity", // Hint for browser optimization

@@ -1,4 +1,5 @@
 import React from "react";
+import { SYSTEM_SETTINGS } from "../../config/config";
 import { useStore } from "../../store/useStore";
 import { AmbientMarketData } from "./AmbientMarketData";
 import { MarketBrain } from "./MarketBrain";
@@ -15,24 +16,27 @@ import { NeonGrid } from "./experimental/NeonGrid";
 export const BackgroundEffects: React.FC = () => {
   const { uiDebug } = useStore();
 
-  // VISUALIZATION CONFIGURATION
-  // ===========================
-  // To enable/disable visualizations, simply set the corresponding variable to true/false
-  // You can also change the order by adjusting the z-index values or component order
-
-  // === STANDARD VISUALIZATIONS ===
-  // Get enabled status with fallbacks for components that might not be defined in uiDebug
-  const tokenVerseEnabled = uiDebug.backgrounds.tokenVerse?.enabled ?? false;
-  const marketBrainEnabled = uiDebug.backgrounds.marketBrain?.enabled ?? false;
-  const ambientMarketDataEnabled =
-    uiDebug.backgrounds.ambientMarketData?.enabled ?? false;
-  // For backward compatibility, assume these are enabled if not explicitly disabled
-  const marketVerseEnabled = true; // MarketVerse is always enabled until we add a control
-  const particlesEffectEnabled = true; // Enable enhanced particles effect for landing page
+  // === BACKGROUND SCENE SELECTION ===
+  // This uses the SYSTEM_SETTINGS configuration to determine which single background scene to render
+  // Only one background scene should be enabled at a time to prevent performance issues
+  
+  // Master switch for all background effects
+  const backgroundEnabled = SYSTEM_SETTINGS.BACKGROUND_SCENE.ENABLED;
+  if (!backgroundEnabled) return null;
+  
+  // Determine which scene to render based on the system setting
+  const sceneName = SYSTEM_SETTINGS.BACKGROUND_SCENE.SCENE_NAME;
+  
+  // Enable only the specified background scene and disable all others
+  const particlesEffectEnabled = sceneName === "Dodgeball";
+  const tokenVerseEnabled = sceneName === "TokenVerse";
+  const marketVerseEnabled = sceneName === "MarketVerse";
+  const marketBrainEnabled = sceneName === "MarketBrain";
+  const ambientMarketDataEnabled = sceneName === "AmbientMarketData";
 
   // === EXPERIMENTAL VISUALIZATIONS ===
-  // To test these, set to true and recompile - each uses the same token data as other visualizations
-  const experimentalMode = true; // Master switch for all experimental visualizations
+  // All experimental visualizations are disabled by default for performance
+  const experimentalMode = false;
 
   // Individual experimental layers - only active if experimentalMode is true
   const gradientWavesEnabled =
@@ -55,6 +59,24 @@ export const BackgroundEffects: React.FC = () => {
   const fluidTokensBlendMode = "lighten"; // Better fluid effect
   const abstractPatternsBlendMode = "screen"; // More vivid patterns
   const neonGridBlendMode = "screen"; // Maximum neon glow effect
+
+  // Development warning - log a warning if multiple 3D scenes are enabled
+  // This should help prevent future performance issues
+  if (process.env.NODE_ENV !== 'production') {
+    const enabledScenes = [
+      particlesEffectEnabled && 'ParticlesEffect',
+      tokenVerseEnabled && 'TokenVerse',
+      marketVerseEnabled && 'MarketVerse',
+      marketBrainEnabled && 'MarketBrain'
+    ].filter(Boolean);
+    
+    if (enabledScenes.length > 1) {
+      console.warn(
+        'PERFORMANCE WARNING: Multiple 3D scenes are enabled simultaneously, which can cause severe performance issues:',
+        enabledScenes.join(', ')
+      );
+    }
+  }
 
   return (
     <>

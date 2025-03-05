@@ -145,7 +145,7 @@ export const App: React.FC = () => {
             {user?.is_superadmin && <ServiceDebugPanel />}
             {user?.is_superadmin && <GameDebugPanel />}
 
-            {/* Animated Background */}
+            {/* CSS-based animated background - lightweight so we can keep this enabled */}
             <MovingBackground />
 
             {/* Server Down Banner */}

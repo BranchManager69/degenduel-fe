@@ -282,7 +282,7 @@ const upcomingFeatures: Feature[] = [
   },
 ] as const;
 
-export const Features: React.FC = () => {
+const Features: React.FC = () => {
   // Memoize the cosmic effects container
   const CosmicEffects = useMemo(
     () => (
@@ -470,3 +470,6 @@ export const Features: React.FC = () => {
     </MeasureRender>
   );
 };
+
+// Export default for dynamic import
+export default Features;

@@ -74,6 +74,19 @@ export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 /* OpenRouter API Key */
 //export const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
+/* Feature Flags */
+export const FEATURE_FLAGS = {
+  SHOW_FEATURES_SECTION: false, // Set to false to disable the Features section on landing page
+};
+
+/* System Settings */
+export const SYSTEM_SETTINGS = {
+  BACKGROUND_SCENE: {
+    ENABLED: true,
+    SCENE_NAME: "Dodgeball", // Options: "Dodgeball", "TokenVerse", "MarketVerse", etc.
+  }
+};
+
 /* Done */
 if (NODE_ENV === "development") {
   console.log("API_URL configuration in use:", {
@@ -82,6 +95,7 @@ if (NODE_ENV === "development") {
     wsUrl: WS_URL,
     port: PORT_CONFIG,
     hostname: window.location.hostname,
+    featureFlags: FEATURE_FLAGS,
   });
 } else {
   console.log("API_URL configuration in use:", {

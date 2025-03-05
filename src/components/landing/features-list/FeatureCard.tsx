@@ -51,7 +51,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   const CANDLE_COUNT = 5; // Very few candles for maximum performance
   const candleData = calculateCandleData(seed, CANDLE_COUNT);
   
-  // Draw minimal, efficient red/green candles pattern
+  // Draw minimal, efficient red/green candles pattern with subtle animation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -59,53 +59,87 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     const ctx = canvas.getContext('2d', { alpha: false }); // Disable alpha for performance
     if (!ctx) return;
     
-    canvasPerf.start();
+    let animationId: number | NodeJS.Timeout;
+    let startTime = performance.now();
     
-    // Constants for better performance
-    const WIDTH = canvas.width;
-    const HEIGHT = canvas.height;
-    const CANDLE_WIDTH = WIDTH / (CANDLE_COUNT * 2);
-    const CANDLE_SPACING = CANDLE_WIDTH;
-    
-    // Pre-compute colors for better performance
-    const GREEN = isUpcoming ? '#3b82f6' : '#22c55e';
-    const RED = isUpcoming ? '#6366f1' : '#dc2626';
-    const BG_COLOR = isUpcoming ? '#1e1a42' : '#1a1333';
-    
-    // Clear canvas with background color (faster than clearRect + fillRect)
-    ctx.fillStyle = BG_COLOR;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    
-    // Draw abstract candle representation
-    for (let i = 0; i < CANDLE_COUNT; i++) {
-      const { isUp, height } = candleData[i];
+    // Animation function
+    const animate = () => {
+      canvasPerf.start();
       
-      // Determine candle position
-      const x = i * (CANDLE_WIDTH + CANDLE_SPACING) + CANDLE_SPACING/2;
+      // Constants for better performance
+      const WIDTH = canvas.width;
+      const HEIGHT = canvas.height;
+      const CANDLE_WIDTH = WIDTH / (CANDLE_COUNT * 2);
+      const CANDLE_SPACING = CANDLE_WIDTH;
       
-      // Candle positioning - stagger for visual interest
-      const yBottom = HEIGHT;
-      const yTop = yBottom - height * HEIGHT;
+      // Pre-compute colors for better performance
+      const GREEN = isUpcoming ? '#3b82f6' : '#22c55e';
+      const RED = isUpcoming ? '#6366f1' : '#dc2626';
+      const BG_COLOR = isUpcoming ? '#1e1a42' : '#1a1333';
       
-      // Select color based on direction
-      ctx.fillStyle = isUp ? GREEN : RED;
+      // Get current time for animation
+      const now = performance.now();
+      const elapsed = now - startTime;
       
-      // Draw simplified candle without rounded corners
-      ctx.fillRect(x, yTop, CANDLE_WIDTH, height * HEIGHT);
-    }
+      // Clear canvas with background color (faster than clearRect + fillRect)
+      ctx.fillStyle = BG_COLOR;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      
+      // Draw abstract candle representation
+      for (let i = 0; i < CANDLE_COUNT; i++) {
+        const { isUp, height } = candleData[i];
+        
+        // Determine candle position
+        const x = i * (CANDLE_WIDTH + CANDLE_SPACING) + CANDLE_SPACING/2;
+        
+        // Simple vertical oscillation based on time - unique for each candle
+        // Small amplitude (2px) and different frequency per candle for visual interest
+        const offsetY = Math.sin((elapsed / 1000) + i * 1.5) * 2;
+        
+        // Candle positioning - stagger for visual interest, with animation offset
+        const yBottom = HEIGHT;
+        const yTop = yBottom - height * HEIGHT + offsetY;
+        
+        // Select color based on direction
+        ctx.fillStyle = isUp ? GREEN : RED;
+        
+        // Draw simplified candle without rounded corners
+        ctx.fillRect(x, yTop, CANDLE_WIDTH, height * HEIGHT);
+      }
+      
+      // Horizontal line with subtle wave
+      ctx.strokeStyle = isUpcoming ? '#3b82f6' : '#22c55e';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      
+      // Wavy line with minimal calculation
+      const lineY = HEIGHT * 0.4;
+      ctx.moveTo(0, lineY + Math.sin(elapsed/1000) * 1);
+      
+      // Just one control point in the middle for minimal processing
+      const midX = WIDTH / 2;
+      const midY = lineY + Math.sin((elapsed/800) + 2) * 1.5;
+      
+      ctx.lineTo(midX, midY);
+      ctx.lineTo(WIDTH, lineY + Math.sin((elapsed/1000) + 4) * 1);
+      ctx.stroke();
+      
+      canvasPerf.end();
+      
+      // Request next frame at a reduced rate (every 100ms) for better performance
+      animationId = setTimeout(() => {
+        requestAnimationFrame(animate);
+      }, 100); // 10fps instead of 60fps
+    };
     
-    // Replace complex line connecting points with a simple horizontal line
-    // This is much faster than calculating and drawing curves
-    ctx.strokeStyle = isUpcoming ? '#3b82f6' : '#22c55e';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(0, HEIGHT * 0.4);
-    ctx.lineTo(WIDTH, HEIGHT * 0.4);
-    ctx.stroke();
+    // Start animation
+    animate();
     
-    canvasPerf.end();
-    
-  }, [candleData, isUpcoming, canvasPerf]); // Note: using pre-calculated candleData instead of seed
+    // Clean up
+    return () => {
+      if (animationId) clearTimeout(animationId);
+    };
+  }, [candleData, isUpcoming, canvasPerf]);
   
   return (
     <MeasureRender id="FeatureCard" logThreshold={5}>

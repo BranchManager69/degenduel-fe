@@ -10,7 +10,8 @@ import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { Link, Link as RouterLink } from "react-router-dom";
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
-import { Features } from "../../../components/landing/features-list/Features";
+// Features import removed and controlled by feature flag
+import { FEATURE_FLAGS } from "../../../config/config";
 import { formatCurrency, isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
@@ -298,22 +299,37 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Enhanced Features section */}
-        <motion.div
-          className="relative"
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: animationPhase > 0 ? 1 : 0,
-            transition: {
-              delay: 0.9,
-              duration: 1.2,
-            },
-          }}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Features />
-          </div>
-        </motion.div>
+        {/* Enhanced Features section - conditionally rendered based on feature flag */}
+        {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: animationPhase > 0 ? 1 : 0,
+              transition: {
+                delay: 0.9,
+                duration: 1.2,
+              },
+            }}
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Features component is only imported and rendered when the flag is enabled */}
+              {/* This prevents the component from being bundled and loaded when disabled */}
+              {(() => {
+                if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
+                  // Dynamic import only when needed
+                  const Features = React.lazy(() => import('../../../components/landing/features-list/Features'));
+                  return (
+                    <React.Suspense fallback={<div>Loading features...</div>}>
+                      <Features />
+                    </React.Suspense>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          </motion.div>
+        )}
 
         {/* Contest sections */}
         <motion.div
