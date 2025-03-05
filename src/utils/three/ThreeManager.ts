@@ -127,30 +127,71 @@ class ThreeManager {
   }
   
   /**
-   * Register a component scene - each visual component gets its own scene
+   * Add the renderer to a DOM element for a specific component (alias for attachRenderer)
    */
-  public registerScene(
-    componentId: string, 
-    camera?: THREE.Camera, 
-    scene?: THREE.Scene,
+  public attachToContainer(componentId: string, domElement: HTMLElement): void {
+    this.attachRenderer(componentId, domElement);
+  }
+  
+  /**
+   * Create a new scene with camera
+   */
+  public createScene(
+    componentId: string,
+    cameraOptions?: {
+      fov?: number;
+      near?: number;
+      far?: number;
+      position?: THREE.Vector3;
+      lookAt?: THREE.Vector3;
+    },
     renderOrder: number = 0
   ): { scene: THREE.Scene, camera: THREE.Camera } {
-    const newScene = scene || new THREE.Scene();
-    const newCamera = camera || new THREE.PerspectiveCamera(
-      70, 
-      window.innerWidth / window.innerHeight, 
-      0.1, 
-      1000
+    const scene = new THREE.Scene();
+    
+    // Create camera with options or defaults
+    const fov = cameraOptions?.fov ?? 70;
+    const near = cameraOptions?.near ?? 0.1;
+    const far = cameraOptions?.far ?? 1000;
+    const camera = new THREE.PerspectiveCamera(
+      fov,
+      window.innerWidth / window.innerHeight,
+      near,
+      far
     );
     
-    this.scenes.set(componentId, newScene);
-    this.cameras.set(componentId, newCamera);
+    // Position camera if specified
+    if (cameraOptions?.position) {
+      camera.position.copy(cameraOptions.position);
+    }
+    
+    // Set camera lookAt if specified
+    if (cameraOptions?.lookAt) {
+      camera.lookAt(cameraOptions.lookAt);
+    }
+    
+    // Store in maps
+    this.scenes.set(componentId, scene);
+    this.cameras.set(componentId, camera);
     
     // Store in render order
     this.insertInRenderOrder(componentId, renderOrder);
     
-    console.log(`[ThreeManager] Registered scene: ${componentId}`);
-    return { scene: newScene, camera: newCamera };
+    console.log(`[ThreeManager] Created scene: ${componentId}`);
+    return { scene, camera };
+  }
+
+  /**
+   * Register a component scene - each visual component gets its own scene
+   */
+  public registerScene(
+    componentId: string, 
+    animationCallback: (deltaTime: number) => void
+  ): void {
+    // Register the animation callback
+    this.registerAnimation(componentId, animationCallback);
+    
+    console.log(`[ThreeManager] Registered animation for scene: ${componentId}`);
   }
   
   /**
@@ -188,6 +229,13 @@ class ThreeManager {
     // If no more scenes, we could detach the renderer, but keeping it
     // prevents re-creation costs when new scenes register
     console.log(`[ThreeManager] Unregistered scene: ${componentId}`);
+  }
+  
+  /**
+   * Remove a scene (alias for unregisterScene)
+   */
+  public removeScene(componentId: string): void {
+    this.unregisterScene(componentId);
   }
   
   /**

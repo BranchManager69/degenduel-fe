@@ -1,18 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 
 /**
  * Wrapper component to measure render performance
- * 
+ *
  * Logs the rendering time and count for the wrapped component to help
  * identify performance bottlenecks
  */
-export const MeasureRender = ({ 
-  id, 
-  children, 
+export const MeasureRender = ({
+  id,
+  children,
   logToConsole = true,
-  logThreshold = 0 // Only log renders that take longer than this threshold (in ms)
-}: { 
-  id: string; 
+  logThreshold = 0, // Only log renders that take longer than this threshold (in ms)
+}: {
+  id: string;
   children: React.ReactNode;
   logToConsole?: boolean;
   logThreshold?: number;
@@ -26,22 +26,30 @@ export const MeasureRender = ({
     const timeSinceLastRender = now - lastRender.current;
     renderCount.current += 1;
     renderTimes.current.push(timeSinceLastRender);
-    
+
     // Only log if the render time exceeds the threshold
     if (logToConsole && timeSinceLastRender > logThreshold) {
       console.log(
-        `%c[${id}] Render #${renderCount.current}: ${timeSinceLastRender.toFixed(2)}ms`,
-        timeSinceLastRender > 16.67 ? 'color:red;font-weight:bold' : 'color:green'
+        `%c[${id}] Render #${
+          renderCount.current
+        }: ${timeSinceLastRender.toFixed(2)}ms`,
+        timeSinceLastRender > 16.67
+          ? "color:red;font-weight:bold"
+          : "color:green"
       );
     }
-    
+
     // Add performance mark and measure for DevTools analysis
     performance.mark(`${id}-render-start`);
     performance.mark(`${id}-render-end`);
-    performance.measure(`${id}-render-time`, `${id}-render-start`, `${id}-render-end`);
-    
+    performance.measure(
+      `${id}-render-time`,
+      `${id}-render-start`,
+      `${id}-render-end`
+    );
+
     lastRender.current = now;
-    
+
     // Log statistics every 10 renders
     if (renderCount.current % 10 === 0 && logToConsole) {
       const times = renderTimes.current;
@@ -50,11 +58,13 @@ export const MeasureRender = ({
       const min = Math.min(...times);
       console.log(
         `%c[${id}] Stats after ${renderCount.current} renders: 
-        Avg: ${avg.toFixed(2)}ms, Min: ${min.toFixed(2)}ms, Max: ${max.toFixed(2)}ms`,
-        'color:blue;font-weight:bold'
+        Avg: ${avg.toFixed(2)}ms, Min: ${min.toFixed(2)}ms, Max: ${max.toFixed(
+          2
+        )}ms`,
+        "color:blue;font-weight:bold"
       );
     }
-    
+
     return () => {
       // Clean up performance measures to avoid memory leaks
       performance.clearMarks(`${id}-render-start`);
@@ -68,13 +78,13 @@ export const MeasureRender = ({
 
 /**
  * Hook to measure the performance of specific operations
- * 
+ *
  * @returns An object with start and end functions to measure performance
  */
 export const usePerformanceMeasure = (id: string) => {
   const startMark = `${id}-start`;
   const endMark = `${id}-end`;
-  
+
   return {
     start: () => performance.mark(startMark),
     end: () => {
@@ -82,16 +92,18 @@ export const usePerformanceMeasure = (id: string) => {
       performance.measure(id, startMark, endMark);
       const entries = performance.getEntriesByName(id);
       const latestEntry = entries[entries.length - 1];
-      
+
       console.log(
         `%c[${id}] Operation took: ${latestEntry.duration.toFixed(2)}ms`,
-        latestEntry.duration > 16.67 ? 'color:red;font-weight:bold' : 'color:green'
+        latestEntry.duration > 16.67
+          ? "color:red;font-weight:bold"
+          : "color:green"
       );
-      
+
       // Clean up
       performance.clearMarks(startMark);
       performance.clearMarks(endMark);
       performance.clearMeasures(id);
-    }
+    },
   };
 };

@@ -114,10 +114,15 @@ export class DodgeballScene {
     this.initializeArrays();
     
     // Register scene with ThreeManager
-    const { scene, camera } = threeManager.registerScene(
+    const { scene, camera } = threeManager.createScene(
       this.COMPONENT_ID,
-      undefined,
-      undefined,
+      {
+        fov: 75,
+        near: 0.1,
+        far: 1000,
+        position: new THREE.Vector3(0, 15, 25),
+        lookAt: new THREE.Vector3(0, 0, 0)
+      },
       10 // Render order - higher numbers render on top
     );
     
@@ -133,8 +138,8 @@ export class DodgeballScene {
     // Setup scene
     this.setupScene();
     
-    // Register animation callback
-    threeManager.registerAnimation(this.COMPONENT_ID, this.animate.bind(this));
+    // Register scene for animation updates
+    threeManager.registerScene(this.COMPONENT_ID, this.animate.bind(this));
     
     // Attach renderer to container
     threeManager.attachRenderer(this.COMPONENT_ID, container);
