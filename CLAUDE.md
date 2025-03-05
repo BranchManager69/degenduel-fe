@@ -2,15 +2,29 @@
 
 ## Build & Test Commands
 
-- `npm run build:prod` - Build for production
-- `npm run build:dev` - Build for development (unminified)
-- `npm run build:local` - Build unminified development version and serve on port 3010
+- `npm run build:prod &` - Build for production (ALWAYS RUN IN BACKGROUND)
+- `npm run build:dev &` - Build for development (unminified) (ALWAYS RUN IN BACKGROUND)
+- `npm run build:local &` - Build unminified development version and serve on port 3010 (ALWAYS RUN IN BACKGROUND)
 - `npm run dev` - Start development server
 - `npm run dev:local` - Start development server in local mode (connects to dev.degenduel.me API)
 - `npm run type-check` - Run TypeScript checks
 - `npm run test` - Run all tests
 - `npm test -- -t "test name"` - Run specific test
 - `npm test -- src/path/to/file.test.tsx` - Run tests in specific file
+
+## Server Operations
+
+### Background Processes
+- ALWAYS run build commands and pm2 operations in the background by appending `&` to the command
+- Example: `npm run build:prod &`
+- Example: `pm2 start app.js &`
+
+### Process Management
+- `pm2 start <app> &` - Start process in background
+- `pm2 list` - List all running processes
+- `pm2 stop <id|name>` - Stop a process
+- `pm2 restart <id|name>` - Restart a process
+- `pm2 delete <id|name>` - Delete a process
 
 ## Code Style Guidelines
 

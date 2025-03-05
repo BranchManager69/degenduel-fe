@@ -393,11 +393,17 @@ export default {
         "contest-card-entrance":
           "contestCardEntrance 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards",
         "parallax-slow": "parallax 20s ease-in-out infinite",
+        "scroll-slow": "scroll 20s linear infinite",
+        "scan": "scan-line 8s linear infinite",
       },
       keyframes: {
         shine: {
           "0%": { "background-position": "300% center" },
           "100%": { "background-position": "0% center" },
+        },
+        scroll: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-100%)" },
         },
         "fade-in": {
           "0%": { opacity: "0", transform: "translateY(10px)" },
@@ -581,6 +587,10 @@ export default {
           "0%": { transform: "translateX(0) scale(1.25)" },
           "50%": { transform: "translateX(-10%) scale(1.25)" },
           "100%": { transform: "translateX(0) scale(1.25)" },
+        },
+        scroll: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-100%)" },
         },
       },
       animationDelay: {

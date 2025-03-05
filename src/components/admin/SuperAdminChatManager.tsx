@@ -1,6 +1,13 @@
+// src/components/admin/SuperAdminChatManager.tsx
+
+/**
+ * This component is used to manage the chat windows for the superadmin.
+ * It allows the superadmin to monitor and send messages to all contests.
+ */
+
 import React, { useState } from "react";
 import { useUserContests } from "../../hooks/useUserContests";
-import { FloatingContestChat } from "../contest/FloatingContestChat";
+import { FloatingContestChat } from "../contest-chat/FloatingContestChat";
 
 // Define ContestStatus type based on UserContest
 type ContestStatus = "upcoming" | "active" | "completed";
@@ -9,6 +16,7 @@ interface SuperAdminChatManagerProps {
   userId?: string; // Make userId optional since useUserContests doesn't take parameters
 }
 
+// Superadmin Chat Manager
 export const SuperAdminChatManager: React.FC<
   SuperAdminChatManagerProps
 > = () => {

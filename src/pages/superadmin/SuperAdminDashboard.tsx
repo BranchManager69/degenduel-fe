@@ -8,8 +8,8 @@ import { FaucetManager } from "../../components/admin/FaucetManager";
 import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap";
 import { LogViewer } from "../../components/admin/LogViewer";
 import { SpyPanel } from "../../components/admin/SpyPanel";
-import { VanityPool } from "../../components/admin/VanityPool";
 import { SuperAdminWalletManagement } from "../../components/admin/SuperAdminWalletManagement";
+import { VanityPool } from "../../components/admin/VanityPool";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
@@ -122,6 +122,16 @@ export const SuperAdminDashboard: React.FC = () => {
       badge: "MASTER",
     },
     {
+      id: "chat-dashboard",
+      title: "Chat Dashboard",
+      icon: "💬",
+      description:
+        "Monitor and manage all contest chats from a single interface",
+      link: "/admin/chat-dashboard",
+      color: "cyan",
+      badge: "NEW",
+    },
+    {
       id: "websocket",
       title: "WebSocket Monitor",
       icon: "🔌",
@@ -134,11 +144,13 @@ export const SuperAdminDashboard: React.FC = () => {
       id: "circuit-breaker",
       title: "Circuit Monitor (Deprecated)",
       icon: "⚡",
-      description: "Monitor and manage system circuit breakers - Use SkyDuel instead",
+      description:
+        "Monitor and manage system circuit breakers - Use SkyDuel instead",
       component: (
         <div>
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4 text-red-400">
-            This component is deprecated. Please use the SkyDuel Console with Circuit View instead.
+            This component is deprecated. Please use the SkyDuel Console with
+            Circuit View instead.
           </div>
           <CircuitBreakerPanel />
         </div>
@@ -227,7 +239,7 @@ export const SuperAdminDashboard: React.FC = () => {
     <ContestProvider>
       {/* Add BackgroundEffects for visual consistency with other pages */}
       <BackgroundEffects />
-      
+
       <div className="container mx-auto p-6 space-y-8 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -332,38 +344,58 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000" />
           </button>
         </div>
-        
+
         {/* System Reports Button */}
-        <Link to="/admin/system-reports"
-              className="block bg-dark-200/70 backdrop-blur-lg p-6 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1">
+        <Link
+          to="/admin/system-reports"
+          className="block bg-dark-200/70 backdrop-blur-lg p-6 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15)_0%,transparent_60%)]" />
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="text-4xl text-purple-400 group-hover:scale-110 transition-transform duration-300">📊</div>
+              <div className="text-4xl text-purple-400 group-hover:scale-110 transition-transform duration-300">
+                📊
+              </div>
               <div>
-                <h3 className="text-xl font-bold text-purple-200 mb-1 font-heading">System Reports</h3>
-                <p className="text-purple-300/80">View service health and database metrics</p>
+                <h3 className="text-xl font-bold text-purple-200 mb-1 font-heading">
+                  System Reports
+                </h3>
+                <p className="text-purple-300/80">
+                  View service health and database metrics
+                </p>
               </div>
             </div>
-            
+
             <div className="bg-purple-500/20 p-3 rounded-full group-hover:bg-purple-500/30 transition-colors">
-              <svg className="w-6 h-6 text-purple-300 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              <svg
+                className="w-6 h-6 text-purple-300 transform group-hover:translate-x-1 transition-transform"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
               </svg>
             </div>
           </div>
-          
+
           <div className="mt-4 grid grid-cols-3 gap-3">
             <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
-              <div className="text-xs text-purple-300/70 mb-1">Service Health</div>
+              <div className="text-xs text-purple-300/70 mb-1">
+                Service Health
+              </div>
               <div className="flex items-center">
                 <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
                 <span className="text-green-300 text-sm">Monitoring</span>
               </div>
             </div>
-            
+
             <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
               <div className="text-xs text-purple-300/70 mb-1">Database</div>
               <div className="flex items-center">
@@ -371,7 +403,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 <span className="text-blue-300 text-sm">Metrics</span>
               </div>
             </div>
-            
+
             <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
               <div className="text-xs text-purple-300/70 mb-1">AI Analysis</div>
               <div className="flex items-center">
@@ -402,9 +434,11 @@ export const SuperAdminDashboard: React.FC = () => {
             <h3 className="text-base font-bold text-purple-200 mt-2">
               SkyDuel Console
             </h3>
-            <p className="text-xs text-purple-300/80 mt-1">Unified service management</p>
+            <p className="text-xs text-purple-300/80 mt-1">
+              Unified service management
+            </p>
           </Link>
-          
+
           <Link
             to="/superadmin/wallet-monitoring"
             className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-blue-500/30 hover:bg-dark-300/50 hover:border-blue-500/50 transition-all duration-300 group shadow-lg"
@@ -418,9 +452,34 @@ export const SuperAdminDashboard: React.FC = () => {
             <h3 className="text-base font-bold text-blue-200 mt-2">
               Wallet Monitoring
             </h3>
-            <p className="text-xs text-blue-300/80 mt-1">Transaction tracking</p>
+            <p className="text-xs text-blue-300/80 mt-1">
+              Transaction tracking
+            </p>
           </Link>
-          
+
+          <Link
+            to="/admin/chat-dashboard"
+            className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-cyan-500/30 hover:bg-dark-300/50 hover:border-cyan-500/50 transition-all duration-300 group shadow-lg relative overflow-hidden"
+          >
+            <div className="absolute -top-1 -right-1">
+              <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-cyan-500/30 text-cyan-200 font-mono">
+                NEW
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-3xl">💬</span>
+              <span className="text-cyan-300 opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                →
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-cyan-200 mt-2">
+              Chat Dashboard
+            </h3>
+            <p className="text-xs text-cyan-300/80 mt-1">
+              Contest chat management
+            </p>
+          </Link>
+
           <Link
             to="/api-playground"
             className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-cyan-500/30 hover:bg-dark-300/50 hover:border-cyan-500/50 transition-all duration-300 group shadow-lg"
@@ -434,9 +493,11 @@ export const SuperAdminDashboard: React.FC = () => {
             <h3 className="text-base font-bold text-cyan-200 mt-2">
               API Playground
             </h3>
-            <p className="text-xs text-cyan-300/80 mt-1">API testing environment</p>
+            <p className="text-xs text-cyan-300/80 mt-1">
+              API testing environment
+            </p>
           </Link>
-          
+
           <Link
             to="/wss-playground"
             className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border-2 border-emerald-500/30 hover:bg-dark-300/50 hover:border-emerald-500/50 transition-all duration-300 group shadow-lg"
@@ -450,10 +511,12 @@ export const SuperAdminDashboard: React.FC = () => {
             <h3 className="text-base font-bold text-emerald-200 mt-2">
               WSS Playground
             </h3>
-            <p className="text-xs text-emerald-300/80 mt-1">WebSocket testing</p>
+            <p className="text-xs text-emerald-300/80 mt-1">
+              WebSocket testing
+            </p>
           </Link>
         </div>
-        
+
         {/* Secondary Actions */}
         <div className="grid grid-cols-3 gap-4">
           <Link
@@ -470,7 +533,7 @@ export const SuperAdminDashboard: React.FC = () => {
               AMM Simulator
             </h3>
           </Link>
-          
+
           <Link
             to="/superadmin/switchboard"
             className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30 hover:bg-dark-300/70 transition-all duration-300 group relative opacity-60 grayscale"
@@ -486,7 +549,7 @@ export const SuperAdminDashboard: React.FC = () => {
             </h3>
             <div className="text-xs text-red-400/80 mt-1">Deprecated</div>
           </Link>
-          
+
           <Link
             to="/superadmin/circuit-breaker"
             className="bg-dark-300/50 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30 hover:bg-dark-300/70 transition-all duration-300 group relative opacity-60 grayscale"
@@ -511,14 +574,18 @@ export const SuperAdminDashboard: React.FC = () => {
               key={section.id}
               className={`
                 bg-dark-200/70 backdrop-blur-lg rounded-xl border-2 shadow-lg
-                ${selectedSection === section.id 
-                  ? `border-${section.color}-500/50 shadow-${section.color}-500/10` 
-                  : `border-${section.color}-500/30 hover:border-${section.color}-500/50`}
+                ${
+                  selectedSection === section.id
+                    ? `border-${section.color}-500/50 shadow-${section.color}-500/10`
+                    : `border-${section.color}-500/30 hover:border-${section.color}-500/50`
+                }
                 transition-all duration-300 group relative
                 ${
-                  selectedSection === section.id && section.id === 'wallet' && expandedView
-                    ? 'col-span-full md:col-span-full lg:col-span-full'
-                    : ''
+                  selectedSection === section.id &&
+                  section.id === "wallet" &&
+                  expandedView
+                    ? "col-span-full md:col-span-full lg:col-span-full"
+                    : ""
                 }
               `}
               whileHover={{ scale: 1.02, y: -4 }}
@@ -542,7 +609,11 @@ export const SuperAdminDashboard: React.FC = () => {
                 <Link to={section.link} className="block p-6 h-full">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}>{section.icon}</div>
+                      <div
+                        className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
+                      >
+                        {section.icon}
+                      </div>
                       <h3
                         className={`text-xl font-bold text-${section.color}-200 mb-2`}
                       >
@@ -570,7 +641,11 @@ export const SuperAdminDashboard: React.FC = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}>{section.icon}</div>
+                      <div
+                        className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
+                      >
+                        {section.icon}
+                      </div>
                       <h3
                         className={`text-xl font-bold text-${section.color}-200 mb-2`}
                       >
@@ -581,19 +656,22 @@ export const SuperAdminDashboard: React.FC = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {selectedSection === section.id && section.id === 'wallet' && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedView(!expandedView);
-                          }}
-                          className={`text-${section.color}-200 px-2 py-1 text-xs rounded-md border-2 border-${section.color}-500/30 bg-dark-300/80 hover:bg-dark-300/90`}
-                        >
-                          {expandedView ? 'Compact View' : 'Expand View'}
-                        </button>
-                      )}
+                      {selectedSection === section.id &&
+                        section.id === "wallet" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedView(!expandedView);
+                            }}
+                            className={`text-${section.color}-200 px-2 py-1 text-xs rounded-md border-2 border-${section.color}-500/30 bg-dark-300/80 hover:bg-dark-300/90`}
+                          >
+                            {expandedView ? "Compact View" : "Expand View"}
+                          </button>
+                        )}
                       <div
-                        className={`text-${section.color}-300 text-lg transform transition-all ${
+                        className={`text-${
+                          section.color
+                        }-300 text-lg transform transition-all ${
                           selectedSection === section.id ? "rotate-180" : ""
                         }`}
                       >

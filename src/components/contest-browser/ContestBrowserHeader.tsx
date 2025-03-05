@@ -62,7 +62,7 @@ export const ContestBrowserHeader: React.FC<ContestBrowserHeaderProps> = ({
               </div>
             </div>
 
-            {/* Create Contest Button (Admin Only) */}
+            {/* Create Contest Button (Administrators Only) */}
             {user?.is_admin && (
               <Button
                 onClick={onCreateContest}

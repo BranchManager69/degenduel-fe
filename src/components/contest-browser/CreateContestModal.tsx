@@ -39,8 +39,11 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   const getNextHourDateTime = () => {
     const now = new Date();
-    const nextHour = new Date(now.setHours(now.getHours() + 1, 0, 0, 0));
-    return nextHour.toISOString().slice(0, 16);
+    // Subtract 5 hours from the current time, then set to the next hour
+    const adjustedTime = new Date(
+      now.setHours(now.getHours() - 5 + 1, 0, 0, 0)
+    );
+    return adjustedTime.toISOString().slice(0, 16);
   };
 
   const formatSolAmount = (amount: string | number) => {
@@ -58,12 +61,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     }
 
     // For larger amounts, show 2 decimal places
-    return `${num.toFixed(2).replace(/\.?0+$/, "")} SOL`;
+    return `${num.toFixed(2)} SOL`;
   };
 
   const calculateMaxPrizePool = (entryFee: string, maxParticipants: number) => {
     const fee = parseFloat(entryFee) || 0;
-    return Math.floor(fee * maxParticipants * (1 - DD_PLATFORM_FEE));
+    // Don't use Math.floor to preserve decimal precision
+    return fee * maxParticipants * (1 - DD_PLATFORM_FEE);
   };
 
   const calculateCurrentPrizePool = (
@@ -98,7 +102,9 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     current_prize_pool: "0.00", // = entry_fee * min_participants
     start_time: getNextHourDateTime(),
     end_time: new Date(
-      new Date(getNextHourDateTime()).getTime() + 60 * 60 * 1000
+      new Date(getNextHourDateTime()).getTime() +
+        60 * 60 * 1000 -
+        5 * 60 * 60 * 1000
     )
       .toISOString()
       .slice(0, 16),
@@ -313,6 +319,18 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     //{ value: 10, label: "Bucket 10" },
   ];
 
+  // Options for min participants dropdown
+  const minParticipantsOptions = Array.from({ length: 9 }, (_, i) => ({
+    value: String(i + 2),
+    label: `${i + 2} participants`,
+  }));
+
+  // Options for max participants dropdown
+  const maxParticipantsOptions = Array.from({ length: 99 }, (_, i) => ({
+    value: String(i + 2),
+    label: `${i + 2} participants`,
+  }));
+
   // Handle SOL amount input with simple decimal validation
   const handleSolInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, "");
@@ -356,7 +374,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
-                <div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Contest Name
                   </label>
@@ -416,14 +434,16 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Min Entries
                   </label>
-                  <Input
-                    type="number"
-                    name="min_participants"
-                    value={formData.min_participants}
-                    onChange={handleInputChange}
-                    className="w-full text-gray-100 bg-dark-300"
-                    min={2}
-                    required
+                  <Select
+                    value={String(formData.min_participants)}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        min_participants: parseInt(value, 10),
+                      }))
+                    }
+                    options={minParticipantsOptions}
+                    className="w-full text-gray-100"
                   />
                 </div>
 
@@ -431,15 +451,16 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Max. Entries
                   </label>
-                  <Input
-                    type="number"
-                    name="max_participants"
-                    value={formData.max_participants}
-                    onChange={handleInputChange}
-                    className="w-full text-gray-100 bg-dark-300"
-                    min={2}
-                    max={1000}
-                    required
+                  <Select
+                    value={String(formData.max_participants)}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        max_participants: parseInt(value, 10),
+                      }))
+                    }
+                    options={maxParticipantsOptions}
+                    className="w-full text-gray-100"
                   />
                 </div>
 
@@ -504,7 +525,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Contest Settings
                   </label>
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-dark-300 rounded-md">
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-dark-300 rounded-md border border-dark-400">
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">
                         Class
@@ -527,7 +548,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                             { value: "whale", label: "Whale" },
                           ] as const
                         }
-                        className="w-full text-gray-100"
+                        className="w-full text-gray-100 bg-dark-400 border-dark-500"
                       />
                     </div>
 
@@ -535,20 +556,22 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                       <label className="block text-sm text-gray-400 mb-1">
                         Min. Level
                       </label>
-                      <Input
-                        type="number"
-                        value={formData.settings.min_trades}
-                        onChange={(e) =>
+                      <Select
+                        value={String(formData.settings.min_trades)}
+                        onChange={(value) =>
                           setFormData((prev) => ({
                             ...prev,
                             settings: {
                               ...prev.settings,
-                              min_trades: Number(e.target.value),
+                              min_trades: parseInt(value, 10),
                             },
                           }))
                         }
-                        className="w-full text-gray-100"
-                        min={1}
+                        options={Array.from({ length: 50 }, (_, i) => ({
+                          value: String(i + 1),
+                          label: `Level ${i + 1}`,
+                        }))}
+                        className="w-full text-gray-100 bg-dark-400 border-dark-500"
                       />
                     </div>
                   </div>
@@ -563,10 +586,14 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  className="w-full text-gray-100 bg-dark-300"
+                  className="w-full text-gray-100 bg-dark-300 border border-dark-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                   rows={4}
+                  placeholder="Describe your contest rules and objectives..."
                   required
                 />
+                <p className="mt-1 text-xs text-gray-400">
+                  Provide details about your contest to attract participants.
+                </p>
               </div>
 
               {error && (

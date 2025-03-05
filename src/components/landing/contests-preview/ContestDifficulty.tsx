@@ -14,7 +14,17 @@ interface ContestDifficultyProps {
 
 const difficultyConfig: Record<
   DifficultyLevel,
-  { label: string; colors: { from: string; to: string; border: string } }
+  {
+    label: string;
+    colors: {
+      from: string;
+      to: string;
+      border: string;
+      text: string;
+      glow: string;
+    };
+    icon: string;
+  }
 > = {
   guppy: {
     label: "Guppy",
@@ -22,7 +32,10 @@ const difficultyConfig: Record<
       from: "from-emerald-400/20",
       to: "to-emerald-600/20",
       border: "border-emerald-500/30",
+      text: "text-emerald-400",
+      glow: "bg-emerald-500/30",
     },
+    icon: "🐠",
   },
   tadpole: {
     label: "Tadpole",
@@ -30,7 +43,10 @@ const difficultyConfig: Record<
       from: "from-blue-400/20",
       to: "to-blue-600/20",
       border: "border-blue-500/30",
+      text: "text-blue-400",
+      glow: "bg-blue-500/30",
     },
+    icon: "🐸",
   },
   squid: {
     label: "Squid",
@@ -38,7 +54,10 @@ const difficultyConfig: Record<
       from: "from-purple-400/20",
       to: "to-purple-600/20",
       border: "border-purple-500/30",
+      text: "text-purple-400",
+      glow: "bg-purple-500/30",
     },
+    icon: "🦑",
   },
   dolphin: {
     label: "Dolphin",
@@ -46,7 +65,10 @@ const difficultyConfig: Record<
       from: "from-pink-400/20",
       to: "to-pink-600/20",
       border: "border-pink-500/30",
+      text: "text-pink-400",
+      glow: "bg-pink-500/30",
     },
+    icon: "🐬",
   },
   shark: {
     label: "Shark",
@@ -54,7 +76,10 @@ const difficultyConfig: Record<
       from: "from-orange-400/20",
       to: "to-orange-600/20",
       border: "border-orange-500/30",
+      text: "text-orange-400",
+      glow: "bg-orange-500/30",
     },
+    icon: "🦈",
   },
   whale: {
     label: "Whale",
@@ -62,7 +87,10 @@ const difficultyConfig: Record<
       from: "from-red-400/20",
       to: "to-red-600/20",
       border: "border-red-500/30",
+      text: "text-red-400",
+      glow: "bg-red-500/30",
     },
+    icon: "🐋",
   },
 };
 
@@ -75,7 +103,10 @@ export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
       from: "from-gray-400/20",
       to: "to-gray-600/20",
       border: "border-gray-500/30",
+      text: "text-gray-400",
+      glow: "bg-gray-500/30",
     },
+    icon: "❓",
   };
 
   return (
@@ -88,13 +119,15 @@ export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
       <div
         className={`
           relative
-          inline-flex items-center px-3 py-1
-          rounded-full text-xs font-semibold
+          inline-flex items-center gap-1.5 px-3 py-1.5
+          rounded-full text-xs font-semibold font-cyber tracking-wide
           bg-gradient-to-r ${config.colors.from} ${config.colors.to}
           border ${config.colors.border}
           transition-all duration-300
           hover:scale-105
           overflow-hidden
+          backdrop-blur-sm
+          ${config.colors.text}
         `}
       >
         {/* Shine effect - contained within parent */}
@@ -102,8 +135,21 @@ export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shine" />
         </div>
 
+        {/* Icon */}
+        <span className="text-sm">{config.icon}</span>
+
         {/* Label */}
         <span className="relative">{config.label}</span>
+
+        {/* Pulsing dot */}
+        <span className="relative w-1.5 h-1.5">
+          <span
+            className={`absolute inset-0 rounded-full ${config.colors.glow} animate-ping opacity-75`}
+          ></span>
+          <span
+            className={`relative rounded-full w-1.5 h-1.5 ${config.colors.glow}`}
+          ></span>
+        </span>
       </div>
     </div>
   );

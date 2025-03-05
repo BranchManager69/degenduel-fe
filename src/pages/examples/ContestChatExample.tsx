@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ContestChat } from "../../components/contest/ContestChat";
+import { ContestChat } from "../../components/contest-chat/ContestChat";
 
 const ContestChatExample: React.FC = () => {
   const [contestId, setContestId] = useState("123"); // Default contest ID

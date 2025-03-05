@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React, { useEffect } from "react";
+import React, { lazy, useEffect } from "react";
 /* Router */
 import {
   Navigate,
@@ -34,7 +34,7 @@ import { ReferralProvider } from "./hooks/useReferral";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* Pages */
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
-import { ContestChatManager } from "./components/contest/ContestChatManager";
+import { ContestChatManager } from "./components/contest-chat/ContestChatManager";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
@@ -76,6 +76,14 @@ import "./styles/color-schemes.css";
 
 // Test HMR
 //console.log("[Debug] Testing HMR - " + new Date().toISOString());
+
+// Lazy-loaded components
+const SuperAdminChatExample = lazy(
+  () => import("./pages/examples/SuperAdminChatExample")
+);
+const AdminChatDashboard = lazy(
+  () => import("./pages/admin/AdminChatDashboard")
+);
 
 export const App: React.FC = () => {
   const { checkAuth } = useAuth();
@@ -371,6 +379,30 @@ export const App: React.FC = () => {
                     <SuperAdminRoute>
                       <ControlPanelHub />
                     </SuperAdminRoute>
+                  }
+                />
+
+                {/* Super Admin Chat Example - REPLACED with unified AdminChatDashboard */}
+                <Route
+                  path="/superadmin/chat-dashboard"
+                  element={
+                    <SuperAdminRoute>
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <AdminChatDashboard />
+                      </React.Suspense>
+                    </SuperAdminRoute>
+                  }
+                />
+
+                {/* Admin Chat Dashboard - Accessible to both admins and superadmins */}
+                <Route
+                  path="/admin/chat-dashboard"
+                  element={
+                    <AdminRoute>
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <AdminChatDashboard />
+                      </React.Suspense>
+                    </AdminRoute>
                   }
                 />
 

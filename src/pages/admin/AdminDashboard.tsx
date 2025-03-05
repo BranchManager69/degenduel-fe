@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import { BalanceManager } from "../../components/admin/BalanceManager";
+import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
@@ -203,6 +204,14 @@ export const AdminDashboard: React.FC = () => {
       color: "brand",
     },
     {
+      id: "wallet-reclaim",
+      title: "Reclaim Unused Funds",
+      icon: "💸",
+      description: "Reclaim unused funds from contest wallets",
+      component: <WalletReclaimFunds />,
+      color: "green",
+    },
+    {
       id: "system-reports",
       title: "System Reports",
       icon: "📊",
@@ -217,6 +226,15 @@ export const AdminDashboard: React.FC = () => {
       description: "Monitor and test WebSocket connections",
       link: "/websocket-test",
       color: "cyber",
+    },
+    {
+      id: "chat-dashboard",
+      title: "Chat Dashboard",
+      icon: "💬",
+      description:
+        "Monitor contest chats without being visible to participants",
+      link: "/admin/chat-dashboard",
+      color: "red",
     },
     {
       id: "contests",
@@ -257,7 +275,7 @@ export const AdminDashboard: React.FC = () => {
     {
       id: "transactions",
       title: "Transaction History",
-      icon: "💸",
+      icon: "📝",
       description: "View and manage transactions",
       link: "/transactions",
       color: "blue",
@@ -288,25 +306,41 @@ export const AdminDashboard: React.FC = () => {
               System management and monitoring interface
             </p>
           </div>
-          <Link
-            to="/admin/skyduel"
-            className="flex items-center gap-2 bg-purple-500/30 px-4 py-2.5 rounded-xl hover:bg-purple-500/40 transition-all border-2 border-purple-500/40 shadow-lg hover:shadow-purple-500/20 group relative"
-          >
-            <div className="absolute -top-2 -left-2">
-              <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-purple-500/30 text-purple-100 font-mono">
-                NEW
+          <div className="flex gap-3">
+            <Link
+              to="/admin/chat-dashboard"
+              className="flex items-center gap-2 bg-red-500/30 px-4 py-2.5 rounded-xl hover:bg-red-500/40 transition-all border-2 border-red-500/40 shadow-lg hover:shadow-red-500/20 group relative"
+            >
+              <div className="text-red-300 text-xl group-hover:scale-110 transition-transform">
+                💬
               </div>
-            </div>
-            <div className="text-purple-300 text-xl group-hover:scale-110 transition-transform">
-              ⚡
-            </div>
-            <span className="text-purple-100 font-semibold group-hover:text-white transition-colors">
-              SkyDuel Console
-            </span>
-            <div className="ml-2 text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity">
-              →
-            </div>
-          </Link>
+              <span className="text-red-100 font-semibold group-hover:text-white transition-colors">
+                Chat Dashboard
+              </span>
+              <div className="ml-2 text-red-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
+            <Link
+              to="/admin/skyduel"
+              className="flex items-center gap-2 bg-purple-500/30 px-4 py-2.5 rounded-xl hover:bg-purple-500/40 transition-all border-2 border-purple-500/40 shadow-lg hover:shadow-purple-500/20 group relative"
+            >
+              <div className="absolute -top-2 -left-2">
+                <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-purple-500/30 text-purple-100 font-mono">
+                  NEW
+                </div>
+              </div>
+              <div className="text-purple-300 text-xl group-hover:scale-110 transition-transform">
+                ⚡
+              </div>
+              <span className="text-purple-100 font-semibold group-hover:text-white transition-colors">
+                SkyDuel Console
+              </span>
+              <div className="ml-2 text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* System Alerts */}
@@ -506,11 +540,7 @@ export const AdminDashboard: React.FC = () => {
                   <div
                     className={`
                     w-6 h-6 rounded-full border-2 
-                    ${
-                      maintenanceMode
-                        ? "border-red-500"
-                        : "border-green-500"
-                    }
+                    ${maintenanceMode ? "border-red-500" : "border-green-500"}
                     transition-colors duration-300
                   `}
                   >
@@ -530,9 +560,7 @@ export const AdminDashboard: React.FC = () => {
                   <div className="font-cyber tracking-wider text-lg">
                     {isTogglingMaintenance ? (
                       <span className="text-brand-400 animate-pulse">
-                        {maintenanceMode
-                          ? "DEACTIVATING..."
-                          : "INITIATING..."}
+                        {maintenanceMode ? "DEACTIVATING..." : "INITIATING..."}
                       </span>
                     ) : maintenanceMode ? (
                       <span className="text-red-400 group-hover:text-red-300">
@@ -567,38 +595,58 @@ export const AdminDashboard: React.FC = () => {
             </button>
           </div>
         </div>
-        
+
         {/* System Reports Button */}
-        <Link to="/admin/system-reports"
-              className="block bg-dark-200/70 backdrop-blur-lg p-6 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1">
+        <Link
+          to="/admin/system-reports"
+          className="block bg-dark-200/70 backdrop-blur-lg p-6 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1"
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15)_0%,transparent_60%)]" />
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="text-4xl text-purple-400 group-hover:scale-110 transition-transform duration-300">📊</div>
+              <div className="text-4xl text-purple-400 group-hover:scale-110 transition-transform duration-300">
+                📊
+              </div>
               <div>
-                <h3 className="text-xl font-bold text-purple-200 mb-1 font-heading">System Reports</h3>
-                <p className="text-purple-300/80">View service health and database metrics</p>
+                <h3 className="text-xl font-bold text-purple-200 mb-1 font-heading">
+                  System Reports
+                </h3>
+                <p className="text-purple-300/80">
+                  View service health and database metrics
+                </p>
               </div>
             </div>
-            
+
             <div className="bg-purple-500/20 p-3 rounded-full group-hover:bg-purple-500/30 transition-colors">
-              <svg className="w-6 h-6 text-purple-300 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              <svg
+                className="w-6 h-6 text-purple-300 transform group-hover:translate-x-1 transition-transform"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
               </svg>
             </div>
           </div>
-          
+
           <div className="mt-4 grid grid-cols-3 gap-3">
             <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
-              <div className="text-xs text-purple-300/70 mb-1">Service Health</div>
+              <div className="text-xs text-purple-300/70 mb-1">
+                Service Health
+              </div>
               <div className="flex items-center">
                 <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
                 <span className="text-green-300 text-sm">Monitoring</span>
               </div>
             </div>
-            
+
             <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
               <div className="text-xs text-purple-300/70 mb-1">Database</div>
               <div className="flex items-center">
@@ -606,7 +654,7 @@ export const AdminDashboard: React.FC = () => {
                 <span className="text-blue-300 text-sm">Metrics</span>
               </div>
             </div>
-            
+
             <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
               <div className="text-xs text-purple-300/70 mb-1">AI Analysis</div>
               <div className="flex items-center">

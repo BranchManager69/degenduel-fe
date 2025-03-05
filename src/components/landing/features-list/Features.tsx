@@ -1,7 +1,6 @@
-import React, { useMemo, useState, useRef } from "react";
-import { Card, CardContent } from "../../ui/Card";
-import { motion, useInView, AnimatePresence } from "framer-motion";
-import { useDebounce } from "../../../hooks/useDebounce";
+import React, { useMemo, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+import { FeatureCard } from "./FeatureCard";
 
 interface Feature {
   title: string;
@@ -349,28 +348,12 @@ export const Features: React.FC = () => {
     []
   );
 
-  // State to track the flipped card
-  const [flippedCard, setFlippedCard] = useState<string | null>(null);
-  const [revealedCard, setRevealedCard] = useState<string | null>(null);
+  // Removed card flip and reveal animation states
   
-  // Debounce reveal state to prevent accidental triggers (not currently used but kept for future implementations)
-  // const debouncedReveal = useDebounce(revealedCard, 300);
-  
-  // Track drag position for the cover reveal animation
-  const dragEndHandler = (title: string, info: { velocity: { y: number } }) => {
-    const velocity = Math.abs(info.velocity.y);
-    if (velocity > 500) {
-      setRevealedCard(title);
-      
-      // Auto-reset after animation completes
-      setTimeout(() => {
-        setRevealedCard(null);
-      }, 3000);
-    }
-  };
-  
-  // Enhanced FeatureCard component
-  const FeatureCard = useMemo(
+  // Removed the Candlestick Chart Component since it's now inside FeatureCard component
+
+  // Enhanced FeatureCard wrapper with animations
+  const AnimatedFeatureCard = useMemo(
     () =>
       ({
         feature,
@@ -407,171 +390,13 @@ export const Features: React.FC = () => {
             animate={isInView ? "visible" : "hidden"}
             variants={cardVariants}
           >
-          <Card
-            key={feature.title}
-            className={`group relative backdrop-blur-sm border transform transition-all duration-500 hover:scale-[1.03] hover:shadow-xl overflow-hidden h-full ${
-              isUpcoming
-                ? "bg-gradient-to-br from-[#1e1a42]/90 to-[#1a1333]/90 border-blue-500/10 hover:border-blue-400/30 hover:shadow-blue-500/10"
-                : "bg-gradient-to-br from-[#1a1333]/90 to-[#120d24]/90 border-purple-500/10 hover:border-purple-400/30 hover:shadow-purple-500/10"
-            }`}
-            onClick={() => setFlippedCard(flippedCard === feature.title ? null : feature.title)}
-          >
-            {isUpcoming && (
-              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-blue-400/10 border border-blue-400/30 z-20 backdrop-blur-sm">
-                <span className="text-xs font-cyber text-blue-400 tracking-wider flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                  COMING SOON
-                </span>
-              </div>
-            )}
-
-            {/* Animated gradient overlay */}
-            <div
-              className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-700 ${feature.gradient}`}
+            <FeatureCard 
+              title={feature.title}
+              description={feature.description}
+              icon={feature.icon}
+              gradient={feature.gradient}
+              isUpcoming={isUpcoming}
             />
-
-            {/* Animated border glow */}
-            <div
-              className={`absolute -inset-[1px] rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${
-                isUpcoming
-                  ? "bg-gradient-to-r from-blue-400/20 via-indigo-400/20 to-blue-400/20"
-                  : "bg-gradient-to-r from-purple-400/20 via-brand-500/20 to-purple-400/20"
-              }`}
-            />
-
-            {/* Scan line effect */}
-            <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(99,102,241,0.03)_50%,transparent_100%)] bg-[length:100%_8px] animate-scan" />
-
-            {/* Digital Cover Animation */}
-            <AnimatePresence>
-              {revealedCard !== feature.title && (
-                <motion.div 
-                  className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing"
-                  drag="y"
-                  dragConstraints={{ top: 0, bottom: 0 }}
-                  dragElastic={0.6}
-                  onDragEnd={(_, info) => dragEndHandler(feature.title, info)}
-                  initial={{ y: 0 }}
-                  exit={{ 
-                    y: -400, 
-                    opacity: 0,
-                    transition: { 
-                      type: "spring", 
-                      damping: 12, 
-                      stiffness: 100 
-                    } 
-                  }}
-                >
-                  <div className={`
-                    absolute inset-0 backdrop-blur-sm
-                    ${isUpcoming
-                      ? "bg-gradient-to-br from-[#1e1a42]/95 to-[#1a1333]/95 border-blue-500/30"
-                      : "bg-gradient-to-br from-[#1a1333]/95 to-[#120d24]/95 border-purple-500/30"
-                    }
-                  `}>
-                    <div 
-                      className="absolute inset-0 opacity-5"
-                      style={{ backgroundImage: noiseTexture ? `url(${noiseTexture})` : 'none' }}
-                    ></div>
-                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-brand-500/20 to-transparent"></div>
-                    
-                    {/* Pull indicator */}
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-                      <motion.div 
-                        className="text-white/50 text-sm"
-                        animate={{ y: [0, 5, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.5 }}
-                      >
-                        Swipe up to reveal
-                      </motion.div>
-                      <motion.div 
-                        className="w-8 h-8 mt-2 text-white/50"
-                        animate={{ y: [0, 5, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.5 }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 19V5M5 12l7-7 7 7" />
-                        </svg>
-                      </motion.div>
-                    </div>
-                    
-                    {/* Corner fold effect */}
-                    <div className="absolute top-0 right-0 w-0 h-0 border-t-[30px] border-r-[30px] border-b-0 border-l-0 border-transparent border-t-white/5 border-r-white/5"></div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            <CardContent className="relative p-8">
-              {/* Icon with animated background - optimized animations */}
-              <div className="mb-6 relative">
-                <div
-                  className={`
-                  relative z-10 inline-flex items-center justify-center w-14 h-14 rounded-lg
-                  ${
-                    isUpcoming
-                      ? "bg-blue-500/10 text-blue-400 group-hover:text-blue-300"
-                      : "bg-purple-500/10 text-purple-400 group-hover:text-purple-300"
-                  } transition-colors duration-500
-                `}
-                >
-                  {feature.icon}
-                </div>
-                <div
-                  className={`
-                  absolute inset-0 rounded-lg blur-md opacity-40 group-hover:opacity-70 transition-opacity duration-500
-                  ${isUpcoming ? "bg-blue-500/20" : "bg-purple-500/20"}
-                `}
-                ></div>
-              </div>
-
-              {/* Title with animated underline */}
-              <h3
-                className={`
-                text-xl font-bold mb-3 font-cyber tracking-wide relative inline-block
-                ${
-                  isUpcoming
-                    ? "text-blue-300 group-hover:text-blue-200"
-                    : "text-purple-300 group-hover:text-purple-200"
-                } transition-colors duration-500
-              `}
-              >
-                {feature.title}
-                <span
-                  className={`
-                  absolute -bottom-1 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ease-out
-                  ${
-                    isUpcoming
-                      ? "bg-gradient-to-r from-blue-400 to-indigo-400"
-                      : "bg-gradient-to-r from-purple-400 to-brand-500"
-                  }
-                `}
-                ></span>
-              </h3>
-
-              {/* Description with improved readability */}
-              <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-500">
-                {feature.description}
-              </p>
-
-              {/* Hover indicator */}
-              <div
-                className={`
-                absolute bottom-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500
-                ${
-                  isUpcoming
-                    ? "bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"
-                    : "bg-gradient-to-r from-transparent via-purple-400/50 to-transparent"
-                }
-              `}
-              ></div>
-              
-              {/* Click/swipe hint */}
-              <div className="absolute bottom-4 right-4 text-xs text-white/30">
-                {revealedCard === feature.title ? "Revealed" : "Swipe to reveal"}
-              </div>
-            </CardContent>
-          </Card>
           </motion.div>
         );
       },
@@ -590,32 +415,7 @@ export const Features: React.FC = () => {
   };
   */
   
-  // Create a noise texture effect for the card covers
-  const [noiseTexture, setNoiseTexture] = useState<string | null>(null);
-  
-  React.useEffect(() => {
-    // Create a canvas noise texture for better performance than image loading
-    const canvas = document.createElement("canvas");
-    canvas.width = 200; 
-    canvas.height = 200;
-    const ctx = canvas.getContext("2d");
-    
-    if (ctx) {
-      const imageData = ctx.createImageData(200, 200);
-      const data = imageData.data;
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const value = Math.floor(Math.random() * 255);
-        data[i] = value;
-        data[i + 1] = value;
-        data[i + 2] = value;
-        data[i + 3] = 15; // Very transparent
-      }
-      
-      ctx.putImageData(imageData, 0, 0);
-      setNoiseTexture(canvas.toDataURL("image/png"));
-    }
-  }, []);
+  // Removed noise texture and candlestick patterns generation
 
   return (
     <div className="relative py-20 overflow-hidden">
@@ -648,14 +448,14 @@ export const Features: React.FC = () => {
         {/* Feature Cards Grid with improved spacing */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 relative z-10">
           {existingFeatures.map((feature, index) => (
-            <FeatureCard 
+            <AnimatedFeatureCard 
               key={feature.title} 
               feature={feature} 
               index={index} 
             />
           ))}
           {upcomingFeatures.map((feature, index) => (
-            <FeatureCard
+            <AnimatedFeatureCard
               key={feature.title}
               feature={feature}
               isUpcoming={true}
