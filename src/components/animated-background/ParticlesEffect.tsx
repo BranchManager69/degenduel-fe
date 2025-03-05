@@ -202,15 +202,15 @@ export const ParticlesEffect: React.FC = () => {
       };
     } else if (graphicsQuality === "low-power" || (isMobile && MOBILE_OPTIMIZED)) {
       particleCount = {
-        red: 80,
-        green: 80,
-        blueBalls: 20,
+        red: 100,
+        green: 100,
+        blueBalls: 25,
       };
     } else {
       particleCount = {
-        red: 300,
-        green: 300,
-        blueBalls: 80,
+        red: 200,
+        green: 200,
+        blueBalls: 50,
       };
     }
 
