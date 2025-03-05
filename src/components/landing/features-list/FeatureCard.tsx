@@ -12,7 +12,7 @@ interface FeatureCardProps {
 export const FeatureCard: React.FC<FeatureCardProps> = ({ 
   title, 
   description, 
-  icon, 
+  // icon - removing from destructuring since we no longer use it
   isUpcoming = false 
 }) => {
   const [hovered, setHovered] = useState(false);
@@ -130,16 +130,35 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         ctx.stroke();
       }
       
-      // Add dark tinted background to the bottom portion
+      // Add more dramatic colored background to enhance the candlesticks
       const gradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
       if (isUpcoming) {
         gradient.addColorStop(0, 'rgba(37, 99, 235, 0)');
-        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.1)');
+        gradient.addColorStop(0.7, 'rgba(37, 99, 235, 0.05)');
+        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.15)');
       } else {
         gradient.addColorStop(0, 'rgba(126, 34, 206, 0)');
-        gradient.addColorStop(1, 'rgba(126, 34, 206, 0.1)');
+        gradient.addColorStop(0.7, 'rgba(126, 34, 206, 0.05)');
+        gradient.addColorStop(1, 'rgba(126, 34, 206, 0.15)');
       }
       ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, chartHeight);
+      
+      // Add subtle radial glow in center
+      const radialGradient = ctx.createRadialGradient(
+        canvas.width/2, chartHeight/2, 0,
+        canvas.width/2, chartHeight/2, canvas.width/2
+      );
+      if (isUpcoming) {
+        radialGradient.addColorStop(0, 'rgba(37, 99, 235, 0.1)');
+        radialGradient.addColorStop(0.6, 'rgba(37, 99, 235, 0.03)');
+        radialGradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
+      } else {
+        radialGradient.addColorStop(0, 'rgba(126, 34, 206, 0.1)');
+        radialGradient.addColorStop(0.6, 'rgba(126, 34, 206, 0.03)');
+        radialGradient.addColorStop(1, 'rgba(126, 34, 206, 0)');
+      }
+      ctx.fillStyle = radialGradient;
       ctx.fillRect(0, 0, canvas.width, chartHeight);
       
       // Calculate starting index based on offset
@@ -172,9 +191,9 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         const upColorBase = isUpcoming ? 'rgba(59, 130, 246, 1)' : 'rgba(34, 197, 94, 1)';
         const downColorBase = isUpcoming ? 'rgba(99, 102, 241, 1)' : 'rgba(220, 38, 38, 1)';
         
-        // Draw shadow first for glow effect
+        // Draw shadow first for glow effect - more intense when hovered
         ctx.shadowColor = isUp ? upColorBase : downColorBase;
-        ctx.shadowBlur = hovered ? 8 : 4;
+        ctx.shadowBlur = hovered ? 12 : 6;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
         
@@ -288,7 +307,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         backdrop-blur-sm border rounded-xl
         overflow-hidden h-full
         transition-all duration-500
-        ${hovered ? 'shadow-xl shadow-purple-500/20' : ''}
+        ${hovered ? 
+          isUpcoming ? 
+            'shadow-xl shadow-blue-500/20 border-blue-400/40' : 
+            'shadow-xl shadow-purple-500/30 border-purple-400/40' 
+          : ''}
         transform-style-3d
       `}>
         <div className="absolute inset-0 z-0 overflow-hidden">
@@ -303,10 +326,24 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           {/* Overlay gradient for better text contrast */}
           <div className={`
             absolute inset-0 
-            bg-gradient-to-b 
+            bg-gradient-to-br
             ${isUpcoming ? 
-              'from-[#1e1a42]/90 via-[#1e1a42]/60 to-transparent' : 
-              'from-[#1a1333]/90 via-[#1a1333]/60 to-transparent'
+              'from-[#1e1a42]/95 via-[#1e1a42]/70 to-transparent' : 
+              'from-[#1a1333]/95 via-[#1a1333]/70 to-transparent'
+            }
+          `}></div>
+          
+          {/* Subtle scanlines effect */}
+          <div className="absolute inset-0 bg-scanlines opacity-5"></div>
+          
+          {/* Radial highlight around content */}
+          <div className={`
+            absolute inset-0 
+            bg-radial-gradient
+            opacity-40
+            ${isUpcoming ?
+              'from-blue-500/10 via-transparent to-transparent' :
+              'from-purple-500/10 via-transparent to-transparent'
             }
           `}></div>
         </div>
@@ -321,37 +358,29 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             </div>
           )}
         
-          {/* Title with 3D depth effect */}
+          {/* Title with 3D depth effect and glow */}
           <div 
-            className="mb-3"
+            className="mb-4 max-w-[85%]"
             style={{ 
               transform: 'translateZ(30px)',
               transformStyle: 'preserve-3d' 
             }}
           >
             <h3 className={`
-              text-xl font-bold mb-1 flex items-center
-              ${isUpcoming ? "text-blue-300" : "text-purple-300"}
+              text-2xl font-bold mb-3
+              ${isUpcoming ? "text-blue-100" : "text-purple-100"}
+              text-shadow-lg tracking-wide
             `}>
-              <span className={`
-                mr-3 text-2xl
-                ${isUpcoming ? "text-blue-400" : "text-purple-400"}
-              `}>
-                {icon}
-              </span>
               {title}
             </h3>
-          </div>
-          
-          {/* Description with slight 3D effect */}
-          <div
-            className="mb-8"
-            style={{ 
-              transform: 'translateZ(20px)',
-              transformStyle: 'preserve-3d'
-            }}
-          >
-            <p className="text-gray-400 text-sm">
+            
+            {/* Description with enhanced legibility */}
+            <p className={`
+              mb-2 font-medium leading-relaxed
+              ${isUpcoming ? "text-blue-200/90" : "text-purple-200/90"}
+              backdrop-blur-[2px] rounded-md py-1
+              text-shadow
+            `}>
               {description}
             </p>
           </div>
@@ -369,19 +398,20 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             }}
           >
             <div className={`
-              px-3 py-1.5 rounded-full text-xs font-medium
-              flex items-center gap-1.5
+              px-4 py-2 rounded-lg text-sm font-semibold
+              flex items-center gap-2
               ${isUpcoming ? 
-                'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 
-                'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                'bg-blue-500/30 text-blue-100 border border-blue-400/40' : 
+                'bg-purple-500/30 text-purple-100 border border-purple-400/40'
               }
-              backdrop-blur-sm
+              backdrop-blur-md shadow-md
+              animate-pulse-gpu
             `}>
               <span className={`
-                w-1.5 h-1.5 rounded-full animate-pulse
-                ${isUpcoming ? 'bg-blue-400' : 'bg-purple-400'}
+                w-2 h-2 rounded-full animate-pulse
+                ${isUpcoming ? 'bg-blue-300' : 'bg-purple-300'}
               `}></span>
-              Explore
+              View Feature
             </div>
           </div>
         </CardContent>
