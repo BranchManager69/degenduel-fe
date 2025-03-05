@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { MeasureRender } from "../../../utils/performance";
 import { FeatureCard } from "./FeatureCard";
 
 interface Feature {
@@ -418,16 +419,17 @@ export const Features: React.FC = () => {
   // Removed noise texture and candlestick patterns generation
 
   return (
-    <div className="relative py-20 overflow-hidden">
-      {CosmicEffects}
+    <MeasureRender id="Features" logThreshold={16}>
+      <div className="relative py-20 overflow-hidden">
+        {CosmicEffects}
 
-      {/* Content Container */}
-      <motion.div 
-        className="relative"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
+        {/* Content Container */}
+        <motion.div 
+          className="relative"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
         <motion.div 
           className="text-center mb-16"
           initial={{ opacity: 0, y: -20 }}
@@ -464,6 +466,7 @@ export const Features: React.FC = () => {
           ))}
         </div>
       </motion.div>
-    </div>
+      </div>
+    </MeasureRender>
   );
 };

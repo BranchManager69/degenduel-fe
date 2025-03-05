@@ -14,6 +14,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { useStore } from "../../store/useStore";
+import { MeasureRender, usePerformanceMeasure } from "../../utils/performance";
 
 // Graphics quality and performance settings
 const GRAPHICS_QUALITY = "min"; // options: 'max', 'mid', 'min'
@@ -26,6 +27,8 @@ type QualitySettingType = "max" | "mid" | "min";
 
 // Epic visualization showcasing crypto market as a dodgeball battle
 export const ParticlesEffect: React.FC = () => {
+  const renderPerf = usePerformanceMeasure('ParticlesEffect-render');
+  const animationPerf = usePerformanceMeasure('ParticlesEffect-animation');
   const { maintenanceMode, user } = useStore();
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const mountedRef = useRef<boolean>(true);
@@ -1316,7 +1319,10 @@ export const ParticlesEffect: React.FC = () => {
 
         // Only render if the component is still mounted and renderer exists
         if (mountedRef.current && renderer && scene && camera) {
+          renderPerf.start();
           renderer.render(scene, camera);
+          renderPerf.end();
+          animationPerf.end(); // End tracking the entire frame time
         }
       } catch (error) {
         console.error("Error in animation loop:", error);
@@ -1391,23 +1397,25 @@ export const ParticlesEffect: React.FC = () => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      id="particles-container"
-      className="particles-container"
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none", // Don't capture clicks/taps
-        zIndex: 10,
-        opacity: isMounted ? OPACITY_MAGNITUDE * 0.3 : OPACITY_MAGNITUDE * 0.7, // Start brighter, then fade to subtle
-        transition: "opacity 3s ease-out", // Smooth transition over 3 seconds
-        transform: "translateZ(0)", // Force GPU acceleration
-        willChange: "opacity", // Hint for browser optimization
-      }}
-    ></div>
+    <MeasureRender id="ParticlesEffect" logThreshold={16}>
+      <div
+        ref={containerRef}
+        id="particles-container"
+        className="particles-container"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none", // Don't capture clicks/taps
+          zIndex: 10,
+          opacity: isMounted ? OPACITY_MAGNITUDE * 0.3 : OPACITY_MAGNITUDE * 0.7, // Start brighter, then fade to subtle
+          transition: "opacity 3s ease-out", // Smooth transition over 3 seconds
+          transform: "translateZ(0)", // Force GPU acceleration
+          willChange: "opacity", // Hint for browser optimization
+        }}
+      ></div>
+    </MeasureRender>
   );
 };

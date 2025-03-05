@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Card, CardContent } from '../../ui/Card';
+import React, { useRef, useEffect } from 'react';
+import { MeasureRender, usePerformanceMeasure } from '../../../utils/performance';
 
 interface FeatureCardProps {
   title: string;
@@ -12,410 +12,153 @@ interface FeatureCardProps {
 export const FeatureCard: React.FC<FeatureCardProps> = ({ 
   title, 
   description, 
-  // icon - removing from destructuring since we no longer use it
   isUpcoming = false 
 }) => {
-  const [hovered, setHovered] = useState(false);
-  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+  // No need to track hover state anymore
   
-  // Generate a seed for deterministic but unique patterns for each card
+  // Generate a seed for deterministic patterns
   const seed = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   
-  // Handle 3D tilt effect
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
+  // Performance measurement for canvas operations
+  const canvasPerf = usePerformanceMeasure('FeatureCard-canvas');
+  
+  // Pre-calculate candle data outside useEffect for better performance
+  const calculateCandleData = (seed: number, count: number) => {
+    const data: {isUp: boolean, height: number}[] = [];
     
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Deterministic random function
+    const random = (s: number, i: number) => {
+      return ((Math.sin(s + i * 100) + 1) / 2); // 0-1 value
+    };
     
-    // Calculate rotation based on mouse position
-    const rotateY = ((x / rect.width) - 0.5) * 25; // -12.5 to 12.5 degrees
-    const rotateX = ((y / rect.height) - 0.5) * -25; // 12.5 to -12.5 degrees
+    for (let i = 0; i < count; i++) {
+      const randVal = random(seed, i);
+      const isUp = randVal > 0.5;
+      
+      // Calculate height - taller toward edges for visual effect
+      const centerDistanceFactor = Math.abs((i / (count - 1)) - 0.5) * 2; // 0 at center, 1 at edges
+      const heightFactor = 0.5 + centerDistanceFactor * 0.5; // 0.5-1.0
+      const height = heightFactor * (0.3 + randVal * 0.4); // Normalized height
+
+      data.push({ isUp, height });
+    }
     
-    setRotation({ x: rotateX, y: rotateY });
+    return data;
   };
   
-  // Reset rotation on mouse leave
-  const handleMouseLeave = () => {
-    setHovered(false);
-    setRotation({ x: 0, y: 0 });
-  };
+  // Pre-calculate the data
+  const CANDLE_COUNT = 5; // Very few candles for maximum performance
+  const candleData = calculateCandleData(seed, CANDLE_COUNT);
   
-  // Draw candlestick chart with animated scrolling
+  // Draw minimal, efficient red/green candles pattern
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }); // Disable alpha for performance
     if (!ctx) return;
     
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvasPerf.start();
     
-    // Set chart dimensions to fill the entire canvas
-    const chartHeight = canvas.height;
-    const candleWidth = 8; // Wider candles
-    const padding = 3; // Spacing between candles
+    // Constants for better performance
+    const WIDTH = canvas.width;
+    const HEIGHT = canvas.height;
+    const CANDLE_WIDTH = WIDTH / (CANDLE_COUNT * 2);
+    const CANDLE_SPACING = CANDLE_WIDTH;
     
-    // Generate candlestick data
-    const generatePattern = () => {
-      // Optimized random function
-      const random = (min: number, max: number, index: number) => {
-        // Deterministic random based on seed and index
-        const x = Math.sin(seed + index) * 10000;
-        return ((x - Math.floor(x)) * (max - min)) + min;
-      };
-      
-      // Generate more candles to allow for animation
-      const points: number[] = new Array(42);
-      let price = 100 + random(-20, 20, 0);
-      
-      for (let i = 0; i < 42; i++) {
-        // Higher volatility for more dramatic visuals
-        const volatility = title.includes('Real-Time') ? 20 : 
-                           title.includes('Prize') ? 16 : 12;
-        
-        const change = random(-volatility, volatility, i + 1);
-        price += change;
-        if (price < 50) price = 50; // Prevent negative prices
-        points[i] = price;
-      }
-      
-      return points;
-    };
+    // Pre-compute colors for better performance
+    const GREEN = isUpcoming ? '#3b82f6' : '#22c55e';
+    const RED = isUpcoming ? '#6366f1' : '#dc2626';
+    const BG_COLOR = isUpcoming ? '#1e1a42' : '#1a1333';
     
-    // Generate the pattern data
-    const patterns = generatePattern();
+    // Clear canvas with background color (faster than clearRect + fillRect)
+    ctx.fillStyle = BG_COLOR;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
     
-    // Find min/max for scaling
-    const min = Math.min(...patterns) - 10; // Add padding
-    const max = Math.max(...patterns) + 10;
-    const range = max - min;
+    // Draw abstract candle representation
+    for (let i = 0; i < CANDLE_COUNT; i++) {
+      const { isUp, height } = candleData[i];
+      
+      // Determine candle position
+      const x = i * (CANDLE_WIDTH + CANDLE_SPACING) + CANDLE_SPACING/2;
+      
+      // Candle positioning - stagger for visual interest
+      const yBottom = HEIGHT;
+      const yTop = yBottom - height * HEIGHT;
+      
+      // Select color based on direction
+      ctx.fillStyle = isUp ? GREEN : RED;
+      
+      // Draw simplified candle without rounded corners
+      ctx.fillRect(x, yTop, CANDLE_WIDTH, height * HEIGHT);
+    }
     
-    // Function to scale a price to canvas height
-    const scaleY = (price: number) => chartHeight - ((price - min) / range) * chartHeight;
+    // Replace complex line connecting points with a simple horizontal line
+    // This is much faster than calculating and drawing curves
+    ctx.strokeStyle = isUpcoming ? '#3b82f6' : '#22c55e';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, HEIGHT * 0.4);
+    ctx.lineTo(WIDTH, HEIGHT * 0.4);
+    ctx.stroke();
     
-    // Animation variables
-    let offset = 0;
-    let animationFrameId: number;
-    const candleCount = Math.floor(canvas.width / (candleWidth + padding));
+    canvasPerf.end();
     
-    // Animation function
-    const animate = () => {
-      // Clear the canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Add subtle grid lines
-      ctx.strokeStyle = isUpcoming ? 'rgba(59, 130, 246, 0.1)' : 'rgba(126, 34, 206, 0.1)';
-      ctx.lineWidth = 0.5;
-      
-      // Draw horizontal grid lines
-      for (let i = 0; i <= 4; i++) {
-        const y = (chartHeight / 4) * i;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
-      
-      // Draw vertical grid lines
-      for (let i = 0; i <= candleCount; i++) {
-        const x = (canvas.width / candleCount) * i;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, chartHeight);
-        ctx.stroke();
-      }
-      
-      // Add more dramatic colored background to enhance the candlesticks
-      const gradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
-      if (isUpcoming) {
-        gradient.addColorStop(0, 'rgba(37, 99, 235, 0)');
-        gradient.addColorStop(0.7, 'rgba(37, 99, 235, 0.05)');
-        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.15)');
-      } else {
-        gradient.addColorStop(0, 'rgba(126, 34, 206, 0)');
-        gradient.addColorStop(0.7, 'rgba(126, 34, 206, 0.05)');
-        gradient.addColorStop(1, 'rgba(126, 34, 206, 0.15)');
-      }
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, chartHeight);
-      
-      // Add subtle radial glow in center
-      const radialGradient = ctx.createRadialGradient(
-        canvas.width/2, chartHeight/2, 0,
-        canvas.width/2, chartHeight/2, canvas.width/2
-      );
-      if (isUpcoming) {
-        radialGradient.addColorStop(0, 'rgba(37, 99, 235, 0.1)');
-        radialGradient.addColorStop(0.6, 'rgba(37, 99, 235, 0.03)');
-        radialGradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
-      } else {
-        radialGradient.addColorStop(0, 'rgba(126, 34, 206, 0.1)');
-        radialGradient.addColorStop(0.6, 'rgba(126, 34, 206, 0.03)');
-        radialGradient.addColorStop(1, 'rgba(126, 34, 206, 0)');
-      }
-      ctx.fillStyle = radialGradient;
-      ctx.fillRect(0, 0, canvas.width, chartHeight);
-      
-      // Calculate starting index based on offset
-      const startIdx = Math.floor(offset) % (patterns.length - candleCount);
-      
-      // Calculate line points for area fill
-      const linePoints: {x: number, y: number}[] = [];
-      
-      // Draw the candlesticks
-      for (let i = 0; i < candleCount; i++) {
-        const patternIdx = (startIdx + i) % patterns.length;
-        const nextIdx = (patternIdx + 1) % patterns.length;
-        
-        const prevPrice = patterns[patternIdx];
-        const price = patterns[nextIdx];
-        
-        // Store points for line graph
-        linePoints.push({
-          x: i * (candleWidth + padding) + candleWidth/2,
-          y: scaleY(price)
-        });
-        
-        // X position for this candle
-        const x = i * (candleWidth + padding);
-        
-        // Determine if candle is up or down
-        const isUp = price >= prevPrice;
-        
-        // Set color based on direction with glow effect
-        const upColorBase = isUpcoming ? 'rgba(59, 130, 246, 1)' : 'rgba(34, 197, 94, 1)';
-        const downColorBase = isUpcoming ? 'rgba(99, 102, 241, 1)' : 'rgba(220, 38, 38, 1)';
-        
-        // Draw shadow first for glow effect - more intense when hovered
-        ctx.shadowColor = isUp ? upColorBase : downColorBase;
-        ctx.shadowBlur = hovered ? 12 : 6;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        
-        // Draw rectangle from previous price to current price
-        const y1 = scaleY(prevPrice);
-        const y2 = scaleY(price);
-        const height = Math.max(Math.abs(y2 - y1), 2);
-        
-        // Draw candle body with rounded corners
-        const radius = candleWidth / 3;
-        const y = Math.min(y1, y2);
-        
-        ctx.fillStyle = isUp ? upColorBase : downColorBase;
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + candleWidth - radius, y);
-        ctx.arcTo(x + candleWidth, y, x + candleWidth, y + radius, radius);
-        ctx.lineTo(x + candleWidth, y + height - radius);
-        ctx.arcTo(x + candleWidth, y + height, x + candleWidth - radius, y + height, radius);
-        ctx.lineTo(x + radius, y + height);
-        ctx.arcTo(x, y + height, x, y + height - radius, radius);
-        ctx.lineTo(x, y + radius);
-        ctx.arcTo(x, y, x + radius, y, radius);
-        ctx.fill();
-        
-        // Reset shadow for wicks
-        ctx.shadowBlur = 0;
-        
-        // Add prominent wicks to all candles
-        const wickTop = Math.min(y1, y2) - 6;
-        const wickBottom = Math.max(y1, y2) + 6;
-        
-        ctx.beginPath();
-        ctx.moveTo(x + candleWidth/2, wickTop);
-        ctx.lineTo(x + candleWidth/2, wickBottom);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = isUp ? upColorBase : downColorBase;
-        ctx.stroke();
-      }
-      
-      // Draw area under the line
-      if (linePoints.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(linePoints[0].x, chartHeight);
-        
-        // First point
-        ctx.lineTo(linePoints[0].x, linePoints[0].y);
-        
-        // Connect all points
-        for (let i = 1; i < linePoints.length; i++) {
-          ctx.lineTo(linePoints[i].x, linePoints[i].y);
-        }
-        
-        // Close the path to bottom right then bottom left
-        ctx.lineTo(linePoints[linePoints.length-1].x, chartHeight);
-        ctx.lineTo(linePoints[0].x, chartHeight);
-        
-        // Fill with gradient
-        const areaGradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
-        if (isUpcoming) {
-          areaGradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
-          areaGradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-        } else {
-          areaGradient.addColorStop(0, 'rgba(126, 34, 206, 0.2)');
-          areaGradient.addColorStop(1, 'rgba(126, 34, 206, 0)');  
-        }
-        
-        ctx.fillStyle = areaGradient;
-        ctx.globalAlpha = 0.5;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      }
-      
-      // Update offset for animation - speed up when hovered
-      offset += hovered ? 0.1 : 0.05;
-      
-      // Continue animation
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    
-    // Start animation
-    animate();
-    
-    // Clean up animation on unmount
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [title, seed, isUpcoming, hovered]);
+  }, [candleData, isUpcoming, canvasPerf]); // Note: using pre-calculated candleData instead of seed
   
   return (
-    <div 
-      ref={cardRef}
-      className={`
-        perspective-1000 transform-style-3d cursor-pointer
-        transition-transform duration-700 h-full
-      `}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
-        transformStyle: 'preserve-3d'
-      }}
-    >
-      <Card className={`
-        ${
-          isUpcoming
-            ? "bg-gradient-to-br from-[#1e1a42]/80 to-[#1a1333]/90 border-blue-500/20"
-            : "bg-gradient-to-br from-[#1a1333]/80 to-[#120d24]/90 border-purple-500/20"
-        }
-        backdrop-blur-sm border rounded-xl
-        overflow-hidden h-full
-        transition-all duration-500
-        ${hovered ? 
-          isUpcoming ? 
-            'shadow-xl shadow-blue-500/20 border-blue-400/40' : 
-            'shadow-xl shadow-purple-500/30 border-purple-400/40' 
-          : ''}
-        transform-style-3d
-      `}>
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          {/* Dynamic background with canvas as full backdrop */}
+    <MeasureRender id="FeatureCard" logThreshold={5}>
+      <div 
+        className="relative overflow-hidden rounded-xl border border-opacity-20 h-full transform transition hover:scale-102"
+        style={{
+          borderColor: isUpcoming ? '#3b82f6' : '#a855f7',
+          backgroundColor: isUpcoming ? 'rgba(30, 26, 66, 0.7)' : 'rgba(26, 19, 51, 0.7)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        {/* Bottom stripe with candles visualization - minimal implementation */}
+        <div className="absolute bottom-0 left-0 right-0 h-10 overflow-hidden">
           <canvas 
             ref={canvasRef} 
-            width={600} 
-            height={400}
-            className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
+            width={250} 
+            height={40}
+            className="w-full h-full"
           />
-          
-          {/* Overlay gradient for better text contrast */}
-          <div className={`
-            absolute inset-0 
-            bg-gradient-to-br
-            ${isUpcoming ? 
-              'from-[#1e1a42]/95 via-[#1e1a42]/70 to-transparent' : 
-              'from-[#1a1333]/95 via-[#1a1333]/70 to-transparent'
-            }
-          `}></div>
-          
-          {/* Subtle scanlines effect */}
-          <div className="absolute inset-0 bg-scanlines opacity-5"></div>
-          
-          {/* Radial highlight around content */}
-          <div className={`
-            absolute inset-0 
-            bg-radial-gradient
-            opacity-40
-            ${isUpcoming ?
-              'from-blue-500/10 via-transparent to-transparent' :
-              'from-purple-500/10 via-transparent to-transparent'
-            }
-          `}></div>
         </div>
         
-        <CardContent className="p-6 relative z-10">
+        {/* Content area */}
+        <div className="relative z-10 p-4 pb-12">
+          {/* SOON tag - simplified */}
           {isUpcoming && (
-            <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 z-10 backdrop-blur-sm">
-              <span className="text-xs font-cyber text-blue-400 tracking-wider flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                SOON
-              </span>
-            </div>
+            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-400"></div>
           )}
-        
-          {/* Title with 3D depth effect and glow */}
-          <div 
-            className="mb-4 max-w-[85%]"
-            style={{ 
-              transform: 'translateZ(30px)',
-              transformStyle: 'preserve-3d' 
-            }}
-          >
-            <h3 className={`
-              text-2xl font-bold mb-3
-              ${isUpcoming ? "text-blue-100" : "text-purple-100"}
-              text-shadow-lg tracking-wide
-            `}>
-              {title}
-            </h3>
-            
-            {/* Description with enhanced legibility */}
-            <p className={`
-              mb-2 font-medium leading-relaxed
-              ${isUpcoming ? "text-blue-200/90" : "text-purple-200/90"}
-              backdrop-blur-[2px] rounded-md py-1
-              text-shadow
-            `}>
-              {description}
-            </p>
-          </div>
           
-          {/* Interactive element */}
-          <div 
-            className={`
-              absolute bottom-4 right-4 z-20
-              transition-all duration-300 ease-in-out
-              ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
-            `}
-            style={{ 
-              transform: `translateZ(40px) ${hovered ? 'scale(1)' : 'scale(0.9)'}`, 
-              transformStyle: 'preserve-3d'
-            }}
-          >
-            <div className={`
-              px-4 py-2 rounded-lg text-sm font-semibold
-              flex items-center gap-2
-              ${isUpcoming ? 
-                'bg-blue-500/30 text-blue-100 border border-blue-400/40' : 
-                'bg-purple-500/30 text-purple-100 border border-purple-400/40'
-              }
-              backdrop-blur-md shadow-md
-              animate-pulse-gpu
-            `}>
-              <span className={`
-                w-2 h-2 rounded-full animate-pulse
-                ${isUpcoming ? 'bg-blue-300' : 'bg-purple-300'}
-              `}></span>
-              View Feature
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          {/* Title - simplified typography */}
+          <h3 className={`
+            text-lg font-bold mb-2
+            ${isUpcoming ? "text-blue-100" : "text-purple-100"}
+          `}>
+            {title}
+          </h3>
+          
+          {/* Description - truncated with ellipsis for very long text */}
+          <p className={`
+            text-sm line-clamp-3
+            ${isUpcoming ? "text-blue-200/80" : "text-purple-200/80"}
+          `}>
+            {description}
+          </p>
+        </div>
+        
+        {/* Left color accent bar - static, no animation */}
+        <div 
+          className={`
+            absolute top-0 left-0 bottom-0 w-1
+            ${isUpcoming ? 'bg-blue-500' : 'bg-green-500'}
+          `}
+        />
+      </div>
+    </MeasureRender>
   );
 };
