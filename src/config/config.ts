@@ -83,7 +83,38 @@ export const FEATURE_FLAGS = {
 export const SYSTEM_SETTINGS = {
   BACKGROUND_SCENE: {
     ENABLED: true,
-    SCENE_NAME: "Dodgeball", // Options: "Dodgeball", "TokenVerse", "MarketVerse", etc.
+    SCENES: [
+      { 
+        name: "Dodgeball", 
+        enabled: true,
+        zIndex: 4,
+        blendMode: "screen" 
+      },
+      { 
+        name: "TokenVerse", 
+        enabled: false,
+        zIndex: 1,
+        blendMode: "normal" 
+      },
+      { 
+        name: "MarketVerse", 
+        enabled: false,
+        zIndex: 2,
+        blendMode: "lighten" 
+      },
+      { 
+        name: "MarketBrain", 
+        enabled: false,
+        zIndex: 3,
+        blendMode: "normal" 
+      },
+      { 
+        name: "AmbientMarketData", 
+        enabled: false,
+        zIndex: 5,
+        blendMode: "normal" 
+      }
+    ]
   }
 };
 
