@@ -76,7 +76,7 @@ export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 /* Feature Flags */
 export const FEATURE_FLAGS = {
-  SHOW_FEATURES_SECTION: false, // Set to false to disable the Features section on landing page
+  SHOW_FEATURES_SECTION: true, // Set to false to disable the Features section on landing page for debugging
 };
 
 /* System Settings */
@@ -84,38 +84,38 @@ export const SYSTEM_SETTINGS = {
   BACKGROUND_SCENE: {
     ENABLED: true,
     SCENES: [
-      { 
-        name: "Dodgeball", 
+      {
+        name: "Dodgeball",
         enabled: true,
         zIndex: 4,
-        blendMode: "screen" 
+        blendMode: "screen",
       },
-      { 
-        name: "TokenVerse", 
+      {
+        name: "TokenVerse",
         enabled: false,
         zIndex: 1,
-        blendMode: "normal" 
+        blendMode: "normal",
       },
-      { 
-        name: "MarketVerse", 
+      {
+        name: "MarketVerse",
         enabled: false,
         zIndex: 2,
-        blendMode: "lighten" 
+        blendMode: "lighten",
       },
-      { 
-        name: "MarketBrain", 
+      {
+        name: "MarketBrain",
         enabled: false,
         zIndex: 3,
-        blendMode: "normal" 
+        blendMode: "normal",
       },
-      { 
-        name: "AmbientMarketData", 
+      {
+        name: "AmbientMarketData",
         enabled: false,
         zIndex: 5,
-        blendMode: "normal" 
-      }
-    ]
-  }
+        blendMode: "normal",
+      },
+    ],
+  },
 };
 
 /* Done */

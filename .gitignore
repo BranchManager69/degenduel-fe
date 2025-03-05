@@ -9,6 +9,8 @@ build-metrics/
 
 # Documentation
 docs_drafts/
+.claude/
+CLAUDE.md
 
 # Environments
 .env
