@@ -40,13 +40,14 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
     }
 
     const connect = () => {
-      // Determine the WebSocket URL based on the current domain in production
+      // Determine the WebSocket URL based on the current domain
       let baseWsUrl;
-      const isProduction = import.meta.env.VITE_NODE_ENV === 'production' && 
-                         window.location.hostname === 'degenduel.me';
       
-      if (isProduction) {
-        // In production on the main domain, always use the production domain
+      // Check if we're on the production domain
+      const isProdDomain = window.location.hostname === "degenduel.me";
+      
+      if (isProdDomain) {
+        // In production on the main domain, use the same domain for WebSockets
         baseWsUrl = `wss://${window.location.hostname}`;
       } else if (config.url) {
         // Use the provided URL from config (for dev environments)

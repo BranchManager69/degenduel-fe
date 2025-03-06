@@ -1,13 +1,25 @@
+// src/components/landing/contests-preview/ContestButton.tsx
+
+/**
+ * This is the button that appears on the contest card.
+ * It is used to navigate to the contest page.
+ * It is also used to display the contest status.
+ */
+
 import React from "react";
 import { Link } from "react-router-dom";
 
 interface ContestButtonProps {
   id: number;
-  type: "live" | "upcoming";
+  type: "live" | "upcoming" | "completed" | "cancelled";
 }
 
+// Contest Button Component
 export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
-  const isLive = type === "live";
+  const isLive = type === "live"; // a.k.a. "active"
+  const isUpcoming = type === "upcoming"; // a.k.a. "pending"
+  const isCompleted = type === "completed"; // a.k.a. "finished"
+  const isCancelled = type === "cancelled";
 
   // Determine gradient based on contest type
   const gradientClasses = isLive
@@ -15,7 +27,13 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
     : "from-blue-500/20 via-brand-500/20 to-blue-500/20";
 
   // Determine text color based on contest type
-  const textColorClass = isLive ? "text-green-400" : "text-blue-400";
+  const textColorClass = isLive
+    ? "text-green-400"
+    : isUpcoming
+    ? "text-blue-400"
+    : isCompleted
+    ? "text-green-400"
+    : "text-red-400";
 
   // Determine hover color based on contest type
   const hoverBgClass = isLive
@@ -24,11 +42,35 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
 
   // Determine border color based on contest type
   const borderColorClass = isLive
+    ? "border-red-500/30"
+    : isUpcoming
+    ? "border-blue-500/30"
+    : isCompleted
     ? "border-green-500/30"
-    : "border-blue-500/30";
+    : "border-red-500/30";
+
+  // Determine icon color based on contest type
+  //const iconColorClass = isLive
+  //  ? "text-red-400"
+  //  : isUpcoming
+  //  ? "text-blue-400"
+  //  : isCompleted
+  //  ? "text-green-400"
+  //  : "text-red-400";
+
+  let contestButtonDestination = "";
+  if (isLive) {
+    contestButtonDestination = `/contests/${id}/live`;
+  } else if (isUpcoming) {
+    contestButtonDestination = `/contests/${id}`;
+  } else if (isCompleted) {
+    contestButtonDestination = `/contests/${id}/results`;
+  } else if (isCancelled) {
+    contestButtonDestination = `/contests/${id}`;
+  }
 
   return (
-    <Link to={`/contests/${id}`} className="block">
+    <Link to={contestButtonDestination} className="block">
       <button
         className={`
         w-full relative group overflow-hidden 
@@ -60,32 +102,36 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
 
         {/* Button content */}
         <div className="relative flex items-center justify-center space-x-3">
-          {/* Animated icon for live contests */}
+          {/* Animated 'live' icon for active contests */}
           {isLive && (
             <span className="relative w-2 h-2">
-              <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
-              <span className="relative rounded-full w-2 h-2 bg-green-400"></span>
+              <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-75"></span>
+              <span className="relative rounded-full w-2 h-2 bg-red-400"></span>
             </span>
           )}
 
           <span
             className={`${textColorClass} font-medium text-[15px] uppercase`}
           >
-            {isLive ? "Spectate Live" : "Enter Arena"}
+            {isLive
+              ? "Spectate Live"
+              : isUpcoming
+              ? "Enter Arena"
+              : isCompleted
+              ? "View Results"
+              : "View Details"}
           </span>
 
           <svg
-            className="w-5 h-5 ${textColorClass} transform group-hover:translate-x-1 transition-transform duration-500"
-            fill="none"
+            className={`${textColorClass} w-5 h-5`}
             viewBox="0 0 24 24"
             stroke="currentColor"
+            fill="none"
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M14 5l7 7m0 0l-7 7m7-7H3"
-            />
+            <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
         </div>
 

@@ -1,3 +1,13 @@
+// src/utils/performance.tsx
+
+/**
+ * This file contains the MeasureRender component and the usePerformanceMeasure hook.
+ * It is used to measure the performance of the application.
+ * It is used to identify performance bottlenecks.
+ * It is used to debug the performance of the application.
+ *
+ */
+
 import React, { useEffect, useRef } from "react";
 
 /**

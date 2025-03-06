@@ -2,6 +2,31 @@ import { Activity, Contest, PlatformStats } from "../../types/index";
 import { createApiClient } from "./utils";
 
 export const admin = {
+  getSystemSettings: async (): Promise<any> => {
+    try {
+      const api = createApiClient();
+      const response = await api.fetch("/admin/system-settings");
+      return response.json();
+    } catch (error) {
+      console.error("Failed to fetch system settings:", error);
+      throw error;
+    }
+  },
+  
+  updateSystemSettings: async (key: string, value: any): Promise<any> => {
+    try {
+      const api = createApiClient();
+      const response = await api.fetch("/admin/system-settings", {
+        method: "POST",
+        body: JSON.stringify({ key, value }),
+      });
+      return response.json();
+    } catch (error) {
+      console.error(`Failed to update system setting "${key}":`, error);
+      throw error;
+    }
+  },
+  
   getPlatformStats: async (): Promise<PlatformStats> => {
     try {
       const api = createApiClient();

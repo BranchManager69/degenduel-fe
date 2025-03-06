@@ -14,6 +14,7 @@ export class DodgeballScene {
   // Three.js objects
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
+  private container: HTMLElement | null = null;
 
   // Instanced meshes
   private redPlayers: THREE.InstancedMesh | null = null;
@@ -31,6 +32,11 @@ export class DodgeballScene {
   // Court elements
   private court: THREE.Mesh | null = null;
   private centerLine: THREE.Mesh | null = null;
+
+  // Special effects
+  private mysticalBallGlow: THREE.Mesh | null = null;
+  private eliminationWave: THREE.Mesh | null = null;
+  private victoryGlow: THREE.Mesh | null = null;
 
   // Lights
   private redLight: THREE.PointLight | null = null;
@@ -66,14 +72,26 @@ export class DodgeballScene {
 
   // Game state
   private gameState = {
-    phase: "ready" as "ready" | "rush" | "battle" | "endgame",
+    phase: "ready" as
+      | "ready"
+      | "rush"
+      | "battle"
+      | "endgame"
+      | "mystical-catch",
     phaseStartTime: 0,
     redTeamActive: 0,
     greenTeamActive: 0,
     redTeamBalls: 0,
     greenTeamBalls: 0,
-    ballOwnership: [] as (-1 | 0 | 1)[], // -1: no owner, 0: red team, 1: green team
-    ballState: [] as ("center" | "carried" | "thrown" | "ground")[], // Current ball status
+    ballOwnership: [] as (-1 | 0 | 1 | 2)[], // -1: no owner, 0: red team, 1: green team, 2: user
+    ballState: [] as (
+      | "center"
+      | "carried"
+      | "thrown"
+      | "ground"
+      | "user-held"
+      | "user-thrown"
+    )[], // Current ball status
     ballTargets: [] as (number | null)[], // Target player index when thrown
     throwCooldown: [] as number[], // Cooldown timers for each player
     playerStatus: {
@@ -105,6 +123,28 @@ export class DodgeballScene {
       min: 0.2, // One throw every 5 seconds when slow
       max: 1.0, // Up to one throw per second when intense
     },
+    // User interaction state
+    userInteraction: {
+      isHolding: false, // User is currently holding a ball
+      heldBallIndex: -1, // Index of ball user is holding
+      dragStartPosition: new THREE.Vector2(), // Screen position where drag started
+      currentPosition: new THREE.Vector2(), // Current mouse/touch position
+      dragStartTime: 0, // When drag started
+      throwVelocity: new THREE.Vector3(), // Calculated throw velocity
+      lastThrowTime: 0, // Time of last user throw (for cooldown)
+      mysticalCatchTeam: null as "red" | "green" | null, // Team that made mystical catch
+      mysticalCatchTime: 0, // When the mystical catch happened
+      mysticalCatchPlayer: -1, // Index of player who made catch
+      raycaster: new THREE.Raycaster(), // For hit detection
+      mouse: new THREE.Vector2(), // Normalized mouse coordinates
+    },
+    // Special effects state
+    specialEffects: {
+      mysticalGlowIntensity: 1, // Intensity of mystical ball glow (0-1)
+      victoryGlowIntensity: 1, // Intensity of victory team glow (0-1)
+      eliminationWaveRadius: 1, // Radius of elimination wave effect (0-1)
+      eliminationWaveOpacity: 1, // Opacity of elimination wave (0-1)
+    },
   };
 
   // Trail positions
@@ -127,12 +167,15 @@ export class DodgeballScene {
 
   constructor(
     container: HTMLElement,
-    particleCountRed: number = 150,
-    particleCountGreen: number = 150,
-    particleCountBlueBalls: number = 40
+    particleCountRed: number = 300,
+    particleCountGreen: number = 300,
+    particleCountBlueBalls: number = 75
   ) {
     // Get ThreeManager instance
     const threeManager = ThreeManager.getInstance();
+
+    // Store container reference
+    this.container = container;
 
     // Set particle counts
     this.particleCount = {
@@ -175,6 +218,419 @@ export class DodgeballScene {
 
     // Attach renderer to container
     threeManager.attachRenderer(this.COMPONENT_ID, container);
+
+    // Setup user interaction events
+    this.setupUserInteraction();
+  }
+
+  /**
+   * Setup user interaction events
+   */
+  private setupUserInteraction(): void {
+    if (!this.container) return;
+
+    // Mouse/touch down event - start ball grab
+    this.container.addEventListener("mousedown", this.onMouseDown.bind(this));
+    this.container.addEventListener(
+      "touchstart",
+      this.onTouchStart.bind(this),
+      { passive: false }
+    );
+
+    // Mouse/touch move event - update drag position
+    window.addEventListener("mousemove", this.onMouseMove.bind(this));
+    window.addEventListener("touchmove", this.onTouchMove.bind(this), {
+      passive: false,
+    });
+
+    // Mouse/touch up event - throw ball
+    window.addEventListener("mouseup", this.onMouseUp.bind(this));
+    window.addEventListener("touchend", this.onTouchEnd.bind(this));
+  }
+
+  /**
+   * Handle mouse down - attempt to grab a ball
+   */
+  private onMouseDown(event: MouseEvent): void {
+    event.preventDefault();
+    this.updateMousePosition(event.clientX, event.clientY);
+    this.attemptBallGrab();
+  }
+
+  /**
+   * Handle touch start - attempt to grab a ball
+   */
+  private onTouchStart(event: TouchEvent): void {
+    if (event.touches.length === 0) return;
+
+    event.preventDefault();
+    const touch = event.touches[0];
+    this.updateMousePosition(touch.clientX, touch.clientY);
+    this.attemptBallGrab();
+  }
+
+  /**
+   * Handle mouse move - update drag position
+   */
+  private onMouseMove(event: MouseEvent): void {
+    if (!this.gameState.userInteraction.isHolding) return;
+
+    this.updateMousePosition(event.clientX, event.clientY);
+    this.updateHeldBallPosition();
+  }
+
+  /**
+   * Handle touch move - update drag position
+   */
+  private onTouchMove(event: TouchEvent): void {
+    if (!this.gameState.userInteraction.isHolding || event.touches.length === 0)
+      return;
+
+    const touch = event.touches[0];
+    this.updateMousePosition(touch.clientX, touch.clientY);
+    this.updateHeldBallPosition();
+  }
+
+  /**
+   * Handle mouse up - throw ball if holding
+   */
+  private onMouseUp(event: MouseEvent): void {
+    if (!this.gameState.userInteraction.isHolding) return;
+
+    this.updateMousePosition(event.clientX, event.clientY);
+    this.throwHeldBall();
+  }
+
+  /**
+   * Handle touch end - throw ball if holding
+   */
+  private onTouchEnd(_event: TouchEvent): void {
+    if (!this.gameState.userInteraction.isHolding) return;
+
+    // Use last known position since touch has ended
+    this.throwHeldBall();
+  }
+
+  /**
+   * Update normalized mouse position for raycasting
+   */
+  private updateMousePosition(clientX: number, clientY: number): void {
+    if (!this.container) return;
+
+    // Get container bounds
+    const rect = this.container.getBoundingClientRect();
+
+    // Store actual screen coordinates for velocity calculation
+    this.gameState.userInteraction.currentPosition.x = clientX;
+    this.gameState.userInteraction.currentPosition.y = clientY;
+
+    // Calculate normalized coordinates (-1 to 1)
+    const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Store normalized coordinates for raycasting
+    this.gameState.userInteraction.mouse.x = x;
+    this.gameState.userInteraction.mouse.y = y;
+  }
+
+  /**
+   * Attempt to grab a ball from the scene
+   */
+  private attemptBallGrab(): void {
+    // Only allow grab if not already holding and not in mystical catch phase
+    if (
+      this.gameState.userInteraction.isHolding ||
+      this.gameState.phase === "mystical-catch"
+    )
+      return;
+
+    // Setup raycaster
+    const raycaster = this.gameState.userInteraction.raycaster;
+    raycaster.setFromCamera(this.gameState.userInteraction.mouse, this.camera);
+
+    // Find all balls in the scene
+    const ballObjects: THREE.Object3D[] = [];
+    if (this.blueBalls) {
+      for (let i = 0; i < this.particleCount.blueBalls; i++) {
+        // Extract each ball's position
+        const idx = i * 3;
+        const position = new THREE.Vector3(
+          this.blueBallsPositions[idx],
+          this.blueBallsPositions[idx + 1],
+          this.blueBallsPositions[idx + 2]
+        );
+
+        // Create temporary hit sphere for raycasting (we're not actually adding this to the scene)
+        const hitSphere = new THREE.Mesh(
+          new THREE.SphereGeometry(1), // Larger hit area for easier grabbing
+          new THREE.MeshBasicMaterial()
+        );
+        hitSphere.position.copy(position);
+        hitSphere.userData = { ballIndex: i };
+
+        ballObjects.push(hitSphere);
+      }
+    }
+
+    // Cast ray against balls
+    const intersects = raycaster.intersectObjects(ballObjects, false);
+
+    if (intersects.length > 0) {
+      // Grab the first intersected ball
+      const ballIndex = intersects[0].object.userData.ballIndex;
+      this.grabBall(ballIndex);
+    }
+  }
+
+  /**
+   * Grab a specific ball
+   */
+  private grabBall(ballIndex: number): void {
+    // Don't grab if ball is already user-held
+    if (
+      this.gameState.ballState[ballIndex] === "user-held" ||
+      this.gameState.ballState[ballIndex] === "user-thrown"
+    )
+      return;
+
+    // Save previous state for possible return if user doesn't throw
+    const previousState = this.gameState.ballState[ballIndex];
+    const previousOwner = this.gameState.ballOwnership[ballIndex];
+
+    // Update ball state
+    this.gameState.userInteraction.isHolding = true;
+    this.gameState.userInteraction.heldBallIndex = ballIndex;
+    this.gameState.userInteraction.dragStartTime = this.time;
+    this.gameState.userInteraction.dragStartPosition.copy(
+      this.gameState.userInteraction.currentPosition
+    );
+
+    this.gameState.ballState[ballIndex] = "user-held";
+    this.gameState.ballOwnership[ballIndex] = 2; // User
+
+    // If ball was carried by a player, update player state
+    if (previousState === "carried") {
+      if (previousOwner === 0) {
+        // Red team
+        for (let i = 0; i < this.particleCount.red; i++) {
+          if (this.gameState.playerStatus.red[i] === "carrying") {
+            this.gameState.playerStatus.red[i] = "active";
+            this.gameState.redTeamBalls--;
+            break;
+          }
+        }
+      } else if (previousOwner === 1) {
+        // Green team
+        for (let i = 0; i < this.particleCount.green; i++) {
+          if (this.gameState.playerStatus.green[i] === "carrying") {
+            this.gameState.playerStatus.green[i] = "active";
+            this.gameState.greenTeamBalls--;
+            break;
+          }
+        }
+      }
+    }
+
+    // Create mystical purple material for user balls if not already created
+    const threeManager = ThreeManager.getInstance();
+    const mysticalMaterial = threeManager.getOrCreateMaterial(
+      "mystical-purple-ball",
+      () =>
+        new THREE.MeshStandardMaterial({
+          color: 0x8a2be2, // Bright purple
+          emissive: 0x6a0dad, // Dark purple
+          emissiveIntensity: 0.7,
+          roughness: 0.3,
+          metalness: 0.8,
+        })
+    );
+
+    // Apply mystical material to ball
+    if (this.blueBalls) {
+      this.blueBalls.material = mysticalMaterial;
+    }
+
+    // Update ball position to follow cursor
+    this.updateHeldBallPosition();
+  }
+
+  /**
+   * Update position of ball held by user
+   */
+  private updateHeldBallPosition(): void {
+    if (!this.gameState.userInteraction.isHolding) return;
+
+    const ballIndex = this.gameState.userInteraction.heldBallIndex;
+    if (ballIndex < 0 || ballIndex >= this.particleCount.blueBalls) return;
+
+    // Project mouse position into 3D space
+    const raycaster = this.gameState.userInteraction.raycaster;
+    raycaster.setFromCamera(this.gameState.userInteraction.mouse, this.camera);
+
+    // Find intersection with an invisible plane at y=2
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -2);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(plane, intersection);
+
+    // Update ball position
+    const idx = ballIndex * 3;
+    this.blueBallsPositions[idx] = intersection.x;
+    this.blueBallsPositions[idx + 1] = intersection.y;
+    this.blueBallsPositions[idx + 2] = intersection.z;
+
+    // Calculate velocity for visual feedback
+    const dt = this.time - this.gameState.userInteraction.dragStartTime;
+    if (dt > 0) {
+      const startPos = this.gameState.userInteraction.dragStartPosition;
+      const currentPos = this.gameState.userInteraction.currentPosition;
+
+      // Screen space velocity
+      const dx = ((currentPos.x - startPos.x) / dt) * 0.01;
+      const dy = ((currentPos.y - startPos.y) / dt) * 0.01;
+
+      // Project to 3D space (simplified)
+      this.gameState.userInteraction.throwVelocity.set(
+        dx,
+        -dy * 0.5, // Reverse Y and scale down
+        -dy * 0.5 // Forward/backward movement
+      );
+    }
+  }
+
+  /**
+   * Throw the ball held by user
+   */
+  private throwHeldBall(): void {
+    if (!this.gameState.userInteraction.isHolding) return;
+
+    const ballIndex = this.gameState.userInteraction.heldBallIndex;
+    if (ballIndex < 0) return;
+
+    // Get drag duration and distance
+    const dragDuration =
+      this.time - this.gameState.userInteraction.dragStartTime;
+    const startPos = this.gameState.userInteraction.dragStartPosition;
+    const endPos = this.gameState.userInteraction.currentPosition;
+
+    // Calculate drag distance and direction
+    const dragDistX = endPos.x - startPos.x;
+    const dragDistY = endPos.y - startPos.y;
+    const dragDistance = Math.sqrt(
+      dragDistX * dragDistX + dragDistY * dragDistY
+    );
+
+    // Only throw if drag was long enough
+    if (dragDistance < 10 || dragDuration < 0.1) {
+      // Too small movement - just drop the ball
+      this.gameState.ballState[ballIndex] = "ground";
+      this.gameState.ballOwnership[ballIndex] = -1;
+
+      // Reset user state
+      this.gameState.userInteraction.isHolding = false;
+      this.gameState.userInteraction.heldBallIndex = -1;
+      return;
+    }
+
+    // Calculate throw velocity based on drag
+    const speed = Math.min(0.5, dragDistance * 0.001 * (1 / dragDuration));
+
+    // Direction based on drag vector
+    const dirX = dragDistX / dragDistance;
+    const dirY = dragDistY / dragDistance;
+
+    // Apply velocity to ball
+    const idx = ballIndex * 3;
+    this.blueBallsVelocities[idx] = dirX * speed;
+    this.blueBallsVelocities[idx + 1] = -dirY * speed * 0.5; // Y is inverted in screen space
+    this.blueBallsVelocities[idx + 2] = -dirY * speed * 0.5; // Forward/backward based on Y drag
+
+    // Change state to thrown
+    this.gameState.ballState[ballIndex] = "user-thrown";
+
+    // Reset user state
+    this.gameState.userInteraction.isHolding = false;
+    this.gameState.userInteraction.heldBallIndex = -1;
+    this.gameState.userInteraction.lastThrowTime = this.time;
+
+    // Restore normal ball material
+    const threeManager = ThreeManager.getInstance();
+    const standardBallMaterial = threeManager.getOrCreateMaterial(
+      "dodgeball-blue",
+      () =>
+        new THREE.MeshStandardMaterial({
+          color: 0x4488ff,
+          emissive: 0x0044ff,
+          emissiveIntensity: 0.5,
+          roughness: 0.2,
+          metalness: 0.8,
+        })
+    ) as THREE.MeshStandardMaterial;
+
+    if (this.blueBalls) {
+      this.blueBalls.material = standardBallMaterial;
+    }
+  }
+
+  /**
+   * Create mystical glow effect around a ball
+   */
+  private createMysticalGlow(ballIndex: number): void {
+    const idx = ballIndex * 3;
+    const position = new THREE.Vector3(
+      this.blueBallsPositions[idx],
+      this.blueBallsPositions[idx + 1],
+      this.blueBallsPositions[idx + 2]
+    );
+
+    // Create glow mesh if not exists
+    if (!this.mysticalBallGlow) {
+      const glowGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x8a2be2, // Bright purple
+        transparent: true,
+        opacity: 0.7,
+        blending: THREE.AdditiveBlending,
+      });
+      this.mysticalBallGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+      this.scene.add(this.mysticalBallGlow);
+    }
+
+    // Position and show glow
+    this.mysticalBallGlow.position.copy(position);
+    this.mysticalBallGlow.scale.set(1, 1, 1);
+    this.mysticalBallGlow.visible = true;
+  }
+
+  /**
+   * Create team victory glow effect
+   */
+  private createVictoryGlow(team: "red" | "green"): void {
+    const color = team === "red" ? 0xff3333 : 0x33ff33;
+
+    // Create victory glow plane if not exists
+    if (!this.victoryGlow) {
+      const glowGeometry = new THREE.PlaneGeometry(50, 30);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+      });
+      this.victoryGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+      this.victoryGlow.rotation.x = Math.PI / 2;
+      this.victoryGlow.position.y = -0.3;
+      this.scene.add(this.victoryGlow);
+    } else {
+      // Update existing glow color
+      (this.victoryGlow.material as THREE.MeshBasicMaterial).color.setHex(
+        color
+      );
+    }
+
+    // Reset opacity
+    (this.victoryGlow.material as THREE.MeshBasicMaterial).opacity = 0;
+    this.gameState.specialEffects.victoryGlowIntensity = 0;
   }
 
   /**
@@ -761,6 +1217,12 @@ export class DodgeballScene {
     // Update tension factor based on game state
     this.updateTensionFactor();
 
+    // Update mystical catch effects if active
+    if (this.gameState.phase === "mystical-catch") {
+      this.updateMysticalCatchEffects(deltaTime);
+      return; // Skip other game state updates during mystical catch
+    }
+
     // Handle game phases based on elapsed time
     if (this.gameState.phase === "ready" && this.time > 2) {
       // Start rush phase after 2 seconds
@@ -1268,7 +1730,14 @@ export class DodgeballScene {
    */
   private updateThrownBalls(): void {
     for (let i = 0; i < this.particleCount.blueBalls; i++) {
-      if (this.gameState.ballState[i] !== "thrown") continue;
+      // Process both AI-thrown and user-thrown balls
+      if (
+        this.gameState.ballState[i] !== "thrown" &&
+        this.gameState.ballState[i] !== "user-thrown"
+      )
+        continue;
+
+      const isUserThrown = this.gameState.ballState[i] === "user-thrown";
 
       const ballIdx = i * 3;
       const bx = this.blueBallsPositions[ballIdx];
@@ -1289,115 +1758,158 @@ export class DodgeballScene {
         continue;
       }
 
-      // Check for hits on players
-      const targetTeam =
-        this.gameState.ballOwnership[i] === 0 ? "green" : "red";
-      const targetPositions =
-        targetTeam === "red" ? this.redPositions : this.greenPositions;
-      const targetStatuses =
-        targetTeam === "red"
-          ? this.gameState.playerStatus.red
-          : this.gameState.playerStatus.green;
+      // User balls can hit both teams, AI balls only hit the opposing team
+      let teamsToCheck: ("red" | "green")[] = [];
 
-      for (
-        let j = 0;
-        j <
-        (targetTeam === "red"
-          ? this.particleCount.red
-          : this.particleCount.green);
-        j++
-      ) {
-        if (targetStatuses[j] === "eliminated") continue;
+      if (isUserThrown) {
+        // User-thrown balls can hit both teams
+        teamsToCheck = ["red", "green"];
+      } else {
+        // AI-thrown balls only hit the opposing team
+        const ballOwner = this.gameState.ballOwnership[i];
+        teamsToCheck = [ballOwner === 0 ? "green" : "red"];
+      }
 
-        const playerIdx = j * 3;
-        const px = targetPositions[playerIdx];
-        const py = targetPositions[playerIdx + 1];
-        const pz = targetPositions[playerIdx + 2];
+      // Check for hits against each relevant team
+      let hitDetected = false;
 
-        // Calculate squared distance
-        const distSquared =
-          (bx - px) * (bx - px) + (by - py) * (by - py) + (bz - pz) * (bz - pz);
+      for (const targetTeam of teamsToCheck) {
+        if (hitDetected) break; // Skip second team if already hit someone
 
-        // Check if hit (1.0 unit distance)
-        if (distSquared < 1.0) {
-          // Check if player catches the ball
-          const isCatching =
-            targetStatuses[j] === "dodging" && Math.random() < 0.4; // 40% catch chance when dodging
+        const targetPositions =
+          targetTeam === "red" ? this.redPositions : this.greenPositions;
+        const targetStatuses =
+          targetTeam === "red"
+            ? this.gameState.playerStatus.red
+            : this.gameState.playerStatus.green;
 
-          if (isCatching) {
-            // Player catches the ball!
-            if (targetTeam === "red") {
-              this.gameState.playerStatus.red[j] = "carrying";
-              this.gameState.redTeamBalls++;
+        const teamSize =
+          targetTeam === "red"
+            ? this.particleCount.red
+            : this.particleCount.green;
+        for (let j = 0; j < teamSize; j++) {
+          if (targetStatuses[j] === "eliminated") continue;
 
-              // The thrower is eliminated
-              const throwerTeam = "green";
-              for (let k = 0; k < this.particleCount.green; k++) {
-                if (this.gameState.playerStatus.green[k] === "throwing") {
-                  this.eliminatePlayer(throwerTeam, k);
-                  break;
-                }
+          const playerIdx = j * 3;
+          const px = targetPositions[playerIdx];
+          const py = targetPositions[playerIdx + 1];
+          const pz = targetPositions[playerIdx + 2];
+
+          // Calculate squared distance
+          const distSquared =
+            (bx - px) * (bx - px) +
+            (by - py) * (by - py) +
+            (bz - pz) * (bz - pz);
+
+          // Check if hit (1.0 unit distance)
+          if (distSquared < 1.0) {
+            hitDetected = true;
+
+            // Different logic for user-thrown vs AI-thrown balls
+            if (isUserThrown) {
+              // User-thrown balls can be caught very rarely (1/100 chance)
+              // This triggers the "golden snitch" effect
+              const catchChance =
+                targetStatuses[j] === "dodging" ? 0.004 : 0.001;
+              const isMysticalCatch = Math.random() < catchChance;
+
+              if (isMysticalCatch) {
+                // Mystical catch! This is a special event
+                this.processMysticalCatch(targetTeam, j, i);
+              } else {
+                // Normal hit - eliminate player
+                this.eliminatePlayer(targetTeam, j);
+
+                // Ball continues but loses some momentum
+                this.blueBallsVelocities[ballIdx] *= 0.8;
+
+                // Create hit effect
+                this.createCollision(px, py, pz, targetTeam !== "red");
+
+                // Record action
+                this.gameState.lastActionTime = this.time;
               }
             } else {
-              this.gameState.playerStatus.green[j] = "carrying";
-              this.gameState.greenTeamBalls++;
+              // AI-thrown ball - normal dodgeball rules
+              const catchChance = targetStatuses[j] === "dodging" ? 0.4 : 0.1;
+              const isCatching = Math.random() < catchChance;
 
-              // The thrower is eliminated
-              const throwerTeam = "red";
-              for (let k = 0; k < this.particleCount.red; k++) {
-                if (this.gameState.playerStatus.red[k] === "throwing") {
-                  this.eliminatePlayer(throwerTeam, k);
-                  break;
+              if (isCatching) {
+                // Player catches the ball!
+                if (targetTeam === "red") {
+                  this.gameState.playerStatus.red[j] = "carrying";
+                  this.gameState.redTeamBalls++;
+
+                  // The thrower is eliminated
+                  const throwerTeam = "green";
+                  for (let k = 0; k < this.particleCount.green; k++) {
+                    if (this.gameState.playerStatus.green[k] === "throwing") {
+                      this.eliminatePlayer(throwerTeam, k);
+                      break;
+                    }
+                  }
+                } else {
+                  this.gameState.playerStatus.green[j] = "carrying";
+                  this.gameState.greenTeamBalls++;
+
+                  // The thrower is eliminated
+                  const throwerTeam = "red";
+                  for (let k = 0; k < this.particleCount.red; k++) {
+                    if (this.gameState.playerStatus.red[k] === "throwing") {
+                      this.eliminatePlayer(throwerTeam, k);
+                      break;
+                    }
+                  }
                 }
+
+                // Update ball state
+                this.gameState.ballState[i] = "carried";
+                this.gameState.ballOwnership[i] = targetTeam === "red" ? 0 : 1;
+                this.gameState.ballTargets[i] = null;
+
+                // Create catch effect
+                this.createCollision(px, py, pz, targetTeam === "red");
+
+                // Record action
+                this.gameState.lastActionTime = this.time;
+
+                // Increase tension
+                this.gameState.tensionFactor = Math.min(
+                  1.0,
+                  this.gameState.tensionFactor + 0.2
+                );
+              } else {
+                // Player gets hit!
+                this.eliminatePlayer(targetTeam, j);
+
+                // Ball drops to ground
+                this.gameState.ballState[i] = "ground";
+                this.gameState.ballOwnership[i] = -1;
+                this.gameState.ballTargets[i] = null;
+
+                // Ball loses momentum
+                this.blueBallsVelocities[ballIdx] *= 0.2;
+                this.blueBallsVelocities[ballIdx + 1] = 0;
+                this.blueBallsVelocities[ballIdx + 2] *= 0.2;
+
+                // Create hit effect
+                this.createCollision(px, py, pz, targetTeam !== "red");
+
+                // Record action
+                this.gameState.lastActionTime = this.time;
+
+                // Increase tension
+                this.gameState.tensionFactor = Math.min(
+                  1.0,
+                  this.gameState.tensionFactor + 0.3
+                );
               }
             }
 
-            // Update ball state
-            this.gameState.ballState[i] = "carried";
-            this.gameState.ballOwnership[i] = targetTeam === "red" ? 0 : 1;
-            this.gameState.ballTargets[i] = null;
-
-            // Create catch effect
-            this.createCollision(px, py, pz, targetTeam === "red");
-
-            // Record action
-            this.gameState.lastActionTime = this.time;
-
-            // Increase tension
-            this.gameState.tensionFactor = Math.min(
-              1.0,
-              this.gameState.tensionFactor + 0.2
-            );
-          } else {
-            // Player gets hit!
-            this.eliminatePlayer(targetTeam, j);
-
-            // Ball drops to ground
-            this.gameState.ballState[i] = "ground";
-            this.gameState.ballOwnership[i] = -1;
-            this.gameState.ballTargets[i] = null;
-
-            // Ball loses momentum
-            this.blueBallsVelocities[ballIdx] *= 0.2;
-            this.blueBallsVelocities[ballIdx + 1] = 0;
-            this.blueBallsVelocities[ballIdx + 2] *= 0.2;
-
-            // Create hit effect
-            this.createCollision(px, py, pz, targetTeam !== "red");
-
-            // Record action
-            this.gameState.lastActionTime = this.time;
-
-            // Increase tension
-            this.gameState.tensionFactor = Math.min(
-              1.0,
-              this.gameState.tensionFactor + 0.3
-            );
+            break;
           }
-
-          break;
         }
-      }
+      } // End of team loop
     }
   }
 
@@ -2638,8 +3150,213 @@ export class DodgeballScene {
     // Unregister from ThreeManager
     ThreeManager.getInstance().unregisterScene(this.COMPONENT_ID);
 
+    // Remove event listeners
+    if (this.container) {
+      this.container.removeEventListener(
+        "mousedown",
+        this.onMouseDown.bind(this)
+      );
+      this.container.removeEventListener(
+        "touchstart",
+        this.onTouchStart.bind(this)
+      );
+    }
+
+    window.removeEventListener("mousemove", this.onMouseMove.bind(this));
+    window.removeEventListener("touchmove", this.onTouchMove.bind(this));
+    window.removeEventListener("mouseup", this.onMouseUp.bind(this));
+    window.removeEventListener("touchend", this.onTouchEnd.bind(this));
+
     // No need to dispose geometries or materials as they're managed by ThreeManager
     console.log("[DodgeballScene] Disposed");
+  }
+
+  /**
+   * Process a mystical catch event - like catching the golden snitch!
+   */
+  private processMysticalCatch(
+    catchingTeam: "red" | "green",
+    playerIdx: number,
+    ballIdx: number
+  ): void {
+    // Enter mystical catch phase
+    this.gameState.phase = "mystical-catch";
+    this.gameState.phaseStartTime = this.time;
+
+    // Save catch info
+    this.gameState.userInteraction.mysticalCatchTeam = catchingTeam;
+    this.gameState.userInteraction.mysticalCatchPlayer = playerIdx;
+    this.gameState.userInteraction.mysticalCatchTime = this.time;
+
+    // Ball now controlled by this player
+    this.gameState.ballState[ballIdx] = "carried";
+    this.gameState.ballOwnership[ballIdx] = catchingTeam === "red" ? 0 : 1;
+
+    // Create mystical ball glow
+    this.createMysticalGlow(ballIdx);
+
+    // Create victory glow for the catching team
+    this.createVictoryGlow(catchingTeam);
+
+    // Prepare for elimination wave effect
+    this.gameState.specialEffects.eliminationWaveRadius = 0;
+    this.gameState.specialEffects.eliminationWaveOpacity = 1.0;
+
+    // Set camera to look at the catching player
+    const playerPos =
+      catchingTeam === "red"
+        ? new THREE.Vector3(
+            this.redPositions[playerIdx * 3],
+            this.redPositions[playerIdx * 3 + 1],
+            this.redPositions[playerIdx * 3 + 2]
+          )
+        : new THREE.Vector3(
+            this.greenPositions[playerIdx * 3],
+            this.greenPositions[playerIdx * 3 + 1],
+            this.greenPositions[playerIdx * 3 + 2]
+          );
+
+    // Create elimination wave if needed
+    if (!this.eliminationWave) {
+      const waveGeometry = new THREE.RingGeometry(0, 1, 32);
+      const waveColor = catchingTeam === "red" ? 0xff3333 : 0x33ff33;
+
+      const waveMaterial = new THREE.MeshBasicMaterial({
+        color: waveColor,
+        transparent: true,
+        opacity: 1.0,
+        side: THREE.DoubleSide,
+      });
+
+      this.eliminationWave = new THREE.Mesh(waveGeometry, waveMaterial);
+      this.eliminationWave.rotation.x = Math.PI / 2; // Flat along ground
+      this.eliminationWave.position.y = -0.4;
+      this.scene.add(this.eliminationWave);
+    } else {
+      // Update color for catching team
+      const waveColor = catchingTeam === "red" ? 0xff3333 : 0x33ff33;
+      (this.eliminationWave.material as THREE.MeshBasicMaterial).color.setHex(
+        waveColor
+      );
+    }
+
+    // Position wave at player
+    this.eliminationWave.position.x = playerPos.x;
+    this.eliminationWave.position.z = playerPos.z;
+    this.eliminationWave.scale.set(0, 0, 0); // Start small
+    this.eliminationWave.visible = true;
+  }
+
+  /**
+   * Update mystical catch effects
+   */
+  private updateMysticalCatchEffects(_deltaTime: number): void {
+    if (this.gameState.phase !== "mystical-catch") return;
+
+    const catchingTeam = this.gameState.userInteraction.mysticalCatchTeam;
+    if (!catchingTeam) return;
+
+    const eliminationTeam = catchingTeam === "red" ? "green" : "red";
+    const elapsedTime =
+      this.time - this.gameState.userInteraction.mysticalCatchTime;
+
+    // First phase (0-1.5s): Ball glow grows
+    if (elapsedTime < 1.5) {
+      // Grow mystical glow intensity
+      this.gameState.specialEffects.mysticalGlowIntensity = Math.min(
+        1.0,
+        elapsedTime / 1.0
+      );
+
+      if (this.mysticalBallGlow) {
+        const glowScale = 1.0 + elapsedTime * 2;
+        this.mysticalBallGlow.scale.set(glowScale, glowScale, glowScale);
+        (this.mysticalBallGlow.material as THREE.MeshBasicMaterial).opacity =
+          0.7 * this.gameState.specialEffects.mysticalGlowIntensity;
+      }
+    }
+    // Second phase (1.5-3.0s): Elimination wave spreads
+    else if (elapsedTime < 3.0) {
+      const wavePhase = (elapsedTime - 1.5) / 1.5; // 0 to 1 during wave phase
+
+      // Grow elimination wave
+      this.gameState.specialEffects.eliminationWaveRadius = 30 * wavePhase;
+      this.gameState.specialEffects.eliminationWaveOpacity =
+        1.0 - wavePhase * 0.3;
+
+      if (this.eliminationWave) {
+        const waveScale = this.gameState.specialEffects.eliminationWaveRadius;
+        this.eliminationWave.scale.set(waveScale, waveScale, waveScale);
+        (this.eliminationWave.material as THREE.MeshBasicMaterial).opacity =
+          this.gameState.specialEffects.eliminationWaveOpacity;
+      }
+
+      // Victory glow fades in
+      this.gameState.specialEffects.victoryGlowIntensity = wavePhase;
+      if (this.victoryGlow) {
+        (this.victoryGlow.material as THREE.MeshBasicMaterial).opacity =
+          this.gameState.specialEffects.victoryGlowIntensity * 0.5;
+      }
+
+      // Eliminate opposing team players as the wave passes them
+      const waveRadius = this.gameState.specialEffects.eliminationWaveRadius;
+      const waveOrigin = this.eliminationWave?.position || new THREE.Vector3();
+
+      if (eliminationTeam === "red") {
+        for (let i = 0; i < this.particleCount.red; i++) {
+          if (this.gameState.playerStatus.red[i] === "eliminated") continue;
+
+          const playerIdx = i * 3;
+          const px = this.redPositions[playerIdx];
+          const pz = this.redPositions[playerIdx + 2];
+
+          // Calculate distance to wave origin
+          const distToWave = Math.sqrt(
+            (px - waveOrigin.x) * (px - waveOrigin.x) +
+              (pz - waveOrigin.z) * (pz - waveOrigin.z)
+          );
+
+          // If player is within wave radius but not too close to center
+          if (distToWave < waveRadius && distToWave > waveRadius * 0.8) {
+            // Eliminate player
+            this.eliminatePlayer("red", i);
+          }
+        }
+      } else {
+        for (let i = 0; i < this.particleCount.green; i++) {
+          if (this.gameState.playerStatus.green[i] === "eliminated") continue;
+
+          const playerIdx = i * 3;
+          const px = this.greenPositions[playerIdx];
+          const pz = this.greenPositions[playerIdx + 2];
+
+          // Calculate distance to wave origin
+          const distToWave = Math.sqrt(
+            (px - waveOrigin.x) * (px - waveOrigin.x) +
+              (pz - waveOrigin.z) * (pz - waveOrigin.z)
+          );
+
+          // If player is within wave radius but not too close to center
+          if (distToWave < waveRadius && distToWave > waveRadius * 0.8) {
+            // Eliminate player
+            this.eliminatePlayer("green", i);
+          }
+        }
+      }
+    }
+    // Final phase (3.0+): Transition to victory
+    else {
+      // Transition to normal endgame
+      this.gameState.phase = "endgame";
+      this.gameState.phaseStartTime = this.time;
+
+      // Hide special effects
+      if (this.mysticalBallGlow) this.mysticalBallGlow.visible = false;
+      if (this.eliminationWave) this.eliminationWave.visible = false;
+
+      // Keep victory glow
+      this.gameState.specialEffects.victoryGlowIntensity = 1.0;
+    }
   }
 }
 

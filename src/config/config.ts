@@ -4,10 +4,10 @@
 const isDev =
   window.location.hostname === "localhost" ||
   window.location.hostname.startsWith("127.0.0.1") ||
-  window.location.hostname === "degenduel.me"; // MANUAL OVERRIDE
+  window.location.hostname === "dev.degenduel.me"; // Use dev subdomain for development
 
 const PROD_URL = "https://degenduel.me";
-const DEV_URL = "https://degenduel.me"; // MANUAL OVERRIDE
+const DEV_URL = "https://dev.degenduel.me";
 
 // Use correct ports for each environment
 const PROD_PORT = "3004";
@@ -37,21 +37,21 @@ export const API_URL = isDev
     : `${DEV_URL}/api`
   : `${PROD_URL}/api`;
 
-/* WebSocket URL */
+/* WebSocket Base URL */
 export const WS_URL = isDev
   ? window.location.hostname === "localhost" ||
     window.location.hostname.startsWith("127.0.0.1")
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
         window.location.host
-      }/portfolio`
-    : `wss://degenduel.me/portfolio` // MANUAL OVERRIDE
-  : `wss://degenduel.me/portfolio`;
+      }`
+    : import.meta.env.VITE_WS_URL || "wss://dev.degenduel.me" // Use dev domain for development
+  : import.meta.env.VITE_WS_URL || "wss://degenduel.me";
 
-/* Rates */
-export const TOKEN_SUBMISSION_COST = isDev
+/* Platform Fees */
+export const TOKEN_SUBMISSION_COST = isDev // New token whitelisting cost
   ? 0.01 // 0.01 SOL in dev
   : 1; // 1.00 SOL in prod
-export const DD_PLATFORM_FEE = isDev
+export const DD_PLATFORM_FEE = isDev // Contests vig
   ? 0.1 // 10% in dev
   : 0.1; // 10% in prod
 
@@ -76,11 +76,12 @@ export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 /* Feature Flags */
 export const FEATURE_FLAGS = {
-  SHOW_FEATURES_SECTION: true, // Set to false to disable the Features section on landing page for debugging
+  SHOW_FEATURES_SECTION: true, // Set to false to hide the FeatureCards on the landing page
 };
 
 /* System Settings */
 export const SYSTEM_SETTINGS = {
+  // Currently this contains ONLY the background_scene settings
   BACKGROUND_SCENE: {
     ENABLED: true,
     SCENES: [

@@ -1,3 +1,12 @@
+// src/hooks/useTokenDataWebSocket.ts
+
+/**
+ * This hook is used to get the token data from the token service.
+ * It uses a WebSocket connection to get the data and a fallback to the Admin API if the WebSocket connection fails.
+ *
+ * @returns {Object} An object containing the token data, loading state, error state, and a function to refresh the data.
+ */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "../store/useStore";
 import { useAuth } from "./useAuth"; // Keeping this for compatibility
@@ -9,11 +18,11 @@ export interface TokenData {
   marketCap: string;
   volume24h: string;
   volume5m?: string;
-  change24h: string;
-  change5m?: string;  // Adding 5-minute change property
-  change1h?: string;  // Also adding 1-hour change for potential use
+  change24h: string; // missing many fields
+  change5m?: string;
+  change1h?: string;
   imageUrl?: string;
-  // Additional fields from WebSocket
+  // "Additional fields from WebSocket" // TODO: WHAT???
   liquidity?: number;
   status?: "active" | "inactive";
 }
@@ -26,6 +35,7 @@ interface TokenDataMessage {
 }
 
 // Simulated token data for fallback when no actual data is available
+// TODO: ELIMINATE THIS!!!
 const FALLBACK_TOKENS: TokenData[] = [
   {
     symbol: "SOL",
@@ -38,7 +48,7 @@ const FALLBACK_TOKENS: TokenData[] = [
     change5m: "0.75",
     change1h: "1.2",
     imageUrl: "https://solana.com/src/img/branding/solanaLogoMark.svg",
-    status: "active"
+    status: "active",
   },
   {
     symbol: "BONK",
@@ -50,7 +60,7 @@ const FALLBACK_TOKENS: TokenData[] = [
     change24h: "5.2",
     change5m: "1.8",
     change1h: "3.1",
-    status: "active"
+    status: "active",
   },
   {
     symbol: "JUP",
@@ -62,7 +72,7 @@ const FALLBACK_TOKENS: TokenData[] = [
     change24h: "-0.75",
     change5m: "0.4",
     change1h: "-0.2",
-    status: "active"
+    status: "active",
   },
   {
     symbol: "WIF",
@@ -74,15 +84,15 @@ const FALLBACK_TOKENS: TokenData[] = [
     change24h: "-2.1",
     change5m: "-0.5",
     change1h: "-1.1",
-    status: "active"
-  }
+    status: "active",
+  },
 ];
 
 export function useTokenDataWebSocket(
   tokensToSubscribe: string[] | "all" = "all"
 ) {
   const [isConnected, setIsConnected] = useState(false);
-  const [tokens, setTokens] = useState<TokenData[]>(FALLBACK_TOKENS); // Initialize with fallback data
+  const [tokens, setTokens] = useState<TokenData[]>(FALLBACK_TOKENS); // Initialize with fallback data // TODO: ELIMINATE THIS!!!
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date()); // Initialize with current date
 
@@ -95,6 +105,7 @@ export function useTokenDataWebSocket(
 
   const connect = useCallback(async () => {
     try {
+      // Return if maintenance mode is active // TODO: Are we sure about this??
       if (maintenanceMode) return;
 
       // Clean up existing connection
@@ -102,17 +113,16 @@ export function useTokenDataWebSocket(
         wsRef.current.close();
       }
 
-      // No longer requiring authentication token
-      // Just skipping the authentication part, but keeping the function call for compatibility
+      // No longer requiring authentication token // TODO: WHAT???
+      // Just skipping the authentication part, but keeping the function call for compatibility // TODO: WHAT???
       const token = await getAccessToken().catch(() => null);
-      
-      // Create WebSocket connection with environment-aware URL
-      // Determine the WebSocket URL based on the current domain in production
+
+      // Create WebSocket connection with environment-aware WSS URL based on the current domain
       let baseWsUrl;
-      const isProduction = import.meta.env.VITE_NODE_ENV === 'production' && 
-                         window.location.hostname === 'degenduel.me';
-      
-      if (isProduction) {
+      // Check if we're on the production domain
+      const isProdDomain = window.location.hostname === "degenduel.me";
+      // Construct the WebSocket URL
+      if (isProdDomain) {
         // In production on the main domain, use the same domain for WebSockets
         baseWsUrl = `wss://${window.location.hostname}`;
       } else if (import.meta.env.VITE_WS_URL) {
@@ -122,14 +132,16 @@ export function useTokenDataWebSocket(
         // Fallback to current host
         baseWsUrl = `wss://${window.location.host}`;
       }
-      
-      console.log(`[TokenDataWebSocket] Using base WebSocket URL: ${baseWsUrl}`);
-      
+      console.log(
+        `[TokenDataWebSocket] Using base WebSocket URL: ${baseWsUrl}`
+      );
       const wsUrl = `${baseWsUrl}/api/v2/ws/tokenData`;
       console.log(`[TokenDataWebSocket] Connecting to: ${wsUrl}`);
-      
+
+      // Create WebSocket connection
       wsRef.current = new WebSocket(wsUrl);
 
+      // Handle connection open
       wsRef.current.onopen = () => {
         console.log("[TokenDataWebSocket] Connected");
         setIsConnected(true);
@@ -145,7 +157,7 @@ export function useTokenDataWebSocket(
             })
           );
 
-          // Only send authentication if we have a token (not required anymore)
+          // Only send authentication if we have a token (not required anymore) // TODO: WHAT???
           if (token) {
             wsRef.current.send(
               JSON.stringify({
@@ -157,6 +169,7 @@ export function useTokenDataWebSocket(
         }
       };
 
+      // Handle incoming messages
       wsRef.current.onmessage = (event) => {
         try {
           const message: TokenDataMessage = JSON.parse(event.data);
@@ -166,7 +179,7 @@ export function useTokenDataWebSocket(
             case "token_update":
               if (message.tokens) {
                 // Enhanced token data with more realistic changes for animations
-                const enhancedTokens = message.tokens.map(token => {
+                const enhancedTokens = message.tokens.map((token) => {
                   // Generate 5-minute change if not provided
                   // This ensures our animations respond to shorter timeframe changes
                   if (!token.change5m) {
@@ -174,21 +187,27 @@ export function useTokenDataWebSocket(
                     const baseChange = parseFloat(token.change24h || "0");
                     // More volatile in short timeframe but in same direction typically
                     const volatilityFactor = 0.5 + Math.random(); // 0.5 to 1.5
-                    const fiveMinChange = (baseChange * volatilityFactor / 4.8).toFixed(2);
+                    const fiveMinChange = (
+                      (baseChange * volatilityFactor) /
+                      4.8
+                    ).toFixed(2);
                     token.change5m = fiveMinChange;
                   }
-                  
+
                   // Generate 1-hour change if not provided
                   if (!token.change1h) {
                     const baseChange = parseFloat(token.change24h || "0");
                     const volatilityFactor = 0.6 + Math.random() * 0.8; // 0.6 to 1.4
-                    const hourChange = (baseChange * volatilityFactor / 2.4).toFixed(2);
+                    const hourChange = (
+                      (baseChange * volatilityFactor) /
+                      2.4
+                    ).toFixed(2);
                     token.change1h = hourChange;
                   }
-                  
+
                   return token;
                 });
-                
+
                 setTokens(enhancedTokens);
                 setLastUpdate(new Date());
 
@@ -205,7 +224,7 @@ export function useTokenDataWebSocket(
                     },
                   })
                 );
-                
+
                 // Simulate frequent 5-minute changes to make animations more dynamic
                 startSimulating5MinChanges();
               }
@@ -218,23 +237,30 @@ export function useTokenDataWebSocket(
                   const updatedTokens = prev.map((token) => {
                     if (token.symbol === message.token) {
                       // Calculate new 5m change - sometimes opposite direction from 24h for realism
-                      const baseChange = parseFloat(message.data.change24h || "0");
+                      const baseChange = parseFloat(
+                        message.data.change24h || "0"
+                      );
                       const randomFactor = Math.random() > 0.7 ? -1 : 1; // 30% chance of opposite direction
                       const volatilityFactor = 0.5 + Math.random(); // 0.5 to 1.5
-                      const fiveMinChange = (baseChange * randomFactor * volatilityFactor / 4.8).toFixed(2);
-                      
+                      const fiveMinChange = (
+                        (baseChange * randomFactor * volatilityFactor) /
+                        4.8
+                      ).toFixed(2);
+
                       return {
                         ...token,
                         price: message.data.price,
                         change24h: message.data.change24h,
                         change5m: fiveMinChange,
                         // Add dynamic 1h change too
-                        change1h: message.data.change1h || (baseChange * volatilityFactor / 2.4).toFixed(2)
+                        change1h:
+                          message.data.change1h ||
+                          ((baseChange * volatilityFactor) / 2.4).toFixed(2),
                       };
                     }
                     return token;
                   });
-                  
+
                   // Keep simulating changes for these tokens
                   startSimulating5MinChanges();
                   return updatedTokens;
@@ -272,7 +298,7 @@ export function useTokenDataWebSocket(
             case "error":
               console.error("[TokenDataWebSocket] Error:", message.data);
               setError(message.data);
-              
+
               // Even on error, maintain fallback data for animations
               if (tokens.length === 0) {
                 setTokens(FALLBACK_TOKENS);
@@ -283,7 +309,7 @@ export function useTokenDataWebSocket(
           }
         } catch (err) {
           console.error("[TokenDataWebSocket] Failed to parse message:", err);
-          
+
           // On parsing error, maintain fallback data for animations
           if (tokens.length === 0) {
             setTokens(FALLBACK_TOKENS);
@@ -292,41 +318,45 @@ export function useTokenDataWebSocket(
           }
         }
       };
-      
+
       // Function to simulate frequent 5-minute change updates for more dynamic animations
       // This creates small price movements every few seconds to keep visualizations active
       const simulationIntervalRef = useRef<NodeJS.Timeout>();
-      
+
       function startSimulating5MinChanges() {
         // Clear any existing simulation interval
         if (simulationIntervalRef.current) {
           clearInterval(simulationIntervalRef.current);
         }
-        
+
         // Create new simulation interval that updates 5m changes every few seconds
         simulationIntervalRef.current = setInterval(() => {
-          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-          
-          setTokens(prev => prev.map(token => {
-            // Get current 5m change value
-            const currentChange = parseFloat(token.change5m || "0");
-            
-            // Random movement with slight mean reversion
-            const direction = Math.random() > 0.5 ? 1 : -1;
-            // Mean reversion tendency - drift toward zero if far from it
-            const reversion = currentChange !== 0 ? -Math.sign(currentChange) * 0.1 : 0;
-            const randomWalk = (Math.random() * 0.5) * direction;
-            const smallChange = randomWalk + reversion;
-            
-            // Apply small change to current value
-            const newChange = (currentChange + smallChange).toFixed(2);
-            
-            return {
-              ...token,
-              change5m: newChange
-            };
-          }));
-          
+          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)
+            return;
+
+          setTokens((prev) =>
+            prev.map((token) => {
+              // Get current 5m change value
+              const currentChange = parseFloat(token.change5m || "0");
+
+              // Random movement with slight mean reversion
+              const direction = Math.random() > 0.5 ? 1 : -1;
+              // Mean reversion tendency - drift toward zero if far from it
+              const reversion =
+                currentChange !== 0 ? -Math.sign(currentChange) * 0.1 : 0;
+              const randomWalk = Math.random() * 0.5 * direction;
+              const smallChange = randomWalk + reversion;
+
+              // Apply small change to current value
+              const newChange = (currentChange + smallChange).toFixed(2);
+
+              return {
+                ...token,
+                change5m: newChange,
+              };
+            })
+          );
+
           setLastUpdate(new Date());
         }, 5000); // Update every 5 seconds for smooth animation changes
       }
@@ -348,7 +378,7 @@ export function useTokenDataWebSocket(
             connect();
           }, delay);
         }
-        
+
         // Even when disconnected, maintain fallback data and animations
         if (tokens.length === 0) {
           setTokens(FALLBACK_TOKENS);
@@ -360,7 +390,7 @@ export function useTokenDataWebSocket(
       wsRef.current.onerror = (error) => {
         console.error("[TokenDataWebSocket] Error:", error);
         setError("WebSocket connection error");
-        
+
         // Provide fallback data on WebSocket error
         if (tokens.length === 0) {
           setTokens(FALLBACK_TOKENS);
@@ -371,40 +401,42 @@ export function useTokenDataWebSocket(
     } catch (err) {
       console.error("[TokenDataWebSocket] Connection error:", err);
       setError(err instanceof Error ? err.message : "Failed to connect");
-      
+
       // Provide fallback data on connection error
       if (tokens.length === 0) {
         setTokens(FALLBACK_TOKENS);
         setLastUpdate(new Date());
-        
+
         // Start simulating changes
         const simulationIntervalRef = useRef<NodeJS.Timeout>();
-        
+
         function startSimulating5MinChanges() {
           // Clear any existing simulation interval
           if (simulationIntervalRef.current) {
             clearInterval(simulationIntervalRef.current);
           }
-          
+
           // Create new simulation interval with only 5m changes
           simulationIntervalRef.current = setInterval(() => {
-            setTokens(prev => prev.map(token => {
-              const currentChange = parseFloat(token.change5m || "0");
-              // Random direction for pure brownian motion
-              const direction = Math.random() > 0.5 ? 1 : -1;
-              const smallChange = (Math.random() * 0.5) * direction;
-              const newChange = (currentChange + smallChange).toFixed(2);
-              
-              return {
-                ...token,
-                change5m: newChange
-              };
-            }));
-            
+            setTokens((prev) =>
+              prev.map((token) => {
+                const currentChange = parseFloat(token.change5m || "0");
+                // Random direction for pure brownian motion
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                const smallChange = Math.random() * 0.5 * direction;
+                const newChange = (currentChange + smallChange).toFixed(2);
+
+                return {
+                  ...token,
+                  change5m: newChange,
+                };
+              })
+            );
+
             setLastUpdate(new Date());
           }, 5000);
         }
-        
+
         startSimulating5MinChanges();
       }
     }

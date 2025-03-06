@@ -72,7 +72,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       // If the time has passed or is now
       if (diff <= 0) {
         if (Math.abs(diff) > 7 * 24 * 60 * 60 * 1000) {
-          // More than a week in the past
+          // More than one week in the past
           console.warn(
             `Contest time is far in the past:\n` +
               `${isLive ? "End" : "Start"} time: ${
@@ -90,6 +90,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
         (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
       );
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
       if (days > 0) {
         return `${days}d ${hours}h`;
@@ -97,6 +98,9 @@ export const ContestCard: React.FC<ContestCardProps> = ({
         return `${hours}h ${minutes > 0 ? `${minutes}m` : ""}`;
       } else if (minutes > 0) {
         return `${minutes}m`;
+      } else if (seconds > 0 || (seconds === 0 && days + hours + minutes > 0)) {
+        // Prevent seconds value from disappearing once per minute
+        return `${seconds}s`;
       } else {
         return isLive ? "Ending soon" : "Starting soon";
       }
@@ -199,7 +203,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 <p className="text-sm font-medium text-brand-300 flex items-center gap-2">
                   <span
                     className={`w-2 h-2 rounded-full ${
-                      isLive ? "bg-green-400 animate-pulse" : "bg-blue-400"
+                      isLive ? "bg-red-400 animate-pulse" : "bg-blue-400"
                     }`}
                   ></span>
                   {timeRemaining.startsWith("Late to start")
@@ -296,7 +300,15 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             <div className="mt-4">
               <ContestButton
                 id={parseInt(id)}
-                type={isLive ? "live" : "upcoming"}
+                type={
+                  status === "active" 
+                    ? "live" 
+                    : status === "pending" 
+                    ? "upcoming" 
+                    : status === "completed" 
+                    ? "completed" 
+                    : "cancelled"
+                }
               />
             </div>
           </div>

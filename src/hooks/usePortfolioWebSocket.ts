@@ -1,3 +1,13 @@
+// src/hooks/usePortfolioWebSocket.ts
+
+/**
+ * This hook is used to get the portfolio updates from the portfolio service.
+ * It uses a WebSocket connection to get the updates and a fallback to the Admin API if the WebSocket connection fails.
+ *
+ * @returns {Object} An object containing the portfolio updates, loading state, error state, and a function to refresh the updates.
+ */
+
+import { WS_URL } from "../config/config";
 import { useStore } from "../store/useStore";
 import { useBaseWebSocket } from "./useBaseWebSocket";
 
@@ -59,9 +69,12 @@ export const usePortfolioWebSocket = () => {
     }
   };
 
+  // Use WS_URL from config which handles proper environment detection
+  //const { WS_URL } = require("../config/config"); // Moved to imports (top of file)
+
   return useBaseWebSocket({
-    url: import.meta.env.VITE_WS_URL,
-    endpoint: "/v2/ws/portfolio",
+    url: WS_URL,
+    endpoint: "/v2/ws/portfolio", // Append specific endpoint for portfolio service
     socketType: "portfolio",
     onMessage: handleMessage,
     heartbeatInterval: 30000, // 30 second heartbeat

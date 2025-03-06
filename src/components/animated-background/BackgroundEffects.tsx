@@ -1,47 +1,81 @@
 import React from "react";
-import { SYSTEM_SETTINGS } from "../../config/config";
 import { useStore } from "../../store/useStore";
+
 // Import background scenes
 import { AmbientMarketData } from "./AmbientMarketData";
 import { MarketBrain } from "./MarketBrain";
 import { MarketVerse } from "./MarketVerse";
-import { ParticlesEffect } from "./ParticlesEffect"; 
+import { ParticlesEffect } from "./ParticlesEffect";
 import { TokenVerse } from "./TokenVerse";
 // experimental visualizations
+import { SYSTEM_SETTINGS } from "../../config/config";
+import { useSystemSettingsWebSocket } from "../../hooks/useSystemSettingsWebSocket";
+import { extractBackgroundSettings } from "../../utils/extractBackgroundSettings";
 import { AbstractPatterns } from "./experimental/AbstractPatterns";
 import { FluidTokens } from "./experimental/FluidTokens";
 import { GradientWaves } from "./experimental/GradientWaves";
 import { NeonGrid } from "./experimental/NeonGrid";
 
 // Define valid CSS mix blend modes to fix TypeScript errors
-type MixBlendMode = 
-  | "normal" | "multiply" | "screen" | "overlay" 
-  | "darken" | "lighten" | "color-dodge" | "color-burn" 
-  | "hard-light" | "soft-light" | "difference" | "exclusion" 
-  | "hue" | "saturation" | "color" | "luminosity";
+type MixBlendMode =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "darken"
+  | "lighten"
+  | "color-dodge"
+  | "color-burn"
+  | "hard-light"
+  | "soft-light"
+  | "difference"
+  | "exclusion"
+  | "hue"
+  | "saturation"
+  | "color"
+  | "luminosity";
 
 // BackgroundEffects is the main component that mixes and handles all the background effects
 export const BackgroundEffects: React.FC = () => {
   const { uiDebug } = useStore();
+  const { settings } = useSystemSettingsWebSocket();
+
+  // Get background settings, with fallback to defaults
+  const backgroundSettings = extractBackgroundSettings(settings);
+
+  // Debug if needed
+  if (process.env.NODE_ENV !== "production") {
+    // console.log('BackgroundEffects using settings:', backgroundSettings);
+  }
 
   // === BACKGROUND SCENE SELECTION ===
   // This uses the SYSTEM_SETTINGS configuration to determine which background scenes to render
   // Multiple scenes can be enabled at once with different blend modes and z-indices
-  
+
   // Master switch for all background effects
-  const backgroundEnabled = SYSTEM_SETTINGS.BACKGROUND_SCENE.ENABLED;
+  const backgroundEnabled = backgroundSettings.ENABLED;
   if (!backgroundEnabled) return null;
-  
+
   // Get scene configurations from SYSTEM_SETTINGS
   const sceneConfigs = SYSTEM_SETTINGS.BACKGROUND_SCENE.SCENES || [];
-  
+
   // Get scene configuration objects
-  const particlesEffectConfig = sceneConfigs.find(scene => scene.name === "Dodgeball");
-  const tokenVerseConfig = sceneConfigs.find(scene => scene.name === "TokenVerse");
-  const marketVerseConfig = sceneConfigs.find(scene => scene.name === "MarketVerse");
-  const marketBrainConfig = sceneConfigs.find(scene => scene.name === "MarketBrain");
-  const ambientMarketDataConfig = sceneConfigs.find(scene => scene.name === "AmbientMarketData");
-  
+  const particlesEffectConfig = sceneConfigs.find(
+    (scene) => scene.name === "Dodgeball"
+  );
+  const tokenVerseConfig = sceneConfigs.find(
+    (scene) => scene.name === "TokenVerse"
+  );
+  const marketVerseConfig = sceneConfigs.find(
+    (scene) => scene.name === "MarketVerse"
+  );
+  const marketBrainConfig = sceneConfigs.find(
+    (scene) => scene.name === "MarketBrain"
+  );
+  const ambientMarketDataConfig = sceneConfigs.find(
+    (scene) => scene.name === "AmbientMarketData"
+  );
+
   // Determine if scenes are enabled
   const particlesEffectEnabled = particlesEffectConfig?.enabled ?? false;
   const tokenVerseEnabled = tokenVerseConfig?.enabled ?? false;
@@ -63,11 +97,15 @@ export const BackgroundEffects: React.FC = () => {
 
   // === BLEND MODES ===
   // Get blend modes from configuration or use defaults
-  const tokenVerseBlendMode = (tokenVerseConfig?.blendMode || "normal") as MixBlendMode;
-  const marketVerseBlendMode = (marketVerseConfig?.blendMode || "lighten") as MixBlendMode;
-  const marketBrainBlendMode = (marketBrainConfig?.blendMode || "normal") as MixBlendMode;
-  const particlesBlendMode = (particlesEffectConfig?.blendMode || "screen") as MixBlendMode;
-  
+  const tokenVerseBlendMode = (tokenVerseConfig?.blendMode ||
+    "normal") as MixBlendMode;
+  const marketVerseBlendMode = (marketVerseConfig?.blendMode ||
+    "lighten") as MixBlendMode;
+  const marketBrainBlendMode = (marketBrainConfig?.blendMode ||
+    "normal") as MixBlendMode;
+  const particlesBlendMode = (particlesEffectConfig?.blendMode ||
+    "screen") as MixBlendMode;
+
   // Get z-indices from configuration or use defaults
   const tokenVerseZIndex = tokenVerseConfig?.zIndex || 1;
   const marketVerseZIndex = marketVerseConfig?.zIndex || 2;
@@ -82,18 +120,19 @@ export const BackgroundEffects: React.FC = () => {
   const neonGridBlendMode: MixBlendMode = "screen"; // Maximum neon glow effect
 
   // Development warning - log a warning if multiple 3D scenes are enabled
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     const enabledScenes = [
-      particlesEffectEnabled && 'ParticlesEffect',
-      tokenVerseEnabled && 'TokenVerse',
-      marketVerseEnabled && 'MarketVerse',
-      marketBrainEnabled && 'MarketBrain'
+      particlesEffectEnabled && "ParticlesEffect",
+      tokenVerseEnabled && "TokenVerse",
+      marketVerseEnabled && "MarketVerse",
+      marketBrainEnabled && "MarketBrain",
     ].filter(Boolean);
-    
+
+    // Multiple 3D scenes are enabled
     if (enabledScenes.length > 1) {
       console.warn(
-        'PERFORMANCE WARNING: Multiple 3D scenes are enabled simultaneously, which can cause severe performance issues:',
-        enabledScenes.join(', ')
+        "PERFORMANCE WARNING: Multiple scenes are enabled simultaneously: \n\t",
+        enabledScenes.join(" \n\t")
       );
     }
   }
@@ -113,7 +152,10 @@ export const BackgroundEffects: React.FC = () => {
         {tokenVerseEnabled && (
           <div
             className="absolute inset-0"
-            style={{ zIndex: tokenVerseZIndex, mixBlendMode: tokenVerseBlendMode }}
+            style={{
+              zIndex: tokenVerseZIndex,
+              mixBlendMode: tokenVerseBlendMode,
+            }}
           >
             <TokenVerse />
           </div>
@@ -123,7 +165,10 @@ export const BackgroundEffects: React.FC = () => {
         {marketVerseEnabled && (
           <div
             className="absolute inset-0"
-            style={{ zIndex: marketVerseZIndex, mixBlendMode: marketVerseBlendMode }}
+            style={{
+              zIndex: marketVerseZIndex,
+              mixBlendMode: marketVerseBlendMode,
+            }}
           >
             <MarketVerse />
           </div>
@@ -133,7 +178,10 @@ export const BackgroundEffects: React.FC = () => {
         {marketBrainEnabled && (
           <div
             className="absolute inset-0"
-            style={{ zIndex: marketBrainZIndex, mixBlendMode: marketBrainBlendMode }}
+            style={{
+              zIndex: marketBrainZIndex,
+              mixBlendMode: marketBrainBlendMode,
+            }}
           >
             <MarketBrain />
           </div>
@@ -143,7 +191,10 @@ export const BackgroundEffects: React.FC = () => {
         {particlesEffectEnabled && (
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{ zIndex: particlesZIndex, mixBlendMode: particlesBlendMode }}
+            style={{
+              zIndex: particlesZIndex,
+              mixBlendMode: particlesBlendMode,
+            }}
           >
             <ParticlesEffect />
           </div>
@@ -151,7 +202,10 @@ export const BackgroundEffects: React.FC = () => {
 
         {/* (5) AMBIENT MARKET DATA NOTIFICATIONS */}
         {ambientMarketDataEnabled && (
-          <div className="absolute inset-0" style={{ zIndex: ambientMarketDataZIndex }}>
+          <div
+            className="absolute inset-0"
+            style={{ zIndex: ambientMarketDataZIndex }}
+          >
             <AmbientMarketData />
           </div>
         )}
