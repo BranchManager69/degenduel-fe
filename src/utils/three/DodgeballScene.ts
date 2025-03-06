@@ -369,12 +369,12 @@ export class DodgeballScene {
     this.court.position.y = -0.5;
     this.scene.add(this.court);
     
-    // Create center line
-    const centerLineGeometry = new THREE.PlaneGeometry(0.5, 30);
+    // Create center line - make it more visible
+    const centerLineGeometry = new THREE.PlaneGeometry(0.8, 30);
     const centerLineMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.7,
       side: THREE.DoubleSide
     });
     
@@ -382,6 +382,35 @@ export class DodgeballScene {
     this.centerLine.rotation.x = Math.PI / 2;
     this.centerLine.position.y = -0.4;
     this.scene.add(this.centerLine);
+    
+    // Add visual indicators for team sides
+    const redSideMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      transparent: true,
+      opacity: 0.1,
+      side: THREE.DoubleSide
+    });
+    
+    const greenSideMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      transparent: true,
+      opacity: 0.1,
+      side: THREE.DoubleSide
+    });
+    
+    // Red side indicator (left)
+    const redSideGeometry = new THREE.PlaneGeometry(25, 30);
+    const redSide = new THREE.Mesh(redSideGeometry, redSideMaterial);
+    redSide.rotation.x = Math.PI / 2;
+    redSide.position.set(-12.5, -0.45, 0);
+    this.scene.add(redSide);
+    
+    // Green side indicator (right)
+    const greenSideGeometry = new THREE.PlaneGeometry(25, 30);
+    const greenSide = new THREE.Mesh(greenSideGeometry, greenSideMaterial);
+    greenSide.rotation.x = Math.PI / 2;
+    greenSide.position.set(12.5, -0.45, 0);
+    this.scene.add(greenSide);
     
     // Add team-colored lighting
     this.redLight = new THREE.PointLight(0xff3333, 0.6, 30);
@@ -657,11 +686,18 @@ export class DodgeballScene {
       const courtWidth = 25;
       const courtDepth = 15;
       
-      if (Math.abs(this.redPositions[idx]) > courtWidth) {
+      // Red team should stay on the left side (negative x)
+      if (this.redPositions[idx] > 0) {
+        // If red player crosses center line, push back
+        this.redVelocities[idx] *= -0.7; // Strong bounce back
+        this.redPositions[idx] = -0.5; // Push back to left side
+      } else if (this.redPositions[idx] < -courtWidth) {
+        // Left boundary bounce
         this.redVelocities[idx] *= -0.5; // Bounce with energy loss
-        this.redPositions[idx] = Math.sign(this.redPositions[idx]) * courtWidth;
+        this.redPositions[idx] = -courtWidth;
       }
       
+      // Depth boundaries (same for both teams)
       if (Math.abs(this.redPositions[idx + 2]) > courtDepth) {
         this.redVelocities[idx + 2] *= -0.5; // Bounce with energy loss
         this.redPositions[idx + 2] = Math.sign(this.redPositions[idx + 2]) * courtDepth;
@@ -792,11 +828,18 @@ export class DodgeballScene {
       const courtWidth = 25;
       const courtDepth = 15;
       
-      if (Math.abs(this.greenPositions[idx]) > courtWidth) {
+      // Green team should stay on the right side (positive x)
+      if (this.greenPositions[idx] < 0) {
+        // If green player crosses center line, push back
+        this.greenVelocities[idx] *= -0.7; // Strong bounce back
+        this.greenPositions[idx] = 0.5; // Push back to right side
+      } else if (this.greenPositions[idx] > courtWidth) {
+        // Right boundary bounce
         this.greenVelocities[idx] *= -0.5; // Bounce with energy loss
-        this.greenPositions[idx] = Math.sign(this.greenPositions[idx]) * courtWidth;
+        this.greenPositions[idx] = courtWidth;
       }
       
+      // Depth boundaries (same for both teams)
       if (Math.abs(this.greenPositions[idx + 2]) > courtDepth) {
         this.greenVelocities[idx + 2] *= -0.5; // Bounce with energy loss
         this.greenPositions[idx + 2] = Math.sign(this.greenPositions[idx + 2]) * courtDepth;
@@ -903,8 +946,12 @@ export class DodgeballScene {
       
       // Update based on game phase
       if (this.gameState.phase === 'ready') {
-        // Balls hover at center
+        // Balls hover at center with a more dramatic pulsing effect
         this.blueBallsPositions[idx + 1] = 0.5 + Math.sin(this.time * 5 + i) * 0.2;
+        
+        // Add subtle side-to-side movement for visual interest
+        this.blueBallsPositions[idx] += Math.sin(this.time * 3 + i * 0.7) * 0.005;
+        this.blueBallsPositions[idx + 2] += Math.cos(this.time * 2 + i * 0.5) * 0.005;
         
         // Update with spinning effect
         this.position.set(
@@ -913,21 +960,33 @@ export class DodgeballScene {
           this.blueBallsPositions[idx + 2]
         );
         
-        // Spin the ball
+        // Spin the ball with varied rotation
         this.rotation.x = this.time * 2 + i;
         this.rotation.y = this.time * 3;
+        this.rotation.z = this.time + i * 0.5;
         this.quaternion.setFromEuler(this.rotation);
         
-        // Apply normal scale
-        this.scale.set(1, 1, 1);
+        // Pulsing scale in ready phase
+        const pulse = 0.15 * Math.sin(this.time * 8 + i * 2);
+        this.scale.set(1 + pulse, 1 + pulse, 1 + pulse);
         
         // Update matrix
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.blueBalls?.setMatrixAt(i, this.matrix);
         
-        // No trails in ready phase
+        // Add subtle glow effect with very small trails
         for (let t = 0; t < 3; t++) {
-          this.matrix.makeScale(0, 0, 0);
+          const trailScale = 0.3 - t * 0.1;
+          this.scale.set(trailScale, trailScale, trailScale);
+          
+          const offset = new THREE.Vector3(
+            Math.sin(this.time * 10 + i + t) * 0.1,
+            Math.cos(this.time * 10 + i + t) * 0.1,
+            Math.sin(this.time * 8 + i + t) * 0.1
+          );
+          
+          const trailPos = this.position.clone().add(offset);
+          this.matrix.compose(trailPos, this.quaternion, this.scale);
           this.blueTrails?.setMatrixAt(i * 3 + t, this.matrix);
         }
       } 
@@ -1183,17 +1242,23 @@ export class DodgeballScene {
           if (Math.random() < 0.3 && this.gameState.phase === 'battle') {
             this.gameState.playerStatus.red[redI] = 'eliminated';
             this.gameState.redTeamActive--;
+            this.gameState.lastHitTime = this.time; // Record hit time for light effects
             
             // Hide the player
             this.matrix.makeScale(0, 0, 0);
             this.redPlayers?.setMatrixAt(redI, this.matrix);
             
-            // Create extra collision particles
-            for (let k = 0; k < 3; k++) {
+            // Create extra collision particles for elimination explosion
+            const particleCount = 4 + Math.floor(Math.random() * 3); // 4-6 particles
+            for (let k = 0; k < particleCount; k++) {
+              // Create particles in a more dramatic pattern
+              const angle = (k / particleCount) * Math.PI * 2;
+              const radius = 0.2 + Math.random() * 0.4;
+              
               this.createCollision(
-                rx + (Math.random() - 0.5) * 0.5,
-                ry + Math.random() * 0.5, 
-                rz + (Math.random() - 0.5) * 0.5,
+                rx + Math.cos(angle) * radius,
+                ry + Math.random() * 0.7,  // Higher vertical spread
+                rz + Math.sin(angle) * radius,
                 false // Green team color (red player hit)
               );
             }
@@ -1236,17 +1301,23 @@ export class DodgeballScene {
           if (Math.random() < 0.3 && this.gameState.phase === 'battle') {
             this.gameState.playerStatus.green[greenI] = 'eliminated';
             this.gameState.greenTeamActive--;
+            this.gameState.lastHitTime = this.time; // Record hit time for light effects
             
             // Hide the player
             this.matrix.makeScale(0, 0, 0);
             this.greenPlayers?.setMatrixAt(greenI, this.matrix);
             
-            // Create extra collision particles
-            for (let k = 0; k < 3; k++) {
+            // Create extra collision particles for elimination explosion
+            const particleCount = 4 + Math.floor(Math.random() * 3); // 4-6 particles
+            for (let k = 0; k < particleCount; k++) {
+              // Create particles in a more dramatic pattern
+              const angle = (k / particleCount) * Math.PI * 2;
+              const radius = 0.2 + Math.random() * 0.4;
+              
               this.createCollision(
-                gx + (Math.random() - 0.5) * 0.5,
-                gy + Math.random() * 0.5, 
-                gz + (Math.random() - 0.5) * 0.5,
+                gx + Math.cos(angle) * radius,
+                gy + Math.random() * 0.7,  // Higher vertical spread
+                gz + Math.sin(angle) * radius,
                 true // Red team color (green player hit)
               );
             }
@@ -1264,7 +1335,7 @@ export class DodgeballScene {
   }
   
   /**
-   * Create a collision effect at a specific position
+   * Create a collision effect at a specific position with improved visuals
    */
   private createCollision(x: number, y: number, z: number, isRed: boolean): void {
     if (this.activeCollisions >= this.maxCollisions) return;
@@ -1275,23 +1346,69 @@ export class DodgeballScene {
     // Position the collision
     this.position.set(x, y, z);
     
-    // Expand for dramatic effect
-    this.scale.set(3, 3, 3);
+    // Vary scale for more natural look
+    const baseSize = 3 + Math.random();
+    this.scale.set(baseSize, baseSize, baseSize);
     
-    // Use redish or greenish color for the collision
+    // Use redish or greenish color for the collision with improved glow
     if (isRed) {
-      (this.collisionEffects?.material as THREE.MeshBasicMaterial).color.set(0xff5555);
+      (this.collisionEffects?.material as THREE.MeshBasicMaterial).color.set(0xff3333);
     } else {
-      (this.collisionEffects?.material as THREE.MeshBasicMaterial).color.set(0x55ff55);
+      (this.collisionEffects?.material as THREE.MeshBasicMaterial).color.set(0x33ff33);
     }
     
+    // Add slight random rotation for more natural appearance
+    this.rotation.set(
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2
+    );
+    this.quaternion.setFromEuler(this.rotation);
+    
     // Set matrix
-    this.quaternion.setFromEuler(new THREE.Euler(0, 0, 0));
     this.matrix.compose(this.position, this.quaternion, this.scale);
     this.collisionEffects?.setMatrixAt(idx, this.matrix);
     
-    // Initialize age
-    this.collisionAge[idx] = 0;
+    // Initialize age with slight randomization for less uniform fading
+    this.collisionAge[idx] = Math.random() * 0.1;
+    
+    // Create secondary smaller particles for more complex effect
+    // Reuse existing collision slots if available
+    for (let i = 0; i < 2; i++) {
+      if (this.activeCollisions >= this.maxCollisions) break;
+      
+      const subIdx = this.activeCollisions;
+      this.activeCollisions++;
+      
+      // Random offset from main collision
+      const offset = new THREE.Vector3(
+        (Math.random() - 0.5) * 1.5,
+        (Math.random() - 0.5) * 1.5,
+        (Math.random() - 0.5) * 1.5
+      );
+      
+      // Smaller size for secondary particles
+      const subSize = baseSize * (0.3 + Math.random() * 0.2);
+      this.scale.set(subSize, subSize, subSize);
+      
+      // Random rotation
+      this.rotation.set(
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2
+      );
+      this.quaternion.setFromEuler(this.rotation);
+      
+      // Position with offset
+      this.position.set(x + offset.x, y + offset.y, z + offset.z);
+      
+      // Set matrix
+      this.matrix.compose(this.position, this.quaternion, this.scale);
+      this.collisionEffects?.setMatrixAt(subIdx, this.matrix);
+      
+      // Slightly different age for varied fading
+      this.collisionAge[subIdx] = Math.random() * 0.2;
+    }
   }
   
   /**
@@ -1313,15 +1430,43 @@ export class DodgeballScene {
         this.collisionEffects?.getMatrixAt(i, this.matrix);
         this.position.setFromMatrixPosition(this.matrix);
         
-        // Expand and fade
-        this.scale.set(
-          3 + expandPhase * 5,
-          3 + expandPhase * 5,
-          3 + expandPhase * 5
-        );
+        // Add slight upward drift for more dynamic effect
+        this.position.y += deltaTime * 2;
         
-        // Set opacity
-        (this.collisionEffects?.material as THREE.MeshBasicMaterial).opacity = fadePhase;
+        // Get current scale from matrix
+        const currentScale = new THREE.Vector3();
+        currentScale.setFromMatrixScale(this.matrix);
+        
+        // Calculate base scale (original size)
+        const baseScale = currentScale.x / (1 + this.collisionAge[i] * 5);
+        
+        // Expand and fade with more dynamic scaling
+        const scaleMultiplier = 1 + expandPhase * 5;
+        
+        // Apply non-uniform scaling for more interesting effect
+        // This creates slightly oval or irregular shapes instead of perfect spheres
+        const xScale = baseScale * scaleMultiplier * (1 + Math.sin(this.time * 10 + i) * 0.1);
+        const yScale = baseScale * scaleMultiplier * (1 + Math.cos(this.time * 10 + i) * 0.1);
+        const zScale = baseScale * scaleMultiplier * (1 + Math.sin(this.time * 8 + i) * 0.1);
+        
+        this.scale.set(xScale, yScale, zScale);
+        
+        // Extract current rotation
+        const currentRotation = new THREE.Quaternion();
+        currentRotation.setFromRotationMatrix(this.matrix);
+        
+        // Apply slight continuous rotation 
+        this.rotation.set(
+          this.time * 0.5 + i,
+          this.time * 0.7 + i * 0.5,
+          this.time * 0.3 + i * 0.7
+        );
+        this.quaternion.setFromEuler(this.rotation);
+        this.quaternion.multiply(currentRotation); // Combine with existing rotation
+        
+        // Set opacity with pulsing effect
+        const opacityPulse = 0.1 * Math.sin(this.time * 20 + i * 5);
+        (this.collisionEffects?.material as THREE.MeshBasicMaterial).opacity = fadePhase + opacityPulse;
         
         // Update matrix
         this.matrix.compose(this.position, this.quaternion, this.scale);
@@ -1355,22 +1500,49 @@ export class DodgeballScene {
   
   /**
    * Update light colors and intensities
-   * Note: deltaTime parameter is not used directly, but kept for consistency
-   * with other update methods. Could be used for time-based animations in the future.
    */
   private updateLights(_deltaTime: number): void {
     if (!this.redLight || !this.greenLight || !this.centerLight) return;
     
-    // Pulsing light intensity
-    this.redLight.intensity = 0.5 + 0.2 * Math.sin(this.time * 2);
-    this.greenLight.intensity = 0.5 + 0.2 * Math.sin(this.time * 2 + Math.PI);
-    this.centerLight.intensity = 0.4 + 0.1 * Math.sin(this.time * 3);
+    // Pulsing light intensity with more dynamic pattern
+    this.redLight.intensity = 0.5 + 0.3 * Math.sin(this.time * 2) + 0.1 * Math.sin(this.time * 5);
+    this.greenLight.intensity = 0.5 + 0.3 * Math.sin(this.time * 2 + Math.PI) + 0.1 * Math.sin(this.time * 6);
+    this.centerLight.intensity = 0.4 + 0.2 * Math.sin(this.time * 3);
     
     // Make team light brighter when team is winning
-    if (this.gameState.redTeamActive > this.gameState.greenTeamActive) {
-      this.redLight.intensity += 0.2;
-    } else if (this.gameState.greenTeamActive > this.gameState.redTeamActive) {
-      this.greenLight.intensity += 0.2;
+    const redAdvantage = this.gameState.redTeamActive - this.gameState.greenTeamActive;
+    
+    if (redAdvantage > 0) {
+      // Red team winning - intensify red light
+      this.redLight.intensity += 0.2 + (redAdvantage / this.particleCount.red) * 0.3;
+      // Slightly dim green light
+      this.greenLight.intensity *= 0.9;
+    } else if (redAdvantage < 0) {
+      // Green team winning - intensify green light
+      this.greenLight.intensity += 0.2 + (Math.abs(redAdvantage) / this.particleCount.green) * 0.3;
+      // Slightly dim red light
+      this.redLight.intensity *= 0.9;
+    }
+    
+    // Add subtle position movement to lights for more dynamic effect
+    if (this.gameState.phase === 'battle') {
+      // Move lights in small circles
+      this.redLight.position.x = -15 + Math.sin(this.time * 0.5) * 2;
+      this.redLight.position.z = Math.cos(this.time * 0.7) * 2;
+      
+      this.greenLight.position.x = 15 + Math.sin(this.time * 0.5 + Math.PI) * 2;
+      this.greenLight.position.z = Math.cos(this.time * 0.7 + Math.PI) * 2;
+      
+      // Center light moves in figure-8 pattern
+      this.centerLight.position.x = Math.sin(this.time) * 3;
+      this.centerLight.position.z = Math.sin(this.time * 2) * 2;
+    }
+    
+    // Add flashing effect on hits
+    if (this.activeCollisions > 0 && this.time - this.gameState.lastHitTime < 0.5) {
+      // Flash on recent hit
+      const hitIntensity = 0.5 * (1 - (this.time - this.gameState.lastHitTime) * 2);
+      this.centerLight.intensity += hitIntensity;
     }
   }
   
