@@ -1,0 +1,55 @@
+# MARKET DODGEBALL SCENE - ENHANCEMENT PLAN
+
+## COMPLETED
+- ✅ Dynamic camera starting directly overhead with cinematic fly-in
+- ✅ Smooth camera descent that orbits the court
+- ✅ Transition to game position as action begins
+
+## NEXT STEPS - PRIORITIZED
+
+### 1️⃣ CORE DODGEBALL MECHANICS (HIGHEST PRIORITY)
+- Players rush to center to grab balls, then retreat to their side
+- Implement proper throwing mechanics with targeting
+- Add dodging AI with appropriate player movement
+- Enable catching mechanics with success/failure states
+- Track player states: ready, carrying, throwing, dodging, eliminated
+- Victory celebration with confetti particles for winners
+
+### 2️⃣ PLAYER & BALL VISUAL ENHANCEMENTS
+- **Enhanced Player Orbs:**
+  - Team-colored cores with outer translucent shell
+  - Intensity glow based on state (brightest when carrying ball)
+  - Dramatic aura burst when successfully catching a ball
+  - Spin-based particle trails that intensify with speed
+  - Slight shape deformation based on direction and speed
+
+- **Advanced Ball Effects:**
+  - Motion blur/trails with length proportional to throw speed
+  - Visible spin with rotation lines and particle wake
+  - Color intensity that increases with ball velocity
+  - Mini-particle explosion on impacts
+  - Trajectory hints for computer-controlled throws
+
+### 3️⃣ ENVIRONMENT & LIGHTING IMPROVEMENTS
+- **Court Enhancement:**
+  - Dynamic ripple effects under moving orbs
+  - Team-colored reflection patterns based on position
+  - Subtle court glow under areas of high activity
+
+- **Lighting System:**
+  - Spotlight tracking for balls in flight
+  - Player-cast shadows with correct perspective
+  - Subtle flash highlights for successful catches/hits
+  - Ambient environment lighting that responds to game state
+
+### 4️⃣ PERFORMANCE OPTIMIZATIONS (FOR LATER)
+- GPU-accelerated particle systems
+- Instanced rendering for similar objects
+- Level-of-detail adjustments based on action intensity
+- Shader-based effects instead of geometry
+
+## TECHNICAL IMPLEMENTATION NOTES
+- Using THREE.InstancedMesh for efficient rendering
+- Shared materials and geometries through ThreeManager
+- State-driven animation system to handle transitions
+- Independent collision and physics calculations
