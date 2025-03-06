@@ -13,7 +13,7 @@ import {
 } from "../../../utils/performance";
 
 // Enable performance logging for debugging (WebGL, canvas, etc.)
-const DEBUG_PERFORMANCE = true;
+const DEBUG_PERFORMANCE = false;
 
 interface FeatureCardProps {
   title: string;
