@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useNotificationWebSocket } from "../../hooks/useNotificationWebSocket";
 import { useScrollHeader } from "../../hooks/useScrollHeader";
 import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
@@ -11,6 +12,7 @@ import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
 import { LiveContestTicker } from "./LiveContestTicker";
+import Logo3D from "../ui/Logo3D";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { UserMenu } from "./user-menu/UserMenu";
 
@@ -27,6 +29,7 @@ export const Header: React.FC = () => {
     setMaintenanceMode,
   } = useStore();
   const { isAdmin } = useAuth();
+  const { unreadCount } = useNotificationWebSocket();
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
@@ -246,50 +249,16 @@ export const Header: React.FC = () => {
           >
             {/* Left section: Logo and Nav */}
             <div className="flex items-center">
-              {/* Logo */}
+              {/* Logo - 3D Version */}
               <Link
                 to="/"
                 className={`flex items-center gap-1 group relative pl-1 sm:pl-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-                  ${
-                    isCompact
-                      ? "scale-[0.8] sm:scale-[0.85]"
-                      : "scale-[0.85] sm:scale-100"
-                  }`}
+                  ${isCompact ? "scale-[0.9]" : "scale-100"}`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="relative flex items-center justify-center">
-                  <div className="relative flex items-center gap-[2px]">
-                    <span className="text-3xl sm:text-4xl font-cyber text-purple-400 group-hover:text-purple-300 transition-colors animate-logo-slam-left inline-block tracking-tighter relative">
-                      <span className="relative z-20">D</span>
-                      <span className="absolute inset-0 text-purple-500 translate-x-[1px] translate-y-[1px] z-10">
-                        D
-                      </span>
-                      <span className="absolute inset-0 text-purple-600 translate-x-[2px] translate-y-[2px] z-[5]">
-                        D
-                      </span>
-                      <span className="absolute inset-0 text-purple-700 translate-x-[3px] translate-y-[3px] z-[1]">
-                        D
-                      </span>
-                      <span className="absolute inset-0 blur-[2px] text-purple-400/50 z-0">
-                        D
-                      </span>
-                    </span>
-                    <span className="text-3xl sm:text-4xl font-cyber text-gray-300 group-hover:text-gray-200 transition-colors animate-logo-slam-right inline-block tracking-tighter relative">
-                      <span className="relative z-20">D</span>
-                      <span className="absolute inset-0 text-gray-400 translate-x-[1px] translate-y-[1px] z-10">
-                        D
-                      </span>
-                      <span className="absolute inset-0 text-gray-500 translate-x-[2px] translate-y-[2px] z-[5]">
-                        D
-                      </span>
-                      <span className="absolute inset-0 text-gray-600 translate-x-[3px] translate-y-[3px] z-[1]">
-                        D
-                      </span>
-                      <span className="absolute inset-0 blur-[2px] text-gray-300/50 z-0">
-                        D
-                      </span>
-                    </span>
-                  </div>
+                  {/* Use our 3D Logo component with ThreeManager */}
+                  <Logo3D size={isCompact ? "sm" : "md"} />
                 </div>
               </Link>
 
@@ -362,6 +331,7 @@ export const Header: React.FC = () => {
                       user={user}
                       onDisconnect={disconnectWallet}
                       isCompact={isCompact}
+                      unreadNotifications={unreadCount}
                     />
                   </motion.div>
                 ) : (

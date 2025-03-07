@@ -1,6 +1,6 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
-import { FaUser, FaUserFriends } from "react-icons/fa";
+import { FaUser, FaUserFriends, FaBell } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { User } from "../../../types";
@@ -10,12 +10,14 @@ interface UserMenuProps {
   user: User;
   onDisconnect: () => void;
   isCompact?: boolean;
+  unreadNotifications?: number;
 }
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   user,
   onDisconnect,
   isCompact = false,
+  unreadNotifications = 0,
 }) => {
   const { isAdmin, isSuperAdmin } = useAuth();
   const [imageError, setImageError] = useState(false);
@@ -93,6 +95,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       to: "/me",
     },
     {
+      label: "Noti's",
+      icon: FaBell,
+      to: "/notifications",
+      badge: unreadNotifications > 0 ? unreadNotifications : undefined,
+    },
+    {
       label: "Referrals",
       icon: FaUserFriends,
       to: "/referrals",
@@ -136,22 +144,29 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               >
                 {displayName}
               </span>
-              <div
-                className={`
-                  ml-2 rounded-full overflow-hidden ring-2 ${buttonStyles.ring}
-                  transition-all duration-300 shadow-lg
-                  ${isCompact ? "w-5 h-5" : "w-6 h-6"}
-                  bg-dark-300
-                `}
-              >
-                <img
-                  src={profileImageUrl}
-                  alt={displayName}
-                  onError={handleImageError}
-                  className="w-full h-full object-cover"
-                  loading="eager"
-                  crossOrigin="anonymous"
-                />
+              <div className="relative">
+                {unreadNotifications > 0 && (
+                  <div className="absolute -top-1 -right-1.5 z-10 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-red-500 text-white border border-dark-200 shadow-lg animate-pulse">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </div>
+                )}
+                <div
+                  className={`
+                    ml-2 rounded-full overflow-hidden ring-2 ${buttonStyles.ring}
+                    transition-all duration-300 shadow-lg
+                    ${isCompact ? "w-5 h-5" : "w-6 h-6"}
+                    bg-dark-300
+                  `}
+                >
+                  <img
+                    src={profileImageUrl}
+                    alt={displayName}
+                    onError={handleImageError}
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                    crossOrigin="anonymous"
+                  />
+                </div>
               </div>
             </div>
           </Menu.Button>
@@ -195,7 +210,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                               ${active ? "text-brand-200" : "text-brand-300"}
                             `}
                           />
-                          <span>{item.label}</span>
+                          <span className="flex-1">{item.label}</span>
+                          {item.badge !== undefined && (
+                            <span className="flex items-center justify-center min-w-5 h-5 text-xs font-semibold rounded-full bg-red-500/80 text-white px-1">
+                              {item.badge > 99 ? "99+" : item.badge}
+                            </span>
+                          )}
                         </Link>
                       )}
                     </Menu.Item>

@@ -44,6 +44,7 @@ import WebSocketHub from "./pages/admin/WebSocketHub";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/PrivateProfilePage";
 import { ReferralPage } from "./pages/authenticated/ReferralPage";
+import NotificationsPage from "./pages/authenticated/NotificationsPage";
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
@@ -294,6 +295,18 @@ export const App: React.FC = () => {
                     <AuthenticatedRoute>
                       <MaintenanceGuard>
                         <ReferralPage />
+                      </MaintenanceGuard>
+                    </AuthenticatedRoute>
+                  }
+                />
+
+                {/* Notifications */}
+                <Route
+                  path="/notifications"
+                  element={
+                    <AuthenticatedRoute>
+                      <MaintenanceGuard>
+                        <NotificationsPage />
                       </MaintenanceGuard>
                     </AuthenticatedRoute>
                   }
