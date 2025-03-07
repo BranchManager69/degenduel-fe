@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 interface ReportGenerationModalProps {
   onClose: () => void;
-  onGenerate: (withAi: boolean) => Promise<void>;
+  onGenerate: (withAi: boolean, reportType: "service" | "db" | "prisma") => Promise<void>;
 }
 
 export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
@@ -10,6 +10,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
   onGenerate,
 }) => {
   const [withAi, setWithAi] = useState(false);
+  const [reportType, setReportType] = useState<"service" | "db" | "prisma">("service");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +18,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
     setIsGenerating(true);
     setError(null);
     try {
-      await onGenerate(withAi);
+      await onGenerate(withAi, reportType);
     } catch (err) {
       console.error("Failed to generate report:", err);
       setError("Failed to generate report. Please try again.");
@@ -53,26 +54,72 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
             )}
 
             <div className="bg-dark-300/50 rounded-lg p-4 mb-6 border border-dark-300/70">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="withAi"
-                  checked={withAi}
-                  onChange={(e) => setWithAi(e.target.checked)}
-                  className="mr-3 h-5 w-5 accent-brand-500"
-                />
-                <label htmlFor="withAi" className="text-gray-200 font-medium flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Include AI analysis
-                </label>
-              </div>
-              {withAi && (
-                <p className="text-gray-400 text-sm mt-3 ml-8">
-                  AI will analyze the report data and provide insights on system performance and potential issues.
+              <div className="mb-4">
+                <label className="text-gray-200 font-medium mb-2 block">Report Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReportType("service")}
+                    className={`px-3 py-2 rounded-md text-center text-sm ${
+                      reportType === "service" 
+                        ? "bg-brand-500 text-white" 
+                        : "bg-dark-300/70 text-gray-300 hover:bg-dark-300"
+                    }`}
+                  >
+                    Service
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReportType("db")}
+                    className={`px-3 py-2 rounded-md text-center text-sm ${
+                      reportType === "db" 
+                        ? "bg-brand-500 text-white" 
+                        : "bg-dark-300/70 text-gray-300 hover:bg-dark-300"
+                    }`}
+                  >
+                    Database
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReportType("prisma")}
+                    className={`px-3 py-2 rounded-md text-center text-sm ${
+                      reportType === "prisma" 
+                        ? "bg-brand-500 text-white" 
+                        : "bg-dark-300/70 text-gray-300 hover:bg-dark-300"
+                    }`}
+                  >
+                    Prisma
+                  </button>
+                </div>
+                <p className="text-gray-400 text-xs mt-2">
+                  {reportType === "service" && "Analyze service health and configuration"}
+                  {reportType === "db" && "Compare database schema with expected state"}
+                  {reportType === "prisma" && "Reconcile Prisma schema with database"}
                 </p>
-              )}
+              </div>
+              
+              <div className="border-t border-dark-300/40 pt-4 mt-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="withAi"
+                    checked={withAi}
+                    onChange={(e) => setWithAi(e.target.checked)}
+                    className="mr-3 h-5 w-5 accent-brand-500"
+                  />
+                  <label htmlFor="withAi" className="text-gray-200 font-medium flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Include AI analysis
+                  </label>
+                </div>
+                {withAi && (
+                  <p className="text-gray-400 text-sm mt-3 ml-8">
+                    AI will analyze the report data and provide insights on system performance and potential issues.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-3">

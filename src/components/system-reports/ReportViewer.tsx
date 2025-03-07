@@ -51,12 +51,19 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
           } else {
             setError("Failed to fetch service report content");
           }
-        } else {
+        } else if (report.type === "db") {
           const response = await systemReportsService.getDbReport(report.id);
           if (response.success) {
             setContent(response.report.content);
           } else {
             setError("Failed to fetch database report content");
+          }
+        } else if (report.type === "prisma") {
+          const response = await systemReportsService.getPrismaReport(report.id);
+          if (response.success) {
+            setContent(response.report.content);
+          } else {
+            setError("Failed to fetch Prisma schema reconciliation report");
           }
         }
       } catch (err) {
@@ -126,6 +133,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
                   hasAiAnalysis={report.hasAiAnalysis}
                   onTabChange={setActiveTab}
                   copyToClipboard={copyToClipboard}
+                  title={report.type === "prisma" ? "Prisma Schema Reconciliation" : "Database Report"}
                 />
               )}
             </div>
@@ -299,6 +307,7 @@ interface DatabaseReportViewProps {
   hasAiAnalysis: boolean;
   onTabChange: (tab: string) => void;
   copyToClipboard: (text: string) => void;
+  title?: string;
 }
 
 const DatabaseReportView: React.FC<DatabaseReportViewProps> = ({
@@ -306,6 +315,7 @@ const DatabaseReportView: React.FC<DatabaseReportViewProps> = ({
   hasAiAnalysis,
   onTabChange,
   copyToClipboard,
+  title = "Database Report",
 }) => {
   if (!content) {
     return (
@@ -333,7 +343,7 @@ const DatabaseReportView: React.FC<DatabaseReportViewProps> = ({
             <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
             </svg>
-            Database Report
+            {title}
           </TabsTrigger>
           {hasAiAnalysis && (
             <TabsTrigger 
@@ -354,7 +364,7 @@ const DatabaseReportView: React.FC<DatabaseReportViewProps> = ({
                 <svg className="w-5 h-5 mr-2 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
-                Database Report
+                {title}
               </h3>
               <button
                 onClick={() => copyToClipboard(content.report)}

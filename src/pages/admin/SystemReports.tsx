@@ -62,9 +62,9 @@ export const SystemReports: React.FC = () => {
     handleFilterChange("date", date);
   };
 
-  const handleGenerateReport = async (withAi: boolean) => {
+  const handleGenerateReport = async (withAi: boolean, reportType: "service" | "db" | "prisma") => {
     try {
-      await systemReportsService.generateReport({ withAi });
+      await systemReportsService.generateReport({ withAi, reportType });
       fetchReports();
       setIsGenerationModalOpen(false);
     } catch (err) {
@@ -130,10 +130,11 @@ export const SystemReports: React.FC = () => {
                 onValueChange={(value) => handleFilterChange("type", value)}
                 className="w-[300px]"
               >
-                <TabsList className="grid grid-cols-3 bg-dark-300/50">
+                <TabsList className="grid grid-cols-4 bg-dark-300/50">
                   <TabsTrigger value="all" className="data-[state=active]:bg-brand-500 data-[state=active]:text-white">All</TabsTrigger>
                   <TabsTrigger value="service" className="data-[state=active]:bg-brand-500 data-[state=active]:text-white">Service</TabsTrigger>
                   <TabsTrigger value="db" className="data-[state=active]:bg-brand-500 data-[state=active]:text-white">Database</TabsTrigger>
+                  <TabsTrigger value="prisma" className="data-[state=active]:bg-brand-500 data-[state=active]:text-white">Prisma</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -222,10 +223,18 @@ export const SystemReports: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge
                         variant={
-                          report.type === "service" ? "default" : "secondary"
+                          report.type === "service" 
+                            ? "default" 
+                            : report.type === "db" 
+                              ? "secondary" 
+                              : "outline"
                         }
                       >
-                        {report.type === "service" ? "Service" : "Database"}
+                        {report.type === "service" 
+                          ? "Service" 
+                          : report.type === "db" 
+                            ? "Database" 
+                            : "Prisma Schema"}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-200">

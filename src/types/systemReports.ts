@@ -1,6 +1,6 @@
 export interface SystemReport {
   id: string;
-  type: "service" | "db";
+  type: "service" | "db" | "prisma";
   timestamp: string;
   date: string;
   time: string;
@@ -53,6 +53,7 @@ export interface DbReportResponse {
 
 export interface GenerateReportRequest {
   withAi: boolean;
+  reportType?: "service" | "db" | "prisma";
 }
 
 export interface GenerateReportResponse {
@@ -63,7 +64,7 @@ export interface GenerateReportResponse {
 }
 
 export interface SystemReportFilters {
-  type?: "service" | "db" | "all";
+  type?: "service" | "db" | "prisma" | "all";
   date?: string;
   limit?: number;
   withAiOnly?: boolean;

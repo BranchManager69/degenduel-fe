@@ -81,9 +81,17 @@ class SystemReportsService {
 
     return response.json();
   }
+  
+  async getPrismaReport(reportId: string): Promise<DbReportResponse> {
+    const response = await this.apiClient.fetch(
+      `/admin/system-reports/${reportId}/prisma`
+    );
+
+    return response.json();
+  }
 
   async generateReport(
-    options: GenerateReportRequest = { withAi: false }
+    options: GenerateReportRequest = { withAi: false, reportType: "service" }
   ): Promise<GenerateReportResponse> {
     const response = await this.apiClient.fetch(
       `/admin/system-reports/generate`,
