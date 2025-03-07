@@ -1,59 +1,71 @@
 // src/components/layout/Footer.tsx
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import { ddApi } from "../../services/dd-api";
-import { useStore } from "../../store/useStore";
+import { useServerStatusWebSocket, ServerStatus } from "../../hooks/useServerStatusWebSocket";
 
 export const Footer: React.FC = () => {
-  const { maintenanceMode } = useStore();
-  const [serverStatus, setServerStatus] = useState<
-    "online" | "maintenance" | "offline"
-  >(maintenanceMode ? "maintenance" : "online");
+  // Use our new WebSocket hook for server status
+  const { status, message, isWebSocketConnected } = useServerStatusWebSocket();
 
-  useEffect(() => {
-    // Update status when maintenance mode changes
-    if (maintenanceMode) {
-      setServerStatus("maintenance");
-    }
-  }, [maintenanceMode]);
-
-  useEffect(() => {
-    // Only check server status if not in maintenance mode
-    if (maintenanceMode) return;
-
-    const checkServerStatus = async () => {
-      try {
-        const response = await ddApi.fetch("/status");
-        if (response.status === 503) {
-          setServerStatus("maintenance");
-        } else {
-          setServerStatus("online");
-        }
-      } catch (err) {
-        if (err instanceof Error && err.message.includes("503")) {
-          setServerStatus("maintenance");
-        } else {
-          setServerStatus("offline");
-        }
-        // Log all errors as this endpoint shouldn't be failing
-        console.error("Failed to check server status:", err);
+  // Get color scheme and animation based on status
+  const getStatusStyles = (status: ServerStatus, isWebSocketConnected: boolean) => {
+    // Base styles depending on status
+    const baseStyles = {
+      online: {
+        bgColor: 'bg-green-500/10',
+        dotColor: 'bg-green-500',
+        shadow: 'shadow-[0_0_10px_rgba(34,197,94,0.5)]',
+        textColor: 'text-green-400',
+        animate: 'animate-pulse'
+      },
+      maintenance: {
+        bgColor: 'bg-yellow-500/10',
+        dotColor: 'bg-yellow-500',
+        shadow: 'shadow-[0_0_10px_rgba(234,179,8,0.5)]',
+        textColor: 'text-yellow-400',
+        animate: ''
+      },
+      error: {
+        bgColor: 'bg-orange-500/10',
+        dotColor: 'bg-orange-500',
+        shadow: 'shadow-[0_0_10px_rgba(249,115,22,0.5)]',
+        textColor: 'text-orange-400',
+        animate: ''
+      },
+      offline: {
+        bgColor: 'bg-red-500/10',
+        dotColor: 'bg-red-500',
+        shadow: 'shadow-[0_0_10px_rgba(239,68,68,0.5)]',
+        textColor: 'text-red-400',
+        animate: ''
       }
     };
 
-    // Initial check
-    checkServerStatus();
+    // Get base styles for current status
+    const currentStyles = baseStyles[status] || baseStyles.offline;
+    
+    // Add WebSocket-specific enhancements when connected
+    if (isWebSocketConnected) {
+      return {
+        ...currentStyles,
+        // Enhanced styles for WebSocket connection
+        wsBorder: 'border border-cyan-500/30',
+        wsEffect: 'animate-shine-websocket',
+        wsIndicator: true
+      };
+    }
+    
+    // Regular style without WebSocket enhancements
+    return {
+      ...currentStyles,
+      wsBorder: '',
+      wsEffect: '',
+      wsIndicator: false
+    };
+  };
 
-    // Check every 5 seconds when offline, every 30 seconds when online
-    const interval = setInterval(
-      () => {
-        checkServerStatus();
-      },
-      serverStatus === "offline" ? 5000 : 30000
-    );
-
-    return () => clearInterval(interval);
-  }, [serverStatus, maintenanceMode]);
+  const styles = getStatusStyles(status, isWebSocketConnected);
 
   return (
     <footer className="backdrop-blur-sm border-t border-dark-300/30 relative mt-auto">
@@ -116,46 +128,49 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Right side - Status Indicator */}
-          <div className="flex items-center gap-2 pl-4 shrink-0">
+          <div className="flex items-center gap-2 pl-4 shrink-0 group">
             <div
               className={`
                 flex items-center gap-2 px-3 py-1 rounded-full 
-                transition-all duration-300
-                ${
-                  serverStatus === "online"
-                    ? "bg-green-500/10"
-                    : serverStatus === "maintenance"
-                    ? "bg-yellow-500/10"
-                    : "bg-red-500/10"
-                }
+                transition-all duration-300 ${styles.bgColor} ${styles.wsBorder}
+                ${styles.wsEffect} relative overflow-hidden
               `}
+              title={message} // Show the detailed message on hover
             >
+              {/* WebSocket-specific shine effect */}
+              {styles.wsIndicator && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-shine" />
+              )}
+              
               <div
-                className={`w-2 h-2 rounded-full transition-all duration-300
-                  ${
-                    serverStatus === "online"
-                      ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
-                      : serverStatus === "maintenance"
-                      ? "bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"
-                      : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
-                  }
-                  ${serverStatus === "online" ? "animate-pulse" : ""}
+                className={`w-2 h-2 rounded-full transition-all duration-300 z-10
+                  ${styles.dotColor} ${styles.shadow} ${styles.animate}
                 `}
               />
               <span
                 className={`
-                text-xs font-cyber tracking-wide
-                ${
-                  serverStatus === "online"
-                    ? "text-green-400"
-                    : serverStatus === "maintenance"
-                    ? "text-yellow-400"
-                    : "text-red-400"
-                }
+                text-xs font-cyber tracking-wide ${styles.textColor} z-10
+                ${styles.wsIndicator ? 'text-shadow-sm' : ''}
               `}
               >
-                {serverStatus.toUpperCase()}
+                {status.toUpperCase()}
+                {styles.wsIndicator && (
+                  <span className="ml-0.5 text-cyan-400 text-opacity-70 text-[8px] align-top">⚡</span>
+                )}
               </span>
+            </div>
+            
+            {/* Tooltip showing detailed status message on hover */}
+            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block pointer-events-none">
+              <div className={`${styles.bgColor} p-2 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder}`}>
+                {message}
+                {styles.wsIndicator && (
+                  <div className="mt-1 text-cyan-400 text-[10px] flex items-center">
+                    <span className="mr-1">⚡</span>
+                    <span>WebSocket Connected</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

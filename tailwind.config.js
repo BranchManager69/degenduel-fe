@@ -322,6 +322,7 @@ export default {
         "caution-flow-left": "caution-flow-left 20s linear infinite",
         "caution-flow-right": "caution-flow-right 25s linear infinite",
         "shine-slow": "shine-slow 3s ease-in-out infinite",
+        "shine-websocket": "shine 3s linear infinite",
         "cyber-pulse": "cyber-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "cyber-glitch": "glitch 1s linear infinite",
         "matrix-rain": "matrix-rain 20s linear infinite",

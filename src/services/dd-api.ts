@@ -1059,13 +1059,17 @@ export const ddApi = {
             }
           });
         } else {
-          // Default sort: most participants first
-          contests.sort(
-            (a, b) => Number(b.participant_count) - Number(a.participant_count)
-          );
+          // Default sort: start time ascending
+          contests.sort((a, b) => {
+            const aStartTime = new Date(a.start_time).getTime();
+            const bStartTime = new Date(b.start_time).getTime();
+            return aStartTime - bStartTime;
+          });
         }
 
         // Check participation in batches if user is logged in
+        // TODO: improve this by checking participation for all contests at once
+        // This is where the is_participating flag is set
         if (user?.wallet_address) {
           const BATCH_SIZE = 5;
           for (let i = 0; i < contests.length; i += BATCH_SIZE) {
@@ -1094,7 +1098,7 @@ export const ddApi = {
 
         return contests;
       } catch (error: any) {
-        logError("contests.getAll", error, {
+        logError(`contests.getAll: ${error}`, error, {
           userWallet: user?.wallet_address,
         });
         throw error;

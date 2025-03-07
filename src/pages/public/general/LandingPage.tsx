@@ -16,7 +16,7 @@ import { formatCurrency, isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
 
-// TODO: Move to a separate file
+// TODO: move to separate file
 interface ContestResponse {
   contests: Contest[];
   pagination: {
@@ -26,6 +26,7 @@ interface ContestResponse {
   };
 }
 
+// Landing Page Component
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
@@ -34,6 +35,7 @@ export const LandingPage: React.FC = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0);
 
+  // useEffect for the animation phases
   useEffect(() => {
     // Animation phases for the title
     const phaseOneTimer = setTimeout(() => {
@@ -44,10 +46,11 @@ export const LandingPage: React.FC = () => {
       setAnimationPhase(2); // Full animation
     }, 2000);
 
+    // Fetch contests
     const fetchContests = async () => {
       try {
         // First check maintenance mode
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode(); // TODO: improve MM checks via WSS
         setIsMaintenanceMode(isInMaintenance);
 
         // If in maintenance mode, don't fetch contests
@@ -61,15 +64,20 @@ export const LandingPage: React.FC = () => {
         const contestsArray: Contest[] = Array.isArray(response)
           ? response
           : (response as ContestResponse).contests;
+
+        // Set active ('live') contests
         setActiveContests(contestsArray.filter(isContestLive));
+
+        // Set open ('pending' / 'upcoming') contests
         setOpenContests(
           contestsArray.filter(
             (contest: Contest) => contest.status === "pending"
           )
         );
       } catch (err) {
-        console.error("Failed to load contests:", err);
+        console.error(`Failed to load contests: ${err}`);
         if (err instanceof Error && err.message.includes("503")) {
+          // TODO: improve MM checks via WSS
           setIsMaintenanceMode(true);
           setError("DegenDuel is in Maintenance Mode. Please try again later.");
         } else {
@@ -79,8 +87,12 @@ export const LandingPage: React.FC = () => {
         setLoading(false);
       }
     };
+    // Fetch contests since we're not in maintenance mode
     fetchContests();
 
+    // Poll maintenance status every n seconds
+    const MM_POLL_INTERVAL = 30; // in seconds
+    // TODO: improve MM checks via WSS
     const maintenanceCheckInterval = setInterval(async () => {
       try {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
@@ -89,9 +101,9 @@ export const LandingPage: React.FC = () => {
           setError("DegenDuel is in Maintenance Mode. Please try again later.");
         }
       } catch (err) {
-        console.error("Failed to check maintenance status:", err);
+        console.error(`Failed to check maintenance status: ${err}`);
       }
-    }, 30000);
+    }, MM_POLL_INTERVAL * 1000);
 
     return () => {
       clearInterval(maintenanceCheckInterval);
@@ -102,6 +114,7 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden">
+      {/* 3D Background Scene */}
       <BackgroundEffects />
 
       {/* Content Section */}
@@ -318,7 +331,12 @@ export const LandingPage: React.FC = () => {
               {(() => {
                 if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
                   // Dynamic import only when needed
-                  const Features = React.lazy(() => import('../../../components/landing/features-list/Features'));
+                  const Features = React.lazy(
+                    () =>
+                      import(
+                        "../../../components/landing/features-list/Features"
+                      )
+                  );
                   return (
                     <React.Suspense fallback={<div>Loading features...</div>}>
                       <Features />

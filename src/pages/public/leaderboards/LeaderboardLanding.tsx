@@ -1,15 +1,24 @@
 // src/pages/public/leaderboards/LeaderboardLanding.tsx
 
 import { Link } from "react-router-dom";
+import Logo3D from "../../../components/ui/Logo3D";
 
 export const LeaderboardLanding = () => {
   return (
     <div className="max-w-7xl mx-auto p-8">
+      {/* 3D Logo Header */}
+      <div className="mb-8 text-center relative">
+        <Logo3D size="xl" className="mb-4" />
+        <div className="text-cyber-400 text-xl font-bold animate-cyber.pulse mb-2">
+          DEGEN×DUEL
+        </div>
+      </div>
+      
       {/* Header Section */}
       <div className="mb-12 text-center relative group">
         <h1 className="text-4xl font-bold text-gray-100 mb-4 relative">
           <span className="relative z-10 group-hover:animate-cyber.glitch">
-            DegenDuel Leaderboards
+            Leaderboards
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-cyber.data-stream" />
         </h1>
@@ -85,6 +94,12 @@ export const LeaderboardLanding = () => {
             </div>
           </div>
         </Link>
+      </div>
+      
+      {/* Technical Note */}
+      <div className="mt-16 text-center text-xs text-gray-500">
+        <p>The 3D logo above features two "D" shapes for DegenDuel in a PvP face-off with energy beam connection.</p>
+        <p>Occasionally, it transforms into dueling candlesticks (red and green) that clash like swords - representing the trading competition.</p>
       </div>
     </div>
   );
