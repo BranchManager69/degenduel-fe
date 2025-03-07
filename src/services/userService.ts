@@ -25,6 +25,27 @@ export interface User {
   user_stats: UserStats;
 }
 
+export interface UserLevel {
+  current_level: {
+    level_number: number;
+    class_name: string;
+    title: string;
+    icon_url: string;
+  };
+  experience: {
+    current: number;
+    next_level_at: number;
+    percentage: number;
+  };
+  achievements: {
+    bronze: { current: number; required: number };
+    silver: { current: number; required: number };
+    gold: { current: number; required: number };
+    platinum: { current: number; required: number };
+    diamond: { current: number; required: number };
+  };
+}
+
 class UserService {
   async searchUsers(query: string): Promise<User[]> {
     if (!query || query.length < 2) return [];
@@ -54,6 +75,34 @@ class UserService {
       throw error instanceof Error
         ? error
         : new Error("Failed to search users");
+    }
+  }
+  
+  async getUserLevel(walletAddress: string): Promise<UserLevel> {
+    try {
+      const response = await fetch(
+        `${API_URL}/users/${walletAddress}/level`,
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.error || `Failed to fetch user level: ${response.status}`
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Get user level error:", error);
+      throw error instanceof Error
+        ? error
+        : new Error("Failed to fetch user level");
     }
   }
 }

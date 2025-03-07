@@ -97,7 +97,8 @@ export function useTokenDataWebSocket(
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date()); // Initialize with current date
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<number>();
+  const simulationIntervalRef = useRef<number>();
   const reconnectAttempts = useRef(0);
 
   const { getAccessToken } = useAuth();
@@ -321,8 +322,6 @@ export function useTokenDataWebSocket(
 
       // Function to simulate frequent 5-minute change updates for more dynamic animations
       // This creates small price movements every few seconds to keep visualizations active
-      const simulationIntervalRef = useRef<NodeJS.Timeout>();
-
       function startSimulating5MinChanges() {
         // Clear any existing simulation interval
         if (simulationIntervalRef.current) {
@@ -330,7 +329,7 @@ export function useTokenDataWebSocket(
         }
 
         // Create new simulation interval that updates 5m changes every few seconds
-        simulationIntervalRef.current = setInterval(() => {
+        simulationIntervalRef.current = window.setInterval(() => {
           if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)
             return;
 
@@ -373,7 +372,7 @@ export function useTokenDataWebSocket(
           );
           console.log(`[TokenDataWebSocket] Reconnecting in ${delay}ms`);
 
-          reconnectTimeoutRef.current = setTimeout(() => {
+          reconnectTimeoutRef.current = window.setTimeout(() => {
             reconnectAttempts.current++;
             connect();
           }, delay);
@@ -408,8 +407,6 @@ export function useTokenDataWebSocket(
         setLastUpdate(new Date());
 
         // Start simulating changes
-        const simulationIntervalRef = useRef<NodeJS.Timeout>();
-
         function startSimulating5MinChanges() {
           // Clear any existing simulation interval
           if (simulationIntervalRef.current) {
@@ -417,7 +414,7 @@ export function useTokenDataWebSocket(
           }
 
           // Create new simulation interval with only 5m changes
-          simulationIntervalRef.current = setInterval(() => {
+          simulationIntervalRef.current = window.setInterval(() => {
             setTokens((prev) =>
               prev.map((token) => {
                 const currentChange = parseFloat(token.change5m || "0");
@@ -458,6 +455,9 @@ export function useTokenDataWebSocket(
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (simulationIntervalRef.current) {
+        clearInterval(simulationIntervalRef.current);
       }
     };
   }, [connect, tokens.length]);

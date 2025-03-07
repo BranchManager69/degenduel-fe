@@ -659,6 +659,59 @@ export const ddApi = {
         throw error;
       }
     },
+    
+    // Get user level data
+    getUserLevel: async (wallet: string) => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/users/${wallet}/level`);
+        return response.json();
+      } catch (error: any) {
+        logError("users.getUserLevel", error, { wallet });
+        // Return fallback data if the endpoint doesn't exist
+        return {
+          current_level: {
+            level_number: 1,
+            class_name: "Novice",
+            title: "DegenDuel Novice",
+            icon_url: "/images/levels/novice.png",
+          },
+          experience: {
+            current: 0,
+            next_level_at: 100,
+            percentage: 0,
+          },
+          achievements: {
+            bronze: { current: 0, required: 1 },
+            silver: { current: 0, required: 0 },
+            gold: { current: 0, required: 0 },
+            platinum: { current: 0, required: 0 },
+            diamond: { current: 0, required: 0 },
+          },
+        };
+      }
+    },
+    
+    // Get user profile image
+    getProfileImage: async (wallet: string): Promise<string> => {
+      try {
+        // First try to check if the API has a profile image endpoint
+        const defaultImageUrl = "/images/avatars/default.png";
+        const api = createApiClient();
+        const response = await api.fetch(`/users/${wallet}/profile-image`, {
+          method: "HEAD", // Just check if it exists, don't download the image
+        });
+        
+        if (response.ok) {
+          return `${API_URL}/users/${wallet}/profile-image`;
+        }
+        
+        return defaultImageUrl;
+      } catch (error) {
+        console.warn("Profile image fetch failed, using default", error);
+        return "/images/avatars/default.png";
+      }
+    },
   },
 
   // Token endpoints

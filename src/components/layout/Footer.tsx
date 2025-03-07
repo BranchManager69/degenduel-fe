@@ -2,66 +2,72 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { useServerStatusWebSocket, ServerStatus } from "../../hooks/useServerStatusWebSocket";
+import {
+  ServerStatus,
+  useServerStatusWebSocket,
+} from "../../hooks/useServerStatusWebSocket";
 
 export const Footer: React.FC = () => {
   // Use our new WebSocket hook for server status
   const { status, message, isWebSocketConnected } = useServerStatusWebSocket();
 
   // Get color scheme and animation based on status
-  const getStatusStyles = (status: ServerStatus, isWebSocketConnected: boolean) => {
+  const getStatusStyles = (
+    status: ServerStatus,
+    isWebSocketConnected: boolean
+  ) => {
     // Base styles depending on status
     const baseStyles = {
       online: {
-        bgColor: 'bg-green-500/10',
-        dotColor: 'bg-green-500',
-        shadow: 'shadow-[0_0_10px_rgba(34,197,94,0.5)]',
-        textColor: 'text-green-400',
-        animate: 'animate-pulse'
+        bgColor: "bg-green-500/10",
+        dotColor: "bg-green-500",
+        shadow: "shadow-[0_0_10px_rgba(34,197,94,0.5)]",
+        textColor: "text-green-400",
+        animate: "animate-pulse",
       },
       maintenance: {
-        bgColor: 'bg-yellow-500/10',
-        dotColor: 'bg-yellow-500',
-        shadow: 'shadow-[0_0_10px_rgba(234,179,8,0.5)]',
-        textColor: 'text-yellow-400',
-        animate: ''
+        bgColor: "bg-yellow-500/10",
+        dotColor: "bg-yellow-500",
+        shadow: "shadow-[0_0_10px_rgba(234,179,8,0.5)]",
+        textColor: "text-yellow-400",
+        animate: "",
       },
       error: {
-        bgColor: 'bg-orange-500/10',
-        dotColor: 'bg-orange-500',
-        shadow: 'shadow-[0_0_10px_rgba(249,115,22,0.5)]',
-        textColor: 'text-orange-400',
-        animate: ''
+        bgColor: "bg-orange-500/10",
+        dotColor: "bg-orange-500",
+        shadow: "shadow-[0_0_10px_rgba(249,115,22,0.5)]",
+        textColor: "text-orange-400",
+        animate: "",
       },
       offline: {
-        bgColor: 'bg-red-500/10',
-        dotColor: 'bg-red-500',
-        shadow: 'shadow-[0_0_10px_rgba(239,68,68,0.5)]',
-        textColor: 'text-red-400',
-        animate: ''
-      }
+        bgColor: "bg-red-500/10",
+        dotColor: "bg-red-500",
+        shadow: "shadow-[0_0_10px_rgba(239,68,68,0.5)]",
+        textColor: "text-red-400",
+        animate: "",
+      },
     };
 
     // Get base styles for current status
     const currentStyles = baseStyles[status] || baseStyles.offline;
-    
+
     // Add WebSocket-specific enhancements when connected
     if (isWebSocketConnected) {
       return {
         ...currentStyles,
         // Enhanced styles for WebSocket connection
-        wsBorder: 'border border-cyan-500/30',
-        wsEffect: 'animate-shine-websocket',
-        wsIndicator: true
+        wsBorder: "border border-brand-500/30",
+        wsEffect: "animate-shine-websocket",
+        wsIndicator: true,
       };
     }
-    
+
     // Regular style without WebSocket enhancements
     return {
       ...currentStyles,
-      wsBorder: '',
-      wsEffect: '',
-      wsIndicator: false
+      wsBorder: "",
+      wsEffect: "",
+      wsIndicator: false,
     };
   };
 
@@ -141,7 +147,7 @@ export const Footer: React.FC = () => {
               {styles.wsIndicator && (
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-shine" />
               )}
-              
+
               <div
                 className={`w-2 h-2 rounded-full transition-all duration-300 z-10
                   ${styles.dotColor} ${styles.shadow} ${styles.animate}
@@ -150,19 +156,23 @@ export const Footer: React.FC = () => {
               <span
                 className={`
                 text-xs font-cyber tracking-wide ${styles.textColor} z-10
-                ${styles.wsIndicator ? 'text-shadow-sm' : ''}
+                ${styles.wsIndicator ? "text-shadow-sm" : ""}
               `}
               >
                 {status.toUpperCase()}
                 {styles.wsIndicator && (
-                  <span className="ml-0.5 text-cyan-400 text-opacity-70 text-[8px] align-top">⚡</span>
+                  <span className="ml-0.5 text-cyan-400 text-opacity-70 text-[8px] align-top">
+                    ⚡
+                  </span>
                 )}
               </span>
             </div>
-            
+
             {/* Tooltip showing detailed status message on hover */}
             <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block pointer-events-none">
-              <div className={`${styles.bgColor} p-2 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder}`}>
+              <div
+                className={`${styles.bgColor} p-2 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder}`}
+              >
                 {message}
                 {styles.wsIndicator && (
                   <div className="mt-1 text-cyan-400 text-[10px] flex items-center">
