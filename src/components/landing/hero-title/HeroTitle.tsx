@@ -1,9 +1,7 @@
 import { motion } from "framer-motion";
 import React, { useState, useEffect, useRef } from "react";
-import { ParticlesEffect } from "../../animated-background/ParticlesEffect";
 import * as THREE from "three";
 import ThreeManager from "../../../utils/three/ThreeManager";
-import { Canvas } from "@react-three/fiber";
 
 export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = () => {} }) => {
   const [phase, setPhase] = useState(0);
@@ -250,13 +248,6 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
 
   return (
     <div className="relative h-screen overflow-hidden bg-black">
-      {/* Atmospheric effect */}
-      <div className="absolute inset-0 z-10 opacity-80">
-        <Canvas>
-          <ParticlesEffect />
-        </Canvas>
-      </div>
-
       {/* Initial darkness */}
       <motion.div
         className="absolute inset-0 bg-black z-30"
@@ -267,11 +258,6 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
 
       {/* 3D animated crypto dodgeball background using ThreeManager singleton */}
       <div className="absolute inset-0 z-15 opacity-80" ref={bgContainerRef}></div>
-      
-      {/* Use ParticlesEffect which already uses ThreeManager singleton */}
-      <div className="absolute inset-0 z-10 opacity-50">
-        <ParticlesEffect />
-      </div>
 
       {/* Impact flash effects - enhanced with double flash */}
       {phase > 0 && (

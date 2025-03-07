@@ -2,15 +2,22 @@
 
 ## Build & Test Commands
 
-- `npm run build:prod &` - Build for production (ALWAYS RUN IN BACKGROUND)
-- `npm run build:dev &` - Build for development (unminified) (ALWAYS RUN IN BACKGROUND)
+- `npm run build:prod &` - Build for production and output to `dist/` (ALWAYS RUN IN BACKGROUND)
+- `npm run build:dev &` - Build for development (unminified) and output to `dist-dev/` (ALWAYS RUN IN BACKGROUND)
 - `npm run build:local &` - Build unminified development version and serve on port 3010 (ALWAYS RUN IN BACKGROUND)
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server (for local development only)
 - `npm run dev:local` - Start development server in local mode (connects to dev.degenduel.me API)
 - `npm run type-check` - Run TypeScript checks
 - `npm run test` - Run all tests
 - `npm test -- -t "test name"` - Run specific test
 - `npm test -- src/path/to/file.test.tsx` - Run tests in specific file
+
+## Deployment Architecture
+
+- NGINX is configured to serve `dist-dev/` content at https://dev.degenduel.me
+- NGINX is configured to serve `dist/` content at https://degenduel.me
+- After running a build command, changes are immediately available at the corresponding domain
+- No need to restart servers - just run the build command and refresh the site
 
 ## Server Operations
 
