@@ -5,7 +5,7 @@ import * as THREE from "three";
 import ThreeManager from "../../../utils/three/ThreeManager";
 import { Canvas } from "@react-three/fiber";
 
-export const HeroTitle: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = () => {} }) => {
   const [phase, setPhase] = useState(0);
   const [degenVisible, setDegenVisible] = useState(false);
   const [duelVisible, setDuelVisible] = useState(false);

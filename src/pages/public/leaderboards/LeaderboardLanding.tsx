@@ -6,26 +6,32 @@ import Logo3D from "../../../components/ui/Logo3D";
 export const LeaderboardLanding = () => {
   return (
     <div className="max-w-7xl mx-auto p-8">
-      {/* 3D Logo Header */}
-      <div className="mb-8 text-center relative">
-        <Logo3D size="xl" className="mb-4" />
-        <div className="text-cyber-400 text-xl font-bold animate-cyber.pulse mb-2">
-          DEGEN×DUEL
+      {/* Header with integrated 3D Logo - more compact layout */}
+      <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+        <div className="w-full md:w-1/3 max-w-[240px]">
+          <Logo3D size="md" className="mb-0" />
+        </div>
+        
+        <div className="w-full md:w-2/3 text-center md:text-left relative group">
+          <h1 className="text-4xl font-bold text-gray-100 mb-2 relative inline-flex items-center">
+            <span className="text-cyber-400 text-xl font-bold mr-3 animate-cyber.pulse hidden md:inline-block">
+              DEGEN×DUEL
+            </span>
+            <span className="relative z-10 group-hover:animate-cyber.glitch">
+              Leaderboards
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-cyber.data-stream" />
+          </h1>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto md:mx-0 group-hover:animate-cyber.pulse">
+            Choose your path to glory. Track performance rankings or check the
+            global leaderboard standings.
+          </p>
         </div>
       </div>
       
-      {/* Header Section */}
-      <div className="mb-12 text-center relative group">
-        <h1 className="text-4xl font-bold text-gray-100 mb-4 relative">
-          <span className="relative z-10 group-hover:animate-cyber.glitch">
-            Leaderboards
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-cyber.data-stream" />
-        </h1>
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto group-hover:animate-cyber.pulse">
-          Choose your path to glory. Track performance rankings or check the
-          global leaderboard standings.
-        </p>
+      {/* Mobile-only DEGEN×DUEL text */}
+      <div className="text-cyber-400 text-xl font-bold animate-cyber.pulse mb-2 text-center md:hidden">
+        DEGEN×DUEL
       </div>
 
       {/* Buttons Container */}

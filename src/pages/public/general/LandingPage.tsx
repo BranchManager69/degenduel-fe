@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { Link, Link as RouterLink } from "react-router-dom";
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
+import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 // Features import removed and controlled by feature flag
 import { FEATURE_FLAGS } from "../../../config/config";
 import { formatCurrency, isContestLive } from "../../../lib/utils";
@@ -123,7 +124,13 @@ export const LandingPage: React.FC = () => {
           <div className="text-center space-y-4">
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
-              {/* Animated Logo */}
+              {/* New HeroTitle component */}
+              <div className="h-[40vh] min-h-[300px] w-full flex items-center justify-center mb-8">
+                <HeroTitle onComplete={() => {}} />
+              </div>
+              
+              {/* Original animated logo (commented out but preserved) */}
+              {/*
               <div className="flex items-center justify-center space-x-4 mb-8">
                 <motion.h1
                   className="text-5xl sm:text-6xl font-black tracking-tighter whitespace-nowrap"
@@ -210,6 +217,7 @@ export const LandingPage: React.FC = () => {
                   </motion.span>
                 </motion.h1>
               </div>
+              */}
 
               {/* Enhanced tagline with dynamic animation */}
               <motion.div
