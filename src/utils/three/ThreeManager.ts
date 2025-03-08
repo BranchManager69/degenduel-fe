@@ -41,8 +41,10 @@ class ThreeManager {
   private fpsHistory: number[] = [];
   private qualityLevel: 'high' | 'medium' | 'low' = 'high';
   
-  // Device detection
+  // Device detection and fallback flags
   private isMobile: boolean = false;
+  private isWebGLFallback: boolean = false;
+  private isStaticFallback: boolean = false;
   
   private constructor() {
     // Detect mobile
@@ -51,20 +53,76 @@ class ThreeManager {
     // Start with an appropriate quality level
     this.qualityLevel = this.isMobile ? 'medium' : 'high';
     
-    // Create renderer with optimal settings
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: !this.isMobile, // Disable antialiasing on mobile for performance
-      alpha: true,
-      powerPreference: 'high-performance',
-      stencil: false,
-      depth: true
-    });
-    
-    // Configure renderer
-    this.renderer.setPixelRatio(this.isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    // Update from outputEncoding (deprecated) to the new outputColorSpace property
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    // Try to create optimal WebGL renderer with comprehensive fallback system
+    try {
+      // First try: High quality renderer
+      try {
+        this.renderer = new THREE.WebGLRenderer({
+          antialias: !this.isMobile,
+          alpha: true,
+          powerPreference: 'high-performance',
+          stencil: false,
+          depth: true
+        });
+        
+        // Configure renderer
+        this.renderer.setPixelRatio(this.isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        
+        console.log('[ThreeManager] WebGL renderer initialized successfully');
+      } catch (highQualityError) {
+        // Second try: Minimal WebGL renderer with lowest settings
+        console.warn('[ThreeManager] High-quality renderer failed, trying minimal WebGL:', highQualityError);
+        this.isWebGLFallback = true;
+        
+        this.renderer = new THREE.WebGLRenderer({
+          antialias: false,
+          alpha: true,
+          powerPreference: 'low-power',
+          precision: 'lowp',
+          depth: false,
+          stencil: false
+        });
+        
+        // Set minimal configuration
+        this.renderer.setPixelRatio(1);
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        
+        // Force low quality mode
+        this.qualityLevel = 'low';
+        console.warn('[ThreeManager] Using fallback low-quality WebGL renderer');
+      }
+    } catch (error) {
+      // Final fallback: No WebGL at all, use a non-WebGL static background
+      console.error('[ThreeManager] WebGL completely unavailable:', error);
+      this.isStaticFallback = true;
+      
+      // Create a mock renderer object that does nothing
+      this.renderer = {
+        domElement: document.createElement('div'),
+        setPixelRatio: () => {},
+        setSize: () => {},
+        clear: () => {},
+        render: () => {},
+        dispose: () => {},
+        outputColorSpace: THREE.SRGBColorSpace
+      } as unknown as THREE.WebGLRenderer;
+      
+      // Style the fallback element to look decent
+      const fallbackEl = this.renderer.domElement;
+      fallbackEl.className = 'webgl-fallback';
+      fallbackEl.style.background = 'radial-gradient(circle, rgba(20,20,30,1) 0%, rgba(10,10,15,1) 100%)';
+      fallbackEl.style.position = 'absolute';
+      fallbackEl.style.top = '0';
+      fallbackEl.style.left = '0';
+      fallbackEl.style.width = '100%';
+      fallbackEl.style.height = '100%';
+      
+      // Add a message for browsers with developer tools open
+      console.warn('[ThreeManager] Using non-WebGL fallback - visual effects disabled');
+    }
     
     // We no longer initialize unused main scene and camera
     // Each component will register its own scene and camera through registerScene
@@ -114,15 +172,32 @@ class ThreeManager {
     if (!this.renderer.domElement.parentElement) {
       domElement.appendChild(this.renderer.domElement);
       
-      // Setting the renderer style to position: fixed with z-index: -1
-      // ensures it's behind all content but visible everywhere
-      this.renderer.domElement.style.position = 'fixed';
+      // Setting the renderer style to absolute positioning with pointerEvents: none
+      // ensures it's visible only within the container and doesn't capture clicks
+      this.renderer.domElement.style.position = 'absolute';
       this.renderer.domElement.style.top = '0';
       this.renderer.domElement.style.left = '0';
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
-      this.renderer.domElement.style.zIndex = '-1';
       this.renderer.domElement.style.pointerEvents = 'none';
+      
+      // If we're in static fallback mode, add a user-friendly message
+      if (this.isStaticFallback) {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'webgl-fallback-message';
+        messageEl.textContent = 'Enhanced visual effects unavailable';
+        messageEl.style.position = 'absolute';
+        messageEl.style.bottom = '10px';
+        messageEl.style.left = '0';
+        messageEl.style.width = '100%';
+        messageEl.style.textAlign = 'center';
+        messageEl.style.color = 'rgba(255,255,255,0.5)';
+        messageEl.style.fontSize = '12px';
+        messageEl.style.padding = '5px';
+        messageEl.style.fontFamily = 'sans-serif';
+        messageEl.style.pointerEvents = 'none';
+        this.renderer.domElement.appendChild(messageEl);
+      }
     }
   }
   
@@ -133,6 +208,13 @@ class ThreeManager {
     this.attachRenderer(componentId, domElement);
   }
   
+  /**
+   * Check if a scene exists
+   */
+  public hasScene(componentId: string): boolean {
+    return this.scenes.has(componentId);
+  }
+
   /**
    * Create a new scene with camera
    */
@@ -291,6 +373,12 @@ class ThreeManager {
    * Main animation loop
    */
   private startAnimationLoop(): void {
+    // If in static fallback mode, don't run the animation loop at all
+    if (this.isStaticFallback) {
+      console.log('[ThreeManager] Static fallback mode - animation disabled');
+      return;
+    }
+    
     const animate = (time: number) => {
       this.animationFrameId = requestAnimationFrame(animate);
       
@@ -298,53 +386,123 @@ class ThreeManager {
       const deltaTime = this.lastFrameTime ? (time - this.lastFrameTime) / 1000 : 0.016;
       this.lastFrameTime = time;
       
-      // Update FPS counter
-      this.frameCounter++;
-      if (time - this.lastFpsUpdate > this.fpsUpdateInterval) {
-        this.currentFps = Math.round(
-          (this.frameCounter * 1000) / (time - this.lastFpsUpdate)
-        );
-        
-        this.lastFpsUpdate = time;
-        this.frameCounter = 0;
-        
-        // Store in history
-        this.fpsHistory.push(this.currentFps);
-        if (this.fpsHistory.length > 10) {
-          this.fpsHistory.shift();
-        }
-        
-        // Adjust quality if needed (not too often)
-        if (this.fpsHistory.length >= 5) {
-          this.adjustQualityForPerformance();
+      // Update FPS counter (skip if in WebGL fallback mode to reduce overhead)
+      if (!this.isWebGLFallback) {
+        this.frameCounter++;
+        if (time - this.lastFpsUpdate > this.fpsUpdateInterval) {
+          this.currentFps = Math.round(
+            (this.frameCounter * 1000) / (time - this.lastFpsUpdate)
+          );
+          
+          this.lastFpsUpdate = time;
+          this.frameCounter = 0;
+          
+          // Store in history
+          this.fpsHistory.push(this.currentFps);
+          if (this.fpsHistory.length > 10) {
+            this.fpsHistory.shift();
+          }
+          
+          // Adjust quality if needed (not too often)
+          if (this.fpsHistory.length >= 5 && !this.isWebGLFallback) {
+            this.adjustQualityForPerformance();
+          }
         }
       }
       
-      // Run component animation callbacks
-      this.animationCallbacks.forEach(callback => {
-        try {
-          callback(deltaTime);
-        } catch (error) {
-          console.error('[ThreeManager] Error in animation callback:', error);
-        }
-      });
-      
-      // Clear the renderer once
-      this.renderer.clear();
-      
-      // Render all registered scenes in order
-      this.renderOrder.forEach(componentId => {
-        const scene = this.scenes.get(componentId);
-        const camera = this.cameras.get(componentId);
+      try {
+        // Run component animation callbacks with error boundaries
+        this.animationCallbacks.forEach(callback => {
+          try {
+            callback(deltaTime);
+          } catch (error) {
+            console.error('[ThreeManager] Error in animation callback:', error);
+          }
+        });
         
-        if (scene && camera) {
-          // Render the scene
-          this.renderer.render(scene, camera);
-        }
-      });
+        // Clear the renderer once
+        this.renderer.clear();
+        
+        // Render all registered scenes in order
+        this.renderOrder.forEach(componentId => {
+          const scene = this.scenes.get(componentId);
+          const camera = this.cameras.get(componentId);
+          
+          if (scene && camera) {
+            try {
+              // Render the scene with error catching for each individual scene
+              this.renderer.render(scene, camera);
+            } catch (error) {
+              console.error(`[ThreeManager] Error rendering scene ${componentId}:`, error);
+              // Remove problematic scene to prevent continual errors
+              this.unregisterScene(componentId);
+            }
+          }
+        });
+      } catch (renderError) {
+        // If we hit a catastrophic rendering error, switch to static fallback
+        console.error('[ThreeManager] Catastrophic render error, disabling WebGL:', renderError);
+        this.switchToStaticFallback();
+      }
     };
     
     this.animationFrameId = requestAnimationFrame(animate);
+  }
+  
+  /**
+   * Emergency switch to static fallback when WebGL fails during runtime
+   */
+  private switchToStaticFallback(): void {
+    // Cancel animation frame
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    
+    // Set fallback flag
+    this.isStaticFallback = true;
+    
+    // Clean up WebGL context
+    if (this.renderer && typeof this.renderer.dispose === 'function') {
+      try {
+        this.renderer.dispose();
+      } catch (e) {
+        console.error('[ThreeManager] Error disposing renderer:', e);
+      }
+    }
+    
+    // Create a static fallback element
+    const fallbackEl = document.createElement('div');
+    fallbackEl.className = 'webgl-fallback';
+    fallbackEl.style.background = 'radial-gradient(circle, rgba(20,20,30,1) 0%, rgba(10,10,15,1) 100%)';
+    fallbackEl.style.position = 'absolute';
+    fallbackEl.style.top = '0';
+    fallbackEl.style.left = '0';
+    fallbackEl.style.width = '100%';
+    fallbackEl.style.height = '100%';
+    
+    // Replace renderer with mock
+    this.renderer = {
+      domElement: fallbackEl,
+      setPixelRatio: () => {},
+      setSize: () => {},
+      clear: () => {},
+      render: () => {},
+      dispose: () => {},
+      outputColorSpace: THREE.SRGBColorSpace
+    } as unknown as THREE.WebGLRenderer;
+    
+    // Attach fallback element to all registered containers
+    this.containers.forEach((container) => {
+      // Remove any existing children
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
+      // Add fallback
+      container.appendChild(fallbackEl.cloneNode(true));
+    });
+    
+    console.warn('[ThreeManager] Switched to static fallback - visual effects disabled');
   }
   
   /**
@@ -425,6 +583,29 @@ class ThreeManager {
    */
   public getQualityLevel(): 'high' | 'medium' | 'low' {
     return this.qualityLevel;
+  }
+  
+  /**
+   * Check if WebGL is available and working
+   */
+  public isWebGLAvailable(): boolean {
+    return !this.isStaticFallback;
+  }
+  
+  /**
+   * Check if using reduced quality fallback
+   */
+  public isUsingReducedQuality(): boolean {
+    return this.isWebGLFallback;
+  }
+  
+  /**
+   * Check if memory usage is high (static analysis)
+   */
+  public isMemoryUsageHigh(): boolean {
+    // This is a best-effort estimate as browsers don't expose precise memory info
+    const highFpsDropCount = this.fpsHistory.filter(fps => fps < 20).length;
+    return highFpsDropCount >= 3 || this.isWebGLFallback || this.isStaticFallback;
   }
 }
 
