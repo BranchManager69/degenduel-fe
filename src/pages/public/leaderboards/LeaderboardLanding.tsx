@@ -1,20 +1,15 @@
 // src/pages/public/leaderboards/LeaderboardLanding.tsx
 
 import { Link } from "react-router-dom";
-import Logo3D from "../../../components/ui/Logo3D";
 
 export const LeaderboardLanding = () => {
   return (
     <div className="max-w-7xl mx-auto p-8">
-      {/* Header with integrated 3D Logo - more compact layout */}
+      {/* Header for leaderboards page - without Logo3D */}
       <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
-        <div className="w-full md:w-1/3 max-w-[240px]">
-          <Logo3D size="md" className="mb-0" />
-        </div>
-        
         <div className="w-full md:w-2/3 text-center md:text-left relative group">
           <h1 className="text-4xl font-bold text-gray-100 mb-2 relative inline-flex items-center">
-            <span className="text-cyber-400 text-xl font-bold mr-3 animate-cyber.pulse hidden md:inline-block">
+            <span className="text-cyber-400 text-xl font-bold mr-3 animate-cyber.pulse md:inline-block">
               DEGEN×DUEL
             </span>
             <span className="relative z-10 group-hover:animate-cyber.glitch">
@@ -27,11 +22,6 @@ export const LeaderboardLanding = () => {
             global leaderboard standings.
           </p>
         </div>
-      </div>
-      
-      {/* Mobile-only DEGEN×DUEL text */}
-      <div className="text-cyber-400 text-xl font-bold animate-cyber.pulse mb-2 text-center md:hidden">
-        DEGEN×DUEL
       </div>
 
       {/* Buttons Container */}
@@ -102,11 +92,6 @@ export const LeaderboardLanding = () => {
         </Link>
       </div>
       
-      {/* Technical Note */}
-      <div className="mt-16 text-center text-xs text-gray-500">
-        <p>The 3D logo above features two "D" shapes for DegenDuel in a PvP face-off with energy beam connection.</p>
-        <p>Occasionally, it transforms into dueling candlesticks (red and green) that clash like swords - representing the trading competition.</p>
-      </div>
     </div>
   );
 };

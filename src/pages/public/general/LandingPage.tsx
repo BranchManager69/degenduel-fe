@@ -124,13 +124,13 @@ export const LandingPage: React.FC = () => {
           <div className="text-center space-y-4">
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
-              {/* New HeroTitle component - full width/height container to avoid vertical constraint */}
-              <div className="w-full h-screen absolute top-0 left-0 overflow-hidden">
+              {/* HeroTitle component solely for hero animation */}
+              <div className="w-full h-screen absolute top-0 left-0 overflow-hidden z-40">
                 <HeroTitle onComplete={() => {}} />
               </div>
               
               {/* Spacer to push content below the hero animation */}
-              <div className="h-[40vh] min-h-[300px] w-full mb-8"></div>
+              <div className="h-[45vh] min-h-[350px] w-full mb-12"></div>
               
               {/* Original animated logo (commented out but preserved) */}
               {/*

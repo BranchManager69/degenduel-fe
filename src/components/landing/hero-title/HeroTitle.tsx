@@ -322,14 +322,14 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
       )}
 
       <div className="relative z-20 flex flex-col items-center justify-center h-full">
-        {/* Container for words that will merge */}
-        <div className={`relative flex flex-col items-center justify-center ${finalMerge ? 'gap-0' : 'gap-4'}`}>
+        {/* Container for animation elements - these are the ones that should fade out */}
+        <div className={`relative flex flex-col items-center justify-center ${finalMerge ? 'gap-0 opacity-0' : 'gap-4 opacity-100'} transition-opacity duration-500`}>
           {/* DEGEN with enhanced glow and 3D effects */}
           <motion.div
             initial={{ y: "-100vh", opacity: 0, filter: "blur(12px)", rotateX: 45 }}
             animate={{
               y: degenPosition().y,
-              opacity: degenVisible ? 1 : 0,
+              opacity: degenVisible && !finalMerge ? 1 : 0,
               scale: degenPosition().scale,
               filter: "blur(0px)",
               rotateX: 0,
@@ -361,6 +361,9 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
                 duration: 0.7,
                 ease: "easeOut",
               },
+              opacity: {
+                duration: 0.5,
+              }
             }}
             className="text-[13vmin] md:text-[15vmin] font-black tracking-tighter select-none"
             style={{
@@ -373,7 +376,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
               color: "#9333EA",
               letterSpacing: "-0.05em",
               fontWeight: "800",
-              zIndex: finalMerge ? 40 : 20,
+              zIndex: 20,
               transform: "perspective(1000px)", // Enhanced 3D effect
             }}
           >
@@ -385,10 +388,10 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
             initial={{ scale: 0, opacity: 0, rotate: 0 }}
             animate={{
               scale: phase === 3 ? [1.2, 1.5, 1.2] : phase > 0 ? [0.8, 1.2, 0.8] : 0,
-              opacity: phase > 0 ? 1 : 0,
+              opacity: phase > 0 && !finalMerge ? 1 : 0,
               rotate: phase === 3 ? [0, 360, 720, 1080] : [0, 360], // Multiple rotations based on phase
-              x: finalMerge ? 0 : 0,
-              y: finalMerge ? 0 : 0,
+              x: 0,
+              y: 0,
             }}
             transition={{
               scale: {
@@ -404,15 +407,15 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
               },
               x: { duration: 0.5 },
               y: { duration: 0.5 },
+              opacity: { duration: 0.5 },
             }}
-            className={`absolute ${finalMerge ? 'mx-0' : 'mx-0'} text-[8vmin] md:text-[10vmin] select-none z-30 flex items-center justify-center`}
+            className="absolute text-[8vmin] md:text-[10vmin] select-none z-30 flex items-center justify-center"
             style={{
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: "700",
               perspective: "1000px",
               color: "#00e1ff", // Cyan color
               filter: "drop-shadow(0 0 20px #00e1ff)",
-              opacity: finalMerge ? 0 : 1,
               width: "12vmin",
               height: "12vmin",
             }}
@@ -475,7 +478,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
             initial={{ y: "100vh", opacity: 0, filter: "blur(12px)", rotateX: -45 }}
             animate={{
               y: duelPosition().y,
-              opacity: duelVisible ? 1 : 0,
+              opacity: duelVisible && !finalMerge ? 1 : 0,
               scale: duelPosition().scale,
               filter: "blur(0px)",
               rotateX: 0,
@@ -507,6 +510,9 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
                 duration: 0.7,
                 ease: "easeOut",
               },
+              opacity: {
+                duration: 0.5,
+              }
             }}
             className="text-[13vmin] md:text-[15vmin] font-black tracking-tighter select-none"
             style={{
@@ -523,7 +529,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
                   ? "0 0 100px rgba(255, 255, 255, 0.8), 0 0 50px rgba(255, 255, 255, 0.6)" 
                   : "0 0 40px rgba(255, 255, 255, 0.5)",
               letterSpacing: "-0.03em",
-              zIndex: finalMerge ? 40 : 20,
+              zIndex: 20,
               transform: "perspective(1000px)", // Enhanced 3D effect
               filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))",
             }}
@@ -532,7 +538,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
           </motion.div>
         </div>
 
-        {/* Merged final logo that appears at the end - enhanced with 3D effects and animations */}
+        {/* Final merged logo - this should be the clean, centered version that stays visible */}
         {finalMerge && (
           <motion.div
             initial={{ opacity: 0, scale: 2, y: 20 }}
@@ -543,8 +549,8 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
               rotateY: [0, 5, 0, -5, 0],
             }}
             transition={{ 
-              duration: 1.8, 
-              ease: [0.19, 1.0, 0.22, 1.0], // Exponential ease-out
+              opacity: { duration: 0.8 },
+              scale: { duration: 0.8 },
               y: {
                 delay: 0.8,
                 duration: 3,
@@ -558,12 +564,12 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
                 repeatType: "loop",
               }
             }}
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+            className="fixed inset-0 flex items-center justify-center z-50"
             style={{
               transform: "perspective(1000px)", // Enhanced 3D effect
             }}
           >
-            <div className="flex items-center relative">
+            <div className="flex items-center justify-center relative">
               <h1 className="text-[13vmin] md:text-[15vmin] font-black tracking-tighter whitespace-nowrap">
                 <span className="relative inline-block">
                   <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600">
@@ -608,14 +614,16 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
                 </span>
                 
                 <span className="relative inline-block">
-                  {/* Metallic DUEL text */}
+                  {/* Metallic DUEL text with proper styling to fix the white rectangle issue */}
                   <span 
                     className="relative z-10"
                     style={{
+                      fontFamily: "'Michroma', sans-serif",
                       background: 'linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%)',
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
+                      textShadow: "0 0 80px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.6)",
                       filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))",
                     }}
                   >

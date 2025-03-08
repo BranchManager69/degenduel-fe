@@ -227,7 +227,7 @@ export const SystemReports: React.FC = () => {
                             ? "default" 
                             : report.type === "db" 
                               ? "secondary" 
-                              : "outline"
+                              : "gold" // Changed from "outline" to "gold" for prisma
                         }
                       >
                         {report.type === "service" 

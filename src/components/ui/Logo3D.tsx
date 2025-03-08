@@ -216,16 +216,17 @@ const Logo3D: React.FC<Logo3DProps> = ({ size = 'lg', className = '' }) => {
     let duelMode = false;
     let duelTimer = 0;
     
-    // Register animation callback
+    // Register animation callback - standard animation for all pages
     manager.registerAnimation(componentId, (deltaTime) => {
       animationTime += deltaTime;
       pulseTimer += deltaTime;
       
-      // Rotate the Ds slightly
-      d1Group.rotation.y = Math.sin(animationTime * 0.7) * 0.1;
-      d2Group.rotation.y = Math.sin(animationTime * 0.7 + Math.PI) * 0.1;
+      // Rotate the Ds slightly - consistent standard animation
+      const rotationAmount = 0.1;
+      d1Group.rotation.y = Math.sin(animationTime * 0.7) * rotationAmount;
+      d2Group.rotation.y = Math.sin(animationTime * 0.7 + Math.PI) * rotationAmount;
       
-      // Make the beam pulse
+      // Standard beam pulse effect
       const pulseScale = 1 + Math.sin(pulseTimer * 5) * 0.2;
       beam.scale.set(pulseScale, 1, pulseScale);
       beamMaterial.opacity = 0.7 + Math.sin(pulseTimer * 7) * 0.3;
@@ -234,7 +235,6 @@ const Logo3D: React.FC<Logo3DProps> = ({ size = 'lg', className = '' }) => {
       const positions = particleGeometry.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
         const i3 = i * 3;
-        // Move particles along the beam
         positions[i3] += (Math.random() - 0.5) * 0.1;
         
         // Reset if they go beyond bounds
@@ -246,7 +246,7 @@ const Logo3D: React.FC<Logo3DProps> = ({ size = 'lg', className = '' }) => {
       }
       particleGeometry.attributes.position.needsUpdate = true;
       
-      // Randomly trigger duel mode animation
+      // Randomly trigger duel mode animation - standard probability
       if (!duelMode && Math.random() < 0.003) {
         duelMode = true;
         duelTimer = 0;
@@ -262,19 +262,22 @@ const Logo3D: React.FC<Logo3DProps> = ({ size = 'lg', className = '' }) => {
         beam.visible = false;
       }
       
-      // Handle duel animation
+      // Handle duel animation - standard timing
       if (duelMode) {
         duelTimer += deltaTime;
+        const duelDuration = 1.5;
         
         if (duelTimer < 1.0) {
           // Candlesticks approach each other
-          redCandle.position.x += deltaTime * 0.8;
-          greenCandle.position.x -= deltaTime * 0.8;
+          const moveSpeed = 0.8;
+          redCandle.position.x += deltaTime * moveSpeed;
+          greenCandle.position.x -= deltaTime * moveSpeed;
           
           // Rotate them like swords
-          redCandle.rotation.z += deltaTime * 5;
-          greenCandle.rotation.z -= deltaTime * 5;
-        } else if (duelTimer < 1.5) {
+          const rotateSpeed = 5;
+          redCandle.rotation.z += deltaTime * rotateSpeed;
+          greenCandle.rotation.z -= deltaTime * rotateSpeed;
+        } else if (duelTimer < duelDuration) {
           // Flash at collision point
           if (!scene.userData.clashLight) {
             const clashLight = new THREE.PointLight(0xffffff, 2, 5);

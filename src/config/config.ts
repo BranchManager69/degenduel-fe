@@ -135,3 +135,5 @@ if (NODE_ENV === "development") {
     hostname: window.location.hostname,
   });
 }
+
+// TODO: Add a config for the API_URL *and* WS_URL
