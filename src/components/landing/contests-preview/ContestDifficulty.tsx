@@ -97,6 +97,7 @@ const difficultyConfig: Record<
 export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
   difficulty,
 }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
   const config = difficultyConfig[difficulty] || {
     label: "Unknown",
     colors: {
@@ -109,47 +110,62 @@ export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
     icon: "❓",
   };
 
-  return (
-    <div className="relative group">
-      {/* Glow effect */}
-      <div
-        className={`absolute -inset-[1px] bg-gradient-to-r ${config.colors.from} ${config.colors.to} rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-      />
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
 
-      <div
+  return (
+    <div className="absolute bottom-0 left-0 right-0 z-10">
+      {/* Expandable drawer */}
+      <div 
+        onClick={(e) => e.stopPropagation()}
         className={`
-          relative
-          inline-flex items-center gap-1.5 px-3 py-1.5
-          rounded-full text-xs font-semibold font-cyber tracking-wide
-          bg-gradient-to-r ${config.colors.from} ${config.colors.to}
-          border ${config.colors.border}
-          transition-all duration-300
-          hover:scale-105
-          overflow-hidden
-          backdrop-blur-sm
-          ${config.colors.text}
+          overflow-hidden transition-all duration-300 ease-in-out
+          ${isExpanded ? 'max-h-36' : 'max-h-0'}
         `}
       >
-        {/* Shine effect - contained within parent */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shine" />
+        <div className={`
+          bg-gradient-to-b ${config.colors.from} to-black/90
+          p-4 backdrop-blur-md border-t ${config.colors.border}
+          transform transition-all duration-300
+          ${isExpanded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+        `}>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">{config.icon}</span>
+            <div>
+              <h4 className={`text-sm font-bold ${config.colors.text}`}>{config.label} Mode</h4>
+              <p className="text-xs text-gray-300">For {config.label === "Unknown" ? "players of all levels" : `${config.label} level players`}</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400">
+            {config.label === "Unknown" 
+              ? "Standard contest with no special rules or restrictions."
+              : `A ${config.label.toLowerCase()}-tier contest with special mechanics for experienced players.`}
+          </p>
         </div>
-
-        {/* Icon */}
-        <span className="text-sm">{config.icon}</span>
-
-        {/* Label */}
-        <span className="relative">{config.label}</span>
-
-        {/* Pulsing dot */}
-        <span className="relative w-1.5 h-1.5">
-          <span
-            className={`absolute inset-0 rounded-full ${config.colors.glow} animate-ping opacity-75`}
-          ></span>
-          <span
-            className={`relative rounded-full w-1.5 h-1.5 ${config.colors.glow}`}
-          ></span>
-        </span>
+      </div>
+      
+      {/* Colored bar indicator */}
+      <div 
+        onClick={toggleExpand}
+        className={`
+          cursor-pointer h-4 w-full
+          bg-gradient-to-r ${config.colors.from} ${config.colors.to}
+          transition-all duration-300 ease-in-out
+          group border-t ${config.colors.border}
+          ${isExpanded ? 'h-1.5' : 'hover:h-5'}
+        `}
+      >
+        <div className="absolute inset-x-0 bottom-0 flex justify-center">
+          <span className={`
+            transform transition-transform duration-300
+            ${isExpanded ? 'rotate-180 translate-y-1' : 'translate-y-0'}
+            ${config.colors.text} opacity-70 text-xs
+          `}>
+            ▲
+          </span>
+        </div>
       </div>
     </div>
   );

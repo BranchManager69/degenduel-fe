@@ -1,7 +1,7 @@
 // src/pages/public/contests/ContestLobbyPage.tsx
 
-import React from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
 import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
@@ -9,30 +9,68 @@ import { PortfolioPerformance } from "../../../components/contest-lobby/Portfoli
 import { TestSkipButton } from "../../../components/contest-lobby/TestSkipButton";
 import { TokenPerformance } from "../../../components/contest-lobby/TokenPerformance";
 import { ContestDifficulty } from "../../../components/landing/contests-preview/ContestDifficulty";
-import { formatCurrency } from "../../../lib/utils";
-
-/*
- * THIS PAGE IS ONE OF THE OLDEST PAGES IN THE APP.
- * IT IS OLD AND NEEDS A HUGE OVERHAUL FOR REAL DATA!
- */
+import { formatCurrency, isContestLive } from "../../../lib/utils";
+import { ddApi } from "../../../services/dd-api";
+import { Contest as BaseContest } from "../../../types";
 
 // Contest Lobby page
 export const ContestLobby: React.FC = () => {
   // Get the contest ID from the URL
   const { id } = useParams();
-  // Should be getting contest data from the API using just the id
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [realContest, setRealContest] = useState<BaseContest | null>(null);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
 
-  /*
-   * THE BELOW PLACEHOLDER DATA SHOULDN'T EVEN BE HERE!
-   * ALWAYS USE REAL DATA.
-   */
-  // Placeholder contest data
+  // Fetch contest data from API
+  useEffect(() => {
+    const fetchContest = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+
+        // First check maintenance mode
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+
+        // If in maintenance mode, don't fetch contest
+        if (isInMaintenance) {
+          setError(
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          );
+          return;
+        }
+
+        const data = await ddApi.contests.getById(id);
+        console.log("Contest data (lobby):", data);
+        setRealContest(data);
+      } catch (err) {
+        console.error("Failed to fetch contest:", err);
+        // Check if the error is a 503 (maintenance mode)
+        if (err instanceof Error && err.message.includes("503")) {
+          setIsMaintenanceMode(true);
+          setError(
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          );
+        } else {
+          setError("Failed to load contest details.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchContest();
+  }, [id]);
+
+  // Derived contest data with proper types
   const contest = {
     id,
-    title: "DEBUG CONTEST NAME",
-    difficulty: "dolphin" as const,
-    prizePool: 666666,
-    endTime: new Date(Date.now() + 3600000), // 1 hour from now
+    title: realContest?.name || "Loading Contest...",
+    difficulty: (realContest?.settings?.difficulty || "guppy") as "guppy" | "tadpole" | "squid" | "dolphin" | "shark" | "whale",
+    prizePool: Number(realContest?.prize_pool || 0),
+    endTime: realContest ? new Date(realContest.end_time) : new Date(Date.now() + 3600000),
   };
   // Placeholder portfolio data
   const portfolioData = {
@@ -95,6 +133,61 @@ export const ContestLobby: React.FC = () => {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <BackgroundEffects />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-8">
+            <div className="h-16 bg-dark-200/50 rounded-lg w-3/4"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-8">
+                <div className="h-64 bg-dark-200/50 rounded-lg"></div>
+                <div className="h-96 bg-dark-200/50 rounded-lg"></div>
+              </div>
+              <div className="space-y-8">
+                <div className="h-64 bg-dark-200/50 rounded-lg"></div>
+                <div className="h-64 bg-dark-200/50 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isMaintenanceMode) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <BackgroundEffects />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+            <div className="flex items-center justify-center gap-2 text-yellow-400">
+              <span className="animate-pulse">⚠</span>
+              <span>
+                DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.
+              </span>
+              <span className="animate-pulse">⚠</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <BackgroundEffects />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
+            {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <BackgroundEffects />
@@ -102,6 +195,19 @@ export const ContestLobby: React.FC = () => {
       {/* Content Section */}
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Breadcrumb navigation */}
+          <div className="mb-4 flex items-center text-sm text-gray-400">
+            <Link to="/" className="hover:text-brand-400 transition-colors">
+              Home
+            </Link>
+            <span className="mx-2">›</span>
+            <Link to="/contests" className="hover:text-brand-400 transition-colors">
+              Contests
+            </Link>
+            <span className="mx-2">›</span>
+            <span className="text-gray-300">{contest.title}</span>
+          </div>
+          
           {/* Enhanced Header Section */}
           <div className="mb-8 relative group">
             <div className="flex items-center justify-between mb-4">
@@ -112,6 +218,23 @@ export const ContestLobby: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
                 </h1>
                 <div className="flex items-center space-x-4">
+                  {/* Contest Status */}
+                  {realContest && (
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                      isContestLive(realContest) 
+                        ? "bg-green-500/20 text-green-400 border-green-500/30" 
+                        : new Date() < new Date(realContest.start_time)
+                          ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                          : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                    }`}>
+                      {isContestLive(realContest) 
+                        ? "Live Now" 
+                        : new Date() < new Date(realContest.start_time)
+                          ? "Upcoming"
+                          : "Ended"}
+                    </span>
+                  )}
+                  
                   {/* Contest Difficulty */}
                   <ContestDifficulty difficulty={contest.difficulty} />
                   <span className="text-gray-400 group-hover:text-brand-400 transition-colors">
@@ -123,12 +246,29 @@ export const ContestLobby: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-col items-end space-y-2">
+                {/* Timer Label */}
+                {realContest && (
+                  <div className="text-right">
+                    <span className="text-sm text-gray-400">
+                      {isContestLive(realContest) 
+                        ? "Contest Ends In:" 
+                        : new Date() < new Date(realContest.start_time)
+                          ? "Contest Starts In:"
+                          : "Contest Ended On:"}
+                    </span>
+                  </div>
+                )}
+                
                 {/* Contest Timer */}
                 <div className="relative group">
-                  <ContestTimer endTime={contest.endTime} />
+                  <ContestTimer 
+                    endTime={contest.endTime} 
+                    showDate={!!(realContest && new Date() > new Date(realContest.end_time))}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
+                
                 {/* Test Skip Button */}
                 <TestSkipButton contestId={id!} />
               </div>

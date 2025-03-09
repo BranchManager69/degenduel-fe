@@ -1,6 +1,7 @@
 // src/pages/public/ContestBrowserPage.tsx
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
 import { ContestSort } from "../../../components/contest-browser/ContestSort";
@@ -13,6 +14,7 @@ import type { SortDirection, SortField } from "../../../types/sort";
 
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
+  const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -225,6 +227,15 @@ export const ContestBrowser: React.FC = () => {
       {/* Content Section */}
       <div className="relative flex-1" style={{ zIndex: 10 }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Breadcrumb navigation */}
+          <div className="mb-4 flex items-center text-sm text-gray-400">
+            <Link to="/" className="hover:text-brand-400 transition-colors">
+              Home
+            </Link>
+            <span className="mx-2">›</span>
+            <span className="text-gray-300">Contests</span>
+          </div>
+          
           {/* Enhanced Header Section */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative group">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
@@ -448,9 +459,7 @@ export const ContestBrowser: React.FC = () => {
                 >
                   <ContestCard
                     contest={contest}
-                    onClick={() =>
-                      (window.location.href = `/contests/${contest.id}`)
-                    }
+                    onClick={() => navigate(`/contests/${contest.id}`)}
                   />
                 </div>
               ))

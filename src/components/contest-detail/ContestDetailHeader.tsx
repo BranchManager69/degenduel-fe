@@ -2,6 +2,7 @@ import React from "react";
 import { Contest } from "../../types";
 import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { CountdownTimer } from "../ui/CountdownTimer";
+import { Link } from "react-router-dom";
 
 interface ContestDetailHeaderProps {
   contest: Contest;
@@ -18,13 +19,124 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
   isWalletConnected,
   onJoinContest,
   onCountdownComplete,
-  isContestLive,
+  // isContestLive is not used directly because we calculate status internally
 }) => {
+  // Determine the contest's current state
+  const now = new Date();
+  const startTime = new Date(contest.start_time);
+  const endTime = new Date(contest.end_time);
+  
+  const hasStarted = now >= startTime;
+  const hasEnded = now >= endTime;
+  
+  // Contest status for UI display
+  const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
+  
+  // Status badge styling
+  const getStatusBadgeStyle = () => {
+    switch(contestStatus) {
+      case "live":
+        return "bg-green-500/20 text-green-400 border-green-500/30";
+      case "upcoming":
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+      case "ended":
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+      default:
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+    }
+  };
+  
+  // Button label based on wallet connection and contest status
+  const getButtonLabel = () => {
+    // Not connected - always show connect wallet
+    if (!isWalletConnected) {
+      return "Connect Wallet to Enter";
+    }
+    
+    // Connected and participating
+    if (isParticipating) {
+      if (contestStatus === "ended") {
+        return "View Results";
+      } else if (contestStatus === "live") {
+        return "View Live Contest";
+      } else {
+        return "Modify Portfolio";
+      }
+    } 
+    
+    // Connected but not participating
+    if (contestStatus === "ended") {
+      return "Contest Ended";
+    } else if (contestStatus === "live") {
+      return "Contest in Progress";
+    } else {
+      return "Select Your Portfolio";
+    }
+  };
+  
+  // Button is disabled in these cases
+  const isButtonDisabled = () => {
+    return !isWalletConnected || 
+      (contestStatus === "ended" && !isParticipating) || 
+      (contestStatus === "live" && !isParticipating);
+  };
+  
+  // Button styling based on state
+  const getButtonStyle = () => {
+    // Base styles
+    const baseStyle = "relative group px-8 py-4 border-l-2 font-bold text-lg overflow-hidden transition-all duration-300";
+    
+    // Not connected - prominent connect style
+    if (!isWalletConnected) {
+      return `${baseStyle} bg-gradient-to-r from-brand-500 to-brand-600 border-brand-400/50 hover:border-brand-400 text-white shadow-lg shadow-brand-500/30 animate-pulse-slow`;
+    }
+    
+    // Disabled state
+    if (isButtonDisabled() && (contestStatus === "ended" || contestStatus === "live")) {
+      return `${baseStyle} bg-dark-300/50 border-gray-500/30 text-gray-400 cursor-not-allowed`;
+    }
+    
+    // Participating - already in the contest
+    if (isParticipating) {
+      if (contestStatus === "ended") {
+        return `${baseStyle} bg-gray-500/20 border-gray-500/30 text-gray-300 hover:text-white hover:bg-gray-500/30 transform hover:translate-x-1`;
+      } else if (contestStatus === "live") {
+        return `${baseStyle} bg-green-500/20 border-green-500/30 text-green-400 hover:text-green-300 hover:bg-green-500/30 transform hover:translate-x-1`;
+      } else {
+        return `${baseStyle} bg-dark-300/80 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300 transform hover:translate-x-1`;
+      }
+    }
+    
+    // Default - not participating but can join
+    return `${baseStyle} bg-brand-500/20 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300 transform hover:translate-x-1`;
+  };
+
   return (
     <div className="relative mb-8">
+      {/* Breadcrumb navigation */}
+      <div className="mb-4 flex items-center text-sm text-gray-400">
+        <Link to="/" className="hover:text-brand-400 transition-colors">
+          Home
+        </Link>
+        <span className="mx-2">›</span>
+        <Link to="/contests" className="hover:text-brand-400 transition-colors">
+          Contests
+        </Link>
+        <span className="mx-2">›</span>
+        <span className="text-gray-300">{contest.name}</span>
+      </div>
+
       <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
       <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/50">
         <div className="space-y-2 flex-1">
+          {/* Status badge - prominent above the title */}
+          <div className="flex items-center mb-2">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeStyle()}`}>
+              {contestStatus === "upcoming" ? "Upcoming" : 
+               contestStatus === "live" ? "Live Now" : "Ended"}
+            </span>
+          </div>
+
           {/* Contest title */}
           <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x">
             {contest.name}
@@ -47,116 +159,87 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
 
           {/* Desktop Action Button with Timer */}
           <div className="hidden md:flex flex-col items-end gap-2">
-            {/* Timer */}
-            <div className="text-xl font-bold text-brand-400 animate-pulse">
-              <CountdownTimer
-                targetDate={
-                  isContestLive(contest) ? contest.end_time : contest.start_time
-                }
-                onComplete={onCountdownComplete}
-                showSeconds={true}
-              />
+            {/* Timer with clear label */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">
+                {contestStatus === "upcoming" ? "Starts in:" : 
+                 contestStatus === "live" ? "Ends in:" : "Contest Ended"}
+              </span>
+              {contestStatus !== "ended" ? (
+                <div className="text-xl font-bold text-brand-400 animate-pulse">
+                  <CountdownTimer
+                    targetDate={contestStatus === "live" ? contest.end_time : contest.start_time}
+                    onComplete={onCountdownComplete}
+                    showSeconds={true}
+                  />
+                </div>
+              ) : (
+                <span className="text-xl font-bold text-gray-500">
+                  {new Date(contest.end_time).toLocaleDateString()}
+                </span>
+              )}
             </div>
 
-            {/* Join Contest Button */}
-            {isParticipating ? (
-              <button
-                onClick={onJoinContest}
-                className="relative group px-8 py-4 bg-dark-300/80 border-l-2 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300 transition-all duration-300 transform hover:translate-x-1 font-bold text-lg overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                <span className="relative flex items-center gap-2">
-                  {/* TODO: Change the button text depending on the entrant's status */}
-                  <span>Modify Portfolio</span>
-                  <svg
-                    className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </span>
-              </button>
-            ) : isWalletConnected ? (
-              <button
-                onClick={onJoinContest}
-                className="relative group px-8 py-4 bg-brand-500/20 border-l-2 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300 transition-all duration-300 transform hover:translate-x-1 font-bold text-lg overflow-hidden"
-              >
-                {/* TODO: Add a tooltip for the button */}
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                <span className="relative flex items-center gap-2">
-                  <span>Draft Tokens for Portfolio</span>
-                  <svg
-                    className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={onJoinContest}
-                className="relative group px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-600 border-l-2 border-brand-400/50 hover:border-brand-400 text-white font-bold text-lg overflow-hidden shadow-lg shadow-brand-500/30 animate-pulse-slow"
-              >
-                {/* Button Hover Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                <span className="relative flex items-center gap-2">
-                  {/* TODO: Change this button text; Should only be saying this if the user is not connected to a wallet (not logged in) */}
-                  <span>Connect Wallet to Enter</span>
-                  <svg
-                    className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </span>
-              </button>
-            )}
-          </div>
-
-          {/* Mobile Action Button with Timer (NEW) */}
-          <div className="flex md:hidden flex-col items-end gap-2">
-            {/* Timer */}
-            <div className="text-xl font-bold text-brand-400 animate-pulse">
-              <CountdownTimer
-                targetDate={
-                  isContestLive(contest) ? contest.end_time : contest.start_time
-                }
-                onComplete={onCountdownComplete}
-                showSeconds={true}
-              />
-            </div>
-
-            {/* Join Contest Button */}
+            {/* Dynamic Action Button */}
             <button
               onClick={onJoinContest}
-              className="relative group px-8 py-4 bg-gradient-to-r from-brand-500 to-brand-600 border-l-2 border-brand-400/50 hover:border-brand-400 text-white font-bold text-lg overflow-hidden shadow-lg shadow-brand-500/30 animate-pulse-slow"
+              disabled={isButtonDisabled()}
+              className={getButtonStyle()}
+            >
+              {/* Button Hover Effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+              <span className="relative flex items-center gap-2">
+                <span>{getButtonLabel()}</span>
+                <svg
+                  className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          {/* Mobile Action Button with Timer */}
+          <div className="flex md:hidden flex-col items-end gap-2">
+            {/* Timer with label */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">
+                {contestStatus === "upcoming" ? "Starts in:" : 
+                 contestStatus === "live" ? "Ends in:" : "Contest Ended"}
+              </span>
+              {contestStatus !== "ended" ? (
+                <div className="text-xl font-bold text-brand-400 animate-pulse">
+                  <CountdownTimer
+                    targetDate={contestStatus === "live" ? contest.end_time : contest.start_time}
+                    onComplete={onCountdownComplete}
+                    showSeconds={true}
+                  />
+                </div>
+              ) : (
+                <span className="text-xl font-bold text-gray-500">
+                  {new Date(contest.end_time).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+
+            {/* Mobile Action Button */}
+            <button
+              onClick={onJoinContest}
+              disabled={isButtonDisabled()}
+              className={getButtonStyle().replace('px-8', 'px-6').replace('text-lg', 'text-base')}
             >
               {/* Button Hover Effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
               <span className="relative flex items-center gap-2">
-                <span>Choose Your Bags</span>
+                <span>{getButtonLabel()}</span>
                 <svg
                   className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
                   fill="none"

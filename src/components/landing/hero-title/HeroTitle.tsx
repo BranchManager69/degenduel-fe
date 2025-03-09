@@ -22,52 +22,56 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
   // Create a ref to track if the scene has been initialized
   const sceneInitializedRef = useRef(false);
 
-  // Background animation setup using Three.js with fallback handling
+  // Use a simplified CSS-only animation instead of WebGL
   useEffect(() => {
     // Skip setup if phase is 0
     if (phase === 0) return;
     
-    // If scene is already initialized, don't re-initialize it
-    if (sceneInitializedRef.current || ThreeManager.getInstance().hasScene('hero-energy-particles')) return;
+    // Mark as initialized
+    sceneInitializedRef.current = true;
     
-    const threeManager = ThreeManager.getInstance();
-    
-    // Check if WebGL is available
-    if (!threeManager.isWebGLAvailable()) {
-      console.log('[HeroTitle] WebGL not available, using CSS fallback');
-      sceneInitializedRef.current = true; // Mark as initialized to prevent retries
+    // Create a CSS-based background effect
+    if (bgContainerRef.current) {
+      // Clear any existing content
+      while (bgContainerRef.current.firstChild) {
+        bgContainerRef.current.removeChild(bgContainerRef.current.firstChild);
+      }
       
-      // Create a CSS fallback background if WebGL is not available
-      if (bgContainerRef.current) {
-        const fallbackBg = document.createElement('div');
-        fallbackBg.className = 'hero-fallback-bg';
-        fallbackBg.style.position = 'absolute';
-        fallbackBg.style.inset = '0';
-        fallbackBg.style.background = 'radial-gradient(ellipse at center, rgba(147, 51, 234, 0.2) 0%, rgba(0, 0, 0, 0.1) 70%)';
-        fallbackBg.style.overflow = 'hidden';
-        bgContainerRef.current.appendChild(fallbackBg);
+      // Create background element
+      const fallbackBg = document.createElement('div');
+      fallbackBg.className = 'hero-fallback-bg';
+      fallbackBg.style.position = 'absolute';
+      fallbackBg.style.inset = '0';
+      fallbackBg.style.background = 'radial-gradient(ellipse at center, rgba(147, 51, 234, 0.2) 0%, rgba(0, 0, 0, 0.1) 70%)';
+      fallbackBg.style.overflow = 'hidden';
+      bgContainerRef.current.appendChild(fallbackBg);
+      
+      // Add CSS particles for visual effect
+      const particleCount = 15; // Reduced count for better performance
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'hero-fallback-particle';
+        particle.style.position = 'absolute';
+        particle.style.width = `${4 + Math.random() * 6}px`;
+        particle.style.height = particle.style.width;
+        particle.style.borderRadius = '50%';
+        particle.style.background = i % 2 === 0 ? '#9333EA' : '#00e1ff';
+        particle.style.opacity = `${0.4 + Math.random() * 0.4}`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.boxShadow = `0 0 10px ${i % 2 === 0 ? '#9333EA' : '#00e1ff'}`;
         
-        // Add some simple CSS particles as a minimal visual effect
-        for (let i = 0; i < 10; i++) {
-          const particle = document.createElement('div');
-          particle.className = 'hero-fallback-particle';
-          particle.style.position = 'absolute';
-          particle.style.width = '8px';
-          particle.style.height = '8px';
-          particle.style.borderRadius = '50%';
-          particle.style.background = i % 2 === 0 ? '#9333EA' : '#00e1ff';
-          particle.style.opacity = '0.6';
-          particle.style.top = `${Math.random() * 100}%`;
-          particle.style.left = `${Math.random() * 100}%`;
-          particle.style.boxShadow = `0 0 10px ${i % 2 === 0 ? '#9333EA' : '#00e1ff'}`;
-          
-          // Add simple CSS animation
-          particle.style.animation = `float-${i % 3 + 1} ${3 + Math.random() * 4}s infinite alternate`;
-          fallbackBg.appendChild(particle);
-        }
-        
-        // Add animation keyframes
+        // Add CSS animation
+        const animIndex = i % 3 + 1;
+        const animDuration = 3 + Math.random() * 4;
+        particle.style.animation = `float-${animIndex} ${animDuration}s infinite alternate`;
+        fallbackBg.appendChild(particle);
+      }
+      
+      // Add animation keyframes if they don't exist
+      if (!document.getElementById('hero-animations')) {
         const style = document.createElement('style');
+        style.id = 'hero-animations';
         style.textContent = `
           @keyframes float-1 {
             0% { transform: translate(0, 0); }
@@ -84,173 +88,33 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
         `;
         document.head.appendChild(style);
       }
-      
-      return;
-    }
-    
-    // Reduce particle count if using reduced quality
-    const particleCount = threeManager.isUsingReducedQuality() ? 15 : 30;
-    
-    // Function to set up energy particles using ThreeManager
-    const setupEnergyParticles = () => {
-      // Mark the scene as initialized 
-      sceneInitializedRef.current = true;
-      
-      const { scene } = threeManager.createScene(
-        'hero-energy-particles',
-        {
-          fov: 75,
-          near: 0.1,
-          far: 1000,
-          position: new Vector3(0, 0, 15),
-          lookAt: new Vector3(0, 0, 0),
-        },
-        12 // Higher render order to render on top
-      );
-      
-      // Add lights
-      const ambientLight = new AmbientLight(0xffffff, 0.4);
-      scene.add(ambientLight);
-      
-      const pointLight1 = new PointLight(0xffffff, 0.6);
-      pointLight1.position.set(10, 10, 10);
-      scene.add(pointLight1);
-      
-      const pointLight2 = new PointLight(0x9333EA, 0.4);
-      pointLight2.position.set(-10, -10, -10);
-      scene.add(pointLight2);
-      
-      // Create particle group
-      const particleGroup = new Group();
-      scene.add(particleGroup);
-      
-      // Create particles
-      const sphereGeometry = threeManager.getOrCreateGeometry(
-        'energy-particle-sphere',
-        () => new SphereGeometry(0.25, 8, 8)
-      );
-      
-      const purpleMaterial = threeManager.getOrCreateMaterial(
-        'energy-particle-purple',
-        () => new MeshStandardMaterial({
-          color: 0x9333EA,
-          emissive: 0x9333EA,
-          emissiveIntensity: 0.8,
-          transparent: true,
-          opacity: 0.8,
-        })
-      );
-      
-      const cyanMaterial = threeManager.getOrCreateMaterial(
-        'energy-particle-cyan',
-        () => new MeshStandardMaterial({
-          color: 0x00e1ff,
-          emissive: 0x00e1ff,
-          emissiveIntensity: 0.8,
-          transparent: true,
-          opacity: 0.8,
-        })
-      );
-      
-      // Pre-generate all random values to avoid inconsistencies
-      const particlesData = Array.from({ length: particleCount }, (_, i) => {
-        // Use a seedable random function if you want even more consistency
-        return {
-          material: i % 2 === 0 ? purpleMaterial : cyanMaterial,
-          initialPosition: new Vector3(
-            (Math.random() - 0.5) * 20,
-            (Math.random() - 0.5) * 10,
-            (Math.random() - 0.5) * 5
-          ),
-          targetPosition: new Vector3(
-            (Math.random() - 0.5) * 30,
-            (Math.random() - 0.5) * 15,
-            (Math.random() - 0.5) * 10
-          ),
-          animationStartTime: performance.now() + i * 80, // Stagger start
-          animationDuration: 3000, // 3 seconds per cycle
-        };
-      });
-      
-      // Create particles with pre-generated data
-      particlesData.forEach((data) => {
-        const particle = new Mesh(
-          sphereGeometry,
-          data.material
-        );
-        
-        particle.position.copy(data.initialPosition);
-        particle.scale.set(0, 0, 0); // Start invisible
-        particle.userData = {
-          initialPosition: data.initialPosition,
-          targetPosition: data.targetPosition,
-          animationStartTime: data.animationStartTime,
-          animationDuration: data.animationDuration,
-        };
-        
-        particleGroup.add(particle);
-      });
-      
-      // Save some properties to the scene's userData for the animation callback
-      scene.userData.particleGroup = particleGroup;
-      
-      // Register animation function using phaseRef to avoid stale closure
-      threeManager.registerScene('hero-energy-particles', (deltaTime) => {
-        try {
-          // Access the current phase via the ref to avoid stale closure
-          const currentPhase = phaseRef.current;
-          
-          // Rotate the particle group based on phase, but slower in reduced quality mode
-          const qualityMultiplier = threeManager.isUsingReducedQuality() ? 0.5 : 1;
-          const rotationSpeed = currentPhase === 3 ? 0.2 : currentPhase === 2 ? 0.1 : 0.05;
-          particleGroup.rotation.z += rotationSpeed * deltaTime * qualityMultiplier;
-          
-          // Animate each particle
-          const now = performance.now();
-          particleGroup.children.forEach((particle) => {
-            const userData = particle.userData;
-            const elapsed = (now - userData.animationStartTime) % userData.animationDuration;
-            const progress = elapsed / userData.animationDuration;
-            
-            // Scale animation: 0 -> 1 -> 0
-            const scale = Math.sin(progress * Math.PI);
-            particle.scale.set(scale, scale, scale);
-            
-            // Position animation: initial -> target -> initial
-            particle.position.lerpVectors(
-              userData.initialPosition,
-              userData.targetPosition,
-              Math.sin(progress * Math.PI * 2) * 0.5 + 0.5
-            );
-          });
-        } catch (error) {
-          console.error('[HeroTitle] Animation error:', error);
-        }
-      });
-      
-      // Attach renderer to the container
-      if (bgContainerRef.current) {
-        threeManager.attachRenderer('hero-energy-particles', bgContainerRef.current);
-      }
-    };
-    
-    // Setup energy particles using ThreeManager singleton
-    try {
-      setupEnergyParticles();
-    } catch (error) {
-      console.error('[HeroTitle] Failed to set up energy particles:', error);
     }
     
     return () => {
-      // No need to cleanup on every render - we'll handle final cleanup in the component unmount
+      // Clean up on unmount
+      if (bgContainerRef.current) {
+        while (bgContainerRef.current.firstChild) {
+          bgContainerRef.current.removeChild(bgContainerRef.current.firstChild);
+        }
+      }
     };
   }, [phase]); // Only re-run when phase changes
   
   // Separate cleanup effect to run only when unmounting
   useEffect(() => {
     return () => {
-      // Cleanup when component unmounts
-      ThreeManager.getInstance().unregisterScene('hero-energy-particles');
+      // Cleanup when component unmounts - check if scene exists before unregistering
+      // to avoid errors when using CSS fallback
+      const threeManager = ThreeManager.getInstance();
+      if (threeManager.hasScene('hero-energy-particles')) {
+        threeManager.unregisterScene('hero-energy-particles');
+      }
+      
+      // Remove animation styles if they exist
+      const animStyles = document.getElementById('hero-animations');
+      if (animStyles) {
+        animStyles.remove();
+      }
     };
   }, []);
 

@@ -336,11 +336,19 @@ export const Logo3D: React.FC<Logo3DProps> = ({ isCompact = false }) => {
   return (
     <div 
       ref={containerRef}
-      className="w-16 h-10"
+      className="relative overflow-hidden"
       style={{
         width: isCompact ? '60px' : '70px',
         height: isCompact ? '25px' : '30px',
+        display: 'inline-block',
+        maxWidth: '70px',
+        maxHeight: '30px',
       }}
-    />
+    >
+      {/* Fallback text in case WebGL fails */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="text-center font-bold opacity-0">DEGEN×DUEL</div>
+      </div>
+    </div>
   );
 };

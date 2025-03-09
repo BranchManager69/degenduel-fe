@@ -104,14 +104,14 @@ export const ContestCard: React.FC<ContestCardProps> = ({
 
           {/* Badge Stack - Properly Spaced */}
           <div className="flex flex-col items-end gap-2">
-            {/* Status Badge */}
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor()} ${
-                displayStatus === "active" ? "animate-cyber-pulse" : ""
-              }`}
-            >
-              {getStatusText()}
-            </span>
+            {/* Status Badge - Hidden when active as we'll use the corner effect */}
+            {displayStatus !== "active" && (
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor()}`}
+              >
+                {getStatusText()}
+              </span>
+            )}
 
             {/* Entered Badge */}
             {contest.is_participating && (
@@ -121,10 +121,21 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               </div>
             )}
           </div>
+          
+          {/* Live Corner Effect */}
+          {displayStatus === "active" && (
+            <div className="absolute top-0 right-0 overflow-hidden">
+              <div className="w-24 h-24 flex items-center justify-center rotate-45 translate-x-[40px] translate-y-[-40px] bg-gradient-to-br from-green-500/80 to-green-600/80 shadow-[0_0_20px_rgba(34,197,94,0.4)] animate-pulse">
+                <p className="text-white font-bold text-xs rotate-[-45deg] translate-y-[40px] translate-x-[-25px]">
+                  LIVE
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Contest Description - no border */}
-        <div className="relative py-2">
+        {/* Contest Description - aligned to top */}
+        <div className="relative py-2 flex flex-col justify-start h-[48px]">
           <p
             className="text-sm text-gray-400 line-clamp-2"
             title={contest.description}
@@ -133,18 +144,18 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           </p>
         </div>
 
-        {/* Prize Pool and Entry Fee side by side with enhanced styling */}
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-1">
-            <span className="text-sm text-gray-400">Prize Pool</span>
-            <div className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 text-transparent bg-clip-text group-hover:animate-gradient-x">
-              {formatCurrency(Number(contest.prize_pool))}
-            </div>
-          </div>
+        {/* Entry Fee and Prize Pool side by side with enhanced styling */}
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <span className="text-sm text-gray-400">Entry Fee</span>
             <div className="text-2xl font-bold text-gray-200 group-hover:text-brand-300 transition-colors">
               {formatCurrency(Number(contest.entry_fee))}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-sm text-gray-400">Prize Pool</span>
+            <div className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 text-transparent bg-clip-text group-hover:animate-gradient-x">
+              {formatCurrency(Number(contest.prize_pool))}
             </div>
           </div>
         </div>
@@ -184,12 +195,10 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           <p className="text-[10px] text-gray-500">{contest.contest_code}</p>
         </div>
 
-        {/* Difficulty Badge in bottom left corner */}
-        <div className="absolute bottom-1.5 left-2">
-          <ContestDifficulty
-            difficulty={contest.settings?.difficulty || "unknown"}
-          />
-        </div>
+        {/* Difficulty now as an expandable drawer at bottom */}
+        <ContestDifficulty
+          difficulty={contest.settings?.difficulty || "unknown"}
+        />
       </div>
     </div>
   );

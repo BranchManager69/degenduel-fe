@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "../store/useStore";
 import { useAuth } from "./useAuth"; // Keeping this for compatibility
+import { WS_URL } from "../config/config";
 
 export interface TokenData {
   symbol: string;
@@ -118,21 +119,9 @@ export function useTokenDataWebSocket(
       // Just skipping the authentication part, but keeping the function call for compatibility // TODO: WHAT???
       const token = await getAccessToken().catch(() => null);
 
-      // Create WebSocket connection with environment-aware WSS URL based on the current domain
-      let baseWsUrl;
-      // Check if we're on the production domain
-      const isProdDomain = window.location.hostname === "degenduel.me";
-      // Construct the WebSocket URL
-      if (isProdDomain) {
-        // In production on the main domain, use the same domain for WebSockets
-        baseWsUrl = `wss://${window.location.hostname}`;
-      } else if (import.meta.env.VITE_WS_URL) {
-        // Use the environment variable if set (for dev environments)
-        baseWsUrl = import.meta.env.VITE_WS_URL;
-      } else {
-        // Fallback to current host
-        baseWsUrl = `wss://${window.location.host}`;
-      }
+      // Use the centralized WS_URL from config for consistent WebSocket connections
+      const baseWsUrl = WS_URL;
+      
       console.log(
         `[TokenDataWebSocket] Using base WebSocket URL: ${baseWsUrl}`
       );

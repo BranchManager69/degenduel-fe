@@ -172,11 +172,9 @@ class ThreeManager {
     if (!this.renderer.domElement.parentElement) {
       domElement.appendChild(this.renderer.domElement);
       
-      // Setting the renderer style to absolute positioning with pointerEvents: none
-      // ensures it's visible only within the container and doesn't capture clicks
-      this.renderer.domElement.style.position = 'absolute';
-      this.renderer.domElement.style.top = '0';
-      this.renderer.domElement.style.left = '0';
+      // Use relative positioning to respect container boundaries
+      // This prevents the renderer from expanding beyond its container
+      this.renderer.domElement.style.position = 'relative';
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
       this.renderer.domElement.style.pointerEvents = 'none';
@@ -427,11 +425,21 @@ class ThreeManager {
         this.renderOrder.forEach(componentId => {
           const scene = this.scenes.get(componentId);
           const camera = this.cameras.get(componentId);
+          const container = this.containers.get(componentId);
           
-          if (scene && camera) {
+          if (scene && camera && container) {
             try {
-              // Render the scene with error catching for each individual scene
-              this.renderer.render(scene, camera);
+              // Get container size
+              const rect = container.getBoundingClientRect();
+              
+              // Only render if container is visible (has width and height)
+              if (rect.width > 0 && rect.height > 0) {
+                // Set renderer size to match container
+                this.renderer.setSize(rect.width, rect.height, false);
+                
+                // Render the scene with error catching for each individual scene
+                this.renderer.render(scene, camera);
+              }
             } catch (error) {
               console.error(`[ThreeManager] Error rendering scene ${componentId}:`, error);
               // Remove problematic scene to prevent continual errors
@@ -509,17 +517,19 @@ class ThreeManager {
    * Handle window resize
    */
   private handleResize(): void {
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    // Don't resize renderer globally - we'll handle this per render
     
-    // Update all cameras
-    this.cameras.forEach(camera => {
+    // Update camera aspects based on their containers
+    this.containers.forEach((container, componentId) => {
+      const camera = this.cameras.get(componentId);
       if (camera instanceof THREE.PerspectiveCamera) {
-        camera.aspect = window.innerWidth / window.innerHeight;
+        const rect = container.getBoundingClientRect();
+        camera.aspect = rect.width / rect.height;
         camera.updateProjectionMatrix();
       }
     });
     
-    console.log('[ThreeManager] Resized renderer');
+    console.log('[ThreeManager] Updated camera aspects for all components');
   }
   
   /**

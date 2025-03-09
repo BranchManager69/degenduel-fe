@@ -44,8 +44,8 @@ export const WS_URL = isDev
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
         window.location.host
       }`
-    : import.meta.env.VITE_WS_URL || "wss://dev.degenduel.me" // Use dev domain for development
-  : import.meta.env.VITE_WS_URL || "wss://degenduel.me";
+    : import.meta.env.VITE_WS_URL || `wss://${window.location.hostname}` // Use current hostname instead of hardcoded domain
+  : import.meta.env.VITE_WS_URL || `wss://${window.location.hostname}`; // Use current hostname instead of hardcoded domain
 
 /* Platform Fees */
 export const TOKEN_SUBMISSION_COST = isDev // New token whitelisting cost
