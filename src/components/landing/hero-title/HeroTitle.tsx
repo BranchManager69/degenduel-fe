@@ -1,16 +1,19 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 import ThreeManager from "../../../utils/three/ThreeManager";
-// Import THREE only what's needed to avoid dual usage patterns
-import { Vector3, AmbientLight, PointLight, Group, SphereGeometry, MeshStandardMaterial, Mesh } from "three";
+import { useAuth } from "../../../hooks/useAuth";
 
 export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = () => {} }) => {
+  const { isSuperAdmin } = useAuth();
   const [phase, setPhase] = useState(0);
   const [degenVisible, setDegenVisible] = useState(false);
   const [duelVisible, setDuelVisible] = useState(false);
   const [impactCount, setImpactCount] = useState(0);
   const [finalMerge, setFinalMerge] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [manualPhaseControl, setManualPhaseControl] = useState(false);
   const bgContainerRef = useRef<HTMLDivElement>(null);
+  const timeoutsRef = useRef<number[]>([]);
   
   // Create a ref to store the current phase to avoid stale closures in animation callbacks
   const phaseRef = useRef(phase);
@@ -118,50 +121,111 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
     };
   }, []);
 
+  // Helper to clear all animation timeouts
+  const clearAllTimeouts = () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+  };
+
+  // Toggle debug mode
+  const toggleDebugMode = () => {
+    const newDebugMode = !debugMode;
+    setDebugMode(newDebugMode);
+    
+    if (newDebugMode) {
+      // When entering debug mode, clear timeouts and enable manual control
+      clearAllTimeouts();
+      setManualPhaseControl(true);
+    } else {
+      // When exiting debug mode, restart animation from beginning
+      setManualPhaseControl(false);
+      setPhase(0);
+      setImpactCount(0);
+      setFinalMerge(false);
+      setDegenVisible(false);
+      setDuelVisible(false);
+    }
+  };
+
+  // Advance to next phase
+  const advancePhase = () => {
+    if (phase === 0) {
+      setDegenVisible(true);
+      setDuelVisible(true);
+      setPhase(1);
+      setImpactCount(1);
+    } else if (phase === 1) {
+      setPhase(2);
+      setImpactCount(2);
+    } else if (phase === 2) {
+      setPhase(3);
+      setImpactCount(3);
+    } else if (phase === 3 && !finalMerge) {
+      setFinalMerge(true);
+    } else {
+      // Reset to beginning
+      setPhase(0);
+      setImpactCount(0);
+      setFinalMerge(false);
+      setDegenVisible(false);
+      setDuelVisible(false);
+    }
+  };
+
   // Main animation sequence
   useEffect(() => {
+    // Skip if in manual control mode
+    if (manualPhaseControl) return;
+    
+    // Store timeouts in ref for later cleanup
+    const timeouts: number[] = [];
+    
     // Sequence the animation
-    const initialDelay = setTimeout(() => setDegenVisible(true), 800);
-    const showDuel = setTimeout(() => setDuelVisible(true), 1400);
+    const addTimeout = (callback: () => void, delay: number) => {
+      const timeoutId = window.setTimeout(callback, delay);
+      timeouts.push(timeoutId);
+      return timeoutId;
+    };
+    
+    // Sequence the animation
+    addTimeout(() => setDegenVisible(true), 800);
+    addTimeout(() => setDuelVisible(true), 1400);
     
     // First collision
-    const firstImpact = setTimeout(() => {
+    addTimeout(() => {
       setPhase(1);
       setImpactCount(1);
     }, 2600);
     
     // Second collision
-    const secondImpact = setTimeout(() => {
+    addTimeout(() => {
       setPhase(2);
       setImpactCount(2);
     }, 3800);
     
     // Third and final collision with big effect
-    const finalImpact = setTimeout(() => {
+    addTimeout(() => {
       setPhase(3);
       setImpactCount(3);
     }, 5000);
     
     // Final merge into page title
-    const mergeTiming = setTimeout(() => {
+    addTimeout(() => {
       setFinalMerge(true);
     }, 6200);
     
     // Animation complete, trigger parent callback
-    const animComplete = setTimeout(() => {
+    addTimeout(() => {
       onComplete();
     }, 7500);
     
+    // Store timeouts in ref
+    timeoutsRef.current = timeouts;
+    
     return () => {
-      clearTimeout(initialDelay);
-      clearTimeout(showDuel);
-      clearTimeout(firstImpact);
-      clearTimeout(secondImpact);
-      clearTimeout(finalImpact);
-      clearTimeout(mergeTiming);
-      clearTimeout(animComplete);
+      timeouts.forEach(clearTimeout);
     };
-  }, [onComplete]);
+  }, [onComplete, manualPhaseControl]);
 
   // Pre-calculate particle data for each impact count (1, 2, 3)
   // This fixes the issue with generating random values during render
@@ -254,6 +318,33 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
   return (
     <div className="relative h-[25vh] overflow-hidden">
       {/* Drastically shorter container height - 80% reduction as requested */}
+
+      {/* Debug mode toggle button - only visible for superadmins */}
+      {isSuperAdmin() && (
+        <div className="absolute top-1 right-1 z-50">
+          <button 
+            className="bg-black/50 text-white text-xs p-1 rounded-md"
+            onClick={toggleDebugMode}>
+            {debugMode ? '🛠️' : '🐛'}
+          </button>
+        </div>
+      )}
+      
+      {/* Debug overlay with controls */}
+      {debugMode && (
+        <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs p-2 rounded-md z-50 flex flex-col gap-1">
+          <div>Phase: {phase}/3</div>
+          <div>Impact Count: {impactCount}</div>
+          <div>Final Merge: {finalMerge ? 'Yes' : 'No'}</div>
+          <div>Degen Visible: {degenVisible ? 'Yes' : 'No'}</div>
+          <div>Duel Visible: {duelVisible ? 'Yes' : 'No'}</div>
+          <button 
+            className="mt-1 bg-purple-500 text-white py-1 px-2 rounded text-xs"
+            onClick={advancePhase}>
+            Next Phase
+          </button>
+        </div>
+      )}
 
       {/* 3D animated crypto dodgeball background using ThreeManager singleton */}
       <div className="absolute inset-0 z-5" ref={bgContainerRef}></div>
