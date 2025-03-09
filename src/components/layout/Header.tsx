@@ -12,7 +12,7 @@ import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
 import { LiveContestTicker } from "./LiveContestTicker";
-import Logo3D from "../ui/Logo3D";
+import Logo from "../ui/Logo";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { UserMenu } from "./user-menu/UserMenu";
 
@@ -249,18 +249,18 @@ export const Header: React.FC = () => {
           >
             {/* Left section: Logo and Nav */}
             <div className="flex items-center">
-              {/* Logo - 3D Version */}
-              <Link
-                to="/"
-                className={`flex items-center gap-1 group relative pl-1 sm:pl-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+              {/* Logo - New clean version */}
+              <div 
+                className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
                   ${isCompact ? "scale-[0.9]" : "scale-100"}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="relative flex items-center justify-center">
-                  {/* Use our 3D Logo component with ThreeManager */}
-                  <Logo3D size={isCompact ? "sm" : "md"} />
-                </div>
-              </Link>
+                <Logo 
+                  size={isCompact ? "sm" : "md"} 
+                  asLink={true}
+                  animated={true}
+                />
+              </div>
 
               {/* Main Navigation */}
               <nav className="hidden md:flex items-center space-x-6 ml-8">

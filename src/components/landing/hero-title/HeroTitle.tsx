@@ -1,18 +1,15 @@
+// src/components/landing/hero-title/HeroTitle.tsx
+ 
 import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
-import ThreeManager from "../../../utils/three/ThreeManager";
 import { useAuth } from "../../../hooks/useAuth";
 
 export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = () => {} }) => {
   const { isSuperAdmin } = useAuth();
   const [phase, setPhase] = useState(0);
-  const [degenVisible, setDegenVisible] = useState(false);
-  const [duelVisible, setDuelVisible] = useState(false);
-  const [impactCount, setImpactCount] = useState(0);
-  const [finalMerge, setFinalMerge] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [manualPhaseControl, setManualPhaseControl] = useState(false);
-  const bgContainerRef = useRef<HTMLDivElement>(null);
+  const [designVariant, setDesignVariant] = useState(0);
   const timeoutsRef = useRef<number[]>([]);
   
   // Create a ref to store the current phase to avoid stale closures in animation callbacks
@@ -22,97 +19,31 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
     phaseRef.current = phase;
   }, [phase]);
 
-  // Create a ref to track if the scene has been initialized
-  const sceneInitializedRef = useRef(false);
-
-  // Use a simplified CSS-only animation instead of WebGL
+  // Create animation styles dynamically
   useEffect(() => {
-    // Skip setup if phase is 0
-    if (phase === 0) return;
-    
-    // Mark as initialized
-    sceneInitializedRef.current = true;
-    
-    // Create a CSS-based background effect
-    if (bgContainerRef.current) {
-      // Clear any existing content
-      while (bgContainerRef.current.firstChild) {
-        bgContainerRef.current.removeChild(bgContainerRef.current.firstChild);
-      }
-      
-      // Create background element
-      const fallbackBg = document.createElement('div');
-      fallbackBg.className = 'hero-fallback-bg';
-      fallbackBg.style.position = 'absolute';
-      fallbackBg.style.inset = '0';
-      fallbackBg.style.background = 'radial-gradient(ellipse at center, rgba(147, 51, 234, 0.2) 0%, rgba(0, 0, 0, 0.1) 70%)';
-      fallbackBg.style.overflow = 'hidden';
-      bgContainerRef.current.appendChild(fallbackBg);
-      
-      // Add CSS particles for visual effect
-      const particleCount = 15; // Reduced count for better performance
-      for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'hero-fallback-particle';
-        particle.style.position = 'absolute';
-        particle.style.width = `${4 + Math.random() * 6}px`;
-        particle.style.height = particle.style.width;
-        particle.style.borderRadius = '50%';
-        particle.style.background = i % 2 === 0 ? '#9333EA' : '#00e1ff';
-        particle.style.opacity = `${0.4 + Math.random() * 0.4}`;
-        particle.style.top = `${Math.random() * 100}%`;
-        particle.style.left = `${Math.random() * 100}%`;
-        particle.style.boxShadow = `0 0 10px ${i % 2 === 0 ? '#9333EA' : '#00e1ff'}`;
-        
-        // Add CSS animation
-        const animIndex = i % 3 + 1;
-        const animDuration = 3 + Math.random() * 4;
-        particle.style.animation = `float-${animIndex} ${animDuration}s infinite alternate`;
-        fallbackBg.appendChild(particle);
-      }
-      
-      // Add animation keyframes if they don't exist
-      if (!document.getElementById('hero-animations')) {
-        const style = document.createElement('style');
-        style.id = 'hero-animations';
-        style.textContent = `
-          @keyframes float-1 {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(20px, 20px); }
-          }
-          @keyframes float-2 {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(-20px, 15px); }
-          }
-          @keyframes float-3 {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(15px, -20px); }
-          }
-        `;
-        document.head.appendChild(style);
-      }
+    // Add animation keyframes if they don't exist
+    if (!document.getElementById('hero-animations')) {
+      const style = document.createElement('style');
+      style.id = 'hero-animations';
+      style.textContent = `
+        @keyframes pulse {
+          0%, 100% { opacity: 0.7; }
+          50% { opacity: 1; }
+        }
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          100% { transform: translateY(-10px); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+          20%, 40%, 60%, 80% { transform: translateX(2px); }
+        }
+      `;
+      document.head.appendChild(style);
     }
     
     return () => {
-      // Clean up on unmount
-      if (bgContainerRef.current) {
-        while (bgContainerRef.current.firstChild) {
-          bgContainerRef.current.removeChild(bgContainerRef.current.firstChild);
-        }
-      }
-    };
-  }, [phase]); // Only re-run when phase changes
-  
-  // Separate cleanup effect to run only when unmounting
-  useEffect(() => {
-    return () => {
-      // Cleanup when component unmounts - check if scene exists before unregistering
-      // to avoid errors when using CSS fallback
-      const threeManager = ThreeManager.getInstance();
-      if (threeManager.hasScene('hero-energy-particles')) {
-        threeManager.unregisterScene('hero-energy-particles');
-      }
-      
       // Remove animation styles if they exist
       const animStyles = document.getElementById('hero-animations');
       if (animStyles) {
@@ -140,36 +71,94 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
       // When exiting debug mode, restart animation from beginning
       setManualPhaseControl(false);
       setPhase(0);
-      setImpactCount(0);
-      setFinalMerge(false);
-      setDegenVisible(false);
-      setDuelVisible(false);
     }
   };
 
-  // Advance to next phase
+  // Font variations
+  const fonts = [
+    { name: 'Silkscreen', type: 'monospace' },
+    { name: 'Orbitron', type: 'sans-serif' },
+    { name: 'Audiowide', type: 'cursive' },
+    { name: 'Press Start 2P', type: 'cursive' },
+    { name: 'VT323', type: 'monospace' },
+    { name: 'Chakra Petch', type: 'sans-serif' },
+    { name: 'Staatliches', type: 'cursive' },
+    { name: 'Bungee', type: 'cursive' },
+    { name: 'Wallpoet', type: 'cursive' },
+    { name: 'Teko', type: 'sans-serif' }
+  ];
+
+  // Color schemes
+  const colorSchemes = [
+    { degen: '#9333EA', connector: '#06b6d4', duel: 'linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%)' },
+    { degen: '#3b82f6', connector: '#f97316', duel: 'linear-gradient(180deg, #f43f5e 0%, #881337 100%)' },
+    { degen: '#10b981', connector: '#f59e0b', duel: 'linear-gradient(180deg, #3730a3 0%, #1e1b4b 100%)' },
+    { degen: '#ec4899', connector: '#14b8a6', duel: 'linear-gradient(180deg, #fbbf24 0%, #92400e 100%)' },
+    { degen: '#6366f1', connector: '#84cc16', duel: 'linear-gradient(180deg, #0ea5e9 0%, #0c4a6e 100%)' }
+  ];
+
+  // Animation style type
+  type AnimationStyleType = 'default' | 'bounce' | 'elastic' | 'staggered' | 'wave';
+
+  // Connector styles - with TypeScript interface
+  interface ConnectorStyle {
+    type: 'line' | 'dot' | 'cross' | 'triangle' | 'pulse';
+    width?: number;
+    height?: number;
+    size?: number;
+  }
+  
+  const connectorStyles: ConnectorStyle[] = [
+    { type: 'line', width: 0.3, height: 0.8 },
+    { type: 'dot', size: 0.6 },
+    { type: 'cross', size: 0.7 },
+    { type: 'triangle', size: 0.7 },
+    { type: 'pulse', size: 0.8 }
+  ];
+
+  // Animation styles
+  const animationStyles: AnimationStyleType[] = [
+    'default',
+    'bounce',
+    'elastic',
+    'staggered',
+    'wave'
+  ];
+
+  // Get current styles based on designVariant
+  const getCurrentFont = () => fonts[designVariant % fonts.length].name;
+  const getCurrentColorScheme = () => colorSchemes[Math.floor(designVariant / fonts.length) % colorSchemes.length];
+  const getCurrentConnector = (): ConnectorStyle => {
+    const connector = connectorStyles[Math.floor(designVariant / (fonts.length * colorSchemes.length)) % connectorStyles.length];
+    // Provide defaults for potentially undefined properties
+    return {
+      ...connector,
+      width: connector.width || 0.3,
+      height: connector.height || 0.8,
+      size: connector.size || 0.6
+    };
+  };
+  const getCurrentAnimation = (): AnimationStyleType => animationStyles[Math.floor(designVariant / (fonts.length * colorSchemes.length * connectorStyles.length)) % animationStyles.length];
+  
+  // Total variants count
+  const totalVariants = fonts.length * colorSchemes.length * connectorStyles.length * animationStyles.length;
+
+  // Phase navigation
   const advancePhase = () => {
-    if (phase === 0) {
-      setDegenVisible(true);
-      setDuelVisible(true);
-      setPhase(1);
-      setImpactCount(1);
-    } else if (phase === 1) {
-      setPhase(2);
-      setImpactCount(2);
-    } else if (phase === 2) {
-      setPhase(3);
-      setImpactCount(3);
-    } else if (phase === 3 && !finalMerge) {
-      setFinalMerge(true);
-    } else {
-      // Reset to beginning
-      setPhase(0);
-      setImpactCount(0);
-      setFinalMerge(false);
-      setDegenVisible(false);
-      setDuelVisible(false);
-    }
+    setPhase(prev => (prev >= 4 ? 0 : prev + 1));
+  };
+  
+  const previousPhase = () => {
+    setPhase(prev => (prev <= 0 ? 4 : prev - 1));
+  };
+  
+  // Design variant navigation
+  const nextDesignVariant = () => {
+    setDesignVariant(prev => (prev + 1) % totalVariants);
+  };
+  
+  const previousDesignVariant = () => {
+    setDesignVariant(prev => (prev <= 0 ? totalVariants - 1 : prev - 1));
   };
 
   // Main animation sequence
@@ -187,37 +176,22 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
       return timeoutId;
     };
     
-    // Sequence the animation
-    addTimeout(() => setDegenVisible(true), 800);
-    addTimeout(() => setDuelVisible(true), 1400);
+    // First phase - words appear separately
+    addTimeout(() => setPhase(1), 600);
     
-    // First collision
-    addTimeout(() => {
-      setPhase(1);
-      setImpactCount(1);
-    }, 2600);
+    // Second phase - words approach
+    addTimeout(() => setPhase(2), 1800);
     
-    // Second collision
-    addTimeout(() => {
-      setPhase(2);
-      setImpactCount(2);
-    }, 3800);
+    // Third phase - letters connect
+    addTimeout(() => setPhase(3), 2700);
     
-    // Third and final collision with big effect
-    addTimeout(() => {
-      setPhase(3);
-      setImpactCount(3);
-    }, 5000);
-    
-    // Final merge into page title
-    addTimeout(() => {
-      setFinalMerge(true);
-    }, 6200);
+    // Final phase - final state with subtle animation
+    addTimeout(() => setPhase(4), 3400);
     
     // Animation complete, trigger parent callback
     addTimeout(() => {
       onComplete();
-    }, 7500);
+    }, 4000);
     
     // Store timeouts in ref
     timeoutsRef.current = timeouts;
@@ -227,98 +201,8 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
     };
   }, [onComplete, manualPhaseControl]);
 
-  // Pre-calculate particle data for each impact count (1, 2, 3)
-  // This fixes the issue with generating random values during render
-  const particleDataCache = React.useMemo(() => {
-    // Create particles data for counts 1, 2, and 3
-    const cache: { [key: number]: Array<any> } = {};
-    
-    // Generate for each possible count value
-    [1, 2, 3].forEach(count => {
-      const multiplier = count === 3 ? 3 : count;
-      const particleCount = 15 * multiplier;
-      
-      cache[count] = Array.from({ length: particleCount }, (_, i) => {
-        const baseSpeed = count === 3 ? 150 : 80;
-        // Use a deterministic seed based on the index and count for consistent randomness
-        const seed = (i * 9301 + count * 49297) % 233280;
-        // Simple pseudo-random generator
-        const random = () => ((seed * (i + 1)) % 233280) / 233280;
-        
-        const angle = random() * Math.PI * 2;
-        const distance = random() * baseSpeed;
-        const x = Math.cos(angle) * distance;
-        const y = Math.sin(angle) * distance;
-        const width = random() * 0.8 + 0.3;
-        const scale = random() * 3 + 1;
-        const duration = random() * 0.8 + 0.7;
-        const colorIndex = i % 3;
-        
-        return { x, y, width, scale, duration, colorIndex };
-      });
-    });
-    
-    return cache;
-  }, []); // Empty dependency array means this only calculates once
-  
-  // Generate particles based on impact count
-  const generateParticles = React.useCallback((count: number) => {
-    // Use the pre-calculated particle data from the cache
-    const particleData = particleDataCache[count] || [];
-    
-    return particleData.map((data, i) => {
-      return (
-        <motion.div
-          key={`particle-${i}-${count}`} // Include count in key for proper reconciliation
-          className={`absolute top-1/2 left-1/2 rounded-full ${
-            data.colorIndex === 0 ? 'bg-brand-400' : 
-            data.colorIndex === 1 ? 'bg-white' : 'bg-cyan-400'
-          }`}
-          style={{ 
-            width: `${data.width}vmin`, 
-            height: `${data.width}vmin`,
-            zIndex: 25 
-          }}
-          initial={{ x: 0, y: 0, opacity: 1 }}
-          animate={{ 
-            x: data.x + "vmin",
-            y: data.y + "vmin",
-            opacity: 0,
-            scale: data.scale
-          }}
-          transition={{ 
-            duration: data.duration, 
-            ease: "easeOut" 
-          }}
-        />
-      );
-    });
-  }, [particleDataCache]); // Only depends on the memoized cache
-
-  // Calculate position for DEGEN word - memoized to prevent recalculations
-  const degenPosition = React.useMemo(() => {
-    if (phase === 0) return { x: "-40vw", scale: 1.5 };
-    if (phase === 1) return { x: "-10vw", scale: 1.3 };
-    if (phase === 2) return { x: "-15vw", scale: 1.4 };
-    if (phase === 3 && !finalMerge) return { x: "-5vw", scale: 1.2 };
-    if (finalMerge) return { x: "0vw", scale: 1 };
-    return { x: "-40vw", scale: 1.5 };
-  }, [phase, finalMerge]);
-
-  // Calculate position for DUEL word - memoized to prevent recalculations
-  const duelPosition = React.useMemo(() => {
-    if (phase === 0) return { x: "40vw", scale: 1.5 };
-    if (phase === 1) return { x: "10vw", scale: 1.3 };
-    if (phase === 2) return { x: "15vw", scale: 1.4 };
-    if (phase === 3 && !finalMerge) return { x: "5vw", scale: 1.2 };
-    if (finalMerge) return { x: "0vw", scale: 1 };
-    return { x: "40vw", scale: 1.5 };
-  }, [phase, finalMerge]);
-
   return (
     <div className="relative h-[25vh] overflow-hidden">
-      {/* Drastically shorter container height - 80% reduction as requested */}
-
       {/* Debug mode toggle button - only visible for superadmins */}
       {isSuperAdmin() && (
         <div className="absolute top-1 right-1 z-50">
@@ -332,410 +216,510 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({ onComplete = 
       
       {/* Debug overlay with controls */}
       {debugMode && (
-        <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs p-2 rounded-md z-50 flex flex-col gap-1">
-          <div>Phase: {phase}/3</div>
-          <div>Impact Count: {impactCount}</div>
-          <div>Final Merge: {finalMerge ? 'Yes' : 'No'}</div>
-          <div>Degen Visible: {degenVisible ? 'Yes' : 'No'}</div>
-          <div>Duel Visible: {duelVisible ? 'Yes' : 'No'}</div>
-          <button 
-            className="mt-1 bg-purple-500 text-white py-1 px-2 rounded text-xs"
-            onClick={advancePhase}>
-            Next Phase
-          </button>
+        <div className="absolute bottom-1 left-1 bg-black/80 text-white text-xs p-2 rounded-md z-50 flex flex-col gap-1" style={{ maxWidth: '180px' }}>
+          <div>Phase: {phase}/4</div>
+          <div>Font: {getCurrentFont()}</div>
+          <div>Variant: {designVariant+1}/{totalVariants}</div>
+          <div>Animation: {getCurrentAnimation()}</div>
+          <div>Connector: {getCurrentConnector().type}</div>
+          <div className="grid grid-cols-2 gap-1 mt-1">
+            {/* Phase navigation */}
+            <button 
+              className="bg-purple-700 text-white py-1 px-1 rounded-l text-xs col-span-1 flex items-center justify-center"
+              onClick={previousPhase}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button 
+              className="bg-purple-500 text-white py-1 px-1 rounded-r text-xs col-span-1 flex items-center justify-center"
+              onClick={advancePhase}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            {/* Style navigation */}
+            <button 
+              className="bg-cyan-700 text-white py-1 px-1 rounded-l text-xs col-span-1 flex items-center justify-center"
+              onClick={previousDesignVariant}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button 
+              className="bg-cyan-500 text-white py-1 px-1 rounded-r text-xs col-span-1 flex items-center justify-center"
+              onClick={nextDesignVariant}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
-      {/* 3D animated crypto dodgeball background using ThreeManager singleton */}
-      <div className="absolute inset-0 z-5" ref={bgContainerRef}></div>
+{/* Background removed to let the main background show through */}
 
-      {/* Impact flash effects - enhanced with double flash */}
-      {phase > 0 && (
+      {/* Flash effect on connection */}
+      {phase === 3 && (
         <motion.div
-          className="absolute inset-0 bg-white z-25"
+          className="absolute inset-0 bg-white z-10"
           initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: phase === 3 
-              ? [0, 0.95, 0.3, 0.7, 0] 
-              : phase === 2 
-                ? [0, 0.7, 0.2, 0] 
-                : [0, 0.5, 0] 
-          }}
-          transition={{ 
-            duration: phase === 3 ? 1.5 : 1,
-            times: phase === 3 
-              ? [0, 0.2, 0.5, 0.7, 1] 
-              : phase === 2 
-                ? [0, 0.3, 0.6, 1] 
-                : [0, 0.4, 1]
-          }}
+          animate={{ opacity: [0, 0.7, 0] }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
         />
       )}
 
-      {/* Improved shockwave effects */}
-      {phase > 0 && (
-        <>
-          <motion.div 
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
-              phase === 3 ? 'bg-gradient-to-r from-brand-400/60 via-cyan-400/60 to-brand-400/60' : 'bg-brand-400/40'
-            } z-25`}
-            initial={{ width: 0, height: 0 }}
-            animate={{ 
-              width: phase === 3 ? "320vw" : "180vw", 
-              height: phase === 3 ? "320vh" : "180vh", 
-              opacity: [phase === 3 ? 0.95 : 0.7, 0] 
-            }}
-            transition={{ 
-              duration: phase === 3 ? 1.8 : 1,
-              ease: "easeOut" 
-            }}
-          />
-          
-          {/* Secondary shockwave with slight delay */}
-          <motion.div 
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
-              phase === 3 ? 'bg-gradient-to-r from-cyan-400/50 via-brand-400/50 to-cyan-400/50' : 'bg-cyan-400/30'
-            } z-25`}
-            initial={{ width: 0, height: 0 }}
-            animate={{ 
-              width: phase === 3 ? "300vw" : "150vw", 
-              height: phase === 3 ? "300vh" : "150vh", 
-              opacity: [phase === 3 ? 0.85 : 0.6, 0] 
-            }}
-            transition={{ 
-              duration: phase === 3 ? 1.7 : 0.9,
-              delay: 0.1,
-              ease: "easeOut" 
-            }}
-          />
-        </>
-      )}
+      {/* Main container */}
+      <div className="relative z-20 flex items-center justify-center h-full">
+        <motion.div
+          className={`relative ${phase >= 3 ? 'shake' : ''}`}
+          animate={{ scale: phase === 0 ? 0.95 : 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Hidden clip guides for better positioning (invisible) */}
+          <div className="absolute opacity-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter whitespace-nowrap" 
+               style={{ fontFamily: `'${getCurrentFont()}', ${fonts[designVariant % fonts.length].type}` }}>
+            DEGENDUEL
+          </div>
 
-      <div className="relative z-10 flex items-center justify-center h-full">
-        {/* Container for animation elements - these are the ones that should fade out */}
-        <div className={`relative flex items-center justify-center ${finalMerge ? 'gap-0 opacity-0' : 'gap-4 opacity-100'} transition-opacity duration-500`}>
-          {/* DEGEN with enhanced glow and 3D effects */}
+          {/* DEGEN word */}
           <motion.div
-            initial={{ x: "-100vw", opacity: 0, filter: "blur(12px)", rotateY: 45 }}
-            animate={{
-              x: degenPosition.x,
-              opacity: degenVisible && !finalMerge ? 1 : 0,
-              scale: degenPosition.scale,
-              filter: "blur(0px)",
-              rotateY: 0,
-              rotateZ: phase > 0 ? [-3, 3, 0] : 0, // Slight twist
+            className="absolute left-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
+            style={{ 
+              fontFamily: `'${getCurrentFont()}', ${fonts[designVariant % fonts.length].type}`,
+              color: getCurrentColorScheme().degen,
+              filter: `drop-shadow(0 0 5px ${getCurrentColorScheme().degen}80)`,
+              letterSpacing: "-0.02em",
+              transformOrigin: "right center"
             }}
-            transition={{
-              x: {
-                type: "spring",
-                stiffness: phase === 3 ? 400 : 200,
-                damping: phase === 3 ? 25 : 20,
-                duration: 0.9,
-              },
-              rotateY: {
-                duration: 1.2,
-                ease: "easeOut",
-              },
-              rotateZ: {
-                duration: phase === 3 ? 0.7 : 0.5,
-                times: [0, 0.7, 1],
-                ease: "easeOut",
-              },
-              scale: {
-                duration: 0.7,
-                ease: "easeOut",
-              },
-              opacity: {
-                duration: 0.5,
-              }
+            initial={{ x: "-100vw", opacity: 0 }}
+            animate={{ 
+              x: phase >= 2 ? "0%" : phase >= 1 ? "-30%" : "-100vw",
+              opacity: phase >= 1 ? 1 : 0,
+              filter: phase >= 3 
+                ? `drop-shadow(0 0 10px ${getCurrentColorScheme().degen}cc)` 
+                : `drop-shadow(0 0 5px ${getCurrentColorScheme().degen}80)`,
+              ...(getCurrentAnimation() === 'bounce' && phase >= 2 && { y: [0, -10, 0] }),
+              ...(getCurrentAnimation() === 'elastic' && phase >= 2 && { rotate: [-2, 2, 0] }),
+              ...(getCurrentAnimation() === 'wave' && phase >= 2 && { scale: [0.95, 1.05, 0.95] }),
             }}
-            className="text-[13vmin] md:text-[15vmin] font-black tracking-tighter select-none"
-            style={{
-              fontFamily: "'Bai Jamjuree', sans-serif",
-              textShadow: phase === 3 
-                ? "0 0 150px rgba(147, 51, 234, 0.95), 0 0 80px rgba(147, 51, 234, 0.8), 0 0 30px rgba(147, 51, 234, 0.6)" 
-                : phase > 0 
-                  ? "0 0 100px rgba(147, 51, 234, 0.8), 0 0 50px rgba(147, 51, 234, 0.6)" 
-                  : "0 0 40px rgba(147, 51, 234, 0.5)",
-              color: "#9333EA",
-              letterSpacing: "-0.05em",
-              fontWeight: "800",
-              zIndex: 20,
-              transform: "perspective(1000px)", // Enhanced 3D effect
+            transition={{ 
+              x: { 
+                type: "spring", 
+                stiffness: getCurrentAnimation() === 'elastic' ? 400 : 300, 
+                damping: getCurrentAnimation() === 'elastic' ? 15 : 30, 
+                duration: 0.8 
+              },
+              opacity: { duration: 0.3 },
+              filter: { duration: 0.4 },
+              y: { duration: 1.5, repeat: Infinity, repeatType: "reverse" },
+              rotate: { duration: 2, repeat: Infinity, repeatType: "reverse" },
+              scale: { duration: 3, repeat: Infinity, repeatType: "reverse" }
             }}
           >
             DEGEN
           </motion.div>
 
-          {/* VS divider - now a dynamic, glowing element with particle effects */}
+          {/* Connector element */}
           <motion.div
-            initial={{ scale: 0, opacity: 0, rotate: 0 }}
-            animate={{
-              scale: phase === 3 ? [1.2, 1.5, 1.2] : phase > 0 ? [0.8, 1.2, 0.8] : 0,
-              opacity: phase > 0 && !finalMerge ? 1 : 0,
-              rotate: phase === 3 ? [0, 360, 720, 1080] : [0, 360], // Multiple rotations based on phase
-              x: 0,
-              y: 0,
+            className="absolute left-[50%] top-[50%] z-30 w-4 h-16 -translate-x-1/2 -translate-y-1/2"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ 
+              opacity: phase >= 3 ? 1 : 0,
+              scale: phase >= 3 ? 1 : 0,
+              rotate: getCurrentConnector().type === 'cross' ? [0, 180, 360] : 0
             }}
-            transition={{
-              scale: {
-                duration: phase === 3 ? 4 : 2,
-                repeat: Infinity,
-                repeatType: "reverse",
-              },
-              rotate: {
-                duration: phase === 3 ? 8 : 4,
-                ease: "linear",
-                repeat: Infinity,
-                repeatType: "loop",
-              },
-              x: { duration: 0.5 },
-              y: { duration: 0.5 },
-              opacity: { duration: 0.5 },
-            }}
-            className="absolute text-[8vmin] md:text-[10vmin] select-none z-30 flex items-center justify-center"
-            style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: "700",
-              perspective: "1000px",
-              color: "#00e1ff", // Cyan color
-              filter: "drop-shadow(0 0 20px #00e1ff)",
-              width: "12vmin",
-              height: "12vmin",
+            transition={{ 
+              opacity: { duration: 0.3 },
+              scale: { type: "spring", stiffness: 400, damping: 20 },
+              rotate: { duration: 6, repeat: Infinity, ease: "linear" }
             }}
           >
             <div className="relative w-full h-full">
-              {/* Central glowing orb */}
+              {/* Glowing connector backdrop */}
               <motion.div 
-                className="absolute inset-0 flex items-center justify-center"
-                animate={{
-                  scale: [1, 1.3, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
+                className={`absolute inset-0 rounded-full bg-opacity-40 blur-lg`}
+                style={{ backgroundColor: getCurrentColorScheme().connector }}
+                animate={{ scale: [1, 1.5, 1] }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
                   repeatType: "reverse",
+                  ease: "easeInOut" 
                 }}
-              >
-                <div className="relative w-1/3 h-1/3 rounded-full bg-cyan-400 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-cyan-300 blur-lg opacity-80"></div>
-                  <div className="absolute inset-0 rounded-full bg-white blur-md opacity-50"></div>
+              />
+              
+              {/* Connector types */}
+              {getCurrentConnector().type === 'line' && (
+                <motion.div 
+                  className="absolute left-[50%] top-0 w-[2px] h-full -translate-x-1/2"
+                  style={{ backgroundColor: getCurrentColorScheme().connector }}
+                  animate={{ 
+                    opacity: [0.6, 1, 0.6],
+                    boxShadow: [
+                      `0 0 5px 2px ${getCurrentColorScheme().connector}80`,
+                      `0 0 10px 4px ${getCurrentColorScheme().connector}cc`,
+                      `0 0 5px 2px ${getCurrentColorScheme().connector}80`
+                    ]
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity, 
+                    repeatType: "reverse" 
+                  }}
+                />
+              )}
+              
+              {getCurrentConnector().type === 'dot' && (
+                <motion.div 
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{ 
+                    backgroundColor: getCurrentColorScheme().connector,
+                    width: `0.6em`,
+                    height: `0.6em`
+                  }}
+                  animate={{ 
+                    scale: [1, 1.3, 1],
+                    boxShadow: [
+                      `0 0 5px 2px ${getCurrentColorScheme().connector}80`,
+                      `0 0 15px 5px ${getCurrentColorScheme().connector}cc`,
+                      `0 0 5px 2px ${getCurrentColorScheme().connector}80`
+                    ]
+                  }}
+                  transition={{ 
+                    duration: 1.8, 
+                    repeat: Infinity, 
+                    repeatType: "reverse" 
+                  }}
+                />
+              )}
+              
+              {getCurrentConnector().type === 'cross' && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div 
+                    className="absolute w-[2px] h-full"
+                    style={{ backgroundColor: getCurrentColorScheme().connector }}
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
+                  />
+                  <motion.div 
+                    className="absolute w-full h-[2px]"
+                    style={{ backgroundColor: getCurrentColorScheme().connector }}
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", delay: 0.2 }}
+                  />
                 </div>
-              </motion.div>
+              )}
               
-              {/* Crossed energy beams */}
-              <motion.div
-                className="absolute inset-0"
-                animate={{
-                  rotate: 360,
-                }}
-                transition={{
-                  duration: 8,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-full bg-gradient-to-b from-cyan-300 via-cyan-400 to-cyan-300"></div>
-                <div className="absolute top-1/2 left-0 -translate-y-1/2 w-full h-[2px] bg-gradient-to-r from-cyan-300 via-cyan-400 to-cyan-300"></div>
-              </motion.div>
+              {getCurrentConnector().type === 'triangle' && (
+                <motion.div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                  style={{ 
+                    width: 0,
+                    height: 0,
+                    borderLeft: `0.35em solid transparent`,
+                    borderRight: `0.35em solid transparent`,
+                    borderBottom: `0.7em solid ${getCurrentColorScheme().connector}`
+                  }}
+                  animate={{ 
+                    rotate: [0, 180, 360],
+                    filter: [
+                      `drop-shadow(0 0 3px ${getCurrentColorScheme().connector})`,
+                      `drop-shadow(0 0 8px ${getCurrentColorScheme().connector})`,
+                      `drop-shadow(0 0 3px ${getCurrentColorScheme().connector})`
+                    ]
+                  }}
+                  transition={{ 
+                    rotate: { duration: 8, repeat: Infinity, ease: "linear" },
+                    filter: { duration: 2, repeat: Infinity, repeatType: "reverse" }
+                  }}
+                />
+              )}
               
-              {/* Diagonal beams */}
-              <motion.div
-                className="absolute inset-0"
-                animate={{
-                  rotate: -360,
-                }}
-                transition={{
-                  duration: 12,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              >
-                <div className="absolute top-0 left-0 w-[2px] h-[141%] bg-gradient-to-b from-cyan-300 via-cyan-400 to-cyan-300 origin-bottom-right rotate-45"></div>
-                <div className="absolute top-0 right-0 w-[2px] h-[141%] bg-gradient-to-b from-cyan-300 via-cyan-400 to-cyan-300 origin-bottom-left -rotate-45"></div>
-              </motion.div>
+              {getCurrentConnector().type === 'pulse' && (
+                <>
+                  <motion.div 
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{ 
+                      backgroundColor: `${getCurrentColorScheme().connector}60`
+                    }}
+                    animate={{ 
+                      width: [`0.2em`, `0.8em`],
+                      height: [`0.2em`, `0.8em`],
+                      opacity: [0.8, 0]
+                    }}
+                    transition={{ 
+                      duration: 1.5, 
+                      repeat: Infinity, 
+                      ease: "easeOut"
+                    }}
+                  />
+                  <motion.div 
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{ 
+                      backgroundColor: getCurrentColorScheme().connector,
+                      width: `0.2em`,
+                      height: `0.2em`
+                    }}
+                    animate={{ 
+                      scale: [0.9, 1.1, 0.9],
+                    }}
+                    transition={{ 
+                      duration: 1, 
+                      repeat: Infinity, 
+                      repeatType: "reverse" 
+                    }}
+                  />
+                </>
+              )}
             </div>
           </motion.div>
 
-          {/* DUEL with enhanced 3D effects and metallic appearance */}
+          {/* DUEL word */}
           <motion.div
-            initial={{ x: "100vw", opacity: 0, filter: "blur(12px)", rotateY: -45 }}
-            animate={{
-              x: duelPosition.x,
-              opacity: duelVisible && !finalMerge ? 1 : 0,
-              scale: duelPosition.scale,
-              filter: "blur(0px)",
-              rotateY: 0,
-              rotateZ: phase > 0 ? [3, -3, 0] : 0, // Slight twist in opposite direction
+            className="absolute right-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
+            style={{ 
+              fontFamily: `'${getCurrentFont()}', ${fonts[designVariant % fonts.length].type}`,
+              background: getCurrentColorScheme().duel,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              filter: "drop-shadow(0 0 5px rgba(255, 255, 255, 0.5))",
+              letterSpacing: "-0.02em",
+              transformOrigin: "left center"
             }}
-            transition={{
-              x: {
-                type: "spring",
-                stiffness: phase === 3 ? 400 : 200,
-                damping: phase === 3 ? 25 : 20,
-                duration: 0.9,
-              },
-              rotateY: {
-                duration: 1.2,
-                ease: "easeOut",
-              },
-              rotateZ: {
-                duration: phase === 3 ? 0.7 : 0.5,
-                times: [0, 0.7, 1],
-                ease: "easeOut",
-              },
-              scale: {
-                duration: 0.7,
-                ease: "easeOut",
-              },
-              opacity: {
-                duration: 0.5,
-              }
+            initial={{ x: "100vw", opacity: 0 }}
+            animate={{ 
+              x: phase >= 2 ? "0%" : phase >= 1 ? "30%" : "100vw",
+              opacity: phase >= 1 ? 1 : 0,
+              filter: phase >= 3 
+                ? "drop-shadow(0 0 10px rgba(255, 255, 255, 0.8))" 
+                : "drop-shadow(0 0 5px rgba(255, 255, 255, 0.5))",
+              ...(getCurrentAnimation() === 'bounce' && phase >= 2 && { y: [0, -10, 0] }),
+              ...(getCurrentAnimation() === 'elastic' && phase >= 2 && { rotate: [2, -2, 0] }),
+              ...(getCurrentAnimation() === 'wave' && phase >= 2 && { scale: [0.95, 1.05, 0.95] }),
+              ...(getCurrentAnimation() === 'staggered' && phase >= 2 && { y: [0, -5, 0] }),
             }}
-            className="text-[13vmin] md:text-[15vmin] font-black tracking-tighter select-none"
-            style={{
-              fontFamily: "'Michroma', sans-serif",
-              background: phase === 3 
-                ? 'linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%)' 
-                : 'linear-gradient(180deg, #FFFFFF 0%, #D0D0D0 100%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: phase === 3 
-                ? "0 0 150px rgba(255, 255, 255, 0.95), 0 0 80px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.6)" 
-                : phase > 0 
-                  ? "0 0 100px rgba(255, 255, 255, 0.8), 0 0 50px rgba(255, 255, 255, 0.6)" 
-                  : "0 0 40px rgba(255, 255, 255, 0.5)",
-              letterSpacing: "-0.03em",
-              zIndex: 20,
-              transform: "perspective(1000px)", // Enhanced 3D effect
-              filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))",
+            transition={{ 
+              x: { 
+                type: "spring", 
+                stiffness: getCurrentAnimation() === 'elastic' ? 400 : 300, 
+                damping: getCurrentAnimation() === 'elastic' ? 15 : 30, 
+                duration: 0.8 
+              },
+              opacity: { duration: 0.3 },
+              filter: { duration: 0.4 },
+              y: { 
+                duration: getCurrentAnimation() === 'staggered' ? 2 : 1.5, 
+                repeat: Infinity, 
+                repeatType: "reverse",
+                delay: getCurrentAnimation() === 'staggered' ? 0.5 : 0
+              },
+              rotate: { duration: 2, repeat: Infinity, repeatType: "reverse" },
+              scale: { duration: 3, repeat: Infinity, repeatType: "reverse" }
             }}
           >
             DUEL
           </motion.div>
-        </div>
 
-        {/* Final merged logo - this should be the clean, centered version that stays visible */}
-        {finalMerge && (
-          <motion.div
-            initial={{ opacity: 0, scale: 2, y: 20 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1,
-              y: [0, -10, 0],
-              rotateY: [0, 5, 0, -5, 0],
-            }}
-            transition={{ 
-              opacity: { duration: 0.8 },
-              scale: { duration: 0.8 },
-              y: {
-                delay: 0.8,
-                duration: 3,
-                repeat: Infinity,
-                repeatType: "reverse",
-              },
-              rotateY: {
-                delay: 0.8,
-                duration: 6,
-                repeat: Infinity,
-                repeatType: "loop",
-              }
-            }}
-            className="absolute inset-0 flex items-center justify-center z-10"
-            style={{
-              transform: "perspective(1000px)", // Enhanced 3D effect
-            }}
-          >
-            <div className="flex items-center justify-center relative">
-              <h1 className="text-[13vmin] md:text-[15vmin] font-black tracking-tighter whitespace-nowrap drop-shadow-lg">
-                <span className="relative inline-block">
-                  <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-br from-purple-500 via-brand-500 to-brand-600" style={{fontFamily: "'Exo 2', sans-serif", fontWeight: "800"}}>
-                    DEGEN
-                  </span>
-                  {/* Enhanced glow effect with texture */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-brand-400/30 via-brand-500/30 to-purple-400/30 blur-xl -z-10" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 blur-lg -z-10" />
-                  <motion.div 
-                    className="absolute inset-0 bg-brand-400/10 blur-md -z-10"
-                    animate={{ opacity: [0.1, 0.3, 0.1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
+          {/* Unified final logo - when the words are connected */}
+          {phase >= 4 && (
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1, 
+                y: getCurrentAnimation() === 'default' || getCurrentAnimation() === 'bounce' ? [0, -5, 0] : 0,
+                rotate: getCurrentAnimation() === 'elastic' ? [-1, 1, -1] : 0
+              }}
+              transition={{ 
+                opacity: { duration: 0.5 },
+                scale: { duration: 0.5 },
+                y: { 
+                  duration: 3, 
+                  repeat: Infinity, 
+                  repeatType: "reverse", 
+                  ease: "easeInOut" 
+                },
+                rotate: {
+                  duration: 5,
+                  repeat: Infinity,
+                  repeatType: "reverse"
+                }
+              }}
+            >
+              <div className="relative flex items-center">
+                {/* DEGEN part */}
+                <span className="relative"
+                  style={{ 
+                    fontFamily: `'${getCurrentFont()}', ${fonts[designVariant % fonts.length].type}`,
+                    color: getCurrentColorScheme().degen,
+                    filter: `drop-shadow(0 0 8px ${getCurrentColorScheme().degen}b3)`,
+                    ...(getCurrentAnimation() === 'wave' && { animation: 'float 2s infinite alternate' })
+                  }}
+                >
+                  DEGE
+                  <span className="relative" style={{ marginRight: "-0.15em" }}>N</span>
                 </span>
                 
-                {/* Animated separator - rotating energy cross */}
-                <span className="relative inline-block mx-2 md:mx-4 text-cyan-400 transform -skew-x-12">
-                  <motion.span
-                    animate={{ 
-                      rotate: 360,
-                      scale: [1, 1.2, 1]
-                    }}
-                    transition={{
-                      rotate: {
-                        duration: 12,
-                        repeat: Infinity,
-                        ease: "linear"
-                      },
-                      scale: {
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: "reverse"
-                      }
-                    }}
-                    style={{
-                      display: "inline-block",
-                      filter: "drop-shadow(0 0 10px #00e1ff)"
-                    }}
-                  >
-                    ×
-                  </motion.span>
-                </span>
+                {/* Connecting element based on connector style */}
+                <div className="relative z-50 mx-[-0.15em]">
+                  {getCurrentConnector().type === 'line' && (
+                    <motion.div 
+                      className="rounded-sm"
+                      style={{ 
+                        width: `0.3em`, 
+                        height: `0.8em`,
+                        backgroundColor: getCurrentColorScheme().connector
+                      }}
+                      animate={{ 
+                        opacity: [0.8, 1, 0.8],
+                        boxShadow: [
+                          `0 0 5px ${getCurrentColorScheme().connector}80`,
+                          `0 0 10px ${getCurrentColorScheme().connector}cc`,
+                          `0 0 5px ${getCurrentColorScheme().connector}80`
+                        ]
+                      }}
+                      transition={{ 
+                        duration: 1.5, 
+                        repeat: Infinity, 
+                        repeatType: "reverse" 
+                      }}
+                    />
+                  )}
+                  
+                  {getCurrentConnector().type === 'dot' && (
+                    <motion.div 
+                      className="rounded-full"
+                      style={{ 
+                        width: `0.3em`, 
+                        height: `0.3em`,
+                        backgroundColor: getCurrentColorScheme().connector
+                      }}
+                      animate={{ 
+                        scale: [1, 1.3, 1],
+                        boxShadow: [
+                          `0 0 5px ${getCurrentColorScheme().connector}80`,
+                          `0 0 15px ${getCurrentColorScheme().connector}cc`,
+                          `0 0 5px ${getCurrentColorScheme().connector}80`
+                        ]
+                      }}
+                      transition={{ 
+                        duration: 1.8, 
+                        repeat: Infinity, 
+                        repeatType: "reverse" 
+                      }}
+                    />
+                  )}
+                  
+                  {getCurrentConnector().type === 'cross' && (
+                    <div className="relative" style={{ width: '0.6em', height: '0.6em' }}>
+                      <motion.div 
+                        className="absolute top-1/2 left-0 h-[2px] w-full -translate-y-1/2"
+                        style={{ backgroundColor: getCurrentColorScheme().connector }}
+                        animate={{ rotate: [0, 180, 360] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                      />
+                      <motion.div 
+                        className="absolute top-0 left-1/2 w-[2px] h-full -translate-x-1/2"
+                        style={{ backgroundColor: getCurrentColorScheme().connector }}
+                        animate={{ rotate: [0, 180, 360] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                      />
+                    </div>
+                  )}
+                  
+                  {getCurrentConnector().type === 'triangle' && (
+                    <motion.div
+                      style={{ 
+                        width: 0,
+                        height: 0,
+                        borderLeft: `0.35em solid transparent`,
+                        borderRight: `0.35em solid transparent`,
+                        borderBottom: `0.7em solid ${getCurrentColorScheme().connector}`
+                      }}
+                      animate={{ 
+                        rotate: [0, 180, 360],
+                        filter: [
+                          `drop-shadow(0 0 2px ${getCurrentColorScheme().connector})`,
+                          `drop-shadow(0 0 6px ${getCurrentColorScheme().connector})`,
+                          `drop-shadow(0 0 2px ${getCurrentColorScheme().connector})`
+                        ]
+                      }}
+                      transition={{ 
+                        rotate: { duration: 8, repeat: Infinity, ease: "linear" },
+                        filter: { duration: 2, repeat: Infinity, repeatType: "reverse" }
+                      }}
+                    />
+                  )}
+                  
+                  {getCurrentConnector().type === 'pulse' && (
+                    <div className="relative" style={{ width: '0.6em', height: '0.6em' }}>
+                      <motion.div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-sm"
+                        style={{ 
+                          backgroundColor: getCurrentColorScheme().connector,
+                          width: '0.3em',
+                          height: '0.3em'
+                        }}
+                        animate={{ scale: [1, 1.5, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                      <motion.div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        style={{ backgroundColor: `${getCurrentColorScheme().connector}40` }}
+                        animate={{ 
+                          width: ['0.2em', '1em'],
+                          height: ['0.2em', '1em'],
+                          opacity: [0.8, 0]
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                    </div>
+                  )}
+                </div>
                 
-                <span className="relative inline-block">
-                  {/* Metallic DUEL text with texture and better font */}
-                  <span 
-                    className="relative z-10"
-                    style={{
-                      fontFamily: "'Goldman', sans-serif",
-                      background: 'linear-gradient(180deg, #FFFFFF 0%, #A0A0A0 100%)',
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      textShadow: "0 0 80px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.6)",
-                      filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))",
-                    }}
-                  >
-                    DUEL
-                  </span>
-                  {/* Subtle glow underneath with texture */}
-                  <div className="absolute inset-0 bg-white/5 blur-xl -z-10" />
+                {/* DUEL part */}
+                <span className="relative"
+                  style={{ 
+                    fontFamily: `'${getCurrentFont()}', ${fonts[designVariant % fonts.length].type}`,
+                    background: getCurrentColorScheme().duel,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.7))",
+                    ...(getCurrentAnimation() === 'wave' && { animation: 'float 2s infinite alternate-reverse' })
+                  }}
+                >
+                  <span className="relative" style={{ marginLeft: "-0.15em" }}>D</span>
+                  UEL
                 </span>
-              </h1>
+              </div>
               
-              {/* Background energy pulse */}
+              {/* Energy pulse effect behind final logo */}
               <motion.div
-                className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-400/5 via-cyan-400/5 to-brand-400/5 blur-xl"
+                className="absolute inset-0 rounded-xl blur-lg -z-10"
+                style={{
+                  background: `linear-gradient(to right, ${getCurrentColorScheme().degen}1a, ${getCurrentColorScheme().connector}1a, ${getCurrentColorScheme().degen}1a)`
+                }}
                 animate={{ 
                   scale: [1, 1.2, 1],
-                  opacity: [0.1, 0.2, 0.1] 
+                  opacity: [0.2, 0.4, 0.2]
                 }}
-                transition={{
-                  duration: 4,
+                transition={{ 
+                  duration: 3,
                   repeat: Infinity,
-                  repeatType: "loop"
+                  repeatType: "reverse"
                 }}
               />
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+        </motion.div>
       </div>
 
-      {/* Impact particles that fly out on collision */}
-      {phase > 0 && generateParticles(impactCount)}
-
-      {/* Font imports - using modern, impressive fonts with texture and personality */}
+      {/* Font imports */}
       <link
-        href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800;900&family=Goldman:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Orbitron:wght@400;700&family=Audiowide&family=Press+Start+2P&family=VT323&family=Chakra+Petch:wght@400;700&family=Staatliches&family=Bungee&family=Wallpoet&family=Teko:wght@400;700&display=swap"
         rel="stylesheet"
       />
     </div>
