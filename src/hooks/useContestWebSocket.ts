@@ -66,7 +66,7 @@ export const useContestWebSocket = (contestId: string) => {
 
   return useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
-    endpoint: `/v2/ws/contest/${contestId}`,
+    endpoint: `/api/v69/ws/contest/${contestId}`,
     socketType: "contest",
     onMessage: handleMessage,
     heartbeatInterval: 30000, // 30 second heartbeat

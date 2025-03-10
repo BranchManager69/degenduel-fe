@@ -66,7 +66,7 @@ export const useCircuitBreakerSocket = () => {
 
   return useBaseWebSocket({
     url: import.meta.env.VITE_WS_URL,
-    endpoint: "/api/admin/circuit-breaker",
+    endpoint: "/api/v69/ws/circuit-breaker",
     socketType: "circuit-breaker",
     onMessage: handleMessage,
     heartbeatInterval: 15000, // 15 second heartbeat
