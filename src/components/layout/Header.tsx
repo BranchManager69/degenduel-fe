@@ -12,6 +12,7 @@ import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
 import Logo from "../ui/Logo";
+import { ConnectWalletButton } from "../auth/ConnectWalletButton";
 import { LiveContestTicker } from "./LiveContestTicker";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { UserMenu } from "./user-menu/UserMenu";
@@ -342,21 +343,10 @@ export const Header: React.FC = () => {
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    <Button
-                      onClick={connectWallet}
-                      disabled={isConnecting}
-                      className={`bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 
-                        text-white font-cyber transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-                        ${
-                          isCompact
-                            ? "text-xs sm:text-sm py-1 sm:py-1.5 px-2 sm:px-3"
-                            : "text-sm sm:text-base py-1.5 sm:py-2 px-3 sm:px-4"
-                        }`}
-                      variant="gradient"
-                      size={isCompact ? "sm" : "md"}
-                    >
-                      {isConnecting ? "Connecting..." : "Connect Wallet"}
-                    </Button>
+                    {/* Use our centralized ConnectWalletButton component */}
+                    <div className="flex items-center">
+                      <ConnectWalletButton compact={isCompact} />
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -15,8 +15,8 @@ interface AuthContextType {
   isConnecting: boolean;
   
   // Auth methods
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => Promise<void>;
+  connectWallet: () => void;
+  disconnectWallet: () => void;
   
   // Role checks
   isSuperAdmin: () => boolean;

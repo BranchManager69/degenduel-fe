@@ -11,6 +11,7 @@ import { formatDate } from '../../utils/formatters';
  * Social Accounts Panel Component
  * 
  * Displays user's linked social accounts and provides options to link/unlink
+ * Styled with cyberspace aesthetics to match the DegenDuel theme
  */
 const SocialAccountsPanel = () => {
   const { user } = useAuthContext();
@@ -68,33 +69,48 @@ const SocialAccountsPanel = () => {
   const twitterAccount = socialAccounts.find(account => account.platform === 'twitter');
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Linked Social Accounts</CardTitle>
-        <CardDescription>
+    <Card className="border border-brand-500/20 bg-dark-300/50 backdrop-blur-sm relative overflow-hidden">
+      {/* Gradient background effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-brand-800/5" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(153,51,255,0.15),transparent_70%)]" />
+      
+      <CardHeader className="relative">
+        <CardTitle className="text-xl font-cyber bg-gradient-to-r from-brand-200 to-brand-400 bg-clip-text text-transparent">
+          Linked Social Accounts
+        </CardTitle>
+        <CardDescription className="text-gray-400">
           Connect your social media accounts for easier login and more features
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      
+      <CardContent className="space-y-4 relative">
         {loading ? (
-          <div className="text-center py-4">Loading social accounts...</div>
+          <div className="text-center py-6">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-400"></div>
+            <p className="mt-2 text-brand-300/70">Loading accounts...</p>
+          </div>
         ) : (
           <>
             {/* Twitter Account */}
-            <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-center justify-between p-4 border border-brand-500/20 rounded-lg bg-dark-400/30 hover:bg-dark-400/40 transition-all duration-300 group relative overflow-hidden">
+              {/* Hover effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              
               <div className="flex items-center gap-3">
-                <FaTwitter className="text-[#1DA1F2] text-xl" />
+                <div className="p-2 bg-dark-500/60 rounded-full border border-brand-500/20 shadow-lg">
+                  <FaTwitter className="text-[#1DA1F2] text-xl" />
+                </div>
                 <div>
-                  <h4 className="font-medium">Twitter</h4>
+                  <h4 className="font-medium text-white">Twitter</h4>
                   {twitterAccount ? (
-                    <div className="text-sm text-gray-500">
-                      @{twitterAccount.username}
-                      <div className="flex items-center gap-1 text-xs text-green-600">
+                    <div>
+                      <div className="text-sm text-brand-200">@{twitterAccount.username}</div>
+                      <div className="flex items-center gap-1 text-xs text-green-400">
                         <FaCheck /> Verified on {formatDate(twitterAccount.verification_date)}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">Not connected</p>
+                    <p className="text-sm text-gray-400">Not connected</p>
                   )}
                 </div>
               </div>
@@ -105,7 +121,7 @@ const SocialAccountsPanel = () => {
                     variant="ghost" 
                     size="sm" 
                     onClick={() => handleUnlinkAccount('twitter')}
-                    className="text-gray-500 hover:text-red-500"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                   >
                     <FaUnlink className="mr-1" /> Unlink
                   </Button>
@@ -116,8 +132,9 @@ const SocialAccountsPanel = () => {
             </div>
             
             {/* Placeholder for future social integrations */}
-            <div className="border border-dashed rounded-lg p-4 text-center text-gray-500">
-              More social integrations coming soon!
+            <div className="border border-dashed border-brand-500/20 rounded-lg p-6 text-center bg-dark-400/10">
+              <p className="text-gray-400">More social integrations coming soon!</p>
+              <div className="text-xs text-brand-300/50 mt-1">Ethereum · Solana · Discord</div>
             </div>
           </>
         )}

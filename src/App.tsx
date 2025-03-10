@@ -29,6 +29,7 @@ import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { MovingBackground } from "./components/ui/MovingBackground";
 import { ReferralProvider } from "./hooks/useReferral";
 /* Contexts */
+import { AuthProvider } from "./contexts/AuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* Pages */
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
@@ -54,6 +55,7 @@ import { Contact } from "./pages/public/general/Contact";
 import { FAQ } from "./pages/public/general/FAQ";
 import { HowItWorks } from "./pages/public/general/HowItWorks";
 import { LandingPage } from "./pages/public/general/LandingPage";
+import LoginPage from "./pages/public/general/LoginPage";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
 import { PublicProfile } from "./pages/public/general/PublicProfile";
@@ -134,14 +136,17 @@ export const App: React.FC = () => {
   return (
     <Router>
 
-      {/* Referral Provider */}
-      <ReferralProvider>
-        
-        {/* Token Data Provider */}
-        <TokenDataProvider>
+      {/* Auth Provider */}
+      <AuthProvider>
+      
+        {/* Referral Provider */}
+        <ReferralProvider>
           
-          {/* Toast Provider */}
-          <ToastProvider>
+          {/* Token Data Provider */}
+          <TokenDataProvider>
+            
+            {/* Toast Provider */}
+            <ToastProvider>
 
             {/* Main container */}
             <div className="min-h-screen flex flex-col">
@@ -283,6 +288,12 @@ export const App: React.FC = () => {
                   <Route 
                     path="/contact" 
                     element={<Contact />} 
+                  />
+                  
+                  {/* Login Page */}
+                  <Route 
+                    path="/login" 
+                    element={<LoginPage />} 
                   />
 
                   {/* NOTE: We need to overhaul Leaderboards. We totally ignore the LEVEL SYSTEM!!! XP!!! ACHIEVEMENTS!!! */}
@@ -625,6 +636,7 @@ export const App: React.FC = () => {
           </ToastProvider>
         </TokenDataProvider>
       </ReferralProvider>
+      </AuthProvider>
     </Router>
   );
 };
