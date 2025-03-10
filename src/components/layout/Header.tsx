@@ -10,7 +10,6 @@ import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
-import { Button } from "../ui/Button";
 import Logo from "../ui/Logo";
 import { ConnectWalletButton } from "../auth/ConnectWalletButton";
 import { LiveContestTicker } from "./LiveContestTicker";
@@ -21,9 +20,7 @@ export const Header: React.FC = () => {
   const { isCompact } = useScrollHeader(50);
   const {
     user,
-    connectWallet,
     disconnectWallet,
-    isConnecting,
     error,
     clearError,
     maintenanceMode,
