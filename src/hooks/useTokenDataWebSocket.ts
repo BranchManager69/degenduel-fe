@@ -8,9 +8,13 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { WS_URL } from "../config/config";
 import { useStore } from "../store/useStore";
 import { useAuth } from "./useAuth"; // Keeping this for compatibility
-import { WS_URL } from "../config/config";
+
+// Config
+const TOKEN_DATA_WSS_PATH = `/api/v2/ws/tokenData`;
+
 
 export interface TokenData {
   symbol: string;
@@ -125,7 +129,7 @@ export function useTokenDataWebSocket(
       console.log(
         `[TokenDataWebSocket] Using base WebSocket URL: ${baseWsUrl}`
       );
-      const wsUrl = `${baseWsUrl}/api/v2/ws/tokenData`;
+      const wsUrl = `${baseWsUrl}${TOKEN_DATA_WSS_PATH}`;
       console.log(`[TokenDataWebSocket] Connecting to: ${wsUrl}`);
 
       // Create WebSocket connection

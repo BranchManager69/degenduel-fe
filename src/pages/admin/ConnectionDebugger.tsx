@@ -3,6 +3,12 @@ import toast from "react-hot-toast";
 import { WebSocketMonitor } from "../../components/debug/websocket/WebSocketMonitor";
 import { useStore } from "../../store/useStore";
 
+// Config
+const WS_URL = import.meta.env.VITE_WS_URL;
+////const TOKEN_DATA_WSS_PATH = `/api/v2/ws/tokenData`;
+const TOKEN_DATA_WSS_PATH = `/api/ws/token-data`;
+const TOKEN_DATA_LOCAL_URL = `localhost:6000`
+
 // WebSocket Connection Status component
 const ConnectionStatus: React.FC<{
   socketType: string;
@@ -139,58 +145,58 @@ const WebSocketDashboard: React.FC = () => {
   const websocketEndpoints = [
     {
       type: "contest-chat",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/v2/ws/contest",
     },
     {
       type: "skyduel",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/api/admin/skyduel",
     },
     {
       type: "wallet",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/v2/ws/wallet",
     },
     {
       type: "market",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/v2/ws/market",
     },
     {
       type: "achievements",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/v2/ws/achievements",
     },
     {
       type: "portfolio",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/v2/ws/portfolio",
     },
     {
       type: "contest",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/v2/ws/contest/:contestId",
     },
     {
       type: "circuit-breaker",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/api/admin/circuit-breaker",
     },
     {
       type: "services",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/api/admin/services",
     },
     {
       type: "analytics",
-      url: import.meta.env.VITE_WS_URL,
+      url: WS_URL,
       endpoint: "/analytics",
     },
     {
       type: "token-data",
-      url: import.meta.env.VITE_WS_URL,
-      endpoint: "/api/v2/ws/tokenData",
+      url: WS_URL,
+      endpoint: TOKEN_DATA_WSS_PATH,
     },
   ];
 
@@ -633,7 +639,8 @@ const SOCKET_TYPES = {
     messageTypes: ["health:update", "breaker:trip"],
   },
   tokenData: {
-    endpoint: "/api/v2/ws/tokenData",
+    ////endpoint: "/api/v2/ws/tokenData",
+    endpoint: TOKEN_DATA_LOCAL_URL,
     messageTypes: [
       "subscribe",
       "token_update",

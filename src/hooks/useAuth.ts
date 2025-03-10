@@ -1,5 +1,10 @@
 // src/hooks/useAuth.ts
 
+/**
+ * This hook is used to check the user's authentication state and get an access token for WebSocket authentication.
+ * It is used in the App component to initialize the auth state and get the access token for WebSocket authentication.
+ */
+
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
@@ -161,8 +166,7 @@ export function useAuth() {
 
       // Append timestamp to prevent caching
       const timestamp = new Date().getTime();
-      const url = `/api/auth/token?_t=${timestamp}`;
-      // TODO: THIS LEADS TO 404 !!
+      const url = `/api/auth/token?_t=${timestamp}`; // TODO: This previously led to 404. Has it been fixed?
 
       // Try to get the token from the session with detailed logging
       const response = await axios.get(url, {
@@ -175,14 +179,20 @@ export function useAuth() {
         timeout: 5000, // 5 second timeout
       });
 
+      console.log(
+        `[DDDEBUG] [useAuth] [getAccessToken] [${url}] [${response.status}]`
+      );
+
       console.log("[Auth] Token response:", {
         status: response.status,
         hasToken: !!response.data?.token,
       });
 
+      // Return the token or null if no token is available
       return response.data?.token || null;
     } catch (error: any) {
-      console.error("[Auth] Failed to get access token:", {
+      // Log the error
+      console.error("[Auth] Failed to get WSS access token:", {
         message: error?.message,
         status: error?.response?.status,
         data: error?.response?.data,
@@ -203,6 +213,6 @@ export function useAuth() {
     isAdmin,
     isFullyConnected,
     checkAuth: triggerAuthCheck, // Replace checkAuth with the debounced version
-    getAccessToken, // Add the getAccessToken function
+    getAccessToken, // New WSS getAccessToken function
   };
 }

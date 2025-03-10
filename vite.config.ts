@@ -179,7 +179,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
 
   // Try to load SSL certs - both domains use the same certificate
   const certPath = "/etc/letsencrypt/live/degenduel.me-0001";
-  const domain = isDev ? "degenduel.me" : "degenduel.me"; // MANUAL OVERRIDE
+  const domain = isDev ? "dev.degenduel.me" : "degenduel.me";
   let hasCerts = false;
   let httpsConfig = undefined;
 
@@ -215,7 +215,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       proxy: {
         "/api": {
           target: isDev
-            ? "https://degenduel.me/api" // MANUAL OVERRIDE
+            ? "https://dev.degenduel.me/api" 
             : "https://degenduel.me/api",
           changeOrigin: true,
           secure: true,
@@ -246,7 +246,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         },
         "/portfolio": {
           target: isDev
-            ? "wss://degenduel.me/api/v2/ws" // MANUAL OVERRIDE
+            ? "wss://dev.degenduel.me/api/v2/ws"
             : "wss://degenduel.me/api/v2/ws",
           ws: true,
           changeOrigin: true,
@@ -254,77 +254,77 @@ export default defineConfig(({ command, mode }): UserConfig => {
           cookieDomainRewrite: "localhost",
         },
         "/api/v2/ws": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/contest": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/admin/skyduel": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/wallet": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",  
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/market": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/achievements": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/v2/ws/portfolio": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/admin/circuit-breaker": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/admin/services": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/analytics": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
         "/api/v2/ws/tokenData": {
-          target: isDev ? "wss://degenduel.me" : "wss://degenduel.me", // MANUAL OVERRIDE
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,

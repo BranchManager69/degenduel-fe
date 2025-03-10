@@ -24,6 +24,7 @@ const checkAndUpdateBanStatus = (response: Response) => {
   const banStatus = response.headers.get("X-User-Banned");
   const banReason = response.headers.get("X-Ban-Reason");
 
+  // Ban status is set by the API, and we can't do anything about it.
   if (banStatus === "true" && store.user) {
     store.setUser({
       ...store.user,
@@ -31,6 +32,7 @@ const checkAndUpdateBanStatus = (response: Response) => {
       ban_reason: banReason || "Account has been banned",
     });
   }
+
 };
 
 // Normalize path to avoid double API URL issues
@@ -152,13 +154,16 @@ const updateAnalytics = (breaker: ServiceCircuitBreaker, success: boolean) => {
 };
 
 // Helper function to handle expected unauthorized endpoints
+// TODO: This is a very curious function, and I'm not sure why it's needed. I forget.
 const isExpectedUnauthorized = (path: string, status: number): boolean => {
+  // List of endpoints that are expected to return 401 unauthorized status
   const expectedUnauthEndpoints: readonly string[] = [
     "/api/auth/session",
     "/api/admin/maintenance/status",
     "/api/admin/metrics/service-analytics",
   ] as const;
 
+  // Check if the path includes any of the expected unauthorized endpoints
   return expectedUnauthEndpoints.some(
     (endpoint) => path.includes(endpoint.replace("/api/", "")) && status === 401
   );
@@ -174,6 +179,7 @@ const resetCircuitBreaker = (endpoint: string) => {
   updateAnalytics(breaker, true);
 };
 
+// Handle success with circuit breaker
 const handleSuccess = (endpoint: string) => {
   const breaker = getOrCreateBreaker(endpoint);
   breaker.lastSuccess = Date.now();
@@ -187,6 +193,7 @@ const handleSuccess = (endpoint: string) => {
   updateAnalytics(breaker, true);
 };
 
+// Handle failure with circuit breaker
 const handleFailure = (endpoint: string, error: any) => {
   const breaker = getOrCreateBreaker(endpoint);
   breaker.failures++;
@@ -240,10 +247,12 @@ let serverDownSince: number | null = null;
 let serverDownChecks = 0;
 const SERVER_DOWN_THRESHOLD = 3; // Number of 502 errors before considering server down
 
+// Check if server is down
 const isServerDown = () => {
   return serverDownSince !== null && serverDownChecks >= SERVER_DOWN_THRESHOLD;
 };
 
+// Handle server status
 const handleServerStatus = (status: number) => {
   if (status === 502) {
     if (!serverDownSince) {
@@ -332,7 +341,7 @@ const createApiClient = () => {
           );
         }
 
-        // Check if this is an expected unauthorized response
+        // Check if this is an expected unauthorized response // TODO: THIS MAKES NO SENSE
         if (isExpectedUnauthorized(normalizedPath, response.status)) {
           // Log as info instead of error for expected unauthorized responses
           if (DDAPI_DEBUG_MODE === "true") {
@@ -417,11 +426,12 @@ const participationCache = new Map<
   string,
   { result: boolean; timestamp: number }
 >();
-const CACHE_DURATION = 30000; // 30 seconds
-const FETCH_TIMEOUT = 5000; // 5 second timeout for fetch requests
+const CACHE_DURATION = 30000; // Participation check cache duration: 30 seconds
+const FETCH_TIMEOUT = 5000; // Fetch timeout: 5 seconds
 
 // Check contest participation using dedicated participation check endpoint
-// TODO: Ensure this is not duplicative
+// TODO: THIS IS PRETTY MUCH DUPLICATIVE OF THE ENDPOINT BELOW
+// EXCEPT IT'S EVEN LESS EFFICIENT
 const checkContestParticipation = async (
   contestId: number | string,
   userWallet?: string
@@ -550,10 +560,11 @@ const checkMaintenanceMode = async () => {
   try {
     // Get current user state
     const store = useStore.getState();
-    const isAdmin =
-      store.user?.role === "admin" || store.user?.role === "superadmin";
 
-    // If user is admin, try admin endpoint
+    // PREFERRED WAY TO CHECK IF USER IS ADMINISTRATOR:
+    const isAdmin = store.user?.role === "admin" || store.user?.role === "superadmin";
+
+    // If user is administrator, try administrator endpoint
     if (isAdmin) {
       try {
         const adminResponse = await fetch(`${API_URL}/admin/maintenance`, {
@@ -571,13 +582,13 @@ const checkMaintenanceMode = async () => {
         }
       } catch (err) {
         console.warn(
-          "Admin maintenance check failed, falling back to public endpoint"
+          `Admin maintenance check failed. Falling back to public endpoint...`
         );
       }
     }
 
-    // For non-admins or if admin check fails, use public endpoint
-    const response = await fetch(`${API_URL}/status`, {
+    // For non-administrators and/or if administrator maintenance check fails, use the public status endpoint instead
+    const statusCheckResponse = await fetch(`${API_URL}/status`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -586,22 +597,35 @@ const checkMaintenanceMode = async () => {
       },
     });
 
-    // If we get a 503, that means we're in maintenance mode
-    if (response.status === 503) {
+    // If we get a 503, that is how we currently indicate that Maintenance Mode is active
+    if (statusCheckResponse.status === 503) {
       return true;
     }
 
-    // If we get a successful response, check the maintenance flag
-    if (response.ok) {
-      const data = await response.json();
+    // If we get a successful response, check its maintenance flag just in case
+    if (statusCheckResponse.ok) {
+      const data = await statusCheckResponse.json();
       return data.maintenance || false;
     }
 
-    return false;
+    //// If we get a 401, that means we're not authorized to check maintenance mode
+    //if (response.status === 401) {
+    //  return false;
+    //}
+
+    // Not in maintenance mode if we get a 200 (or 404)
+    if (statusCheckResponse.status === 200 || statusCheckResponse.status === 404) { 
+      return false;
+    }
+
+    // If we get a 500, that means there was an error checking maintenance mode, in which case we've got bigger problems
+    if (statusCheckResponse.status === 500) {
+      console.error(`DegenDuel servers are down, cannot check maintenance mode.`, statusCheckResponse.statusText);
+      return false;
+    }
   } catch (error) {
     console.error("Failed to check maintenance mode:", error);
-    // Default to false on error - better to let users try to access
-    // than falsely block them
+    // Default to false on error - better to let users try to access than to block them incorrectly
     return false;
   }
 };
@@ -1041,6 +1065,7 @@ export const ddApi = {
       }
     },
 
+    // Get service analytics
     getServiceAnalytics: async (): Promise<{
       services: Array<{
         name: string;
@@ -1670,6 +1695,7 @@ export const ddApi = {
     return response;
   },
 
+  // Superadmin token endpoints
   superadmin: {
     getToken: async (): Promise<{ token: string }> => {
       const api = createApiClient();
@@ -1681,93 +1707,7 @@ export const ddApi = {
 
 // -------------------------------------------------------
 
-// Create a new DD API client
-export const createDDApi = () => {
-  return {
-    fetch: async (endpoint: string, options: RequestInit = {}) => {
-      const breaker = getOrCreateBreaker(endpoint);
-
-      // Check if circuit breaker is open
-      if (breaker.isOpen && breaker.lastFailure) {
-        const timeSinceLastFailure = Date.now() - breaker.lastFailure;
-        if (timeSinceLastFailure < breaker.cooldownPeriod) {
-          throw new Error(
-            `Service ${breaker.endpoint} temporarily unavailable - Circuit breaker is open`
-          );
-        } else {
-          // Try to reset after cooldown
-          resetCircuitBreaker(endpoint);
-        }
-      }
-
-      const defaultOptions = {
-        credentials: "include" as const,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      };
-
-      // Normalize endpoint path
-      const normalizedPath = normalizePath(endpoint);
-      const response = await fetch(`${API_URL}/${normalizedPath}`, {
-        ...defaultOptions,
-        ...options,
-        headers: {
-          ...defaultOptions.headers,
-          ...options.headers,
-        },
-      });
-
-      // Check for ban status
-      checkAndUpdateBanStatus(response);
-
-      if (!response.ok) {
-        // Check if this is an expected unauthorized response
-        if (isExpectedUnauthorized(normalizedPath, response.status)) {
-          // Log as info instead of error for expected unauthorized responses
-          if (DDAPI_DEBUG_MODE === "true") {
-            console.info(
-              `[DD-API Info] Expected unauthorized access to ${endpoint}`,
-              {
-                status: response.status,
-                statusText: response.statusText,
-              }
-            );
-          }
-          return response;
-        }
-
-        // Don't treat 503 maintenance mode as an error
-        if (response.status === 503) {
-          return response;
-        }
-
-        // Handle failure with circuit breaker
-        handleFailure(
-          endpoint,
-          new Error(`${response.status} ${response.statusText}`)
-        );
-
-        // Log actual errors
-        console.error(`[API Error] ${endpoint}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          cookies: document.cookie,
-        });
-
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `API Error: ${response.statusText}`
-        );
-      }
-
-      // Handle success with circuit breaker
-      handleSuccess(endpoint);
-      return response;
-    },
-  };
-};
+// Note: createDDApi function was removed as it was redundant and never used
 
 // Export analytics for admin dashboard
 export const getCircuitBreakerAnalytics = () => ({
