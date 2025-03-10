@@ -21,11 +21,20 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
   const { user } = useStore();
 
   const dispatchDebugEvent = (type: string, data?: any) => {
+    // Add more detailed logging for debugging purposes
+    console.log(`[WebSocket:${config.socketType}] [${type}]`, {
+      endpoint: config.endpoint,
+      timestamp: new Date().toISOString(),
+      ...data
+    });
+    
+    // Also dispatch event for potential WebSocket monitoring tools
     window.dispatchEvent(
       new CustomEvent("ws-debug", {
         detail: {
           type,
           socketType: config.socketType,
+          endpoint: config.endpoint,
           timestamp: new Date().toISOString(),
           data,
         },
@@ -57,8 +66,9 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
         baseWsUrl = `wss://${window.location.host}`;
       }
       
-      console.log(`[${config.socketType}] Using WebSocket URL: ${baseWsUrl}${config.endpoint}`);
+      console.log(`[WebSocket:${config.socketType}] [Connecting] [URL: ${baseWsUrl}${config.endpoint}] [Token available: ${!!user.session_token}]`);
       
+      // Create the WebSocket connection with token as subprotocol
       const ws = new WebSocket(
         `${baseWsUrl}${config.endpoint}`,
         user.session_token
@@ -66,6 +76,7 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
 
       ws.onopen = () => {
         reconnectAttempts.current = 0;
+        console.log(`[WebSocket:${config.socketType}] [Connected] [${config.endpoint}]`);
         dispatchDebugEvent("connection");
       };
 
@@ -82,12 +93,14 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
         }
       };
 
-      ws.onclose = () => {
-        dispatchDebugEvent("close");
+      ws.onclose = (event) => {
+        console.log(`[WebSocket:${config.socketType}] [Closed] [${config.endpoint}] [Code: ${event.code}] [Reason: ${event.reason || 'No reason provided'}]`);
+        dispatchDebugEvent("close", { code: event.code, reason: event.reason });
         handleReconnection();
       };
 
       ws.onerror = (error) => {
+        console.error(`[WebSocket:${config.socketType}] [Error] [${config.endpoint}]`, error);
         dispatchDebugEvent("error", error);
       };
 

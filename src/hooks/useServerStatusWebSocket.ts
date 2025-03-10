@@ -76,7 +76,7 @@ export function useServerStatusWebSocket() {
     // Instead, fall back to HTTP polling in the useEffect below
   };
 
-  // Connect to the status WebSocket
+  // Connect to the status WebSocket using v69 endpoint
   const { status: socketStatus } = useBaseWebSocket({
     url: '',  // Base URL will be determined by useBaseWebSocket
     endpoint: '/api/v69/ws/monitor',

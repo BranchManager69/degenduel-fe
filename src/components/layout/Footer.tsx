@@ -177,18 +177,35 @@ export const Footer: React.FC = () => {
               </span>
             </div>
 
-            {/* Tooltip showing detailed status message on hover */}
-            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block pointer-events-none">
+            {/* Enhanced tooltip showing detailed status message and WebSocket info on hover */}
+            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block pointer-events-none z-50">
               <div
-                className={`${styles.bgColor} p-2 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder}`}
+                className={`${styles.bgColor} p-3 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder} min-w-[280px]`}
               >
-                {message}
-                {styles.wsIndicator && (
-                  <div className="mt-1 text-cyan-400 text-[10px] flex items-center">
-                    <span className="mr-1">⚡</span>
-                    <span>WebSocket Connected</span>
+                <div className="font-semibold mb-1">Server Status: {status.toUpperCase()}</div>
+                <div className="mb-2">{message}</div>
+                
+                <div className="border-t border-gray-700 my-2 pt-2">
+                  <div className="font-semibold mb-1">WebSocket Connections:</div>
+                  <div className={`flex items-center ${isWebSocketConnected ? "text-green-400" : "text-red-400"}`}>
+                    <div className={`w-2 h-2 rounded-full mr-2 ${isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`} />
+                    Server Status WS: {isWebSocketConnected ? "Connected" : "Disconnected"}
                   </div>
-                )}
+                  
+                  {/* Add connection status for TokenData WebSocket */}
+                  <div className="text-gray-400 mt-1 text-[10px]">
+                    Endpoint: /api/v69/ws/monitor
+                  </div>
+                  
+                  <div className="mt-2 text-gray-400 text-[10px]">
+                    WebSocket migration to v69 is in progress.
+                    Some services may be temporarily unavailable.
+                  </div>
+                </div>
+                
+                <div className="text-right mt-2 text-[8px] text-gray-500">
+                  Last checked: {new Date().toLocaleTimeString()}
+                </div>
               </div>
             </div>
           </div>
