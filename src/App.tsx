@@ -3,15 +3,13 @@
 import React, { lazy, useEffect } from "react";
 /* Router */
 import {
-  Navigate,
-  Route,
-  BrowserRouter as Router,
-  Routes,
+    Navigate,
+    Route,
+    BrowserRouter as Router,
+    Routes,
 } from "react-router-dom";
-/* Toast */
-import { Toaster } from "react-hot-toast";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+/* Toast - New Unified System */
+import { ToastProvider, ToastContainer } from "./components/toast";
 /* Hooks */
 import { useAuth } from "./hooks/useAuth";
 import { useStore } from "./store/useStore";
@@ -41,10 +39,10 @@ import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import { SystemReports } from "./pages/admin/SystemReports";
 import WebSocketHub from "./pages/admin/WebSocketHub";
+import NotificationsPage from "./pages/authenticated/NotificationsPage";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/PrivateProfilePage";
 import { ReferralPage } from "./pages/authenticated/ReferralPage";
-import NotificationsPage from "./pages/authenticated/NotificationsPage";
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
@@ -137,7 +135,8 @@ export const App: React.FC = () => {
     <Router>
       <ReferralProvider>
         <TokenDataProvider>
-          <div className="min-h-screen flex flex-col relative">
+          <ToastProvider>
+          <div className="min-h-screen flex flex-col">
             {/* Add WebSocketManager at the root */}
             <WebSocketManager />
 
@@ -158,7 +157,7 @@ export const App: React.FC = () => {
             <Header />
 
             {/* Main Content */}
-            <main className="flex-1 relative">
+            <main className="flex-1 pb-12">
               {/* Routes */}
               <Routes>
                 {/* PUBLIC ROUTES */}
@@ -559,23 +558,12 @@ export const App: React.FC = () => {
             {/* Modals and Overlays */}
             <ReferralWelcomeModal />
 
-            {/* Toast Notifications */}
-            <Toaster position="top-right" />
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="dark"
-            />
+            {/* Toast Notifications now handled by our unified system */}
 
             <AchievementNotification />
+            <ToastContainer />
           </div>
+          </ToastProvider>
         </TokenDataProvider>
       </ReferralProvider>
     </Router>

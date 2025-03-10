@@ -196,12 +196,15 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
   const totalVariants =
     fonts.length * colorSchemes.length * connectorStyles.length * animationStyles.length;
 
+  // Define more granular phases for precise positioning (0-20)
+  const TOTAL_PHASES = 20;
+  
   // Phase nav
   const advancePhase = () => {
-    setPhase((prev) => (prev >= 4 ? 0 : prev + 1));
+    setPhase((prev) => (prev >= TOTAL_PHASES ? 0 : prev + 1));
   };
   const previousPhase = () => {
-    setPhase((prev) => (prev <= 0 ? 4 : prev - 1));
+    setPhase((prev) => (prev <= 0 ? TOTAL_PHASES : prev - 1));
   };
 
   // Design nav
@@ -210,6 +213,63 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
   };
   const previousDesignVariant = () => {
     setDesignVariant((prev) => (prev <= 0 ? totalVariants - 1 : prev - 1));
+  };
+  
+  // Convert phase (0-20) to specific pixel positions for perfect alignment
+  const phaseToPosition = (currentPhase: number, side: "left" | "right"): string => {
+    // Phase 0: Off-screen, Phase TOTAL_PHASES: Final position (connected)
+    if (currentPhase === 0) return side === "left" ? "-100vw" : "100vw";
+    
+    // When we reach phase 18 or above, keep the words centered with specific offsets for perfect alignment
+    if (currentPhase >= 18) {
+      // For left side (DUEL now)
+      if (side === "left") {
+        return "-48%"; // Slight offset to align perfectly with connector
+      } 
+      // For right side (DEGEN now)
+      else {
+        return "48%"; // Slight offset to align perfectly with connector
+      }
+    }
+    
+    if (side === "left") {
+      // Left side (DUEL) positioning - needs to move from left edge to center
+      // Map phases 1-20 to positions from -70% to -1%, with more granularity in the final approach
+      if (currentPhase < TOTAL_PHASES / 4) {
+        // First quarter: -70% to -50%
+        return `-${70 - (currentPhase * 20 / (TOTAL_PHASES / 4))}%`;
+      } else if (currentPhase < TOTAL_PHASES / 2) {
+        // Second quarter: -50% to -25%
+        const progress = (currentPhase - TOTAL_PHASES / 4) / (TOTAL_PHASES / 4);
+        return `-${50 - (progress * 25)}%`;
+      } else if (currentPhase < TOTAL_PHASES * 0.75) {
+        // Third quarter: -25% to -10%
+        const progress = (currentPhase - TOTAL_PHASES / 2) / (TOTAL_PHASES * 0.25);
+        return `-${25 - (progress * 15)}%`;
+      } else {
+        // Final quarter: -10% to exact connection point
+        const progress = (currentPhase - TOTAL_PHASES * 0.75) / (TOTAL_PHASES * 0.25);
+        return `-${10 - (progress * 10) - (progress * 38)}%`; // Additional shift for centering
+      }
+    } else {
+      // Right side (DEGEN) positioning - needs to move from right edge to center
+      if (currentPhase < TOTAL_PHASES / 4) {
+        // First quarter: 70% to 50%
+        return `${70 - (currentPhase * 20 / (TOTAL_PHASES / 4))}%`;
+      } else if (currentPhase < TOTAL_PHASES / 2) {
+        // Second quarter: 50% to 25%
+        const progress = (currentPhase - TOTAL_PHASES / 4) / (TOTAL_PHASES / 4);
+        return `${50 - (progress * 25)}%`;
+      } else if (currentPhase < TOTAL_PHASES * 0.75) {
+        // Third quarter: 25% to 10%
+        const progress = (currentPhase - TOTAL_PHASES / 2) / (TOTAL_PHASES * 0.25);
+        return `${25 - (progress * 15)}%`;
+      } else {
+        // Final quarter: 10% to exact connection point
+        const progress = (currentPhase - TOTAL_PHASES * 0.75) / (TOTAL_PHASES * 0.25);
+        return `${10 - (progress * 10) + (progress * 38)}%`; // Additional shift for centering
+      }
+    }
   };
 
   // Main timed animation sequence, unless in manual debug
@@ -223,15 +283,23 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
       return timeoutId;
     };
 
+    // First few main phases - these are key transition points
     addTimeout(() => setPhase(1), 600);
-    addTimeout(() => setPhase(2), 1800);
-    addTimeout(() => setPhase(3), 2700);
-    addTimeout(() => setPhase(4), 3400);
+    addTimeout(() => setPhase(Math.floor(TOTAL_PHASES * 0.2)), 1800);
+    addTimeout(() => setPhase(Math.floor(TOTAL_PHASES * 0.4)), 2700);
+    addTimeout(() => setPhase(Math.floor(TOTAL_PHASES * 0.6)), 3400);
+    
+    // Distribute the remaining phases to create smooth motion
+    for (let i = Math.floor(TOTAL_PHASES * 0.6) + 1; i <= TOTAL_PHASES; i++) {
+      // Calculate a time point between 3500ms and 4000ms based on remaining phases
+      const timePoint = 3500 + ((i - Math.floor(TOTAL_PHASES * 0.6)) * 500 / (TOTAL_PHASES - Math.floor(TOTAL_PHASES * 0.6)));
+      addTimeout(() => setPhase(i), timePoint);
+    }
 
     // onComplete after final
     addTimeout(() => {
       onComplete();
-    }, 4000);
+    }, 4200);
 
     timeoutsRef.current = timeouts;
     return () => {
@@ -290,7 +358,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
 
   return (
     <div
-      className="relative h-[25vh] overflow-hidden"
+      className="relative h-[40vh] min-h-[300px] overflow-visible flex items-center justify-center"
       onMouseMove={handleMouseMove}
     >
       {/* Debug mode toggle (only visible to superadmin) */}
@@ -308,16 +376,27 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
       {/* Debug overlay with controls */}
       {debugMode && (
         <div
-          className="absolute bottom-1 left-1 bg-black/80 text-white text-xs p-2 rounded-md z-50 flex flex-col gap-1"
-          style={{ maxWidth: "180px" }}
+          className="absolute bottom-2 left-2 bg-black/80 text-white text-xs p-3 rounded-md z-50 flex flex-col gap-1 shadow-lg shadow-black/50"
+          style={{ maxWidth: "220px" }}
         >
-          <div>Phase: {phase}/4</div>
+          <div>Phase: {phase}/{TOTAL_PHASES}</div>
           <div>Font: {getCurrentFont()}</div>
           <div>
             Variant: {designVariant + 1}/{totalVariants}
           </div>
           <div>Animation: {getCurrentAnimation()}</div>
           <div>Connector: {getCurrentConnector().type}</div>
+          
+          {/* Connector explanation */}
+          {/* <div className="mt-1 text-xs opacity-75 border-t border-white/20 pt-1"> */}
+          {/*   Connectors may look "bad" due to: */}
+          {/*   <ul className="list-disc pl-3 mt-1 space-y-0.5"> */}
+          {/*     <li>Pixel-perfect alignment needed</li> */  }
+          {/*     <li>Font variations affect spacing</li> */}
+          {/*     <li>CSS transforms alter rendering</li> */}
+          {/*     <li>Text baseline inconsistencies</li> */}
+          {/*   </ul> */}
+          {/* </div> */}
           <div className="grid grid-cols-2 gap-1 mt-1">
             {/* Phase navigation */}
             <button
@@ -421,27 +500,27 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
       )}
 
       {/* Main container */}
-      <div className="relative z-20 flex items-center justify-center h-full">
+      <div className="relative z-20 flex items-center justify-center h-full w-full">
         <motion.div
-          className={`relative ${phase >= 3 ? "shake" : ""}`}
+          className={`relative ${phase >= 3 ? "shake" : ""} w-full flex items-center justify-center`}
           animate={{ scale: phase === 0 ? 0.95 : 1 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Invisible sizing reference */}
+          {/* Invisible sizing reference - centered */}
           <div
-            className="absolute opacity-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter whitespace-nowrap"
+            className="absolute opacity-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter whitespace-nowrap left-0 right-0 mx-auto text-center"
             style={{
               fontFamily: `'${getCurrentFont()}', ${
                 fonts[designVariant % fonts.length].type
               }`,
             }}
           >
-            DEGENDUEL
+            DUELDEGEN
           </div>
 
           {/* DEGEN word */}
           <motion.div
-            className="absolute left-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
+            className="absolute right-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
             style={{
               fontFamily: `'${getCurrentFont()}', ${
                 fonts[designVariant % fonts.length].type
@@ -449,20 +528,21 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
               color: getCurrentColorScheme().degen,
               filter: `drop-shadow(0 0 5px ${getCurrentColorScheme().degen}80)`,
               letterSpacing: "-0.02em",
-              transformOrigin: "right center",
+              transformOrigin: "left center",
             }}
-            initial={{ x: "-100vw", opacity: 0 }}
+            initial={{ x: "100vw", opacity: 0 }}
             animate={{
-              x: phase >= 2 ? "0%" : phase >= 1 ? "-30%" : "-100vw",
+              // More granular x-positioning based on phase (0-20)
+              x: phaseToPosition(phase, "right"),
               opacity: phase >= 1 ? 1 : 0,
               filter:
-                phase >= 3
+                phase >= Math.floor(TOTAL_PHASES * 0.75)
                   ? `drop-shadow(0 0 10px ${getCurrentColorScheme().degen}cc)`
                   : `drop-shadow(0 0 5px ${getCurrentColorScheme().degen}80)`,
               ...(getCurrentAnimation() === "bounce" &&
                 phase >= 2 && { y: [0, -10, 0] }),
               ...(getCurrentAnimation() === "elastic" &&
-                phase >= 2 && { rotate: [-2, 2, 0] }),
+                phase >= 2 && { rotate: [2, -2, 0] }),
               ...(getCurrentAnimation() === "wave" &&
                 phase >= 2 && { scale: [0.95, 1.05, 0.95] }),
             }}
@@ -485,11 +565,11 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
 
           {/* Connector element */}
           <motion.div
-            className="absolute left-[50%] top-[50%] z-30 w-4 h-16 -translate-x-1/2 -translate-y-1/2"
+            className="absolute left-0 top-[50%] right-0 mx-auto z-30 w-4 h-16 -translate-y-1/2"
             initial={{ opacity: 0, scale: 0 }}
             animate={{
-              opacity: phase >= 3 ? 1 : 0,
-              scale: phase >= 3 ? 1 : 0,
+              opacity: phase >= Math.floor(TOTAL_PHASES * 0.7) ? 1 : 0,
+              scale: phase >= Math.floor(TOTAL_PHASES * 0.7) ? 1 : 0,
               rotate: getCurrentConnector().type === "cross" ? [0, 180, 360] : 0,
             }}
             transition={{
@@ -649,7 +729,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
 
           {/* DUEL word */}
           <motion.div
-            className="absolute right-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
+            className="absolute left-0 text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
             style={{
               fontFamily: `'${getCurrentFont()}', ${
                 fonts[designVariant % fonts.length].type
@@ -659,20 +739,21 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
               WebkitTextFillColor: "transparent",
               filter: "drop-shadow(0 0 5px rgba(255, 255, 255, 0.5))",
               letterSpacing: "-0.02em",
-              transformOrigin: "left center",
+              transformOrigin: "right center",
             }}
-            initial={{ x: "100vw", opacity: 0 }}
+            initial={{ x: "-100vw", opacity: 0 }}
             animate={{
-              x: phase >= 2 ? "0%" : phase >= 1 ? "30%" : "100vw",
+              // More granular x-positioning based on phase (0-20)
+              x: phaseToPosition(phase, "left"),
               opacity: phase >= 1 ? 1 : 0,
               filter:
-                phase >= 3
+                phase >= Math.floor(TOTAL_PHASES * 0.75)
                   ? "drop-shadow(0 0 10px rgba(255, 255, 255, 0.8))"
                   : "drop-shadow(0 0 5px rgba(255, 255, 255, 0.5))",
               ...(getCurrentAnimation() === "bounce" &&
                 phase >= 2 && { y: [0, -10, 0] }),
               ...(getCurrentAnimation() === "elastic" &&
-                phase >= 2 && { rotate: [2, -2, 0] }),
+                phase >= 2 && { rotate: [-2, 2, 0] }),
               ...(getCurrentAnimation() === "wave" &&
                 phase >= 2 && { scale: [0.95, 1.05, 0.95] }),
               ...(getCurrentAnimation() === "staggered" &&
@@ -700,8 +781,8 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
             DUEL
           </motion.div>
 
-          {/* Final unified logo */}
-          {phase >= 4 && (
+          {/* Final unified logo - temporary disabled to avoid overlap */}
+          {false && phase >= Math.floor(TOTAL_PHASES * 0.8) && (
             <motion.div
               className="absolute inset-0 flex items-center justify-center text-[14vmin] md:text-[16vmin] font-normal select-none tracking-tighter"
               initial={{ opacity: 0, scale: 1.1 }}
@@ -738,27 +819,29 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                 onClick={() => spawnParticles(12)}
                 style={{ cursor: "pointer" }}
               >
-                {/* DEGEN part */}
+                {/* DUEL part */}
                 <span
                   className="relative"
                   style={{
                     fontFamily: `'${getCurrentFont()}', ${
                       fonts[designVariant % fonts.length].type
                     }`,
-                    color: getCurrentColorScheme().degen,
-                    filter: `drop-shadow(0 0 8px ${getCurrentColorScheme().degen}b3)`,
+                    background: getCurrentColorScheme().duel,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.7))",
                     ...(getCurrentAnimation() === "wave" && {
-                      animation: "float 2s infinite alternate",
+                      animation: "float 2s infinite alternate-reverse",
                     }),
                   }}
                 >
-                  DEGE
                   <span
                     className="relative"
                     style={{ marginRight: "-0.15em" }}
                   >
-                    N
+                    D
                   </span>
+                  UEL
                 </span>
 
                 {/* Connecting element */}
@@ -902,19 +985,17 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                   )}
                 </div>
 
-                {/* DUEL part */}
+                {/* DEGEN part */}
                 <span
                   className="relative"
                   style={{
                     fontFamily: `'${getCurrentFont()}', ${
                       fonts[designVariant % fonts.length].type
                     }`,
-                    background: getCurrentColorScheme().duel,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.7))",
+                    color: getCurrentColorScheme().degen,
+                    filter: `drop-shadow(0 0 8px ${getCurrentColorScheme().degen}b3)`,
                     ...(getCurrentAnimation() === "wave" && {
-                      animation: "float 2s infinite alternate-reverse",
+                      animation: "float 2s infinite alternate",
                     }),
                   }}
                 >
@@ -924,7 +1005,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                   >
                     D
                   </span>
-                  UEL
+                  EGEN
                 </span>
               </div>
 

@@ -2,14 +2,17 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
+import { useScrollFooter } from "../../hooks/useScrollFooter";
 import {
-  ServerStatus,
-  useServerStatusWebSocket,
+    ServerStatus,
+    useServerStatusWebSocket,
 } from "../../hooks/useServerStatusWebSocket";
 
 export const Footer: React.FC = () => {
   // Use our new WebSocket hook for server status
   const { status, message, isWebSocketConnected } = useServerStatusWebSocket();
+  // Use our new scroll hook for footer
+  const { isCompact } = useScrollFooter(50);
 
   // Get color scheme and animation based on status
   const getStatusStyles = (
@@ -74,9 +77,15 @@ export const Footer: React.FC = () => {
   const styles = getStatusStyles(status, isWebSocketConnected);
 
   return (
-    <footer className="backdrop-blur-sm border-t border-dark-300/30 relative mt-auto">
-      <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between min-w-0">
+    <footer 
+      className={`backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+        ${isCompact ? "py-1.5" : "py-3"}`}
+    >
+      <div className="max-w-7xl mx-auto px-4">
+        <div 
+          className={`flex items-center justify-between min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+            ${isCompact ? "h-10" : "h-12"}`}
+        >
           {/* Left side - Links with horizontal scroll if needed */}
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0">
             <div className="flex items-center space-x-4 shrink-0">

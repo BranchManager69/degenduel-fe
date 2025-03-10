@@ -125,12 +125,12 @@ export const LandingPage: React.FC = () => {
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
               {/* HeroTitle component solely for hero animation */}
-              <div className="w-full h-[25vh] absolute top-0 left-0 overflow-hidden z-10">
+              <div className="w-full h-[40vh] relative overflow-visible z-10">
                 <HeroTitle onComplete={() => {}} />
               </div>
               
-              {/* Spacer to push content below the hero animation */}
-              <div className="h-[25vh] min-h-[180px] w-full mb-4"></div>
+              {/* Spacer to push content below the hero animation - reduced since we have proper relative positioning now */}
+              <div className="h-[10vh] min-h-[50px] w-full mb-4"></div>
               
               {/* Original animated logo (commented out but preserved) */}
               {/*

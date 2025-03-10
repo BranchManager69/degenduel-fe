@@ -11,8 +11,8 @@ import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { Button } from "../ui/Button";
-import { LiveContestTicker } from "./LiveContestTicker";
 import Logo from "../ui/Logo";
+import { LiveContestTicker } from "./LiveContestTicker";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { UserMenu } from "./user-menu/UserMenu";
 
@@ -166,7 +166,7 @@ export const Header: React.FC = () => {
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <header
-        className={`relative bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+        className={`bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           ${isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16"}`}
       >
         {/* Banned User Banner */}
