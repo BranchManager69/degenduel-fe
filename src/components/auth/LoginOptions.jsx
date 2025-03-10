@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
-import { ConnectWalletButton } from './ConnectWalletButton';
+import { ConnectWalletButton } from './ConnectWalletButton.tsx';
 import TwitterLoginButton from './TwitterLoginButton';
 import { Divider } from '../ui/Divider';
 
