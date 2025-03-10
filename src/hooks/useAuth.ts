@@ -163,9 +163,11 @@ export function useAuth() {
   // Function to get an access token for WebSocket authentication
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     try {
-      console.log(
-        "[Auth] Requesting access token for WebSocket authentication"
-      );
+      if (NODE_ENV === "development") {
+        console.log(
+          "[Auth] Requesting access token for WebSocket authentication"
+        );
+      }
 
       // Append timestamp to prevent caching
       const timestamp = new Date().getTime();
@@ -182,9 +184,14 @@ export function useAuth() {
         timeout: 5000, // 5 second timeout
       });
       if (NODE_ENV === "development") {
+        const stringifiedWSTokenResponse = JSON.stringify(response.data);
         console.log(
-          `[AUTH DEBUG] [useAuth] [getAccessToken] [${url}] \n [${response}]`
+          `[AUTHDEBUG] \n[useAuth] [getAccessToken] \n[${url}] \n[${stringifiedWSTokenResponse}]`
         );
+        console.log(`
+          [WS TOKEN  ] ${response.data?.token}
+          [WS EXPIRES] ${response.data?.expiresIn}
+          `);
       }
 
       // Return the token or null if no token is available

@@ -8,27 +8,24 @@
  * @returns {Object} An object containing the token data, loading state, error state, and a function to refresh the data.
  */
 
+import axios from "axios"; // for logging errors to the server
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NODE_ENV, WS_URL } from "../config/config";
 import { useStore } from "../store/useStore";
 import { useAuth } from "./useAuth"; // Keeping this for authentication
 
-// Config for WebSocket
-const TRY_NEW_WS_v69 = true;
-let TOKEN_DATA_WSS_PATH: string;
-let TOKEN_DATA_LOCAL_URL: string;
-let USE_LOCAL_SERVER = false; // Set to true when testing with localhost
+// Config for WebSocket - using ONLY the new v69 endpoint
+//    No fallbacks, no progressive attempts - just the one we want
 
-// WebSocket Configuration
-if (TRY_NEW_WS_v69) {
-  // Using v69 WebSocket path - must match server's WSS_PATH in token-data-ws.js
-  TOKEN_DATA_WSS_PATH = `/api/v69/ws/token-data`;
-  TOKEN_DATA_LOCAL_URL = `localhost:3005`; // Development server port
-} else {
-  // Legacy path
-  TOKEN_DATA_WSS_PATH = `/api/v2/ws/tokenData`;
-  TOKEN_DATA_LOCAL_URL = `localhost:3004`; // Production server port
-}
+// Enable for detailed WebSocket debugging
+const WS_DEBUG = true;
+
+// Token data WebSocket endpoint path
+const TOKEN_DATA_WSS_PATH = `/api/v69/market-data`;
+
+// Local development settings (only used when USE_LOCAL_SERVER is true)
+const TOKEN_DATA_LOCAL_URL = NODE_ENV === "development" ? `localhost:3005` : `localhost:3004`;
+const USE_LOCAL_SERVER = false; // Can set to true when testing with localhost (but I choose to favor dev.degenduel.me over localhost)
 
 export interface TokenData {
   symbol: string;
@@ -60,7 +57,7 @@ interface TokenDataMessage {
 }
 
 // Simulated token data for fallback when no actual data is available
-// TODO: ELIMINATE THIS!!!
+// TODO: ELIMINATE THESE!!!
 const FALLBACK_TOKENS: TokenData[] = [
   {
     symbol: "SOL",
@@ -141,7 +138,7 @@ export function useTokenDataWebSocket(
 
       // Get authentication token - v69 supports auth but doesn't require it
       const token = await getAccessToken().catch(() => null);
-
+      
       // Determine WebSocket URL based on configuration
       let wsUrl: string;
       
@@ -156,7 +153,8 @@ export function useTokenDataWebSocket(
       }
       
       if (NODE_ENV === "development") {
-        console.log(`[TokenDataWebSocket] Connecting to: ${wsUrl}`);
+        // Log connection info
+        console.log(`[TokenDataWebSocket] \n[Connecting to v69 endpoint] \n[${wsUrl}]`);
       }
 
       // Create WebSocket connection
@@ -165,7 +163,7 @@ export function useTokenDataWebSocket(
       // Handle connection open
       wsRef.current.onopen = () => {
         if (NODE_ENV === "development") {
-          console.log("[TokenDataWebSocket] Connected!");
+          console.log("[TokenDataWebSocket] \n[Connected]");
         }
         setIsConnected(true);
         setError(null);
@@ -209,7 +207,7 @@ export function useTokenDataWebSocket(
           
           // Debug in development
           if (NODE_ENV === "development") {
-            console.log(`[TokenDataWebSocket] Received: ${message.type}`);
+            console.log(`[TokenDataWebSocket] \n[Received] \n[${message.type}]`);
           }
 
           // Handle different message types - adapted for v69 WebSocket format
@@ -324,7 +322,7 @@ export function useTokenDataWebSocket(
             // v69 token subscription success notification  
             case "tokens_subscribed":
               if (NODE_ENV === "development") {
-                console.log(`[TokenDataWebSocket] Subscribed to ${message.count} tokens`);
+                console.log(`[TokenDataWebSocket] \n[Subscribed to ${message.count} tokens]`);
               }
               break;
               
@@ -333,7 +331,7 @@ export function useTokenDataWebSocket(
               const errorMsg = message.error || "Unknown WebSocket error";
               const errorCode = message.code || "UNKNOWN";
               
-              console.error(`[TokenDataWebSocket] Error (${errorCode}):`, errorMsg);
+              console.error(`[TokenDataWebSocket] \n[Error] \n[${errorCode}] \n[${errorMsg}]`);
               setError(errorMsg);
 
               // Even on error, maintain fallback data for animations
@@ -345,6 +343,7 @@ export function useTokenDataWebSocket(
               break;
               
             // Handle market updates (similar to token updates but for market overview)
+            // TODO: ELIMINATE DUMMY DATA!!!
             case "market_update":
               if (message.data && Array.isArray(message.data)) {
                 // Process the same as token_update
@@ -425,15 +424,32 @@ export function useTokenDataWebSocket(
 
       wsRef.current.onclose = (event) => {
         setIsConnected(false);
-        console.log(`[TokenDataWebSocket] Connection closed: ${event.code}`);
+        if (NODE_ENV === "development") {
+          console.log(`[TokenDataWebSocket] \n[Connection closed] \n[${event.code}]`);
+        }
 
-        // Don't reconnect if explicitly closed or in maintenance mode
+        if (event.code === 1006) {
+          if (NODE_ENV === "development") {
+            const stringifiedErrorEvent = JSON.stringify(event);
+            console.error(`[TokenDataWebSocket] \n[Connection closed unexpectedly] \n${stringifiedErrorEvent}`);
+          }
+          // Log the error to the server
+          axios.post(`${WS_URL}/api/v69/log-error`, {
+            error: event.code,
+            message: event.reason,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Simple reconnection with exponential backoff
         if (event.code !== 1000 && !maintenanceMode) {
           const delay = Math.min(
             30000,
             Math.pow(1.5, reconnectAttempts.current) * 1000
           );
-          console.log(`[TokenDataWebSocket] Reconnecting in ${delay}ms`);
+          if (NODE_ENV === "development") {
+            console.log(`[TokenDataWebSocket] \n[Reconnecting in ${delay}ms]`);
+          }
 
           reconnectTimeoutRef.current = window.setTimeout(() => {
             reconnectAttempts.current++;
@@ -450,9 +466,23 @@ export function useTokenDataWebSocket(
       };
 
       wsRef.current.onerror = (error) => {
-        console.error("[TokenDataWebSocket] Error:", error);
-        setError("WebSocket connection error");
-
+        // Log the error to the server
+        axios.post(`${WS_URL}/api/v69/log-error`, {
+          error: error,
+          message: "WebSocket connection error",
+          timestamp: new Date().toISOString(),
+        });
+        
+        console.error(`[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}] \n${error}`);
+        setError(`WebSocket connection error`);
+        
+        // Log connection details
+        if (NODE_ENV === "development") {
+          if (WS_DEBUG) {
+            console.debug(`[TokenDataWebSocket] \n[Connection info] \n[${TOKEN_DATA_WSS_PATH}] \n[${wsUrl}] \n[${window.location.hostname}] \n[${new Date().toISOString()}]`);
+          }
+        }
+        
         // Provide fallback data on WebSocket error
         if (tokens.length === 0) {
           setTokens(FALLBACK_TOKENS);
@@ -461,10 +491,11 @@ export function useTokenDataWebSocket(
         }
       };
     } catch (err) {
-      console.error("[TokenDataWebSocket] Connection error:", err);
+      console.error(`[TokenDataWebSocket] \n[Connection error] \n${err}`);
       setError(err instanceof Error ? err.message : "Failed to connect");
 
       // Provide fallback data on connection error
+      // TODO: ELIMINATE THIS!!!
       if (tokens.length === 0) {
         setTokens(FALLBACK_TOKENS);
         setLastUpdate(new Date());

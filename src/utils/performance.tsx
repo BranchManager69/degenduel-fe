@@ -9,6 +9,10 @@
  */
 
 import React, { useEffect, useRef } from "react";
+import { NODE_ENV } from "../config/config";
+
+// Config
+const LOG_THRESHOLD = 16.67 * 2; // 30 FPS
 
 /**
  * Wrapper component to measure render performance
@@ -20,7 +24,7 @@ export const MeasureRender = ({
   id,
   children,
   logToConsole = true,
-  logThreshold = 0, // Only log renders that take longer than this threshold (in ms)
+  logThreshold = LOG_THRESHOLD, // Only log renders that take longer than this threshold (in ms)
 }: {
   id: string;
   children: React.ReactNode;
@@ -37,16 +41,18 @@ export const MeasureRender = ({
     renderCount.current += 1;
     renderTimes.current.push(timeSinceLastRender);
 
-    // Only log if the render time exceeds the threshold
-    if (logToConsole && timeSinceLastRender > logThreshold) {
-      console.log(
-        `%c[${id}] Render #${
-          renderCount.current
-        }: ${timeSinceLastRender.toFixed(2)}ms`,
-        timeSinceLastRender > 16.67
-          ? "color:red;font-weight:bold"
-          : "color:green"
-      );
+    if (NODE_ENV === "development") {
+      // Only log if the render time exceeds the threshold
+      if (logToConsole && timeSinceLastRender > logThreshold) {
+        console.log(`
+          %c[${id}] Render #${
+            renderCount.current
+          }: ${timeSinceLastRender.toFixed(2)}ms`,
+          timeSinceLastRender > 16.67
+            ? "color:red;font-weight:bold"
+            : "color:green"
+        );
+      }
     }
 
     // Add performance mark and measure for DevTools analysis

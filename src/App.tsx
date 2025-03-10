@@ -3,13 +3,13 @@
 import React, { lazy, useEffect } from "react";
 /* Router */
 import {
-    Navigate,
-    Route,
-    BrowserRouter as Router,
-    Routes,
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
 } from "react-router-dom";
 /* Toast - New Unified System */
-import { ToastProvider, ToastContainer } from "./components/toast";
+import { ToastContainer, ToastProvider } from "./components/toast";
 /* Hooks */
 import { useAuth } from "./hooks/useAuth";
 import { useStore } from "./store/useStore";
@@ -133,436 +133,495 @@ export const App: React.FC = () => {
 
   return (
     <Router>
+
+      {/* Referral Provider */}
       <ReferralProvider>
+        
+        {/* Token Data Provider */}
         <TokenDataProvider>
+          
+          {/* Toast Provider */}
           <ToastProvider>
-          <div className="min-h-screen flex flex-col">
-            {/* Add WebSocketManager at the root */}
-            <WebSocketManager />
 
-            {/* Debug Panels */}
-            {user?.is_superadmin && <UiDebugPanel />}
-            {user?.is_superadmin && <ServiceDebugPanel />}
-            {user?.is_superadmin && <GameDebugPanel />}
+            {/* Main container */}
+            <div className="min-h-screen flex flex-col">
+            
+              {/* WebSocketManager (at the root) */}
+              <WebSocketManager />
 
-            {/* CSS-based animated background - lightweight so we can keep this enabled */}
-            <MovingBackground />
+              {/* Debug Panels (superadmin only) */}
+              {user?.is_superadmin && <UiDebugPanel />}
+              {user?.is_superadmin && <ServiceDebugPanel />}
+              {user?.is_superadmin && <GameDebugPanel />}
 
-            {/* Server Down Banner */}
-            <ServerDownBanner />
-            {/* Service Status Banner (MOVED) */}
-            {/* <ServiceStatusBanner /> */}
+              {/* CSS-based animated background (lightweight, keep this enabled) */}
+              <MovingBackground />
 
-            {/* Header */}
-            <Header />
+              {/* Server Down Banner */}
+              <ServerDownBanner />
+              {/* Service Status Banner (MOVED) */}
+              {/* <ServiceStatusBanner /> */}
 
-            {/* Main Content */}
-            <main className="flex-1 pb-12">
-              {/* Routes */}
-              <Routes>
-                {/* PUBLIC ROUTES */}
+              {/* Header */}
+              <Header />
 
-                {/* Landing Page */}
-                <Route path="/" element={<LandingPage />} />
+              {/* Main Content */}
+              <main className="flex-1 pb-12">
+                
+                {/* Routes */}
+                <Routes>
 
-                {/* Referral Join Route */}
-                {/*     Redirects to landing page; this is part of referral links before stripping the referral code and /join from the URL. When the user clicks on a referral link and accesses /join (as opposed to navigating to the landing page directly), the user will be presented with a Welcome modal atop the landing page in which they are given the opportunity to connect their wallet (a.k.a. register) which immediately credits the referrer with the appropriate referral benefits. */}
-                <Route path="/join" element={<Navigate to="/" replace />} />
+                  {/* PUBLIC ROUTES */}
 
-                {/* Contest Browser */}
-                <Route
-                  path="/contests"
-                  element={
-                    <MaintenanceGuard>
-                      <ContestBrowser />
-                    </MaintenanceGuard>
-                  }
-                />
+                  {/* Landing Page */}
+                  <Route 
+                    path="/" 
+                    element={<LandingPage />} 
+                  />
 
-                {/* Contest Details */}
-                <Route
-                  path="/contests/:id"
-                  element={
-                    <MaintenanceGuard>
-                      <ContestDetails />
-                    </MaintenanceGuard>
-                  }
-                />
+                  {/* Referral Join Route */}
+                  {/*     Redirects to landing page; this is part of referral links before stripping the referral code and /join from the URL. 
+                  {/*     When the user clicks on a referral link and accesses /join (as opposed to navigating to the landing page directly), the user will be presented with a Welcome modal atop the landing page in which they are given the opportunity to connect their wallet (a.k.a. register) which immediately credits the referrer with the appropriate referral benefits. */}
+                  <Route 
+                    path="/join" 
+                    element={<Navigate to="/" replace />} 
+                  />
 
-                {/* Contest Lobby (Live Game) */}
-                <Route
-                  path="/contests/:id/live"
-                  element={
-                    <MaintenanceGuard>
-                      <ContestLobby />{" "}
-                    </MaintenanceGuard>
-                  }
-                />
-
-                {/* Contest Results */}
-                <Route
-                  path="/contests/:id/results"
-                  element={
-                    <MaintenanceGuard>
-                      <ContestResults />{" "}
-                    </MaintenanceGuard>
-                  }
-                />
-
-                {/* Tokens Page */}
-                <Route
-                  path="/tokens"
-                  element={
-                    <MaintenanceGuard>
-                      <TokensPage />
-                    </MaintenanceGuard>
-                  }
-                />
-
-                {/* Token Whitelist Page */}
-                <Route
-                  path="/tokens/whitelist"
-                  element={
-                    <MaintenanceGuard>
-                      <TokenWhitelistPage />
-                    </MaintenanceGuard>
-                  }
-                />
-
-                {/* Virtual Game Agent Page */}
-                <Route
-                  path="/game/virtual-agent"
-                  element={
-                    <MaintenanceGuard>
-                      <VirtualAgentPage />
-                    </MaintenanceGuard>
-                  }
-                />
-
-                {/* Public Profile Page */}
-                <Route
-                  path="/profile/:identifier"
-                  element={
-                    <MaintenanceGuard>
-                      <PublicProfile />
-                    </MaintenanceGuard>
-                  }
-                />
-
-                {/* FAQ */}
-                <Route path="/faq" element={<FAQ />} />
-
-                {/* How It Works */}
-                <Route path="/how-it-works" element={<HowItWorks />} />
-
-                {/* Contact */}
-                <Route path="/contact" element={<Contact />} />
-
-                {/* NOTE: We need to overhaul Leaderboards. We totally ignore the LEVEL SYSTEM!!! XP!!! ACHIEVEMENTS!!! */}
-
-                {/* Leaderboards Landing Page */}
-                <Route path="/leaderboards" element={<LeaderboardLanding />} />
-
-                {/* "Degen Rankings" Leaderboard */}
-                <Route
-                  path="/rankings/performance"
-                  element={<ContestPerformance />}
-                />
-
-                {/* "Global Rankings" Leaderboard */}
-                <Route path="/rankings/global" element={<GlobalRankings />} />
-
-                {/* AUTHENTICATED ROUTES */}
-
-                {/* Profile (own profile) */}
-                <Route
-                  path="/me"
-                  element={
-                    <AuthenticatedRoute>
+                  {/* Contest Browser */}
+                  <Route
+                    path="/contests"
+                    element={
                       <MaintenanceGuard>
-                        <Profile />
+                        <ContestBrowser />
                       </MaintenanceGuard>
-                    </AuthenticatedRoute>
-                  }
-                />
+                    }
+                  />
 
-                {/* Referrals */}
-                {/* NOTE: I really want to change the path to /refer ... but I'm afraid of breaking existing links. */}
-                <Route
-                  path="/referrals"
-                  element={
-                    <AuthenticatedRoute>
+                  {/* Contest Details */}
+                  <Route
+                    path="/contests/:id"
+                    element={
                       <MaintenanceGuard>
-                        <ReferralPage />
+                        <ContestDetails />
                       </MaintenanceGuard>
-                    </AuthenticatedRoute>
-                  }
-                />
+                    }
+                  />
 
-                {/* Notifications */}
-                <Route
-                  path="/notifications"
-                  element={
-                    <AuthenticatedRoute>
+                  {/* Contest Lobby (Live Game) */}
+                  <Route
+                    path="/contests/:id/live"
+                    element={
                       <MaintenanceGuard>
-                        <NotificationsPage />
+                        <ContestLobby />{" "}
                       </MaintenanceGuard>
-                    </AuthenticatedRoute>
-                  }
-                />
+                    }
+                  />
 
-                {/* Portfolio Token Selection */}
-                <Route
-                  path="/contests/:id/select-tokens"
-                  element={
-                    <AuthenticatedRoute>
+                  {/* Contest Results */}
+                  <Route
+                    path="/contests/:id/results"
+                    element={
                       <MaintenanceGuard>
-                        <TokenSelection />
+                        <ContestResults />{" "}
                       </MaintenanceGuard>
-                    </AuthenticatedRoute>
-                  }
-                />
+                    }
+                  />
 
-                {/* ADMIN ROUTES */}
+                  {/* Tokens Page */}
+                  <Route
+                    path="/tokens"
+                    element={
+                      <MaintenanceGuard>
+                        <TokensPage />
+                      </MaintenanceGuard>
+                    }
+                  />
 
-                {/* SkyDuel Service Management */}
-                {/* NOTE: I really want to change the path to /skyduel ... Shouldn't be too hard... */}
-                <Route
-                  path="/admin/skyduel"
-                  element={
-                    <AdminRoute>
-                      <React.Suspense fallback={<div>Loading...</div>}>
-                        <SkyDuelPage />
-                      </React.Suspense>
-                    </AdminRoute>
-                  }
-                />
+                  {/* Token Whitelist Page */}
+                  <Route
+                    path="/tokens/whitelist"
+                    element={
+                      <MaintenanceGuard>
+                        <TokenWhitelistPage />
+                      </MaintenanceGuard>
+                    }
+                  />
 
-                {/* System Reports */}
-                <Route
-                  path="/admin/system-reports"
-                  element={
-                    <AdminRoute>
-                      <SystemReports />
-                    </AdminRoute>
-                  }
-                />
+                  {/* Virtual Game Agent Page */}
+                  <Route
+                    path="/game/virtual-agent"
+                    element={
+                      <MaintenanceGuard>
+                        <VirtualAgentPage />
+                      </MaintenanceGuard>
+                    }
+                  />
 
-                {/* Admin Dashboard */}
-                <Route
-                  path="/admin"
-                  element={
-                    <AdminRoute>
-                      <AdminDashboard />
-                    </AdminRoute>
-                  }
-                />
+                  {/* Public Profile Page */}
+                  <Route
+                    path="/profile/:identifier"
+                    element={
+                      <MaintenanceGuard>
+                        <PublicProfile />
+                      </MaintenanceGuard>
+                    }
+                  />
 
-                {/* SUPERADMIN ROUTES*/}
+                  {/* FAQ */}
+                  <Route 
+                    path="/faq" 
+                    element={<FAQ />} 
+                  />
 
-                {/* Superadmin Dashboard */}
-                <Route
-                  path="/superadmin"
-                  element={
-                    <SuperAdminRoute>
-                      <SuperAdminDashboard />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* How It Works */}
+                  <Route 
+                    path="/how-it-works" 
+                    element={<HowItWorks />} 
+                  />
 
-                {/* Wallet Monitoring */}
-                <Route
-                  path="/superadmin/wallet-monitoring"
-                  element={
-                    <SuperAdminRoute>
-                      <WalletMonitoring />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* Contact */}
+                  <Route 
+                    path="/contact" 
+                    element={<Contact />} 
+                  />
 
-                {/* Control Panel Hub */}
-                <Route
-                  path="/superadmin/control-hub"
-                  element={
-                    <SuperAdminRoute>
-                      <ControlPanelHub />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* NOTE: We need to overhaul Leaderboards. We totally ignore the LEVEL SYSTEM!!! XP!!! ACHIEVEMENTS!!! */}
 
-                {/* Super Admin Chat Example - REPLACED with unified AdminChatDashboard */}
-                <Route
-                  path="/superadmin/chat-dashboard"
-                  element={
-                    <SuperAdminRoute>
-                      <React.Suspense fallback={<div>Loading...</div>}>
-                        <AdminChatDashboard />
-                      </React.Suspense>
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* Leaderboards Landing Page */}
+                  <Route 
+                    path="/leaderboards" 
+                    element={<LeaderboardLanding />} 
+                  />
 
-                {/* Admin Chat Dashboard - Accessible to both admins and superadmins */}
-                <Route
-                  path="/admin/chat-dashboard"
-                  element={
-                    <AdminRoute>
-                      <React.Suspense fallback={<div>Loading...</div>}>
-                        <AdminChatDashboard />
-                      </React.Suspense>
-                    </AdminRoute>
-                  }
-                />
+                  {/* "Degen Rankings" Leaderboard */}
+                  <Route
+                    path="/rankings/performance"
+                    element={<ContestPerformance />}
+                  />
 
-                {/* Services Control Panel - DEPRECATED: Use SkyDuel instead */}
-                <Route
-                  path="/superadmin/services"
-                  element={
-                    <SuperAdminRoute>
-                      <ServiceControlPage />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* "Global Rankings" Leaderboard */}
+                  <Route path="/rankings/global" element={<GlobalRankings />} />
 
-                {/* Service Switchboard - DEPRECATED: Use SkyDuel instead */}
-                <Route
-                  path="/superadmin/switchboard"
-                  element={
-                    <SuperAdminRoute>
-                      <ServiceSwitchboard />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* AUTHENTICATED ROUTES */}
 
-                {/* Circuit Breaker Panel - DEPRECATED: Use SkyDuel Circuit View instead */}
-                <Route
-                  path="/superadmin/circuit-breaker"
-                  element={
-                    <SuperAdminRoute>
-                      <CircuitBreakerPage />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* Profile (own profile) */}
+                  <Route
+                    path="/me"
+                    element={
+                      <AuthenticatedRoute>
+                        <MaintenanceGuard>
+                          <Profile />
+                        </MaintenanceGuard>
+                      </AuthenticatedRoute>
+                    }
+                  />
 
-                {/* Service Command Center */}
-                <Route
-                  path="/superadmin/service-command-center"
-                  element={
-                    <SuperAdminRoute>
-                      <ServiceCommandCenter />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* Referrals */}
+                  {/* NOTE: I really want to change the path to /refer ... but I'm afraid of breaking existing links. */}
+                  <Route
+                    path="/referrals"
+                    element={
+                      <AuthenticatedRoute>
+                        <MaintenanceGuard>
+                          <ReferralPage />
+                        </MaintenanceGuard>
+                      </AuthenticatedRoute>
+                    }
+                  />
 
-                {/* Legacy route for backward compatibility */}
-                <Route
-                  path="/superadmin/websocket-monitor"
-                  element={
-                    <Navigate to="/superadmin/service-command-center" replace />
-                  }
-                />
+                  {/* Notifications */}
+                  <Route
+                    path="/notifications"
+                    element={
+                      <AuthenticatedRoute>
+                        <MaintenanceGuard>
+                          <NotificationsPage />
+                        </MaintenanceGuard>
+                      </AuthenticatedRoute>
+                    }
+                  />
 
-                {/* API Playground */}
-                <Route
-                  path="/api-playground"
-                  element={
-                    <SuperAdminRoute>
-                      <ApiPlayground />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* Portfolio Token Selection */}
+                  <Route
+                    path="/contests/:id/select-tokens"
+                    element={
+                      <AuthenticatedRoute>
+                        <MaintenanceGuard>
+                          <TokenSelection />
+                        </MaintenanceGuard>
+                      </AuthenticatedRoute>
+                    }
+                  />
 
-                {/* WSS Playground */}
-                <Route
-                  path="/wss-playground"
-                  element={
-                    <SuperAdminRoute>
-                      <WssPlayground />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* ADMIN ROUTES */}
 
-                {/* Connection Debugger */}
-                <Route
-                  path="/connection-debugger"
-                  element={
-                    <AdminRoute>
-                      <ConnectionDebugger />
-                    </AdminRoute>
-                  }
-                />
+                  {/* SkyDuel Service Management */}
+                  {/* NOTE: I really want to change the path to /skyduel ... Shouldn't be too hard... */}
+                  <Route
+                    path="/admin/skyduel"
+                    element={
+                      <AdminRoute>
+                        <React.Suspense fallback={<div>Loading...</div>}>
+                          <SkyDuelPage />
+                        </React.Suspense>
+                      </AdminRoute>
+                    }
+                  />
 
-                {/* WebSocket Hub - central access point for all WebSocket tools */}
-                <Route
-                  path="/websocket-hub"
-                  element={
-                    <AdminRoute>
-                      <React.Suspense fallback={<div>Loading...</div>}>
-                        <WebSocketHub />
-                      </React.Suspense>
-                    </AdminRoute>
-                  }
-                />
+                  {/* System Reports */}
+                  <Route
+                    path="/admin/system-reports"
+                    element={
+                      <AdminRoute>
+                        <SystemReports />
+                      </AdminRoute>
+                    }
+                  />
 
-                {/* AI Testing Panel */}
-                <Route
-                  path="/superadmin/ai-testing"
-                  element={
-                    <SuperAdminRoute>
-                      <React.Suspense fallback={<div>Loading...</div>}>
-                        <AiTesting />
-                      </React.Suspense>
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* Admin Dashboard */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <AdminRoute>
+                        <AdminDashboard />
+                      </AdminRoute>
+                    }
+                  />
 
-                {/* Legacy routes for backward compatibility */}
-                <Route
-                  path="/websocket-test"
-                  element={<Navigate to="/connection-debugger" replace />}
-                />
-                <Route
-                  path="/websocket-dashboard"
-                  element={<Navigate to="/connection-debugger" replace />}
-                />
+                  {/* SUPERADMIN ROUTES*/}
 
-                {/* AMM Simulation */}
-                <Route
-                  path="/amm-sim"
-                  element={
-                    <SuperAdminRoute>
-                      <AmmSim />
-                    </SuperAdminRoute>
-                  }
-                />
+                  {/* Superadmin Dashboard */}
+                  <Route
+                    path="/superadmin"
+                    element={
+                      <SuperAdminRoute>
+                        <SuperAdminDashboard />
+                      </SuperAdminRoute>
+                    }
+                  />
 
-                {/* MISC ROUTES */}
+                  {/* Wallet Monitoring */}
+                  <Route
+                    path="/superadmin/wallet-monitoring"
+                    element={
+                      <SuperAdminRoute>
+                        <WalletMonitoring />
+                      </SuperAdminRoute>
+                    }
+                  />
 
-                {/* 404 Page */}
-                <Route path="*" element={<NotFound />} />
-                {/* Banned User */}
-                <Route path="/banned" element={<BannedUser />} />
-                {/* Banned IP */}
-                <Route path="/banned-ip" element={<BannedIP />} />
-                {/* Maintenance Mode */}
-                <Route path="/maintenance" element={<Maintenance />} />
-              </Routes>
-            </main>
+                  {/* Control Panel Hub */}
+                  <Route
+                    path="/superadmin/control-hub"
+                    element={
+                      <SuperAdminRoute>
+                        <ControlPanelHub />
+                      </SuperAdminRoute>
+                    }
+                  />
 
-            {/* Footer */}
-            <Footer />
+                  {/* Super Admin Chat Example */}
+                  {/* REPLACED with unified AdminChatDashboard */}
+                  <Route
+                    path="/superadmin/chat-dashboard"
+                    element={
+                      <SuperAdminRoute>
+                        <React.Suspense fallback={<div>Loading...</div>}>
+                          <AdminChatDashboard />
+                        </React.Suspense>
+                      </SuperAdminRoute>
+                    }
+                  />
 
-            {/* Contest Chat Manager - Only show for authenticated users */}
-            {user && <ContestChatManager />}
+                  {/* Admin Chat Dashboard */}
+                  {/* Accessible to both admins and superadmins */}
+                  <Route
+                    path="/admin/chat-dashboard"
+                    element={
+                      <AdminRoute>
+                        <React.Suspense fallback={<div>Loading...</div>}>
+                          <AdminChatDashboard />
+                        </React.Suspense>
+                      </AdminRoute>
+                    }
+                  />
 
-            {/* Modals and Overlays */}
-            <ReferralWelcomeModal />
+                  {/* Services Control Panel */}
+                  {/* DEPRECATED: Use SkyDuel instead */}
+                  <Route
+                    path="/superadmin/services"
+                    element={
+                      <SuperAdminRoute>
+                        <ServiceControlPage />
+                      </SuperAdminRoute>
+                    }
+                  />
 
-            {/* Toast Notifications now handled by our unified system */}
+                  {/* Service Switchboard */}
+                  {/* DEPRECATED: Use SkyDuel instead */}
+                  <Route
+                    path="/superadmin/switchboard"
+                    element={
+                      <SuperAdminRoute>
+                        <ServiceSwitchboard />
+                      </SuperAdminRoute>
+                    }
+                  />
 
-            <AchievementNotification />
-            <ToastContainer />
-          </div>
+                  {/* Circuit Breaker Panel */}
+                  {/* DEPRECATED: Use SkyDuel Circuit View instead */}
+                  <Route
+                    path="/superadmin/circuit-breaker"
+                    element={
+                      <SuperAdminRoute>
+                        <CircuitBreakerPage />
+                      </SuperAdminRoute>
+                    }
+                  />
+
+                  {/* Service Command Center */}
+                  <Route
+                    path="/superadmin/service-command-center"
+                    element={
+                      <SuperAdminRoute>
+                        <ServiceCommandCenter />
+                      </SuperAdminRoute>
+                    }
+                  />
+
+                  {/* Legacy route to Service Command Center for backward compatibility */}
+                  <Route
+                    path="/superadmin/websocket-monitor"
+                    element={
+                      <Navigate to="/superadmin/service-command-center" replace />
+                    }
+                  />
+
+                  {/* API Playground */}
+                  {/* (Mostly deprecated) */}
+                  <Route
+                    path="/api-playground"
+                    element={
+                      <SuperAdminRoute>
+                        <ApiPlayground />
+                      </SuperAdminRoute>
+                    }
+                  />
+
+                  {/* WSS Playground */}
+                  {/* (Don't remember if this is deprecated or not) */}
+                  <Route
+                    path="/wss-playground"
+                    element={
+                      <SuperAdminRoute>
+                        <WssPlayground />
+                      </SuperAdminRoute>
+                    }
+                  />
+
+                  {/* Connection Debugger */}
+                  <Route
+                    path="/connection-debugger"
+                    element={
+                      <AdminRoute>
+                        <ConnectionDebugger />
+                      </AdminRoute>
+                    }
+                  />
+
+                  {/* WebSocket Hub - central access point for all WebSocket tools */}
+                  {/* (Don't remember if this is deprecated or not) */}
+                  <Route
+                    path="/websocket-hub"
+                    element={
+                      <AdminRoute>
+                        <React.Suspense fallback={<div>Loading...</div>}>
+                          <WebSocketHub />
+                        </React.Suspense>
+                      </AdminRoute>
+                    }
+                  />
+
+                  {/* AI Testing Panel */}
+                  <Route
+                    path="/superadmin/ai-testing"
+                    element={
+                      <SuperAdminRoute>
+                        <React.Suspense fallback={<div>Loading...</div>}>
+                          <AiTesting />
+                        </React.Suspense>
+                      </SuperAdminRoute>
+                    }
+                  />
+
+                  {/* Legacy routes to Connection Debugger for backward compatibility */}
+                  <Route
+                    path="/websocket-test"
+                    element={<Navigate to="/connection-debugger" replace />}
+                  />
+                  <Route
+                    path="/websocket-dashboard"
+                    element={<Navigate to="/connection-debugger" replace />}
+                  />
+
+                  {/* AMM Sim */}
+                  <Route
+                    path="/amm-sim"
+                    element={
+                      <SuperAdminRoute>
+                        <AmmSim />
+                      </SuperAdminRoute>
+                    }
+                  />
+
+                  {/* MISC ROUTES */}
+
+                  {/* 404 Page */}
+                  <Route 
+                    path="*" 
+                    element={<NotFound />} 
+                  />
+
+                  {/* Banned User Page */}
+                  <Route 
+                    path="/banned" 
+                    element={<BannedUser />} 
+                  />
+
+                  {/* Banned IP Page */}
+                  <Route 
+                    path="/banned-ip" 
+                    element={<BannedIP />} 
+                  />
+
+                  {/* Maintenance Mode Page */}
+                  <Route 
+                    path="/maintenance" 
+                    element={<Maintenance />} 
+                  />
+                
+                </Routes>
+              </main>
+
+              {/* Footer */}
+              <Footer />
+
+              {/* Contest Chat Manager (authenticated users only) */}
+              {user && <ContestChatManager />}
+
+              {/* Modals and Overlays */}
+              <ReferralWelcomeModal />
+
+              {/* Toast Notifications now handled by our unified system */}
+
+              {/* Achievement Notification */}
+              <AchievementNotification />
+
+              {/* Toast Container */}
+              <ToastContainer />
+
+            </div>
+
           </ToastProvider>
         </TokenDataProvider>
       </ReferralProvider>
