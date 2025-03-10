@@ -48,6 +48,22 @@ export const CardTitle: React.FC<CardTitleProps> = ({
   );
 };
 
+interface CardDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const CardDescription: React.FC<CardDescriptionProps> = ({
+  children,
+  className = "",
+}) => {
+  return (
+    <p className={`text-sm text-gray-400 ${className}`}>
+      {children}
+    </p>
+  );
+};
+
 interface CardContentProps {
   children: React.ReactNode;
   className?: string;
