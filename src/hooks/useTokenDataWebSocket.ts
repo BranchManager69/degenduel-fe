@@ -20,8 +20,8 @@ import { useAuth } from "./useAuth"; // Keeping this for authentication
 // Enable for detailed WebSocket debugging
 const WS_DEBUG = true;
 
-// Token data WebSocket endpoint path
-const TOKEN_DATA_WSS_PATH = `/api/v69/market-data`;
+// Token data WebSocket endpoint path - updated to match v69 documentation
+const TOKEN_DATA_WSS_PATH = `/api/v69/ws/token-data`;
 
 // Local development settings (only used when USE_LOCAL_SERVER is true)
 const TOKEN_DATA_LOCAL_URL = NODE_ENV === "development" ? `localhost:3005` : `localhost:3004`;
@@ -153,8 +153,8 @@ export function useTokenDataWebSocket(
       }
       
       if (NODE_ENV === "development") {
-        // Log connection info
-        console.log(`[TokenDataWebSocket] \n[Connecting to v69 endpoint] \n[${wsUrl}]`);
+        // Log connection info with more details
+        console.log(`[TokenDataWebSocket] \n[Connecting to v69 endpoint] \n[${wsUrl}] \n[Token available: ${!!token}]`);
       }
 
       // Create WebSocket connection
@@ -433,8 +433,11 @@ export function useTokenDataWebSocket(
             const stringifiedErrorEvent = JSON.stringify(event);
             console.error(`[TokenDataWebSocket] \n[Connection closed unexpectedly] \n${stringifiedErrorEvent}`);
           }
+          // Convert WS_URL to HTTP/HTTPS for axios
+          const httpUrl = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+          
           // Log the error to the server
-          axios.post(`${WS_URL}/api/v69/log-error`, {
+          axios.post(`${httpUrl}/api/v69/log-error`, {
             error: event.code,
             message: event.reason,
             timestamp: new Date().toISOString(),
@@ -466,8 +469,12 @@ export function useTokenDataWebSocket(
       };
 
       wsRef.current.onerror = (error) => {
+        // Convert WS_URL to HTTP/HTTPS for axios
+        const httpUrl = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
+        
         // Log the error to the server
-        axios.post(`${WS_URL}/api/v69/log-error`, {
+        //axios.post(`${httpUrl}/api/v69/log-error`, {
+        axios.post(`${httpUrl}/api`, {
           error: error,
           message: "WebSocket connection error",
           timestamp: new Date().toISOString(),
