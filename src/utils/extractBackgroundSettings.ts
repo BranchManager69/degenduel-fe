@@ -8,6 +8,9 @@
 
 import { SYSTEM_SETTINGS as DEFAULT_SETTINGS } from "../config/config";
 
+const NODE_ENV = import.meta.env.VITE_NODE_ENV;
+
+
 interface SystemSettings {
   background_scene?:
     | string
@@ -34,9 +37,11 @@ export function extractBackgroundSettings(
   // If no settings provided, use defaults
   if (!systemSettings) {
     // No background_scene found in global system settings
-    console.log(
-      "No background_scene in global system settings! Falling back to local default."
-    );
+    if (NODE_ENV === "development") {
+      console.log(
+        "No background_scene in global system settings! Falling back to local default."
+      );
+    }
     // Return local default background_scene settings
     return DEFAULT_SETTINGS.BACKGROUND_SCENE;
   }

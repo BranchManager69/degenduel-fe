@@ -11,6 +11,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useStore } from "../store/useStore";
 import { useDebounce } from "./useDebounce";
 
+const NODE_ENV = import.meta.env.VITE_NODE_ENV;
+
+
 interface AuthState {
   user: any | null; // Using any temporarily since we're getting user from store
   loading: boolean;
@@ -178,15 +181,11 @@ export function useAuth() {
         withCredentials: true,
         timeout: 5000, // 5 second timeout
       });
-
-      console.log(
-        `[DDDEBUG] [useAuth] [getAccessToken] [${url}] [${response.status}]`
-      );
-
-      console.log("[Auth] Token response:", {
-        status: response.status,
-        hasToken: !!response.data?.token,
-      });
+      if (NODE_ENV === "development") {
+        console.log(
+          `[AUTH DEBUG] [useAuth] [getAccessToken] [${url}] \n [${response}]`
+        );
+      }
 
       // Return the token or null if no token is available
       return response.data?.token || null;

@@ -3,18 +3,32 @@
 /**
  * This hook is used to get the token data from the token service.
  * It uses a WebSocket connection to get the data and a fallback to the Admin API if the WebSocket connection fails.
+ * V69 version - Compatible with new token-data-ws.js WebSocket server
  *
  * @returns {Object} An object containing the token data, loading state, error state, and a function to refresh the data.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WS_URL } from "../config/config";
+import { NODE_ENV, WS_URL } from "../config/config";
 import { useStore } from "../store/useStore";
-import { useAuth } from "./useAuth"; // Keeping this for compatibility
+import { useAuth } from "./useAuth"; // Keeping this for authentication
 
-// Config
-const TOKEN_DATA_WSS_PATH = `/api/v2/ws/tokenData`;
+// Config for WebSocket
+const TRY_NEW_WS_v69 = true;
+let TOKEN_DATA_WSS_PATH: string;
+let TOKEN_DATA_LOCAL_URL: string;
+let USE_LOCAL_SERVER = false; // Set to true when testing with localhost
 
+// WebSocket Configuration
+if (TRY_NEW_WS_v69) {
+  // Using v69 WebSocket path - must match server's WSS_PATH in token-data-ws.js
+  TOKEN_DATA_WSS_PATH = `/api/v69/ws/token-data`;
+  TOKEN_DATA_LOCAL_URL = `localhost:3005`; // Development server port
+} else {
+  // Legacy path
+  TOKEN_DATA_WSS_PATH = `/api/v2/ws/tokenData`;
+  TOKEN_DATA_LOCAL_URL = `localhost:3004`; // Production server port
+}
 
 export interface TokenData {
   symbol: string;
@@ -34,9 +48,15 @@ export interface TokenData {
 
 interface TokenDataMessage {
   type: string;
-  token?: string;
-  tokens?: TokenData[];
-  data?: any;
+  symbol?: string;       // v69 uses 'symbol' instead of 'token' for token identifiers
+  symbols?: string[];    // v69 uses 'symbols' for subscription arrays
+  token?: string;        // Legacy field, kept for backward compatibility
+  tokens?: TokenData[];  // Legacy field, kept for backward compatibility
+  data?: any;            // The v69 server places token data in the 'data' field
+  timestamp?: string;    // ISO timestamp for when the message was sent
+  error?: string;        // Error message
+  code?: string;         // Error code
+  count?: number;        // Number of tokens in subscription/operation responses
 }
 
 // Simulated token data for fallback when no actual data is available
@@ -111,7 +131,7 @@ export function useTokenDataWebSocket(
 
   const connect = useCallback(async () => {
     try {
-      // Return if maintenance mode is active // TODO: Are we sure about this??
+      // Return if maintenance mode is active
       if (maintenanceMode) return;
 
       // Clean up existing connection
@@ -119,44 +139,63 @@ export function useTokenDataWebSocket(
         wsRef.current.close();
       }
 
-      // No longer requiring authentication token // TODO: WHAT???
-      // Just skipping the authentication part, but keeping the function call for compatibility // TODO: WHAT???
+      // Get authentication token - v69 supports auth but doesn't require it
       const token = await getAccessToken().catch(() => null);
 
-      // Use the centralized WS_URL from config for consistent WebSocket connections
-      const baseWsUrl = WS_URL;
+      // Determine WebSocket URL based on configuration
+      let wsUrl: string;
       
-      console.log(
-        `[TokenDataWebSocket] Using base WebSocket URL: ${baseWsUrl}`
-      );
-      const wsUrl = `${baseWsUrl}${TOKEN_DATA_WSS_PATH}`;
-      console.log(`[TokenDataWebSocket] Connecting to: ${wsUrl}`);
+      if (USE_LOCAL_SERVER) {
+        // Use localhost for testing - note: must include ws:// protocol
+        const baseWsUrl = `ws://${TOKEN_DATA_LOCAL_URL}`;
+        wsUrl = `${baseWsUrl}${TOKEN_DATA_WSS_PATH}`;
+      } else {
+        // Use production WebSocket URL from config (wss://domain.com)
+        const baseWsUrl = WS_URL;
+        wsUrl = `${baseWsUrl}${TOKEN_DATA_WSS_PATH}`;
+      }
+      
+      if (NODE_ENV === "development") {
+        console.log(`[TokenDataWebSocket] Connecting to: ${wsUrl}`);
+      }
 
       // Create WebSocket connection
       wsRef.current = new WebSocket(wsUrl);
 
       // Handle connection open
       wsRef.current.onopen = () => {
-        console.log("[TokenDataWebSocket] Connected");
+        if (NODE_ENV === "development") {
+          console.log("[TokenDataWebSocket] Connected!");
+        }
         setIsConnected(true);
         setError(null);
         reconnectAttempts.current = 0;
 
-        // Subscribe to tokens
+        // v69 server requires different messages for authentication and subscription
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "subscribe",
-              tokens: tokensToSubscribe,
-            })
-          );
-
-          // Only send authentication if we have a token (not required anymore) // TODO: WHAT???
+          // Send authentication first if token is available
           if (token) {
             wsRef.current.send(
               JSON.stringify({
                 type: "authenticate",
                 token: token,
+              })
+            );
+          }
+          
+          // After auth, request all tokens
+          wsRef.current.send(
+            JSON.stringify({
+              type: "get_all_tokens"
+            })
+          );
+          
+          // Then subscribe to specific tokens if specified
+          if (tokensToSubscribe !== "all") {
+            wsRef.current.send(
+              JSON.stringify({
+                type: "subscribe_tokens", // v69 uses 'subscribe_tokens' instead of 'subscribe'
+                symbols: tokensToSubscribe, // v69 uses 'symbols' instead of 'tokens'
               })
             );
           }
@@ -167,13 +206,19 @@ export function useTokenDataWebSocket(
       wsRef.current.onmessage = (event) => {
         try {
           const message: TokenDataMessage = JSON.parse(event.data);
+          
+          // Debug in development
+          if (NODE_ENV === "development") {
+            console.log(`[TokenDataWebSocket] Received: ${message.type}`);
+          }
 
-          // Handle different message types
+          // Handle different message types - adapted for v69 WebSocket format
           switch (message.type) {
             case "token_update":
-              if (message.tokens) {
+              // v69 version sends data in the 'data' field, not 'tokens' field
+              if (message.data && Array.isArray(message.data)) {
                 // Enhanced token data with more realistic changes for animations
-                const enhancedTokens = message.tokens.map((token) => {
+                const enhancedTokens = message.data.map((token) => {
                   // Generate 5-minute change if not provided
                   // This ensures our animations respond to shorter timeframe changes
                   if (!token.change5m) {
@@ -213,7 +258,7 @@ export function useTokenDataWebSocket(
                       message: "Token data update received",
                       data: {
                         tokenCount: enhancedTokens.length,
-                        timestamp: new Date().toISOString(),
+                        timestamp: message.timestamp || new Date().toISOString(),
                       },
                     },
                   })
@@ -224,12 +269,13 @@ export function useTokenDataWebSocket(
               }
               break;
 
-            case "token_price":
-              if (message.token && message.data) {
+            // v69 uses 'token_data' for single token updates 
+            case "token_data":
+              if (message.symbol && message.data) {
                 // Update single token price with enhanced 5m data
                 setTokens((prev) => {
                   const updatedTokens = prev.map((token) => {
-                    if (token.symbol === message.token) {
+                    if (token.symbol === message.symbol) {
                       // Calculate new 5m change - sometimes opposite direction from 24h for realism
                       const baseChange = parseFloat(
                         message.data.change24h || "0"
@@ -243,12 +289,10 @@ export function useTokenDataWebSocket(
 
                       return {
                         ...token,
-                        price: message.data.price,
-                        change24h: message.data.change24h,
-                        change5m: fiveMinChange,
-                        // Add dynamic 1h change too
-                        change1h:
-                          message.data.change1h ||
+                        ...message.data, // Apply all the new data
+                        // Add dynamic changes if not provided
+                        change5m: message.data.change5m || fiveMinChange,
+                        change1h: message.data.change1h ||
                           ((baseChange * volatilityFactor) / 2.4).toFixed(2),
                       };
                     }
@@ -263,12 +307,13 @@ export function useTokenDataWebSocket(
               }
               break;
 
+            // v69 uses 'token_metadata' for metadata updates (same as original)
             case "token_metadata":
-              if (message.token && message.data) {
-                // Update token metadata
+              if (message.symbol && message.data) {
+                // Update token metadata - note the change from message.token to message.symbol
                 setTokens((prev) =>
                   prev.map((token) =>
-                    token.symbol === message.token
+                    token.symbol === message.symbol
                       ? { ...token, ...message.data }
                       : token
                   )
@@ -276,26 +321,51 @@ export function useTokenDataWebSocket(
               }
               break;
 
-            case "token_liquidity":
-              if (message.token && message.data) {
-                // Update token liquidity
-                setTokens((prev) =>
-                  prev.map((token) =>
-                    token.symbol === message.token
-                      ? { ...token, liquidity: message.data.liquidity }
-                      : token
-                  )
-                );
+            // v69 token subscription success notification  
+            case "tokens_subscribed":
+              if (NODE_ENV === "development") {
+                console.log(`[TokenDataWebSocket] Subscribed to ${message.count} tokens`);
               }
               break;
-
+              
+            // v69 subscription errors are sent as custom error types
             case "error":
-              console.error("[TokenDataWebSocket] Error:", message.data);
-              setError(message.data);
+              const errorMsg = message.error || "Unknown WebSocket error";
+              const errorCode = message.code || "UNKNOWN";
+              
+              console.error(`[TokenDataWebSocket] Error (${errorCode}):`, errorMsg);
+              setError(errorMsg);
 
               // Even on error, maintain fallback data for animations
               if (tokens.length === 0) {
                 setTokens(FALLBACK_TOKENS);
+                setLastUpdate(new Date());
+                startSimulating5MinChanges();
+              }
+              break;
+              
+            // Handle market updates (similar to token updates but for market overview)
+            case "market_update":
+              if (message.data && Array.isArray(message.data)) {
+                // Process the same as token_update
+                const enhancedTokens = message.data.map((token) => {
+                  // Enhancement logic (same as token_update)
+                  if (!token.change5m) {
+                    const baseChange = parseFloat(token.change24h || "0");
+                    const volatilityFactor = 0.5 + Math.random();
+                    token.change5m = ((baseChange * volatilityFactor) / 4.8).toFixed(2);
+                  }
+                  
+                  if (!token.change1h) {
+                    const baseChange = parseFloat(token.change24h || "0");
+                    const volatilityFactor = 0.6 + Math.random() * 0.8;
+                    token.change1h = ((baseChange * volatilityFactor) / 2.4).toFixed(2);
+                  }
+                  
+                  return token;
+                });
+                
+                setTokens(enhancedTokens);
                 setLastUpdate(new Date());
                 startSimulating5MinChanges();
               }
