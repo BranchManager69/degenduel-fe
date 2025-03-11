@@ -161,8 +161,10 @@ DegenDuel uses a comprehensive WebSocket system for real-time data:
 ### Admin Features
 - **Contest Management**: Create, edit, and monitor contests
 - **User Management**: Search and manage user accounts
+- **Ban System**: Ban users and IP addresses with "ban on sight" capability
 - **System Monitoring**: WebSocket and service monitoring
 - **Analytics Dashboard**: User activity and platform statistics
+- **IP Ban Management**: Control access by IP address
 
 ## 📦 Integration Points
 
@@ -213,6 +215,29 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [API Documentation](https://degenduel.me/api-docs)
 - [Contest System Specification](/docs_important/Contest_Chat_System/README.md)
 - [WebSocket System Guide](/docs_important/WebSockets_and_Services/WEBSOCKET_SYSTEM_GUIDE.md)
+
+## 🛡️ Ban on Sight Feature
+
+The "Ban on Sight" feature allows administrators to quickly ban users directly from user profiles, activity logs, and monitoring panels without navigating to a separate ban management interface.
+
+### Components
+
+- **BanOnSightButton**: A versatile button component with button and icon variants that can be placed on any user-related interface
+- **BanIPButton**: Similar component for banning IP addresses directly
+
+### Integration Points
+
+Ban buttons have been integrated in:
+1. **Public User Profiles**: For immediately banning suspicious users
+2. **Activity Monitor & Logs**: For banning users based on suspicious activity
+3. **User Activity Map**: For monitoring and taking action on live user activity
+4. **Admin panels**: Throughout the admin interface
+
+### Benefits
+
+- Reduced moderation time by eliminating navigation to dedicated ban interface
+- Contextual banning where suspicious activity is first observed
+- Consolidated user experience with consistent ban UI across the platform
 
 ---
 

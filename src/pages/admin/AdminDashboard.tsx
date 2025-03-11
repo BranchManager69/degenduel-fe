@@ -281,6 +281,14 @@ export const AdminDashboard: React.FC = () => {
       color: "emerald",
     },
     {
+      id: "ip-ban",
+      title: "IP Ban Management",
+      icon: "🛡️",
+      description: "Manage banned IP addresses and check IP status",
+      link: "/admin/ip-ban",
+      color: "red",
+    },
+    {
       id: "transactions",
       title: "Transaction History",
       icon: "📝",
@@ -315,6 +323,25 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-3">
+            <Link
+              to="/admin/ip-ban"
+              className="flex items-center gap-2 bg-red-500/30 px-4 py-2.5 rounded-xl hover:bg-red-500/40 transition-all border-2 border-red-500/40 shadow-lg hover:shadow-red-500/20 group relative"
+            >
+              <div className="absolute -top-2 -left-2">
+                <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-red-500/30 text-red-100 font-mono">
+                  NEW
+                </div>
+              </div>
+              <div className="text-red-300 text-xl group-hover:scale-110 transition-transform">
+                🛡️
+              </div>
+              <span className="text-red-100 font-semibold group-hover:text-white transition-colors">
+                IP Ban Management
+              </span>
+              <div className="ml-2 text-red-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
             <Link
               to="/admin/chat-dashboard"
               className="flex items-center gap-2 bg-red-500/30 px-4 py-2.5 rounded-xl hover:bg-red-500/40 transition-all border-2 border-red-500/40 shadow-lg hover:shadow-red-500/20 group relative"

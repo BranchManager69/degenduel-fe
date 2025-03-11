@@ -169,7 +169,7 @@ export const TokenWhitelistPage: React.FC = () => {
               rel="noopener noreferrer"
               className="text-brand-400 hover:text-brand-300"
             >
-              View on Solscan
+              Solscan Receipt
             </a>
           </div>
         </div>,
@@ -265,9 +265,10 @@ export const TokenWhitelistPage: React.FC = () => {
       );
 
       // Add delay before navigation
+      const REDIRECT_DELAY = 5; // seconds
       setTimeout(() => {
         navigate("/tokens");
-      }, 5000);
+      }, REDIRECT_DELAY * 1000);
     } catch (error) {
       console.error("Submission error:", error);
       
@@ -298,9 +299,9 @@ export const TokenWhitelistPage: React.FC = () => {
             <div className="text-center space-y-4">
               <h1 className="text-4xl font-bold text-white">List Your Token</h1>
               <p className="text-gray-400 max-w-2xl mx-auto">
-                Get your token listed on DegenDuel for immediate exposure and
-                inclusion in our games. Your token will be tracked and available
-                for all players to use in their portfolios.
+                List your token on DegenDuel for immediate exposure and
+                inclusion in our contests. Your token will be tracked and available
+                for all players to use in their portfolios within minutes.
               </p>
             </div>
 
@@ -315,7 +316,7 @@ export const TokenWhitelistPage: React.FC = () => {
                     </h3>
                     <p className="text-sm text-gray-400">
                       Your token will be immediately added to our tracking
-                      system and available in games
+                      system and available in contests
                     </p>
                   </div>
                   <div className="bg-dark-300/30 rounded-lg p-4">
@@ -323,7 +324,8 @@ export const TokenWhitelistPage: React.FC = () => {
                       Increased Visibility
                     </h3>
                     <p className="text-sm text-gray-400">
-                      Expose your token to active traders and gaming enthusiasts
+                      Expose your token to active degens, trench warriors, and
+                      your loyal community
                     </p>
                   </div>
                   <div className="bg-dark-300/30 rounded-lg p-4">
@@ -332,6 +334,7 @@ export const TokenWhitelistPage: React.FC = () => {
                     </h3>
                     <p className="text-sm text-gray-400">
                       Get comprehensive market data and analytics for your token
+                      (coming soon)
                     </p>
                   </div>
                 </div>
@@ -352,15 +355,35 @@ export const TokenWhitelistPage: React.FC = () => {
                   </div>
 
                   <div className="bg-dark-300/30 rounded-lg p-4">
+
+                    {/* Listing Fee */}
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Listing Fee</span>
+                      <span className="text-gray-400">DegenDuel Listing</span>
                       <div className="text-right">
                         <span className="text-white font-bold">
-                          {finalCost.toFixed(2)} SOL
+                          {finalCost.toFixed(4)} SOL
                         </span>
+                        {discountPercent <= 0 && (
+                          <div className="text-xs text-brand-400">
+                            <span className="text-white">Did you know?</span> Token listing fees are 
+                            discounted based on your Degen Level 👀😵 
+                            <br />
+                            <br />
+                            <span className="text-white">
+                              <a href="/leaderboard" className="text-brand-400 hover:text-brand-300">
+                                Check your <span className="font-bold">Degen Level</span> to see your discount
+                              </a>
+                            </span>
+                            <br />
+                            <br />
+                            <span className="text-white">
+                              The discount is applied automatically based on your level so the more you level up, the more you save 🤑📶
+                            </span>
+                          </div>
+                        )}
                         {discountPercent > 0 && (
                           <div className="text-xs text-brand-400">
-                            {discountPercent}% level discount applied!
+                            Your discount: <span className="font-bold">{discountPercent}%</span>
                           </div>
                         )}
                       </div>

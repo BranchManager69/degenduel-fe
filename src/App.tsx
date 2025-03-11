@@ -3,11 +3,19 @@
 import React, { lazy, useEffect } from "react";
 /* Router */
 import {
-  Navigate,
-  Route,
-  BrowserRouter as Router,
-  Routes,
+    Navigate,
+    Route,
+    BrowserRouter as Router,
+    Routes,
+    useLocation,
 } from "react-router-dom";
+
+// Helper component to redirect while preserving query parameters
+const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
+  const location = useLocation();
+  // Preserve all query parameters by appending the search string to the destination
+  return <Navigate to={`${to}${location.search}`} replace />;
+};
 /* Toast - New Unified System */
 import { ToastContainer, ToastProvider } from "./components/toast";
 /* Hooks */
@@ -37,6 +45,7 @@ import { ContestChatManager } from "./components/contest-chat/ContestChatManager
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AiTesting } from "./pages/admin/AiTesting";
 import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
+import IpBanManagementPage from "./pages/admin/ip-ban/IpBanManagementPage";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import { SystemReports } from "./pages/admin/SystemReports";
 import WebSocketHub from "./pages/admin/WebSocketHub";
@@ -62,6 +71,7 @@ import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
 import { PublicProfile } from "./pages/public/general/PublicProfile";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
+import { DegenLevelPage } from "./pages/public/leaderboards/DegenLevelPage";
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
 import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding";
 import { TokensPage } from "./pages/public/tokens/TokensPage";
@@ -187,11 +197,16 @@ export const App: React.FC = () => {
                   />
 
                   {/* Referral Join Route */}
-                  {/*     Redirects to landing page; this is part of referral links before stripping the referral code and /join from the URL. 
-                  {/*     When the user clicks on a referral link and accesses /join (as opposed to navigating to the landing page directly), the user will be presented with a Welcome modal atop the landing page in which they are given the opportunity to connect their wallet (a.k.a. register) which immediately credits the referrer with the appropriate referral benefits. */}
+                  {/* Redirects to landing page while preserving query parameters, especially the "ref" parameter
+                      When the user clicks on a referral link and accesses /join?ref=CODE (as opposed to navigating
+                      to the landing page directly), the user will be presented with a Welcome modal atop the landing
+                      page in which they are given the opportunity to connect their wallet (a.k.a. register) which
+                      immediately credits the referrer with the appropriate referral benefits. */}
                   <Route 
                     path="/join" 
-                    element={<Navigate to="/" replace />} 
+                    element={
+                      <PreserveQueryParamsRedirect to="/" />
+                    } 
                   />
 
                   {/* Contest Browser */}
@@ -304,6 +319,12 @@ export const App: React.FC = () => {
                   <Route 
                     path="/leaderboards" 
                     element={<LeaderboardLanding />} 
+                  />
+
+                  {/* Degen Level Rankings Page - Main entry point for level info */}
+                  <Route 
+                    path="/leaderboard" 
+                    element={<DegenLevelPage />} 
                   />
 
                   {/* "Degen Rankings" Leaderboard */}
@@ -467,6 +488,16 @@ export const App: React.FC = () => {
                           <AdminChatDashboard />
                         </React.Suspense>
                       </SuperAdminRoute>
+                    }
+                  />
+
+                  {/* IP Ban Management */}
+                  <Route
+                    path="/admin/ip-ban"
+                    element={
+                      <AdminRoute>
+                        <IpBanManagementPage />
+                      </AdminRoute>
                     }
                   />
 

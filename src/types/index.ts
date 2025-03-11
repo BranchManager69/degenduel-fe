@@ -254,6 +254,63 @@ export interface PlatformStats {
   volumeGrowth: number;
 }
 
+// IP Ban Types
+export interface IpBan {
+  id: string;
+  ip_address: string;
+  reason: string;
+  is_permanent: boolean;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  troll_level: number;
+  num_attempts: number;
+  metadata?: Record<string, any>;
+}
+
+export interface IpBanListResponse {
+  success: boolean;
+  data: IpBan[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface IpBanParams {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
+  filter?: string;
+}
+
+export interface IpBanCheckResponse {
+  success: boolean;
+  is_banned: boolean;
+  ban_details?: IpBan;
+}
+
+export interface IpBanCreateParams {
+  ip_address: string;
+  reason: string;
+  is_permanent?: boolean;
+  expires_at?: string;
+  troll_level?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface IpBanUpdateParams {
+  reason?: string;
+  is_permanent?: boolean;
+  expires_at?: string;
+  troll_level?: number;
+  metadata?: Record<string, any>;
+}
+
 // Error Types
 export type WalletError = {
   code:
