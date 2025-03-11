@@ -4,6 +4,22 @@ import { v4 as uuidv4 } from "uuid";
 import { ddApi } from "../services/dd-api";
 import { ReferralAnalytics } from "../types/referral.types";
 
+// Referrer profile information
+interface ReferrerProfile {
+  nickname: string;
+  wallet_address: string;
+  profile_image?: {
+    url: string;
+    thumbnail_url?: string;
+  };
+}
+
+// Reward information
+interface ReferralRewards {
+  user_bonus: string;
+  referrer_bonus: string;
+}
+
 interface ReferralContextType {
   referralCode: string | null;
   showWelcomeModal: boolean;
@@ -12,6 +28,8 @@ interface ReferralContextType {
   trackConversion: () => Promise<void>;
   analytics: ReferralAnalytics | null;
   refreshAnalytics: () => Promise<void>;
+  referrerProfile: ReferrerProfile | null;
+  referralRewards: ReferralRewards | null;
 }
 
 const ReferralContext = createContext<ReferralContextType | null>(null);
@@ -50,6 +68,8 @@ export const ReferralProvider = ({
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<ReferralAnalytics | null>(null);
+  const [referrerProfile, setReferrerProfile] = useState<ReferrerProfile | null>(null);
+  const [referralRewards, setReferralRewards] = useState<ReferralRewards | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -80,10 +100,65 @@ export const ReferralProvider = ({
     }
   };
 
+  // Function to fetch referrer profile details
+  const fetchReferrerDetails = async (code: string) => {
+    try {
+      console.log("[Referral] Fetching referrer details for code:", code);
+      const response = await fetch(`/api/referrals/details?code=${encodeURIComponent(code)}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch referrer details: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("[Referral] Received referrer details:", data);
+      
+      if (data.referrer) {
+        setReferrerProfile(data.referrer);
+      }
+      
+      if (data.rewards) {
+        setReferralRewards(data.rewards);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("[Referral] Error fetching referrer details:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    // Check for referral code in URL
+    // Primary method: Check for referral code in URL query parameters
     const params = new URLSearchParams(location.search);
-    const ref = params.get("ref");
+    let ref = params.get("ref");
+
+    // Secondary method: Check if the URL path contains a referral code
+    // For example, a URL like "degenduel.me/join/ABC123" or just "degenduel.me/ABC123"
+    if (!ref) {
+      const pathSegments = location.pathname.split('/').filter(Boolean);
+      if (pathSegments.length > 0) {
+        const lastSegment = pathSegments[pathSegments.length - 1];
+        // Check if the last path segment looks like a referral code
+        if (/^[A-Z0-9-_]{3,32}$/i.test(lastSegment)) {
+          console.log("[Referral] Found potential referral code in URL path:", lastSegment);
+          ref = lastSegment;
+        }
+      }
+    }
+
+    // Enhanced logging for troubleshooting
+    console.log("[Referral] Processing URL:", location.href);
+    console.log("[Referral] URL Path:", location.pathname);
+    console.log("[Referral] URL Search:", location.search);
+    console.log("[Referral] URL Hash:", location.hash);
+    console.log("[Referral] Found referral code:", ref);
+    
+    // Debug info for developers
+    if (import.meta.env.DEV) {
+      console.log("[Referral Debug] All URL params:", Object.fromEntries(params.entries()));
+      console.log("[Referral Debug] Path segments:", location.pathname.split('/').filter(Boolean));
+    }
 
     if (ref) {
       // Validate referral code format
@@ -139,6 +214,11 @@ export const ReferralProvider = ({
 
       // Update state
       setReferralCode(ref);
+
+      // Fetch referrer profile details
+      fetchReferrerDetails(ref).catch(error => {
+        console.error("[Referral] Failed to fetch referrer details:", error);
+      });
 
       // Only show welcome modal if user hasn't seen it before
       const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
@@ -257,6 +337,8 @@ export const ReferralProvider = ({
     trackConversion,
     analytics,
     refreshAnalytics,
+    referrerProfile,
+    referralRewards,
   };
 
   return React.createElement(ReferralContext.Provider, { value }, children);
