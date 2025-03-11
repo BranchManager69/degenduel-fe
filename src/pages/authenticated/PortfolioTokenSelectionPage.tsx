@@ -372,17 +372,20 @@ export const TokenSelection: React.FC = () => {
       transaction.recentBlockhash = latestBlockhash.blockhash;
       transaction.feePayer = new PublicKey(user.wallet_address);
 
-      // Use Phantom's new unified method to sign and send the transaction
+      // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
+      // Use Phantom's unified signAndSendTransaction method instead of separate sign + send calls
       setTransactionState({
         status: 'signing',
         message: 'Please confirm the transaction in your wallet...',
       });
       
-      console.log("Requesting transaction signature and submission from Phantom...");
+      console.log("Requesting transaction signature and submission from Phantom using recommended signAndSendTransaction method...");
       
       try {
+        // Use signAndSendTransaction in a single call with the transaction object as a property
+        // This is the correct approach according to Phantom's documentation
         const { signature } = await solana.signAndSendTransaction({
-          transaction: transaction,
+          transaction // Must be passed as a property of an options object
         });
         console.log("Transaction sent, signature:", signature);
         
@@ -415,6 +418,8 @@ export const TokenSelection: React.FC = () => {
           signature,
         });
         
+        // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
+        // Use the modern confirmation pattern with signature, blockhash and lastValidBlockHeight
         await connection.confirmTransaction({
           signature,
           blockhash: latestBlockhash.blockhash,

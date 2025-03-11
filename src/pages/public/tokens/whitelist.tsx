@@ -141,14 +141,16 @@ export const TokenWhitelistPage: React.FC = () => {
       transaction.recentBlockhash = latestBlockhash.blockhash;
       transaction.feePayer = walletPublicKey;
 
-      // Use Phantom's new unified method to sign and send the transaction
+      // Use Phantom's recommended unified method to sign and send the transaction
       setTransactionState({
         status: 'signing',
         message: 'Please confirm the transaction in your wallet...',
       });
       
+      // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
+      // Use signAndSendTransaction in a single call with the transaction object as a property
       const { signature } = await window.solana.signAndSendTransaction({
-        transaction: transaction,
+        transaction // Must be passed as a property of an options object
       });
 
       setTransactionState({
