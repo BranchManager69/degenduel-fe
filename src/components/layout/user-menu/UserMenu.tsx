@@ -1,10 +1,19 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
-import { FaUser, FaUserFriends, FaBell } from "react-icons/fa";
+import { FaUser, FaUserFriends, FaBell, FaTrophy } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
+import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
 import { AdminControls } from "./UserMenuAdminControls";
+
+interface MenuItem {
+  label: string;
+  icon: React.ComponentType;
+  to: string;
+  badge?: number | string;
+  badgeColor?: string;
+}
 
 interface UserMenuProps {
   user: User;
@@ -20,9 +29,99 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   unreadNotifications = 0,
 }) => {
   const { isAdmin, isSuperAdmin } = useAuth();
+  const { achievements } = useStore();
   const [imageError, setImageError] = useState(false);
+  
+  // Get user level information
+  const userLevel = achievements?.userProgress?.level || 0;
+  
+  // Define a function to get color scheme based on level
+  const getLevelColorScheme = useMemo(() => {
+    // Return different color schemes based on level tiers
+    if (userLevel >= 40) {
+      return {
+        bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
+        text: "text-amber-300",
+        border: "border-amber-400/30",
+        badge: "bg-gradient-to-r from-amber-600 to-amber-400",
+        badgeBorder: "border-amber-500/30",
+        hover: {
+          glow: "group-hover:shadow-[0_0_10px_rgba(251,191,36,0.3)]",
+          border: "group-hover:border-amber-400/50",
+          badge: "group-hover:from-amber-500 group-hover:to-amber-300",
+        }
+      };
+    } else if (userLevel >= 30) {
+      return {
+        bg: "from-fuchsia-500/20 via-fuchsia-400/20 to-fuchsia-300/20",
+        text: "text-fuchsia-300",
+        border: "border-fuchsia-400/30", 
+        badge: "bg-gradient-to-r from-fuchsia-600 to-fuchsia-400",
+        badgeBorder: "border-fuchsia-500/30",
+        hover: {
+          glow: "group-hover:shadow-[0_0_10px_rgba(217,70,239,0.3)]",
+          border: "group-hover:border-fuchsia-400/50",
+          badge: "group-hover:from-fuchsia-500 group-hover:to-fuchsia-300",
+        }
+      };
+    } else if (userLevel >= 20) {
+      return {
+        bg: "from-blue-500/20 via-blue-400/20 to-blue-300/20",
+        text: "text-blue-300",
+        border: "border-blue-400/30",
+        badge: "bg-gradient-to-r from-blue-600 to-blue-400",
+        badgeBorder: "border-blue-500/30",
+        hover: {
+          glow: "group-hover:shadow-[0_0_10px_rgba(59,130,246,0.3)]",
+          border: "group-hover:border-blue-400/50",
+          badge: "group-hover:from-blue-500 group-hover:to-blue-300",
+        }
+      };
+    } else if (userLevel >= 10) {
+      return {
+        bg: "from-emerald-500/20 via-emerald-400/20 to-emerald-300/20",
+        text: "text-emerald-300",
+        border: "border-emerald-400/30",
+        badge: "bg-gradient-to-r from-emerald-600 to-emerald-400",
+        badgeBorder: "border-emerald-500/30",
+        hover: {
+          glow: "group-hover:shadow-[0_0_10px_rgba(16,185,129,0.3)]",
+          border: "group-hover:border-emerald-400/50",
+          badge: "group-hover:from-emerald-500 group-hover:to-emerald-300",
+        }
+      };
+    } else if (userLevel >= 5) {
+      return {
+        bg: "from-cyan-500/20 via-cyan-400/20 to-cyan-300/20",
+        text: "text-cyan-300",
+        border: "border-cyan-400/30",
+        badge: "bg-gradient-to-r from-cyan-600 to-cyan-400",
+        badgeBorder: "border-cyan-500/30",
+        hover: {
+          glow: "group-hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]",
+          border: "group-hover:border-cyan-400/50",
+          badge: "group-hover:from-cyan-500 group-hover:to-cyan-300",
+        }
+      };
+    } else {
+      // Default colors for levels 1-4
+      return {
+        bg: "from-brand-500/20 via-brand-400/20 to-brand-300/20",
+        text: "text-brand-300",
+        border: "border-brand-400/30",
+        badge: "bg-gradient-to-r from-brand-600 to-brand-400",
+        badgeBorder: "border-brand-500/30",
+        hover: {
+          glow: "group-hover:shadow-[0_0_10px_rgba(153,51,255,0.3)]",
+          border: "group-hover:border-brand-400/50",
+          badge: "group-hover:from-brand-500 group-hover:to-brand-300",
+        }
+      };
+    }
+  }, [userLevel]);
 
   const buttonStyles = useMemo(() => {
+    // Super Admin styling takes precedence
     if (isSuperAdmin()) {
       return {
         bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
@@ -38,6 +137,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         shine: "via-white/30",
       };
     }
+    
+    // Admin styling takes secondary precedence
     if (isAdmin()) {
       return {
         bg: "from-brand-600/20 via-brand-500/20 to-brand-400/20",
@@ -53,6 +154,26 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         shine: "via-white/25",
       };
     }
+    
+    // For regular users, use level-based styling if they have a level
+    if (userLevel > 0) {
+      const levelColors = getLevelColorScheme;
+      return {
+        bg: levelColors.bg,
+        text: levelColors.text,
+        border: levelColors.border,
+        hover: {
+          bg: `group-hover:${levelColors.bg.replace('from-', 'from-').replace('/20', '/30')}`,
+          text: "group-hover:text-white",
+          border: levelColors.hover.border,
+          glow: levelColors.hover.glow,
+        },
+        ring: `ring-${levelColors.border.replace('border-', '')} group-hover:ring-${levelColors.hover.border.replace('group-hover:border-', '')}`,
+        shine: "via-white/25",
+      };
+    }
+    
+    // Default styling for users with no level
     return {
       bg: "from-brand-500/20 to-brand-400/20",
       text: "text-gray-200",
@@ -66,7 +187,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       ring: "ring-brand-400/20 group-hover:ring-brand-400/30",
       shine: "via-white/20",
     };
-  }, [isAdmin, isSuperAdmin]);
+  }, [isAdmin, isSuperAdmin, userLevel, getLevelColorScheme]);
 
   const displayName = useMemo(() => {
     if (user.nickname) return user.nickname;
@@ -93,6 +214,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       label: "Profile",
       icon: FaUser,
       to: "/me",
+    },
+    // Add Degen Level item that links to leaderboard
+    {
+      label: "Degen Level",
+      icon: FaTrophy,
+      to: "/leaderboard",
+      badge: userLevel > 0 ? `Lvl ${userLevel}` : undefined,
+      badgeColor: userLevel > 0 ? getLevelColorScheme.badge : undefined
     },
     {
       label: "Noti's",
@@ -135,15 +264,36 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
             {/* Content */}
             <div className="relative flex items-center justify-between w-full px-3">
-              <span
-                className={`
-                  ${buttonStyles.text} ${buttonStyles.hover.text}
-                  font-medium tracking-wide transition-all duration-300
-                  ${isCompact ? "text-sm" : "text-base"}
-                `}
-              >
-                {displayName}
-              </span>
+              <div className="flex items-center gap-2">
+                {/* Level Badge - Only show if level > 0 */}
+                {userLevel > 0 && (
+                  <div 
+                    className={`
+                      flex items-center justify-center 
+                      ${isCompact ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"} 
+                      px-1 font-bold rounded-full 
+                      ${getLevelColorScheme.badge}
+                      border ${getLevelColorScheme.badgeBorder}
+                      shadow-inner transition-all duration-300
+                    `}
+                  >
+                    <span className="mx-0.5">{userLevel}</span>
+                  </div>
+                )}
+                
+                {/* Username */}
+                <span
+                  className={`
+                    ${buttonStyles.text} ${buttonStyles.hover.text}
+                    font-medium tracking-wide transition-all duration-300
+                    ${isCompact ? "text-sm" : "text-base"}
+                  `}
+                >
+                  {displayName}
+                </span>
+              </div>
+              
+              {/* Avatar */}
               <div className="relative">
                 {unreadNotifications > 0 && (
                   <div className="absolute -top-1 -right-1.5 z-10 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-red-500 text-white border border-dark-200 shadow-lg animate-pulse">
@@ -212,8 +362,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                           />
                           <span className="flex-1">{item.label}</span>
                           {item.badge !== undefined && (
-                            <span className="flex items-center justify-center min-w-5 h-5 text-xs font-semibold rounded-full bg-red-500/80 text-white px-1">
-                              {item.badge > 99 ? "99+" : item.badge}
+                            <span 
+                              className={`
+                                flex items-center justify-center min-w-5 h-5 text-xs font-semibold 
+                                rounded-full px-1.5 shadow-sm
+                                ${item.badgeColor ? item.badgeColor : 'bg-red-500/80'} 
+                                text-white
+                              `}
+                            >
+                              {typeof item.badge === 'number' && item.badge > 99 ? "99+" : item.badge}
                             </span>
                           )}
                         </Link>

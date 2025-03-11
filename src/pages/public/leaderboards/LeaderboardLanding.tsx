@@ -25,7 +25,7 @@ export const LeaderboardLanding = () => {
       </div>
 
       {/* Buttons Container */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
         {/* Performance Rankings Button */}
         <Link
           to="/rankings/performance"
@@ -86,6 +86,37 @@ export const LeaderboardLanding = () => {
               {/* Call to Action */}
               <div className="text-cyber-400 font-medium group-hover:animate-cyber.pulse">
                 View Rankings →
+              </div>
+            </div>
+          </div>
+        </Link>
+        
+        {/* Degen Level Rankings Button */}
+        <Link to="/leaderboard" className="group perspective-1000 relative">
+          <div className="relative transform transition-all duration-500 group-hover:scale-105">
+            <div className="bg-dark-200/80 backdrop-blur-sm border border-brand-500/30 rounded-xl p-8 text-center relative overflow-hidden">
+              {/* Background Effects */}
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-amber-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 animate-cyber.scan-vertical opacity-0 group-hover:opacity-20 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+
+              {/* Icon */}
+              <div className="text-5xl mb-4 text-amber-400 group-hover:animate-cyber.neon-flicker">
+                📈
+              </div>
+
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-gray-100 mb-3 relative z-10 group-hover:animate-cyber.glitch">
+                Degen Levels
+              </h2>
+
+              {/* Description */}
+              <p className="text-gray-400 mb-4 relative z-10 group-hover:text-gray-300">
+                Check your level and unlock special discounts
+              </p>
+
+              {/* Call to Action */}
+              <div className="text-amber-400 font-medium group-hover:animate-cyber.pulse">
+                View Levels →
               </div>
             </div>
           </div>

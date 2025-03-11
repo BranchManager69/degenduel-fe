@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { adminService } from "../../services/adminService";
 import { AdminActivity, AdminActivityFilters } from "../../types/admin";
+import { BanIPButton } from "./BanIPButton";
+import { BanOnSightButton } from "./BanOnSightButton";
 
 interface ActivityMonitorProps {
   limit?: number;
@@ -130,7 +132,26 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                   className="px-4 py-2 text-gray-300 text-sm whitespace-nowrap"
                   title={activity.action}
                 >
-                  {activity.action}
+                  <div className="flex items-center gap-2">
+                    <span>{activity.action}</span>
+                    {/* If this is a user-related action, extract wallet and add ban button */}
+                    {(activity.action === 'user.login' || 
+                     activity.action === 'user.register' || 
+                     activity.action === 'user.update') && 
+                     activity.details && 
+                     typeof activity.details === 'object' && 
+                     'wallet_address' in activity.details && (
+                      <BanOnSightButton
+                        user={{
+                          wallet_address: activity.details.wallet_address as string,
+                          nickname: ('nickname' in activity.details) ? activity.details.nickname as string : undefined
+                        }}
+                        size="sm"
+                        variant="icon"
+                        onSuccess={fetchActivities}
+                      />
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-2 text-gray-300 text-sm">
                   <div
@@ -150,7 +171,17 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                   className="px-4 py-2 text-gray-300 text-sm font-mono whitespace-nowrap"
                   title={activity.ip_address}
                 >
-                  {activity.ip_address}
+                  <div className="flex items-center gap-2">
+                    <span>{activity.ip_address}</span>
+                    {activity.ip_address && (
+                      <BanIPButton
+                        ipAddress={activity.ip_address}
+                        size="sm"
+                        variant="icon"
+                        onSuccess={fetchActivities}
+                      />
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
