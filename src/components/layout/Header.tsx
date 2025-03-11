@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotificationWebSocket } from "../../hooks/useNotificationWebSocket";
 import { useScrollHeader } from "../../hooks/useScrollHeader";
@@ -12,8 +11,11 @@ import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { ConnectWalletButton } from "../auth/ConnectWalletButton";
 import Logo from "../ui/Logo";
+import { ContestsDropdown } from "./ContestsDropdown";
 import { LiveContestTicker } from "./LiveContestTicker";
 import { MobileMenuButton } from "./MobileMenuButton";
+import { RankingsDropdown } from "./RankingsDropdown";
+import { TokensDropdown } from "./TokensDropdown";
 import { UserMenu } from "./user-menu/UserMenu";
 
 export const Header: React.FC = () => {
@@ -265,24 +267,9 @@ export const Header: React.FC = () => {
 
               {/* Main Navigation */}
               <nav className="hidden md:flex items-center space-x-6 ml-8">
-                <Link
-                  to="/contests"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Contests
-                </Link>
-                <Link
-                  to="/tokens"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Tokens
-                </Link>
-                <Link
-                  to="/leaderboards"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Rankings
-                </Link>
+                <ContestsDropdown isCompact={isCompact} />
+                <TokensDropdown isCompact={isCompact} />
+                <RankingsDropdown isCompact={isCompact} />
               </nav>
             </div>
 

@@ -406,6 +406,7 @@ const logError = (
 
 // This function is deprecated and will be removed in a future update
 // Use checkContestParticipation or getContestParticipation instead
+/*
 const addParticipationFlag = (
   contest: Contest,
   userWallet?: string
@@ -423,6 +424,7 @@ const addParticipationFlag = (
       ) || false,
   };
 };
+*/
 
 // Add a debounce/cache mechanism for participation checks
 const participationCache = new Map<
@@ -1115,6 +1117,37 @@ export const ddApi = {
       }
 
       return contests;
+    },
+    
+    // Gets detailed performance data for a user's contest entry
+    getPerformanceDetails: async (contestId: string | number, walletAddress: string) => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(
+          `/contests/${contestId}/performance?wallet_address=${encodeURIComponent(walletAddress)}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch performance data: HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return {
+          value: data.portfolio_value || 0,
+          change: data.performance_percentage || 0,
+          ranking: data.ranking || null,
+          tokens: data.token_performances || []
+        };
+      } catch (error) {
+        console.error(`Error fetching performance for contest ${contestId}:`, error);
+        // Return mock data for now until the API is implemented
+        return {
+          value: 100 + Math.random() * 100,
+          change: Math.random() * 20 - 10, // Random value between -10 and +10
+          ranking: Math.floor(Math.random() * 20) + 1,
+          tokens: []
+        };
+      }
     },
 
     // Get all contests

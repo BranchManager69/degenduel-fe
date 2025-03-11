@@ -13,7 +13,8 @@ const NotificationsPage: React.FC = () => {
     error, 
     markAsRead, 
     markAllAsRead,
-    refreshNotifications 
+    refreshNotifications,
+    isConnected
   } = useNotificationWebSocket();
 
   const getPriorityColor = useCallback((priority: string) => {

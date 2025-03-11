@@ -55,30 +55,34 @@ export const ServerDownBanner: React.FC = () => {
     : 0;
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-red-500/10 backdrop-blur-lg border border-red-500/20 rounded-b-lg shadow-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <FaServer className="text-red-400 animate-pulse" />
-              <div>
-                <h3 className="text-red-400 font-semibold">
-                  Server Unavailable
-                </h3>
-                <p className="text-sm text-red-300/80">
-                  Our servers are currently experiencing issues. We are working
-                  to restore service.
-                  {downDuration > 0 && (
-                    <span className="ml-2">
-                      Down for {Math.floor(downDuration / 60)}m{" "}
-                      {downDuration % 60}s
-                    </span>
-                  )}
-                </p>
-              </div>
+    <div className="w-full bg-gradient-to-r from-red-950/60 via-red-900/50 to-red-950/60 border-b border-red-500/40">
+      <div className="relative overflow-hidden w-full backdrop-blur-lg px-0">
+        {/* Animated glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent animate-shine-slow"></div>
+        
+        {/* Pulsing border effect */}
+        <div className="absolute inset-0 border-b-2 border-red-500/0 animate-pulse-border"></div>
+        
+        <div className="relative flex items-center justify-between py-2 px-3 sm:py-3 sm:px-4 md:px-6">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <FaServer className="text-red-400 animate-pulse text-sm sm:text-base" />
+            <div>
+              <h3 className="text-red-400 font-semibold text-xs sm:text-sm md:text-base">
+                Server Unavailable
+              </h3>
+              <p className="text-xs md:text-sm text-red-300/80 line-clamp-1 sm:line-clamp-none">
+                <span className="hidden sm:inline">Our servers are currently experiencing issues. We are working to restore service.</span>
+                <span className="sm:hidden">Server issues. Working on it.</span>
+                {downDuration > 0 && (
+                  <span className="ml-1 sm:ml-2">
+                    Down for {Math.floor(downDuration / 60)}m{" "}
+                    {downDuration % 60}s
+                  </span>
+                )}
+              </p>
             </div>
-            <FaExclamationTriangle className="text-red-400 animate-pulse" />
           </div>
+          <FaExclamationTriangle className="text-red-400 animate-pulse text-sm sm:text-base" />
         </div>
       </div>
     </div>

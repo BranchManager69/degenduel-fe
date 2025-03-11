@@ -40,6 +40,8 @@ import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import { SystemReports } from "./pages/admin/SystemReports";
 import WebSocketHub from "./pages/admin/WebSocketHub";
+import MyContestsPage from "./pages/authenticated/MyContestsPage";
+import MyPortfoliosPage from "./pages/authenticated/MyPortfoliosPage";
 import NotificationsPage from "./pages/authenticated/NotificationsPage";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { Profile } from "./pages/authenticated/PrivateProfilePage";
@@ -162,13 +164,13 @@ export const App: React.FC = () => {
               {/* CSS-based animated background (lightweight, keep this enabled) */}
               <MovingBackground />
 
+              {/* Header */}
+              <Header />
+              
               {/* Server Down Banner */}
               <ServerDownBanner />
               {/* Service Status Banner (MOVED) */}
               {/* <ServiceStatusBanner /> */}
-
-              {/* Header */}
-              <Header />
 
               {/* Main Content */}
               <main className="flex-1 pb-12">
@@ -347,6 +349,30 @@ export const App: React.FC = () => {
                       <AuthenticatedRoute>
                         <MaintenanceGuard>
                           <NotificationsPage />
+                        </MaintenanceGuard>
+                      </AuthenticatedRoute>
+                    }
+                  />
+                  
+                  {/* My Contests */}
+                  <Route
+                    path="/my-contests"
+                    element={
+                      <AuthenticatedRoute>
+                        <MaintenanceGuard>
+                          <MyContestsPage />
+                        </MaintenanceGuard>
+                      </AuthenticatedRoute>
+                    }
+                  />
+                  
+                  {/* My Portfolios */}
+                  <Route
+                    path="/my-portfolios"
+                    element={
+                      <AuthenticatedRoute>
+                        <MaintenanceGuard>
+                          <MyPortfoliosPage />
                         </MaintenanceGuard>
                       </AuthenticatedRoute>
                     }

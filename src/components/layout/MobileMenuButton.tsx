@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useStore } from "../../store/useStore";
 
 interface MobileMenuButtonProps {
   className?: string;
@@ -12,6 +13,8 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
   isCompact = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  // Use store directly to check user authentication
+  const { user } = useStore();
 
   return (
     <div className={`relative ${className}`}>
@@ -71,8 +74,8 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className={`absolute right-0 mt-1 w-48 bg-dark-200/95 border border-brand-500/20 
-                rounded-lg shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-sm
+              className={`absolute right-0 mt-1 w-48 bg-dark-200/80 border-[0.5px] border-brand-500/30 
+                rounded-xl shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-xl
                 ${isCompact ? "mt-0.5" : "mt-1"}`}
             >
               {/* Enhanced gradient overlays */}
@@ -97,14 +100,44 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   },
                 }}
               >
-                <MenuItem to="/contests" onClick={() => setIsOpen(false)}>
+                {/* Contests Section */}
+                <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Contests
+                </div>
+                <MenuItem to="/contests" onClick={() => setIsOpen(false)}>
+                  Browse Contests
                 </MenuItem>
-                <MenuItem to="/tokens" onClick={() => setIsOpen(false)}>
+                {user && (
+                  <>
+                    <MenuItem to="/my-contests" onClick={() => setIsOpen(false)}>
+                      My Contests
+                    </MenuItem>
+                    <MenuItem to="/my-portfolios" onClick={() => setIsOpen(false)}>
+                      My Portfolios
+                    </MenuItem>
+                  </>
+                )}
+                
+                {/* Tokens Section */}
+                <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
                   Tokens
+                </div>
+                <MenuItem to="/tokens" onClick={() => setIsOpen(false)}>
+                  Browse Tokens
                 </MenuItem>
-                <MenuItem to="/leaderboards" onClick={() => setIsOpen(false)}>
+                <MenuItem to="/tokens/whitelist" onClick={() => setIsOpen(false)}>
+                  Whitelist
+                </MenuItem>
+                
+                {/* Rankings Section */}
+                <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
                   Rankings
+                </div>
+                <MenuItem to="/rankings/global" onClick={() => setIsOpen(false)}>
+                  Global Rankings
+                </MenuItem>
+                <MenuItem to="/rankings/performance" onClick={() => setIsOpen(false)}>
+                  Performance Rankings
                 </MenuItem>
 
                 {/* Divider before admin sections */}
@@ -148,7 +181,7 @@ const MenuItem: React.FC<{
   >
     <Link
       to={to}
-      className={`block px-4 py-2 text-sm text-gray-300 hover:bg-dark-300/50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${className}`}
+      className={`block px-4 py-2 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${className}`}
       onClick={onClick}
     >
       {children}
