@@ -113,38 +113,100 @@ export function useNotificationWebSocket(): NotificationState & NotificationActi
   useEffect(() => {
     if (isConnected && user) {
       refreshNotifications();
+    } else if (!isConnected && !isLoading) {
+      // Set an error if we're not loading and not connected
+      setError(new Error("WebSocket connection failed. Unable to load notifications."));
     }
-  }, [isConnected, user]);
+  }, [isConnected, user, isLoading]);
 
   // Send message helper function
   const sendMessage = useCallback((message: any) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(typeof message === 'string' ? message : JSON.stringify(message));
+      try {
+        wsRef.current.send(typeof message === 'string' ? message : JSON.stringify(message));
+        return true;
+      } catch (err) {
+        console.error('Error sending message to WebSocket:', err);
+        setError(err instanceof Error ? err : new Error('Failed to send WebSocket message'));
+        return false;
+      }
     } else {
       console.warn('WebSocket is not connected, cannot send message');
+      setError(new Error('Unable to send message: WebSocket is not connected'));
+      return false;
     }
   }, [wsRef]);
 
   // Actions
   const markAsRead = useCallback((notificationId: string) => {
-    sendMessage({
-      action: 'MARK_READ',
-      notificationId
-    });
+    try {
+      const success = sendMessage({
+        action: 'MARK_READ',
+        notificationId
+      });
+      
+      // Optimistic update if message was sent successfully
+      if (success) {
+        setNotifications(prev => 
+          prev.map(notification => 
+            notification.id === notificationId 
+              ? { ...notification, isRead: true } 
+              : notification
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      setError(error instanceof Error ? error : new Error('Failed to mark notification as read'));
+    }
   }, [sendMessage]);
 
   const markAllAsRead = useCallback(() => {
-    sendMessage({
-      action: 'MARK_ALL_READ'
-    });
+    try {
+      const success = sendMessage({
+        action: 'MARK_ALL_READ'
+      });
+      
+      // Optimistic update if message was sent successfully
+      if (success) {
+        setNotifications(prev => 
+          prev.map(notification => ({ ...notification, isRead: true }))
+        );
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      setError(error instanceof Error ? error : new Error('Failed to mark all notifications as read'));
+    }
   }, [sendMessage]);
 
   const refreshNotifications = useCallback(() => {
-    setIsLoading(true);
-    sendMessage({
-      action: 'GET_NOTIFICATIONS'
-    });
-  }, [sendMessage]);
+    try {
+      setIsLoading(true);
+      setError(null); // Clear previous errors on refresh
+      const success = sendMessage({
+        action: 'GET_NOTIFICATIONS'
+      });
+      
+      // If message couldn't be sent, set loading to false
+      if (!success) {
+        setIsLoading(false);
+      }
+      
+      // Set a timeout to prevent infinite loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+          setError(new Error('Notification refresh timed out. Please try again.'));
+        }
+      }, 10000); // 10 second timeout
+      
+      return () => clearTimeout(timeoutId);
+    } catch (error) {
+      console.error('Error refreshing notifications:', error);
+      setIsLoading(false);
+      setError(error instanceof Error ? error : new Error('Failed to refresh notifications'));
+    }
+  }, [sendMessage, isLoading]);
 
   return {
     notifications,

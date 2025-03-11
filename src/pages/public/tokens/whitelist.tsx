@@ -47,6 +47,15 @@ export const TokenWhitelistPage: React.FC = () => {
   const { user, connectWallet, achievements } = useStore();
   const [contractAddress, setContractAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [transactionState, setTransactionState] = useState<{
+    status: 'idle' | 'preparing' | 'signing' | 'sending' | 'confirming' | 'success' | 'error';
+    message: string;
+    error?: string;
+    signature?: string;
+  }>({
+    status: 'idle',
+    message: '',
+  });
   const navigate = useNavigate();
   const walletAddress = user?.wallet_address;
   const isConnected = !!walletAddress;
@@ -100,6 +109,10 @@ export const TokenWhitelistPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      setTransactionState({
+        status: 'preparing',
+        message: 'Preparing transaction...',
+      });
 
       // 1. Create and send payment transaction
       const connection = new Connection(RPC_ENDPOINT, "confirmed");
@@ -129,11 +142,45 @@ export const TokenWhitelistPage: React.FC = () => {
       transaction.feePayer = walletPublicKey;
 
       // Use Phantom's new unified method to sign and send the transaction
+      setTransactionState({
+        status: 'signing',
+        message: 'Please confirm the transaction in your wallet...',
+      });
+      
       const { signature } = await window.solana.signAndSendTransaction({
         transaction: transaction,
       });
 
+      setTransactionState({
+        status: 'sending',
+        message: 'Transaction sent, waiting for confirmation...',
+        signature,
+      });
+
+      toast.success(
+        <div>
+          <div>Transaction sent!</div>
+          <div className="text-xs mt-1">
+            <a 
+              href={`https://solscan.io/tx/${signature}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-brand-400 hover:text-brand-300"
+            >
+              View on Solscan
+            </a>
+          </div>
+        </div>,
+        { duration: 5000 }
+      );
+
       // Wait for confirmation with blockhash details
+      setTransactionState({
+        status: 'confirming',
+        message: 'Waiting for blockchain confirmation...',
+        signature,
+      });
+      
       const confirmation = await connection.confirmTransaction({
         signature,
         blockhash: latestBlockhash.blockhash,
@@ -141,6 +188,12 @@ export const TokenWhitelistPage: React.FC = () => {
       });
       
       if (confirmation.value.err) {
+        setTransactionState({
+          status: 'error',
+          message: 'Transaction failed on the blockchain',
+          error: 'Please check Solscan for details',
+          signature,
+        });
         throw new Error("Transaction failed!");
       }
 
@@ -178,8 +231,27 @@ export const TokenWhitelistPage: React.FC = () => {
       }
 
       // 3. Show success and redirect
+      setTransactionState({
+        status: 'success',
+        message: 'Transaction confirmed! Token submitted successfully.',
+        signature,
+      });
+
       toast.success(
-        `Successfully submitted token! It will be available in games shortly.`,
+        <div>
+          <div>Successfully submitted token!</div>
+          <div className="text-xs mt-1">It will be available in games shortly.</div>
+          <div className="text-xs mt-1">
+            <a 
+              href={`https://solscan.io/tx/${signature}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-brand-400 hover:text-brand-300"
+            >
+              View transaction on Solscan
+            </a>
+          </div>
+        </div>,
         {
           duration: 5000,
           style: {
@@ -196,6 +268,14 @@ export const TokenWhitelistPage: React.FC = () => {
       }, 5000);
     } catch (error) {
       console.error("Submission error:", error);
+      
+      setTransactionState({
+        status: 'error',
+        message: 'An error occurred',
+        error: error instanceof Error ? error.message : "Failed to submit token",
+        signature: transactionState.signature,
+      });
+      
       toast.error(
         error instanceof Error ? error.message : "Failed to submit token"
       );
@@ -293,6 +373,58 @@ export const TokenWhitelistPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Transaction Status Indicators */}
+                  {transactionState.status !== 'idle' && (
+                    <div className={`mb-4 p-3 rounded-lg border ${
+                      transactionState.status === 'error' ? 'border-red-500/30 bg-red-500/10' : 
+                      transactionState.status === 'success' ? 'border-green-500/30 bg-green-500/10' : 
+                      'border-brand-500/30 bg-brand-500/10'
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        {transactionState.status === 'preparing' && (
+                          <div className="animate-pulse text-brand-400">⚙️</div>
+                        )}
+                        {transactionState.status === 'signing' && (
+                          <div className="animate-bounce text-brand-400">✍️</div>
+                        )}
+                        {transactionState.status === 'sending' && (
+                          <div className="animate-spin text-brand-400">🔄</div>
+                        )}
+                        {transactionState.status === 'confirming' && (
+                          <div className="animate-pulse text-brand-400">⏳</div>
+                        )}
+                        {transactionState.status === 'success' && (
+                          <div className="text-green-400">✅</div>
+                        )}
+                        {transactionState.status === 'error' && (
+                          <div className="text-red-400">❌</div>
+                        )}
+                        <div>
+                          <p className={`font-medium ${
+                            transactionState.status === 'error' ? 'text-red-400' : 
+                            transactionState.status === 'success' ? 'text-green-400' : 
+                            'text-brand-400'
+                          }`}>
+                            {transactionState.message}
+                          </p>
+                          {transactionState.error && (
+                            <p className="text-xs text-red-400 mt-1">{transactionState.error}</p>
+                          )}
+                          {transactionState.signature && (
+                            <a 
+                              href={`https://solscan.io/tx/${transactionState.signature}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-brand-400 hover:text-brand-300 mt-1 inline-block"
+                            >
+                              View on Solscan
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <Button
                     onClick={handleSubmit}

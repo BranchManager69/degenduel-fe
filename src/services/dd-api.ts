@@ -404,13 +404,16 @@ const logError = (
   });
 };
 
-// Add type for participant in addParticipationFlag
+// This function is deprecated and will be removed in a future update
+// Use checkContestParticipation or getContestParticipation instead
 const addParticipationFlag = (
   contest: Contest,
   userWallet?: string
 ): Contest => {
   if (!userWallet) return { ...contest, is_participating: false };
 
+  // This approach relies on the participants array which may not be complete
+  // or may not be available in all contest responses
   return {
     ...contest,
     is_participating:
@@ -429,9 +432,14 @@ const participationCache = new Map<
 const CACHE_DURATION = 30000; // Participation check cache duration: 30 seconds
 const FETCH_TIMEOUT = 5000; // Fetch timeout: 5 seconds
 
-// Check contest participation using dedicated participation check endpoint
-// TODO: THIS IS PRETTY MUCH DUPLICATIVE OF THE ENDPOINT BELOW
-// EXCEPT IT'S EVEN LESS EFFICIENT
+/**
+ * Standard method for checking contest participation
+ * Uses the dedicated check-participation endpoint for efficient lookups
+ * 
+ * @param contestId The ID of the contest to check participation for
+ * @param userWallet The wallet address to check participation for
+ * @returns A promise that resolves to a boolean indicating if the user is participating
+ */
 const checkContestParticipation = async (
   contestId: number | string,
   userWallet?: string
@@ -487,49 +495,24 @@ const checkContestParticipation = async (
       return false;
     }
 
-    try {
-      const data = await response.json();
+    const data = await response.json();
 
-      // Validate response format
-      if (data.is_participating === undefined) {
-        console.warn(
-          `[DD-API] Invalid participation check response format for contest ${contestId}:`,
-          data
-        );
-        participationCache.set(cacheKey, { result: false, timestamp: now });
-        return false;
-      }
-
-      // The dedicated endpoint returns is_participating boolean
-      const result = Boolean(data.is_participating);
-
-      // Store participant data in the global store if available
-      if (data.is_participating && data.participant_data) {
-        try {
-          // This is where we could potentially update the store with participant data
-          // for use in other parts of the application
-          console.debug(
-            `[DD-API] Contest ${contestId} participation data:`,
-            data.participant_data
-          );
-        } catch (storeError) {
-          console.warn(
-            "[DD-API] Failed to store participant data in global state:",
-            storeError
-          );
-        }
-      }
-
-      participationCache.set(cacheKey, { result, timestamp: now });
-      return result;
-    } catch (parseError) {
-      console.error(
-        `[DD-API] Failed to parse participation response for contest ${contestId}:`,
-        parseError
+    // Validate response format
+    if (data.is_participating === undefined) {
+      console.warn(
+        `[DD-API] Invalid participation check response format for contest ${contestId}:`,
+        data
       );
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
+
+    // The dedicated endpoint returns is_participating boolean
+    const result = Boolean(data.is_participating);
+
+    // Store in cache
+    participationCache.set(cacheKey, { result, timestamp: now });
+    return result;
   } catch (error: unknown) {
     // Don't log timeout errors
     if (error instanceof Error && error.name !== "AbortError") {
@@ -1098,13 +1081,40 @@ export const ddApi = {
       });
 
       const data = await response.json();
-      const contests: Contest[] = Array.isArray(data)
+      let contests: Contest[] = Array.isArray(data)
         ? data
         : data.contests || [];
 
-      return contests.map((contest: Contest) =>
-        addParticipationFlag(contest, user?.wallet_address)
-      );
+      // Mark contests as not participating by default
+      contests = contests.map(contest => ({
+        ...contest,
+        is_participating: false
+      }));
+      
+      // If user is logged in, check participation using the dedicated endpoint
+      if (user?.wallet_address) {
+        // Check participation in batches for better performance
+        const BATCH_SIZE = 5;
+        for (let i = 0; i < contests.length; i += BATCH_SIZE) {
+          const batch = contests.slice(i, i + BATCH_SIZE);
+          const batchPromises = batch.map((contest) =>
+            checkContestParticipation(contest.id, user.wallet_address).catch(
+              () => false
+            )
+          );
+          const batchResults = await Promise.all(batchPromises);
+
+          // Update contests with participation results
+          batchResults.forEach((result, index) => {
+            contests[i + index] = {
+              ...contests[i + index],
+              is_participating: result,
+            };
+          });
+        }
+      }
+
+      return contests;
     },
 
     // Get all contests
@@ -1145,33 +1155,41 @@ export const ddApi = {
           });
         }
 
-        // Check participation in batches if user is logged in
-        // TODO: improve this by checking participation for all contests at once
-        // This is where the is_participating flag is set
+        // Mark contests as not participating by default
+        contests = contests.map(contest => ({
+          ...contest,
+          is_participating: false
+        }));
+        
+        // If user is logged in, check participation either using:
+        // 1. The is_participating flag already present in the response (if using Method 1 on backend)
+        // 2. Batch checking with the dedicated endpoint (if no flags are present)
         if (user?.wallet_address) {
-          const BATCH_SIZE = 5;
-          for (let i = 0; i < contests.length; i += BATCH_SIZE) {
-            const batch = contests.slice(i, i + BATCH_SIZE);
-            const batchPromises = batch.map((contest) =>
-              checkContestParticipation(contest.id, user.wallet_address).catch(
-                () => false
-              )
-            );
-            const batchResults = await Promise.all(batchPromises);
+          const needsParticipationCheck = contests.some(contest => 
+            contest.is_participating === undefined || contest.is_participating === null
+          );
+          
+          if (needsParticipationCheck) {
+            // Check participation in batches 
+            const BATCH_SIZE = 5;
+            for (let i = 0; i < contests.length; i += BATCH_SIZE) {
+              const batch = contests.slice(i, i + BATCH_SIZE);
+              const batchPromises = batch.map((contest) =>
+                checkContestParticipation(contest.id, user.wallet_address).catch(
+                  () => false
+                )
+              );
+              const batchResults = await Promise.all(batchPromises);
 
-            // Update contests with participation results
-            batchResults.forEach((result, index) => {
-              contests[i + index] = {
-                ...contests[i + index],
-                is_participating: result,
-              };
-            });
+              // Update contests with participation results
+              batchResults.forEach((result, index) => {
+                contests[i + index] = {
+                  ...contests[i + index],
+                  is_participating: result,
+                };
+              });
+            }
           }
-        } else {
-          contests = contests.map((contest) => ({
-            ...contest,
-            is_participating: false,
-          }));
         }
 
         return contests;
