@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { CopyToClipboard } from "../../common/CopyToClipboard";
+import { useStore } from "../../../store/useStore";
 
 const MAX_NICKNAME_LENGTH = 15;
 const MIN_NICKNAME_LENGTH = 4;
@@ -88,6 +89,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   banReason,
   isPublicView = false,
 }) => {
+  const { user } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [newNickname, setNewNickname] = useState(username);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -244,9 +246,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-brand-500/30 bg-dark-300/50"
               >
                 <img
-                  src="/assets/media/default/profile_pic.png"
+                  src={user?.profile_image?.url || "/assets/media/default/profile_pic.png"}
                   alt={displayName}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/assets/media/default/profile_pic.png";
+                  }}
                 />
                 {/* Overlay Effects */}
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-brand-600/10 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300" />

@@ -7,6 +7,7 @@ import { UserProgress } from "../../components/achievements/UserProgress";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestHistorySection } from "../../components/profile/contest-history/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/profile-header/ProfileHeaderSection";
+import SocialAccountsPanel from "../../components/profile/SocialAccountsPanel";
 import { UserStatsSection } from "../../components/profile/user-stats/UserStatsSection";
 import { useStore } from "../../store/useStore";
 
@@ -81,13 +82,28 @@ export const Profile: React.FC = () => {
               <UserStatsSection />
             </motion.div>
 
+            {/* Social Accounts Panel */}
+            <motion.div
+              key="social-accounts"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-4"
+            >
+              <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
+                Social Accounts
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
+              </h2>
+              <SocialAccountsPanel />
+            </motion.div>
+            
             {/* Two Column Layout for Achievements and History */}
             <motion.div
               key="columns"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+              className="grid grid-cols-1 gap-8"
             >
               {/* Achievements Column */}
               <div className="space-y-4">

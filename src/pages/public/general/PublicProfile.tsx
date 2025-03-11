@@ -7,6 +7,7 @@ import { UserProgress } from "../../../components/achievements/UserProgress";
 import { CopyToClipboard } from "../../../components/common/CopyToClipboard";
 import { ErrorMessage } from "../../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
+import SocialAccountsPanel from "../../../components/profile/SocialAccountsPanel";
 import {
   ContestEntry,
   ContestHistory,
@@ -289,6 +290,12 @@ export const PublicProfile: React.FC = () => {
               {/* User Progress Section */}
               <div className="mt-8 max-w-3xl mx-auto">
                 <UserProgress />
+              </div>
+              
+              {/* Social Accounts */}
+              <div className="mt-8 max-w-3xl mx-auto">
+                <h3 className="text-xl font-bold mb-4 text-gray-200">Social Accounts</h3>
+                <SocialAccountsPanel />
               </div>
 
               {/* Join Date */}
