@@ -1,8 +1,8 @@
 import React from 'react';
+import { toast } from 'react-hot-toast';
+import { FaTwitter } from 'react-icons/fa';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
-import { FaTwitter } from 'react-icons/fa';
-import { toast } from 'react-hot-toast';
 
 /**
  * Twitter Login Button Component
@@ -35,7 +35,7 @@ const TwitterLoginButton = ({ linkMode = false, className = '' }) => {
     if (!linkMode && !user) {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('twitter') === 'pending') {
-        toast.info('Please connect your wallet to complete Twitter linking');
+        toast.error('Please connect your wallet to complete Twitter linking');
       }
     }
     
@@ -46,7 +46,7 @@ const TwitterLoginButton = ({ linkMode = false, className = '' }) => {
         toast.success('Twitter account linked successfully!');
         
         // Remove the query parameter to prevent showing the toast on refresh
-        const url = new URL(window.location);
+        const url = new URL(window.location.href);
         url.searchParams.delete('twitter_linked');
         window.history.replaceState({}, '', url);
       }

@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/Card';
-import TwitterLoginButton from '../auth/TwitterLoginButton';
-import { useAuthContext } from '../../contexts/AuthContext';
-import { FaTwitter, FaCheck, FaUnlink } from 'react-icons/fa';
-import { Button } from '../ui/Button';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { formatDate } from '../../utils/formatters';
+import { FaCheck, FaTwitter, FaUnlink } from 'react-icons/fa';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { formatDate } from '../../lib/utils';
+import TwitterLoginButton from '../auth/TwitterLoginButton';
+import { Button } from '../ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
+
+interface SocialAccount {
+  platform: string;
+  username: string;
+  verification_date: string;
+}
 
 /**
  * Social Accounts Panel Component
@@ -15,7 +21,7 @@ import { formatDate } from '../../utils/formatters';
  */
 const SocialAccountsPanel = () => {
   const { user } = useAuthContext();
-  const [socialAccounts, setSocialAccounts] = useState([]);
+  const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,10 +37,18 @@ const SocialAccountsPanel = () => {
         if (response.ok) {
           const data = await response.json();
           setSocialAccounts(data);
+        } else {
+          console.warn(`Social profiles endpoint returned ${response.status}`, await response.text());
+          // For now, use empty array to prevent UI errors
+          setSocialAccounts([]);
         }
       } catch (error) {
         console.error('Failed to fetch social accounts:', error);
-        toast.error('Failed to load linked social accounts');
+        // For now, don't show error toast since this is expected until backend is ready
+        // toast.error('Failed to load linked social accounts');
+        
+        // Use empty array to prevent UI errors
+        setSocialAccounts([]);
       } finally {
         setLoading(false);
       }
@@ -43,7 +57,7 @@ const SocialAccountsPanel = () => {
     fetchSocialAccounts();
   }, [user]);
   
-  const handleUnlinkAccount = async (platform) => {
+  const handleUnlinkAccount = async (platform: string) => {
     if (!user?.wallet_address) return;
     if (!confirm(`Are you sure you want to unlink your ${platform} account?`)) return;
     
@@ -118,7 +132,7 @@ const SocialAccountsPanel = () => {
               <div>
                 {twitterAccount ? (
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="sm" 
                     onClick={() => handleUnlinkAccount('twitter')}
                     className="text-red-400 hover:text-red-300 hover:bg-red-900/20"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+// @ts-ignore - JSX component without TypeScript definitions
 import LoginOptions from '../../../components/auth/LoginOptions';
 import Logo from '../../../components/ui/Logo';
 import { useAuthContext } from '../../../contexts/AuthContext';

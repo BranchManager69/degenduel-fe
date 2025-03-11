@@ -10,8 +10,8 @@ import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
-import Logo from "../ui/Logo";
 import { ConnectWalletButton } from "../auth/ConnectWalletButton";
+import Logo from "../ui/Logo";
 import { LiveContestTicker } from "./LiveContestTicker";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { UserMenu } from "./user-menu/UserMenu";
@@ -55,8 +55,11 @@ export const Header: React.FC = () => {
         // 3. The LiveContestTicker component already has formatting for all four status types
         //    (active, pending, completed, and cancelled)
         // 4. This is an easy temporary solution until the evaluation service is fixed
-        // Original code: setActiveContests(contests.filter(isContestLive) || []);
-        setActiveContests(contests || []);
+        //setActiveContests(contests || []);
+        
+        // NEVERMIND! C.E.S. should be back up and running now:
+        setActiveContests(contests.filter(isContestLive) || []);
+        
       } catch (err: any) {
         if (err?.status === 503 || err?.message?.includes("503")) {
           handleMaintenanceTransition();

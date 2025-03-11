@@ -11,7 +11,7 @@ import { BackgroundEffects } from "../../../components/animated-background/Backg
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Input } from "../../../components/ui/Input";
-import { TOKEN_SUBMISSION_COST, TREASURY_WALLET } from "../../../config/config";
+import { NODE_ENV, TOKEN_SUBMISSION_COST, TREASURY_WALLET } from "../../../config/config";
 import { useStore } from "../../../store/useStore";
 // Provide types for window.solana
 declare global {
@@ -24,16 +24,21 @@ declare global {
         encoding: string
       ) => Promise<{ signature: Uint8Array }>;
       signTransaction: (transaction: Transaction) => Promise<Transaction>;
+      signAndSendTransaction: (options: { transaction: Transaction }) => Promise<{ signature: string }>;
       publicKey?: { toString: () => string };
     };
   }
 }
 
-const BASE_SUBMISSION_COST = TOKEN_SUBMISSION_COST;
+// Development mode has a lower submission cost
+const BASE_SUBMISSION_COST = NODE_ENV === "development" 
+  ? TOKEN_SUBMISSION_COST * 0.01 
+  : TOKEN_SUBMISSION_COST;
+
 const RECIPIENT_WALLET = new PublicKey(TREASURY_WALLET);
 const RPC_ENDPOINT =
-  import.meta.env.VITE_SOLANA_RPC_MAINNET ||
-  "https://api.mainnet-beta.solana.com";
+  //import.meta.env.VITE_SOLANA_RPC_MAINNET || "https://api.mainnet-beta.solana.com";
+  import.meta.env.VITE_SOLANA_RPC_MAINNET;
 
 // Maximum discount percentage (cap at 50%)
 const MAX_DISCOUNT_PERCENT = 50;
@@ -98,15 +103,12 @@ export const TokenWhitelistPage: React.FC = () => {
 
       // 1. Create and send payment transaction
       const connection = new Connection(RPC_ENDPOINT, "confirmed");
-      const { blockhash } = await connection.getLatestBlockhash("finalized");
-
+      
       // Get the user's public key
       const walletPublicKey = new PublicKey(walletAddress);
 
       const transaction = new Transaction();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = walletPublicKey;
-
+      
       // Add transfer instruction with discounted amount
       transaction.add(
         SystemProgram.transfer({
@@ -117,21 +119,33 @@ export const TokenWhitelistPage: React.FC = () => {
       );
 
       // Check if window.solana is available for transaction signing
-      if (!window.solana?.signTransaction) {
-        throw new Error("Wallet does not support transaction signing");
+      if (!window.solana?.signAndSendTransaction) {
+        throw new Error("Wallet does not support the required transaction signing method");
       }
 
-      // Sign and send transaction
-      const signed = await window.solana.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signed.serialize());
+      // Get the latest blockhash for transaction freshness
+      const latestBlockhash = await connection.getLatestBlockhash("finalized");
+      transaction.recentBlockhash = latestBlockhash.blockhash;
+      transaction.feePayer = walletPublicKey;
 
-      // Wait for confirmation
-      const confirmation = await connection.confirmTransaction(signature);
+      // Use Phantom's new unified method to sign and send the transaction
+      const { signature } = await window.solana.signAndSendTransaction({
+        transaction: transaction,
+      });
+
+      // Wait for confirmation with blockhash details
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      });
+      
       if (confirmation.value.err) {
         throw new Error("Transaction failed!");
       }
 
       // 2. Submit to our API with the new endpoint
+      // TODO: Change to the new endpoint
       const response = await fetch(
         "https://data.degenduel.me/api/tokens/add-to-whitelist",
         {

@@ -8,7 +8,7 @@
  * @returns {Object} An object containing the token data, loading state, error state, and a function to refresh the data.
  */
 
-import axios from "axios"; // for logging errors to the server
+//import axios from "axios"; // for logging errors to the server
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NODE_ENV, WS_URL } from "../config/config";
 import { useStore } from "../store/useStore";
@@ -24,8 +24,9 @@ const WS_DEBUG = true;
 const TOKEN_DATA_WSS_PATH = `/api/v69/ws/token-data`;
 
 // Local development settings (only used when USE_LOCAL_SERVER is true)
+//     Can set to true when testing with localhost (but I choose to favor dev.degenduel.me over localhost)
+const USE_LOCAL_SERVER = false;
 const TOKEN_DATA_LOCAL_URL = NODE_ENV === "development" ? `localhost:3005` : `localhost:3004`;
-const USE_LOCAL_SERVER = false; // Can set to true when testing with localhost (but I choose to favor dev.degenduel.me over localhost)
 
 export interface TokenData {
   symbol: string;
@@ -434,14 +435,14 @@ export function useTokenDataWebSocket(
             console.error(`[TokenDataWebSocket] \n[Connection closed unexpectedly] \n${stringifiedErrorEvent}`);
           }
           // Convert WS_URL to HTTP/HTTPS for axios
-          const httpUrl = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-          
+          // const httpUrl = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
           // Log the error to the server
-          axios.post(`${httpUrl}/api/v69/log-error`, {
-            error: event.code,
-            message: event.reason,
-            timestamp: new Date().toISOString(),
-          });
+          //axios.post(`${httpUrl}/api/v69/log-error`, {
+          //axios.post(`${httpUrl}/api`, { // testing
+          //  error: event.code,
+          //  message: event.reason,
+          //  timestamp: new Date().toISOString(),
+          //});
         }
 
         // Simple reconnection with exponential backoff
@@ -470,17 +471,20 @@ export function useTokenDataWebSocket(
 
       wsRef.current.onerror = (error) => {
         // Convert WS_URL to HTTP/HTTPS for axios
-        const httpUrl = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-        
+        // const httpUrl = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
         // Log the error to the server
         //axios.post(`${httpUrl}/api/v69/log-error`, {
-        axios.post(`${httpUrl}/api`, {
-          error: error,
-          message: "WebSocket connection error",
-          timestamp: new Date().toISOString(),
-        });
+        //axios.post(`${httpUrl}/api`, { // testing
+        //  error: error,
+        //  message: "WebSocket connection error",
+        //  timestamp: new Date().toISOString(),
+        //});
         
-        console.error(`[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}] \n${error}`);
+        if (NODE_ENV === "development") {
+          console.error(`[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}] \n${JSON.stringify(error)}`);
+        } else {
+          console.error(`[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}]`);
+        }
         setError(`WebSocket connection error`);
         
         // Log connection details

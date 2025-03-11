@@ -1,8 +1,8 @@
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
-import { ConnectWalletButton } from './ConnectWalletButton.tsx';
-import TwitterLoginButton from './TwitterLoginButton';
+//import React from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/Card';
 import { Divider } from '../ui/Divider';
+import { ConnectWalletButton } from './ConnectWalletButton';
+import TwitterLoginButton from './TwitterLoginButton';
 
 /**
  * Login Options Component

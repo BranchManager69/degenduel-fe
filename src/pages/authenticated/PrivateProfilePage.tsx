@@ -7,6 +7,7 @@ import { UserProgress } from "../../components/achievements/UserProgress";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestHistorySection } from "../../components/profile/contest-history/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/profile-header/ProfileHeaderSection";
+// @ts-ignore - JSX component without TypeScript definitions
 import SocialAccountsPanel from "../../components/profile/SocialAccountsPanel";
 import { UserStatsSection } from "../../components/profile/user-stats/UserStatsSection";
 import { useStore } from "../../store/useStore";

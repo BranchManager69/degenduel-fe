@@ -12,6 +12,7 @@ import React, { useEffect, useRef } from "react";
 import { NODE_ENV } from "../config/config";
 
 // Config
+const RENDERING_DEBUG_MODE = false;
 const LOG_THRESHOLD = 16.67 * 2; // 30 FPS
 
 /**
@@ -23,7 +24,7 @@ const LOG_THRESHOLD = 16.67 * 2; // 30 FPS
 export const MeasureRender = ({
   id,
   children,
-  logToConsole = true,
+  logToConsole = RENDERING_DEBUG_MODE,
   logThreshold = LOG_THRESHOLD, // Only log renders that take longer than this threshold (in ms)
 }: {
   id: string;

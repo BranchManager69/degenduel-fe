@@ -25,6 +25,17 @@ import { Contest, Token, TokensResponse } from "../../types/index";
 declare global {
   interface Window {
     Buffer: typeof Buffer;
+    solana?: {
+      isPhantom?: boolean;
+      connect: () => Promise<{ publicKey: { toString: () => string } }>;
+      signMessage: (
+        message: Uint8Array,
+        encoding: string
+      ) => Promise<{ signature: Uint8Array }>;
+      signTransaction: (transaction: Transaction) => Promise<Transaction>;
+      signAndSendTransaction: (options: { transaction: Transaction }) => Promise<{ signature: string }>;
+      publicKey?: { toString: () => string };
+    };
   }
 }
 
@@ -352,16 +363,25 @@ export const TokenSelection: React.FC = () => {
         })
       );
 
-      // Sign and send transaction
-      console.log("Requesting transaction signature from Phantom...");
-      const signed = await solana.signTransaction(transaction);
-      console.log("Transaction signed, sending to network...");
+      // Get the latest blockhash for transaction freshness
+      console.log("Getting latest blockhash...");
+      const latestBlockhash = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = latestBlockhash.blockhash;
+      transaction.feePayer = new PublicKey(user.wallet_address);
 
-      const signature = await connection.sendRawTransaction(signed.serialize());
+      // Use Phantom's new unified method to sign and send the transaction
+      console.log("Requesting transaction signature and submission from Phantom...");
+      const { signature } = await solana.signAndSendTransaction({
+        transaction: transaction,
+      });
       console.log("Transaction sent, signature:", signature);
 
       console.log("Waiting for transaction confirmation...");
-      await connection.confirmTransaction(signature);
+      await connection.confirmTransaction({
+        signature,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      });
       console.log("Transaction confirmed!");
 
       // 2. Submit contest entry and portfolio in one atomic operation

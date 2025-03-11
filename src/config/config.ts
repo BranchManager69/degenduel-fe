@@ -3,7 +3,7 @@
 /* Environment */
 const isDev =
   window.location.hostname === "localhost" ||
-  window.location.hostname.startsWith("127.0.0.1") ||
+  ////window.location.hostname.startsWith("127.0.0.1") ||
   window.location.hostname === "dev.degenduel.me"; // Use dev subdomain for development
 
 const PROD_URL = "https://degenduel.me";
