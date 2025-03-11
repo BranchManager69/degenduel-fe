@@ -1,4 +1,14 @@
-import { Activity, Contest, PlatformStats } from "../../types/index";
+import { 
+  Activity, 
+  Contest, 
+  IpBan, 
+  IpBanCheckResponse, 
+  IpBanCreateParams, 
+  IpBanListResponse, 
+  IpBanParams, 
+  IpBanUpdateParams, 
+  PlatformStats 
+} from "../../types/index";
 import { createApiClient } from "./utils";
 
 export const admin = {
@@ -102,4 +112,127 @@ export const admin = {
     );
     return response.json();
   },
+
+  // IP Ban Management
+  ipBan: {
+    // List all banned IPs with pagination
+    list: async (params: IpBanParams = {}): Promise<IpBanListResponse> => {
+      try {
+        const api = createApiClient();
+        const queryParams = new URLSearchParams();
+
+        // Add all parameters to query string
+        if (params.page) queryParams.append('page', params.page.toString());
+        if (params.limit) queryParams.append('limit', params.limit.toString());
+        if (params.sort) queryParams.append('sort', params.sort);
+        if (params.order) queryParams.append('order', params.order);
+        if (params.filter) queryParams.append('filter', params.filter);
+
+        const url = `/admin/ip-bans${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const response = await api.fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch IP bans: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to list IP bans:', error);
+        throw error;
+      }
+    },
+    
+    // Get specific ban details
+    get: async (id: string): Promise<IpBan> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/ip-bans/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch IP ban: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to get IP ban details for ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Add new IP ban
+    add: async (data: IpBanCreateParams): Promise<IpBan> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch('/admin/ip-bans', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to add IP ban: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to add IP ban:', error);
+        throw error;
+      }
+    },
+    
+    // Update existing ban
+    update: async (id: string, data: IpBanUpdateParams): Promise<IpBan> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/ip-bans/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update IP ban: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to update IP ban with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Remove ban
+    remove: async (id: string): Promise<{ success: boolean; message: string }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/ip-bans/${id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to remove IP ban: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to remove IP ban with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Check if IP is banned (admin version with full details)
+    check: async (ip: string): Promise<IpBanCheckResponse> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/ip-bans/check?ip=${encodeURIComponent(ip)}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to check IP ban status: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to check ban status for IP ${ip}:`, error);
+        throw error;
+      }
+    }
+  }
 };

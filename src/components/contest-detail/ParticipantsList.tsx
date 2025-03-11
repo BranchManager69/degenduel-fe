@@ -63,18 +63,20 @@ const ProfilePicture = ({
   isSelected: boolean;
   role?: string;
 }) => {
-  // Determine border class based on role
+  // Determine border class based on role (case-insensitive)
   const getBorderClass = () => {
-    if (role === 'admin') return 'border-red-500/70';
-    if (role === 'superadmin') return 'border-yellow-500/70';
+    const normalizedRole = role?.toLowerCase();
+    if (normalizedRole === 'admin') return 'border-red-500/70';
+    if (normalizedRole === 'superadmin') return 'border-yellow-500/70';
     if (isSelected) return 'border-brand-400';
     return 'border-brand-500/30';
   };
   
-  // Determine background class based on role
+  // Determine background class based on role (case-insensitive)
   const getBackgroundClass = () => {
-    if (role === 'admin') return 'bg-red-500/10';
-    if (role === 'superadmin') return 'bg-yellow-500/10';
+    const normalizedRole = role?.toLowerCase();
+    if (normalizedRole === 'admin') return 'bg-red-500/10';
+    if (normalizedRole === 'superadmin') return 'bg-yellow-500/10';
     if (isSelected) return 'bg-brand-500/30';
     return 'bg-brand-500/20';
   };
@@ -98,10 +100,10 @@ const ProfilePicture = ({
       {/* Role indicator */}
       {role && (
         <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center">
-          {role === 'admin' && (
+          {role.toLowerCase() === 'admin' && (
             <span className="text-xs bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center" title="Admin">A</span>
           )}
-          {role === 'superadmin' && (
+          {role.toLowerCase() === 'superadmin' && (
             <span className="text-xs bg-yellow-500 text-black rounded-full h-4 w-4 flex items-center justify-center" title="Super Admin">S</span>
           )}
         </div>
@@ -180,11 +182,15 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
 
   const sortedParticipants = useMemo(() => {
     return [...filteredParticipants].sort((a, b) => {
+      // Get normalized roles (lowercase)
+      const roleA = a.role?.toLowerCase();
+      const roleB = b.role?.toLowerCase();
+      
       // First sort by admin roles
-      if (a.role === 'superadmin' && b.role !== 'superadmin') return -1;
-      if (b.role === 'superadmin' && a.role !== 'superadmin') return 1;
-      if (a.role === 'admin' && b.role !== 'admin' && b.role !== 'superadmin') return -1;
-      if (b.role === 'admin' && a.role !== 'admin' && a.role !== 'superadmin') return 1;
+      if (roleA === 'superadmin' && roleB !== 'superadmin') return -1;
+      if (roleB === 'superadmin' && roleA !== 'superadmin') return 1;
+      if (roleA === 'admin' && roleB !== 'admin' && roleB !== 'superadmin') return -1;
+      if (roleB === 'admin' && roleA !== 'admin' && roleA !== 'superadmin') return 1;
       
       // Then sort by contest score for live/completed contests
       if (contestStatus !== "upcoming") {
@@ -207,16 +213,17 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   // Get CSS class for participant row based on role and selection status
   const getParticipantRowClass = (participant: EnhancedParticipant) => {
     const baseClass = "flex items-center justify-between p-3 rounded transition-colors group";
+    const role = participant.role?.toLowerCase();
     
     if (selectedUser && selectedUser.wallet_address === participant.address) {
       return `${baseClass} bg-brand-500/20 border-l-2 border-brand-400`;
     }
     
-    if (participant.role === 'superadmin') {
+    if (role === 'superadmin') {
       return `${baseClass} bg-yellow-500/5 hover:bg-yellow-500/10 border-l border-yellow-500/30`;
     }
     
-    if (participant.role === 'admin') {
+    if (role === 'admin') {
       return `${baseClass} bg-red-500/5 hover:bg-red-500/10 border-l border-red-500/30`;
     }
     

@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { SkyDuelDashboard } from "../../components/admin/skyduel/SkyDuelDashboard";
+import { useAuth } from "../../hooks/useAuth";
 import { useSkyDuelWebSocket } from "../../hooks/useSkyDuelWebSocket";
 import { useStore } from "../../store/useStore";
 
 export const SkyDuelPage: React.FC = () => {
-  const { user } = useStore();
   const [loading, setLoading] = useState(true);
   const skyDuelSocket = useSkyDuelWebSocket();
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
-    
     // Check if user has admin permissions
-    const isAdmin = user.role === "admin" || user.role === "superadmin";
-    if (!isAdmin) {
+    if (!isAdmin()) {
       window.location.href = "/";
       return;
     }
@@ -28,7 +26,7 @@ export const SkyDuelPage: React.FC = () => {
         skyDuelSocket.close();
       }
     };
-  }, [user, skyDuelSocket]);
+  }, [isAdmin, skyDuelSocket]);
 
   if (loading) {
     return (

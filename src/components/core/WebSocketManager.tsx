@@ -11,25 +11,21 @@
 import React, { useEffect } from "react";
 import { useAchievementWebSocket } from "../../hooks/useAchievementWebSocket";
 import { useAnalyticsWebSocket } from "../../hooks/useAnalyticsWebSocket";
+import { useAuth } from "../../hooks/useAuth";
 import { useCircuitBreakerSocket } from "../../hooks/useCircuitBreakerSocket";
+import { useContestChatWebSocket } from "../../hooks/useContestChatWebSocket";
+import { useContestWebSocket } from "../../hooks/useContestWebSocket";
+import { useMarketDataWebSocket } from "../../hooks/useMarketDataWebSocket";
 import { usePortfolioWebSocket } from "../../hooks/usePortfolioWebSocket";
 import { useServiceWebSocket } from "../../hooks/useServiceWebSocket";
 import { useWalletWebSocket } from "../../hooks/useWalletWebSocket";
-// START NEW (CONTEST WEBSOCKETS TESTING):
-import { useContestChatWebSocket } from "../../hooks/useContestChatWebSocket";
-import { useContestWebSocket } from "../../hooks/useContestWebSocket";
-// END NEW (CONTEST WEBSOCKETS TESTING)
-// START NEW (MARKET DATA WEBSOCKETS TESTING):
-import { useMarketDataWebSocket } from "../../hooks/useMarketDataWebSocket";
-// END NEW (MARKET DATA WEBSOCKETS TESTING)
-
 import { useStore } from "../../store/useStore";
 
 // WebSocketManager
 //   TODO: It may or may not be the latest and greatest tool to do so; do not assume it is our preferred method.
 export const WebSocketManager: React.FC = () => {
   const { user } = useStore();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const { isAdmin } = useAuth();
   const isAuthenticated = !!user?.session_token;
 
   // Only initialize WebSocket connections if user is authenticated
@@ -60,7 +56,7 @@ export const WebSocketManager: React.FC = () => {
     // (3.2) Initialize market data WebSocket connections for the selected tokens
     const marketData = useMarketDataWebSocket(symbols);
     // If administrator, show market data for debugging purposes
-    if (isAdmin) {
+    if (isAdmin()) {
       // Show market data to administrators (debugging purposes)
       console.log("marketData", marketData); // ?? log to satisfy eslint
     } else {
@@ -73,7 +69,7 @@ export const WebSocketManager: React.FC = () => {
 
     // Enable the administrator-only connections
     let service: any, circuit: any, analytics: any;
-    if (isAdmin) {
+    if (isAdmin()) {
       service = useServiceWebSocket();
       circuit = useCircuitBreakerSocket();
       analytics = useAnalyticsWebSocket();
@@ -94,7 +90,7 @@ export const WebSocketManager: React.FC = () => {
       // ----- (END NEW TESTING) -----
 
       // Close administrator-only connections if the user is a non-administrator
-      if (isAdmin) {
+      if (isAdmin()) {
         service?.close?.();
         circuit?.close?.();
         analytics?.close?.();

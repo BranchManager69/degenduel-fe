@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { AchievementsSection } from "../../../components/achievements/AchievementsSection";
 import { UserProgress } from "../../../components/achievements/UserProgress";
+import { BanOnSightButton } from "../../../components/admin/BanOnSightButton";
 import { CopyToClipboard } from "../../../components/common/CopyToClipboard";
 import { ErrorMessage } from "../../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
@@ -12,6 +13,7 @@ import {
   ContestEntry,
   ContestHistory,
 } from "../../../components/profile/contest-history/ContestHistory";
+import { useAuth } from "../../../hooks/useAuth";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { UserData, UserStats as UserStatsType } from "../../../types/profile";
@@ -42,7 +44,7 @@ interface ErrorState {
 
 export const PublicProfile: React.FC = () => {
   const { identifier } = useParams();
-  const { maintenanceMode } = useStore();
+  const { maintenanceMode, user: currentUser } = useStore();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userStats, setUserStats] = useState<UserStatsType | null>(null);
   const [contestHistory, setContestHistory] = useState<ContestEntry[]>([]);
@@ -58,6 +60,9 @@ export const PublicProfile: React.FC = () => {
     achievements: null,
     history: null,
   });
+  
+  // Use useAuth hook for role checks
+  const { isAdmin } = useAuth();
 
   // Helper to determine if a string is likely a Solana wallet address
   // TODO: FIX THIS BULLSHIT
@@ -230,9 +235,28 @@ export const PublicProfile: React.FC = () => {
 
               {/* Username */}
               <div className="space-y-2">
-                <h1 className="text-5xl font-black bg-gradient-to-r from-brand-300 via-brand-400 to-brand-500 text-transparent bg-clip-text animate-gradient-x">
-                  {userData.nickname || "Anonymous Trader"}
-                </h1>
+                <div className="flex items-center justify-center gap-3">
+                  <h1 className="text-5xl font-black bg-gradient-to-r from-brand-300 via-brand-400 to-brand-500 text-transparent bg-clip-text animate-gradient-x">
+                    {userData.nickname || "Anonymous Trader"}
+                  </h1>
+                  
+                  {/* Admin controls - only shown if user has admin role */}
+                  {isAdmin() && !userData.is_banned && (
+                    <BanOnSightButton
+                      user={{
+                        wallet_address: userData.wallet_address,
+                        nickname: userData.nickname,
+                        is_banned: userData.is_banned,
+                        role: userData.role
+                      }}
+                      variant="icon"
+                      size="lg"
+                      className="ml-2"
+                      onSuccess={() => window.location.reload()}
+                    />
+                  )}
+                </div>
+                
                 {shouldShowWalletAddress && (
                   <div className="flex items-center justify-center gap-2">
                     <CopyToClipboard

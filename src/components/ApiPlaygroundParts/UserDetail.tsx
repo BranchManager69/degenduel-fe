@@ -45,8 +45,14 @@ interface UserResponse {
 
 // Helper function to determine if a user can ban another user
 const canBanUser = (adminRole: string, targetRole: string) => {
-  const adminLevel = ROLE_HIERARCHY[adminRole.toUpperCase() as Role] || 0;
-  const targetLevel = ROLE_HIERARCHY[targetRole.toUpperCase() as Role] || 0;
+  // First normalize roles to uppercase for consistent hierarchy checking
+  const adminRoleUpper = adminRole.toUpperCase() as Role;
+  const targetRoleUpper = targetRole.toUpperCase() as Role;
+  
+  const adminLevel = ROLE_HIERARCHY[adminRoleUpper] || 0;
+  const targetLevel = ROLE_HIERARCHY[targetRoleUpper] || 0;
+  
+  // Return true only if admin has higher role than target
   return adminLevel > targetLevel;
 };
 
@@ -364,10 +370,11 @@ export function UserDetail() {
           isOpen={showBanModal}
           onClose={() => setShowBanModal(false)}
           onSuccess={handleGetUserDetail}
-          userToban={{
+          userToBan={{
             wallet_address: response.wallet_address,
             nickname: response.nickname,
             is_banned: response.is_banned,
+            role: response.role,
           }}
           mode={response.is_banned ? "unban" : "ban"}
         />

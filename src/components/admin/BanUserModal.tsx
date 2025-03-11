@@ -5,10 +5,11 @@ interface UserBanModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  userToban: {
+  userToBan: {
     wallet_address: string;
     nickname?: string;
     is_banned?: boolean;
+    role?: string;
   };
   mode: "ban" | "unban";
 }
@@ -17,7 +18,7 @@ export function UserBanModal({
   isOpen,
   onClose,
   onSuccess,
-  userToban,
+  userToBan,
   mode,
 }: UserBanModalProps) {
   const [banReason, setBanReason] = useState("");
@@ -35,7 +36,7 @@ export function UserBanModal({
       setError(null);
       const endpoint = mode === "ban" ? "ban" : "unban";
       const banResponse = await fetch(
-        `${API_URL}/admin/users/${userToban.wallet_address}/${endpoint}`,
+        `${API_URL}/admin/users/${userToBan.wallet_address}/${endpoint}`,
         {
           method: "POST",
           headers: {
@@ -69,7 +70,17 @@ export function UserBanModal({
       onClose();
       setBanReason("");
     } catch (error) {
-      console.error(`${mode} user error:`, error);
+      console.error(`[BanUserModal] ${mode} user error:`, {
+        error: error instanceof Error ? 
+          { message: error.message, stack: error.stack } : 
+          error,
+        user: userToBan.wallet_address,
+        nickname: userToBan.nickname,
+        role: userToBan.role,
+        roleUpperCase: userToBan.role?.toUpperCase(),
+        mode,
+        reason: banReason
+      });
       setError(
         error instanceof Error ? error.message : `Failed to ${mode} user`
       );
@@ -87,7 +98,7 @@ export function UserBanModal({
           {mode === "ban" ? "Ban User" : "Unban User"}
         </h3>
         <p className="text-gray-400 mb-4">
-          Are you sure you want to {mode} {userToban.nickname || "Anonymous"}?
+          Are you sure you want to {mode} {userToBan.nickname || "Anonymous"}?
           {mode === "ban" && " This action cannot be undone."}
         </p>
         {error && (

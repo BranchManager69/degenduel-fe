@@ -208,7 +208,11 @@ const handleFailure = (endpoint: string, error: any) => {
     // Only notify once per circuit breaker open event
     if (!breaker.notifiedAdmin) {
       const store = useStore.getState();
-      if (store.user?.role === "admin" || store.user?.role === "superadmin") {
+      // Case-insensitive role check
+      const userRole = store.user?.role?.toLowerCase();
+      const isAdmin = userRole === "admin" || userRole === "superadmin";
+      
+      if (isAdmin) {
         const details = {
           service: breaker.endpoint,
           failures: breaker.failures,
@@ -546,8 +550,9 @@ const checkMaintenanceMode = async () => {
     // Get current user state
     const store = useStore.getState();
 
-    // PREFERRED WAY TO CHECK IF USER IS ADMINISTRATOR:
-    const isAdmin = store.user?.role === "admin" || store.user?.role === "superadmin";
+    // Case-insensitive administrator check:
+    const userRole = store.user?.role?.toLowerCase();
+    const isAdmin = userRole === "admin" || userRole === "superadmin";
 
     // If user is administrator, try administrator endpoint
     if (isAdmin) {
