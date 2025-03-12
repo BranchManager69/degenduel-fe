@@ -5,23 +5,13 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  # Add scheduled runs to detect issues even when no PRs are active
-  schedule:
-    - cron: '0 5 * * 1' # Run at 5 AM UTC every Monday
 
 # Add permissions needed for deployments
 permissions:
-  contents: write # Increased to write to allow deployment creation
+  contents: write
   deployments: write
   pull-requests: write
-  issues: write # Allow creating issues for failed builds
-  statuses: write # Added status permission
-
-# Define reusable environment variables
-env:
-  NODE_VERSION: '18'
-  NPM_FLAGS: '--legacy-peer-deps'
-  CACHE_KEY: npm-deps-${{ hashFiles('**/package-lock.json') }}
+  statuses: write
 
 jobs:
   test:
@@ -30,87 +20,29 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # Fetch all history for accurate PR detection
-        
-    # Check if PR branch needs updating
-    - name: Check if branch needs updating
-      if: github.event_name == 'pull_request'
-      id: check-update
-      uses: actions/github-script@v6
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const { repo, owner } = context.repo;
-          const pullRequest = context.payload.pull_request;
-          
-          if (pullRequest) {
-            try {
-              // Check if branch is behind base branch
-              const compare = await github.rest.repos.compareCommits({
-                owner,
-                repo,
-                base: pullRequest.head.ref,
-                head: pullRequest.base.ref
-              });
-              
-              if (compare.data.behind_by > 0) {
-                console.log(`Branch is ${compare.data.behind_by} commits behind base branch`);
-                core.setOutput('needs_update', 'true');
-                
-                // Comment on PR
-                await github.rest.issues.createComment({
-                  owner,
-                  repo,
-                  issue_number: pullRequest.number,
-                  body: `⚠️ This branch is ${compare.data.behind_by} commits behind the base branch. Consider updating it before merging.`
-                });
-              } else {
-                console.log('Branch is up to date with base branch');
-                core.setOutput('needs_update', 'false');
-              }
-            } catch (error) {
-              console.log(`Error checking branch status: ${error}`);
-              core.setOutput('needs_update', 'false');
-            }
-          }
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: '18'
         cache: 'npm'
     
-    - name: Cache node modules
-      uses: actions/cache@v3
-      id: npm-cache
-      with:
-        path: node_modules
-        key: ${{ env.CACHE_KEY }}
-        restore-keys: |
-          npm-deps-
-    
     - name: Install dependencies
-      if: steps.npm-cache.outputs.cache-hit != 'true'
-      run: npm ci ${{ env.NPM_FLAGS }}
+      run: npm ci --legacy-peer-deps
       
     - name: Run type checking
-      id: type-check
       run: npm run type-check
       continue-on-error: true
       
     - name: Run linting
-      id: lint
       run: npm run lint
       continue-on-error: true
       
     - name: Run tests
-      id: tests
       run: npm test
       continue-on-error: true
       
     - name: Generate coverage report
-      id: coverage
       run: npm test -- --coverage
       continue-on-error: true
       
@@ -120,31 +52,6 @@ jobs:
         directory: ./coverage/
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN || github.token }}
-      continue-on-error: true
-      
-    # New high-value additions
-    
-    - name: Check for TypeScript regressions
-      if: steps.type-check.outcome == 'failure' && github.event_name == 'pull_request'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '⚠️ **TypeScript Check Failed**\nThis PR introduces new TypeScript errors. Please fix them before merging.'
-          })
-    
-    - name: Check for performance regressions
-      if: github.event_name == 'pull_request'
-      run: |
-        # Compare bundle sizes between base and PR
-        npx -y bundlesize@^0.18.1 
-      continue-on-error: true
-      
-    - name: Detect dependency vulnerabilities
-      run: npm audit --production
       continue-on-error: true
 
   build-dev:
@@ -159,32 +66,16 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: '18'
         cache: 'npm'
     
-    - name: Cache node modules
-      uses: actions/cache@v3
-      id: npm-cache
-      with:
-        path: node_modules
-        key: ${{ env.CACHE_KEY }}
-        restore-keys: |
-          npm-deps-
-          
     - name: Install dependencies
-      if: steps.npm-cache.outputs.cache-hit != 'true'
-      run: |
-        npm ci ${{ env.NPM_FLAGS }}
-        # Install Storybook dependencies if .storybook directory exists
-        if [ -d ".storybook" ]; then
-          npm install -D @storybook/addon-essentials @storybook/addon-interactions @storybook/addon-links @storybook/blocks @storybook/manager-api @storybook/react @storybook/react-vite @storybook/testing-library
-        fi
+      run: npm ci --legacy-peer-deps
       
     - name: Build development version
       run: |
         # Skip TypeScript check since we already ran it in the test job
         echo "Building development version, bypassing TypeScript check..."
-        # Use the standard npm script that's known to work
         VITE_FORCE_DISABLE_MINIFY=true npm run build:dev
       
     - name: Verify build output
@@ -199,47 +90,28 @@ jobs:
           exit 1
         fi
         
-    - name: Analyze bundle size
-      if: steps.verify-build.outputs.build_success == 'true'
-      run: |
-        # Output build size stats
-        echo "Development Build Stats:"
-        du -sh dist-dev
-        find dist-dev -type f -name "*.js" | xargs du -ch | sort -rh | head -10
-      
     - name: Upload development build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: dist-dev
         path: dist-dev
         retention-days: 7
         
     - name: Create GitHub deployment for development
-      uses: bobheadxi/deployments@v1
+      uses: chrnorm/deployment-action@v2
       id: deployment-dev
       with:
-        step: start
         token: ${{ github.token }}
-        env: "development (dev.degenduel.me)"
+        environment-url: https://dev.degenduel.me
+        environment: "development (dev.degenduel.me)"
         ref: ${{ github.head_ref || github.ref }}
-        no_override: false
         
     - name: Mark development deployment as successful
-      uses: bobheadxi/deployments@v1
+      uses: chrnorm/deployment-status@v2
       with:
-        step: finish
         token: ${{ github.token }}
-        env: "development (dev.degenduel.me)"
-        status: success
-        deployment_id: ${{ steps.deployment-dev.outputs.deployment_id }}
-        env_url: https://dev.degenduel.me
-        
-    # Auto-deploy development builds for feature branches
-    - name: Prepare Development Auto-deployment
-      if: github.event_name == 'push' && github.ref != 'refs/heads/main' && steps.verify-build.outputs.build_success == 'true'
-      run: |
-        echo "Ready to auto-deploy feature branch to development environment"
-        echo "AUTO_DEPLOY=true" >> $GITHUB_ENV
+        state: success
+        deployment-id: ${{ steps.deployment-dev.outputs.deployment_id }}
 
   build-prod:
     name: Production Build
@@ -253,27 +125,16 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: '18'
         cache: 'npm'
     
-    - name: Cache node modules
-      uses: actions/cache@v3
-      id: npm-cache
-      with:
-        path: node_modules
-        key: ${{ env.CACHE_KEY }}
-        restore-keys: |
-          npm-deps-
-    
     - name: Install dependencies
-      if: steps.npm-cache.outputs.cache-hit != 'true'
-      run: npm ci ${{ env.NPM_FLAGS }}
+      run: npm ci --legacy-peer-deps
       
     - name: Build production version
       run: |
         # Skip TypeScript check since we already ran it in the test job
         echo "Building production version, bypassing TypeScript check..."
-        # Use the standard npm script that's known to work
         npm run build:prod
       
     - name: Verify build output
@@ -288,312 +149,25 @@ jobs:
           exit 1
         fi
         
-    - name: Analyze bundle size and optimize
-      if: steps.verify-build.outputs.build_success == 'true'
-      run: |
-        # Output build size stats
-        echo "Production Build Stats:"
-        du -sh dist
-        find dist -type f -name "*.js" | xargs du -ch | sort -rh | head -10
-        
-        # Check gzip sizes (simulating what users will download)
-        echo "Gzipped sizes (what users will download):"
-        find dist -name "*.js" | xargs gzip -c | wc -c
-        
     - name: Upload production build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: dist-prod
         path: dist
         retention-days: 7
         
     - name: Create GitHub deployment for production
-      uses: bobheadxi/deployments@v1
+      uses: chrnorm/deployment-action@v2
       id: deployment-prod
       with:
-        step: start
         token: ${{ github.token }}
-        env: "production (degenduel.me)"
+        environment-url: https://degenduel.me
+        environment: "production (degenduel.me)"
         ref: ${{ github.head_ref || github.ref }}
-        no_override: false
         
     - name: Mark production deployment as successful
-      uses: bobheadxi/deployments@v1
+      uses: chrnorm/deployment-status@v2
       with:
-        step: finish
         token: ${{ github.token }}
-        env: "production (degenduel.me)"
-        status: success
-        deployment_id: ${{ steps.deployment-prod.outputs.deployment_id }}
-        env_url: https://degenduel.me
-        
-    # Only run auto-deploy on pushes to main, not PRs
-    - name: Prepare Auto-deployment (main branch only)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.verify-build.outputs.build_success == 'true'
-      run: |
-        echo "Ready to auto-deploy to production environment"
-        echo "AUTO_DEPLOY=true" >> $GITHUB_ENV
-        
-    # Add notification job for workflow completion
-    - name: Notify on success
-      if: success()
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const { repo, owner } = context.repo;
-          const run_id = context.runId;
-          const run_url = `https://github.com/${owner}/${repo}/actions/runs/${run_id}`;
-          
-          if (context.eventName === 'pull_request') {
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: owner,
-              repo: repo,
-              body: `✅ **Build Successful!**\nAll checks have passed! [View details](${run_url})`
-            });
-          }
-          
-  # Add a separate performance monitoring job
-  performance:
-    name: Performance Monitoring
-    runs-on: ubuntu-latest
-    needs: [build-prod]
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download production build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist-prod
-        path: dist
-        
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install Lighthouse CI
-      run: npm install -g @lhci/cli
-      
-    - name: Run Lighthouse CI
-      run: |
-        lhci autorun --upload.target=temporary-public-storage || true
-      continue-on-error: true
-      
-    - name: Analyze first load experience
-      run: |
-        echo "Analyzing critical path rendering..."
-        # Check the sizes of initial JS and CSS payload
-        find dist -type f -name "*.js" -o -name "*.css" | sort -rh | head -5 | xargs ls -la
-        
-        # Output a summary report
-        echo "Performance Summary:" > performance-report.txt
-        echo "====================" >> performance-report.txt
-        echo "Date: $(date)" >> performance-report.txt
-        echo "Branch: ${{ github.ref }}" >> performance-report.txt
-        echo "Total JS size: $(find dist -name "*.js" -type f -exec du -ch {} \; | grep total$)" >> performance-report.txt
-        echo "Total CSS size: $(find dist -name "*.css" -type f -exec du -ch {} \; | grep total$)" >> performance-report.txt
-        
-    - name: Upload performance report
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-report
-        path: performance-report.txt
-        retention-days: 30
-        
-  # Add a separate job for specialized builds/previews
-  specialized-builds:
-    name: Preview & Experimental Builds
-    runs-on: ubuntu-latest
-    needs: [test]
-    if: contains(github.event.head_commit.message, '[preview]') || contains(github.head_ref, 'preview-')
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-    
-    - name: Cache node modules
-      uses: actions/cache@v3
-      id: npm-cache
-      with:
-        path: node_modules
-        key: ${{ env.CACHE_KEY }}
-        restore-keys: |
-          npm-deps-
-    
-    - name: Install dependencies
-      if: steps.npm-cache.outputs.cache-hit != 'true'
-      run: npm ci ${{ env.NPM_FLAGS }}
-      
-    - name: Build experimental bundle
-      run: |
-        # Extract configuration from commit message or branch name
-        CONFIG=""
-        if [[ "${{ github.event.head_commit.message }}" == *"[config:"* ]]; then
-          CONFIG=$(echo "${{ github.event.head_commit.message }}" | grep -o '\[config:[^]]*\]' | sed 's/\[config://' | sed 's/\]//')
-        fi
-        
-        echo "Building experimental bundle with settings: $CONFIG"
-        
-        # Build with experimental settings
-        VITE_EXPERIMENTAL=true npm run build:dev
-      
-    - name: Create bundle analysis report
-      run: |
-        npx -y source-map-explorer@2.5.3 dist-dev/assets/*.js --html bundle-analysis.html
-        
-    - name: Upload analysis report
-      uses: actions/upload-artifact@v4
-      with:
-        name: bundle-analysis
-        path: bundle-analysis.html
-        retention-days: 14
-        
-  # Add a new job for visual regression testing
-  visual-regression:
-    name: Visual Regression Tests
-    runs-on: ubuntu-latest
-    needs: [build-dev]
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci ${{ env.NPM_FLAGS }}
-      
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps chromium
-      
-    - name: Download development build
-      uses: actions/download-artifact@v4
-      with:
-        name: dist-dev
-        path: dist-dev
-        
-    - name: Start static server
-      run: npx http-server dist-dev -p 8080 &
-      
-    - name: Run visual regression tests
-      run: |
-        # Wait for server to start
-        sleep 3
-        
-        # Create screenshots directory
-        mkdir -p screenshots
-        
-        # Using Playwright to take screenshots
-        npx playwright screenshot --device="Desktop Chrome" http://localhost:8080 screenshots/homepage.png
-        
-        # If we have baseline screenshots, compare them
-        if [ -d "baseline-screenshots" ]; then
-          echo "Comparing against baseline screenshots..."
-          npx -y pixelmatch@5.3.0 baseline-screenshots/homepage.png screenshots/homepage.png diff.png 0.1
-        else
-          echo "No baseline screenshots found. Creating initial set..."
-          mkdir -p baseline-screenshots
-          cp screenshots/homepage.png baseline-screenshots/
-        fi
-      continue-on-error: true
-        
-    - name: Upload screenshots
-      uses: actions/upload-artifact@v4
-      with:
-        name: visual-regression-results
-        path: screenshots
-        retention-days: 7
-        
-  # Add a storybook job for component documentation and testing
-  storybook:
-    name: Storybook Build
-    runs-on: ubuntu-latest
-    needs: [test]
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: |
-        npm ci ${{ env.NPM_FLAGS }}
-        # Install Storybook CLI and addon dependencies
-        npm install -D @storybook/cli @storybook/addon-essentials @storybook/addon-interactions @storybook/addon-links @storybook/blocks @storybook/manager-api @storybook/react @storybook/react-vite @storybook/testing-library storybook
-      
-    - name: Check for Storybook
-      id: check-storybook
-      run: |
-        if [ -f ".storybook/main.js" ] || [ -f ".storybook/main.ts" ]; then
-          echo "has_storybook=true" >> $GITHUB_OUTPUT
-        else
-          echo "has_storybook=false" >> $GITHUB_OUTPUT
-          echo "No Storybook configuration found. Skipping Storybook build."
-        fi
-        
-    - name: Build Storybook
-      if: steps.check-storybook.outputs.has_storybook == 'true'
-      run: |
-        # If storybook is in devDependencies but not installed globally
-        npx storybook build -o storybook-static
-      continue-on-error: true
-        
-    - name: Upload Storybook
-      if: steps.check-storybook.outputs.has_storybook == 'true'
-      uses: actions/upload-artifact@v4
-      with:
-        name: storybook
-        path: storybook-static
-        retention-days: 30
-        
-  # Enable auto-merge for PR
-  enable-automerge:
-    name: Enable Auto-merge for PR
-    runs-on: ubuntu-latest
-    needs: [test, build-dev, build-prod]
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - name: Enable auto-merge using GitHub's native feature
-      uses: actions/github-script@v6
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const pullRequest = context.payload.pull_request;
-          if (pullRequest) {
-            try {
-              await github.rest.pulls.updateBranch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pullRequest.number
-              });
-              
-              await github.rest.pulls.enableAutoMerge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pullRequest.number,
-                merge_method: 'MERGE'
-              });
-              
-              console.log(`Auto-merge enabled for PR #${pullRequest.number}`);
-            } catch (error) {
-              console.log(`Error enabling auto-merge: ${error}`);
-            }
-          }
+        state: success
+        deployment-id: ${{ steps.deployment-prod.outputs.deployment_id }}
