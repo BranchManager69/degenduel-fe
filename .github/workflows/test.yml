@@ -19,6 +19,7 @@ permissions:
 env:
   NODE_VERSION: '18'
   NPM_FLAGS: '--legacy-peer-deps'
+  CACHE_KEY: npm-deps-${{ hashFiles('**/package-lock.json') }}
 
 jobs:
   test:
@@ -34,7 +35,17 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
     
+    - name: Cache node modules
+      uses: actions/cache@v3
+      id: npm-cache
+      with:
+        path: node_modules
+        key: ${{ env.CACHE_KEY }}
+        restore-keys: |
+          npm-deps-
+    
     - name: Install dependencies
+      if: steps.npm-cache.outputs.cache-hit != 'true'
       run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Run tests
@@ -56,7 +67,17 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
     
+    - name: Cache node modules
+      uses: actions/cache@v3
+      id: npm-cache
+      with:
+        path: node_modules
+        key: ${{ env.CACHE_KEY }}
+        restore-keys: |
+          npm-deps-
+    
     - name: Install dependencies
+      if: steps.npm-cache.outputs.cache-hit != 'true'
       run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Build development version
@@ -93,7 +114,17 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
     
+    - name: Cache node modules
+      uses: actions/cache@v3
+      id: npm-cache
+      with:
+        path: node_modules
+        key: ${{ env.CACHE_KEY }}
+        restore-keys: |
+          npm-deps-
+    
     - name: Install dependencies
+      if: steps.npm-cache.outputs.cache-hit != 'true'
       run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Build production version
