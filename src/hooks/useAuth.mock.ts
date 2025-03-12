@@ -35,16 +35,23 @@ export interface MockAuthConfig {
 // Default mock implementation
 export function useAuth(config: MockAuthConfig = {}): UseAuthReturnType {
   // Use useState to allow tests to update values
-  const [user, setUser] = useState<User | null>(config.user || null);
-  const [loading, setLoading] = useState<boolean>(config.loading || false);
-  const [error, setError] = useState<Error | null>(config.error || null);
-  const [isWalletConnected, setIsWalletConnected] = useState<boolean>(config.isWalletConnected || false);
-  const [walletAddress, setWalletAddress] = useState<string | undefined>(config.walletAddress);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [user, _setUser] = useState<User | null>(config.user || null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [loading, _setLoading] = useState<boolean>(config.loading || false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [error, _setError] = useState<Error | null>(config.error || null);
+  const [isWalletConnected] = useState<boolean>(
+    config.isWalletConnected || false,
+  );
+  const [walletAddress] = useState<string | undefined>(
+    config.walletAddress,
+  );
 
   // Default role check functions
   const isSuperAdmin = () => {
-    return config.isSuperAdminReturnValue !== undefined 
-      ? config.isSuperAdminReturnValue 
+    return config.isSuperAdminReturnValue !== undefined
+      ? config.isSuperAdminReturnValue
       : user?.role === "superadmin";
   };
 

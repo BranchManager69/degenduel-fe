@@ -2,12 +2,14 @@ import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
 import { FaUser, FaUserFriends, FaBell, FaTrophy } from "react-icons/fa";
 import { Link } from "react-router-dom";
+
+import { AdminControls } from "./UserMenuAdminControls";
 import { useAuth } from "../../../hooks/useAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
-import { AdminControls } from "./UserMenuAdminControls";
 
-interface MenuItem {
+// MenuItem is used for internal types
+type MenuItem = {
   label: string;
   icon: React.ComponentType;
   to: string;
@@ -31,10 +33,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const { isAdmin, isSuperAdmin } = useAuth();
   const { achievements } = useStore();
   const [imageError, setImageError] = useState(false);
-  
+
   // Get user level information
   const userLevel = achievements?.userProgress?.level || 0;
-  
+
   // Define a function to get color scheme based on level
   const getLevelColorScheme = useMemo(() => {
     // Return different color schemes based on level tiers
@@ -49,20 +51,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           glow: "group-hover:shadow-[0_0_10px_rgba(251,191,36,0.3)]",
           border: "group-hover:border-amber-400/50",
           badge: "group-hover:from-amber-500 group-hover:to-amber-300",
-        }
+        },
       };
     } else if (userLevel >= 30) {
       return {
         bg: "from-fuchsia-500/20 via-fuchsia-400/20 to-fuchsia-300/20",
         text: "text-fuchsia-300",
-        border: "border-fuchsia-400/30", 
+        border: "border-fuchsia-400/30",
         badge: "bg-gradient-to-r from-fuchsia-600 to-fuchsia-400",
         badgeBorder: "border-fuchsia-500/30",
         hover: {
           glow: "group-hover:shadow-[0_0_10px_rgba(217,70,239,0.3)]",
           border: "group-hover:border-fuchsia-400/50",
           badge: "group-hover:from-fuchsia-500 group-hover:to-fuchsia-300",
-        }
+        },
       };
     } else if (userLevel >= 20) {
       return {
@@ -75,7 +77,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           glow: "group-hover:shadow-[0_0_10px_rgba(59,130,246,0.3)]",
           border: "group-hover:border-blue-400/50",
           badge: "group-hover:from-blue-500 group-hover:to-blue-300",
-        }
+        },
       };
     } else if (userLevel >= 10) {
       return {
@@ -88,7 +90,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           glow: "group-hover:shadow-[0_0_10px_rgba(16,185,129,0.3)]",
           border: "group-hover:border-emerald-400/50",
           badge: "group-hover:from-emerald-500 group-hover:to-emerald-300",
-        }
+        },
       };
     } else if (userLevel >= 5) {
       return {
@@ -101,7 +103,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           glow: "group-hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]",
           border: "group-hover:border-cyan-400/50",
           badge: "group-hover:from-cyan-500 group-hover:to-cyan-300",
-        }
+        },
       };
     } else {
       // Default colors for levels 1-4
@@ -115,7 +117,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           glow: "group-hover:shadow-[0_0_10px_rgba(153,51,255,0.3)]",
           border: "group-hover:border-brand-400/50",
           badge: "group-hover:from-brand-500 group-hover:to-brand-300",
-        }
+        },
       };
     }
   }, [userLevel]);
@@ -137,7 +139,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         shine: "via-white/30",
       };
     }
-    
+
     // Admin styling takes secondary precedence
     if (isAdmin()) {
       return {
@@ -154,7 +156,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         shine: "via-white/25",
       };
     }
-    
+
     // For regular users, use level-based styling if they have a level
     if (userLevel > 0) {
       const levelColors = getLevelColorScheme;
@@ -163,16 +165,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         text: levelColors.text,
         border: levelColors.border,
         hover: {
-          bg: `group-hover:${levelColors.bg.replace('from-', 'from-').replace('/20', '/30')}`,
+          bg: `group-hover:${levelColors.bg.replace("from-", "from-").replace("/20", "/30")}`,
           text: "group-hover:text-white",
           border: levelColors.hover.border,
           glow: levelColors.hover.glow,
         },
-        ring: `ring-${levelColors.border.replace('border-', '')} group-hover:ring-${levelColors.hover.border.replace('group-hover:border-', '')}`,
+        ring: `ring-${levelColors.border.replace("border-", "")} group-hover:ring-${levelColors.hover.border.replace("group-hover:border-", "")}`,
         shine: "via-white/25",
       };
     }
-    
+
     // Default styling for users with no level
     return {
       bg: "from-brand-500/20 to-brand-400/20",
@@ -221,7 +223,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       icon: FaTrophy,
       to: "/leaderboard",
       badge: userLevel > 0 ? `Lvl ${userLevel}` : undefined,
-      badgeColor: userLevel > 0 ? getLevelColorScheme.badge : undefined
+      badgeColor: userLevel > 0 ? getLevelColorScheme.badge : undefined,
     },
     {
       label: "Noti's",
@@ -245,8 +247,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               relative group overflow-hidden transition-all duration-300 ease-out
               ${isCompact ? "h-7" : "h-8"} flex items-center
               rounded-full border ${buttonStyles.border} ${
-              buttonStyles.hover.border
-            }
+                buttonStyles.hover.border
+              }
               ${buttonStyles.hover.glow} transition-shadow duration-500
             `}
           >
@@ -267,7 +269,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               <div className="flex items-center gap-2">
                 {/* Level Badge - Only show if level > 0 */}
                 {userLevel > 0 && (
-                  <div 
+                  <div
                     className={`
                       flex items-center justify-center 
                       ${isCompact ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"} 
@@ -280,7 +282,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                     <span className="mx-0.5">{userLevel}</span>
                   </div>
                 )}
-                
+
                 {/* Username */}
                 <span
                   className={`
@@ -292,12 +294,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                   {displayName}
                 </span>
               </div>
-              
+
               {/* Avatar */}
               <div className="relative">
                 {unreadNotifications > 0 && (
                   <div className="absolute -top-1 -right-1.5 z-10 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-red-500 text-white border border-dark-200 shadow-lg animate-pulse">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
                   </div>
                 )}
                 <div
@@ -362,15 +364,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                           />
                           <span className="flex-1">{item.label}</span>
                           {item.badge !== undefined && (
-                            <span 
+                            <span
                               className={`
                                 flex items-center justify-center min-w-5 h-5 text-xs font-semibold 
                                 rounded-full px-1.5 shadow-sm
-                                ${item.badgeColor ? item.badgeColor : 'bg-red-500/80'} 
+                                ${item.badgeColor ? item.badgeColor : "bg-red-500/80"} 
                                 text-white
                               `}
                             >
-                              {typeof item.badge === 'number' && item.badge > 99 ? "99+" : item.badge}
+                              {typeof item.badge === "number" && item.badge > 99
+                                ? "99+"
+                                : item.badge}
                             </span>
                           )}
                         </Link>

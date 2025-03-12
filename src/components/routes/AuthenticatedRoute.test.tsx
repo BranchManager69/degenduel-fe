@@ -1,6 +1,7 @@
 // src/components/routes/AuthenticatedRoute.test.tsx
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+
 import { AuthenticatedRoute } from "./AuthenticatedRoute";
 import { User } from "../../types";
 
@@ -48,7 +49,7 @@ describe("AuthenticatedRoute component", () => {
           />
           <Route path="/" element={<div>Home Page</div>} />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   };
 
@@ -59,7 +60,9 @@ describe("AuthenticatedRoute component", () => {
     // Should show loading indicator
     expect(screen.getByRole("status")).toBeInTheDocument();
     // The protected content should not be visible
-    expect(screen.queryByText("Protected Authenticated Content")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Protected Authenticated Content"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders children when user is authenticated", () => {
@@ -69,10 +72,10 @@ describe("AuthenticatedRoute component", () => {
       role: "user",
       created_at: "2023-01-01T00:00:00.000Z",
       last_login: "2023-01-01T00:00:00.000Z",
-      total_contests: 0,
-      total_wins: 0,
-      total_earnings: 0,
-      rank_score: 0,
+      total_contests: "0",
+      total_wins: "0",
+      total_earnings: "0",
+      rank_score: "0",
       settings: {},
       balance: 1000,
       is_banned: false,
@@ -85,7 +88,9 @@ describe("AuthenticatedRoute component", () => {
     renderAuthenticatedRoute();
 
     // Protected content should be visible
-    expect(screen.getByText("Protected Authenticated Content")).toBeInTheDocument();
+    expect(
+      screen.getByText("Protected Authenticated Content"),
+    ).toBeInTheDocument();
   });
 
   it("redirects to home when user is not authenticated", () => {
@@ -95,6 +100,8 @@ describe("AuthenticatedRoute component", () => {
     // Should redirect to home page
     expect(screen.getByText("Home Page")).toBeInTheDocument();
     // The protected content should not be visible
-    expect(screen.queryByText("Protected Authenticated Content")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Protected Authenticated Content"),
+    ).not.toBeInTheDocument();
   });
 });

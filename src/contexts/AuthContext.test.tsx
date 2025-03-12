@@ -1,11 +1,11 @@
 // src/contexts/AuthContext.test.tsx
-import React from 'react';
-import { render, screen, act } from '@testing-library/react';
-import { AuthProvider, useAuthContext, AuthContextType } from './AuthContext';
-import { User } from '../types';
+import { render, screen, act } from "@testing-library/react";
+import React from "react";
+
+import { AuthProvider, useAuthContext } from "./AuthContext";
 
 // Mock the hooks used by AuthContext
-jest.mock('../hooks/useAuth', () => ({
+jest.mock("../hooks/useAuth", () => ({
   useAuth: jest.fn(() => ({
     user: null,
     loading: false,
@@ -23,7 +23,7 @@ jest.mock('../hooks/useAuth', () => ({
 // Mock useStore
 const mockConnectWallet = jest.fn();
 const mockDisconnectWallet = jest.fn();
-jest.mock('../store/useStore', () => ({
+jest.mock("../store/useStore", () => ({
   useStore: jest.fn(() => ({
     connectWallet: mockConnectWallet,
     disconnectWallet: mockDisconnectWallet,
@@ -38,13 +38,13 @@ const TestConsumer: React.FC = () => {
   return (
     <div>
       <div data-testid="auth-status">
-        {auth.isWalletConnected ? 'connected' : 'disconnected'}
+        {auth.isWalletConnected ? "connected" : "disconnected"}
       </div>
       <div data-testid="user-info">
-        {auth.user ? auth.user.nickname : 'no-user'}
+        {auth.user ? auth.user.nickname : "no-user"}
       </div>
       <div data-testid="admin-status">
-        {auth.isAdmin() ? 'admin' : 'not-admin'}
+        {auth.isAdmin() ? "admin" : "not-admin"}
       </div>
       <button onClick={auth.connectWallet} data-testid="connect-button">
         Connect
@@ -56,31 +56,31 @@ const TestConsumer: React.FC = () => {
   );
 };
 
-describe('AuthContext', () => {
+describe("AuthContext", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('provides auth context to child components', () => {
+  it("provides auth context to child components", () => {
     render(
       <AuthProvider>
         <TestConsumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
-    expect(screen.getByTestId('auth-status')).toHaveTextContent('disconnected');
-    expect(screen.getByTestId('user-info')).toHaveTextContent('no-user');
-    expect(screen.getByTestId('admin-status')).toHaveTextContent('not-admin');
+    expect(screen.getByTestId("auth-status")).toHaveTextContent("disconnected");
+    expect(screen.getByTestId("user-info")).toHaveTextContent("no-user");
+    expect(screen.getByTestId("admin-status")).toHaveTextContent("not-admin");
   });
 
-  it('connects wallet when requested', () => {
+  it("connects wallet when requested", () => {
     render(
       <AuthProvider>
         <TestConsumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
-    const connectButton = screen.getByTestId('connect-button');
+    const connectButton = screen.getByTestId("connect-button");
     act(() => {
       connectButton.click();
     });
@@ -88,14 +88,14 @@ describe('AuthContext', () => {
     expect(mockConnectWallet).toHaveBeenCalled();
   });
 
-  it('disconnects wallet when requested', () => {
+  it("disconnects wallet when requested", () => {
     render(
       <AuthProvider>
         <TestConsumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
 
-    const disconnectButton = screen.getByTestId('disconnect-button');
+    const disconnectButton = screen.getByTestId("disconnect-button");
     act(() => {
       disconnectButton.click();
     });
@@ -103,7 +103,7 @@ describe('AuthContext', () => {
     expect(mockDisconnectWallet).toHaveBeenCalled();
   });
 
-  it('throws an error when used outside of AuthProvider', () => {
+  it("throws an error when used outside of AuthProvider", () => {
     // Suppress console.error for this test to avoid noisy output
     const originalConsoleError = console.error;
     console.error = jest.fn();
@@ -111,7 +111,7 @@ describe('AuthContext', () => {
     // Error should be thrown when rendering TestConsumer outside AuthProvider
     expect(() => {
       render(<TestConsumer />);
-    }).toThrow('useAuthContext must be used within an AuthProvider');
+    }).toThrow("useAuthContext must be used within an AuthProvider");
 
     // Restore console.error
     console.error = originalConsoleError;
