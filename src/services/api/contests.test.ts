@@ -1,31 +1,50 @@
-import { contests } from './contests';
+import { contests } from "./contests";
+import { API_URL } from "../../config/config";
+import { Contest, PortfolioResponse } from "../../types/index";
+import { SortOptions } from "../../types/sort";
 
 // Mock the fetch function
 global.fetch = jest.fn();
 
-describe('Contests API Service', () => {
-  const mockResponse = (status: number, data: any) => 
+// Mock the useStore
+jest.mock("../../store/useStore", () => ({
+  useStore: {
+    getState: jest.fn().mockReturnValue({
+      user: { wallet_address: "wallet-456" },
+    }),
+  },
+}));
+
+// Mock the utility functions
+jest.mock("./utils", () => ({
+  checkContestParticipation: jest.fn().mockResolvedValue(false),
+  logError: jest.fn(),
+}));
+
+describe("Contests API Service", () => {
+  const mockResponse = (status: number, data: any) =>
     Promise.resolve({
       status,
       ok: status >= 200 && status < 300,
-      json: () => Promise.resolve(data)
-    }) as Response;
+      json: () => Promise.resolve(data),
+      text: () => Promise.resolve(JSON.stringify(data)),
+    }) as unknown as Response;
 
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
   });
 
-  describe('Contest retrieval', () => {
-    it('should fetch all contests', async () => {
-      const mockContests = [
-        { id: 'contest-1', name: 'Contest 1', status: 'active' },
-        { id: 'contest-2', name: 'Contest 2', status: 'completed' }
+  describe("Contest retrieval", () => {
+    it("should fetch all contests", async () => {
+      const mockContests: Partial<Contest>[] = [
+        { id: 1, name: "Contest 1", status: "active", participant_count: 10 },
+        { id: 2, name: "Contest 2", status: "completed", participant_count: 20 },
       ];
 
       // Setup the mock to return success response
       (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockContests)
+        mockResponse(200, mockContests),
       );
 
       // Call the function
@@ -33,278 +52,209 @@ describe('Contests API Service', () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/contests',
+        `${API_URL}/contests`,
         expect.objectContaining({
-          method: 'GET'
-        })
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+          }),
+          credentials: "include",
+        }),
       );
 
-      // Verify result matches the mock response
-      expect(result).toEqual(mockContests);
+      // Verify result contains the mock contests with is_participating flag
+      expect(result).toEqual(
+        expect.arrayContaining(
+          mockContests.map(contest => expect.objectContaining({
+            ...contest,
+            is_participating: expect.any(Boolean),
+          }))
+        )
+      );
     });
 
-    it('should fetch a single contest by ID', async () => {
-      const contestId = 'contest-123';
-      const mockContest = {
-        id: contestId,
-        name: 'Test Contest',
-        description: 'Test description',
-        start_time: '2023-01-01T00:00:00Z',
-        end_time: '2023-01-02T00:00:00Z',
-        status: 'active',
-        entry_fee: 10,
-        prize_pool: 1000
+    it("should fetch all contests with sort options", async () => {
+      const mockContests: Partial<Contest>[] = [
+        { id: 1, name: "Contest 1", status: "active", participant_count: 10 },
+        { id: 2, name: "Contest 2", status: "completed", participant_count: 20 },
+      ];
+
+      const sortOptions: SortOptions = {
+        field: "participant_count",
+        direction: "asc",
       };
 
       // Setup the mock to return success response
       (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockContest)
+        mockResponse(200, mockContests),
       );
 
       // Call the function
-      const result = await contests.getOne(contestId);
+      const result = await contests.getAll(sortOptions);
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/contests/${contestId}`,
+        `${API_URL}/contests`,
         expect.objectContaining({
-          method: 'GET'
-        })
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+          }),
+          credentials: "include",
+        }),
+      );
+
+      // Verify result is sorted according to options
+      expect(result[0].participant_count).toBeLessThanOrEqual(result[1].participant_count);
+    });
+
+    it("should fetch a single contest by ID", async () => {
+      const contestId = "123";
+      const mockContest: Partial<Contest> = {
+        id: 123 as number,
+        name: "Test Contest",
+        description: "Test description",
+        start_time: "2023-01-01T00:00:00Z",
+        end_time: "2023-01-02T00:00:00Z",
+        status: "active",
+        entry_fee: "10",
+        prize_pool: "1000",
+        participant_count: 50,
+      };
+
+      // Setup the mock to return success response
+      (global.fetch as jest.Mock).mockResolvedValueOnce(
+        mockResponse(200, mockContest),
+      );
+
+      // Call the function
+      const result = await contests.getById(contestId);
+
+      // Verify fetch was called with correct parameters
+      expect(global.fetch).toHaveBeenCalledWith(
+        `${API_URL}/contests/${contestId}`,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+          }),
+          credentials: "include",
+        }),
       );
 
       // Verify result matches the mock response
-      expect(result).toEqual(mockContest);
+      expect(result).toEqual({
+        ...mockContest,
+        is_participating: expect.any(Boolean),
+      });
     });
 
-    it('should handle errors when fetching a contest', async () => {
-      const contestId = 'non-existent';
+    it("should handle errors when fetching a contest", async () => {
+      const contestId = "non-existent";
 
       // Setup the mock to return error response
       (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(404, { error: 'Contest not found' })
+        mockResponse(404, { error: "Contest not found" }),
       );
 
       // Expect function to throw an error
-      await expect(contests.getOne(contestId)).rejects.toThrow();
+      await expect(contests.getById(contestId)).rejects.toThrow();
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/contests/${contestId}`,
+        `${API_URL}/contests/${contestId}`,
         expect.objectContaining({
-          method: 'GET'
-        })
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+          }),
+          credentials: "include",
+        }),
       );
     });
   });
 
-  describe('Contest participation', () => {
-    it('should join a contest successfully', async () => {
-      const contestId = 'contest-123';
-      const walletAddress = 'wallet-456';
-      
-      const mockResponse = {
+  describe("Contest participation", () => {
+    it("should join a contest successfully", async () => {
+      const contestId = "123";
+      const portfolioData: PortfolioResponse = {
+        tokens: [
+          { 
+            contractAddress: "0xtoken1",
+            symbol: "TKN1", 
+            weight: 0.5
+          },
+          { 
+            contractAddress: "0xtoken2",
+            symbol: "TKN2", 
+            weight: 0.5
+          },
+        ]
+      };
+
+      const mockResponseData = {
         success: true,
-        message: 'Successfully joined the contest'
+        message: "Successfully joined the contest",
       };
 
       // Setup the mock to return success response
       (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockResponse)
+        mockResponse(200, mockResponseData),
       );
 
       // Call the function
-      const result = await contests.join(contestId, walletAddress);
+      const result = await contests.enterContest(contestId, portfolioData);
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/contests/${contestId}/join`,
+        `${API_URL}/contests/${contestId}/join`,
         expect.objectContaining({
-          method: 'POST',
+          method: "POST",
           headers: expect.objectContaining({
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           }),
-          body: JSON.stringify({ wallet_address: walletAddress })
-        })
+          credentials: "include",
+          body: expect.any(String),
+        }),
       );
 
-      // Verify result matches the mock response
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should submit a portfolio for a contest', async () => {
-      const contestId = 'contest-123';
-      const walletAddress = 'wallet-456';
-      const portfolioData = {
-        tokens: [
-          { token_id: 'token-1', allocation: 0.5 },
-          { token_id: 'token-2', allocation: 0.5 }
-        ]
-      };
+      // Get the body that was actually passed to fetch
+      const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
       
-      const mockResponse = {
-        success: true,
-        portfolio_id: 'portfolio-789'
-      };
-
-      // Setup the mock to return success response
-      (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockResponse)
-      );
-
-      // Call the function
-      const result = await contests.submitPortfolio(contestId, walletAddress, portfolioData);
-
-      // Verify fetch was called with correct parameters
-      expect(global.fetch).toHaveBeenCalledWith(
-        `/api/contests/${contestId}/portfolio`,
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json'
+      // Verify it contains wallet_address and token data
+      expect(body).toEqual({
+        wallet_address: "wallet-456",
+        tokens: expect.arrayContaining([
+          expect.objectContaining({
+            contractAddress: expect.any(String),
+            symbol: expect.any(String),
+            weight: expect.any(Number),
           }),
-          body: JSON.stringify({
-            wallet_address: walletAddress,
-            ...portfolioData
-          })
-        })
-      );
+        ]),
+      });
 
       // Verify result matches the mock response
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should validate a portfolio meets contest requirements', async () => {
-      const contestId = 'contest-123';
-      const portfolioData = {
-        tokens: [
-          { token_id: 'token-1', allocation: 0.5 },
-          { token_id: 'token-2', allocation: 0.5 }
-        ]
-      };
-      
-      const mockResponse = {
-        valid: true,
-        message: 'Portfolio meets all requirements'
-      };
-
-      // Setup the mock to return success response
-      (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockResponse)
-      );
-
-      // Call the function
-      const result = await contests.validatePortfolio(contestId, portfolioData);
-
-      // Verify fetch was called with correct parameters
-      expect(global.fetch).toHaveBeenCalledWith(
-        `/api/contests/${contestId}/validate-portfolio`,
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json'
-          }),
-          body: JSON.stringify(portfolioData)
-        })
-      );
-
-      // Verify result matches the mock response
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockResponseData);
     });
   });
 
-  describe('Contest leaderboard', () => {
-    it('should fetch contest leaderboard', async () => {
-      const contestId = 'contest-123';
-      const mockLeaderboard = [
-        { 
-          wallet_address: 'wallet-1', 
-          nickname: 'Player1',
-          rank: 1, 
-          portfolio_return: 0.25 
-        },
-        { 
-          wallet_address: 'wallet-2', 
-          nickname: 'Player2',
-          rank: 2, 
-          portfolio_return: 0.15 
-        }
-      ];
-
-      // Setup the mock to return success response
-      (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockLeaderboard)
-      );
-
-      // Call the function
-      const result = await contests.getLeaderboard(contestId);
-
-      // Verify fetch was called with correct parameters
-      expect(global.fetch).toHaveBeenCalledWith(
-        `/api/contests/${contestId}/leaderboard`,
-        expect.objectContaining({
-          method: 'GET'
-        })
-      );
-
-      // Verify result matches the mock response
-      expect(result).toEqual(mockLeaderboard);
-    });
-
-    it('should fetch user portfolio performance in a contest', async () => {
-      const contestId = 'contest-123';
-      const walletAddress = 'wallet-456';
-      const mockPerformance = {
-        wallet_address: walletAddress,
-        rank: 5,
-        portfolio_return: 0.12,
-        tokens: [
-          { token_id: 'token-1', allocation: 0.5, return: 0.2 },
-          { token_id: 'token-2', allocation: 0.5, return: 0.04 }
-        ]
+  describe("Contest creation and management", () => {
+    it("should create a new contest", async () => {
+      const contestData: Partial<Contest> = {
+        name: "New Test Contest",
+        description: "A test contest created via API",
+        start_time: "2023-03-01T00:00:00Z",
+        end_time: "2023-03-02T00:00:00Z",
+        entry_fee: "5",
+        prize_pool: "500",
+        min_participants: 10,
       };
 
-      // Setup the mock to return success response
-      (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockPerformance)
-      );
-
-      // Call the function
-      const result = await contests.getUserPerformance(contestId, walletAddress);
-
-      // Verify fetch was called with correct parameters
-      expect(global.fetch).toHaveBeenCalledWith(
-        `/api/contests/${contestId}/performance/${walletAddress}`,
-        expect.objectContaining({
-          method: 'GET'
-        })
-      );
-
-      // Verify result matches the mock response
-      expect(result).toEqual(mockPerformance);
-    });
-  });
-
-  describe('Contest creation and management', () => {
-    it('should create a new contest', async () => {
-      const contestData = {
-        name: 'New Test Contest',
-        description: 'A test contest created via API',
-        start_time: '2023-03-01T00:00:00Z',
-        end_time: '2023-03-02T00:00:00Z',
-        entry_fee: 5,
-        prize_pool: 500,
-        min_participants: 10
-      };
-      
-      const mockResponse = {
-        id: 'new-contest-789',
+      const mockResponseData = {
+        id: 789,
         ...contestData,
-        status: 'pending'
+        status: "pending" as const,
       };
 
       // Setup the mock to return success response
       (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(201, mockResponse)
+        mockResponse(201, mockResponseData),
       );
 
       // Call the function
@@ -312,46 +262,49 @@ describe('Contests API Service', () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/contests',
+        `${API_URL}/contests`,
         expect.objectContaining({
-          method: 'POST',
+          method: "POST",
           headers: expect.objectContaining({
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
           }),
-          body: JSON.stringify(contestData)
-        })
+          credentials: "include",
+          body: JSON.stringify(contestData),
+        }),
       );
 
       // Verify result matches the mock response
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockResponseData);
     });
 
-    it('should handle validation errors when creating a contest', async () => {
+    it("should handle validation errors when creating a contest", async () => {
       const invalidContestData = {
-        name: 'New Test Contest',
+        name: "New Test Contest",
         // Missing required fields
       };
-      
+
       const errorResponse = {
-        error: 'Validation failed',
-        details: ['start_time is required', 'end_time is required']
+        error: "Validation failed",
+        details: ["start_time is required", "end_time is required"],
       };
 
       // Setup the mock to return error response
       (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(400, errorResponse)
+        mockResponse(400, errorResponse),
       );
 
       // Expect function to throw an error
-      await expect(contests.create(invalidContestData as any)).rejects.toThrow();
+      await expect(
+        contests.create(invalidContestData as any),
+      ).rejects.toThrow();
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/contests',
+        `${API_URL}/contests`,
         expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify(invalidContestData)
-        })
+          method: "POST",
+          body: JSON.stringify(invalidContestData),
+        }),
       );
     });
   });

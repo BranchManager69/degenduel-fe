@@ -2,17 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+
 import { AchievementsSection } from "../../../components/achievements/AchievementsSection";
 import { UserProgress } from "../../../components/achievements/UserProgress";
 import { BanOnSightButton } from "../../../components/admin/BanOnSightButton";
 import { CopyToClipboard } from "../../../components/common/CopyToClipboard";
 import { ErrorMessage } from "../../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
-import SocialAccountsPanel from "../../../components/profile/SocialAccountsPanel";
 import {
   ContestEntry,
   ContestHistory,
 } from "../../../components/profile/contest-history/ContestHistory";
+import SocialAccountsPanel from "../../../components/profile/SocialAccountsPanel";
 import { useAuth } from "../../../hooks/useAuth";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
@@ -44,7 +45,7 @@ interface ErrorState {
 
 export const PublicProfile: React.FC = () => {
   const { identifier } = useParams();
-  const { maintenanceMode, user: currentUser } = useStore();
+  const { maintenanceMode } = useStore();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userStats, setUserStats] = useState<UserStatsType | null>(null);
   const [contestHistory, setContestHistory] = useState<ContestEntry[]>([]);
@@ -60,12 +61,12 @@ export const PublicProfile: React.FC = () => {
     achievements: null,
     history: null,
   });
-  
+
   // Use useAuth hook for role checks
   const { isAdmin } = useAuth();
 
   // Helper to determine if a string is likely a Solana wallet address
-  // TODO: FIX THIS BULLSHIT
+  // TODO: FIX THIS BULLSHIT! IT NEEDS TO USE A REAL CHAIN CHECK SOMEHOW!
   const isWalletAddress = (str: string) => {
     // Base58 check (Solana addresses are base58 encoded)
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -100,6 +101,7 @@ export const PublicProfile: React.FC = () => {
         } catch (err) {
           // If the first attempt fails and it's not a wallet address,
           // we might need to try a different API endpoint or handle the error
+          // TODO: IS THIS THE SOURCE OF THE PUBLIC PROFILE NOT LOADING CORRECTLY ERROR?
           if (!isWallet) {
             setError((prev) => ({
               ...prev,
@@ -111,7 +113,7 @@ export const PublicProfile: React.FC = () => {
         }
 
         const balanceResponse = await ddApi.balance.get(
-          userResponse.wallet_address
+          userResponse.wallet_address,
         );
 
         setUserData({
@@ -128,7 +130,7 @@ export const PublicProfile: React.FC = () => {
         setLoading((prev) => ({ ...prev, stats: true }));
         setError((prev) => ({ ...prev, stats: null }));
         const statsResponse = await ddApi.stats.getOverall(
-          userResponse.wallet_address
+          userResponse.wallet_address,
         );
         setUserStats(statsResponse);
 
@@ -138,7 +140,7 @@ export const PublicProfile: React.FC = () => {
         const historyResponse = await ddApi.stats.getHistory(
           userResponse.wallet_address,
           10,
-          0
+          0,
         );
         setContestHistory(historyResponse.map(mapHistoryResponse));
       } catch (err: any) {
@@ -237,17 +239,17 @@ export const PublicProfile: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-center gap-3">
                   <h1 className="text-5xl font-black bg-gradient-to-r from-brand-300 via-brand-400 to-brand-500 text-transparent bg-clip-text animate-gradient-x">
-                    {userData.nickname || "Anonymous Trader"}
+                    {userData.nickname || "Anon Degen"}
                   </h1>
-                  
+
                   {/* Admin controls - only shown if user has admin role */}
                   {isAdmin() && !userData.is_banned && (
                     <BanOnSightButton
                       user={{
                         wallet_address: userData.wallet_address,
-                        nickname: userData.nickname,
+                        nickname: userData.nickname ?? undefined,
                         is_banned: userData.is_banned,
-                        role: userData.role
+                        role: userData.role ?? 'user',
                       }}
                       variant="icon"
                       size="lg"
@@ -256,7 +258,7 @@ export const PublicProfile: React.FC = () => {
                     />
                   )}
                 </div>
-                
+
                 {shouldShowWalletAddress && (
                   <div className="flex items-center justify-center gap-2">
                     <CopyToClipboard
@@ -315,10 +317,12 @@ export const PublicProfile: React.FC = () => {
               <div className="mt-8 max-w-3xl mx-auto">
                 <UserProgress />
               </div>
-              
+
               {/* Social Accounts */}
               <div className="mt-8 max-w-3xl mx-auto">
-                <h3 className="text-xl font-bold mb-4 text-gray-200">Social Accounts</h3>
+                <h3 className="text-xl font-bold mb-4 text-gray-200">
+                  Social Accounts
+                </h3>
                 <SocialAccountsPanel />
               </div>
 

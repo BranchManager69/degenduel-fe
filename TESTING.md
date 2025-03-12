@@ -84,6 +84,78 @@ The authentication system has comprehensive test coverage across three key areas
    - `queryBy*`: Use when element might not be in the document
    - `findBy*`: Use for async elements that appear after some time
 
+## TypeScript Testing Best Practices
+
+1. **Use Explicit Type Annotations**: When mocking in TypeScript, use explicit type annotations instead of relying on imports.
+
+   ```typescript
+   // Instead of importing then mocking (creates unused import warnings):
+   // import { myService } from './myService';
+   
+   // Create explicitly typed mock functions 
+   const mockGetData = jest.fn<Promise<UserData>, [string]>();
+   const mockUpdateUser = jest.fn<Promise<void>, [string, UserUpdateParams]>();
+   
+   // Set up the mock implementation with properly typed functions
+   jest.mock('./myService', () => ({
+     myService: {
+       getData: mockGetData,
+       updateUser: mockUpdateUser
+     }
+   }));
+   ```
+
+2. **Use Named Mock Functions**: Instead of casting functions to jest.Mock, create explicit mock functions with variable names.
+
+   ```typescript
+   // 🚫 Avoid this pattern that requires type casting
+   (myService.getData as jest.Mock).mockResolvedValue({ data: 123 });
+   
+   // ✅ Better approach with named mocks
+   const mockGetData = jest.fn();
+   jest.mock('./myService', () => ({ myService: { getData: mockGetData } }));
+   mockGetData.mockResolvedValue({ data: 123 });
+   ```
+
+3. **Type Your Mock Responses**: Ensure mock responses match the expected types.
+
+   ```typescript
+   // Type your mock data
+   const mockUserData: User = { 
+     id: 1, 
+     name: 'Test User',
+     email: 'test@example.com'
+   };
+   
+   // Use proper typing for the response
+   mockGetUser.mockResolvedValue(mockUserData);
+   ```
+
+4. **Create Properly Typed Mock Responses**: For fetch or axios, create helper functions that return properly typed responses.
+
+   ```typescript
+   const createMockResponse = <T>(status: number, data: T): Response => {
+     return {
+       status,
+       ok: status >= 200 && status < 300,
+       json: jest.fn().mockResolvedValue(data),
+       text: jest.fn().mockResolvedValue(JSON.stringify(data)),
+       headers: new Headers()
+     } as unknown as Response;
+   };
+   ```
+
+5. **Avoid Type Assertions When Possible**: Use proper types from the start rather than converting types later.
+
+   ```typescript
+   // 🚫 Avoid excessive type assertions
+   const result = await myFunction() as SomeType;
+   
+   // ✅ Better to ensure your mocks and functions return the correct types
+   mockFunction.mockResolvedValue(correctlyTypedData);
+   const result = await myFunction(); // TypeScript knows the type
+   ```
+
 ## Coverage
 
 We track code coverage using Jest's built-in coverage reporter. Coverage reports are generated in the `coverage/` directory after running tests with the `--coverage` flag.
@@ -211,6 +283,72 @@ You can access:
 3. Write tests using describe and it blocks.
 4. Use render() and screen from React Testing Library to test the component.
 
+## Common TypeScript Testing Issues and Solutions
+
+### 1. Issue: Using API client functions with incorrect parameters
+
+```typescript
+// 🚫 Problem: This function doesn't accept a token parameter
+const client = createApiClient("token");
+
+// ✅ Solution: Pass auth headers in the request options instead
+const client = createApiClient();
+await client.fetch("/endpoint", {
+  headers: {
+    Authorization: "Bearer token"
+  }
+});
+```
+
+### 2. Issue: Type errors when mocking API services
+
+```typescript
+// 🚫 Problem: Using type assertions can lead to errors
+const result = await (apiService.getData as jest.Mock)(); // TS error!
+
+// ✅ Solution: Use named mock functions
+const mockGetData = jest.fn();
+jest.mock('./apiService', () => ({
+  apiService: { getData: mockGetData }
+}));
+const result = await mockGetData(); // No type errors
+```
+
+### 3. Issue: Incorrect mock Response objects
+
+```typescript
+// 🚫 Problem: Mock response doesn't match real Response object
+const mockResponse = {
+  json: () => Promise.resolve(data)
+}; // Missing required properties!
+
+// ✅ Solution: Create a helper function for proper response objects
+const createMockResponse = (status: number, data: any): Response => {
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    json: jest.fn().mockResolvedValue(data),
+    text: jest.fn().mockResolvedValue(JSON.stringify(data)),
+    headers: new Headers()
+  } as unknown as Response;
+};
+```
+
+### 4. Issue: Order of imports and mocks affecting types
+
+```typescript
+// 🚫 Problem: Mocking before imports loses type information
+jest.mock('./myModule');
+import { myFunction } from './myModule'; // Types may be incorrect!
+
+// ✅ Solution: Import first, then mock
+import { myFunction } from './myModule';
+const mockFn = jest.fn();
+jest.mock('./myModule', () => ({
+  myFunction: mockFn
+}));
+```
+
 ## Common Testing Patterns
 
 ### Testing Event Handlers
@@ -260,16 +398,98 @@ it("increments counter", () => {
 
 ### Testing API Services
 
+There are two recommended patterns for testing API services:
+
+#### Method 1: Direct Mock Implementation
+
 ```typescript
-// Mock fetch or axios
-jest.mock('axios');
-const mockAxios = axios as jest.Mocked<typeof axios>;
+// Mock the entire module with inline implementation
+jest.mock('../../services/api', () => ({
+  myService: {
+    getData: jest.fn(),
+    updateData: jest.fn()
+  }
+}));
+
+// Import after mocking
+import { myService } from '../../services/api';
 
 it('handles API errors gracefully', async () => {
   // Setup mock to simulate a network error
-  mockAxios.get.mockRejectedValueOnce(new Error('Network error'));
+  (myService.getData as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
   // Call the service function and verify error handling
   await expect(myService.getData()).rejects.toThrow('Network error');
+});
+```
+
+#### Method 2: Named Mock Functions (Preferred)
+
+```typescript
+// Create typed mock functions - no imports needed
+const mockGetData = jest.fn<Promise<DataType>, [string]>();
+const mockUpdateData = jest.fn<Promise<void>, [string, DataPayload]>();
+
+// Mock the module with our named functions
+jest.mock('../../services/api', () => ({
+  myService: {
+    getData: mockGetData,
+    updateData: mockUpdateData
+  }
+}));
+
+it('handles API errors gracefully', async () => {
+  // Setup mock to simulate a network error
+  mockGetData.mockRejectedValueOnce(new Error('Network error'));
+
+  // Call the mock function directly - cleaner and better typed
+  await expect(mockGetData('some-id')).rejects.toThrow('Network error');
+});
+```
+
+This approach is cleaner because:
+1. No unnecessary imports that create "unused import" warnings
+2. Explicit typing of mock functions that matches the real API
+3. Direct use of mock functions without type assertions
+4. Follows Jest's module mocking pattern correctly
+
+#### Testing with Fetch API
+
+When mocking the Fetch API:
+
+```typescript
+// Mock global fetch
+global.fetch = jest.fn();
+
+// Create a helper for mock responses
+const createMockResponse = (status: number, data: any): Response => {
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    json: jest.fn().mockResolvedValue(data),
+    text: jest.fn().mockResolvedValue(JSON.stringify(data)),
+    headers: new Headers()
+  } as unknown as Response;
+};
+
+it('fetches data successfully', async () => {
+  // Setup the mock response
+  (global.fetch as jest.Mock).mockResolvedValueOnce(
+    createMockResponse(200, { success: true, data: [1, 2, 3] })
+  );
+  
+  // Call the service function
+  const result = await myService.getData();
+  
+  // Verify the result
+  expect(result).toEqual([1, 2, 3]);
+  
+  // Verify fetch was called correctly
+  expect(global.fetch).toHaveBeenCalledWith(
+    '/api/data',
+    expect.objectContaining({
+      method: 'GET'
+    })
+  );
 });
 ```

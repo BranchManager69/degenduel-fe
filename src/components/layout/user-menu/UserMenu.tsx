@@ -1,17 +1,17 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
-import { FaUser, FaUserFriends, FaBell, FaTrophy } from "react-icons/fa";
+import { FaBell, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
-import { AdminControls } from "./UserMenuAdminControls";
 import { useAuth } from "../../../hooks/useAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
+import { AdminControls } from "./UserMenuAdminControls";
 
-// MenuItem is used for internal types
-type MenuItem = {
+// Define the shape of our menu items
+interface MenuItemType {
   label: string;
-  icon: React.ComponentType;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   to: string;
   badge?: number | string;
   badgeColor?: string;
@@ -211,7 +211,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     console.warn("Failed to load profile image, falling back to default");
   };
 
-  const menuItems = [
+  const menuItems: MenuItemType[] = [
     {
       label: "Profile",
       icon: FaUser,
