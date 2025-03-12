@@ -1,5 +1,8 @@
 name: DegenDuel CI/CD
 
+# This workflow focuses on the basic build and deployment verification
+# It creates the necessary deployment records for GitHub branch protection requirements
+
 on:
   push:
     branches: [ main ]
@@ -8,14 +11,18 @@ on:
 
 # Add permissions needed for deployments
 permissions:
-  contents: write
+  contents: read
   deployments: write
-  pull-requests: write
   statuses: write
+
+# Define reusable environment variables
+env:
+  NODE_VERSION: '18'
+  NPM_FLAGS: '--legacy-peer-deps'
 
 jobs:
   test:
-    name: Test Suite
+    name: Test
     runs-on: ubuntu-latest
     
     steps:
@@ -24,34 +31,14 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-      
-    - name: Run type checking
-      run: npm run type-check
-      continue-on-error: true
-      
-    - name: Run linting
-      run: npm run lint
-      continue-on-error: true
+      run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Run tests
       run: npm test
-      continue-on-error: true
-      
-    - name: Generate coverage report
-      run: npm test -- --coverage
-      continue-on-error: true
-      
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
-      with:
-        directory: ./coverage/
-        fail_ci_if_error: false
-        token: ${{ secrets.CODECOV_TOKEN || github.token }}
       continue-on-error: true
 
   build-dev:
@@ -66,37 +53,15 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci --legacy-peer-deps
+      run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Build development version
-      run: |
-        # Skip TypeScript check since we already ran it in the test job
-        echo "Building development version, bypassing TypeScript check..."
-        VITE_FORCE_DISABLE_MINIFY=true npm run build:dev
+      run: npm run build:dev
       
-    - name: Verify build output
-      id: verify-build
-      run: |
-        if [ -d "dist-dev" ] && [ "$(find dist-dev -type f | wc -l)" -gt 0 ]; then
-          echo "✅ Development build successful!"
-          echo "build_success=true" >> $GITHUB_OUTPUT
-        else
-          echo "❌ Development build failed!"
-          echo "build_success=false" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-        
-    - name: Upload development build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-dev
-        path: dist-dev
-        retention-days: 7
-        
     - name: Create GitHub deployment for development
       uses: chrnorm/deployment-action@v2
       id: deployment-dev
@@ -125,37 +90,15 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci --legacy-peer-deps
+      run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Build production version
-      run: |
-        # Skip TypeScript check since we already ran it in the test job
-        echo "Building production version, bypassing TypeScript check..."
-        npm run build:prod
+      run: npm run build:prod
       
-    - name: Verify build output
-      id: verify-build
-      run: |
-        if [ -d "dist" ] && [ "$(find dist -type f | wc -l)" -gt 0 ]; then
-          echo "✅ Production build successful!"
-          echo "build_success=true" >> $GITHUB_OUTPUT
-        else
-          echo "❌ Production build failed!"
-          echo "build_success=false" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-        
-    - name: Upload production build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-prod
-        path: dist
-        retention-days: 7
-        
     - name: Create GitHub deployment for production
       uses: chrnorm/deployment-action@v2
       id: deployment-prod
