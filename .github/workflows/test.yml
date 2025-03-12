@@ -64,7 +64,7 @@ jobs:
       run: |
         # Skip TypeScript check in build
         echo "Building development version, bypassing TypeScript check..."
-        VITE_FORCE_DISABLE_MINIFY=true vite build --mode development
+        VITE_FORCE_DISABLE_MINIFY=true npx vite build --mode development
       
     - name: Verify build output
       run: |
@@ -118,7 +118,7 @@ jobs:
       run: |
         # Skip TypeScript check in build
         echo "Building production version, bypassing TypeScript check..."
-        vite build --mode production
+        npx vite build --mode production
       
     - name: Verify build output
       run: |
