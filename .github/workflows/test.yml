@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+# Add permissions needed for deployments
+permissions:
+  contents: read
+  deployments: write
+  pull-requests: write
+
 jobs:
   test:
     name: Test Suite
@@ -66,22 +72,10 @@ jobs:
       
     - name: Build development version
       run: |
-        # Skip TypeScript check in build
+        # Skip TypeScript check since we already ran it in the test job
         echo "Building development version, bypassing TypeScript check..."
-        # Create a temporary vite config with react-hot-toast as external
-        echo 'import { defineConfig } from "vite";
-        import config from "./vite.config.js";
-        export default defineConfig({
-          ...config,
-          build: {
-            ...config.build,
-            rollupOptions: {
-              ...config.build?.rollupOptions,
-              external: ["react-hot-toast"]
-            }
-          }
-        });' > vite.config.build.js
-        VITE_FORCE_DISABLE_MINIFY=true npx vite build --mode development --config vite.config.build.js
+        # Use the standard npm script that's known to work
+        VITE_FORCE_DISABLE_MINIFY=true npm run build:dev
       
     - name: Verify build output
       run: |
@@ -133,24 +127,10 @@ jobs:
       
     - name: Build production version
       run: |
-        # Skip TypeScript check in build
+        # Skip TypeScript check since we already ran it in the test job
         echo "Building production version, bypassing TypeScript check..."
-        # Create a temporary vite config with react-hot-toast as external (if not already created)
-        if [ ! -f vite.config.build.js ]; then
-          echo 'import { defineConfig } from "vite";
-          import config from "./vite.config.js";
-          export default defineConfig({
-            ...config,
-            build: {
-              ...config.build,
-              rollupOptions: {
-                ...config.build?.rollupOptions,
-                external: ["react-hot-toast"]
-              }
-            }
-          });' > vite.config.build.js
-        fi
-        npx vite build --mode production --config vite.config.build.js
+        # Use the standard npm script that's known to work
+        npm run build:prod
       
     - name: Verify build output
       run: |
