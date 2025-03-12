@@ -4,6 +4,7 @@
 <div align="center">
   <img src="https://your-logo-url-here.com/logo.png" alt="DegenDuel Logo" width="300">
 
+  [![CI/CD](https://github.com/BranchManager69/degenduel-fe/actions/workflows/test.yml/badge.svg)](https://github.com/BranchManager69/degenduel-fe/actions/workflows/test.yml)
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
   [![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
@@ -130,8 +131,11 @@ npm run preview        # Preview production build
 ```bash
 npm run test           # Run all tests
 npm test -- -t "test name"  # Run specific test
+npm test -- --coverage # Run tests with coverage report
 npm run type-check     # Run TypeScript type checking
 ```
+
+See [TESTING.md](./TESTING.md) for comprehensive testing guidelines and CI/CD information.
 
 ## 🔌 WebSocket System
 
