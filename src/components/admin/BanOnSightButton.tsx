@@ -13,7 +13,6 @@ interface BanOnSightButtonProps {
   variant?: "button" | "icon";
   className?: string;
   onSuccess?: () => void;
-  currentUserRole?: string;
 }
 
 export function BanOnSightButton({
@@ -21,8 +20,7 @@ export function BanOnSightButton({
   size = "md",
   variant = "button",
   className = "",
-  onSuccess,
-  currentUserRole, // This parameter is now optional
+  onSuccess
 }: BanOnSightButtonProps) {
   const [showBanModal, setShowBanModal] = useState(false);
   const { isAdmin, isSuperAdmin } = useAuth(); // Use the auth hook's built-in role checks

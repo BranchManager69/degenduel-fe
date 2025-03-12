@@ -188,16 +188,19 @@ Our CI pipeline provides:
 1. **Test Results**: View in the GitHub Actions tab
    - See which tests passed/failed
    - Debug test failures directly in GitHub
+   - Quick feedback on test status
 
 2. **Code Coverage**: Uploaded to Codecov
    - Coverage reports and history
    - Coverage diff for each PR
    - Visualization and metrics
+   - Track progress over time
 
 3. **Build Artifacts**: Uploaded for each workflow run
    - Can be downloaded for inspection
    - Retained for 7 days
    - Useful for debugging build issues
+   - Verify build output manually if needed
 
 You can access:
 - Test and build results: GitHub Actions tab → Select workflow run → View jobs

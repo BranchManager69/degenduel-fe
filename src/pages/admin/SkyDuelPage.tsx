@@ -3,7 +3,7 @@ import { BackgroundEffects } from "../../components/animated-background/Backgrou
 import { SkyDuelDashboard } from "../../components/admin/skyduel/SkyDuelDashboard";
 import { useAuth } from "../../hooks/useAuth";
 import { useSkyDuelWebSocket } from "../../hooks/useSkyDuelWebSocket";
-import { useStore } from "../../store/useStore";
+// Removed unused imports
 
 export const SkyDuelPage: React.FC = () => {
   const [loading, setLoading] = useState(true);

@@ -7,9 +7,10 @@ import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
 import { AdminControls } from "./UserMenuAdminControls";
 
-interface MenuItem {
+// Define menu item type for user menu entries
+export interface MenuItem {
   label: string;
-  icon: React.ComponentType;
+  icon: React.ComponentType<any>;
   to: string;
   badge?: number | string;
   badgeColor?: string;

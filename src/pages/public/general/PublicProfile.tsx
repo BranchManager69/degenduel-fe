@@ -15,6 +15,7 @@ import {
 } from "../../../components/profile/contest-history/ContestHistory";
 import { useAuth } from "../../../hooks/useAuth";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
+import type { AxiosError } from "axios";
 import { useStore } from "../../../store/useStore";
 import { UserData, UserStats as UserStatsType } from "../../../types/profile";
 
@@ -44,7 +45,7 @@ interface ErrorState {
 
 export const PublicProfile: React.FC = () => {
   const { identifier } = useParams();
-  const { maintenanceMode, user: currentUser } = useStore();
+  const { maintenanceMode } = useStore();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [userStats, setUserStats] = useState<UserStatsType | null>(null);
   const [contestHistory, setContestHistory] = useState<ContestEntry[]>([]);
@@ -65,7 +66,7 @@ export const PublicProfile: React.FC = () => {
   const { isAdmin } = useAuth();
 
   // Helper to determine if a string is likely a Solana wallet address
-  // TODO: FIX THIS BULLSHIT
+  // TODO: Improve wallet address validation
   const isWalletAddress = (str: string) => {
     // Base58 check (Solana addresses are base58 encoded)
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -141,10 +142,11 @@ export const PublicProfile: React.FC = () => {
           0
         );
         setContestHistory(historyResponse.map(mapHistoryResponse));
-      } catch (err: any) {
+      } catch (err) {
+        const axiosError = err as AxiosError<{ message: string }>;
         setError((prev) => ({
           ...prev,
-          user: err.response?.data?.message || "Failed to load user data",
+          user: axiosError.response?.data?.message || "Failed to load user data",
         }));
       } finally {
         setLoading((prev) => ({
@@ -245,7 +247,7 @@ export const PublicProfile: React.FC = () => {
                     <BanOnSightButton
                       user={{
                         wallet_address: userData.wallet_address,
-                        nickname: userData.nickname,
+                        nickname: userData.nickname || undefined,
                         is_banned: userData.is_banned,
                         role: userData.role
                       }}

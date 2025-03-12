@@ -7,7 +7,19 @@ dist-dev/
 coverage/
 build-metrics/
 
+# Coverage
 coverage/
+coverage-dev/
+
+# Stray logs
+logs-*.txt
+log-*.txt
+logs-*.log
+log-*.log
+logs-*.json
+log-*.json
+logs-*
+log-*
 
 # Documentation
 docs_drafts/

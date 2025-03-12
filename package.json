@@ -14,7 +14,9 @@
     "dev": "vite",
     "dev:local": "vite --mode dev-local",
     "type-check": "tsc --noEmit",
-    "test": "jest --config jest.config.ts --verbose"
+    "test": "jest --config jest.config.ts --verbose",
+    "test:api": "jest --config jest.config.ts --verbose src/services/api/admin.test.ts src/services/api/contests.test.ts src/services/dd-api.test.ts",
+    "test:coverage": "jest --config jest.config.ts --verbose --coverage"
   },
   "dependencies": {
     "@aptos-labs/wallet-adapter-react": "^3.7.9",
@@ -74,8 +76,10 @@
   "devDependencies": {
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",
+    "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
+    "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/user-event": "^14.6.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/express": "^5.0.0",

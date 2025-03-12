@@ -49,7 +49,7 @@ const BanIPModal: React.FC<BanIPModalProps> = ({
           { message: error.message, stack: error.stack } : 
           error,
         ipAddress,
-        request: banData,
+        request: null, // banData is not defined in this scope
         timestamp: new Date().toISOString()
       });
       setError(
