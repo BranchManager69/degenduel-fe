@@ -312,58 +312,7 @@ jobs:
           
 # Performance monitoring job removed to simplify workflow
         
-  # Add a separate job for specialized builds/previews
-  specialized-builds:
-    name: Preview & Experimental Builds
-    runs-on: ubuntu-latest
-    needs: [test]
-    if: contains(github.event.head_commit.message, '[preview]') || (github.head_ref != null && contains(github.head_ref, 'preview-'))
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-    
-    - name: Cache node modules
-      uses: actions/cache@v3
-      id: npm-cache
-      with:
-        path: node_modules
-        key: ${{ env.CACHE_KEY }}
-        restore-keys: |
-          npm-deps-
-    
-    - name: Install dependencies
-      if: steps.npm-cache.outputs.cache-hit != 'true'
-      run: npm ci ${{ env.NPM_FLAGS }}
-      
-    - name: Build experimental bundle
-      run: |
-        # Extract configuration from commit message or branch name
-        CONFIG=""
-        if [[ "${{ github.event.head_commit.message }}" == *"[config:"* ]]; then
-          CONFIG=$(echo "${{ github.event.head_commit.message }}" | grep -o '\[config:[^]]*\]' | sed 's/\[config://' | sed 's/\]//')
-        fi
-        
-        echo "Building experimental bundle with settings: $CONFIG"
-        
-        # Build with experimental settings
-        VITE_EXPERIMENTAL=true npm run build:dev
-      
-    - name: Create bundle analysis report
-      run: |
-        npx -y source-map-explorer@2.5.3 dist-dev/assets/*.js --html bundle-analysis.html
-        
-    - name: Upload analysis report
-      uses: actions/upload-artifact@v4
-      with:
-        name: bundle-analysis
-        path: bundle-analysis.html
-        retention-days: 14
+# Specialized builds job removed to simplify workflow
         
   # Add a new job for visual regression testing
   visual-regression:
