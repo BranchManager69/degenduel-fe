@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
+
+import { UserStats } from "./UserStats";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { UserStats as UserStatsType } from "../../../types/profile";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
-import { UserStats } from "./UserStats";
 
 export const UserStatsSection: React.FC = () => {
   const { user, maintenanceMode } = useStore();

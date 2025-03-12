@@ -1,10 +1,11 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+
 // @ts-ignore - JSX component without TypeScript definitions
-import LoginOptions from '../../../components/auth/LoginOptions';
-import Logo from '../../../components/ui/Logo';
-import { useAuthContext } from '../../../contexts/AuthContext';
+import LoginOptions from "../../../components/auth/LoginOptions";
+import Logo from "../../../components/ui/Logo";
+import { useAuthContext } from "../../../contexts/AuthContext";
 
 /**
  * Dedicated login page for DegenDuel
@@ -13,11 +14,11 @@ import { useAuthContext } from '../../../contexts/AuthContext';
 const LoginPage: React.FC = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
-  
+
   // If already logged in, redirect to home
   React.useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate("/");
     }
   }, [user, navigate]);
 
@@ -33,12 +34,12 @@ const LoginPage: React.FC = () => {
         <div className="flex justify-center">
           <Logo size="lg" animated={true} />
         </div>
-        
+
         {/* Login options panel */}
         <LoginOptions />
-        
+
         {/* Note below login panel */}
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.5 }}

@@ -46,8 +46,8 @@ export const RankingsDropdown: React.FC<RankingsDropdownProps> = ({
               relative group overflow-hidden transition-all duration-300 ease-out
               ${isCompact ? "h-7 text-sm" : "h-8 text-base"} flex items-center px-3
               rounded-full backdrop-blur-lg border-[0.5px] ${buttonStyles.border} ${
-              buttonStyles.hover.border
-            }
+                buttonStyles.hover.border
+              }
               ${buttonStyles.hover.glow} transition-shadow duration-500
             `}
           >
@@ -119,10 +119,12 @@ export const RankingsDropdown: React.FC<RankingsDropdownProps> = ({
                           }
                         `}
                       >
-                        <span className={`
+                        <span
+                          className={`
                             w-4 h-4 transition-colors duration-300
                             ${active ? "text-brand-200" : "text-brand-300"}
-                          `}>
+                          `}
+                        >
                           <item.icon />
                         </span>
                         <span>{item.label}</span>

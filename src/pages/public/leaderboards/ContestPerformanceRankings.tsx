@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 import { ddApi } from "../../../services/dd-api";
 import type {
   ContestPerformanceEntry,
@@ -42,7 +43,7 @@ export const ContestPerformance = () => {
       // If in maintenance mode, don't fetch rankings
       if (isInMaintenance) {
         setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later.",
         );
         return;
       }
@@ -50,7 +51,7 @@ export const ContestPerformance = () => {
       const data = await ddApi.leaderboard.getContestPerformance(
         timeframe,
         PAGE_SIZE,
-        page * PAGE_SIZE
+        page * PAGE_SIZE,
       );
       // Update rankings
       setRankings(data.rankings);
@@ -61,11 +62,11 @@ export const ContestPerformance = () => {
       if (err instanceof Error && err.message.includes("503")) {
         setIsMaintenanceMode(true);
         setError(
-          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+          "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later.",
         );
       } else {
         setError(
-          "Contest performance rankings are not available yet. Please check back later."
+          "Contest performance rankings are not available yet. Please check back later.",
         );
       }
       // Log error
@@ -87,7 +88,7 @@ export const ContestPerformance = () => {
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later.",
           );
         }
       } catch (err) {
@@ -349,7 +350,7 @@ export const ContestPerformance = () => {
                   {/* Trend */}
                   <td
                     className={`px-6 py-4 text-right ${getTrendColor(
-                      entry.trend
+                      entry.trend,
                     )} group-hover/row:animate-glitch`}
                   >
                     {entry.trend}

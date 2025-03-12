@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo } from "react";
+
 import {
   TokenData,
   useTokenDataWebSocket,
@@ -12,7 +13,7 @@ interface TokenDataContextType {
 }
 
 const TokenDataContext = createContext<TokenDataContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({

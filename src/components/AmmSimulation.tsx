@@ -360,7 +360,7 @@ const AmmSimulation: React.FC = () => {
                         onChange={(e) =>
                           handleParamChange(
                             key as keyof SimulationParams,
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         step={config.step}
@@ -373,7 +373,7 @@ const AmmSimulation: React.FC = () => {
                       <p className="mt-1 text-sm text-gray-400 group-hover:text-brand-400 transition-colors">
                         Current:{" "}
                         {config.formatter(
-                          params[key as keyof SimulationParams]
+                          params[key as keyof SimulationParams],
                         )}
                       </p>
                     </div>
@@ -497,8 +497,8 @@ const AmmSimulation: React.FC = () => {
                         name === "Liquidity"
                           ? formatters.marketCap(value)
                           : name === "Sale Amount"
-                          ? formatters.currency.format(value)
-                          : formatters.percent.format(value),
+                            ? formatters.currency.format(value)
+                            : formatters.percent.format(value),
                         name,
                       ]}
                       labelFormatter={formatters.day}

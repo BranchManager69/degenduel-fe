@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 import { FiMaximize2, FiMinimize2, FiX } from "react-icons/fi";
+
 import { useStore } from "../../../store/useStore";
 import { Label } from "../../ui/Label";
 import { Slider } from "../../ui/Slider";
@@ -18,7 +19,7 @@ export const UiDebugPanel: React.FC = () => {
   const handleUpdateSetting = (
     background: keyof typeof uiDebug.backgrounds,
     setting: string,
-    value: number
+    value: number,
   ) => {
     updateBackgroundSetting(background, setting, value);
   };
@@ -91,7 +92,7 @@ export const UiDebugPanel: React.FC = () => {
                   step={1}
                   onValueChange={handleSliderChange(
                     "movingBackground",
-                    "intensity"
+                    "intensity",
                   )}
                 />
               </div>
@@ -129,7 +130,7 @@ export const UiDebugPanel: React.FC = () => {
                   step={1}
                   onValueChange={handleSliderChange(
                     "tokenVerse",
-                    "starIntensity"
+                    "starIntensity",
                   )}
                 />
               </div>
@@ -142,7 +143,7 @@ export const UiDebugPanel: React.FC = () => {
                   step={0.1}
                   onValueChange={handleSliderChange(
                     "tokenVerse",
-                    "bloomStrength"
+                    "bloomStrength",
                   )}
                 />
               </div>
@@ -155,7 +156,7 @@ export const UiDebugPanel: React.FC = () => {
                   step={100}
                   onValueChange={handleSliderChange(
                     "tokenVerse",
-                    "particleCount"
+                    "particleCount",
                   )}
                 />
               </div>
@@ -168,7 +169,7 @@ export const UiDebugPanel: React.FC = () => {
                   step={10}
                   onValueChange={handleSliderChange(
                     "tokenVerse",
-                    "updateFrequency"
+                    "updateFrequency",
                   )}
                 />
               </div>
@@ -223,7 +224,7 @@ export const UiDebugPanel: React.FC = () => {
                   step={1}
                   onValueChange={handleSliderChange(
                     "ambientMarketData",
-                    "intensity"
+                    "intensity",
                   )}
                 />
               </div>
@@ -260,7 +261,7 @@ export const UiDebugPanel: React.FC = () => {
                       step={1}
                       onValueChange={handleSliderChange(
                         "gradientWaves",
-                        "intensity"
+                        "intensity",
                       )}
                     />
                   </div>
@@ -290,7 +291,7 @@ export const UiDebugPanel: React.FC = () => {
                       step={1}
                       onValueChange={handleSliderChange(
                         "fluidTokens",
-                        "intensity"
+                        "intensity",
                       )}
                     />
                   </div>
@@ -322,7 +323,7 @@ export const UiDebugPanel: React.FC = () => {
                       step={1}
                       onValueChange={handleSliderChange(
                         "abstractPatterns",
-                        "intensity"
+                        "intensity",
                       )}
                     />
                   </div>
@@ -352,7 +353,7 @@ export const UiDebugPanel: React.FC = () => {
                       step={1}
                       onValueChange={handleSliderChange(
                         "neonGrid",
-                        "intensity"
+                        "intensity",
                       )}
                     />
                   </div>

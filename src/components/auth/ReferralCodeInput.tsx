@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useLocation } from "react-router-dom";
+
 import { ddApi } from "../../services/dd-api";
 
 interface ReferralCodeInputProps {
@@ -54,7 +55,7 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
     } catch (err) {
       console.error("Failed to apply referral code:", err);
       toast.error(
-        err instanceof Error ? err.message : "Failed to apply referral code"
+        err instanceof Error ? err.message : "Failed to apply referral code",
       );
     } finally {
       setLoading(false);

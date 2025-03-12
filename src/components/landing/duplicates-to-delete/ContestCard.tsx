@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import React, { useMemo, useState } from "react";
 import { FaClock } from "react-icons/fa";
 import { Link } from "react-router-dom";
+
 import { formatCurrency } from "../../../lib/utils";
 import { ContestStatus, DifficultyLevel } from "../../../types";
 import { Card } from "../../ui/Card";
@@ -50,7 +51,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
       const targetDate = new Date(isLive ? endTime : startTime);
       if (isNaN(targetDate.getTime())) {
         console.error(
-          `Invalid date string received: ${isLive ? endTime : startTime}`
+          `Invalid date string received: ${isLive ? endTime : startTime}`,
         );
         return "Time unavailable";
       }
@@ -66,7 +67,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
             `Current time: ${new Date(now).toISOString()}\n` +
             `Difference: ${diff}ms\n` +
             `Contest ID: ${id}\n` +
-            `Status: ${status}`
+            `Status: ${status}`,
         );
       }
 
@@ -78,7 +79,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
                 isLive ? endTime : startTime
               }\n` +
               `Contest ID: ${id}\n` +
-              `Status: ${status}`
+              `Status: ${status}`,
           );
         }
         return isLive ? "Ending soon" : "Starting soon";
@@ -86,7 +87,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor(
-        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
       );
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
@@ -108,7 +109,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
         "\nEnd time:",
         endTime,
         "\nStatus:",
-        status
+        status,
       );
       return "Time unavailable";
     }

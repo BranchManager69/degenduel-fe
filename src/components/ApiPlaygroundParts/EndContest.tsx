@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
+
 import { API_URL } from "../../config/config";
 
 interface Contest {
@@ -60,7 +61,7 @@ export function EndContest() {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
 
       const data = await response.json();
@@ -98,7 +99,7 @@ export function EndContest() {
     const endTime = new Date(contest.end_time);
     const now = new Date();
     const diffInMinutes = Math.floor(
-      (endTime.getTime() - now.getTime()) / (1000 * 60)
+      (endTime.getTime() - now.getTime()) / (1000 * 60),
     );
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);

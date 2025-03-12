@@ -1,7 +1,7 @@
-import { API_URL } from "../../config/config";
-import { User } from "../../types/index";
-import { UserLevel } from "../../services/userService";
 import { createApiClient, logError } from "./utils";
+import { API_URL } from "../../config/config";
+import { UserLevel } from "../../services/userService";
+import { User } from "../../types/index";
 
 export const users = {
   getAll: async (): Promise<User[]> => {
@@ -42,7 +42,7 @@ export const users = {
 
   updateSettings: async (
     wallet: string,
-    settings: Record<string, any>
+    settings: Record<string, any>,
   ): Promise<void> => {
     try {
       const api = createApiClient();
@@ -55,7 +55,7 @@ export const users = {
       throw error;
     }
   },
-  
+
   // Add new endpoint for user level data
   getUserLevel: async (wallet: string): Promise<UserLevel> => {
     try {
@@ -87,7 +87,7 @@ export const users = {
       };
     }
   },
-  
+
   // Add endpoint for retrieving profile image
   getProfileImage: async (wallet: string): Promise<string> => {
     try {
@@ -97,11 +97,11 @@ export const users = {
       const response = await api.fetch(`/users/${wallet}/profile-image`, {
         method: "HEAD", // Just check if it exists, don't download the image
       });
-      
+
       if (response.ok) {
         return `${API_URL}/users/${wallet}/profile-image`;
       }
-      
+
       return defaultImageUrl;
     } catch (error) {
       console.warn("Profile image fetch failed, using default", error);

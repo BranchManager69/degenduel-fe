@@ -1,6 +1,7 @@
 // src/pages/superadmin/WssPlayground.tsx
 
 import React, { useEffect, useRef, useState } from "react";
+
 import { useStore } from "../../store/useStore";
 
 interface Message {
@@ -51,18 +52,20 @@ export const WssPlayground: React.FC = () => {
     incomingCount: 0,
     connectionDuration: 0,
   });
-  
+
   const [pingInterval] = useState<number>(5000);
   const [autoPing] = useState<boolean>(true);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const connectionStartTimeRef = useRef<number | null>(null);
-  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   // Predefined test messages
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
 
   const setupAutoPing = () => {
@@ -72,7 +75,11 @@ export const WssPlayground: React.FC = () => {
       pingIntervalRef.current = null;
     }
 
-    if (autoPing && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    if (
+      autoPing &&
+      wsRef.current &&
+      wsRef.current.readyState === WebSocket.OPEN
+    ) {
       pingIntervalRef.current = setInterval(() => {
         sendMessage("ping", {});
       }, pingInterval);
@@ -85,11 +92,13 @@ export const WssPlayground: React.FC = () => {
     }
 
     connectionStartTimeRef.current = Date.now();
-    
+
     durationIntervalRef.current = setInterval(() => {
       if (connectionStartTimeRef.current) {
-        const duration = Math.floor((Date.now() - connectionStartTimeRef.current) / 1000);
-        setStats(prev => ({ ...prev, connectionDuration: duration }));
+        const duration = Math.floor(
+          (Date.now() - connectionStartTimeRef.current) / 1000,
+        );
+        setStats((prev) => ({ ...prev, connectionDuration: duration }));
       }
     }, 1000);
   };
@@ -108,7 +117,7 @@ export const WssPlayground: React.FC = () => {
         clearInterval(pingIntervalRef.current);
         pingIntervalRef.current = null;
       }
-      
+
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
         durationIntervalRef.current = null;
@@ -116,10 +125,10 @@ export const WssPlayground: React.FC = () => {
 
       // Reset connection stats
       connectionStartTimeRef.current = null;
-      setStats(prev => ({
+      setStats((prev) => ({
         ...prev,
         connectionDuration: 0,
-        lastReconnect: new Date()
+        lastReconnect: new Date(),
       }));
 
       // Close existing connection if any
@@ -134,7 +143,7 @@ export const WssPlayground: React.FC = () => {
         `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
           window.location.host
         }/api/v2/ws/portfolio`,
-        user.jwt
+        user.jwt,
       );
       wsRef.current = ws;
 
@@ -142,27 +151,27 @@ export const WssPlayground: React.FC = () => {
         console.log("WebSocket Connected");
         setStatus("connected");
         setError(null);
-        
+
         // Start tracking connection duration
         setupConnectionDurationTimer();
-        
+
         // Setup auto-ping if enabled
         setupAutoPing();
-        
+
         // Add connection message to the log
         const connectionMsg: Message = {
           type: "CONNECTION_ESTABLISHED",
           timestamp: new Date().toISOString(),
           data: { status: "connected" },
-          direction: "incoming"
+          direction: "incoming",
         };
-        
-        setMessages(prev => [connectionMsg, ...prev]);
-        setStats((prev) => ({ 
-          ...prev, 
+
+        setMessages((prev) => [connectionMsg, ...prev]);
+        setStats((prev) => ({
+          ...prev,
           lastReconnect: new Date(),
           incomingCount: prev.incomingCount + 1,
-          messageCount: prev.messageCount + 1
+          messageCount: prev.messageCount + 1,
         }));
 
         // Send initial ping
@@ -212,10 +221,10 @@ export const WssPlayground: React.FC = () => {
               }));
               break;
             case "CONNECTED_CLIENTS":
-              if (message.data && typeof message.data.count === 'number') {
-                setStats(prev => ({
+              if (message.data && typeof message.data.count === "number") {
+                setStats((prev) => ({
                   ...prev,
-                  connectedClients: message.data.count
+                  connectedClients: message.data.count,
                 }));
               }
               break;
@@ -225,22 +234,22 @@ export const WssPlayground: React.FC = () => {
         } catch (err) {
           console.error("Error parsing message:", err);
           setError("Failed to parse message");
-          setStats((prev) => ({ 
-            ...prev, 
+          setStats((prev) => ({
+            ...prev,
             errorCount: prev.errorCount + 1,
             messageCount: prev.messageCount + 1,
-            incomingCount: prev.incomingCount + 1
+            incomingCount: prev.incomingCount + 1,
           }));
-          
+
           // Add error message to the log
           const errorMsg: Message = {
             type: "PARSE_ERROR",
             timestamp: new Date().toISOString(),
             error: `Failed to parse: ${event.data}`,
-            direction: "incoming"
+            direction: "incoming",
           };
-          
-          setMessages(prev => [errorMsg, ...prev]);
+
+          setMessages((prev) => [errorMsg, ...prev]);
         }
       };
 
@@ -251,35 +260,35 @@ export const WssPlayground: React.FC = () => {
           wasClean: event.wasClean,
         });
         setStatus("disconnected");
-        
+
         // Stop all timers
         if (pingIntervalRef.current) {
           clearInterval(pingIntervalRef.current);
           pingIntervalRef.current = null;
         }
-        
+
         if (durationIntervalRef.current) {
           clearInterval(durationIntervalRef.current);
           durationIntervalRef.current = null;
         }
-        
+
         // Add disconnect message to the log
         const disconnectMsg: Message = {
           type: "CONNECTION_CLOSED",
           timestamp: new Date().toISOString(),
-          data: { 
+          data: {
             code: event.code,
             reason: event.reason,
-            wasClean: event.wasClean
+            wasClean: event.wasClean,
           },
-          direction: "incoming"
+          direction: "incoming",
         };
-        
-        setMessages(prev => [disconnectMsg, ...prev]);
-        setStats(prev => ({
+
+        setMessages((prev) => [disconnectMsg, ...prev]);
+        setStats((prev) => ({
           ...prev,
           incomingCount: prev.incomingCount + 1,
-          messageCount: prev.messageCount + 1
+          messageCount: prev.messageCount + 1,
         }));
 
         // Auto reconnect logic
@@ -295,21 +304,21 @@ export const WssPlayground: React.FC = () => {
         const errorMessage = (event as ErrorEvent).message || "Unknown error";
         setError(`WebSocket error: ${errorMessage}`);
         setStatus("disconnected");
-        
+
         // Add error message to the log
         const errorMsg: Message = {
           type: "CONNECTION_ERROR",
           timestamp: new Date().toISOString(),
           error: errorMessage,
-          direction: "incoming"
+          direction: "incoming",
         };
-        
-        setMessages(prev => [errorMsg, ...prev]);
-        setStats((prev) => ({ 
-          ...prev, 
+
+        setMessages((prev) => [errorMsg, ...prev]);
+        setStats((prev) => ({
+          ...prev,
           errorCount: prev.errorCount + 1,
           messageCount: prev.messageCount + 1,
-          incomingCount: prev.incomingCount + 1
+          incomingCount: prev.incomingCount + 1,
         }));
       };
     } catch (err) {
@@ -317,21 +326,21 @@ export const WssPlayground: React.FC = () => {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(`Failed to create WebSocket: ${errorMessage}`);
       setStatus("disconnected");
-      
+
       // Add error message to the log
       const errorMsg: Message = {
         type: "INITIALIZATION_ERROR",
         timestamp: new Date().toISOString(),
         error: errorMessage,
-        direction: "incoming"
+        direction: "incoming",
       };
-      
-      setMessages(prev => [errorMsg, ...prev]);
-      setStats((prev) => ({ 
-        ...prev, 
+
+      setMessages((prev) => [errorMsg, ...prev]);
+      setStats((prev) => ({
+        ...prev,
         errorCount: prev.errorCount + 1,
         messageCount: prev.messageCount + 1,
-        incomingCount: prev.incomingCount + 1
+        incomingCount: prev.incomingCount + 1,
       }));
     }
   };
@@ -341,73 +350,73 @@ export const WssPlayground: React.FC = () => {
       wsRef.current.close();
       wsRef.current = null;
     }
-    
+
     // Clear all timeouts and intervals
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     if (pingIntervalRef.current) {
       clearInterval(pingIntervalRef.current);
       pingIntervalRef.current = null;
     }
-    
+
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
     }
   };
-  
+
   const sendMessage = (type: string, data: any = {}) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       setError("WebSocket not connected");
       return false;
     }
-    
+
     try {
       const message = {
         type,
         data,
         timestamp: new Date().toISOString(),
       };
-      
+
       wsRef.current.send(JSON.stringify(message));
-      
+
       // Add to message log
       const logMessage: Message = {
         ...message,
-        direction: "outgoing"
+        direction: "outgoing",
       };
-      
-      setMessages(prev => [logMessage, ...prev]);
-      setStats(prev => ({
+
+      setMessages((prev) => [logMessage, ...prev]);
+      setStats((prev) => ({
         ...prev,
         messageCount: prev.messageCount + 1,
-        outgoingCount: prev.outgoingCount + 1
+        outgoingCount: prev.outgoingCount + 1,
       }));
-      
+
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(`Failed to send message: ${errorMessage}`);
-      
+
       // Add error to message log
       const errorMsg: Message = {
         type: "SEND_ERROR",
         timestamp: new Date().toISOString(),
         error: errorMessage,
-        direction: "outgoing"
+        direction: "outgoing",
       };
-      
-      setMessages(prev => [errorMsg, ...prev]);
-      setStats(prev => ({
+
+      setMessages((prev) => [errorMsg, ...prev]);
+      setStats((prev) => ({
         ...prev,
         errorCount: prev.errorCount + 1,
         messageCount: prev.messageCount + 1,
-        outgoingCount: prev.outgoingCount + 1
+        outgoingCount: prev.outgoingCount + 1,
       }));
-      
+
       return false;
     }
   };
@@ -430,12 +439,12 @@ export const WssPlayground: React.FC = () => {
 
   const clearMessages = () => {
     setMessages([]);
-    setStats((prev) => ({ 
-      ...prev, 
-      messageCount: 0, 
+    setStats((prev) => ({
+      ...prev,
+      messageCount: 0,
       avgLatency: 0,
       incomingCount: 0,
-      outgoingCount: 0
+      outgoingCount: 0,
     }));
   };
 
@@ -448,7 +457,7 @@ export const WssPlayground: React.FC = () => {
       }
     };
   }, [autoPing, pingInterval, status]);
-  
+
   // Cleanup on component unmount
   useEffect(() => {
     return () => {
@@ -467,7 +476,7 @@ export const WssPlayground: React.FC = () => {
 
   const filteredMessages = filterType
     ? messages.filter((msg) =>
-        msg.type.toLowerCase().includes(filterType.toLowerCase())
+        msg.type.toLowerCase().includes(filterType.toLowerCase()),
       )
     : messages;
 
@@ -489,8 +498,8 @@ export const WssPlayground: React.FC = () => {
                 status === "connected"
                   ? "bg-green-500 animate-pulse"
                   : status === "connecting"
-                  ? "bg-yellow-500 animate-pulse"
-                  : "bg-red-500"
+                    ? "bg-yellow-500 animate-pulse"
+                    : "bg-red-500"
               }`}
             />
             <span className="text-sm font-medium text-gray-300 capitalize">

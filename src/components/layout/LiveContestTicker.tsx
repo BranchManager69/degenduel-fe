@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+
 import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 
@@ -251,10 +252,10 @@ export const LiveContestTicker: React.FC<Props> = ({
                         contest.status === "active"
                           ? "text-gray-300 group-hover/item:text-gray-200"
                           : contest.status === "pending"
-                          ? "text-gray-300 group-hover/item:text-gray-200"
-                          : contest.status === "completed"
-                          ? "text-green-300/50 group-hover/item:text-green-200"
-                          : "text-red-300/50 group-hover/item:text-red-200"
+                            ? "text-gray-300 group-hover/item:text-gray-200"
+                            : contest.status === "completed"
+                              ? "text-green-300/50 group-hover/item:text-green-200"
+                              : "text-red-300/50 group-hover/item:text-red-200"
                       }`}
                     >
                       {contest.name}
@@ -267,10 +268,10 @@ export const LiveContestTicker: React.FC<Props> = ({
                           contest.status === "active"
                             ? "from-cyber-400 to-brand-400"
                             : contest.status === "pending"
-                            ? "from-green-400 to-brand-400"
-                            : contest.status === "completed"
-                            ? "from-green-600/50 to-brand-400/50"
-                            : "from-red-400/50 to-brand-400/50"
+                              ? "from-green-400 to-brand-400"
+                              : contest.status === "completed"
+                                ? "from-green-600/50 to-brand-400/50"
+                                : "from-red-400/50 to-brand-400/50"
                         } bg-clip-text text-transparent group-hover/item:animate-gradientX`}
                       >
                         {Number(contest.entry_fee)} SOL
@@ -293,10 +294,10 @@ export const LiveContestTicker: React.FC<Props> = ({
                             contest.status === "active"
                               ? "bg-gradient-to-r from-cyber-400 to-brand-400"
                               : contest.status === "pending"
-                              ? "bg-gradient-to-r from-green-400 to-brand-400"
-                              : contest.status === "completed"
-                              ? "bg-gradient-to-r from-green-600/50 to-brand-400/50"
-                              : "bg-gradient-to-r from-red-400/50 to-brand-400/50"
+                                ? "bg-gradient-to-r from-green-400 to-brand-400"
+                                : contest.status === "completed"
+                                  ? "bg-gradient-to-r from-green-600/50 to-brand-400/50"
+                                  : "bg-gradient-to-r from-red-400/50 to-brand-400/50"
                           }`}
                           style={{
                             width: `${
@@ -358,7 +359,7 @@ export const LiveContestTicker: React.FC<Props> = ({
                                   new Date(contest.end_time),
                                   {
                                     addSuffix: true,
-                                  }
+                                  },
                                 )
                               : "N/A"}
                           </>
@@ -373,7 +374,7 @@ export const LiveContestTicker: React.FC<Props> = ({
                                     new Date(contest.start_time),
                                     {
                                       addSuffix: true,
-                                    }
+                                    },
                                   )
                               : "N/A"}
                           </>
@@ -383,9 +384,9 @@ export const LiveContestTicker: React.FC<Props> = ({
                             Cancelled{" "}
                             {formatDistanceToNow(
                               new Date(
-                                contest.cancelled_at || contest.end_time
+                                contest.cancelled_at || contest.end_time,
                               ),
-                              { addSuffix: true }
+                              { addSuffix: true },
                             )}
                           </>
                         )}

@@ -1,6 +1,7 @@
-import React from 'react';
-import { useStore } from '../../store/useStore';
-import { Button } from '../ui/Button';
+import React from "react";
+
+import { useStore } from "../../store/useStore";
+import { Button } from "../ui/Button";
 
 interface ConnectWalletButtonProps {
   className?: string;
@@ -9,21 +10,21 @@ interface ConnectWalletButtonProps {
 
 /**
  * Connect Wallet Button Component
- * 
+ *
  * Primary authentication method for DegenDuel
  * Reuses the existing wallet connection logic from useStore
  * Follows the style of the Header button
  */
-export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({ 
-  className = '', 
-  compact = false 
+export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
+  className = "",
+  compact = false,
 }) => {
   const { connectWallet, disconnectWallet, isConnecting, user } = useStore();
-  
+
   // If connected, show the "Connected" button with truncated address
   if (user?.wallet_address) {
     return (
-      <Button 
+      <Button
         onClick={disconnectWallet}
         variant="outline"
         className={`flex items-center justify-center ${className}`}
@@ -35,17 +36,18 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       </Button>
     );
   }
-  
+
   // Not connected - show connect button with gradient styling
   return (
-    <Button 
+    <Button
       onClick={connectWallet}
       disabled={isConnecting}
       className={`bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 
         text-white font-cyber transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-        ${compact 
-          ? "text-xs sm:text-sm py-1 sm:py-1.5 px-2 sm:px-3" 
-          : "text-sm sm:text-base py-1.5 sm:py-2 px-3 sm:px-4"
+        ${
+          compact
+            ? "text-xs sm:text-sm py-1 sm:py-1.5 px-2 sm:px-3"
+            : "text-sm sm:text-base py-1.5 sm:py-2 px-3 sm:px-4"
         } ${className}`}
       variant="gradient"
       size={compact ? "sm" : "md"}

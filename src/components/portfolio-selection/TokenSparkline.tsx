@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Area, AreaChart, YAxis } from "recharts";
+
 import { API_URL } from "../../config/config";
 
 interface PricePoint {
@@ -32,7 +33,7 @@ export const TokenSparkline: React.FC<TokenSparklineProps> = ({
             headers: {
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (response.status === 502) {

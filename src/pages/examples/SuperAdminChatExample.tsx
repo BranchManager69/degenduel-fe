@@ -1,4 +1,5 @@
 import React from "react";
+
 import { SuperAdminChatManager } from "../../components/admin/SuperAdminChatManager";
 
 const SuperAdminChatExample: React.FC = () => {

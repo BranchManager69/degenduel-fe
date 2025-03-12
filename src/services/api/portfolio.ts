@@ -1,6 +1,6 @@
+import { createApiClient } from "./utils";
 import { useStore } from "../../store/useStore";
 import { PortfolioResponse } from "../../types/index";
-import { createApiClient } from "./utils";
 
 export const portfolio = {
   get: async (contestId: number): Promise<PortfolioResponse> => {
@@ -12,7 +12,7 @@ export const portfolio = {
 
     const api = createApiClient();
     const response = await api.fetch(
-      `/contests/${contestId}/portfolio/${user.wallet_address}`
+      `/contests/${contestId}/portfolio/${user.wallet_address}`,
     );
 
     if (response.status === 401) {

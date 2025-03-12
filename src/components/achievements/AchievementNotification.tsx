@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect } from "react";
+
 import { useStore } from "../../store/useStore";
 
 type AchievementTier =

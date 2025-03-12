@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import { useUserContests } from "../../hooks/useUserContests";
 import { FloatingContestChat } from "../contest-chat/FloatingContestChat";
 
@@ -14,7 +15,7 @@ export const AdminChatManager: React.FC<AdminChatManagerProps> = () => {
   const [selectedContests, setSelectedContests] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<ContestStatus | "all">(
-    "all"
+    "all",
   );
   const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [activeContestId, setActiveContestId] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export const AdminChatManager: React.FC<AdminChatManagerProps> = () => {
     setSelectedContests((prev) =>
       prev.includes(contestId)
         ? prev.filter((id) => id !== contestId)
-        : [...prev, contestId]
+        : [...prev, contestId],
     );
 
     // Initialize position for new chat if not already set
@@ -75,10 +76,10 @@ export const AdminChatManager: React.FC<AdminChatManagerProps> = () => {
     // If the closed chat was active, set a new active chat
     if (activeContestId === contestId) {
       const remainingContests = selectedContests.filter(
-        (id) => id !== contestId
+        (id) => id !== contestId,
       );
       setActiveContestId(
-        remainingContests.length > 0 ? remainingContests[0] : null
+        remainingContests.length > 0 ? remainingContests[0] : null,
       );
     }
   };
@@ -211,8 +212,8 @@ export const AdminChatManager: React.FC<AdminChatManagerProps> = () => {
                     contest.status === "active"
                       ? "bg-green-900/50 text-green-400"
                       : contest.status === "upcoming"
-                      ? "bg-blue-900/50 text-blue-400"
-                      : "bg-gray-700 text-gray-400"
+                        ? "bg-blue-900/50 text-blue-400"
+                        : "bg-gray-700 text-gray-400"
                   }`}
                 >
                   {contest.status.charAt(0).toUpperCase() +

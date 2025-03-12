@@ -2,8 +2,8 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-import { AuthenticatedRoute } from "./AuthenticatedRoute";
 import { User } from "../../types";
+import { AuthenticatedRoute } from "./AuthenticatedRoute";
 
 // Mock the useAuth hook to test different authentication scenarios
 jest.mock("../../hooks/useAuth", () => ({
@@ -72,12 +72,12 @@ describe("AuthenticatedRoute component", () => {
       role: "user",
       created_at: "2023-01-01T00:00:00.000Z",
       last_login: "2023-01-01T00:00:00.000Z",
-      total_contests: "0",
-      total_wins: "0",
-      total_earnings: "0",
-      rank_score: "0",
+      total_contests: 0,
+      total_wins: 0,
+      total_earnings: "0",  // this is a string
+      rank_score: 0,
       settings: {},
-      balance: 1000,
+      balance: "1000",
       is_banned: false,
       ban_reason: null,
       risk_level: "low",

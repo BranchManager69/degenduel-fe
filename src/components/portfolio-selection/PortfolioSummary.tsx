@@ -1,4 +1,5 @@
 import React from "react";
+
 import { Token } from "../../types/index";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 
@@ -13,7 +14,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
 }) => {
   const totalWeight = Array.from(selectedTokens.values()).reduce(
     (sum, weight) => sum + weight,
-    0
+    0,
   );
 
   return (
@@ -38,7 +39,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
             {Array.from(selectedTokens.entries()).map(
               ([contractAddress, weight]) => {
                 const token = tokens.find(
-                  (t) => t.contractAddress === contractAddress
+                  (t) => t.contractAddress === contractAddress,
                 );
                 return (
                   <div
@@ -69,7 +70,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
                     </span>
                   </div>
                 );
-              }
+              },
             )}
             {selectedTokens.size === 0 && (
               <div className="text-center py-6 px-4">

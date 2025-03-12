@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
+
+import CircuitBreakerCard from "./CircuitBreakerCard";
 import { useCircuitBreakerSocket } from "../../hooks/useCircuitBreakerSocket";
 import { useStore } from "../../store/useStore";
-import CircuitBreakerCard from "./CircuitBreakerCard";
 
 const CircuitBreakerPanel: React.FC = () => {
   const { circuitBreaker, setCircuitBreakerState, addCircuitAlert } =
@@ -33,8 +34,8 @@ const CircuitBreakerPanel: React.FC = () => {
             circuitBreaker.systemHealth.status === "operational"
               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
               : circuitBreaker.systemHealth.status === "degraded"
-              ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
-              : "bg-red-500/10 border-red-500/20 text-red-400"
+                ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
+                : "bg-red-500/10 border-red-500/20 text-red-400"
           }
         `}
         >

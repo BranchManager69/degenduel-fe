@@ -8,6 +8,7 @@ export interface UserData {
   bonusBalance: string;
   is_banned?: boolean;
   ban_reason?: string | null;
+  role?: string | null;
 }
 
 export interface UserStats {

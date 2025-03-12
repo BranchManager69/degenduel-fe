@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-hot-toast";
 import ReactCrop, { Crop, PixelCrop } from "react-image-crop";
+
 import "react-image-crop/dist/ReactCrop.css";
 import { ddApi } from "../../../services/dd-api";
 import { Button } from "../../ui/Button";
@@ -55,7 +56,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
     // Validate file type
     if (!VALID_MIME_TYPES.includes(file.type)) {
       toast.error(
-        `Unsupported file type. Please use ${VALID_EXTENSIONS.join(", ")}`
+        `Unsupported file type. Please use ${VALID_EXTENSIONS.join(", ")}`,
       );
       return;
     }
@@ -104,7 +105,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       0,
       0,
       pixelCrop.width,
-      pixelCrop.height
+      pixelCrop.height,
     );
 
     // Convert to WebP format for better compression
@@ -132,7 +133,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
           headers: {
             Accept: "application/json",
           },
-        }
+        },
       );
 
       if (!uploadResponse.ok) {
@@ -157,7 +158,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       }
 
       toast.success(
-        responseData.message || "Profile image updated successfully"
+        responseData.message || "Profile image updated successfully",
       );
       onImageUpdate(responseData.data.profile_image_url);
       setPreviewImage(null);
@@ -168,7 +169,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to upload profile image"
+          : "Failed to upload profile image",
       );
     } finally {
       setIsUploading(false);
@@ -186,7 +187,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
           headers: {
             Accept: "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -202,7 +203,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
 
       const responseData = await response.json();
       toast.success(
-        responseData.message || "Profile image removed successfully"
+        responseData.message || "Profile image removed successfully",
       );
       onImageUpdate(""); // Clear the image URL
     } catch (error) {
@@ -210,7 +211,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to remove profile image"
+          : "Failed to remove profile image",
       );
     } finally {
       setIsUploading(false);

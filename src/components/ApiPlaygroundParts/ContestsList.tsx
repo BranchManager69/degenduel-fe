@@ -2,11 +2,12 @@
 
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
+
 import { API_URL } from "../../config/config";
 
 // Helper function to format SOL amounts consistently
 const formatSolAmount = (
-  amount: string | number | null | undefined
+  amount: string | number | null | undefined,
 ): string => {
   const value = parseFloat(amount?.toString() || "0");
   return value.toFixed(2);
@@ -72,7 +73,7 @@ export function ContestsList() {
     const date = new Date(dateStr);
     const now = new Date();
     const diffInMinutes = Math.floor(
-      (date.getTime() - now.getTime()) / (1000 * 60)
+      (date.getTime() - now.getTime()) / (1000 * 60),
     );
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);
@@ -91,8 +92,8 @@ export function ContestsList() {
             {absDays > 0
               ? `${absDays}d ${remainingHours}h ago`
               : absHours > 0
-              ? `${absHours}h ${remainingMinutes}m ago`
-              : `${absMinutes}m ago`}
+                ? `${absHours}h ${remainingMinutes}m ago`
+                : `${absMinutes}m ago`}
           </span>
         );
       } else {
@@ -102,8 +103,8 @@ export function ContestsList() {
             {absDays > 0
               ? `${absDays}d ${remainingHours}h ago`
               : absHours > 0
-              ? `${absHours}h ${remainingMinutes}m ago`
-              : `${absMinutes}m ago`}
+                ? `${absHours}h ${remainingMinutes}m ago`
+                : `${absMinutes}m ago`}
           </span>
         );
       }
@@ -119,8 +120,8 @@ export function ContestsList() {
           {diffInDays > 0
             ? `${diffInDays}d ${remainingHours}h`
             : diffInHours > 0
-            ? `${diffInHours}h ${remainingMinutes}m`
-            : `${diffInMinutes}m`}
+              ? `${diffInHours}h ${remainingMinutes}m`
+              : `${diffInMinutes}m`}
         </span>
       );
     } else {
@@ -130,8 +131,8 @@ export function ContestsList() {
           {diffInDays > 0
             ? `${diffInDays}d ${remainingHours}h`
             : diffInHours > 0
-            ? `${diffInHours}h ${remainingMinutes}m`
-            : `${diffInMinutes}m`}
+              ? `${diffInHours}h ${remainingMinutes}m`
+              : `${diffInMinutes}m`}
         </span>
       );
     }

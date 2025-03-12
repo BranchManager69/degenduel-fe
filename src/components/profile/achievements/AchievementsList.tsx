@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import React from "react";
-import { Achievement } from "../../../types/profile";
+
 import { AchievementCard } from "./AchievementCard";
+import { Achievement } from "../../../types/profile";
 
 interface AchievementsListProps {
   achievements: Achievement[];

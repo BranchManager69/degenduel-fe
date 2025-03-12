@@ -1,8 +1,9 @@
 import React from "react";
+import { Link } from "react-router-dom";
+
 import { Contest } from "../../types";
 import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { CountdownTimer } from "../ui/CountdownTimer";
-import { Link } from "react-router-dom";
 
 interface ContestDetailHeaderProps {
   contest: Contest;
@@ -25,16 +26,16 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
   const now = new Date();
   const startTime = new Date(contest.start_time);
   const endTime = new Date(contest.end_time);
-  
+
   const hasStarted = now >= startTime;
   const hasEnded = now >= endTime;
-  
+
   // Contest status for UI display
   const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
-  
+
   // Status badge styling
   const getStatusBadgeStyle = () => {
-    switch(contestStatus) {
+    switch (contestStatus) {
       case "live":
         return "bg-green-500/20 text-green-400 border-green-500/30";
       case "upcoming":
@@ -45,14 +46,14 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
         return "bg-gray-500/20 text-gray-400 border-gray-500/30";
     }
   };
-  
+
   // Button label based on wallet connection and contest status
   const getButtonLabel = () => {
     // Not connected - always show connect wallet
     if (!isWalletConnected) {
       return "Connect Wallet to Enter";
     }
-    
+
     // Connected and participating
     if (isParticipating) {
       if (contestStatus === "ended") {
@@ -62,8 +63,8 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
       } else {
         return "Modify Portfolio";
       }
-    } 
-    
+    }
+
     // Connected but not participating
     if (contestStatus === "ended") {
       return "Contest Ended";
@@ -73,29 +74,35 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
       return "Select Your Portfolio";
     }
   };
-  
+
   // Button is disabled in these cases
   const isButtonDisabled = () => {
-    return !isWalletConnected || 
-      (contestStatus === "ended" && !isParticipating) || 
-      (contestStatus === "live" && !isParticipating);
+    return (
+      !isWalletConnected ||
+      (contestStatus === "ended" && !isParticipating) ||
+      (contestStatus === "live" && !isParticipating)
+    );
   };
-  
+
   // Button styling based on state
   const getButtonStyle = () => {
     // Base styles
-    const baseStyle = "relative group px-8 py-4 border-l-2 font-bold text-lg overflow-hidden transition-all duration-300";
-    
+    const baseStyle =
+      "relative group px-8 py-4 border-l-2 font-bold text-lg overflow-hidden transition-all duration-300";
+
     // Not connected - prominent connect style
     if (!isWalletConnected) {
       return `${baseStyle} bg-gradient-to-r from-brand-500 to-brand-600 border-brand-400/50 hover:border-brand-400 text-white shadow-lg shadow-brand-500/30 animate-pulse-slow`;
     }
-    
+
     // Disabled state
-    if (isButtonDisabled() && (contestStatus === "ended" || contestStatus === "live")) {
+    if (
+      isButtonDisabled() &&
+      (contestStatus === "ended" || contestStatus === "live")
+    ) {
       return `${baseStyle} bg-dark-300/50 border-gray-500/30 text-gray-400 cursor-not-allowed`;
     }
-    
+
     // Participating - already in the contest
     if (isParticipating) {
       if (contestStatus === "ended") {
@@ -106,7 +113,7 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
         return `${baseStyle} bg-dark-300/80 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300 transform hover:translate-x-1`;
       }
     }
-    
+
     // Default - not participating but can join
     return `${baseStyle} bg-brand-500/20 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300 transform hover:translate-x-1`;
   };
@@ -131,9 +138,14 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
         <div className="space-y-2 flex-1">
           {/* Status badge - prominent above the title */}
           <div className="flex items-center mb-2">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeStyle()}`}>
-              {contestStatus === "upcoming" ? "Upcoming" : 
-               contestStatus === "live" ? "Live Now" : "Ended"}
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeStyle()}`}
+            >
+              {contestStatus === "upcoming"
+                ? "Upcoming"
+                : contestStatus === "live"
+                  ? "Live Now"
+                  : "Ended"}
             </span>
           </div>
 
@@ -162,13 +174,20 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
             {/* Timer with clear label */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400">
-                {contestStatus === "upcoming" ? "Starts in:" : 
-                 contestStatus === "live" ? "Ends in:" : "Contest Ended"}
+                {contestStatus === "upcoming"
+                  ? "Starts in:"
+                  : contestStatus === "live"
+                    ? "Ends in:"
+                    : "Contest Ended"}
               </span>
               {contestStatus !== "ended" ? (
                 <div className="text-xl font-bold text-brand-400 animate-pulse">
                   <CountdownTimer
-                    targetDate={contestStatus === "live" ? contest.end_time : contest.start_time}
+                    targetDate={
+                      contestStatus === "live"
+                        ? contest.end_time
+                        : contest.start_time
+                    }
                     onComplete={onCountdownComplete}
                     showSeconds={true}
                   />
@@ -212,13 +231,20 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
             {/* Timer with label */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400">
-                {contestStatus === "upcoming" ? "Starts in:" : 
-                 contestStatus === "live" ? "Ends in:" : "Contest Ended"}
+                {contestStatus === "upcoming"
+                  ? "Starts in:"
+                  : contestStatus === "live"
+                    ? "Ends in:"
+                    : "Contest Ended"}
               </span>
               {contestStatus !== "ended" ? (
                 <div className="text-xl font-bold text-brand-400 animate-pulse">
                   <CountdownTimer
-                    targetDate={contestStatus === "live" ? contest.end_time : contest.start_time}
+                    targetDate={
+                      contestStatus === "live"
+                        ? contest.end_time
+                        : contest.start_time
+                    }
                     onComplete={onCountdownComplete}
                     showSeconds={true}
                   />
@@ -234,7 +260,9 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
             <button
               onClick={onJoinContest}
               disabled={isButtonDisabled()}
-              className={getButtonStyle().replace('px-8', 'px-6').replace('text-lg', 'text-base')}
+              className={getButtonStyle()
+                .replace("px-8", "px-6")
+                .replace("text-lg", "text-base")}
             >
               {/* Button Hover Effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />

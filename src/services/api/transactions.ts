@@ -1,5 +1,5 @@
-import { Transaction } from "../../types/index";
 import { createApiClient } from "./utils";
+import { Transaction } from "../../types/index";
 
 export const transactions = {
   getHistory: async (): Promise<Transaction[]> => {

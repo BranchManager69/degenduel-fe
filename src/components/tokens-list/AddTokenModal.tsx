@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
+
 import { ddApi } from "../../services/dd-api";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -60,7 +61,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
             color: "#fff",
             border: "1px solid #262626",
           },
-        }
+        },
       );
 
       // Reset form and close modal
@@ -178,6 +179,6 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };

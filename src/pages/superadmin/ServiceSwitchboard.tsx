@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
-import { toast } from "react-toastify";
 import styled from "styled-components";
+import { toast } from "../../components/toast";
+
 import { ServiceDebugPanel } from "../../components/admin/ServiceDebugPanel";
 import { ServiceSwitch } from "../../components/admin/ServiceSwitch";
 import { useServiceWebSocket } from "../../hooks/useServiceWebSocket";
@@ -111,15 +112,15 @@ const StatusDot = styled.div<{ $status: "healthy" | "warning" | "error" }>`
     props.$status === "healthy"
       ? "#48BB78"
       : props.$status === "warning"
-      ? "#ECC94B"
-      : "#F56565"};
+        ? "#ECC94B"
+        : "#F56565"};
   box-shadow: 0 0 8px
     ${(props) =>
       props.$status === "healthy"
         ? "rgba(72, 187, 120, 0.5)"
         : props.$status === "warning"
-        ? "rgba(236, 201, 75, 0.5)"
-        : "rgba(245, 101, 101, 0.5)"};
+          ? "rgba(236, 201, 75, 0.5)"
+          : "rgba(245, 101, 101, 0.5)"};
 `;
 
 const SwitchGrid = styled.div`
@@ -187,7 +188,7 @@ export const ServiceSwitchboard: React.FC = () => {
         `/api/superadmin/services/${serviceName}/toggle`,
         {
           method: "POST",
-        }
+        },
       );
       const data = await response.json();
       if (!data.success) {
@@ -202,7 +203,7 @@ export const ServiceSwitchboard: React.FC = () => {
   };
 
   const getGroupStatus = (
-    groupServices: string[]
+    groupServices: string[],
   ): "healthy" | "warning" | "error" => {
     const statuses = groupServices.map((serviceName) => {
       const service = services[serviceName] as ServiceState | undefined;
@@ -225,7 +226,7 @@ export const ServiceSwitchboard: React.FC = () => {
       errors: Object.values(services).filter((s) => s.status === "error")
         .length,
       warnings: Object.values(services).filter(
-        (s) => s.stats?.circuitBreaker?.isOpen
+        (s) => s.stats?.circuitBreaker?.isOpen,
       ).length,
     };
     return stats;
@@ -293,7 +294,7 @@ export const ServiceSwitchboard: React.FC = () => {
                           services[serviceName]?.enabled
                             ? "disabled"
                             : "enabled"
-                        } successfully`
+                        } successfully`,
                       );
                     } catch (error) {
                       toast.error(`Failed to toggle ${serviceName}`);

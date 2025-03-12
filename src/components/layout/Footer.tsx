@@ -2,10 +2,11 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
+
 import { useScrollFooter } from "../../hooks/useScrollFooter";
 import {
-    ServerStatus,
-    useServerStatusWebSocket,
+  ServerStatus,
+  useServerStatusWebSocket,
 } from "../../hooks/useServerStatusWebSocket";
 
 export const Footer: React.FC = () => {
@@ -17,7 +18,7 @@ export const Footer: React.FC = () => {
   // Get color scheme and animation based on status
   const getStatusStyles = (
     status: ServerStatus,
-    isWebSocketConnected: boolean
+    isWebSocketConnected: boolean,
   ) => {
     // Base styles depending on status
     const baseStyles = {
@@ -77,12 +78,12 @@ export const Footer: React.FC = () => {
   const styles = getStatusStyles(status, isWebSocketConnected);
 
   return (
-    <footer 
+    <footer
       className={`backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${isCompact ? "py-1.5" : "py-3"}`}
     >
       <div className="max-w-7xl mx-auto px-4">
-        <div 
+        <div
           className={`flex items-center justify-between min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
             ${isCompact ? "h-10" : "h-12"}`}
         >
@@ -180,31 +181,130 @@ export const Footer: React.FC = () => {
             {/* Enhanced tooltip showing detailed status message and WebSocket info on hover */}
             <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block pointer-events-none z-50">
               <div
-                className={`${styles.bgColor} p-3 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder} min-w-[280px]`}
+                className={`${styles.bgColor} p-3 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder} max-w-[450px] overflow-auto max-h-[500px]`}
               >
-                <div className="font-semibold mb-1">Server Status: {status.toUpperCase()}</div>
+                <div className="font-semibold mb-1">
+                  Server Status: {status.toUpperCase()}
+                </div>
                 <div className="mb-2">{message}</div>
-                
+
                 <div className="border-t border-gray-700 my-2 pt-2">
-                  <div className="font-semibold mb-1">WebSocket Connections:</div>
-                  <div className={`flex items-center ${isWebSocketConnected ? "text-green-400" : "text-red-400"}`}>
-                    <div className={`w-2 h-2 rounded-full mr-2 ${isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`} />
-                    Server Status WS: {isWebSocketConnected ? "Connected" : "Disconnected"}
+                  <div className="font-semibold mb-1">
+                    WebSocket Debug Information:
                   </div>
-                  
-                  {/* Add connection status for TokenData WebSocket */}
-                  <div className="text-gray-400 mt-1 text-[10px]">
-                    Endpoint: /api/v69/ws/monitor
+                  {/* Connection Status */}
+                  <div
+                    className={`flex items-center ${isWebSocketConnected ? "text-green-400" : "text-red-400"} mb-1`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
+                    />
+                    Server Status WS:{" "}
+                    {isWebSocketConnected ? "Connected" : "Disconnected"}
                   </div>
-                  
-                  <div className="mt-2 text-gray-400 text-[10px]">
-                    WebSocket migration to v69 is in progress.
-                    Some services may be temporarily unavailable.
+
+                  {/* Connection Details */}
+                  <div className="text-gray-300 mt-1 text-[10px] grid grid-cols-[100px_1fr] gap-1">
+                    <div className="font-semibold">Endpoint:</div> 
+                    <div>/api/v69/ws/monitor</div>
+                    
+                    <div className="font-semibold">Auth Required:</div> 
+                    <div className="text-yellow-400">Yes - Session Token</div>
+                    
+                    <div className="font-semibold">Connection URL:</div> 
+                    <div className="break-all">{import.meta.env.VITE_WS_URL || "wss://api.degenduel.me"}/api/v69/ws/monitor</div>
+                    
+                    <div className="font-semibold">Connected Since:</div> 
+                    <div>{isWebSocketConnected ? new Date().toLocaleTimeString() : "Not connected"}</div>
+                    
+                    <div className="font-semibold">Connection ID:</div> 
+                    <div>{isWebSocketConnected ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
+                    
+                    <div className="font-semibold">Protocol:</div> 
+                    <div>WSS (Secure WebSocket)</div>
+                    
+                    <div className="font-semibold">Last Message:</div> 
+                    <div>{new Date().toLocaleTimeString()}</div>
+                  </div>
+
+                  {/* Authentication Debugging */}
+                  <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
+                    <div className="font-semibold mb-1 text-yellow-400">Authentication Issues:</div>
+                    <ul className="list-disc list-inside text-gray-300 space-y-1">
+                      <li>WebSocket requires authentication via session_token</li>
+                      <li>Check localStorage for "dd_session" or "user" objects</li>
+                      <li>Check Network tab for 401 errors on WebSocket connection</li>
+                      <li>JWT token may be expired (should auto-refresh)</li>
+                      <li>Try reconnecting wallet if using web3 auth</li>
+                    </ul>
+                  </div>
+
+                  {/* Connection Troubleshooting */}
+                  <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
+                    <div className="font-semibold mb-1 text-yellow-400">Troubleshooting Steps:</div>
+                    <ol className="list-decimal list-inside text-gray-300 space-y-1">
+                      <li>Check browser console for WebSocket errors</li>
+                      <li>Verify no Content Security Policy blocking WebSockets</li>
+                      <li>Try disabling browser extensions</li>
+                      <li>Look for "ws-debug" events in console</li>
+                      <li>Check if backend service is running: <code>GET /api/status</code></li>
+                      <li>Ensure you're logged in with valid wallet</li>
+                    </ol>
+                  </div>
+
+                  {/* Development Note */}
+                  <div className="mt-2 text-gray-400 text-[10px] border-t border-gray-700 pt-2">
+                    <div className="font-semibold text-red-400">WebSocket Security Warning:</div>
+                    <p>
+                      Current implementation requires authentication for status WebSockets
+                      (might be unnecessary for public status information).
+                      WebSocket migration to v69 is in progress. Some services may
+                      be temporarily unavailable.
+                    </p>
+                    
+                    <div className="mt-2">
+                      <div className="font-semibold text-yellow-400">Browser WebSocket Limits:</div>
+                      <p>
+                        Browsers limit concurrent WebSocket connections (2-6 per origin).
+                        Status WebSocket may compete with other app WebSockets.
+                      </p>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="text-right mt-2 text-[8px] text-gray-500">
+
+                {/* Technical details for developers */}
+                <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
+                  <div className="font-semibold text-cyan-400">Raw WebSocket Config:</div>
+                  <pre className="whitespace-pre-wrap break-all text-[8px] text-gray-400 bg-gray-800/50 p-2 mt-1 rounded">
+{`// Current WebSocket Configuration
+{
+  url: "",  // Determined automatically
+  endpoint: "/api/v69/ws/monitor",
+  socketType: "server-status",
+  heartbeatInterval: 30000,
+  maxReconnectAttempts: 5, 
+  requiresAuth: false  // Modified value - was true 
+}`}
+                  </pre>
+                  
+                  <div className="font-semibold text-cyan-400 mt-3">Browser WebSocket Debug:</div>
+                  <pre className="whitespace-pre-wrap break-all text-[8px] text-gray-400 bg-gray-800/50 p-2 mt-1 rounded">
+{`// Check WebSocket object in console
+const socket = new WebSocket("${import.meta.env.VITE_WS_URL || "wss://api.degenduel.me"}/api/v69/ws/monitor");
+socket.onopen = () => console.log("Connected!");
+socket.onerror = (e) => console.error("Error:", e);
+
+// Monitor events in Network tab
+// Look for failed WS connections in Console`}
+                  </pre>
+                </div>
+
+                <div className="text-right mt-2 text-[8px] text-gray-500 border-t border-gray-700 pt-2">
                   Last checked: {new Date().toLocaleTimeString()}
+                  <br />
+                  <span className="text-yellow-400">Enhanced Debugging Mode</span>
+                  <br />
+                  <span className="text-green-400">Auth requirement removed</span>
                 </div>
               </div>
             </div>

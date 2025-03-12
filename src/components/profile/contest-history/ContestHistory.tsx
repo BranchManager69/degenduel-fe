@@ -125,7 +125,7 @@ export const ContestHistory: React.FC<ContestHistoryProps> = ({ contests }) => {
                             width: `${Math.min(
                               Math.abs(parseFloat(contest.portfolio_return)) *
                                 2,
-                              100
+                              100,
                             )}%`,
                           }}
                         >

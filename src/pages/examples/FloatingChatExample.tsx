@@ -1,4 +1,5 @@
 import React from "react";
+
 import { ContestChatManager } from "../../components/contest-chat/ContestChatManager";
 
 const FloatingChatExample: React.FC = () => {

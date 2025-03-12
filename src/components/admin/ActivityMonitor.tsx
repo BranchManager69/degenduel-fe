@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { adminService } from "../../services/adminService";
-import { AdminActivity, AdminActivityFilters } from "../../types/admin";
+
 import { BanIPButton } from "./BanIPButton";
 import { BanOnSightButton } from "./BanOnSightButton";
+import { adminService } from "../../services/adminService";
+import { AdminActivity, AdminActivityFilters } from "../../types/admin";
 
 interface ActivityMonitorProps {
   limit?: number;
@@ -124,7 +125,7 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                   {activity.admin_address
                     ? `${activity.admin_address.slice(
                         0,
-                        6
+                        6,
                       )}...${activity.admin_address.slice(-4)}`
                     : "System"}
                 </td>
@@ -135,22 +136,26 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({
                   <div className="flex items-center gap-2">
                     <span>{activity.action}</span>
                     {/* If this is a user-related action, extract wallet and add ban button */}
-                    {(activity.action === 'user.login' || 
-                     activity.action === 'user.register' || 
-                     activity.action === 'user.update') && 
-                     activity.details && 
-                     typeof activity.details === 'object' && 
-                     'wallet_address' in activity.details && (
-                      <BanOnSightButton
-                        user={{
-                          wallet_address: activity.details.wallet_address as string,
-                          nickname: ('nickname' in activity.details) ? activity.details.nickname as string : undefined
-                        }}
-                        size="sm"
-                        variant="icon"
-                        onSuccess={fetchActivities}
-                      />
-                    )}
+                    {(activity.action === "user.login" ||
+                      activity.action === "user.register" ||
+                      activity.action === "user.update") &&
+                      activity.details &&
+                      typeof activity.details === "object" &&
+                      "wallet_address" in activity.details && (
+                        <BanOnSightButton
+                          user={{
+                            wallet_address: activity.details
+                              .wallet_address as string,
+                            nickname:
+                              "nickname" in activity.details
+                                ? (activity.details.nickname as string)
+                                : undefined,
+                          }}
+                          size="sm"
+                          variant="icon"
+                          onSuccess={fetchActivities}
+                        />
+                      )}
                   </div>
                 </td>
                 <td className="px-4 py-2 text-gray-300 text-sm">

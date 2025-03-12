@@ -1,11 +1,12 @@
 import React, { useMemo } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
+
+import { ContestButton } from "./ContestButton";
+import { ContestDifficulty } from "./ContestDifficulty";
 import { formatCurrency } from "../../../lib/utils";
 import { ContestStatus, DifficultyLevel } from "../../../types/index";
 import { Card, CardHeader } from "../../ui/Card";
-import { ContestButton } from "./ContestButton";
-import { ContestDifficulty } from "./ContestDifficulty";
 
 interface ContestCardProps {
   id: string;
@@ -47,7 +48,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       // Check if date is invalid
       if (isNaN(targetDate.getTime())) {
         console.error(
-          `Invalid date string received: ${isLive ? endTime : startTime}`
+          `Invalid date string received: ${isLive ? endTime : startTime}`,
         );
         return "Time unavailable";
       }
@@ -65,7 +66,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             `Current time: ${new Date(now).toISOString()}\n` +
             `Difference: ${diff}ms\n` +
             `Contest ID: ${id}\n` +
-            `Status: ${status}`
+            `Status: ${status}`,
         );
       }
 
@@ -79,7 +80,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 isLive ? endTime : startTime
               }\n` +
               `Contest ID: ${id}\n` +
-              `Status: ${status}`
+              `Status: ${status}`,
           );
         }
         return isLive ? "Ending soon" : "Starting soon";
@@ -87,7 +88,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor(
-        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
       );
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
@@ -113,7 +114,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
         "\nEnd time:",
         endTime,
         "\nStatus:",
-        status
+        status,
       );
       return "Time unavailable";
     }
@@ -209,9 +210,9 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                   {timeRemaining.startsWith("Late to start")
                     ? timeRemaining
                     : timeRemaining === "Ending soon" ||
-                      timeRemaining === "Starting soon"
-                    ? timeRemaining
-                    : `${isLive ? "Ends" : "Starts"} in ${timeRemaining}`}
+                        timeRemaining === "Starting soon"
+                      ? timeRemaining
+                      : `${isLive ? "Ends" : "Starts"} in ${timeRemaining}`}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
@@ -301,13 +302,13 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               <ContestButton
                 id={parseInt(id)}
                 type={
-                  status === "active" 
-                    ? "live" 
-                    : status === "pending" 
-                    ? "upcoming" 
-                    : status === "completed" 
-                    ? "completed" 
-                    : "cancelled"
+                  status === "active"
+                    ? "live"
+                    : status === "pending"
+                      ? "upcoming"
+                      : status === "completed"
+                        ? "completed"
+                        : "cancelled"
                 }
               />
             </div>

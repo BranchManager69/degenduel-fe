@@ -1,16 +1,18 @@
 // src/pages/authenticated/TokenSelection.tsx
 
+import { Buffer } from "buffer";
+
 import {
   Connection,
   PublicKey,
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
-import { Buffer } from "buffer";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { useNavigate, useParams } from "react-router-dom";
+
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../components/portfolio-selection/TokenFilters";
@@ -30,10 +32,12 @@ declare global {
       connect: () => Promise<{ publicKey: { toString: () => string } }>;
       signMessage: (
         message: Uint8Array,
-        encoding: string
+        encoding: string,
       ) => Promise<{ signature: Uint8Array }>;
       signTransaction: (transaction: Transaction) => Promise<Transaction>;
-      signAndSendTransaction: (options: { transaction: Transaction }) => Promise<{ signature: string }>;
+      signAndSendTransaction: (options: {
+        transaction: Transaction;
+      }) => Promise<{ signature: string }>;
       publicKey?: { toString: () => string };
     };
   }
@@ -71,7 +75,7 @@ export const TokenSelection: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
-    new Map()
+    new Map(),
   );
   const [marketCapFilter, setMarketCapFilter] = useState("");
   const [contest, setContest] = useState<Contest | null>(null);
@@ -80,13 +84,21 @@ export const TokenSelection: React.FC = () => {
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [transactionState, setTransactionState] = useState<{
-    status: 'idle' | 'preparing' | 'signing' | 'sending' | 'confirming' | 'submitting' | 'success' | 'error';
+    status:
+      | "idle"
+      | "preparing"
+      | "signing"
+      | "sending"
+      | "confirming"
+      | "submitting"
+      | "success"
+      | "error";
     message: string;
     error?: string;
     signature?: string;
   }>({
-    status: 'idle',
-    message: '',
+    status: "idle",
+    message: "",
   });
 
   useEffect(() => {
@@ -175,8 +187,8 @@ export const TokenSelection: React.FC = () => {
         // Create map using contract addresses instead of symbols
         const existingPortfolio = new Map<string, number>(
           (portfolioData.tokens as PortfolioToken[])?.map(
-            (token: PortfolioToken) => [token.contractAddress, token.weight]
-          ) || []
+            (token: PortfolioToken) => [token.contractAddress, token.weight],
+          ) || [],
         );
 
         setSelectedTokens(existingPortfolio);
@@ -223,7 +235,7 @@ export const TokenSelection: React.FC = () => {
         },
         quoteToken: token.quoteToken,
       })),
-    [tokens]
+    [tokens],
   );
 
   // Memoize the token selection handler
@@ -240,20 +252,20 @@ export const TokenSelection: React.FC = () => {
       ) {
         console.warn(
           "Received possible symbol instead of contract address:",
-          contractAddress
+          contractAddress,
         );
         const token = memoizedTokens.find((t) => t.symbol === contractAddress);
         if (token) {
           contractAddress = token.contractAddress;
           console.log(
             "Found matching token, using contract address:",
-            contractAddress
+            contractAddress,
           );
         }
       }
 
       const token = memoizedTokens.find(
-        (t) => t.contractAddress === contractAddress
+        (t) => t.contractAddress === contractAddress,
       );
       console.log("Token being selected:", token);
 
@@ -267,12 +279,12 @@ export const TokenSelection: React.FC = () => {
         return newSelectedTokens;
       });
     },
-    [memoizedTokens]
+    [memoizedTokens],
   );
 
   const totalWeight = Array.from(selectedTokens.values()).reduce(
     (sum, weight) => sum + weight,
-    0
+    0,
   );
 
   // Portfolio validation
@@ -322,7 +334,7 @@ export const TokenSelection: React.FC = () => {
       console.log("Creating Solana connection...");
       const connection = new Connection(
         import.meta.env.VITE_SOLANA_RPC_MAINNET,
-        "confirmed"
+        "confirmed",
       );
 
       // Get minimum rent exemption
@@ -344,16 +356,16 @@ export const TokenSelection: React.FC = () => {
       // Get latest blockhash
       console.log("Getting recent blockhash...");
       setTransactionState({
-        status: 'preparing',
-        message: 'Preparing transaction...',
+        status: "preparing",
+        message: "Preparing transaction...",
       });
-      
+
       // Create transaction
       const transaction = new Transaction();
 
       // Check if destination account exists
       const destAccount = await connection.getAccountInfo(
-        new PublicKey(contestDetails.wallet_address)
+        new PublicKey(contestDetails.wallet_address),
       );
       const finalLamports =
         destAccount === null ? lamports + minRentExemption : lamports;
@@ -363,7 +375,7 @@ export const TokenSelection: React.FC = () => {
           fromPubkey: new PublicKey(user.wallet_address),
           toPubkey: new PublicKey(contestDetails.wallet_address),
           lamports: finalLamports,
-        })
+        }),
       );
 
       // Get the latest blockhash for transaction freshness
@@ -375,49 +387,51 @@ export const TokenSelection: React.FC = () => {
       // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
       // Use Phantom's unified signAndSendTransaction method instead of separate sign + send calls
       setTransactionState({
-        status: 'signing',
-        message: 'Please confirm the transaction in your wallet...',
+        status: "signing",
+        message: "Please confirm the transaction in your wallet...",
       });
-      
-      console.log("Requesting transaction signature and submission from Phantom using recommended signAndSendTransaction method...");
-      
+
+      console.log(
+        "Requesting transaction signature and submission from Phantom using recommended signAndSendTransaction method...",
+      );
+
       try {
         // Use signAndSendTransaction in a single call with the transaction object as a property
         // This is the correct approach according to Phantom's documentation
         const { signature } = await solana.signAndSendTransaction({
-          transaction // Must be passed as a property of an options object
+          transaction, // Must be passed as a property of an options object
         });
         console.log("Transaction sent, signature:", signature);
-        
+
         setTransactionState({
-          status: 'sending',
-          message: 'Transaction sent, waiting for confirmation...',
+          status: "sending",
+          message: "Transaction sent, waiting for confirmation...",
           signature,
         });
-        
+
         toast.success(
           <div>
             <div>Transaction sent!</div>
             <div className="text-xs mt-1">
-              <a 
-                href={`https://solscan.io/tx/${signature}`} 
-                target="_blank" 
+              <a
+                href={`https://solscan.io/tx/${signature}`}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300"
               >
                 View on Solscan
               </a>
             </div>
-          </div>
+          </div>,
         );
 
         console.log("Waiting for transaction confirmation...");
         setTransactionState({
-          status: 'confirming',
-          message: 'Waiting for blockchain confirmation...',
+          status: "confirming",
+          message: "Waiting for blockchain confirmation...",
           signature,
         });
-        
+
         // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
         // Use the modern confirmation pattern with signature, blockhash and lastValidBlockHeight
         await connection.confirmTransaction({
@@ -425,20 +439,23 @@ export const TokenSelection: React.FC = () => {
           blockhash: latestBlockhash.blockhash,
           lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
         });
-        
+
         setTransactionState({
-          status: 'submitting',
-          message: 'Transaction confirmed! Submitting contest entry...',
+          status: "submitting",
+          message: "Transaction confirmed! Submitting contest entry...",
           signature,
         });
-        
+
         console.log("Transaction confirmed!");
       } catch (err) {
         console.error("Transaction error:", err);
         setTransactionState({
-          status: 'error',
-          message: 'Transaction failed',
-          error: err instanceof Error ? err.message : "Unknown error during transaction",
+          status: "error",
+          message: "Transaction failed",
+          error:
+            err instanceof Error
+              ? err.message
+              : "Unknown error during transaction",
         });
         throw err;
       }
@@ -450,31 +467,31 @@ export const TokenSelection: React.FC = () => {
           ([contractAddress, weight]) => ({
             contractAddress,
             weight,
-          })
+          }),
         ),
       };
 
       await ddApi.contests.enterContestWithPortfolio(
         contestId,
-        transactionState.signature || '',
-        portfolioData
+        transactionState.signature || "",
+        portfolioData,
       );
 
       // Set success state
       setTransactionState({
-        status: 'success',
-        message: 'Success! You have entered the contest.',
+        status: "success",
+        message: "Success! You have entered the contest.",
         signature: transactionState.signature,
       });
-      
+
       toast.success(
         <div>
           <div>Successfully entered contest!</div>
           {transactionState.signature && (
             <div className="text-xs mt-1">
-              <a 
-                href={`https://solscan.io/tx/${transactionState.signature}`} 
-                target="_blank" 
+              <a
+                href={`https://solscan.io/tx/${transactionState.signature}`}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-brand-400 hover:text-brand-300"
               >
@@ -483,21 +500,21 @@ export const TokenSelection: React.FC = () => {
             </div>
           )}
         </div>,
-        { duration: 5000 }
+        { duration: 5000 },
       );
 
       navigate(`/contests/${contestId}`);
     } catch (error: any) {
-      let errorMsg = error.message || "Failed to enter contest";
-      
+      const errorMsg = error.message || "Failed to enter contest";
+
       // Update transaction state
       setTransactionState({
-        status: 'error',
-        message: 'Error entering contest',
+        status: "error",
+        message: "Error entering contest",
         error: errorMsg,
         signature: transactionState.signature,
       });
-      
+
       console.error("Contest entry failed:", {
         error,
         errorMessage: error instanceof Error ? error.message : "Unknown error",
@@ -628,47 +645,67 @@ export const TokenSelection: React.FC = () => {
 
                       <div className="mt-4 sm:mt-6">
                         {/* Transaction Status Indicator */}
-                        {transactionState.status !== 'idle' && (
-                          <div className={`mb-4 p-3 rounded-lg border ${
-                            transactionState.status === 'error' ? 'border-red-500/30 bg-red-500/10' : 
-                            transactionState.status === 'success' ? 'border-green-500/30 bg-green-500/10' : 
-                            'border-brand-500/30 bg-brand-500/10'
-                          }`}>
+                        {transactionState.status !== "idle" && (
+                          <div
+                            className={`mb-4 p-3 rounded-lg border ${
+                              transactionState.status === "error"
+                                ? "border-red-500/30 bg-red-500/10"
+                                : transactionState.status === "success"
+                                  ? "border-green-500/30 bg-green-500/10"
+                                  : "border-brand-500/30 bg-brand-500/10"
+                            }`}
+                          >
                             <div className="flex items-center gap-3">
-                              {transactionState.status === 'preparing' && (
-                                <div className="animate-pulse text-brand-400">⚙️</div>
+                              {transactionState.status === "preparing" && (
+                                <div className="animate-pulse text-brand-400">
+                                  ⚙️
+                                </div>
                               )}
-                              {transactionState.status === 'signing' && (
-                                <div className="animate-bounce text-brand-400">✍️</div>
+                              {transactionState.status === "signing" && (
+                                <div className="animate-bounce text-brand-400">
+                                  ✍️
+                                </div>
                               )}
-                              {transactionState.status === 'sending' && (
-                                <div className="animate-spin text-brand-400">🔄</div>
+                              {transactionState.status === "sending" && (
+                                <div className="animate-spin text-brand-400">
+                                  🔄
+                                </div>
                               )}
-                              {transactionState.status === 'confirming' && (
-                                <div className="animate-pulse text-brand-400">⏳</div>
+                              {transactionState.status === "confirming" && (
+                                <div className="animate-pulse text-brand-400">
+                                  ⏳
+                                </div>
                               )}
-                              {transactionState.status === 'submitting' && (
-                                <div className="animate-pulse text-brand-400">📝</div>
+                              {transactionState.status === "submitting" && (
+                                <div className="animate-pulse text-brand-400">
+                                  📝
+                                </div>
                               )}
-                              {transactionState.status === 'success' && (
+                              {transactionState.status === "success" && (
                                 <div className="text-green-400">✅</div>
                               )}
-                              {transactionState.status === 'error' && (
+                              {transactionState.status === "error" && (
                                 <div className="text-red-400">❌</div>
                               )}
                               <div>
-                                <p className={`font-medium ${
-                                  transactionState.status === 'error' ? 'text-red-400' : 
-                                  transactionState.status === 'success' ? 'text-green-400' : 
-                                  'text-brand-400'
-                                }`}>
+                                <p
+                                  className={`font-medium ${
+                                    transactionState.status === "error"
+                                      ? "text-red-400"
+                                      : transactionState.status === "success"
+                                        ? "text-green-400"
+                                        : "text-brand-400"
+                                  }`}
+                                >
                                   {transactionState.message}
                                 </p>
                                 {transactionState.error && (
-                                  <p className="text-xs text-red-400 mt-1">{transactionState.error}</p>
+                                  <p className="text-xs text-red-400 mt-1">
+                                    {transactionState.error}
+                                  </p>
                                 )}
                                 {transactionState.signature && (
-                                  <a 
+                                  <a
                                     href={`https://solscan.io/tx/${transactionState.signature}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -681,14 +718,14 @@ export const TokenSelection: React.FC = () => {
                             </div>
                           </div>
                         )}
-                      
+
                         <Button
                           onClick={handleSubmit}
                           disabled={
                             loadingEntryStatus ||
                             portfolioValidation !== null ||
-                            isLoading || 
-                            transactionState.status !== 'idle'
+                            isLoading ||
+                            transactionState.status !== "idle"
                           }
                           className="w-full relative group overflow-hidden text-sm sm:text-base py-3"
                         >
@@ -725,7 +762,7 @@ export const TokenSelection: React.FC = () => {
                     loadingEntryStatus ||
                     portfolioValidation !== null ||
                     isLoading ||
-                    transactionState.status !== 'idle'
+                    transactionState.status !== "idle"
                   }
                   className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20"
                 >

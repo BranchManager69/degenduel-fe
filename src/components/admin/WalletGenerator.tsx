@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
 import { ddApi } from "../../services/dd-api";
 
 interface WalletData {
@@ -416,7 +417,7 @@ export const WalletGenerator: React.FC = () => {
                     type="checkbox"
                     onChange={(e) => {
                       setSelectedWallets(
-                        e.target.checked ? wallets.map((w) => w.publicKey) : []
+                        e.target.checked ? wallets.map((w) => w.publicKey) : [],
                       );
                     }}
                     className="rounded border-gray-400 text-brand-500 focus:ring-brand-500"
@@ -442,8 +443,8 @@ export const WalletGenerator: React.FC = () => {
                           e.target.checked
                             ? [...selectedWallets, wallet.publicKey]
                             : selectedWallets.filter(
-                                (pk) => pk !== wallet.publicKey
-                              )
+                                (pk) => pk !== wallet.publicKey,
+                              ),
                         );
                       }}
                       className="rounded border-gray-400 text-brand-500 focus:ring-brand-500"

@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { CopyToClipboard } from "../../common/CopyToClipboard";
+
 import { useStore } from "../../../store/useStore";
+import { CopyToClipboard } from "../../common/CopyToClipboard";
 
 const MAX_NICKNAME_LENGTH = 15;
 const MIN_NICKNAME_LENGTH = 4;
@@ -111,7 +112,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     timeoutId = setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/users/check-nickname?nickname=${encodeURIComponent(nickname)}`
+          `/api/users/check-nickname?nickname=${encodeURIComponent(nickname)}`,
         );
         const data = await response.json();
         setIsAvailable(data.available);
@@ -159,7 +160,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           setValidationError(errorData.details[0].message);
         } else if (errorData.error === "Nickname already taken") {
           setValidationError(
-            "This nickname is already taken. Please choose another."
+            "This nickname is already taken. Please choose another.",
           );
         } else {
           setValidationError("Failed to update nickname. Please try again.");
@@ -246,11 +247,15 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-brand-500/30 bg-dark-300/50"
               >
                 <img
-                  src={user?.profile_image?.url || "/assets/media/default/profile_pic.png"}
+                  src={
+                    user?.profile_image?.url ||
+                    "/assets/media/default/profile_pic.png"
+                  }
                   alt={displayName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = "/assets/media/default/profile_pic.png";
+                    e.currentTarget.src =
+                      "/assets/media/default/profile_pic.png";
                   }}
                 />
                 {/* Overlay Effects */}

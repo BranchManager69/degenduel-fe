@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+
 import { useStore } from "../../store/useStore";
 
 export const MovingBackground: React.FC = () => {
@@ -34,7 +35,7 @@ export const MovingBackground: React.FC = () => {
       container.removeEventListener("webglcontextlost", handleContextLost);
       container.removeEventListener(
         "webglcontextrestored",
-        handleContextRestored
+        handleContextRestored,
       );
     };
   }, [enabled]);

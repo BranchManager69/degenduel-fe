@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
 import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
@@ -37,7 +38,7 @@ export const ContestLobby: React.FC = () => {
         // If in maintenance mode, don't fetch contest
         if (isInMaintenance) {
           setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
           );
           return;
         }
@@ -51,7 +52,7 @@ export const ContestLobby: React.FC = () => {
         if (err instanceof Error && err.message.includes("503")) {
           setIsMaintenanceMode(true);
           setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
           );
         } else {
           setError("Failed to load contest details.");
@@ -68,9 +69,17 @@ export const ContestLobby: React.FC = () => {
   const contest = {
     id,
     title: realContest?.name || "Loading Contest...",
-    difficulty: (realContest?.settings?.difficulty || "guppy") as "guppy" | "tadpole" | "squid" | "dolphin" | "shark" | "whale",
+    difficulty: (realContest?.settings?.difficulty || "guppy") as
+      | "guppy"
+      | "tadpole"
+      | "squid"
+      | "dolphin"
+      | "shark"
+      | "whale",
     prizePool: Number(realContest?.prize_pool || 0),
-    endTime: realContest ? new Date(realContest.end_time) : new Date(Date.now() + 3600000),
+    endTime: realContest
+      ? new Date(realContest.end_time)
+      : new Date(Date.now() + 3600000),
   };
   // Placeholder portfolio data
   const portfolioData = {
@@ -165,7 +174,8 @@ export const ContestLobby: React.FC = () => {
             <div className="flex items-center justify-center gap-2 text-yellow-400">
               <span className="animate-pulse">⚠</span>
               <span>
-                DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.
+                DegenDuel is undergoing scheduled maintenance ⚙️ Try again
+                later.
               </span>
               <span className="animate-pulse">⚠</span>
             </div>
@@ -201,13 +211,16 @@ export const ContestLobby: React.FC = () => {
               Home
             </Link>
             <span className="mx-2">›</span>
-            <Link to="/contests" className="hover:text-brand-400 transition-colors">
+            <Link
+              to="/contests"
+              className="hover:text-brand-400 transition-colors"
+            >
               Contests
             </Link>
             <span className="mx-2">›</span>
             <span className="text-gray-300">{contest.title}</span>
           </div>
-          
+
           {/* Enhanced Header Section */}
           <div className="mb-8 relative group">
             <div className="flex items-center justify-between mb-4">
@@ -220,21 +233,23 @@ export const ContestLobby: React.FC = () => {
                 <div className="flex items-center space-x-4">
                   {/* Contest Status */}
                   {realContest && (
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                      isContestLive(realContest) 
-                        ? "bg-green-500/20 text-green-400 border-green-500/30" 
-                        : new Date() < new Date(realContest.start_time)
-                          ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                          : "bg-gray-500/20 text-gray-400 border-gray-500/30"
-                    }`}>
-                      {isContestLive(realContest) 
-                        ? "Live Now" 
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                        isContestLive(realContest)
+                          ? "bg-green-500/20 text-green-400 border-green-500/30"
+                          : new Date() < new Date(realContest.start_time)
+                            ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                            : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                      }`}
+                    >
+                      {isContestLive(realContest)
+                        ? "Live Now"
                         : new Date() < new Date(realContest.start_time)
                           ? "Upcoming"
                           : "Ended"}
                     </span>
                   )}
-                  
+
                   {/* Contest Difficulty */}
                   <ContestDifficulty difficulty={contest.difficulty} />
                   <span className="text-gray-400 group-hover:text-brand-400 transition-colors">
@@ -251,24 +266,29 @@ export const ContestLobby: React.FC = () => {
                 {realContest && (
                   <div className="text-right">
                     <span className="text-sm text-gray-400">
-                      {isContestLive(realContest) 
-                        ? "Contest Ends In:" 
+                      {isContestLive(realContest)
+                        ? "Contest Ends In:"
                         : new Date() < new Date(realContest.start_time)
                           ? "Contest Starts In:"
                           : "Contest Ended On:"}
                     </span>
                   </div>
                 )}
-                
+
                 {/* Contest Timer */}
                 <div className="relative group">
-                  <ContestTimer 
-                    endTime={contest.endTime} 
-                    showDate={!!(realContest && new Date() > new Date(realContest.end_time))}
+                  <ContestTimer
+                    endTime={contest.endTime}
+                    showDate={
+                      !!(
+                        realContest &&
+                        new Date() > new Date(realContest.end_time)
+                      )
+                    }
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                
+
                 {/* Test Skip Button */}
                 <TestSkipButton contestId={id!} />
               </div>

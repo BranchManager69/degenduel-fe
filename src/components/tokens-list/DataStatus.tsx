@@ -30,7 +30,7 @@ export const DataStatus: React.FC<DataStatusProps> = ({ metadata }) => {
 
   const cachedAt = new Date(metadata._cachedAt || metadata.timestamp);
   const ageSeconds = Math.floor(
-    (new Date().getTime() - cachedAt.getTime()) / 1000
+    (new Date().getTime() - cachedAt.getTime()) / 1000,
   );
   const ageText =
     ageSeconds < 60 ? `${ageSeconds}s` : `${Math.floor(ageSeconds / 60)}m`;

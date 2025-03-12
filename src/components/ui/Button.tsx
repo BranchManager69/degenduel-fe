@@ -1,15 +1,22 @@
 import React from "react";
+
 import { cn } from "../../lib/utils";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "gradient" | "danger" | "ghost";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "outline"
+    | "gradient"
+    | "danger"
+    | "ghost";
   size?: "sm" | "md" | "lg" | "icon";
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     { className, variant = "primary", size = "md", children, ...props },
-    ref
+    ref,
   ) => {
     return (
       <button
@@ -27,8 +34,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               variant === "outline",
             "bg-gradient-to-r from-brand-500 to-purple-600 text-white hover:from-brand-400 hover:to-purple-500":
               variant === "gradient",
-            "bg-red-500 text-white hover:bg-red-600":
-              variant === "danger",
+            "bg-red-500 text-white hover:bg-red-600": variant === "danger",
             "bg-transparent text-brand-400 hover:bg-brand-500/10 hover:text-brand-300":
               variant === "ghost",
             "px-3 py-1.5 text-sm": size === "sm",
@@ -36,7 +42,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             "px-6 py-3 text-lg": size === "lg",
             "p-2": size === "icon",
           },
-          className
+          className,
         )}
         {...props}
       >
@@ -46,5 +52,5 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
       </button>
     );
-  }
+  },
 );

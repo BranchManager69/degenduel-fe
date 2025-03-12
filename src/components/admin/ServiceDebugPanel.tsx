@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
-import { useStore } from "../../store/useStore";
+
 import { ServiceStateMetrics } from "./ServiceStateMetrics";
+import { useStore } from "../../store/useStore";
 
 interface DebugLog {
   id: string;
@@ -157,7 +158,7 @@ export const ServiceDebugPanel: React.FC = () => {
                         </span>
                         <span
                           className={`${getLogColor(
-                            log.type
+                            log.type,
                           )} font-mono uppercase text-xs`}
                         >
                           {log.type}

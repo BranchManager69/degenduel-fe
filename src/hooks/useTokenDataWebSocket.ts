@@ -10,9 +10,10 @@
 
 //import axios from "axios"; // for logging errors to the server
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useAuth } from "./useAuth"; // Keeping this for authentication
 import { NODE_ENV, WS_URL } from "../config/config";
 import { useStore } from "../store/useStore";
-import { useAuth } from "./useAuth"; // Keeping this for authentication
 
 // Config for WebSocket - using ONLY the new v69 endpoint
 //    No fallbacks, no progressive attempts - just the one we want
@@ -26,7 +27,8 @@ const TOKEN_DATA_WSS_PATH = `/api/v69/ws/token-data`;
 // Local development settings (only used when USE_LOCAL_SERVER is true)
 //     Can set to true when testing with localhost (but I choose to favor dev.degenduel.me over localhost)
 const USE_LOCAL_SERVER = false;
-const TOKEN_DATA_LOCAL_URL = NODE_ENV === "development" ? `localhost:3005` : `localhost:3004`;
+const TOKEN_DATA_LOCAL_URL =
+  NODE_ENV === "development" ? `localhost:3005` : `localhost:3004`;
 
 export interface TokenData {
   symbol: string;
@@ -46,15 +48,15 @@ export interface TokenData {
 
 interface TokenDataMessage {
   type: string;
-  symbol?: string;       // v69 uses 'symbol' instead of 'token' for token identifiers
-  symbols?: string[];    // v69 uses 'symbols' for subscription arrays
-  token?: string;        // Legacy field, kept for backward compatibility
-  tokens?: TokenData[];  // Legacy field, kept for backward compatibility
-  data?: any;            // The v69 server places token data in the 'data' field
-  timestamp?: string;    // ISO timestamp for when the message was sent
-  error?: string;        // Error message
-  code?: string;         // Error code
-  count?: number;        // Number of tokens in subscription/operation responses
+  symbol?: string; // v69 uses 'symbol' instead of 'token' for token identifiers
+  symbols?: string[]; // v69 uses 'symbols' for subscription arrays
+  token?: string; // Legacy field, kept for backward compatibility
+  tokens?: TokenData[]; // Legacy field, kept for backward compatibility
+  data?: any; // The v69 server places token data in the 'data' field
+  timestamp?: string; // ISO timestamp for when the message was sent
+  error?: string; // Error message
+  code?: string; // Error code
+  count?: number; // Number of tokens in subscription/operation responses
 }
 
 // Simulated token data for fallback when no actual data is available
@@ -112,7 +114,7 @@ const FALLBACK_TOKENS: TokenData[] = [
 ];
 
 export function useTokenDataWebSocket(
-  tokensToSubscribe: string[] | "all" = "all"
+  tokensToSubscribe: string[] | "all" = "all",
 ) {
   const [isConnected, setIsConnected] = useState(false);
   const [tokens, setTokens] = useState<TokenData[]>(FALLBACK_TOKENS); // Initialize with fallback data // TODO: ELIMINATE THIS!!!
@@ -139,10 +141,10 @@ export function useTokenDataWebSocket(
 
       // Get authentication token - v69 supports auth but doesn't require it
       const token = await getAccessToken().catch(() => null);
-      
+
       // Determine WebSocket URL based on configuration
       let wsUrl: string;
-      
+
       if (USE_LOCAL_SERVER) {
         // Use localhost for testing - note: must include ws:// protocol
         const baseWsUrl = `ws://${TOKEN_DATA_LOCAL_URL}`;
@@ -152,10 +154,12 @@ export function useTokenDataWebSocket(
         const baseWsUrl = WS_URL;
         wsUrl = `${baseWsUrl}${TOKEN_DATA_WSS_PATH}`;
       }
-      
+
       if (NODE_ENV === "development") {
         // Log connection info with more details
-        console.log(`[TokenDataWebSocket] \n[Connecting to v69 endpoint] \n[${wsUrl}] \n[Token available: ${!!token}]`);
+        console.log(
+          `[TokenDataWebSocket] \n[Connecting to v69 endpoint] \n[${wsUrl}] \n[Token available: ${!!token}]`,
+        );
       }
 
       // Create WebSocket connection
@@ -178,24 +182,24 @@ export function useTokenDataWebSocket(
               JSON.stringify({
                 type: "authenticate",
                 token: token,
-              })
+              }),
             );
           }
-          
+
           // After auth, request all tokens
           wsRef.current.send(
             JSON.stringify({
-              type: "get_all_tokens"
-            })
+              type: "get_all_tokens",
+            }),
           );
-          
+
           // Then subscribe to specific tokens if specified
           if (tokensToSubscribe !== "all") {
             wsRef.current.send(
               JSON.stringify({
                 type: "subscribe_tokens", // v69 uses 'subscribe_tokens' instead of 'subscribe'
                 symbols: tokensToSubscribe, // v69 uses 'symbols' instead of 'tokens'
-              })
+              }),
             );
           }
         }
@@ -205,10 +209,12 @@ export function useTokenDataWebSocket(
       wsRef.current.onmessage = (event) => {
         try {
           const message: TokenDataMessage = JSON.parse(event.data);
-          
+
           // Debug in development
           if (NODE_ENV === "development") {
-            console.log(`[TokenDataWebSocket] \n[Received] \n[${message.type}]`);
+            console.log(
+              `[TokenDataWebSocket] \n[Received] \n[${message.type}]`,
+            );
           }
 
           // Handle different message types - adapted for v69 WebSocket format
@@ -257,10 +263,11 @@ export function useTokenDataWebSocket(
                       message: "Token data update received",
                       data: {
                         tokenCount: enhancedTokens.length,
-                        timestamp: message.timestamp || new Date().toISOString(),
+                        timestamp:
+                          message.timestamp || new Date().toISOString(),
                       },
                     },
-                  })
+                  }),
                 );
 
                 // Simulate frequent 5-minute changes to make animations more dynamic
@@ -268,7 +275,7 @@ export function useTokenDataWebSocket(
               }
               break;
 
-            // v69 uses 'token_data' for single token updates 
+            // v69 uses 'token_data' for single token updates
             case "token_data":
               if (message.symbol && message.data) {
                 // Update single token price with enhanced 5m data
@@ -277,7 +284,7 @@ export function useTokenDataWebSocket(
                     if (token.symbol === message.symbol) {
                       // Calculate new 5m change - sometimes opposite direction from 24h for realism
                       const baseChange = parseFloat(
-                        message.data.change24h || "0"
+                        message.data.change24h || "0",
                       );
                       const randomFactor = Math.random() > 0.7 ? -1 : 1; // 30% chance of opposite direction
                       const volatilityFactor = 0.5 + Math.random(); // 0.5 to 1.5
@@ -291,7 +298,8 @@ export function useTokenDataWebSocket(
                         ...message.data, // Apply all the new data
                         // Add dynamic changes if not provided
                         change5m: message.data.change5m || fiveMinChange,
-                        change1h: message.data.change1h ||
+                        change1h:
+                          message.data.change1h ||
                           ((baseChange * volatilityFactor) / 2.4).toFixed(2),
                       };
                     }
@@ -314,25 +322,29 @@ export function useTokenDataWebSocket(
                   prev.map((token) =>
                     token.symbol === message.symbol
                       ? { ...token, ...message.data }
-                      : token
-                  )
+                      : token,
+                  ),
                 );
               }
               break;
 
-            // v69 token subscription success notification  
+            // v69 token subscription success notification
             case "tokens_subscribed":
               if (NODE_ENV === "development") {
-                console.log(`[TokenDataWebSocket] \n[Subscribed to ${message.count} tokens]`);
+                console.log(
+                  `[TokenDataWebSocket] \n[Subscribed to ${message.count} tokens]`,
+                );
               }
               break;
-              
+
             // v69 subscription errors are sent as custom error types
             case "error":
               const errorMsg = message.error || "Unknown WebSocket error";
               const errorCode = message.code || "UNKNOWN";
-              
-              console.error(`[TokenDataWebSocket] \n[Error] \n[${errorCode}] \n[${errorMsg}]`);
+
+              console.error(
+                `[TokenDataWebSocket] \n[Error] \n[${errorCode}] \n[${errorMsg}]`,
+              );
               setError(errorMsg);
 
               // Even on error, maintain fallback data for animations
@@ -342,7 +354,7 @@ export function useTokenDataWebSocket(
                 startSimulating5MinChanges();
               }
               break;
-              
+
             // Handle market updates (similar to token updates but for market overview)
             // TODO: ELIMINATE DUMMY DATA!!!
             case "market_update":
@@ -353,18 +365,24 @@ export function useTokenDataWebSocket(
                   if (!token.change5m) {
                     const baseChange = parseFloat(token.change24h || "0");
                     const volatilityFactor = 0.5 + Math.random();
-                    token.change5m = ((baseChange * volatilityFactor) / 4.8).toFixed(2);
+                    token.change5m = (
+                      (baseChange * volatilityFactor) /
+                      4.8
+                    ).toFixed(2);
                   }
-                  
+
                   if (!token.change1h) {
                     const baseChange = parseFloat(token.change24h || "0");
                     const volatilityFactor = 0.6 + Math.random() * 0.8;
-                    token.change1h = ((baseChange * volatilityFactor) / 2.4).toFixed(2);
+                    token.change1h = (
+                      (baseChange * volatilityFactor) /
+                      2.4
+                    ).toFixed(2);
                   }
-                  
+
                   return token;
                 });
-                
+
                 setTokens(enhancedTokens);
                 setLastUpdate(new Date());
                 startSimulating5MinChanges();
@@ -416,7 +434,7 @@ export function useTokenDataWebSocket(
                 ...token,
                 change5m: newChange,
               };
-            })
+            }),
           );
 
           setLastUpdate(new Date());
@@ -426,13 +444,17 @@ export function useTokenDataWebSocket(
       wsRef.current.onclose = (event) => {
         setIsConnected(false);
         if (NODE_ENV === "development") {
-          console.log(`[TokenDataWebSocket] \n[Connection closed] \n[${event.code}]`);
+          console.log(
+            `[TokenDataWebSocket] \n[Connection closed] \n[${event.code}]`,
+          );
         }
 
         if (event.code === 1006) {
           if (NODE_ENV === "development") {
             const stringifiedErrorEvent = JSON.stringify(event);
-            console.error(`[TokenDataWebSocket] \n[Connection closed unexpectedly] \n${stringifiedErrorEvent}`);
+            console.error(
+              `[TokenDataWebSocket] \n[Connection closed unexpectedly] \n${stringifiedErrorEvent}`,
+            );
           }
           // Convert WS_URL to HTTP/HTTPS for axios
           // const httpUrl = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
@@ -449,7 +471,7 @@ export function useTokenDataWebSocket(
         if (event.code !== 1000 && !maintenanceMode) {
           const delay = Math.min(
             30000,
-            Math.pow(1.5, reconnectAttempts.current) * 1000
+            Math.pow(1.5, reconnectAttempts.current) * 1000,
           );
           if (NODE_ENV === "development") {
             console.log(`[TokenDataWebSocket] \n[Reconnecting in ${delay}ms]`);
@@ -479,21 +501,27 @@ export function useTokenDataWebSocket(
         //  message: "WebSocket connection error",
         //  timestamp: new Date().toISOString(),
         //});
-        
+
         if (NODE_ENV === "development") {
-          console.error(`[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}] \n${JSON.stringify(error)}`);
+          console.error(
+            `[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}] \n${JSON.stringify(error)}`,
+          );
         } else {
-          console.error(`[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}]`);
+          console.error(
+            `[TokenDataWebSocket] \n[Error on ${TOKEN_DATA_WSS_PATH}]`,
+          );
         }
         setError(`WebSocket connection error`);
-        
+
         // Log connection details
         if (NODE_ENV === "development") {
           if (WS_DEBUG) {
-            console.debug(`[TokenDataWebSocket] \n[Connection info] \n[${TOKEN_DATA_WSS_PATH}] \n[${wsUrl}] \n[${window.location.hostname}] \n[${new Date().toISOString()}]`);
+            console.debug(
+              `[TokenDataWebSocket] \n[Connection info] \n[${TOKEN_DATA_WSS_PATH}] \n[${wsUrl}] \n[${window.location.hostname}] \n[${new Date().toISOString()}]`,
+            );
           }
         }
-        
+
         // Provide fallback data on WebSocket error
         if (tokens.length === 0) {
           setTokens(FALLBACK_TOKENS);
@@ -532,7 +560,7 @@ export function useTokenDataWebSocket(
                   ...token,
                   change5m: newChange,
                 };
-              })
+              }),
             );
 
             setLastUpdate(new Date());

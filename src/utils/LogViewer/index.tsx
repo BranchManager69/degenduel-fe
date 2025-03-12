@@ -1,6 +1,7 @@
 // src/components/LogViewer/index.tsx
 import { formatDistanceToNow } from "date-fns";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+
 import * as config from "../../config/config";
 
 /*
@@ -61,7 +62,7 @@ const LogViewer: React.FC = () => {
   const [filter, setFilter] = useState<string>("");
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
   const [enabledLevels, setEnabledLevels] = useState<Set<LogLevel>>(
-    new Set(LOG_LEVELS)
+    new Set(LOG_LEVELS),
   );
   const [groupByTime, setGroupByTime] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -117,9 +118,9 @@ const LogViewer: React.FC = () => {
 
       const response = await fetch(
         `https://degenduel.me/api/superadmin/logs?file=${encodeURIComponent(
-          filename
+          filename,
         )}`,
-        { headers }
+        { headers },
       );
 
       if (!response.ok) {
@@ -191,7 +192,7 @@ const LogViewer: React.FC = () => {
   const filteredLogs = logContent.filter(
     (log) =>
       log.content.toLowerCase().includes(filter.toLowerCase()) &&
-      enabledLevels.has(log.level)
+      enabledLevels.has(log.level),
   );
 
   const groupedLogs = groupByTime
@@ -201,7 +202,7 @@ const LogViewer: React.FC = () => {
           if (!groups[hour]) groups[hour] = [];
           groups[hour].push(log);
           return groups;
-        }, {})
+        }, {}),
       )
     : null;
 
@@ -257,18 +258,18 @@ const LogViewer: React.FC = () => {
                         level === "error"
                           ? "red"
                           : level === "warning"
-                          ? "yellow"
-                          : level === "info"
-                          ? "blue"
-                          : "gray"
+                            ? "yellow"
+                            : level === "info"
+                              ? "blue"
+                              : "gray"
                       }-900 text-${
                         level === "error"
                           ? "red"
                           : level === "warning"
-                          ? "yellow"
-                          : level === "info"
-                          ? "blue"
-                          : "gray"
+                            ? "yellow"
+                            : level === "info"
+                              ? "blue"
+                              : "gray"
                       }-100`
                     : "bg-gray-800 text-gray-400"
                 } border border-gray-700`}
@@ -412,10 +413,10 @@ const LogViewer: React.FC = () => {
                     onClick={() =>
                       copyToClipboard(
                         `${new Date(
-                          log.timestamp
+                          log.timestamp,
                         ).toLocaleString()} [${log.level.toUpperCase()}] ${
                           log.content
-                        }`
+                        }`,
                       )
                     }
                     className="invisible group-hover:visible ml-2 text-gray-400 hover:text-gray-200"

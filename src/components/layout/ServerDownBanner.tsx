@@ -41,7 +41,7 @@ export const ServerDownBanner: React.FC = () => {
     return () => {
       window.removeEventListener(
         "server-down",
-        handleServerDown as EventListener
+        handleServerDown as EventListener,
       );
       window.removeEventListener("server-up", handleServerUp);
     };
@@ -59,10 +59,10 @@ export const ServerDownBanner: React.FC = () => {
       <div className="relative overflow-hidden w-full backdrop-blur-lg px-0">
         {/* Animated glow effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent animate-shine-slow"></div>
-        
+
         {/* Pulsing border effect */}
         <div className="absolute inset-0 border-b-2 border-red-500/0 animate-pulse-border"></div>
-        
+
         <div className="relative flex items-center justify-between py-2 px-3 sm:py-3 sm:px-4 md:px-6">
           <div className="flex items-center space-x-2 sm:space-x-3">
             <FaServer className="text-red-400 animate-pulse text-sm sm:text-base" />
@@ -71,7 +71,10 @@ export const ServerDownBanner: React.FC = () => {
                 Server Unavailable
               </h3>
               <p className="text-xs md:text-sm text-red-300/80 line-clamp-1 sm:line-clamp-none">
-                <span className="hidden sm:inline">Our servers are currently experiencing issues. We are working to restore service.</span>
+                <span className="hidden sm:inline">
+                  Our servers are currently experiencing issues. We are working
+                  to restore service.
+                </span>
                 <span className="sm:hidden">Server issues. Working on it.</span>
                 {downDuration > 0 && (
                   <span className="ml-1 sm:ml-2">

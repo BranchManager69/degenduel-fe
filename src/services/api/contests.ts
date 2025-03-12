@@ -1,8 +1,8 @@
+import { checkContestParticipation, logError } from "./utils";
 import { API_URL } from "../../config/config";
 import { useStore } from "../../store/useStore";
 import { Contest, PortfolioResponse } from "../../types/index";
 import type { SortOptions } from "../../types/sort";
-import { checkContestParticipation, logError } from "./utils";
 
 export const contests = {
   getActive: async (): Promise<Contest[]> => {
@@ -45,7 +45,7 @@ export const contests = {
       }
 
       const data = await response.json();
-      let contests: Contest[] = Array.isArray(data)
+      const contests: Contest[] = Array.isArray(data)
         ? data
         : data.contests || [];
 
@@ -70,7 +70,7 @@ export const contests = {
       } else {
         // Default sort: most participants first
         contests.sort(
-          (a, b) => Number(b.participant_count) - Number(a.participant_count)
+          (a, b) => Number(b.participant_count) - Number(a.participant_count),
         );
       }
 
@@ -86,14 +86,14 @@ export const contests = {
         contests.map(async (contest: Contest) => {
           const isParticipating = await checkContestParticipation(
             contest.id,
-            user.wallet_address
+            user.wallet_address,
           );
 
           return {
             ...contest,
             is_participating: isParticipating,
           };
-        })
+        }),
       );
 
       return processedContests;
@@ -147,7 +147,7 @@ export const contests = {
 
   enterContest: async (
     contestId: string,
-    portfolio: PortfolioResponse
+    portfolio: PortfolioResponse,
   ): Promise<void> => {
     const user = useStore.getState().user;
 
@@ -194,7 +194,7 @@ export const contests = {
         throw new Error(
           responseData.error ||
             responseData.message ||
-            `Server error: ${response.status}`
+            `Server error: ${response.status}`,
         );
       }
 
@@ -234,7 +234,7 @@ export const contests = {
         throw new Error(
           errorData?.message ||
             errorData?.error ||
-            `Failed to create contest: ${response.status} ${response.statusText}`
+            `Failed to create contest: ${response.status} ${response.statusText}`,
         );
       }
 

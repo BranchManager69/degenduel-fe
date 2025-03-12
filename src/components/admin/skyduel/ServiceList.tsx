@@ -1,13 +1,16 @@
 import React, { useState } from "react";
-import { useStore } from "../../../store/useStore";
+
 import { ServiceNode } from "../../../hooks/useSkyDuelWebSocket";
+import { useStore } from "../../../store/useStore";
 
 export const ServiceList: React.FC = () => {
   const { skyDuel, setSkyDuelSelectedNode } = useStore();
   const [filter, setFilter] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "status" | "health" | "type">("name");
+  const [sortBy, setSortBy] = useState<"name" | "status" | "health" | "type">(
+    "name",
+  );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  
+
   const getStatusLabel = (status: ServiceNode["status"]) => {
     switch (status) {
       case "online":
@@ -22,7 +25,7 @@ export const ServiceList: React.FC = () => {
         return "Unknown";
     }
   };
-  
+
   const getStatusColor = (status: ServiceNode["status"]) => {
     switch (status) {
       case "online":
@@ -37,7 +40,7 @@ export const ServiceList: React.FC = () => {
         return "bg-gray-500";
     }
   };
-  
+
   const getTypeIcon = (type: ServiceNode["type"]) => {
     switch (type) {
       case "api":
@@ -54,7 +57,7 @@ export const ServiceList: React.FC = () => {
         return "📦";
     }
   };
-  
+
   // Format uptime to human-readable format
   const formatUptime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -62,7 +65,7 @@ export const ServiceList: React.FC = () => {
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
     return `${Math.floor(seconds / 86400)}d`;
   };
-  
+
   // Filter and sort nodes
   const filteredNodes = skyDuel.nodes.filter((node) => {
     if (!filter) return true;
@@ -73,16 +76,18 @@ export const ServiceList: React.FC = () => {
       getStatusLabel(node.status).toLowerCase().includes(filter.toLowerCase())
     );
   });
-  
+
   const sortedNodes = [...filteredNodes].sort((a, b) => {
     let comparison = 0;
-    
+
     switch (sortBy) {
       case "name":
         comparison = a.name.localeCompare(b.name);
         break;
       case "status":
-        comparison = getStatusLabel(a.status).localeCompare(getStatusLabel(b.status));
+        comparison = getStatusLabel(a.status).localeCompare(
+          getStatusLabel(b.status),
+        );
         break;
       case "health":
         comparison = a.health - b.health;
@@ -93,10 +98,10 @@ export const ServiceList: React.FC = () => {
       default:
         comparison = 0;
     }
-    
+
     return sortDirection === "asc" ? comparison : -comparison;
   });
-  
+
   // Handler for header click
   const handleHeaderClick = (column: "name" | "status" | "health" | "type") => {
     if (sortBy === column) {
@@ -106,7 +111,7 @@ export const ServiceList: React.FC = () => {
       setSortDirection("asc");
     }
   };
-  
+
   return (
     <div className="h-full flex flex-col">
       {/* Search and filter */}
@@ -119,7 +124,7 @@ export const ServiceList: React.FC = () => {
           onChange={(e) => setFilter(e.target.value)}
         />
       </div>
-      
+
       {/* Table of services */}
       <div className="overflow-auto flex-grow">
         <table className="w-full border-collapse">
@@ -190,13 +195,19 @@ export const ServiceList: React.FC = () => {
                 <td className="px-4 py-3">
                   <div className="flex items-center">
                     <span className="mr-2">{getTypeIcon(node.type)}</span>
-                    <span className="text-gray-300 capitalize">{node.type}</span>
+                    <span className="text-gray-300 capitalize">
+                      {node.type}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${getStatusColor(node.status)}`}></div>
-                    <span className="text-gray-300">{getStatusLabel(node.status)}</span>
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${getStatusColor(node.status)}`}
+                    ></div>
+                    <span className="text-gray-300">
+                      {getStatusLabel(node.status)}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-3">
@@ -209,8 +220,8 @@ export const ServiceList: React.FC = () => {
                           node.health > 80
                             ? "#22c55e" // Emerald-500
                             : node.health > 50
-                            ? "#f59e0b" // Amber-500
-                            : "#ef4444", // Red-500
+                              ? "#f59e0b" // Amber-500
+                              : "#ef4444", // Red-500
                       }}
                     ></div>
                   </div>
@@ -226,15 +237,20 @@ export const ServiceList: React.FC = () => {
                     <span className="text-gray-400">CPU:</span>
                     <span className="text-gray-300">{node.metrics.cpu}%</span>
                     <span className="text-gray-400">Mem:</span>
-                    <span className="text-gray-300">{node.metrics.memory}%</span>
+                    <span className="text-gray-300">
+                      {node.metrics.memory}%
+                    </span>
                     <span className="text-gray-400">Err:</span>
-                    <span className="text-gray-300">{node.metrics.errorRate}%</span>
+                    <span className="text-gray-300">
+                      {node.metrics.errorRate}%
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   {node.alerts.length > 0 ? (
                     <div className="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs">
-                      {node.alerts.length} alert{node.alerts.length > 1 ? "s" : ""}
+                      {node.alerts.length} alert
+                      {node.alerts.length > 1 ? "s" : ""}
                     </div>
                   ) : (
                     <div className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">
@@ -246,7 +262,7 @@ export const ServiceList: React.FC = () => {
             ))}
           </tbody>
         </table>
-        
+
         {sortedNodes.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             No services matching your filter

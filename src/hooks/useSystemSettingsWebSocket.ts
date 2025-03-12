@@ -8,8 +8,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { WS_URL } from "../config/config";
+
 import { useBaseWebSocket } from "./useBaseWebSocket";
+import { WS_URL } from "../config/config";
 
 // SPECIFICALLY FOR BACKGROUND SCENE SETTINGS
 interface SystemSettings {
@@ -65,7 +66,7 @@ export function useSystemSettingsWebSocket() {
           JSON.stringify({
             type: "GET_SYSTEM_SETTINGS",
             timestamp: Date.now(),
-          })
+          }),
         );
       }
     };
@@ -82,7 +83,7 @@ export function useSystemSettingsWebSocket() {
       if (loading && status !== "online") {
         try {
           console.log(
-            "WebSocket fallback: Fetching system settings via Admin API"
+            "WebSocket fallback: Fetching system settings via Admin API",
           );
           const { admin } = await import("../services/api/admin");
           const data = await admin.getSystemSettings();
@@ -108,7 +109,7 @@ export function useSystemSettingsWebSocket() {
         JSON.stringify({
           type: "GET_SYSTEM_SETTINGS",
           timestamp: Date.now(),
-        })
+        }),
       );
     } else {
       // Fallback to API if WebSocket is not connected
@@ -133,12 +134,12 @@ export function useSystemSettingsWebSocket() {
       const { admin } = await import("../services/api/admin");
       const result = await admin.updateSystemSettings(
         "background_scene",
-        value
+        value,
       );
       setSettings((prev) =>
         prev
           ? { ...prev, background_scene: value }
-          : { background_scene: value }
+          : { background_scene: value },
       );
       setLastUpdated(new Date());
       setLoading(false);

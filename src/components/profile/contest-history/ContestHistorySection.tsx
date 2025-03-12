@@ -1,16 +1,17 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+
+import { ContestHistoryList } from "./ContestHistoryList";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { ContestHistoryEntry } from "../../../types/profile";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
-import { ContestHistoryList } from "./ContestHistoryList";
 
 export const ContestHistorySection: React.FC = () => {
   const { user, maintenanceMode } = useStore();
   const [contestHistory, setContestHistory] = useState<ContestHistoryEntry[]>(
-    []
+    [],
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export const ContestHistorySection: React.FC = () => {
         const response = await ddApi.stats.getHistory(
           user.wallet_address,
           10,
-          0
+          0,
         );
 
         // Handle the new response structure
@@ -51,7 +52,7 @@ export const ContestHistorySection: React.FC = () => {
           return;
         }
         setError(
-          err instanceof Error ? err.message : "Failed to load contest history"
+          err instanceof Error ? err.message : "Failed to load contest history",
         );
       } finally {
         setLoading(false);

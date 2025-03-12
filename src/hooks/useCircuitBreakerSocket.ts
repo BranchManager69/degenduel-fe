@@ -1,5 +1,5 @@
-import { useStore } from "../store/useStore";
 import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
 interface CircuitBreakerMessage {
   type: "health:update" | "metrics:update" | "breaker:trip" | "breaker:reset";

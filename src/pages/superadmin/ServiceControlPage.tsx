@@ -33,7 +33,9 @@ const SwitchBase = styled.div`
   height: 100px;
   background: var(--color-dark-200);
   border-radius: 10px;
-  box-shadow: inset 0 -2px 10px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 -2px 10px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -65,7 +67,9 @@ const SwitchLever = styled(motion.div)`
   );
   border-radius: 5px;
   margin-top: 5px;
-  box-shadow: -1px 0 2px rgba(0, 0, 0, 0.2), 1px 0 2px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    -1px 0 2px rgba(0, 0, 0, 0.2),
+    1px 0 2px rgba(255, 255, 255, 0.1);
 `;
 
 export const ServiceControlPage: React.FC = () => {
@@ -99,7 +103,7 @@ export const ServiceControlPage: React.FC = () => {
         `/api/superadmin/services/${serviceName}/toggle`,
         {
           method: "POST",
-        }
+        },
       );
       const data = await response.json();
       if (data.success) {

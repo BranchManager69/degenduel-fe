@@ -1,6 +1,7 @@
 // src/pages/other/Maintenance.tsx
 
 import React, { useEffect, useState } from "react";
+
 import { ddApi } from "../../../services/dd-api";
 
 const DEFAULT_DURATION = 15; // 15 minutes
@@ -33,7 +34,7 @@ export const Maintenance: React.FC = () => {
 
         // Calculate raw end time
         const rawEndTime = new Date(
-          startTimeUTC.getTime() + durationMinutes * 60000
+          startTimeUTC.getTime() + durationMinutes * 60000,
         );
 
         // Only extend time if we've passed the current estimated end time
@@ -41,7 +42,7 @@ export const Maintenance: React.FC = () => {
         if (now > rawEndTime) {
           // If we've passed the end time, add 15 minutes from now and round up
           const extendedEnd = new Date(
-            now.getTime() + DEFAULT_DURATION * 60000
+            now.getTime() + DEFAULT_DURATION * 60000,
           );
           const minutes = extendedEnd.getMinutes();
           const remainder = minutes % 5;

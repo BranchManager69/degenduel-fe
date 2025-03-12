@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import { admin } from "../../services/api/admin";
 
 interface BanIPModalProps {
@@ -46,15 +47,16 @@ const BanIPModal: React.FC<BanIPModalProps> = ({
       onClose();
     } catch (error) {
       console.error("[BanIPButton] Ban IP error:", {
-        error: error instanceof Error ? 
-          { message: error.message, stack: error.stack } : 
-          error,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
         ipAddress,
         request: banData,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       setError(
-        error instanceof Error ? error.message : "Failed to ban IP address"
+        error instanceof Error ? error.message : "Failed to ban IP address",
       );
     } finally {
       setLoading(false);
@@ -219,7 +221,9 @@ export function BanIPButton({
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={size === "sm" ? "h-4 w-4" : size === "md" ? "h-5 w-5" : "h-6 w-6"}
+            className={
+              size === "sm" ? "h-4 w-4" : size === "md" ? "h-5 w-5" : "h-6 w-6"
+            }
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

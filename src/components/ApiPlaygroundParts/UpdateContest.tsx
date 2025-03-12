@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { ContestSelect, useContests } from "./ContestContext";
 import { JsonInput } from "./JsonInput";
 import { ResponseDisplay } from "./ResponseDisplay";
@@ -70,7 +71,7 @@ export function UpdateContest() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
-        }
+        },
       );
       const data = await response.json();
       if (!response.ok) throw data;

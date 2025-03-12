@@ -8,8 +8,8 @@
  * @returns An object containing the market price, volume, and sentiment functions.
  */
 
-import { useStore } from "../store/useStore";
 import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
 /* Market data WebSocket */
 

@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+
 import { ddApi } from "../../../services/dd-api";
 import type { User } from "../../../types";
 

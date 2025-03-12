@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+
 import type { Contest } from "../../../types";
 import { ContestCard } from "../contests-preview/ContestCard";
 

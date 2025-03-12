@@ -1,5 +1,5 @@
-import { Token } from "../../types/index";
 import { createApiClient } from "./utils";
+import { Token } from "../../types/index";
 
 export interface TokenPrice {
   id: number;
@@ -31,42 +31,42 @@ export interface TokenFilter {
 export const tokens = {
   getAll: async (filters?: TokenFilter): Promise<Token[]> => {
     const api = createApiClient();
-    
+
     // Build query string from filters
     let queryParams = "";
     if (filters) {
       const params = new URLSearchParams();
       if (filters.active !== undefined) {
-        params.append('active', filters.active.toString());
+        params.append("active", filters.active.toString());
       }
       if (filters.bucket !== undefined) {
-        params.append('bucket', filters.bucket.toString());
+        params.append("bucket", filters.bucket.toString());
       }
       if (filters.search) {
-        params.append('search', filters.search);
+        params.append("search", filters.search);
       }
       if (params.toString()) {
         queryParams = `?${params.toString()}`;
       }
     }
-    
+
     const response = await api.fetch(`/tokens${queryParams}`);
     const responseData = await response.json();
     return responseData.data || responseData;
   },
-  
+
   getById: async (id: number): Promise<TokenDetails> => {
     const api = createApiClient();
     const response = await api.fetch(`/tokens/${id}`);
     const responseData = await response.json();
     return responseData.data || responseData;
   },
-  
-  create: async (tokenData: { 
-    symbol: string; 
-    name: string; 
-    bucket_id?: number; 
-    is_active?: boolean 
+
+  create: async (tokenData: {
+    symbol: string;
+    name: string;
+    bucket_id?: number;
+    is_active?: boolean;
   }): Promise<string> => {
     const api = createApiClient();
     const response = await api.fetch("/tokens", {
@@ -76,15 +76,18 @@ export const tokens = {
     const responseData = await response.json();
     return responseData.data || responseData;
   },
-  
-  update: async (id: number, tokenData: {
-    symbol?: string;
-    name?: string;
-    is_active?: boolean;
-    market_cap?: string;
-    volume_24h?: string;
-    change_24h?: string;
-  }): Promise<string> => {
+
+  update: async (
+    id: number,
+    tokenData: {
+      symbol?: string;
+      name?: string;
+      is_active?: boolean;
+      market_cap?: string;
+      volume_24h?: string;
+      change_24h?: string;
+    },
+  ): Promise<string> => {
     const api = createApiClient();
     const response = await api.fetch(`/tokens/${id}`, {
       method: "PUT",
@@ -93,14 +96,14 @@ export const tokens = {
     const responseData = await response.json();
     return responseData.data || responseData;
   },
-  
+
   getPrices: async (): Promise<any[]> => {
     const api = createApiClient();
     const response = await api.fetch("/tokens/prices");
     const responseData = await response.json();
     return responseData.data || responseData;
   },
-  
+
   getPriceHistory: async (tokenId: number): Promise<any> => {
     const api = createApiClient();
     const response = await api.fetch(`/tokens/prices/${tokenId}`);

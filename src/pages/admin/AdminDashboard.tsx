@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import { BalanceManager } from "../../components/admin/BalanceManager";
 import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
@@ -50,7 +51,7 @@ export const AdminDashboard: React.FC = () => {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to ${newState ? "enable" : "disable"} maintenance mode`
+          `Failed to ${newState ? "enable" : "disable"} maintenance mode`,
         );
       }
 
@@ -77,7 +78,7 @@ export const AdminDashboard: React.FC = () => {
         } catch (err) {
           console.warn(
             "Failed to set maintenance settings, but mode was toggled:",
-            err
+            err,
           );
         }
       }
@@ -97,7 +98,7 @@ export const AdminDashboard: React.FC = () => {
         setError(
           `Failed to disable maintenance mode. Retrying in ${
             RETRY_DELAY / 1000
-          } seconds... ` + `(Attempt ${retryAttempt + 1}/${MAX_RETRIES})`
+          } seconds... ` + `(Attempt ${retryAttempt + 1}/${MAX_RETRIES})`,
         );
 
         setTimeout(() => {
@@ -111,7 +112,7 @@ export const AdminDashboard: React.FC = () => {
           } maintenance mode. ` +
             (err instanceof Error && err.message.includes("network")
               ? "Please check your network connection."
-              : "Please try again in a few seconds.")
+              : "Please try again in a few seconds."),
         );
         setRetryAttempt(0);
       }
@@ -134,7 +135,7 @@ export const AdminDashboard: React.FC = () => {
         }
         const settings = await response.json();
         const duration = settings.find(
-          (s: any) => s.key === "maintenance_estimated_duration"
+          (s: any) => s.key === "maintenance_estimated_duration",
         )?.value;
         if (duration) {
           setMaintenanceDuration(parseInt(duration));
@@ -158,7 +159,7 @@ export const AdminDashboard: React.FC = () => {
           timestamp: new Date(),
         },
         ...prev,
-      ].slice(0, 10)
+      ].slice(0, 10),
     ); // Keep only last 10 alerts
   };
 
@@ -183,12 +184,12 @@ export const AdminDashboard: React.FC = () => {
 
     window.addEventListener(
       "circuit-breaker",
-      handleCircuitBreaker as EventListener
+      handleCircuitBreaker as EventListener,
     );
     return () => {
       window.removeEventListener(
         "circuit-breaker",
-        handleCircuitBreaker as EventListener
+        handleCircuitBreaker as EventListener,
       );
     };
   }, []);
@@ -464,8 +465,8 @@ export const AdminDashboard: React.FC = () => {
                           {alert.type === "error"
                             ? "⚠"
                             : alert.type === "warning"
-                            ? "⚡"
-                            : "ℹ"}
+                              ? "⚡"
+                              : "ℹ"}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
@@ -499,7 +500,7 @@ export const AdminDashboard: React.FC = () => {
                         <button
                           onClick={() =>
                             setSystemAlerts((prev) =>
-                              prev.filter((a) => a.id !== alert.id)
+                              prev.filter((a) => a.id !== alert.id),
                             )
                           }
                           className="text-gray-500 hover:text-gray-400"
@@ -568,7 +569,7 @@ export const AdminDashboard: React.FC = () => {
                     value={maintenanceDuration}
                     onChange={(e) =>
                       setMaintenanceDuration(
-                        Math.max(1, parseInt(e.target.value) || 1)
+                        Math.max(1, parseInt(e.target.value) || 1),
                       )
                     }
                     className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
@@ -773,7 +774,7 @@ export const AdminDashboard: React.FC = () => {
                 <button
                   onClick={() =>
                     setSelectedSection(
-                      selectedSection === section.id ? null : section.id
+                      selectedSection === section.id ? null : section.id,
                     )
                   }
                   className="block w-full p-6 text-left"

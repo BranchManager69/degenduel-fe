@@ -1,11 +1,12 @@
 // src/components/admin/ip-ban/IpBanList.tsx
 
-import React, { useState } from 'react';
-import { IpBan } from '../../../types';
-import { IpBanDetailsModal } from './IpBanDetailsModal';
-import { IpBanEditModal } from './IpBanEditModal';
-import { admin } from '../../../services/api/admin';
-import { toast } from 'react-hot-toast';
+import React, { useState } from "react";
+import { toast } from "react-hot-toast";
+
+import { IpBanDetailsModal } from "./IpBanDetailsModal";
+import { IpBanEditModal } from "./IpBanEditModal";
+import { admin } from "../../../services/api/admin";
+import { IpBan } from "../../../types";
 
 interface IpBanListProps {
   bans: IpBan[];
@@ -29,7 +30,7 @@ export const IpBanList: React.FC<IpBanListProps> = ({
   pagination,
   onPageChange,
   onBanRemoved,
-  onBanUpdated
+  onBanUpdated,
 }) => {
   const [selectedBan, setSelectedBan] = useState<IpBan | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -38,17 +39,19 @@ export const IpBanList: React.FC<IpBanListProps> = ({
 
   const handleRemoveBan = async (id: string) => {
     // Confirm before removing
-    if (!window.confirm('Are you sure you want to remove this IP ban?')) {
+    if (!window.confirm("Are you sure you want to remove this IP ban?")) {
       return;
     }
 
     try {
       setRemovingId(id);
       await admin.ipBan.remove(id);
-      toast.success('IP ban removed successfully');
+      toast.success("IP ban removed successfully");
       onBanRemoved(id);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to remove IP ban');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove IP ban",
+      );
     } finally {
       setRemovingId(null);
     }
@@ -66,13 +69,13 @@ export const IpBanList: React.FC<IpBanListProps> = ({
 
   // Format date helper function
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Never';
+    if (!dateString) return "Never";
     return new Date(dateString).toLocaleString();
   };
 
   const renderPagination = () => {
     const { page, totalPages } = pagination;
-    
+
     return (
       <div className="flex items-center justify-between mt-4">
         <div>
@@ -161,12 +164,17 @@ export const IpBanList: React.FC<IpBanListProps> = ({
           </thead>
           <tbody className="bg-dark-200/30 divide-y divide-dark-300">
             {bans.map((ban) => (
-              <tr key={ban.id} className="hover:bg-dark-300/20 transition-colors">
+              <tr
+                key={ban.id}
+                className="hover:bg-dark-300/20 transition-colors"
+              >
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-white">
                   {ban.ip_address}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                  {ban.reason.length > 30 ? ban.reason.substring(0, 30) + '...' : ban.reason}
+                  {ban.reason.length > 30
+                    ? ban.reason.substring(0, 30) + "..."
+                    : ban.reason}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   {ban.is_permanent ? (
@@ -180,14 +188,16 @@ export const IpBanList: React.FC<IpBanListProps> = ({
                   )}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
-                  {ban.is_permanent ? 'Never' : formatDate(ban.expires_at)}
+                  {ban.is_permanent ? "Never" : formatDate(ban.expires_at)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
-                  <span 
+                  <span
                     className={`px-2 py-1 text-xs rounded-full ${
-                      ban.troll_level >= 4 ? 'bg-red-500/20 text-red-400' :
-                      ban.troll_level >= 3 ? 'bg-amber-500/20 text-amber-400' :
-                      'bg-blue-500/20 text-blue-400'
+                      ban.troll_level >= 4
+                        ? "bg-red-500/20 text-red-400"
+                        : ban.troll_level >= 3
+                          ? "bg-amber-500/20 text-amber-400"
+                          : "bg-blue-500/20 text-blue-400"
                     }`}
                   >
                     Level {ban.troll_level}
@@ -211,7 +221,7 @@ export const IpBanList: React.FC<IpBanListProps> = ({
                     disabled={removingId === ban.id}
                     className="text-red-400 hover:text-red-300 disabled:opacity-50"
                   >
-                    {removingId === ban.id ? 'Removing...' : 'Remove'}
+                    {removingId === ban.id ? "Removing..." : "Remove"}
                   </button>
                 </td>
               </tr>

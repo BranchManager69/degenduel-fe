@@ -1,5 +1,6 @@
-import React from 'react';
-import { formatCurrency } from '../../lib/utils';
+import React from "react";
+
+import { formatCurrency } from "../../lib/utils";
 
 interface PerformanceData {
   timestamp: string;
@@ -11,8 +12,8 @@ interface PerformanceChartProps {
 }
 
 export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
-  const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
+  const maxValue = Math.max(...data.map((d) => d.value));
+  const minValue = Math.min(...data.map((d) => d.value));
   const range = maxValue - minValue;
 
   return (
@@ -31,9 +32,9 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
             <line
               key={i}
               x1="0"
-              y1={i * (100 / 4) + '%'}
+              y1={i * (100 / 4) + "%"}
               x2="100%"
-              y2={i * (100 / 4) + '%'}
+              y2={i * (100 / 4) + "%"}
               stroke="currentColor"
               className="text-dark-300"
               strokeWidth="1"
@@ -43,11 +44,13 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
 
           {/* Line chart */}
           <path
-            d={data.map((point, i) => {
-              const x = (i / (data.length - 1)) * 100;
-              const y = ((point.value - minValue) / range) * 100;
-              return `${i === 0 ? 'M' : 'L'} ${x}% ${100 - y}%`;
-            }).join(' ')}
+            d={data
+              .map((point, i) => {
+                const x = (i / (data.length - 1)) * 100;
+                const y = ((point.value - minValue) / range) * 100;
+                return `${i === 0 ? "M" : "L"} ${x}% ${100 - y}%`;
+              })
+              .join(" ")}
             fill="none"
             stroke="currentColor"
             className="text-brand-500"
@@ -57,11 +60,13 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
           {/* Area under the line */}
           <path
             d={`
-              ${data.map((point, i) => {
-                const x = (i / (data.length - 1)) * 100;
-                const y = ((point.value - minValue) / range) * 100;
-                return `${i === 0 ? 'M' : 'L'} ${x}% ${100 - y}%`;
-              }).join(' ')}
+              ${data
+                .map((point, i) => {
+                  const x = (i / (data.length - 1)) * 100;
+                  const y = ((point.value - minValue) / range) * 100;
+                  return `${i === 0 ? "M" : "L"} ${x}% ${100 - y}%`;
+                })
+                .join(" ")}
               L 100% 100%
               L 0% 100%
               Z

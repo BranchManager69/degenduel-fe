@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+
+import { FloatingContestChat } from "./FloatingContestChat";
 import { useUserContests } from "../../hooks/useUserContests";
 import { UserContest } from "../../services/contestService";
-import { FloatingContestChat } from "./FloatingContestChat";
 
 export const ContestChatManager: React.FC = () => {
   const { contests, loading } = useUserContests();
@@ -71,13 +72,13 @@ export const ContestChatManager: React.FC = () => {
 
     window.addEventListener(
       "contest-chat-unread" as any,
-      handleUnreadUpdate as EventListener
+      handleUnreadUpdate as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "contest-chat-unread" as any,
-        handleUnreadUpdate as EventListener
+        handleUnreadUpdate as EventListener,
       );
     };
   }, [minimizedChats]);
@@ -107,7 +108,7 @@ export const ContestChatManager: React.FC = () => {
     return () => {
       window.removeEventListener(
         "ws-debug" as any,
-        handleWSError as EventListener
+        handleWSError as EventListener,
       );
       console.log("WebSocket connection listener removed");
     };
@@ -207,21 +208,21 @@ export const ContestChatManager: React.FC = () => {
 
   // Filter contests based on search query
   const filteredContests = contests.filter((contest) =>
-    contest.name.toLowerCase().includes(searchQuery.toLowerCase())
+    contest.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Group contests by status
   const groupedContests = {
     active: filteredContests.filter((contest) => contest.status === "active"),
     upcoming: filteredContests.filter(
-      (contest) => contest.status === "upcoming"
+      (contest) => contest.status === "upcoming",
     ),
     completed: filteredContests.filter(
-      (contest) => contest.status === "completed"
+      (contest) => contest.status === "completed",
     ),
     other: filteredContests.filter(
       (contest) =>
-        !["active", "upcoming", "completed"].includes(contest.status || "")
+        !["active", "upcoming", "completed"].includes(contest.status || ""),
     ),
   };
 

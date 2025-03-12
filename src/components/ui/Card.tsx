@@ -6,9 +6,16 @@ interface CardProps {
   onClick?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ children, className = "", onClick }) => {
+export const Card: React.FC<CardProps> = ({
+  children,
+  className = "",
+  onClick,
+}) => {
   return (
-    <div className={`rounded-lg border bg-dark-200/70 text-gray-100 shadow-sm ${className}`} onClick={onClick}>
+    <div
+      className={`rounded-lg border bg-dark-200/70 text-gray-100 shadow-sm ${className}`}
+      onClick={onClick}
+    >
       {children}
     </div>
   );
@@ -57,11 +64,7 @@ export const CardDescription: React.FC<CardDescriptionProps> = ({
   children,
   className = "",
 }) => {
-  return (
-    <p className={`text-sm text-gray-400 ${className}`}>
-      {children}
-    </p>
-  );
+  return <p className={`text-sm text-gray-400 ${className}`}>{children}</p>;
 };
 
 interface CardContentProps {

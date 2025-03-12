@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
+
 import { AchievementsSection } from "../../components/achievements/AchievementsSection";
 import { UserProgress } from "../../components/achievements/UserProgress";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
@@ -97,7 +98,7 @@ export const Profile: React.FC = () => {
               </h2>
               <SocialAccountsPanel />
             </motion.div>
-            
+
             {/* Two Column Layout for Achievements and History */}
             <motion.div
               key="columns"

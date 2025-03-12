@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import { formatCurrency } from "../../lib/utils";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 
@@ -41,7 +42,8 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
   // Get actual values for display
   const estimatedPrizePool = calculateEstimatedPrizePool();
   const maxPotentialPrizePool = calculateMaxPotentialPrizePool();
-  const participationPercentage = maxParticipants > 0 ? (currentParticipants / maxParticipants) * 100 : 0;
+  const participationPercentage =
+    maxParticipants > 0 ? (currentParticipants / maxParticipants) * 100 : 0;
 
   // Calculate the rotation for each pie slice
   const calculateRotation = (index: number) => {
@@ -55,10 +57,10 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-100">Prize Structure</h3>
-        
+
         {/* Info button with tooltip */}
         <div className="relative">
-          <button 
+          <button
             className="w-6 h-6 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center text-sm border border-brand-500/30 hover:bg-brand-500/30 transition-colors"
             onClick={() => setShowTooltip(!showTooltip)}
             onMouseEnter={() => setShowTooltip(true)}
@@ -66,18 +68,34 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
           >
             ?
           </button>
-          
+
           {showTooltip && (
             <div className="absolute z-50 right-0 mt-2 w-64 p-3 rounded-lg bg-dark-100/95 border border-brand-500/30 text-xs text-gray-300 shadow-xl">
               <div className="space-y-2">
                 <p>Prize distribution breakdown:</p>
                 <ul className="list-disc pl-4 space-y-1">
-                  <li><span className="text-brand-400 font-medium">1st place:</span> 69% of prize pool</li>
-                  <li><span className="text-brand-400 font-medium">2nd place:</span> 20% of prize pool</li>
-                  <li><span className="text-brand-400 font-medium">3rd place:</span> 11% of prize pool</li>
+                  <li>
+                    <span className="text-brand-400 font-medium">
+                      1st place:
+                    </span>{" "}
+                    69% of prize pool
+                  </li>
+                  <li>
+                    <span className="text-brand-400 font-medium">
+                      2nd place:
+                    </span>{" "}
+                    20% of prize pool
+                  </li>
+                  <li>
+                    <span className="text-brand-400 font-medium">
+                      3rd place:
+                    </span>{" "}
+                    11% of prize pool
+                  </li>
                 </ul>
                 <p className="pt-1 border-t border-dark-300">
-                  <span className="text-brand-400 font-medium">Note:</span> Final prize pool depends on total participants.
+                  <span className="text-brand-400 font-medium">Note:</span>{" "}
+                  Final prize pool depends on total participants.
                 </p>
               </div>
             </div>
@@ -117,14 +135,16 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
                 {formatCurrency(estimatedPrizePool)}
               </div>
             </div>
-            
+
             {maxPotentialPrizePool > estimatedPrizePool && (
               <div>
-                <span className="text-xs text-gray-400">Max Potential Pool</span>
+                <span className="text-xs text-gray-400">
+                  Max Potential Pool
+                </span>
                 <div className="text-sm font-medium text-gray-300">
                   {formatCurrency(maxPotentialPrizePool)}
                 </div>
-                
+
                 {/* Participation progress bar */}
                 <div className="flex items-center gap-2 mt-1">
                   <div className="w-24 h-1.5 bg-dark-300 rounded-full overflow-hidden">
@@ -147,7 +167,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
           {prizes.map(({ place, percentage }) => {
             const prizeAmount = (estimatedPrizePool * percentage) / 100;
             const maxPrizeAmount = (maxPotentialPrizePool * percentage) / 100;
-            
+
             return (
               <div
                 key={place}

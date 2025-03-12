@@ -1,9 +1,10 @@
 // src/components/admin/ip-ban/IpBanEditModal.tsx
 
-import React, { useState } from 'react';
-import { IpBan, IpBanUpdateParams } from '../../../types';
-import { admin } from '../../../services/api/admin';
-import { toast } from 'react-hot-toast';
+import React, { useState } from "react";
+import { toast } from "react-hot-toast";
+
+import { admin } from "../../../services/api/admin";
+import { IpBan, IpBanUpdateParams } from "../../../types";
 
 interface IpBanEditModalProps {
   isOpen: boolean;
@@ -16,16 +17,18 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
   isOpen,
   onClose,
   ban,
-  onBanUpdated
+  onBanUpdated,
 }) => {
   const [reason, setReason] = useState(ban.reason);
   const [isPermanent, setIsPermanent] = useState(ban.is_permanent);
   const [expiresAt, setExpiresAt] = useState<string>(
-    ban.expires_at ? new Date(ban.expires_at).toISOString().substring(0, 16) : ''
+    ban.expires_at
+      ? new Date(ban.expires_at).toISOString().substring(0, 16)
+      : "",
   );
   const [trollLevel, setTrollLevel] = useState(ban.troll_level);
   const [metadataJson, setMetadataJson] = useState(
-    ban.metadata ? JSON.stringify(ban.metadata, null, 2) : '{}'
+    ban.metadata ? JSON.stringify(ban.metadata, null, 2) : "{}",
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,12 +39,12 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
 
     // Validate form
     if (!reason.trim()) {
-      setError('Reason is required');
+      setError("Reason is required");
       return;
     }
 
     if (!isPermanent && !expiresAt) {
-      setError('Expiration date is required for temporary bans');
+      setError("Expiration date is required for temporary bans");
       return;
     }
 
@@ -50,7 +53,7 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
     try {
       metadata = metadataJson ? JSON.parse(metadataJson) : {};
     } catch (err) {
-      setError('Invalid JSON in metadata field');
+      setError("Invalid JSON in metadata field");
       return;
     }
 
@@ -59,7 +62,7 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
       reason,
       is_permanent: isPermanent,
       troll_level: trollLevel,
-      metadata
+      metadata,
     };
 
     // Only include expires_at if not permanent
@@ -70,12 +73,12 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
     try {
       setLoading(true);
       await admin.ipBan.update(ban.id, updateData);
-      toast.success('IP ban updated successfully');
+      toast.success("IP ban updated successfully");
       onBanUpdated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update IP ban');
-      toast.error('Failed to update IP ban');
+      setError(err instanceof Error ? err.message : "Failed to update IP ban");
+      toast.error("Failed to update IP ban");
     } finally {
       setLoading(false);
     }
@@ -92,8 +95,18 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -116,12 +129,17 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
               disabled
               className="w-full px-3 py-2 bg-dark-300/50 border border-dark-300 rounded-md text-gray-400 cursor-not-allowed"
             />
-            <p className="mt-1 text-xs text-gray-500">IP addresses cannot be edited. Create a new ban instead.</p>
+            <p className="mt-1 text-xs text-gray-500">
+              IP addresses cannot be edited. Create a new ban instead.
+            </p>
           </div>
 
           {/* Ban Reason */}
           <div>
-            <label htmlFor="reason" className="block text-sm font-medium text-gray-400 mb-1">
+            <label
+              htmlFor="reason"
+              className="block text-sm font-medium text-gray-400 mb-1"
+            >
               Reason *
             </label>
             <textarea
@@ -170,7 +188,10 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
           {/* Expiration Date (only for temporary bans) */}
           {!isPermanent && (
             <div>
-              <label htmlFor="expiresAt" className="block text-sm font-medium text-gray-400 mb-1">
+              <label
+                htmlFor="expiresAt"
+                className="block text-sm font-medium text-gray-400 mb-1"
+              >
                 Expires At *
               </label>
               <input
@@ -181,13 +202,18 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
                 required
                 className="w-full px-3 py-2 bg-dark-300/80 border border-dark-300 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-brand-400"
               />
-              <p className="mt-1 text-xs text-gray-500">Set when this ban should automatically expire.</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Set when this ban should automatically expire.
+              </p>
             </div>
           )}
 
           {/* Troll Level */}
           <div>
-            <label htmlFor="trollLevel" className="block text-sm font-medium text-gray-400 mb-1">
+            <label
+              htmlFor="trollLevel"
+              className="block text-sm font-medium text-gray-400 mb-1"
+            >
               Troll Level
             </label>
             <select
@@ -202,12 +228,17 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
               <option value={4}>Level 4 - Severe</option>
               <option value={5}>Level 5 - Maximum</option>
             </select>
-            <p className="mt-1 text-xs text-gray-500">Determines how the ban is presented to the user.</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Determines how the ban is presented to the user.
+            </p>
           </div>
 
           {/* Metadata (JSON) */}
           <div>
-            <label htmlFor="metadata" className="block text-sm font-medium text-gray-400 mb-1">
+            <label
+              htmlFor="metadata"
+              className="block text-sm font-medium text-gray-400 mb-1"
+            >
               Metadata (JSON)
             </label>
             <textarea
@@ -218,7 +249,9 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
               className="w-full px-3 py-2 bg-dark-300/80 border border-dark-300 rounded-md text-white font-mono text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-400"
               placeholder="{}"
             />
-            <p className="mt-1 text-xs text-gray-500">Additional JSON metadata for this ban. Must be valid JSON.</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Additional JSON metadata for this ban. Must be valid JSON.
+            </p>
           </div>
 
           {/* Form Actions */}
@@ -238,7 +271,7 @@ export const IpBanEditModal: React.FC<IpBanEditModalProps> = ({
               {loading && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               )}
-              {loading ? 'Updating...' : 'Update Ban'}
+              {loading ? "Updating..." : "Update Ban"}
             </button>
           </div>
         </form>

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
+
 import { SkyDuelDashboard } from "../../components/admin/skyduel/SkyDuelDashboard";
+import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { useAuth } from "../../hooks/useAuth";
 import { useSkyDuelWebSocket } from "../../hooks/useSkyDuelWebSocket";
-import { useStore } from "../../store/useStore";
+//import { useStore } from "../../store/useStore";
 
 export const SkyDuelPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const skyDuelSocket = useSkyDuelWebSocket();
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useAuth(); // should this be using this or store?
 
   useEffect(() => {
     // Check if user has admin permissions
@@ -16,10 +17,10 @@ export const SkyDuelPage: React.FC = () => {
       window.location.href = "/";
       return;
     }
-    
+
     // Initialize connection
     setLoading(false);
-    
+
     // Cleanup on unmount
     return () => {
       if (skyDuelSocket && skyDuelSocket.close) {
@@ -43,7 +44,7 @@ export const SkyDuelPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-900 to-dark-950 text-white">
       {/* Background visualization */}
       <BackgroundEffects />
-      
+
       {/* Main content */}
       <div className="container mx-auto px-4 py-8 relative z-10">
         <header className="mb-6">
@@ -57,7 +58,7 @@ export const SkyDuelPage: React.FC = () => {
               </span>
             </h1>
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => skyDuelSocket.sendCommand("refresh")}
                 className="px-3 py-1 bg-brand-600 text-white rounded hover:bg-brand-500 transition-colors"
               >
@@ -66,10 +67,11 @@ export const SkyDuelPage: React.FC = () => {
             </div>
           </div>
           <p className="text-gray-400 text-sm">
-            Monitor and manage all DegenDuel services through a unified dashboard.
+            Monitor and manage all DegenDuel services through a unified
+            dashboard.
           </p>
         </header>
-        
+
         <SkyDuelDashboard socket={skyDuelSocket} />
       </div>
     </div>

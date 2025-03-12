@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "../ui/Card";
-import { UserSearch } from "../admin/UserSearch";
+
+import { API_URL } from "../../config/config";
 import type { User, UserLevel } from "../../services/userService";
 import { userService } from "../../services/userService";
-import { API_URL } from "../../config/config";
+import { UserSearch } from "../admin/UserSearch";
+import { Card, CardContent, CardHeader } from "../ui/Card";
 
 interface Participant {
   address: string;
@@ -26,19 +27,26 @@ interface EnhancedParticipant extends Participant {
 
 // Format the user's level and XP into a clean progress display
 const LevelDisplay = ({ levelData }: { levelData?: UserLevel }) => {
-  if (!levelData) return <div className="animate-pulse h-4 w-20 bg-dark-300 rounded-full"></div>;
-  
+  if (!levelData)
+    return (
+      <div className="animate-pulse h-4 w-20 bg-dark-300 rounded-full"></div>
+    );
+
   const { current_level, experience } = levelData;
-  
+
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-400">Lv. {current_level.level_number}</span>
-        <span className="text-xs font-semibold bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text">{current_level.title}</span>
+        <span className="text-xs text-gray-400">
+          Lv. {current_level.level_number}
+        </span>
+        <span className="text-xs font-semibold bg-gradient-to-r from-brand-400 to-brand-600 text-transparent bg-clip-text">
+          {current_level.title}
+        </span>
       </div>
       <div className="flex items-center mt-0.5">
         <div className="w-16 h-1 bg-dark-300 rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full bg-gradient-to-r from-brand-400 to-brand-600"
             style={{ width: `${experience.percentage}%` }}
           ></div>
@@ -52,59 +60,71 @@ const LevelDisplay = ({ levelData }: { levelData?: UserLevel }) => {
 };
 
 // Profile picture component that handles default images
-const ProfilePicture = ({ 
-  imageUrl, 
-  nickname, 
-  isSelected, 
-  role 
-}: { 
-  imageUrl?: string; 
-  nickname: string; 
+const ProfilePicture = ({
+  imageUrl,
+  nickname,
+  isSelected,
+  role,
+}: {
+  imageUrl?: string;
+  nickname: string;
   isSelected: boolean;
   role?: string;
 }) => {
   // Determine border class based on role (case-insensitive)
   const getBorderClass = () => {
     const normalizedRole = role?.toLowerCase();
-    if (normalizedRole === 'admin') return 'border-red-500/70';
-    if (normalizedRole === 'superadmin') return 'border-yellow-500/70';
-    if (isSelected) return 'border-brand-400';
-    return 'border-brand-500/30';
+    if (normalizedRole === "admin") return "border-red-500/70";
+    if (normalizedRole === "superadmin") return "border-yellow-500/70";
+    if (isSelected) return "border-brand-400";
+    return "border-brand-500/30";
   };
-  
+
   // Determine background class based on role (case-insensitive)
   const getBackgroundClass = () => {
     const normalizedRole = role?.toLowerCase();
-    if (normalizedRole === 'admin') return 'bg-red-500/10';
-    if (normalizedRole === 'superadmin') return 'bg-yellow-500/10';
-    if (isSelected) return 'bg-brand-500/30';
-    return 'bg-brand-500/20';
+    if (normalizedRole === "admin") return "bg-red-500/10";
+    if (normalizedRole === "superadmin") return "bg-yellow-500/10";
+    if (isSelected) return "bg-brand-500/30";
+    return "bg-brand-500/20";
   };
-  
+
   return (
-    <div className={`h-10 w-10 rounded-full ${getBackgroundClass()} flex items-center justify-center border-2 ${getBorderClass()} overflow-hidden relative group`}>
+    <div
+      className={`h-10 w-10 rounded-full ${getBackgroundClass()} flex items-center justify-center border-2 ${getBorderClass()} overflow-hidden relative group`}
+    >
       {imageUrl ? (
-        <img 
-          src={imageUrl} 
-          alt={nickname} 
+        <img
+          src={imageUrl}
+          alt={nickname}
           className="h-full w-full object-cover"
           onError={(e) => {
             // If image fails to load, fall back to the emoji
-            (e.target as HTMLImageElement).style.display = 'none';
+            (e.target as HTMLImageElement).style.display = "none";
           }}
         />
       ) : (
         <span className="text-lg">👤</span>
       )}
-      
+
       {/* Role indicator */}
       {role && (
         <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full flex items-center justify-center">
-          {role.toLowerCase() === 'admin' && (
-            <span className="text-xs bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center" title="Admin">A</span>
+          {role.toLowerCase() === "admin" && (
+            <span
+              className="text-xs bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center"
+              title="Admin"
+            >
+              A
+            </span>
           )}
-          {role.toLowerCase() === 'superadmin' && (
-            <span className="text-xs bg-yellow-500 text-black rounded-full h-4 w-4 flex items-center justify-center" title="Super Admin">S</span>
+          {role.toLowerCase() === "superadmin" && (
+            <span
+              className="text-xs bg-yellow-500 text-black rounded-full h-4 w-4 flex items-center justify-center"
+              title="Super Admin"
+            >
+              S
+            </span>
           )}
         </div>
       )}
@@ -118,50 +138,55 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [enhancedParticipants, setEnhancedParticipants] = useState<EnhancedParticipant[]>([]);
-  
+  const [enhancedParticipants, setEnhancedParticipants] = useState<
+    EnhancedParticipant[]
+  >([]);
+
   // Initialize enhanced participants with loading state
   useEffect(() => {
-    const initialEnhanced: EnhancedParticipant[] = participants.map(p => ({
+    const initialEnhanced: EnhancedParticipant[] = participants.map((p) => ({
       ...p,
-      isLoading: true
+      isLoading: true,
     }));
     setEnhancedParticipants(initialEnhanced);
-    
+
     // Fetch level data for each participant
     const fetchLevelData = async () => {
       const updatedParticipants: EnhancedParticipant[] = [...initialEnhanced];
-      
+
       for (let i = 0; i < participants.length; i++) {
         const participant = participants[i];
         try {
           // Fetch level data
           const levelData = await userService.getUserLevel(participant.address);
-          
+
           // Generate profile image URL (assuming it follows a pattern)
           const profileImageUrl = `${API_URL}/users/${participant.address}/profile-image`;
-          
+
           // Update the participant with level data
           updatedParticipants[i] = {
             ...updatedParticipants[i],
             levelData,
             profileImageUrl,
-            isLoading: false
+            isLoading: false,
           };
-          
+
           // Update state incrementally to show progress
           setEnhancedParticipants([...updatedParticipants]);
         } catch (error) {
-          console.error(`Failed to fetch level data for ${participant.address}:`, error);
+          console.error(
+            `Failed to fetch level data for ${participant.address}:`,
+            error,
+          );
           updatedParticipants[i] = {
             ...updatedParticipants[i],
-            isLoading: false
+            isLoading: false,
           };
           setEnhancedParticipants([...updatedParticipants]);
         }
       }
     };
-    
+
     if (participants.length > 0) {
       fetchLevelData();
     }
@@ -171,12 +196,12 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     if (!searchQuery) {
       return enhancedParticipants;
     }
-    
+
     const query = searchQuery.toLowerCase();
     return enhancedParticipants.filter(
-      (p) => 
-        p.nickname.toLowerCase().includes(query) || 
-        p.address.toLowerCase().includes(query)
+      (p) =>
+        p.nickname.toLowerCase().includes(query) ||
+        p.address.toLowerCase().includes(query),
     );
   }, [enhancedParticipants, searchQuery]);
 
@@ -185,18 +210,20 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
       // Get normalized roles (lowercase)
       const roleA = a.role?.toLowerCase();
       const roleB = b.role?.toLowerCase();
-      
+
       // First sort by admin roles
-      if (roleA === 'superadmin' && roleB !== 'superadmin') return -1;
-      if (roleB === 'superadmin' && roleA !== 'superadmin') return 1;
-      if (roleA === 'admin' && roleB !== 'admin' && roleB !== 'superadmin') return -1;
-      if (roleB === 'admin' && roleA !== 'admin' && roleA !== 'superadmin') return 1;
-      
+      if (roleA === "superadmin" && roleB !== "superadmin") return -1;
+      if (roleB === "superadmin" && roleA !== "superadmin") return 1;
+      if (roleA === "admin" && roleB !== "admin" && roleB !== "superadmin")
+        return -1;
+      if (roleB === "admin" && roleA !== "admin" && roleA !== "superadmin")
+        return 1;
+
       // Then sort by contest score for live/completed contests
       if (contestStatus !== "upcoming") {
         return (b.score || 0) - (a.score || 0);
       }
-      
+
       // Keep original order for upcoming contests
       return 0;
     });
@@ -212,21 +239,22 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
 
   // Get CSS class for participant row based on role and selection status
   const getParticipantRowClass = (participant: EnhancedParticipant) => {
-    const baseClass = "flex items-center justify-between p-3 rounded transition-colors group";
+    const baseClass =
+      "flex items-center justify-between p-3 rounded transition-colors group";
     const role = participant.role?.toLowerCase();
-    
+
     if (selectedUser && selectedUser.wallet_address === participant.address) {
       return `${baseClass} bg-brand-500/20 border-l-2 border-brand-400`;
     }
-    
-    if (role === 'superadmin') {
+
+    if (role === "superadmin") {
       return `${baseClass} bg-yellow-500/5 hover:bg-yellow-500/10 border-l border-yellow-500/30`;
     }
-    
-    if (role === 'admin') {
+
+    if (role === "admin") {
       return `${baseClass} bg-red-500/5 hover:bg-red-500/10 border-l border-red-500/30`;
     }
-    
+
     return `${baseClass} bg-dark-300/50 hover:bg-dark-300/70`;
   };
 
@@ -236,12 +264,13 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-100">Participants</h3>
           <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-            {participants.length} {participants.length === 1 ? 'dueler' : 'duelers'}
+            {participants.length}{" "}
+            {participants.length === 1 ? "dueler" : "duelers"}
           </span>
         </div>
-        
+
         {/* User search component */}
-        <UserSearch 
+        <UserSearch
           onSearch={handleSearch}
           onSelectUser={handleSelectUser}
           placeholder="Search participants..."
@@ -259,53 +288,60 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                 className={getParticipantRowClass(participant)}
               >
                 <div className="flex items-center space-x-3">
-                  <span className="text-gray-400 text-sm font-mono">#{index + 1}</span>
+                  <span className="text-gray-400 text-sm font-mono">
+                    #{index + 1}
+                  </span>
                   <div className="flex items-center gap-3">
                     {/* Enhanced Profile Picture */}
-                    <ProfilePicture 
+                    <ProfilePicture
                       imageUrl={participant.profileImageUrl}
                       nickname={participant.nickname}
-                      isSelected={selectedUser?.wallet_address === participant.address}
+                      isSelected={
+                        selectedUser?.wallet_address === participant.address
+                      }
                       role={participant.role}
                     />
-                    
+
                     {/* User Info Column */}
                     <div className="flex flex-col">
                       {/* Username with Link */}
                       <Link
                         to={`/profile/${participant.address}`}
                         className={`${
-                          selectedUser && selectedUser.wallet_address === participant.address
+                          selectedUser &&
+                          selectedUser.wallet_address === participant.address
                             ? "text-brand-400 font-medium"
-                            : participant.role === 'superadmin'
+                            : participant.role === "superadmin"
                               ? "text-yellow-500 font-medium"
-                              : participant.role === 'admin'
+                              : participant.role === "admin"
                                 ? "text-red-500 font-medium"
                                 : "text-gray-300 hover:text-brand-400"
                         } transition-colors`}
                       >
                         {participant.nickname}
                       </Link>
-                      
+
                       {/* Level Display */}
                       <LevelDisplay levelData={participant.levelData} />
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Score Display for Live/Completed Contests */}
                 {contestStatus !== "upcoming" &&
                   participant.score !== undefined && (
                     <div className="flex flex-col items-end">
                       <span
                         className={`text-sm font-medium ${
-                          participant.score >= 0 ? "text-green-400" : "text-red-400"
+                          participant.score >= 0
+                            ? "text-green-400"
+                            : "text-red-400"
                         }`}
                       >
                         {participant.score >= 0 ? "+" : ""}
                         {participant.score.toFixed(2)}%
                       </span>
-                      
+
                       {/* Optional: Portfolio Value Display */}
                       {participant.score !== undefined && (
                         <span className="text-xs text-gray-500">
@@ -319,8 +355,10 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
           </div>
         ) : searchQuery ? (
           <div className="text-center py-6">
-            <div className="text-gray-400 mb-2">No participants match your search</div>
-            <button 
+            <div className="text-gray-400 mb-2">
+              No participants match your search
+            </div>
+            <button
               onClick={() => setSearchQuery("")}
               className="px-4 py-2 bg-brand-500/20 text-brand-400 text-sm rounded-md hover:bg-brand-500/30 transition-colors"
             >
@@ -329,8 +367,12 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
           </div>
         ) : (
           <div className="text-center py-8">
-            <div className="text-gray-400 mb-2">No duelers have entered yet</div>
-            <div className="text-xs text-gray-500">Be the first to join this contest!</div>
+            <div className="text-gray-400 mb-2">
+              No duelers have entered yet
+            </div>
+            <div className="text-xs text-gray-500">
+              Be the first to join this contest!
+            </div>
           </div>
         )}
       </CardContent>

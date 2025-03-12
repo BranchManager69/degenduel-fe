@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import { ContestChat } from "../../components/contest-chat/ContestChat";
 
 const ContestChatExample: React.FC = () => {

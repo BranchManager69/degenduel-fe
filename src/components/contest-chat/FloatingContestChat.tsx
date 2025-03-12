@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { UserContest } from "../../services/contestService";
+
 import { ContestChat } from "./ContestChat";
+import { UserContest } from "../../services/contestService";
 
 // Default contest icon based on contest type
 const getContestIcon = (contestId: string, contestName: string) => {
@@ -46,13 +47,13 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
 
     window.addEventListener(
       "contest-chat-mark-all-read" as any,
-      handleMarkAllAsRead as EventListener
+      handleMarkAllAsRead as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "contest-chat-mark-all-read" as any,
-        handleMarkAllAsRead as EventListener
+        handleMarkAllAsRead as EventListener,
       );
     };
   }, []);
@@ -259,7 +260,7 @@ export const FloatingContestChat: React.FC<FloatingContestChatProps> = ({
                       contestId: contest.contestId,
                       action: "increment",
                     },
-                  })
+                  }),
                 );
               }
             }}

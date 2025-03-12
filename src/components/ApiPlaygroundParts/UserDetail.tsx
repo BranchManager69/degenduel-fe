@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { useState } from "react";
+
 import { UserBanModal } from "../admin/BanUserModal";
 import { UserSearch } from "../admin/UserSearch";
 import { CopyToClipboard } from "../common/CopyToClipboard";
@@ -48,10 +49,10 @@ const canBanUser = (adminRole: string, targetRole: string) => {
   // First normalize roles to uppercase for consistent hierarchy checking
   const adminRoleUpper = adminRole.toUpperCase() as Role;
   const targetRoleUpper = targetRole.toUpperCase() as Role;
-  
+
   const adminLevel = ROLE_HIERARCHY[adminRoleUpper] || 0;
   const targetLevel = ROLE_HIERARCHY[targetRoleUpper] || 0;
-  
+
   // Return true only if admin has higher role than target
   return adminLevel > targetLevel;
 };
@@ -60,7 +61,7 @@ const canBanUser = (adminRole: string, targetRole: string) => {
 const getBanButtonText = (
   adminRole: string,
   targetRole: string,
-  isTargetBanned: boolean
+  isTargetBanned: boolean,
 ) => {
   if (isTargetBanned) return "Already Banned";
   if (targetRole.toUpperCase() === "SUPERADMIN") return "Can't Ban Super Admin";
@@ -71,7 +72,7 @@ const getBanButtonText = (
 
 // Add a helper function at the top with other helpers
 const formatSolAmount = (
-  amount: string | number | null | undefined
+  amount: string | number | null | undefined,
 ): string => {
   const value = parseFloat(amount?.toString() || "0");
   return value.toFixed(2);
@@ -99,7 +100,7 @@ export function UserDetail() {
         {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-        }
+        },
       );
       const data = await response.json();
       if (!response.ok) throw data;
@@ -209,7 +210,7 @@ export function UserDetail() {
                         {getBanButtonText(
                           currentUserRole,
                           response.role,
-                          response.is_banned
+                          response.is_banned,
                         )}
                       </button>
                     </>
@@ -351,7 +352,7 @@ export function UserDetail() {
                         {response.user_stats.last_updated
                           ? format(
                               new Date(response.user_stats.last_updated),
-                              "PPp"
+                              "PPp",
                             )
                           : "N/A"}
                       </span>

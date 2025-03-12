@@ -6,6 +6,7 @@ import { KernelSize } from "postprocessing";
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { FaPowerOff } from "react-icons/fa";
 import * as THREE from "three";
+
 import { User } from "../../types";
 
 interface WebSocketService {
@@ -526,7 +527,7 @@ const SuperAdminHologramShader = {
 extend({
   SuperAdminHologramMaterial: THREE.ShaderMaterial.bind(
     null,
-    SuperAdminHologramShader
+    SuperAdminHologramShader,
   ),
 });
 
@@ -550,7 +551,7 @@ const HologramScene: React.FC<{
         materialRef.current.uniforms.pulseTime.value =
           clock.getElapsedTime() * 2;
         materialRef.current.uniforms.dataFlow.value = Math.sin(
-          clock.getElapsedTime() * 0.5
+          clock.getElapsedTime() * 0.5,
         );
       }
     }
@@ -733,7 +734,7 @@ export const WebSocketCard: React.FC<WebSocketCardProps> = ({
   const [transitioning, setTransitioning] = useState(false);
   const [showEnergyWave, setShowEnergyWave] = useState(false);
   const [waveType, setWaveType] = useState<"success" | "error" | "warning">(
-    "success"
+    "success",
   );
 
   useEffect(() => {

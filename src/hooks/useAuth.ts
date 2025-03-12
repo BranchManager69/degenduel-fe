@@ -8,11 +8,11 @@
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
-import { useStore } from "../store/useStore";
+
 import { useDebounce } from "./useDebounce";
+import { useStore } from "../store/useStore";
 
 const NODE_ENV = import.meta.env.VITE_NODE_ENV;
-
 
 interface AuthState {
   user: any | null; // Using any temporarily since we're getting user from store
@@ -165,7 +165,7 @@ export function useAuth() {
     try {
       if (NODE_ENV === "development") {
         console.log(
-          "[Auth] Requesting access token for WebSocket authentication"
+          "[Auth] Requesting access token for WebSocket authentication",
         );
       }
 
@@ -186,7 +186,7 @@ export function useAuth() {
       if (NODE_ENV === "development") {
         const stringifiedWSTokenResponse = JSON.stringify(response.data);
         console.log(
-          `[AUTHDEBUG] \n[useAuth] [getAccessToken] \n[${url}] \n[${stringifiedWSTokenResponse}]`
+          `[AUTHDEBUG] \n[useAuth] [getAccessToken] \n[${url}] \n[${stringifiedWSTokenResponse}]`,
         );
         console.log(`
           [WS TOKEN  ] ${response.data?.token}

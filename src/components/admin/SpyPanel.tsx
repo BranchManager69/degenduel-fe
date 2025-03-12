@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
 import { useStore } from "../../store/useStore";
 
 type SubscriptionType = "portfolio" | "trade" | "contest" | "user";
@@ -45,7 +46,7 @@ export const SpyPanel: React.FC = () => {
       // Get JWT token from cookies
       const cookies = document.cookie.split(";");
       const tokenCookie = cookies.find((cookie) =>
-        cookie.trim().startsWith("dd-session=")
+        cookie.trim().startsWith("dd-session="),
       );
       const token = tokenCookie ? tokenCookie.split("=")[1].trim() : null;
 
@@ -129,8 +130,8 @@ export const SpyPanel: React.FC = () => {
               status === "connected"
                 ? "bg-green-500"
                 : status === "connecting"
-                ? "bg-yellow-500"
-                : "bg-red-500"
+                  ? "bg-yellow-500"
+                  : "bg-red-500"
             }`}
           />
           <span className="text-sm text-gray-300 capitalize">{status}</span>

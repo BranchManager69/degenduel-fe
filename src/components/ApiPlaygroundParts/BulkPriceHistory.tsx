@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { JsonInput } from "./JsonInput";
 import { ResponseDisplay } from "./ResponseDisplay";
 
@@ -21,7 +22,7 @@ export function BulkPriceHistory() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token_addresses: tokenAddresses }),
-        }
+        },
       );
       const data = await response.json();
       if (!response.ok) throw data;
@@ -54,7 +55,7 @@ export function BulkPriceHistory() {
               "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
             ],
             null,
-            2
+            2,
           )}
         />
       </div>

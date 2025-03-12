@@ -1,16 +1,17 @@
 // src/components/admin/ip-ban/IpBanFilter.tsx
 
-import React, { useState } from 'react';
-import { IpBanParams } from '../../../types';
+import React, { useState } from "react";
+
+import { IpBanParams } from "../../../types";
 
 interface IpBanFilterProps {
   onFilterChange: (params: Partial<IpBanParams>) => void;
 }
 
 export const IpBanFilter: React.FC<IpBanFilterProps> = ({ onFilterChange }) => {
-  const [filter, setFilter] = useState('');
-  const [sort, setSort] = useState('created_at');
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [filter, setFilter] = useState("");
+  const [sort, setSort] = useState("created_at");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilter(e.target.value);
@@ -21,7 +22,7 @@ export const IpBanFilter: React.FC<IpBanFilterProps> = ({ onFilterChange }) => {
   };
 
   const handleOrderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setOrder(e.target.value as 'asc' | 'desc');
+    setOrder(e.target.value as "asc" | "desc");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,10 +31,16 @@ export const IpBanFilter: React.FC<IpBanFilterProps> = ({ onFilterChange }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6 bg-dark-300/30 p-4 rounded-lg border border-dark-300/50">
+    <form
+      onSubmit={handleSubmit}
+      className="mb-6 bg-dark-300/30 p-4 rounded-lg border border-dark-300/50"
+    >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label htmlFor="filter" className="block text-sm font-medium text-gray-400 mb-1">
+          <label
+            htmlFor="filter"
+            className="block text-sm font-medium text-gray-400 mb-1"
+          >
             Search IP Address
           </label>
           <input
@@ -47,7 +54,10 @@ export const IpBanFilter: React.FC<IpBanFilterProps> = ({ onFilterChange }) => {
         </div>
 
         <div>
-          <label htmlFor="sort" className="block text-sm font-medium text-gray-400 mb-1">
+          <label
+            htmlFor="sort"
+            className="block text-sm font-medium text-gray-400 mb-1"
+          >
             Sort By
           </label>
           <select
@@ -65,7 +75,10 @@ export const IpBanFilter: React.FC<IpBanFilterProps> = ({ onFilterChange }) => {
         </div>
 
         <div>
-          <label htmlFor="order" className="block text-sm font-medium text-gray-400 mb-1">
+          <label
+            htmlFor="order"
+            className="block text-sm font-medium text-gray-400 mb-1"
+          >
             Order
           </label>
           <select

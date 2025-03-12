@@ -1,7 +1,8 @@
-import React, { useMemo, useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { MeasureRender } from "../../../utils/performance";
+import React, { useMemo, useRef } from "react";
+
 import { FeatureCard } from "./FeatureCard";
+import { MeasureRender } from "../../../utils/performance";
 
 interface Feature {
   title: string;
@@ -346,11 +347,11 @@ const Features: React.FC = () => {
         </div>
       </div>
     ),
-    []
+    [],
   );
 
   // Removed card flip and reveal animation states
-  
+
   // Removed the Candlestick Chart Component since it's now inside FeatureCard component
 
   // Enhanced FeatureCard wrapper with animations
@@ -368,7 +369,7 @@ const Features: React.FC = () => {
         // Create ref to check if card is in view
         const ref = useRef(null);
         const isInView = useInView(ref, { once: true, amount: 0.3 });
-        
+
         // Card entrance animation variants
         const cardVariants = {
           hidden: { opacity: 0, y: 50 },
@@ -378,11 +379,11 @@ const Features: React.FC = () => {
             transition: {
               delay: 0.1 + i * 0.1,
               duration: 0.5,
-              ease: [0.22, 1, 0.36, 1]
-            }
-          })
+              ease: [0.22, 1, 0.36, 1],
+            },
+          }),
         };
-        
+
         return (
           <motion.div
             ref={ref}
@@ -391,7 +392,7 @@ const Features: React.FC = () => {
             animate={isInView ? "visible" : "hidden"}
             variants={cardVariants}
           >
-            <FeatureCard 
+            <FeatureCard
               title={feature.title}
               description={feature.description}
               icon={feature.icon}
@@ -401,7 +402,7 @@ const Features: React.FC = () => {
           </motion.div>
         );
       },
-    []
+    [],
   );
 
   // Fix SVG animations to be more performant - create optimized versions of the icons
@@ -415,7 +416,7 @@ const Features: React.FC = () => {
     });
   };
   */
-  
+
   // Removed noise texture and candlestick patterns generation
 
   return (
@@ -424,48 +425,48 @@ const Features: React.FC = () => {
         {CosmicEffects}
 
         {/* Content Container */}
-        <motion.div 
+        <motion.div
           className="relative"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-        <motion.div 
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-        >
-          <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative inline-block">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-            Platform Features
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500"></div>
-          </h2>
-          <p className="mt-6 text-gray-400 max-w-2xl mx-auto text-lg font-cyber tracking-wide">
-            Experience the future of competitive token trading with our
-            innovative platform
-          </p>
-        </motion.div>
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
+            <h2 className="text-4xl font-bold font-cyber text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative inline-block">
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
+              Platform Features
+              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500"></div>
+            </h2>
+            <p className="mt-6 text-gray-400 max-w-2xl mx-auto text-lg font-cyber tracking-wide">
+              Experience the future of competitive token trading with our
+              innovative platform
+            </p>
+          </motion.div>
 
-        {/* Feature Cards Grid with improved spacing */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 relative z-10">
-          {existingFeatures.map((feature, index) => (
-            <AnimatedFeatureCard 
-              key={feature.title} 
-              feature={feature} 
-              index={index} 
-            />
-          ))}
-          {upcomingFeatures.map((feature, index) => (
-            <AnimatedFeatureCard
-              key={feature.title}
-              feature={feature}
-              isUpcoming={true}
-              index={existingFeatures.length + index}
-            />
-          ))}
-        </div>
-      </motion.div>
+          {/* Feature Cards Grid with improved spacing */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-4 relative z-10">
+            {existingFeatures.map((feature, index) => (
+              <AnimatedFeatureCard
+                key={feature.title}
+                feature={feature}
+                index={index}
+              />
+            ))}
+            {upcomingFeatures.map((feature, index) => (
+              <AnimatedFeatureCard
+                key={feature.title}
+                feature={feature}
+                isUpcoming={true}
+                index={existingFeatures.length + index}
+              />
+            ))}
+          </div>
+        </motion.div>
       </div>
     </MeasureRender>
   );

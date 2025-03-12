@@ -1,5 +1,6 @@
 import React from "react";
 import { FaCheckCircle } from "react-icons/fa";
+
 import { formatCurrency } from "../../lib/utils";
 import { Contest, ContestStatus } from "../../types/index";
 import { ContestButton } from "../landing/contests-preview/ContestButton";
@@ -121,7 +122,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               </div>
             )}
           </div>
-          
+
           {/* Live Corner Effect */}
           {displayStatus === "active" && (
             <div className="absolute top-0 right-0 overflow-hidden">

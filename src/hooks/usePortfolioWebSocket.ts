@@ -7,9 +7,9 @@
  * @returns {Object} An object containing the portfolio updates, loading state, error state, and a function to refresh the updates.
  */
 
+import { useBaseWebSocket } from "./useBaseWebSocket";
 import { WS_URL } from "../config/config";
 import { useStore } from "../store/useStore";
-import { useBaseWebSocket } from "./useBaseWebSocket";
 
 interface PortfolioUpdate {
   type: "PORTFOLIO_UPDATED";

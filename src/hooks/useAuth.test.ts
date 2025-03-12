@@ -2,8 +2,8 @@
 
 import { renderHook } from "@testing-library/react";
 
-import { useAuth, MockAuthConfig } from "./useAuth.mock";
 import { User } from "../types";
+import { MockAuthConfig, useAuth } from "./useAuth.mock";
 
 // Mock the useStore hook
 jest.mock("../store/useStore", () => ({
@@ -31,10 +31,10 @@ describe("useAuth hook", () => {
     last_login: "2023-02-01T00:00:00.000Z",
     total_contests: 10,
     total_wins: 2,
-    total_earnings: 1000,
+    total_earnings: "1000",
     rank_score: 750,
     settings: {},
-    balance: 5000,
+    balance: "5000",
     is_banned: false,
     ban_reason: null,
     risk_level: "low",

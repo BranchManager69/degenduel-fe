@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
 import { ddApi } from "../../services/dd-api";
 
 // Types
@@ -51,8 +52,11 @@ interface BalanceHistoryDataPoint {
 // Main Component
 export const WalletMonitoringDashboard: React.FC = () => {
   // State
-  const [dashboardData, setDashboardData] = useState<WalletMonitoringDashboard | null>(null);
-  const [balanceHistory, setBalanceHistory] = useState<BalanceHistoryDataPoint[]>([]);
+  const [dashboardData, setDashboardData] =
+    useState<WalletMonitoringDashboard | null>(null);
+  const [balanceHistory, setBalanceHistory] = useState<
+    BalanceHistoryDataPoint[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -61,7 +65,7 @@ export const WalletMonitoringDashboard: React.FC = () => {
   const [settingsForm, setSettingsForm] = useState({
     queriesPerHour: 1500,
     minCheckIntervalMs: 60000,
-    maxCheckIntervalMs: 1800000
+    maxCheckIntervalMs: 1800000,
   });
   const [forceCheckAddress, setForceCheckAddress] = useState("");
 
@@ -80,26 +84,29 @@ export const WalletMonitoringDashboard: React.FC = () => {
     try {
       setIsRefreshing(true);
       setError(null);
-      
-      const response = await ddApi.fetch("/api/superadmin/wallet-monitoring/dashboard");
+
+      const response = await ddApi.fetch(
+        "/api/superadmin/wallet-monitoring/dashboard",
+      );
       const data = await response.json();
-      
+
       if (data) {
         setDashboardData(data);
-        
+
         // If we have a selected wallet already, update its history
         if (selectedWallet) {
           fetchWalletHistory(selectedWallet);
         }
       } else {
-        throw new Error('Failed to fetch dashboard data');
+        throw new Error("Failed to fetch dashboard data");
       }
-      
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Failed to fetch dashboard data");
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch dashboard data",
+      );
       toast.error("Failed to load monitoring dashboard");
-      
+
       // Use fallback data if needed for development
       setDummyData();
     } finally {
@@ -110,13 +117,15 @@ export const WalletMonitoringDashboard: React.FC = () => {
 
   const fetchWalletHistory = async (walletAddress: string) => {
     try {
-      const response = await ddApi.fetch(`/api/superadmin/wallet-monitoring/history/${walletAddress}`);
+      const response = await ddApi.fetch(
+        `/api/superadmin/wallet-monitoring/history/${walletAddress}`,
+      );
       const data = await response.json();
-      
+
       if (data.history) {
         setBalanceHistory(data.history);
       } else {
-        throw new Error('Failed to fetch wallet history');
+        throw new Error("Failed to fetch wallet history");
       }
     } catch (err) {
       console.error(err);
@@ -127,27 +136,34 @@ export const WalletMonitoringDashboard: React.FC = () => {
 
   const updateServiceSettings = async () => {
     try {
-      const response = await ddApi.fetch("/api/superadmin/wallet-monitoring/settings", {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          settings: settingsForm
-        })
-      });
-      
+      const response = await ddApi.fetch(
+        "/api/superadmin/wallet-monitoring/settings",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            settings: settingsForm,
+          }),
+        },
+      );
+
       const data = await response.json();
-      
+
       if (data.settings) {
         toast.success("Monitoring settings updated");
         setSettingsOpen(false);
-        
+
         // Update dashboard with new settings
-        setDashboardData(prev => prev ? {
-          ...prev,
-          settings: data.settings
-        } : null);
+        setDashboardData((prev) =>
+          prev
+            ? {
+                ...prev,
+                settings: data.settings,
+              }
+            : null,
+        );
       } else {
-        throw new Error('Failed to update settings');
+        throw new Error("Failed to update settings");
       }
     } catch (err) {
       console.error(err);
@@ -157,27 +173,35 @@ export const WalletMonitoringDashboard: React.FC = () => {
 
   const toggleServiceStatus = async () => {
     if (!dashboardData) return;
-    
-    const newStatus = dashboardData.summary.serviceStatus === 'running' ? 'stopped' : 'running';
-    
+
+    const newStatus =
+      dashboardData.summary.serviceStatus === "running" ? "stopped" : "running";
+
     try {
-      const response = await ddApi.fetch(`/api/superadmin/wallet-monitoring/${newStatus === 'running' ? 'start' : 'stop'}`, {
-        method: 'POST'
-      });
-      
+      const response = await ddApi.fetch(
+        `/api/superadmin/wallet-monitoring/${newStatus === "running" ? "start" : "stop"}`,
+        {
+          method: "POST",
+        },
+      );
+
       const data = await response.json();
-      
+
       if (data.success) {
         toast.success(`Monitoring service ${newStatus}`);
-        
+
         // Update local state
-        setDashboardData(prev => prev ? {
-          ...prev,
-          summary: {
-            ...prev.summary,
-            serviceStatus: newStatus as 'running' | 'stopped'
-          }
-        } : null);
+        setDashboardData((prev) =>
+          prev
+            ? {
+                ...prev,
+                summary: {
+                  ...prev.summary,
+                  serviceStatus: newStatus as "running" | "stopped",
+                },
+              }
+            : null,
+        );
       } else {
         throw new Error(`Failed to ${newStatus} service`);
       }
@@ -192,19 +216,22 @@ export const WalletMonitoringDashboard: React.FC = () => {
       toast.error("Please enter a wallet address");
       return;
     }
-    
+
     try {
-      const response = await ddApi.fetch(`/api/superadmin/wallet-monitoring/check/${forceCheckAddress}`, {
-        method: 'POST'
-      });
-      
+      const response = await ddApi.fetch(
+        `/api/superadmin/wallet-monitoring/check/${forceCheckAddress}`,
+        {
+          method: "POST",
+        },
+      );
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         toast.success(`Successfully checked wallet: ${data.balance} SOL`);
         fetchDashboardData(); // Refresh to get the updated check in the feed
       } else {
-        throw new Error('Check failed');
+        throw new Error("Check failed");
       }
     } catch (err) {
       console.error(err);
@@ -225,13 +252,13 @@ export const WalletMonitoringDashboard: React.FC = () => {
         serviceStatus: "running",
         checksPerHour: 450,
         balanceCheckSuccess: 19872,
-        balanceCheckTotal: 20000
+        balanceCheckTotal: 20000,
       },
       balanceDistribution: [
         { range: "0-1 SOL", count: 145, percentage: 35.2 },
         { range: "1-10 SOL", count: 198, percentage: 48.1 },
         { range: "10-100 SOL", count: 57, percentage: 13.8 },
-        { range: "100+ SOL", count: 12, percentage: 2.9 }
+        { range: "100+ SOL", count: 12, percentage: 2.9 },
       ],
       topWallets: [
         {
@@ -239,82 +266,82 @@ export const WalletMonitoringDashboard: React.FC = () => {
           balance: "543.21",
           lastUpdated: "2025-02-25T14:35:22Z",
           nickname: "Treasury A",
-          isHighValue: true
+          isHighValue: true,
         },
         {
           walletAddress: "5KKsGEGZtqGGBGpuTK6J2cGZg6NwTjjJRzUHGKPMuVRJ",
           balance: "289.54",
           lastUpdated: "2025-02-25T14:30:18Z",
-          isHighValue: true
+          isHighValue: true,
         },
         {
           walletAddress: "DEuG7Gph4mUN3tP3PZPfP9pYK6Y1r3XegcLMj7cZGYKq",
           balance: "156.78",
           lastUpdated: "2025-02-25T14:25:05Z",
-          isHighValue: true
+          isHighValue: true,
         },
         {
           walletAddress: "2YsVPJrjK5RkHxCBR9ayjkWdVQRQsCvYmZhJ6pYHvZ8B",
           balance: "98.45",
           lastUpdated: "2025-02-25T14:28:12Z",
           nickname: "Contest Pool",
-          isHighValue: false
+          isHighValue: false,
         },
         {
           walletAddress: "8j5LaKgGMTFJG4qQTNhYH3gYMPJ2ZxBCMWKCkJq9D4uV",
           balance: "75.32",
           lastUpdated: "2025-02-25T14:32:45Z",
-          isHighValue: false
-        }
+          isHighValue: false,
+        },
       ],
       recentChecks: [
         {
           walletAddress: "HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrn",
           balance: "543.21",
           timestamp: "2025-02-25T14:35:22Z",
-          status: "success"
+          status: "success",
         },
         {
           walletAddress: "5KKsGEGZtqGGBGpuTK6J2cGZg6NwTjjJRzUHGKPMuVRJ",
           balance: "289.54",
           timestamp: "2025-02-25T14:30:18Z",
-          status: "success"
+          status: "success",
         },
         {
           walletAddress: "DEuG7Gph4mUN3tP3PZPfP9pYK6Y1r3XegcLMj7cZGYKq",
           balance: "error",
           timestamp: "2025-02-25T14:29:55Z",
           status: "error",
-          errorMessage: "Rate limit exceeded"
+          errorMessage: "Rate limit exceeded",
         },
         {
           walletAddress: "2YsVPJrjK5RkHxCBR9ayjkWdVQRQsCvYmZhJ6pYHvZ8B",
           balance: "98.45",
           timestamp: "2025-02-25T14:28:12Z",
-          status: "success"
+          status: "success",
         },
         {
           walletAddress: "8j5LaKgGMTFJG4qQTNhYH3gYMPJ2ZxBCMWKCkJq9D4uV",
           balance: "75.32",
           timestamp: "2025-02-25T14:32:45Z",
-          status: "success"
-        }
+          status: "success",
+        },
       ],
       settings: {
         queriesPerHour: 1500,
         minCheckIntervalMs: 60000,
         maxCheckIntervalMs: 1800000,
-        effectiveCheckIntervalMs: 600000
-      }
+        effectiveCheckIntervalMs: 600000,
+      },
     };
-    
+
     const dummyHistory: BalanceHistoryDataPoint[] = [
       { timestamp: "2025-02-20T00:00:00Z", balance: "520.15" },
       { timestamp: "2025-02-21T00:00:00Z", balance: "525.82" },
       { timestamp: "2025-02-22T00:00:00Z", balance: "530.44" },
       { timestamp: "2025-02-23T00:00:00Z", balance: "535.67" },
       { timestamp: "2025-02-24T00:00:00Z", balance: "540.12" },
-      { timestamp: "2025-02-25T00:00:00Z", balance: "543.21" }
+      { timestamp: "2025-02-25T00:00:00Z", balance: "543.21" },
     ];
 
     setDashboardData(dummyDashboard);
@@ -324,7 +351,7 @@ export const WalletMonitoringDashboard: React.FC = () => {
   // Helper function for formatting dates
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 
   // Helper function for short wallet addresses
@@ -357,7 +384,7 @@ export const WalletMonitoringDashboard: React.FC = () => {
             onClick={fetchDashboardData}
             disabled={isRefreshing}
             className={`px-3 py-1.5 rounded-lg border border-brand-500/30 
-              ${isRefreshing ? 'bg-brand-500/10' : 'bg-dark-200/50 hover:bg-brand-500/10'} 
+              ${isRefreshing ? "bg-brand-500/10" : "bg-dark-200/50 hover:bg-brand-500/10"} 
               text-brand-400 transition-colors flex items-center gap-2`}
           >
             <svg
@@ -375,14 +402,29 @@ export const WalletMonitoringDashboard: React.FC = () => {
             </svg>
             {isRefreshing ? "Refreshing..." : "Refresh"}
           </button>
-          
+
           <button
             onClick={() => setSettingsOpen(true)}
             className="px-3 py-1.5 rounded-lg border border-cyber-500/30 bg-dark-200/50 hover:bg-cyber-500/10 text-cyber-400 transition-colors flex items-center gap-2"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
             Settings
           </button>
@@ -394,60 +436,88 @@ export const WalletMonitoringDashboard: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Total Balance */}
           <div className="col-span-2 bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-            <div className="text-sm text-gray-400 font-normal mb-1">Total SOL Monitored</div>
+            <div className="text-sm text-gray-400 font-normal mb-1">
+              Total SOL Monitored
+            </div>
             <div className="flex items-baseline">
-              <span className="text-3xl font-bold text-brand-400">{dashboardData.summary.totalBalanceSOL.toFixed(2)}</span>
+              <span className="text-3xl font-bold text-brand-400">
+                {dashboardData.summary.totalBalanceSOL.toFixed(2)}
+              </span>
               <span className="ml-1 text-gray-400">SOL</span>
             </div>
-            <div className="text-sm text-gray-500 mt-1">${dashboardData.summary.totalValueUSD.toLocaleString()}</div>
+            <div className="text-sm text-gray-500 mt-1">
+              ${dashboardData.summary.totalValueUSD.toLocaleString()}
+            </div>
           </div>
-          
+
           {/* User Coverage */}
           <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-            <div className="text-sm text-gray-400 font-normal mb-1">User Coverage</div>
+            <div className="text-sm text-gray-400 font-normal mb-1">
+              User Coverage
+            </div>
             <div className="flex items-baseline">
-              <span className="text-3xl font-bold text-brand-400">{dashboardData.summary.trackingCoverage.toFixed(1)}%</span>
+              <span className="text-3xl font-bold text-brand-400">
+                {dashboardData.summary.trackingCoverage.toFixed(1)}%
+              </span>
             </div>
             <div className="text-sm text-gray-500 mt-1">
-              {dashboardData.summary.trackedUsers} / {dashboardData.summary.totalUsers} users
+              {dashboardData.summary.trackedUsers} /{" "}
+              {dashboardData.summary.totalUsers} users
             </div>
             <div className="w-full bg-dark-300/50 rounded-full h-1.5 mt-2 overflow-hidden">
-              <div 
-                className="bg-brand-500 h-full rounded-full" 
+              <div
+                className="bg-brand-500 h-full rounded-full"
                 style={{ width: `${dashboardData.summary.trackingCoverage}%` }}
               ></div>
             </div>
           </div>
-          
+
           {/* Service Status */}
           <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-            <div className="text-sm text-gray-400 font-normal mb-2">Monitoring Service</div>
+            <div className="text-sm text-gray-400 font-normal mb-2">
+              Monitoring Service
+            </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className={`h-3 w-3 rounded-full mr-2 ${
-                  dashboardData.summary.serviceStatus === 'running' ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                <span className={
-                  dashboardData.summary.serviceStatus === 'running' ? 'text-green-400' : 'text-red-400'
-                }>
-                  {dashboardData.summary.serviceStatus === 'running' ? 'RUNNING' : 'STOPPED'}
+                <div
+                  className={`h-3 w-3 rounded-full mr-2 ${
+                    dashboardData.summary.serviceStatus === "running"
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                ></div>
+                <span
+                  className={
+                    dashboardData.summary.serviceStatus === "running"
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }
+                >
+                  {dashboardData.summary.serviceStatus === "running"
+                    ? "RUNNING"
+                    : "STOPPED"}
                 </span>
               </div>
               <button
                 onClick={toggleServiceStatus}
                 className={`px-2 py-1 text-xs rounded ${
-                  dashboardData.summary.serviceStatus === 'running'
-                    ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                    : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
+                  dashboardData.summary.serviceStatus === "running"
+                    ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                    : "bg-green-500/10 text-green-400 hover:bg-green-500/20"
                 }`}
               >
-                {dashboardData.summary.serviceStatus === 'running' ? 'Stop' : 'Start'}
+                {dashboardData.summary.serviceStatus === "running"
+                  ? "Stop"
+                  : "Start"}
               </button>
             </div>
             <div className="mt-2">
               <div className="text-xs text-gray-500">Check frequency:</div>
               <div className="text-sm text-gray-300">
-                {(dashboardData.settings.effectiveCheckIntervalMs / 60000).toFixed(1)} minutes
+                {(
+                  dashboardData.settings.effectiveCheckIntervalMs / 60000
+                ).toFixed(1)}{" "}
+                minutes
               </div>
             </div>
           </div>
@@ -465,29 +535,39 @@ export const WalletMonitoringDashboard: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Balance Distribution Chart */}
               <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-200 mb-4">Balance Distribution</h3>
+                <h3 className="text-lg font-semibold text-gray-200 mb-4">
+                  Balance Distribution
+                </h3>
                 <div className="grid grid-cols-4 gap-2">
                   {dashboardData.balanceDistribution.map((segment, index) => {
                     // Use different colors for different segments
                     const colors = [
-                      'from-cyan-500 to-cyan-400',
-                      'from-emerald-500 to-emerald-400',
-                      'from-amber-500 to-amber-400',
-                      'from-purple-500 to-purple-400'
+                      "from-cyan-500 to-cyan-400",
+                      "from-emerald-500 to-emerald-400",
+                      "from-amber-500 to-amber-400",
+                      "from-purple-500 to-purple-400",
                     ];
-                    
+
                     return (
                       <div key={segment.range} className="text-center">
-                        <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-2"
-                             style={{
-                               background: `conic-gradient(from 0deg, ${index * 90}deg, transparent 0, transparent 100%)`
-                             }}>
-                          <div className={`bg-gradient-to-b ${colors[index]} w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-dark-800`}>
+                        <div
+                          className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-2"
+                          style={{
+                            background: `conic-gradient(from 0deg, ${index * 90}deg, transparent 0, transparent 100%)`,
+                          }}
+                        >
+                          <div
+                            className={`bg-gradient-to-b ${colors[index]} w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-dark-800`}
+                          >
                             {segment.percentage}%
                           </div>
                         </div>
-                        <div className="text-xs text-gray-400">{segment.range}</div>
-                        <div className="text-sm text-gray-300">{segment.count} wallets</div>
+                        <div className="text-xs text-gray-400">
+                          {segment.range}
+                        </div>
+                        <div className="text-sm text-gray-300">
+                          {segment.count} wallets
+                        </div>
                       </div>
                     );
                   })}
@@ -498,21 +578,27 @@ export const WalletMonitoringDashboard: React.FC = () => {
               {selectedWallet && balanceHistory.length > 0 && (
                 <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-200">Balance History</h3>
+                    <h3 className="text-lg font-semibold text-gray-200">
+                      Balance History
+                    </h3>
                     <div className="text-sm text-gray-400">
-                      {selectedWallet.substring(0, 6)}...{selectedWallet.substring(selectedWallet.length - 6)}
+                      {selectedWallet.substring(0, 6)}...
+                      {selectedWallet.substring(selectedWallet.length - 6)}
                     </div>
                   </div>
-                  
+
                   {/* Basic Chart Visualization */}
                   <div className="h-64 relative">
                     {/* This would be replaced with a proper Chart component */}
                     <div className="absolute inset-0 flex items-end">
                       {balanceHistory.map((point, index) => {
-                        const height = `${(parseFloat(point.balance) / Math.max(...balanceHistory.map(p => parseFloat(p.balance)))) * 100}%`;
+                        const height = `${(parseFloat(point.balance) / Math.max(...balanceHistory.map((p) => parseFloat(p.balance)))) * 100}%`;
                         return (
-                          <div key={index} className="flex-1 flex flex-col items-center">
-                            <div 
+                          <div
+                            key={index}
+                            className="flex-1 flex flex-col items-center"
+                          >
+                            <div
                               className="w-full bg-gradient-to-t from-brand-500/30 to-brand-500/10 rounded-t"
                               style={{ height }}
                             >
@@ -525,14 +611,20 @@ export const WalletMonitoringDashboard: React.FC = () => {
                         );
                       })}
                     </div>
-                    
+
                     {/* Y-axis labels */}
                     <div className="absolute left-0 inset-y-0 flex flex-col justify-between pointer-events-none">
                       <div className="text-xs text-gray-500">
-                        {Math.max(...balanceHistory.map(p => parseFloat(p.balance))).toFixed(2)} SOL
+                        {Math.max(
+                          ...balanceHistory.map((p) => parseFloat(p.balance)),
+                        ).toFixed(2)}{" "}
+                        SOL
                       </div>
                       <div className="text-xs text-gray-500">
-                        {Math.min(...balanceHistory.map(p => parseFloat(p.balance))).toFixed(2)} SOL
+                        {Math.min(
+                          ...balanceHistory.map((p) => parseFloat(p.balance)),
+                        ).toFixed(2)}{" "}
+                        SOL
                       </div>
                     </div>
                   </div>
@@ -541,7 +633,9 @@ export const WalletMonitoringDashboard: React.FC = () => {
 
               {/* Force Check Tool */}
               <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-200 mb-4">Force Check Wallet</h3>
+                <h3 className="text-lg font-semibold text-gray-200 mb-4">
+                  Force Check Wallet
+                </h3>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -564,26 +658,33 @@ export const WalletMonitoringDashboard: React.FC = () => {
             <div className="space-y-6">
               {/* Top Wallets */}
               <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-200 mb-4">Top Wallets</h3>
+                <h3 className="text-lg font-semibold text-gray-200 mb-4">
+                  Top Wallets
+                </h3>
                 <div className="space-y-3">
                   {dashboardData.topWallets.map((wallet) => (
-                    <div 
+                    <div
                       key={wallet.walletAddress}
                       onClick={() => setSelectedWallet(wallet.walletAddress)}
                       className={`p-3 rounded-lg ${
-                        selectedWallet === wallet.walletAddress 
-                          ? 'bg-brand-500/20 border border-brand-500/30' 
-                          : 'bg-dark-300/30 border border-dark-400/30 hover:bg-dark-300/50'
+                        selectedWallet === wallet.walletAddress
+                          ? "bg-brand-500/20 border border-brand-500/30"
+                          : "bg-dark-300/30 border border-dark-400/30 hover:bg-dark-300/50"
                       } cursor-pointer transition-colors`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${wallet.isHighValue ? 'bg-amber-500' : 'bg-gray-500'}`}></div>
+                          <div
+                            className={`h-2 w-2 rounded-full ${wallet.isHighValue ? "bg-amber-500" : "bg-gray-500"}`}
+                          ></div>
                           <span className="text-gray-300 font-medium">
-                            {wallet.nickname || shortenAddress(wallet.walletAddress)}
+                            {wallet.nickname ||
+                              shortenAddress(wallet.walletAddress)}
                           </span>
                         </div>
-                        <span className="text-brand-400 font-semibold">{wallet.balance} SOL</span>
+                        <span className="text-brand-400 font-semibold">
+                          {wallet.balance} SOL
+                        </span>
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         Last updated: {formatDate(wallet.lastUpdated)}
@@ -595,29 +696,43 @@ export const WalletMonitoringDashboard: React.FC = () => {
 
               {/* Recent Checks Feed */}
               <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-200 mb-4">Recent Checks</h3>
+                <h3 className="text-lg font-semibold text-gray-200 mb-4">
+                  Recent Checks
+                </h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                   {dashboardData.recentChecks.map((check, index) => (
-                    <div 
+                    <div
                       key={index}
                       className={`p-2 rounded border ${
-                        check.status === 'success'
-                          ? 'bg-green-500/5 border-green-500/20'
-                          : 'bg-red-500/5 border-red-500/20'
+                        check.status === "success"
+                          ? "bg-green-500/5 border-green-500/20"
+                          : "bg-red-500/5 border-red-500/20"
                       }`}
                     >
                       <div className="flex justify-between">
-                        <div className="text-sm text-gray-300">{shortenAddress(check.walletAddress)}</div>
-                        <div className={`text-sm ${
-                          check.status === 'success' ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {check.status === 'success' ? `${check.balance} SOL` : 'Error'}
+                        <div className="text-sm text-gray-300">
+                          {shortenAddress(check.walletAddress)}
+                        </div>
+                        <div
+                          className={`text-sm ${
+                            check.status === "success"
+                              ? "text-green-400"
+                              : "text-red-400"
+                          }`}
+                        >
+                          {check.status === "success"
+                            ? `${check.balance} SOL`
+                            : "Error"}
                         </div>
                       </div>
-                      <div className="text-xs text-gray-500">{formatDate(check.timestamp)}</div>
-                      
+                      <div className="text-xs text-gray-500">
+                        {formatDate(check.timestamp)}
+                      </div>
+
                       {check.errorMessage && (
-                        <div className="text-xs text-red-400 mt-1">{check.errorMessage}</div>
+                        <div className="text-xs text-red-400 mt-1">
+                          {check.errorMessage}
+                        </div>
                       )}
                     </div>
                   ))}
@@ -626,19 +741,29 @@ export const WalletMonitoringDashboard: React.FC = () => {
 
               {/* Success Rate */}
               <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-200 mb-2">Success Rate</h3>
+                <h3 className="text-lg font-semibold text-gray-200 mb-2">
+                  Success Rate
+                </h3>
                 <div className="flex items-baseline">
                   <span className="text-2xl font-bold text-brand-400">
-                    {(dashboardData.summary.balanceCheckSuccess / dashboardData.summary.balanceCheckTotal * 100).toFixed(1)}%
+                    {(
+                      (dashboardData.summary.balanceCheckSuccess /
+                        dashboardData.summary.balanceCheckTotal) *
+                      100
+                    ).toFixed(1)}
+                    %
                   </span>
                 </div>
                 <div className="text-sm text-gray-500 mb-2">
-                  {dashboardData.summary.balanceCheckSuccess} / {dashboardData.summary.balanceCheckTotal} checks successful
+                  {dashboardData.summary.balanceCheckSuccess} /{" "}
+                  {dashboardData.summary.balanceCheckTotal} checks successful
                 </div>
                 <div className="w-full bg-dark-300/50 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-brand-500 h-full rounded-full" 
-                    style={{ width: `${dashboardData.summary.balanceCheckSuccess / dashboardData.summary.balanceCheckTotal * 100}%` }}
+                  <div
+                    className="bg-brand-500 h-full rounded-full"
+                    style={{
+                      width: `${(dashboardData.summary.balanceCheckSuccess / dashboardData.summary.balanceCheckTotal) * 100}%`,
+                    }}
                   ></div>
                 </div>
               </div>
@@ -654,61 +779,79 @@ export const WalletMonitoringDashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-100 mb-4">
               Monitoring Settings
             </h3>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Queries Per Hour</label>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Queries Per Hour
+                </label>
                 <input
                   type="number"
                   min="10"
                   max="5000"
                   value={settingsForm.queriesPerHour}
-                  onChange={(e) => setSettingsForm(prev => ({
-                    ...prev,
-                    queriesPerHour: parseInt(e.target.value) || 1500
-                  }))}
+                  onChange={(e) =>
+                    setSettingsForm((prev) => ({
+                      ...prev,
+                      queriesPerHour: parseInt(e.target.value) || 1500,
+                    }))
+                  }
                   className="w-full bg-dark-300 rounded px-3 py-2 text-gray-100 border border-dark-400 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
                 />
-                <p className="text-xs text-gray-500 mt-1">Maximum API calls per hour</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum API calls per hour
+                </p>
               </div>
-              
+
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Minimum Check Interval (ms)</label>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Minimum Check Interval (ms)
+                </label>
                 <input
                   type="number"
                   min="5000"
                   max="300000"
                   step="1000"
                   value={settingsForm.minCheckIntervalMs}
-                  onChange={(e) => setSettingsForm(prev => ({
-                    ...prev,
-                    minCheckIntervalMs: parseInt(e.target.value) || 60000
-                  }))}
+                  onChange={(e) =>
+                    setSettingsForm((prev) => ({
+                      ...prev,
+                      minCheckIntervalMs: parseInt(e.target.value) || 60000,
+                    }))
+                  }
                   className="w-full bg-dark-300 rounded px-3 py-2 text-gray-100 border border-dark-400 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
                 />
-                <p className="text-xs text-gray-500 mt-1">Minimum time between checks for high-priority wallets</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Minimum time between checks for high-priority wallets
+                </p>
               </div>
-              
+
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Maximum Check Interval (ms)</label>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Maximum Check Interval (ms)
+                </label>
                 <input
                   type="number"
                   min="300000"
                   max="86400000"
                   step="60000"
                   value={settingsForm.maxCheckIntervalMs}
-                  onChange={(e) => setSettingsForm(prev => ({
-                    ...prev,
-                    maxCheckIntervalMs: parseInt(e.target.value) || 1800000
-                  }))}
+                  onChange={(e) =>
+                    setSettingsForm((prev) => ({
+                      ...prev,
+                      maxCheckIntervalMs: parseInt(e.target.value) || 1800000,
+                    }))
+                  }
                   className="w-full bg-dark-300 rounded px-3 py-2 text-gray-100 border border-dark-400 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
                 />
-                <p className="text-xs text-gray-500 mt-1">Maximum time between checks for low-priority wallets</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum time between checks for low-priority wallets
+                </p>
               </div>
             </div>
-            
+
             <div className="mt-6 flex justify-end gap-3">
-              <button 
+              <button
                 onClick={() => setSettingsOpen(false)}
                 className="px-4 py-2 rounded-lg bg-dark-300 hover:bg-dark-400 text-gray-300 transition-colors"
               >

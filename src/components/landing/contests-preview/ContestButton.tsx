@@ -30,10 +30,10 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
   const textColorClass = isLive
     ? "text-green-400"
     : isUpcoming
-    ? "text-blue-400"
-    : isCompleted
-    ? "text-green-400"
-    : "text-red-400";
+      ? "text-blue-400"
+      : isCompleted
+        ? "text-green-400"
+        : "text-red-400";
 
   // Determine hover color based on contest type
   const hoverBgClass = isLive
@@ -44,10 +44,10 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
   const borderColorClass = isLive
     ? "border-red-500/30"
     : isUpcoming
-    ? "border-blue-500/30"
-    : isCompleted
-    ? "border-green-500/30"
-    : "border-red-500/30";
+      ? "border-blue-500/30"
+      : isCompleted
+        ? "border-green-500/30"
+        : "border-red-500/30";
 
   // Determine icon color based on contest type
   //const iconColorClass = isLive
@@ -116,10 +116,10 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
             {isLive
               ? "Spectate Live"
               : isUpcoming
-              ? "Enter Arena"
-              : isCompleted
-              ? "View Results"
-              : "View Details"}
+                ? "Enter Arena"
+                : isCompleted
+                  ? "View Results"
+                  : "View Details"}
           </span>
 
           <svg
@@ -127,8 +127,8 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type }) => {
             viewBox="0 0 24 24"
             stroke="currentColor"
             fill="none"
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
+            strokeLinecap="round"
+            strokeLinejoin="round"
             strokeWidth={2}
           >
             <path d="M14 5l7 7m0 0l-7 7m7-7H3" />

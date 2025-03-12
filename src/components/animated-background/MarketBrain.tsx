@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+
 import { useTokenData } from "../../contexts/TokenDataContext";
 
 interface MarketNode {
@@ -68,7 +69,7 @@ export const MarketBrain: React.FC = () => {
         maxLife: 100,
       };
     },
-    []
+    [],
   );
 
   const updateParticles = useCallback(() => {
@@ -88,7 +89,7 @@ export const MarketBrain: React.FC = () => {
                 y: acc.y + (dy / distance) * force,
               };
             },
-            { x: 0, y: 0 }
+            { x: 0, y: 0 },
           );
 
           // Apply mouse influence
@@ -113,7 +114,7 @@ export const MarketBrain: React.FC = () => {
             life: particle.life - 1,
           };
         })
-        .filter((particle) => particle.life > 0)
+        .filter((particle) => particle.life > 0),
     );
   }, [nodes]);
 
@@ -124,16 +125,16 @@ export const MarketBrain: React.FC = () => {
           connection.start.position.x,
           connection.start.position.y,
           connection.end.position.x,
-          connection.end.position.y
+          connection.end.position.y,
         );
 
         gradient.addColorStop(
           0,
-          `rgba(59, 130, 246, ${connection.strength * 0.5})`
+          `rgba(59, 130, 246, ${connection.strength * 0.5})`,
         );
         gradient.addColorStop(
           1,
-          `rgba(139, 92, 246, ${connection.strength * 0.5})`
+          `rgba(139, 92, 246, ${connection.strength * 0.5})`,
         );
 
         ctx.beginPath();
@@ -159,7 +160,7 @@ export const MarketBrain: React.FC = () => {
             x: acc.x + (p.position.x - midX) * 0.1,
             y: acc.y + (p.position.y - midY) * 0.1,
           }),
-          { x: 0, y: 0 }
+          { x: 0, y: 0 },
         );
 
         ctx.moveTo(connection.start.position.x, connection.start.position.y);
@@ -169,7 +170,7 @@ export const MarketBrain: React.FC = () => {
           midX + offset.x,
           midY + offset.y,
           connection.end.position.x,
-          connection.end.position.y
+          connection.end.position.y,
         );
         ctx.stroke();
 
@@ -192,7 +193,7 @@ export const MarketBrain: React.FC = () => {
         }
       });
     },
-    [connections, particles]
+    [connections, particles],
   );
 
   const animate = useCallback(() => {
@@ -218,7 +219,7 @@ export const MarketBrain: React.FC = () => {
         particle.position.y,
         particle.size,
         0,
-        Math.PI * 2
+        Math.PI * 2,
       );
       ctx.fill();
     });
@@ -288,11 +289,11 @@ export const MarketBrain: React.FC = () => {
                 },
                 energy: n.energy + newEnergy,
               }
-            : n
+            : n,
         );
       });
     },
-    [createParticle]
+    [createParticle],
   );
 
   useEffect(() => {

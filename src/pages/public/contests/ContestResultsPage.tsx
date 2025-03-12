@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
 import { FinalLeaderboard } from "../../../components/contest-results/FinalLeaderboard";

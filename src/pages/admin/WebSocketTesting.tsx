@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+
 import { WebSocketMonitor } from "../../components/debug/websocket/WebSocketMonitor";
 import { useStore } from "../../store/useStore";
 
@@ -60,10 +61,10 @@ const ConnectionStatus: React.FC<{
               status === "online"
                 ? "bg-green-500 animate-pulse"
                 : status === "connecting"
-                ? "bg-yellow-500"
-                : status === "error"
-                ? "bg-red-500"
-                : "bg-gray-500"
+                  ? "bg-yellow-500"
+                  : status === "error"
+                    ? "bg-red-500"
+                    : "bg-gray-500"
             }`}
           />
           <span className="font-medium">{socketType}</span>
@@ -105,10 +106,10 @@ const ConnectionStatus: React.FC<{
                   status === "online"
                     ? "text-green-400"
                     : status === "connecting"
-                    ? "text-yellow-400"
-                    : status === "error"
-                    ? "text-red-400"
-                    : "text-gray-400"
+                      ? "text-yellow-400"
+                      : status === "error"
+                        ? "text-red-400"
+                        : "text-gray-400"
                 }
               `}
               >
@@ -132,7 +133,7 @@ const ConnectionStatus: React.FC<{
 const WebSocketDashboard: React.FC = () => {
   const { user } = useStore();
   const [activeTab, setActiveTab] = useState<"status" | "testing" | "monitor">(
-    "status"
+    "status",
   );
 
   // All WebSocket hooks and endpoints
@@ -605,7 +606,7 @@ const WebSocketTesting: React.FC = () => {
       }));
 
       toast.success(
-        `Successfully tested ${selectedMessageType} on ${selectedSocket}`
+        `Successfully tested ${selectedMessageType} on ${selectedSocket}`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Test failed");

@@ -38,15 +38,15 @@ export const SystemStatus: React.FC<SystemStatusProps> = ({ status }) => {
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-2">
-        <div className={`w-3 h-3 rounded-full ${getStatusColor(status.overall)}`}></div>
+        <div
+          className={`w-3 h-3 rounded-full ${getStatusColor(status.overall)}`}
+        ></div>
         <div className="font-semibold text-brand-100">
           {getStatusText(status.overall)}
         </div>
       </div>
-      
-      <div className="text-sm text-gray-400">
-        {status.message}
-      </div>
+
+      <div className="text-sm text-gray-400">{status.message}</div>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { useRef } from "react";
-import { useStore } from "../store/useStore";
+
 import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
 // SkyDuel service types
 export interface ServiceNode {
@@ -49,7 +50,12 @@ interface SkyDuelState {
 
 // WebSocket message types
 interface SkyDuelMessage {
-  type: "state_update" | "node_update" | "connection_update" | "alert" | "command_response";
+  type:
+    | "state_update"
+    | "node_update"
+    | "connection_update"
+    | "alert"
+    | "command_response";
   data: any;
   timestamp: string;
 }
@@ -58,7 +64,7 @@ interface SkyDuelMessage {
 const dispatchDebugEvent = (
   type: "connection" | "state" | "alert" | "error" | "metrics" | "command",
   message: string,
-  data?: any
+  data?: any,
 ) => {
   window.dispatchEvent(
     new CustomEvent("ws-debug", {
@@ -69,7 +75,7 @@ const dispatchDebugEvent = (
         data,
         timestamp: new Date().toISOString(),
       },
-    })
+    }),
   );
 };
 
@@ -84,15 +90,15 @@ export const useSkyDuelWebSocket = () => {
     // Calculate exponential backoff delay
     const delay = Math.min(
       1000 * Math.pow(2, reconnectAttempts.current),
-      maxReconnectDelay
+      maxReconnectDelay,
     );
     reconnectAttempts.current++;
 
     addServiceAlert(
       "error",
       `SkyDuel WebSocket connection lost. Retrying in ${Math.round(
-        delay / 1000
-      )} seconds...`
+        delay / 1000,
+      )} seconds...`,
     );
 
     dispatchDebugEvent("error", "Connection error", { error: error.message });
@@ -114,27 +120,39 @@ export const useSkyDuelWebSocket = () => {
           setSkyDuelState(skyDuelState);
           dispatchDebugEvent("state", "SkyDuel state updated", skyDuelState);
           break;
-          
+
         case "node_update":
           dispatchDebugEvent("state", "Node update received", message.data);
           // We'll handle individual node updates in the store
           break;
-          
+
         case "connection_update":
-          dispatchDebugEvent("state", "Connection update received", message.data);
+          dispatchDebugEvent(
+            "state",
+            "Connection update received",
+            message.data,
+          );
           // We'll handle individual connection updates in the store
           break;
-          
+
         case "alert":
           if (message.data.alert) {
             const { severity, content } = message.data.alert;
             addServiceAlert(severity, content);
-            dispatchDebugEvent("alert", "SkyDuel alert received", message.data.alert);
+            dispatchDebugEvent(
+              "alert",
+              "SkyDuel alert received",
+              message.data.alert,
+            );
           }
           break;
-          
+
         case "command_response":
-          dispatchDebugEvent("command", "Command response received", message.data);
+          dispatchDebugEvent(
+            "command",
+            "Command response received",
+            message.data,
+          );
           break;
       }
     } catch (error) {
@@ -160,24 +178,33 @@ export const useSkyDuelWebSocket = () => {
   const sendCommand = (command: string, params: Record<string, any> = {}) => {
     const socket = webSocket.wsRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      console.error("[SkyDuelWebSocket] Cannot send command: socket not connected");
+      console.error(
+        "[SkyDuelWebSocket] Cannot send command: socket not connected",
+      );
       return false;
     }
-    
+
     try {
       const commandMessage = {
         type: "command",
         command,
         params,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       socket.send(JSON.stringify(commandMessage));
-      dispatchDebugEvent("command", `Command sent: ${command}`, { command, params });
+      dispatchDebugEvent("command", `Command sent: ${command}`, {
+        command,
+        params,
+      });
       return true;
     } catch (error) {
       console.error("[SkyDuelWebSocket] Error sending command:", error);
-      dispatchDebugEvent("error", "Error sending command", { command, params, error });
+      dispatchDebugEvent("error", "Error sending command", {
+        command,
+        params,
+        error,
+      });
       return false;
     }
   };

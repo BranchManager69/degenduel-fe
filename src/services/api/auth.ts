@@ -1,8 +1,9 @@
 // src/services/api/auth.ts
 
-import axios from 'axios';
-import { API_URL, DDAPI_DEBUG_MODE } from '../../config/config';
-import { useStore } from '../../store/useStore';
+import axios from "axios";
+
+import { API_URL, DDAPI_DEBUG_MODE } from "../../config/config";
+import { useStore } from "../../store/useStore";
 
 /**
  * Gets the current session data, including user information if authenticated
@@ -13,13 +14,13 @@ export const getSessionData = async () => {
     const response = await axios.get(`${API_URL}/auth/session`, {
       withCredentials: true,
       headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
     });
 
-    if (DDAPI_DEBUG_MODE === 'true') {
-      console.log('[Auth] Session response:', {
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log("[Auth] Session response:", {
         status: response.status,
         data: response.data,
       });
@@ -32,18 +33,21 @@ export const getSessionData = async () => {
   } catch (error: any) {
     // Only log detailed error if it's not a 401 (unauthorized is expected when not logged in)
     if (error?.response?.status !== 401) {
-      console.error('[Auth] Session check failed:', {
+      console.error("[Auth] Session check failed:", {
         message: error?.message,
         status: error?.response?.status,
         data: error?.response?.data,
       });
     } else {
-      console.log('[Auth] No session available');
+      console.log("[Auth] No session available");
     }
 
     return {
       user: null,
-      error: error?.response?.data?.message || error?.message || 'Session check failed',
+      error:
+        error?.response?.data?.message ||
+        error?.message ||
+        "Session check failed",
     };
   }
 };
@@ -54,8 +58,10 @@ export const getSessionData = async () => {
  */
 export const getWebSocketToken = async (): Promise<string | null> => {
   try {
-    if (DDAPI_DEBUG_MODE === 'true') {
-      console.log('[Auth] Requesting access token for WebSocket authentication');
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log(
+        "[Auth] Requesting access token for WebSocket authentication",
+      );
     }
 
     // Append timestamp to prevent caching
@@ -65,15 +71,17 @@ export const getWebSocketToken = async (): Promise<string | null> => {
     // Try to get the token from the session
     const response = await axios.get(url, {
       headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
       withCredentials: true,
       timeout: 5000, // 5 second timeout
     });
 
-    if (DDAPI_DEBUG_MODE === 'true') {
-      console.log(`[AUTHDEBUG] \n[useAuth] [getAccessToken] \n[${url}] \n[${JSON.stringify(response.data)}]`);
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log(
+        `[AUTHDEBUG] \n[useAuth] [getAccessToken] \n[${url}] \n[${JSON.stringify(response.data)}]`,
+      );
       console.log(`
         [WS TOKEN  ] ${response.data?.token}
         [WS EXPIRES] ${response.data?.expiresIn}
@@ -84,7 +92,7 @@ export const getWebSocketToken = async (): Promise<string | null> => {
     return response.data?.token || null;
   } catch (error: any) {
     // Log the error
-    console.error('[Auth] Failed to get WSS access token:', {
+    console.error("[Auth] Failed to get WSS access token:", {
       message: error?.message,
       status: error?.response?.status,
       data: error?.response?.data,
@@ -104,12 +112,12 @@ export const getWebSocketToken = async (): Promise<string | null> => {
 export const verifyWalletSignature = async (
   wallet: string,
   signature: Uint8Array,
-  message: string
+  message: string,
 ) => {
   try {
     // If debug mode is enabled, log the request
-    if (DDAPI_DEBUG_MODE === 'true') {
-      console.log('[Auth Debug] Sending verification request');
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log("[Auth Debug] Sending verification request");
     }
 
     // Convert signature to array for JSON serialization
@@ -120,18 +128,18 @@ export const verifyWalletSignature = async (
       { wallet, signature: signatureArray, message },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Debug': 'true',
-          'Origin': window.location.origin,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Debug": "true",
+          Origin: window.location.origin,
         },
         withCredentials: true,
-      }
+      },
     );
 
     // If debug mode is enabled, log the response
-    if (DDAPI_DEBUG_MODE === 'true') {
-      console.log('[Auth Debug] Verification response:', {
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log("[Auth Debug] Verification response:", {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers,
@@ -159,10 +167,15 @@ export const verifyWalletSignature = async (
   } catch (error: any) {
     // Handle 502 Bad Gateway specifically
     if (error?.response?.status === 502) {
-      throw new Error('Server is currently unavailable. Please try again in a few minutes.');
+      throw new Error(
+        "Server is currently unavailable. Please try again in a few minutes.",
+      );
     }
 
-    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to verify wallet';
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to verify wallet";
     throw new Error(errorMessage);
   }
 };

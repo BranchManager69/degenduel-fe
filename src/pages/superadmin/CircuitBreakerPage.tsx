@@ -1,4 +1,5 @@
 import React from "react";
+
 import CircuitBreakerPanel from "../../components/admin/CircuitBreakerPanel";
 
 const CircuitBreakerPage: React.FC = () => {

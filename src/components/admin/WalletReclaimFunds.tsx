@@ -83,7 +83,7 @@ const WalletReclaimFunds: React.FC = () => {
       // Call the API
       const response = await axios.post(
         "/api/admin/wallet-management/reclaim-unused-funds",
-        payload
+        payload,
       );
 
       // Update state with results
@@ -92,11 +92,11 @@ const WalletReclaimFunds: React.FC = () => {
       // Show success message (could be implemented with a toast notification)
       console.log(
         "Reclaim operation completed successfully:",
-        response.data.message
+        response.data.message,
       );
     } catch (err: any) {
       setError(
-        err.response?.data?.error || err.message || "Failed to reclaim funds"
+        err.response?.data?.error || err.message || "Failed to reclaim funds",
       );
       console.error("Failed to reclaim funds:", err);
     } finally {
@@ -364,7 +364,7 @@ const WalletReclaimFunds: React.FC = () => {
                       >
                         {detail.wallet_address.substring(0, 8)}...
                         {detail.wallet_address.substring(
-                          detail.wallet_address.length - 4
+                          detail.wallet_address.length - 4,
                         )}
                       </a>
                     </td>

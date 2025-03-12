@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
+
+import { AchievementsList } from "./AchievementsList";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import { Achievement } from "../../types/profile";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
-import { AchievementsList } from "./AchievementsList";
 
 interface AchievementsSectionProps {
   walletAddress?: string; // Optional for public profiles
@@ -32,9 +33,8 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
 
       try {
         setError(null);
-        const achievementsResponse = await ddApi.stats.getAchievements(
-          targetWallet
-        );
+        const achievementsResponse =
+          await ddApi.stats.getAchievements(targetWallet);
         setAchievements(achievementsResponse);
       } catch (err) {
         if (err instanceof Response && err.status === 503) {
@@ -42,7 +42,7 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
           return;
         }
         setError(
-          err instanceof Error ? err.message : "Failed to load achievements"
+          err instanceof Error ? err.message : "Failed to load achievements",
         );
       } finally {
         setLoading(false);

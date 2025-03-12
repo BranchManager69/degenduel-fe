@@ -32,7 +32,6 @@ const checkAndUpdateBanStatus = (response: Response) => {
       ban_reason: banReason || "Account has been banned",
     });
   }
-
 };
 
 // Normalize path to avoid double API URL issues
@@ -146,8 +145,8 @@ const updateAnalytics = (breaker: ServiceCircuitBreaker, success: boolean) => {
     status: breaker.isOpen
       ? "failed"
       : breaker.failures > 0
-      ? "degraded"
-      : "healthy",
+        ? "degraded"
+        : "healthy",
     lastCheck: now,
     failureRate: breaker.failures / (breaker.recoveryHistory.length || 1),
   };
@@ -165,7 +164,8 @@ const isExpectedUnauthorized = (path: string, status: number): boolean => {
 
   // Check if the path includes any of the expected unauthorized endpoints
   return expectedUnauthEndpoints.some(
-    (endpoint) => path.includes(endpoint.replace("/api/", "")) && status === 401
+    (endpoint) =>
+      path.includes(endpoint.replace("/api/", "")) && status === 401,
   );
 };
 
@@ -187,7 +187,7 @@ const handleSuccess = (endpoint: string) => {
     breaker.failures = 0;
     breaker.recoveryHistory.push({ timestamp: Date.now(), success: true });
     console.log(
-      `[DD-API] Circuit breaker reset for service: ${breaker.endpoint}`
+      `[DD-API] Circuit breaker reset for service: ${breaker.endpoint}`,
     );
   }
   updateAnalytics(breaker, true);
@@ -211,7 +211,7 @@ const handleFailure = (endpoint: string, error: any) => {
       // Case-insensitive role check
       const userRole = store.user?.role?.toLowerCase();
       const isAdmin = userRole === "admin" || userRole === "superadmin";
-      
+
       if (isAdmin) {
         const details = {
           service: breaker.endpoint,
@@ -235,7 +235,7 @@ const handleFailure = (endpoint: string, error: any) => {
             cooldownPeriod: breaker.cooldownPeriod,
             failureThreshold: breaker.failureThreshold,
             recoveryTime: new Date(
-              Date.now() + breaker.cooldownPeriod
+              Date.now() + breaker.cooldownPeriod,
             ).toISOString(),
           },
         });
@@ -274,7 +274,7 @@ const handleServerStatus = (status: number) => {
             checks: serverDownChecks,
             lastCheck: Date.now(),
           },
-        })
+        }),
       );
     }
   } else {
@@ -294,7 +294,7 @@ const createApiClient = () => {
       // Check if server is already known to be down
       if (isServerDown()) {
         throw new Error(
-          "Server is currently unavailable. Please try again later."
+          "Server is currently unavailable. Please try again later.",
         );
       }
 
@@ -305,7 +305,7 @@ const createApiClient = () => {
         const timeSinceLastFailure = Date.now() - breaker.lastFailure;
         if (timeSinceLastFailure < breaker.cooldownPeriod) {
           throw new Error(
-            `Service ${breaker.endpoint} temporarily unavailable - Circuit breaker is open`
+            `Service ${breaker.endpoint} temporarily unavailable - Circuit breaker is open`,
           );
         } else {
           // Try to reset after cooldown
@@ -341,7 +341,7 @@ const createApiClient = () => {
         // Handle 502 specifically
         if (response.status === 502) {
           throw new Error(
-            "Server is currently unavailable. Please try again later."
+            "Server is currently unavailable. Please try again later.",
           );
         }
 
@@ -354,7 +354,7 @@ const createApiClient = () => {
               {
                 status: response.status,
                 statusText: response.statusText,
-              }
+              },
             );
           }
           return response;
@@ -368,7 +368,7 @@ const createApiClient = () => {
         // Handle failure with circuit breaker
         handleFailure(
           endpoint,
-          new Error(`${response.status} ${response.statusText}`)
+          new Error(`${response.status} ${response.statusText}`),
         );
 
         // Log actual errors
@@ -381,7 +381,7 @@ const createApiClient = () => {
 
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.message || `API Error: ${response.statusText}`
+          errorData.message || `API Error: ${response.statusText}`,
         );
       }
 
@@ -396,7 +396,7 @@ const createApiClient = () => {
 const logError = (
   endpoint: string,
   error: any,
-  context?: Record<string, any>
+  context?: Record<string, any>,
 ) => {
   console.error(`[DD-API Error] ${endpoint}:`, {
     message: error.message,
@@ -441,14 +441,14 @@ const FETCH_TIMEOUT = 5000; // Fetch timeout: 5 seconds
 /**
  * Standard method for checking contest participation
  * Uses the dedicated check-participation endpoint for efficient lookups
- * 
+ *
  * @param contestId The ID of the contest to check participation for
  * @param userWallet The wallet address to check participation for
  * @returns A promise that resolves to a boolean indicating if the user is participating
  */
 const checkContestParticipation = async (
   contestId: number | string,
-  userWallet?: string
+  userWallet?: string,
 ): Promise<boolean> => {
   if (!userWallet) return false;
 
@@ -471,11 +471,11 @@ const checkContestParticipation = async (
     const response = await api
       .fetch(
         `/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(
-          userWallet
+          userWallet,
         )}`,
         {
           signal: controller.signal,
-        }
+        },
       )
       .finally(() => clearTimeout(timeoutId));
 
@@ -489,11 +489,11 @@ const checkContestParticipation = async (
             endpoint: `/contests/${contestId}/check-participation`,
             statusText: response.statusText,
             errorText: errorText.substring(0, 200), // Limit long responses
-          }
+          },
         );
       } catch (e) {
         console.warn(
-          `[DD-API] Participation check failed: HTTP ${response.status}`
+          `[DD-API] Participation check failed: HTTP ${response.status}`,
         );
       }
 
@@ -507,7 +507,7 @@ const checkContestParticipation = async (
     if (data.is_participating === undefined) {
       console.warn(
         `[DD-API] Invalid participation check response format for contest ${contestId}:`,
-        data
+        data,
       );
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
@@ -530,7 +530,7 @@ const checkContestParticipation = async (
             error instanceof Error ? error.constructor.name : "Unknown",
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
-        }
+        },
       );
     }
     participationCache.set(cacheKey, { result: false, timestamp: now });
@@ -572,7 +572,7 @@ const checkMaintenanceMode = async () => {
         }
       } catch (err) {
         console.warn(
-          `Admin maintenance check failed. Falling back to public endpoint...`
+          `Admin maintenance check failed. Falling back to public endpoint...`,
         );
       }
     }
@@ -604,13 +604,19 @@ const checkMaintenanceMode = async () => {
     //}
 
     // Not in maintenance mode if we get a 200 (or 404)
-    if (statusCheckResponse.status === 200 || statusCheckResponse.status === 404) { 
+    if (
+      statusCheckResponse.status === 200 ||
+      statusCheckResponse.status === 404
+    ) {
       return false;
     }
 
     // If we get a 500, that means there was an error checking maintenance mode, in which case we've got bigger problems
     if (statusCheckResponse.status === 500) {
-      console.error(`DegenDuel servers are down, cannot check maintenance mode.`, statusCheckResponse.statusText);
+      console.error(
+        `DegenDuel servers are down, cannot check maintenance mode.`,
+        statusCheckResponse.statusText,
+      );
       return false;
     }
   } catch (error) {
@@ -660,7 +666,7 @@ export const ddApi = {
 
     updateSettings: async (
       wallet: string,
-      settings: Record<string, any>
+      settings: Record<string, any>,
     ): Promise<void> => {
       try {
         const api = createApiClient();
@@ -673,7 +679,7 @@ export const ddApi = {
         throw error;
       }
     },
-    
+
     // Get user level data
     getUserLevel: async (wallet: string) => {
       try {
@@ -705,7 +711,7 @@ export const ddApi = {
         };
       }
     },
-    
+
     // Get user profile image
     getProfileImage: async (wallet: string): Promise<string> => {
       try {
@@ -715,11 +721,11 @@ export const ddApi = {
         const response = await api.fetch(`/users/${wallet}/profile-image`, {
           method: "HEAD", // Just check if it exists, don't download the image
         });
-        
+
         if (response.ok) {
           return `${API_URL}/users/${wallet}/profile-image`;
         }
-        
+
         return defaultImageUrl;
       } catch (error) {
         console.warn("Profile image fetch failed, using default", error);
@@ -755,7 +761,7 @@ export const ddApi = {
       try {
         const api = createApiClient();
         const response = await api.fetch(
-          `/stats/${wallet}/history?limit=${limit}&offset=${offset}`
+          `/stats/${wallet}/history?limit=${limit}&offset=${offset}`,
         );
         return response.json();
       } catch (error: any) {
@@ -835,7 +841,7 @@ export const ddApi = {
     // Update contest
     updateContest: async (
       contestId: string,
-      data: Partial<Contest>
+      data: Partial<Contest>,
     ): Promise<Contest> => {
       try {
         const requestData = {
@@ -879,7 +885,7 @@ export const ddApi = {
             throw new Error(
               parsedResponse.error ||
                 parsedResponse.message ||
-                `Server error: ${response.status} ${response.statusText}`
+                `Server error: ${response.status} ${response.statusText}`,
             );
           }
 
@@ -912,7 +918,7 @@ export const ddApi = {
     // Adjust user balance
     adjustUserBalance: async (
       walletAddress: string,
-      amount: number
+      amount: number,
     ): Promise<void> => {
       try {
         const response = await fetch(
@@ -924,7 +930,7 @@ export const ddApi = {
             },
             body: JSON.stringify({ amount }),
             credentials: "include",
-          }
+          },
         );
 
         if (!response.ok) {
@@ -971,7 +977,7 @@ export const ddApi = {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(
             errorData.error ||
-              `Failed to set maintenance mode: ${response.statusText}`
+              `Failed to set maintenance mode: ${response.statusText}`,
           );
         }
 
@@ -1011,7 +1017,7 @@ export const ddApi = {
     // Update service capacity
     updateServiceCapacity: async (
       service: string,
-      capacity: number
+      capacity: number,
     ): Promise<void> => {
       try {
         const api = createApiClient();
@@ -1025,7 +1031,7 @@ export const ddApi = {
       } catch (error) {
         console.error(
           `Failed to update capacity for service ${service}:`,
-          error
+          error,
         );
         throw error;
       }
@@ -1093,11 +1099,11 @@ export const ddApi = {
         : data.contests || [];
 
       // Mark contests as not participating by default
-      contests = contests.map(contest => ({
+      contests = contests.map((contest) => ({
         ...contest,
-        is_participating: false
+        is_participating: false,
       }));
-      
+
       // If user is logged in, check participation using the dedicated endpoint
       if (user?.wallet_address) {
         // Check participation in batches for better performance
@@ -1106,8 +1112,8 @@ export const ddApi = {
           const batch = contests.slice(i, i + BATCH_SIZE);
           const batchPromises = batch.map((contest) =>
             checkContestParticipation(contest.id, user.wallet_address).catch(
-              () => false
-            )
+              () => false,
+            ),
           );
           const batchResults = await Promise.all(batchPromises);
 
@@ -1123,34 +1129,42 @@ export const ddApi = {
 
       return contests;
     },
-    
+
     // Gets detailed performance data for a user's contest entry
-    getPerformanceDetails: async (contestId: string | number, walletAddress: string) => {
+    getPerformanceDetails: async (
+      contestId: string | number,
+      walletAddress: string,
+    ) => {
       try {
         const api = createApiClient();
         const response = await api.fetch(
-          `/contests/${contestId}/performance?wallet_address=${encodeURIComponent(walletAddress)}`
+          `/contests/${contestId}/performance?wallet_address=${encodeURIComponent(walletAddress)}`,
         );
-        
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch performance data: HTTP ${response.status}`);
+          throw new Error(
+            `Failed to fetch performance data: HTTP ${response.status}`,
+          );
         }
-        
+
         const data = await response.json();
         return {
           value: data.portfolio_value || 0,
           change: data.performance_percentage || 0,
           ranking: data.ranking || null,
-          tokens: data.token_performances || []
+          tokens: data.token_performances || [],
         };
       } catch (error) {
-        console.error(`Error fetching performance for contest ${contestId}:`, error);
+        console.error(
+          `Error fetching performance for contest ${contestId}:`,
+          error,
+        );
         // Return mock data for now until the API is implemented
         return {
           value: 100 + Math.random() * 100,
           change: Math.random() * 20 - 10, // Random value between -10 and +10
           ranking: Math.floor(Math.random() * 20) + 1,
-          tokens: []
+          tokens: [],
         };
       }
     },
@@ -1194,28 +1208,31 @@ export const ddApi = {
         }
 
         // Mark contests as not participating by default
-        contests = contests.map(contest => ({
+        contests = contests.map((contest) => ({
           ...contest,
-          is_participating: false
+          is_participating: false,
         }));
-        
+
         // If user is logged in, check participation either using:
         // 1. The is_participating flag already present in the response (if using Method 1 on backend)
         // 2. Batch checking with the dedicated endpoint (if no flags are present)
         if (user?.wallet_address) {
-          const needsParticipationCheck = contests.some(contest => 
-            contest.is_participating === undefined || contest.is_participating === null
+          const needsParticipationCheck = contests.some(
+            (contest) =>
+              contest.is_participating === undefined ||
+              contest.is_participating === null,
           );
-          
+
           if (needsParticipationCheck) {
-            // Check participation in batches 
+            // Check participation in batches
             const BATCH_SIZE = 5;
             for (let i = 0; i < contests.length; i += BATCH_SIZE) {
               const batch = contests.slice(i, i + BATCH_SIZE);
               const batchPromises = batch.map((contest) =>
-                checkContestParticipation(contest.id, user.wallet_address).catch(
-                  () => false
-                )
+                checkContestParticipation(
+                  contest.id,
+                  user.wallet_address,
+                ).catch(() => false),
               );
               const batchResults = await Promise.all(batchPromises);
 
@@ -1280,7 +1297,7 @@ export const ddApi = {
     // Enter contest
     enterContest: async (
       contestId: string,
-      transaction_signature: string
+      transaction_signature: string,
     ): Promise<void> => {
       const user = useStore.getState().user;
 
@@ -1312,7 +1329,7 @@ export const ddApi = {
     // Submit portfolio
     submitPortfolio: async (
       contestId: string,
-      portfolio: PortfolioResponse
+      portfolio: PortfolioResponse,
     ): Promise<void> => {
       const user = useStore.getState().user;
 
@@ -1345,7 +1362,7 @@ export const ddApi = {
             },
             body: JSON.stringify(payload),
             credentials: "include",
-          }
+          },
         );
 
         const data = await response.json();
@@ -1380,7 +1397,7 @@ export const ddApi = {
     // Update portfolio
     updatePortfolio: async (
       contestId: string | number,
-      portfolio: PortfolioResponse
+      portfolio: PortfolioResponse,
     ) => {
       const user = useStore.getState().user;
 
@@ -1413,7 +1430,7 @@ export const ddApi = {
             },
             body: JSON.stringify(payload),
             credentials: "include",
-          }
+          },
         );
 
         const data = await response.json();
@@ -1454,14 +1471,14 @@ export const ddApi = {
 
         const api = createApiClient();
         const response = await api.fetch(
-          `/contests/participations/${encodeURIComponent(walletAddress)}`
+          `/contests/participations/${encodeURIComponent(walletAddress)}`,
         );
 
         const data = await response.json();
 
         if (!data.participations || !Array.isArray(data.participations)) {
           throw new Error(
-            "Invalid response format: participations array not found"
+            "Invalid response format: participations array not found",
           );
         }
 
@@ -1475,7 +1492,7 @@ export const ddApi = {
     // Get detailed participation data for a specific contest
     getParticipationDetails: async (
       contestId: string | number,
-      walletAddress: string
+      walletAddress: string,
     ) => {
       try {
         if (!contestId || !walletAddress) {
@@ -1485,8 +1502,8 @@ export const ddApi = {
         const api = createApiClient();
         const response = await api.fetch(
           `/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(
-            walletAddress
-          )}`
+            walletAddress,
+          )}`,
         );
 
         const data = await response.json();
@@ -1532,7 +1549,7 @@ export const ddApi = {
           throw new Error(
             errorData?.message ||
               errorData?.error ||
-              `Failed to create contest: ${response.status} ${response.statusText}`
+              `Failed to create contest: ${response.status} ${response.statusText}`,
           );
         }
 
@@ -1557,7 +1574,7 @@ export const ddApi = {
           contractAddress: string;
           weight: number;
         }>;
-      }
+      },
     ) => {
       const user = useStore.getState().user;
       if (!user?.wallet_address) {
@@ -1609,7 +1626,7 @@ export const ddApi = {
             "Content-Type": "application/json",
           },
           credentials: "include",
-        }
+        },
       );
 
       if (response.status === 401) {
@@ -1665,13 +1682,13 @@ export const ddApi = {
     // Get global rankings (DD Point Leaderboard)
     getGlobalRankings: async (
       limit: number = 10,
-      offset: number = 0
+      offset: number = 0,
     ): Promise<GlobalRankingsResponse> => {
       const response = await fetch(
         `${API_URL}/leaderboard/global?limit=${limit}&offset=${offset}`,
         {
           credentials: "include",
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to fetch global rankings");
       return response.json();
@@ -1681,13 +1698,13 @@ export const ddApi = {
     getContestPerformance: async (
       timeframe: TimeFrame = "month",
       limit: number = 10,
-      offset: number = 0
+      offset: number = 0,
     ): Promise<ContestPerformanceResponse> => {
       const response = await fetch(
         `${API_URL}/leaderboard/contests/performance?timeframe=${timeframe}&limit=${limit}&offset=${offset}`,
         {
           credentials: "include",
-        }
+        },
       );
       if (!response.ok)
         throw new Error("Failed to fetch contest performance rankings");
@@ -1725,7 +1742,7 @@ export const ddApi = {
             {
               status: response.status,
               statusText: response.statusText,
-            }
+            },
           );
         }
         return response;
@@ -1773,8 +1790,8 @@ export const getCircuitBreakerAnalytics = () => ({
     status: breaker.isOpen
       ? "failed"
       : breaker.failures > 0
-      ? "degraded"
-      : "healthy",
+        ? "degraded"
+        : "healthy",
     failures: breaker.failures,
     lastFailure: breaker.lastFailure,
     lastSuccess: breaker.lastSuccess,

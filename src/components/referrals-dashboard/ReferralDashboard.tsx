@@ -21,6 +21,7 @@ import {
   FaTwitter,
   FaUsers,
 } from "react-icons/fa";
+
 import { useReferral } from "../../hooks/useReferral";
 import { ddApi } from "../../services/dd-api";
 
@@ -93,7 +94,7 @@ const SocialShareButton: React.FC<{
     const personal = "\n💎 Use my ref link to get exclusive rewards";
 
     return encodeURIComponent(
-      `${baseMessage}${socialProof}${urgency}${personal}\n\n${referralLink}`
+      `${baseMessage}${socialProof}${urgency}${personal}\n\n${referralLink}`,
     );
   };
 
@@ -108,7 +109,7 @@ const SocialShareButton: React.FC<{
         return `https://discord.com/channels/@me?content=${message} ${referralLink}`;
       case "telegram":
         return `https://t.me/share/url?url=${encodeURIComponent(
-          referralLink
+          referralLink,
         )}&text=${message}`;
     }
   };
@@ -250,10 +251,10 @@ const AnalyticsSection: React.FC = () => {
 
   const totalClicks = Object.values(analytics.clicks?.by_source || {}).reduce(
     (a, b) => a + b,
-    0
+    0,
   );
   const totalConversions = Object.values(
-    analytics.conversions?.by_source || {}
+    analytics.conversions?.by_source || {},
   ).reduce((a, b) => a + b, 0);
   const conversionRate = totalClicks
     ? ((totalConversions / totalClicks) * 100).toFixed(1)
@@ -348,7 +349,7 @@ const AnalyticsSection: React.FC = () => {
                     </div>
                   </div>
                 );
-              }
+              },
             )}
           </div>
         </div>
@@ -372,7 +373,7 @@ const AnalyticsSection: React.FC = () => {
                       <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
                     </div>
                   </div>
-                )
+                ),
               )}
             </div>
           </div>
@@ -394,7 +395,7 @@ const AnalyticsSection: React.FC = () => {
                       <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
                     </div>
                   </div>
-                )
+                ),
               )}
             </div>
           </div>
@@ -463,11 +464,11 @@ const ReferralLeaderboard: React.FC = () => {
             <h3 className="text-xl font-bold text-brand-400">
               Current Period:{" "}
               {new Date(
-                leaderboardStats.current_period.start_date
+                leaderboardStats.current_period.start_date,
               ).toLocaleDateString()}{" "}
               -{" "}
               {new Date(
-                leaderboardStats.current_period.end_date
+                leaderboardStats.current_period.end_date,
               ).toLocaleDateString()}
             </h3>
             <p className="text-sm text-gray-400">
@@ -869,7 +870,7 @@ export const ReferralDashboard: React.FC = () => {
                   style={{
                     width: `${Math.min(
                       (stats.qualified_referrals / 5) * 100,
-                      100
+                      100,
                     )}%`,
                   }}
                 />
@@ -893,7 +894,7 @@ export const ReferralDashboard: React.FC = () => {
                   style={{
                     width: `${Math.min(
                       Math.max(((stats.qualified_referrals - 5) / 15) * 100, 0),
-                      100
+                      100,
                     )}%`,
                   }}
                 />
@@ -972,10 +973,10 @@ export const ReferralDashboard: React.FC = () => {
                       referral.status === "qualified"
                         ? "bg-green-500/20 text-green-400"
                         : referral.status === "pending"
-                        ? "bg-yellow-500/20 text-yellow-400"
-                        : referral.status === "rewarded"
-                        ? "bg-brand-500/20 text-brand-400"
-                        : "bg-red-500/20 text-red-400"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : referral.status === "rewarded"
+                            ? "bg-brand-500/20 text-brand-400"
+                            : "bg-red-500/20 text-red-400"
                     }`}
                   >
                     {referral.status}

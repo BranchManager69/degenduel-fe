@@ -1,6 +1,7 @@
 // src/pages/public/general/FAQ.tsx
 
 import React, { useState } from "react";
+
 import { Card, CardContent } from "../../../components/ui/Card";
 
 export const FAQ: React.FC = () => {

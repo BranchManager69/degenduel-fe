@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
 import { ddApi } from "../../services/dd-api";
 
 interface ContestMonitoringData {
@@ -30,7 +31,7 @@ export const ContestMonitoring: React.FC<ContestMonitoringProps> = ({
   autoRefresh = true,
 }) => {
   const [monitoringData, setMonitoringData] = useState<ContestMonitoringData[]>(
-    []
+    [],
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export const ContestMonitoring: React.FC<ContestMonitoringProps> = ({
   }, [autoRefresh, refreshInterval]);
 
   const getStateCheckBadge = (
-    stateCheck: ContestMonitoringData["state_check"]
+    stateCheck: ContestMonitoringData["state_check"],
   ) => {
     const badges = {
       SHOULD_START: "bg-green-500/20 text-green-400 border-green-500/50",
@@ -145,7 +146,7 @@ export const ContestMonitoring: React.FC<ContestMonitoringProps> = ({
                 </div>
                 <div
                   className={`px-3 py-1 rounded-full text-sm border ${getStateCheckBadge(
-                    contest.state_check
+                    contest.state_check,
                   )}`}
                 >
                   {contest.state_check.replace(/_/g, " ")}

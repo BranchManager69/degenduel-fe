@@ -1,8 +1,11 @@
 import React from "react";
-import { useStore } from "../../store/useStore";
 
 // Import background scenes
 import { AmbientMarketData } from "./AmbientMarketData";
+import { AbstractPatterns } from "./experimental/AbstractPatterns";
+import { FluidTokens } from "./experimental/FluidTokens";
+import { GradientWaves } from "./experimental/GradientWaves";
+import { NeonGrid } from "./experimental/NeonGrid";
 import { MarketBrain } from "./MarketBrain";
 import { MarketVerse } from "./MarketVerse";
 import { ParticlesEffect } from "./ParticlesEffect";
@@ -10,11 +13,8 @@ import { TokenVerse } from "./TokenVerse";
 // experimental visualizations
 import { SYSTEM_SETTINGS } from "../../config/config";
 import { useSystemSettingsWebSocket } from "../../hooks/useSystemSettingsWebSocket";
+import { useStore } from "../../store/useStore";
 import { extractBackgroundSettings } from "../../utils/extractBackgroundSettings";
-import { AbstractPatterns } from "./experimental/AbstractPatterns";
-import { FluidTokens } from "./experimental/FluidTokens";
-import { GradientWaves } from "./experimental/GradientWaves";
-import { NeonGrid } from "./experimental/NeonGrid";
 
 // Define valid CSS mix blend modes to fix TypeScript errors
 type MixBlendMode =
@@ -61,19 +61,19 @@ export const BackgroundEffects: React.FC = () => {
 
   // Get scene configuration objects
   const particlesEffectConfig = sceneConfigs.find(
-    (scene) => scene.name === "Dodgeball"
+    (scene) => scene.name === "Dodgeball",
   );
   const tokenVerseConfig = sceneConfigs.find(
-    (scene) => scene.name === "TokenVerse"
+    (scene) => scene.name === "TokenVerse",
   );
   const marketVerseConfig = sceneConfigs.find(
-    (scene) => scene.name === "MarketVerse"
+    (scene) => scene.name === "MarketVerse",
   );
   const marketBrainConfig = sceneConfigs.find(
-    (scene) => scene.name === "MarketBrain"
+    (scene) => scene.name === "MarketBrain",
   );
   const ambientMarketDataConfig = sceneConfigs.find(
-    (scene) => scene.name === "AmbientMarketData"
+    (scene) => scene.name === "AmbientMarketData",
   );
 
   // Determine if scenes are enabled
@@ -132,7 +132,7 @@ export const BackgroundEffects: React.FC = () => {
     if (enabledScenes.length > 1) {
       console.warn(
         "PERFORMANCE WARNING: Multiple scenes are enabled simultaneously: \n\t",
-        enabledScenes.join(" \n\t")
+        enabledScenes.join(" \n\t"),
       );
     }
   }

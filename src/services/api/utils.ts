@@ -5,7 +5,7 @@ import { useStore } from "../../store/useStore";
  * DEPRECATION NOTICE:
  * This file is being phased out in favor of centralizing API utilities in src/services/dd-api.ts.
  * All utilities in this file should be considered deprecated and will be removed in a future update.
- * 
+ *
  * For participation checking, use the standardized checkContestParticipation from dd-api.ts
  * For API client creation, use createApiClient from dd-api.ts
  */
@@ -13,7 +13,7 @@ import { useStore } from "../../store/useStore";
 export const logError = (
   endpoint: string,
   error: any,
-  context?: Record<string, any>
+  context?: Record<string, any>,
 ) => {
   console.error(`[DD-API Error] ${endpoint}:`, {
     message: error.message,
@@ -38,15 +38,16 @@ import { ddApi } from "../../services/dd-api";
  */
 export const checkContestParticipation = async (
   contestId: number | string,
-  userWallet?: string
+  userWallet?: string,
 ): Promise<boolean> => {
   console.warn(
-    "Using deprecated checkContestParticipation from utils.ts. Please update to use the version from dd-api.ts"
+    "Using deprecated checkContestParticipation from utils.ts. Please update to use the version from dd-api.ts",
   );
-  
+
   // Forward to the canonical implementation
-  return await ddApi.contests.getParticipationDetails(contestId, userWallet || "")
-    .then(result => result.isParticipating)
+  return await ddApi.contests
+    .getParticipationDetails(contestId, userWallet || "")
+    .then((result) => result.isParticipating)
     .catch(() => false);
 };
 
@@ -55,9 +56,9 @@ export const checkContestParticipation = async (
  */
 export const createApiClient = () => {
   console.warn(
-    "Using deprecated createApiClient from utils.ts. Please update to use the version from dd-api.ts"
+    "Using deprecated createApiClient from utils.ts. Please update to use the version from dd-api.ts",
   );
-  
+
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
       const defaultOptions = {
@@ -98,7 +99,7 @@ export const createApiClient = () => {
         });
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.message || `API Error: ${response.statusText}`
+          errorData.message || `API Error: ${response.statusText}`,
         );
       }
 

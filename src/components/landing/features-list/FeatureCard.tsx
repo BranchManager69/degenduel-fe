@@ -7,6 +7,7 @@
  */
 
 import React, { useEffect, useRef } from "react";
+
 import {
   MeasureRender,
   usePerformanceMeasure,
@@ -78,7 +79,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     if (!ctx) return;
 
     let animationId: number | NodeJS.Timeout;
-    let startTime = performance.now();
+    const startTime = performance.now();
 
     // Animation function
     const animate = () => {

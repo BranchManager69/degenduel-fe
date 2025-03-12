@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { adminService } from "../../services/adminService";
+
 import { UserSearch } from "./UserSearch";
+import { adminService } from "../../services/adminService";
 
 interface BalanceAdjustment {
   wallet_address: string;
@@ -41,7 +42,7 @@ export const BalanceManager: React.FC = () => {
       setError(null);
       const result = await adminService.adjustUserBalance(
         selectedWallet,
-        numAmount
+        numAmount,
       );
       setSuccess({
         wallet_address: selectedWallet,

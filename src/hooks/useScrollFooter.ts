@@ -15,7 +15,8 @@ export const useScrollFooter = (threshold: number = 50) => {
 
   const handleScroll = useCallback(() => {
     const currentScroll = window.scrollY;
-    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const maxScroll =
+      document.documentElement.scrollHeight - window.innerHeight;
     const distanceFromBottom = maxScroll - currentScroll;
 
     setState((prevState) => {
@@ -64,4 +65,4 @@ export const useScrollFooter = (threshold: number = 50) => {
   }, [handleScroll]);
 
   return state;
-}; 
+};
