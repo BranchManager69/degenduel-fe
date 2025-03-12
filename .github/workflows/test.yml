@@ -42,7 +42,7 @@ jobs:
     name: Development Build
     needs: test
     runs-on: ubuntu-latest
-    environment: development
+    environment: "development (dev.degenduel.me)"
     
     steps:
     - uses: actions/checkout@v3
@@ -81,7 +81,7 @@ jobs:
       with:
         token: ${{ github.token }}
         environment-url: https://dev.degenduel.me
-        environment: development
+        environment: "development (dev.degenduel.me)"
         
     - name: Mark development deployment as successful
       uses: chrnorm/deployment-status@v2
@@ -94,7 +94,7 @@ jobs:
     name: Production Build
     needs: test
     runs-on: ubuntu-latest
-    environment: production
+    environment: "production (degenduel.me)"
     
     steps:
     - uses: actions/checkout@v3
@@ -133,7 +133,7 @@ jobs:
       with:
         token: ${{ github.token }}
         environment-url: https://degenduel.me
-        environment: production
+        environment: "production (degenduel.me)"
         
     - name: Mark production deployment as successful
       uses: chrnorm/deployment-status@v2
