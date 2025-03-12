@@ -1,3 +1,24 @@
+// Mock the dd-api module
+jest.mock('./dd-api', () => ({
+  ddApi: {
+    auth: {
+      getNonce: jest.fn(),
+      verifySignature: jest.fn(),
+      getWebSocketToken: jest.fn()
+    },
+    users: {
+      getOne: jest.fn(),
+      update: jest.fn()
+    },
+    tokens: {
+      getPrice: jest.fn(),
+      getHistoricalPrices: jest.fn()
+    }
+  },
+  formatBonusPoints: jest.fn()
+}));
+
+// Import after mocking
 import { ddApi, formatBonusPoints } from './dd-api';
 
 // Mock the fetch function
@@ -156,7 +177,7 @@ describe('DegenDuel API Service', () => {
 
       // Setup the mock to return success response
       (global.fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(200, mockResponse)
+        mockResponse(200, { success: true })
       );
 
       // Call the function
