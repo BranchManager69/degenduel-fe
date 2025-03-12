@@ -1,5 +1,17 @@
 name: DegenDuel CI/CD
 
+# This workflow handles testing, building, and deployment verification for the DegenDuel frontend
+# It creates the necessary deployment records for GitHub branch protection requirements
+# Main flow: test -> build-dev -> build-prod -> performance monitoring
+#
+# Additional jobs:
+# - specialized-builds: For preview builds with experimental features
+# - visual-regression: Visual regression testing for PRs
+# - storybook: Builds component documentation when available
+#
+# Note: Actual deployment to dev and production servers is handled outside this workflow
+# This workflow only creates the GitHub deployment records required for branch protection
+
 on:
   push:
     branches: [ main ]
@@ -11,10 +23,10 @@ on:
 
 # Add permissions needed for deployments
 permissions:
-  contents: write
-  deployments: write
-  pull-requests: write
-  statuses: write
+  contents: read  # Only need read access for checkout
+  deployments: write  # For creating deployment records
+  pull-requests: write  # For commenting on PRs
+  statuses: write  # For updating commit statuses
 
 # Define reusable environment variables
 env:
@@ -76,7 +88,7 @@ jobs:
       with:
         directory: ./coverage/
         fail_ci_if_error: false
-        token: ${{ secrets.CODECOV_TOKEN || github.token }}
+        token: ${{ secrets.CODECOV_TOKEN }}
       continue-on-error: true
       
     # New high-value additions
@@ -181,12 +193,8 @@ jobs:
         state: success
         deployment-id: ${{ steps.deployment-dev.outputs.deployment_id }}
         
-    # Auto-deploy development builds for feature branches
-    - name: Prepare Development Auto-deployment
-      if: github.event_name == 'push' && github.ref != 'refs/heads/main' && steps.verify-build.outputs.build_success == 'true'
-      run: |
-        echo "Ready to auto-deploy feature branch to development environment"
-        echo "AUTO_DEPLOY=true" >> $GITHUB_ENV
+    # No auto-deployment from workflow for now - deployments are handled manually
+    # This section creates the required GitHub deployment records for branch protection
 
   build-prod:
     name: Production Build
@@ -269,12 +277,8 @@ jobs:
         state: success
         deployment-id: ${{ steps.deployment-prod.outputs.deployment_id }}
         
-    # Only run auto-deploy on pushes to main, not PRs
-    - name: Prepare Auto-deployment (main branch only)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.verify-build.outputs.build_success == 'true'
-      run: |
-        echo "Ready to auto-deploy to production environment"
-        echo "AUTO_DEPLOY=true" >> $GITHUB_ENV
+    # No auto-deployment from workflow for now - deployments are handled manually
+    # This section creates the required GitHub deployment records for branch protection
         
     # Add notification job for workflow completion
     - name: Notify on success
@@ -350,7 +354,7 @@ jobs:
     name: Preview & Experimental Builds
     runs-on: ubuntu-latest
     needs: [test]
-    if: contains(github.event.head_commit.message, '[preview]') || contains(github.head_ref, 'preview-')
+    if: contains(github.event.head_commit.message, '[preview]') || (github.head_ref != null && contains(github.head_ref, 'preview-'))
     
     steps:
     - uses: actions/checkout@v4
@@ -443,7 +447,24 @@ jobs:
         # If we have baseline screenshots, compare them
         if [ -d "baseline-screenshots" ]; then
           echo "Comparing against baseline screenshots..."
-          npx -y pixelmatch@5.3.0 baseline-screenshots/homepage.png screenshots/homepage.png diff.png 0.1
+          # Create diff directory
+          mkdir -p diff-screenshots
+          
+          # Compare screenshots and store diff image
+          DIFF_OUTPUT=$(npx -y pixelmatch@5.3.0 baseline-screenshots/homepage.png screenshots/homepage.png diff-screenshots/homepage-diff.png 0.1 2>&1)
+          DIFF_PIXELS=$(echo "$DIFF_OUTPUT" | grep -o '[0-9]* pixels differ' | cut -d' ' -f1)
+          
+          echo "Diff output: $DIFF_OUTPUT"
+          echo "Different pixels: $DIFF_PIXELS"
+          
+          # Set threshold for failure - more than 1000 pixels different is a regression
+          if [ "$DIFF_PIXELS" -gt "1000" ]; then
+            echo "Visual regression detected: $DIFF_PIXELS pixels differ"
+            echo "::warning::Visual regression detected in homepage ($DIFF_PIXELS pixels)"
+            # Don't fail the build yet - this is just a warning
+          else
+            echo "Visual comparison passed (within threshold)"
+          fi
         else
           echo "No baseline screenshots found. Creating initial set..."
           mkdir -p baseline-screenshots
@@ -451,11 +472,13 @@ jobs:
         fi
       continue-on-error: true
         
-    - name: Upload screenshots
+    - name: Upload screenshots and diffs
       uses: actions/upload-artifact@v4
       with:
         name: visual-regression-results
-        path: screenshots
+        path: |
+          screenshots
+          diff-screenshots
         retention-days: 7
         
   # Add a storybook job for component documentation and testing
