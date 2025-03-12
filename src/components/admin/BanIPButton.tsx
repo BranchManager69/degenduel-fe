@@ -27,17 +27,18 @@ const BanIPModal: React.FC<BanIPModalProps> = ({
       return;
     }
 
+    // Define banData outside the try block so it's available in the catch block
+    const banData = {
+      ip_address: ipAddress,
+      reason: reason.trim(),
+      is_permanent: isPermanent,
+      expires_at: !isPermanent ? expiration : undefined,
+      troll_level: trollLevel,
+    };
+
     try {
       setLoading(true);
       setError(null);
-
-      const banData = {
-        ip_address: ipAddress,
-        reason: reason.trim(),
-        is_permanent: isPermanent,
-        expires_at: !isPermanent ? expiration : undefined,
-        troll_level: trollLevel,
-      };
 
       await admin.ipBan.add(banData);
 
