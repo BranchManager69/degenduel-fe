@@ -2,6 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useState } from "react";
+
 import { ddApi } from "../../services/dd-api";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
@@ -60,7 +61,7 @@ export const LogViewer: React.FC = () => {
   const [selectedType, setSelectedType] = useState<FileType>(FILE_TYPES.ERROR);
   const [logContent, setLogContent] = useState<ParsedLogEntry[]>([]);
   const [displayedEntries, setDisplayedEntries] = useState<ParsedLogEntry[]>(
-    []
+    [],
   );
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -135,7 +136,7 @@ export const LogViewer: React.FC = () => {
     });
 
     return Array.from(dateMap.values()).sort((a, b) =>
-      b.date.localeCompare(a.date)
+      b.date.localeCompare(a.date),
     );
   };
 
@@ -157,7 +158,7 @@ export const LogViewer: React.FC = () => {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to load log files"
+          err instanceof Error ? err.message : "Failed to load log files",
         );
       } finally {
         setLoading(false);
@@ -202,13 +203,13 @@ export const LogViewer: React.FC = () => {
         .map(parseLogEntry)
         .sort(
           (a: ParsedLogEntry, b: ParsedLogEntry) =>
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
         );
 
       setLogContent(entries);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load log content"
+        err instanceof Error ? err.message : "Failed to load log content",
       );
     } finally {
       setLoading(false);
@@ -265,7 +266,7 @@ export const LogViewer: React.FC = () => {
       const entries = Object.entries(value).filter(
         ([key]) =>
           // Filter out redundant fields that are already shown in the log entry
-          !["timestamp", "level", "message"].includes(key)
+          !["timestamp", "level", "message"].includes(key),
       );
       if (entries.length === 0) return <span>{"{}"}</span>;
       return (
@@ -293,7 +294,7 @@ export const LogViewer: React.FC = () => {
   };
 
   const processSpecialLogEntry = (
-    entry: ParsedLogEntry
+    entry: ParsedLogEntry,
   ): CompactLogInfo | null => {
     const details = entry.details || {};
 
@@ -430,8 +431,8 @@ export const LogViewer: React.FC = () => {
                       selectedType === FILE_TYPES.ERROR
                         ? "bg-red-900/80 text-white"
                         : dateOption.hasError
-                        ? "bg-red-900/30 text-red-300 hover:bg-red-900/50"
-                        : "bg-gray-700/50 text-gray-500 cursor-not-allowed"
+                          ? "bg-red-900/30 text-red-300 hover:bg-red-900/50"
+                          : "bg-gray-700/50 text-gray-500 cursor-not-allowed"
                     }`}
                   >
                     Errors
@@ -451,8 +452,8 @@ export const LogViewer: React.FC = () => {
                       selectedType === FILE_TYPES.API
                         ? "bg-gray-900 text-white"
                         : dateOption.hasApi
-                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                        : "bg-gray-700/50 text-gray-500 cursor-not-allowed"
+                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          : "bg-gray-700/50 text-gray-500 cursor-not-allowed"
                     }`}
                   >
                     System
@@ -482,7 +483,7 @@ export const LogViewer: React.FC = () => {
               {selectedDate &&
                 displayedEntries.some(
                   (entry) =>
-                    entry.details && Object.keys(entry.details).length > 0
+                    entry.details && Object.keys(entry.details).length > 0,
                 ) && (
                   <button
                     onClick={() => setShowAllDetails((prev) => !prev)}
@@ -559,7 +560,7 @@ export const LogViewer: React.FC = () => {
                             </span>
                             <span
                               className={`${getLevelColor(
-                                entry.level
+                                entry.level,
                               )} uppercase text-xs font-bold px-2 py-1 rounded bg-gray-800/50 whitespace-nowrap`}
                             >
                               {entry.level}

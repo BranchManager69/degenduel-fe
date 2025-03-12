@@ -1,9 +1,10 @@
 // src/components/admin/WebSocketPanel.tsx
 
 import React, { useEffect } from "react";
+
+import { WebSocketCard } from "./WebSocketCard";
 import { useWebSocketMonitor } from "../../hooks/useWebSocketMonitor";
 import { useStore } from "../../store/useStore";
-import { WebSocketCard } from "./WebSocketCard";
 
 const WebSocketPanel: React.FC = () => {
   const { webSocket, setWebSocketState, addWebSocketAlert } = useStore();
@@ -34,8 +35,8 @@ const WebSocketPanel: React.FC = () => {
               webSocket.systemHealth.status === "operational"
                 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                 : webSocket.systemHealth.status === "degraded"
-                ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
-                : "bg-red-500/10 border-red-500/20 text-red-400"
+                  ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"
+                  : "bg-red-500/10 border-red-500/20 text-red-400"
             }
           `}
         >

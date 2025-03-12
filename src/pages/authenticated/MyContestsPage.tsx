@@ -1,40 +1,53 @@
 // src/pages/authenticated/MyContestsPage.tsx
 
 import React, { useEffect, useMemo } from "react";
+import {
+  FaTrophy,
+  FaCalendarAlt,
+  FaFire,
+  FaBan,
+  FaHourglassHalf,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
-import { useUserContests } from "../../hooks/useUserContests";
-import { Card, CardContent } from "../../components/ui/Card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Tabs";
-import { Button } from "../../components/ui/Button";
 import { ContestCard } from "../../components/contest-browser/ContestCard";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent } from "../../components/ui/Card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/Tabs";
+import { useAuth } from "../../hooks/useAuth";
+import { useUserContests } from "../../hooks/useUserContests";
 import { UserContest } from "../../services/contestService";
 import { Contest } from "../../types";
-import { FaTrophy, FaCalendarAlt, FaFire, FaBan, FaHourglassHalf } from "react-icons/fa";
 
 export const MyContestsPage: React.FC = () => {
   const navigate = useNavigate();
   const { contests, loading, error, refetch } = useUserContests();
-  
+
   // We're already inside an AuthenticatedRoute, no need for additional checks
   const { user } = useAuth();
-  
+
   // This check is redundant since the AuthenticatedRoute already handles redirection
   // Keeping a simplified version just to be safe
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate("/login");
     }
   }, [user, navigate]);
-  
+
   // Transform UserContest to Contest format for ContestCard
   const transformToContestFormat = (userContest: UserContest): Contest => {
     const now = new Date().toISOString();
     return {
       id: parseInt(userContest.contestId) || 0, // Convert to number
       name: userContest.name,
-      status: userContest.status === "upcoming" ? "pending" : userContest.status,
+      status:
+        userContest.status === "upcoming" ? "pending" : userContest.status,
       start_time: userContest.startTime,
       end_time: userContest.endTime,
       participant_count: userContest.participantCount,
@@ -52,29 +65,29 @@ export const MyContestsPage: React.FC = () => {
         difficulty: "guppy", // Default to guppy as it's a valid DifficultyLevel
         min_trades: 1, // Standard minimum trades
         token_types: [],
-        rules: []
-      }
+        rules: [],
+      },
     } as Contest;
   };
-  
+
   // Group contests by status
   const groupedContests = useMemo(() => {
     const active: Contest[] = [];
     const upcoming: Contest[] = [];
     const completed: Contest[] = [];
     const cancelled: Contest[] = [];
-    
+
     // Calculate actual status based on timestamps to ensure accuracy
-    contests.forEach(contest => {
+    contests.forEach((contest) => {
       const now = new Date();
       const startTime = new Date(contest.startTime);
       const endTime = new Date(contest.endTime);
-      
+
       const hasStarted = now >= startTime;
       const hasEnded = now >= endTime;
-      
+
       const transformed = transformToContestFormat(contest);
-      
+
       if (transformed.status === "cancelled") {
         cancelled.push(transformed);
       } else if (hasEnded) {
@@ -85,33 +98,34 @@ export const MyContestsPage: React.FC = () => {
         upcoming.push(transformed);
       }
     });
-    
+
     return {
       active,
       upcoming,
       completed,
-      cancelled
+      cancelled,
     };
   }, [contests]);
-  
+
   return (
     <div className="min-h-screen">
       <BackgroundEffects />
-      
+
       <div className="relative z-10 py-8 container mx-auto px-4">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-white flex items-center gap-2">
             <FaTrophy className="text-brand-400" /> My Contests
           </h1>
           <p className="text-gray-400 mt-2">
-            View all contests you've participated in, are currently participating in, or will participate in.
+            View all contests you've participated in, are currently
+            participating in, or will participate in.
           </p>
         </header>
-        
+
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="mb-8 w-full max-w-3xl mx-auto grid grid-cols-4 bg-dark-200/50 backdrop-blur-md">
-            <TabsTrigger 
-              value="active" 
+            <TabsTrigger
+              value="active"
               className="flex items-center gap-2 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400"
             >
               <FaFire className="shrink-0" />
@@ -120,9 +134,9 @@ export const MyContestsPage: React.FC = () => {
                 {groupedContests.active.length}
               </span>
             </TabsTrigger>
-            
-            <TabsTrigger 
-              value="upcoming" 
+
+            <TabsTrigger
+              value="upcoming"
               className="flex items-center gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400"
             >
               <FaCalendarAlt className="shrink-0" />
@@ -131,9 +145,9 @@ export const MyContestsPage: React.FC = () => {
                 {groupedContests.upcoming.length}
               </span>
             </TabsTrigger>
-            
-            <TabsTrigger 
-              value="completed" 
+
+            <TabsTrigger
+              value="completed"
               className="flex items-center gap-2 data-[state=active]:bg-gray-500/20 data-[state=active]:text-gray-400"
             >
               <FaHourglassHalf className="shrink-0" />
@@ -142,9 +156,9 @@ export const MyContestsPage: React.FC = () => {
                 {groupedContests.completed.length}
               </span>
             </TabsTrigger>
-            
-            <TabsTrigger 
-              value="cancelled" 
+
+            <TabsTrigger
+              value="cancelled"
               className="flex items-center gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
             >
               <FaBan className="shrink-0" />
@@ -156,12 +170,15 @@ export const MyContestsPage: React.FC = () => {
               )}
             </TabsTrigger>
           </TabsList>
-          
+
           {/* Loading state */}
           {loading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(3)].map((_, i) => (
-                <Card key={i} className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                <Card
+                  key={i}
+                  className="bg-dark-200/80 backdrop-blur-sm border-dark-300"
+                >
                   <CardContent className="p-6 space-y-4">
                     <div className="h-8 w-3/4 bg-dark-300 animate-pulse rounded" />
                     <div className="h-4 w-1/2 bg-dark-300 animate-pulse rounded" />
@@ -179,15 +196,15 @@ export const MyContestsPage: React.FC = () => {
               ))}
             </div>
           )}
-          
+
           {/* Error state */}
           {error && !loading && (
             <Card className="bg-red-900/20 border-red-900/50 mb-8">
               <CardContent className="p-6">
                 <p className="text-red-400">{error}</p>
-                <Button 
+                <Button
                   onClick={() => refetch()}
-                  variant="outline" 
+                  variant="outline"
                   className="mt-4 bg-red-500/20 border-red-500/20 text-red-400 hover:bg-red-500/30"
                 >
                   Try Again
@@ -195,7 +212,7 @@ export const MyContestsPage: React.FC = () => {
               </CardContent>
             </Card>
           )}
-          
+
           {/* Empty state */}
           {!loading && !error && contests.length === 0 && (
             <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300 mb-8">
@@ -203,17 +220,23 @@ export const MyContestsPage: React.FC = () => {
                 <div className="w-16 h-16 rounded-full bg-brand-500/20 flex items-center justify-center mb-4">
                   <FaTrophy className="text-3xl text-brand-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-200 mb-2">No Contests Found</h3>
+                <h3 className="text-xl font-bold text-gray-200 mb-2">
+                  No Contests Found
+                </h3>
                 <p className="text-gray-400 mb-6 max-w-md">
-                  You haven't participated in any contests yet. Explore available contests to get started.
+                  You haven't participated in any contests yet. Explore
+                  available contests to get started.
                 </p>
-                <Button onClick={() => navigate('/contests')} className="bg-brand-500 hover:bg-brand-600">
+                <Button
+                  onClick={() => navigate("/contests")}
+                  className="bg-brand-500 hover:bg-brand-600"
+                >
                   Browse Contests
                 </Button>
               </CardContent>
             </Card>
           )}
-          
+
           {/* Active contests tab */}
           <TabsContent value="active" className="mt-0">
             {!loading && groupedContests.active.length === 0 ? (
@@ -222,28 +245,35 @@ export const MyContestsPage: React.FC = () => {
                   <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
                     <FaFire className="text-3xl text-green-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-200 mb-2">No Active Contests</h3>
+                  <h3 className="text-xl font-bold text-gray-200 mb-2">
+                    No Active Contests
+                  </h3>
                   <p className="text-gray-400 mb-6 max-w-md">
-                    You're not participating in any active contests at the moment.
+                    You're not participating in any active contests at the
+                    moment.
                   </p>
-                  <Button onClick={() => navigate('/contests')} className="bg-green-500 hover:bg-green-600 text-white">
+                  <Button
+                    onClick={() => navigate("/contests")}
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
                     Find Active Contests
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {!loading && groupedContests.active.map((contest) => (
-                  <ContestCard 
-                    key={contest.id} 
-                    contest={contest} 
-                    onClick={() => navigate(`/contests/${contest.id}/lobby`)}
-                  />
-                ))}
+                {!loading &&
+                  groupedContests.active.map((contest) => (
+                    <ContestCard
+                      key={contest.id}
+                      contest={contest}
+                      onClick={() => navigate(`/contests/${contest.id}/lobby`)}
+                    />
+                  ))}
               </div>
             )}
           </TabsContent>
-          
+
           {/* Upcoming contests tab */}
           <TabsContent value="upcoming" className="mt-0">
             {!loading && groupedContests.upcoming.length === 0 ? (
@@ -252,28 +282,36 @@ export const MyContestsPage: React.FC = () => {
                   <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mb-4">
                     <FaCalendarAlt className="text-3xl text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-200 mb-2">No Upcoming Contests</h3>
+                  <h3 className="text-xl font-bold text-gray-200 mb-2">
+                    No Upcoming Contests
+                  </h3>
                   <p className="text-gray-400 mb-6 max-w-md">
                     You haven't joined any upcoming contests yet.
                   </p>
-                  <Button onClick={() => navigate('/contests')} className="bg-blue-500 hover:bg-blue-600 text-white">
+                  <Button
+                    onClick={() => navigate("/contests")}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
                     Find Upcoming Contests
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {!loading && groupedContests.upcoming.map((contest) => (
-                  <ContestCard 
-                    key={contest.id} 
-                    contest={contest} 
-                    onClick={() => navigate(`/contests/${contest.id}/select-tokens`)}
-                  />
-                ))}
+                {!loading &&
+                  groupedContests.upcoming.map((contest) => (
+                    <ContestCard
+                      key={contest.id}
+                      contest={contest}
+                      onClick={() =>
+                        navigate(`/contests/${contest.id}/select-tokens`)
+                      }
+                    />
+                  ))}
               </div>
             )}
           </TabsContent>
-          
+
           {/* Completed contests tab */}
           <TabsContent value="completed" className="mt-0">
             {!loading && groupedContests.completed.length === 0 ? (
@@ -282,28 +320,36 @@ export const MyContestsPage: React.FC = () => {
                   <div className="w-16 h-16 rounded-full bg-gray-500/20 flex items-center justify-center mb-4">
                     <FaHourglassHalf className="text-3xl text-gray-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-200 mb-2">No Completed Contests</h3>
+                  <h3 className="text-xl font-bold text-gray-200 mb-2">
+                    No Completed Contests
+                  </h3>
                   <p className="text-gray-400 mb-6 max-w-md">
                     You don't have any completed contests in your history yet.
                   </p>
-                  <Button onClick={() => navigate('/contests')} className="bg-gray-500 hover:bg-gray-600 text-white">
+                  <Button
+                    onClick={() => navigate("/contests")}
+                    className="bg-gray-500 hover:bg-gray-600 text-white"
+                  >
                     Browse All Contests
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {!loading && groupedContests.completed.map((contest) => (
-                  <ContestCard 
-                    key={contest.id} 
-                    contest={contest} 
-                    onClick={() => navigate(`/contests/${contest.id}/results`)}
-                  />
-                ))}
+                {!loading &&
+                  groupedContests.completed.map((contest) => (
+                    <ContestCard
+                      key={contest.id}
+                      contest={contest}
+                      onClick={() =>
+                        navigate(`/contests/${contest.id}/results`)
+                      }
+                    />
+                  ))}
               </div>
             )}
           </TabsContent>
-          
+
           {/* Cancelled contests tab */}
           <TabsContent value="cancelled" className="mt-0">
             {!loading && groupedContests.cancelled.length === 0 ? (
@@ -312,24 +358,30 @@ export const MyContestsPage: React.FC = () => {
                   <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
                     <FaBan className="text-3xl text-red-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-200 mb-2">No Cancelled Contests</h3>
+                  <h3 className="text-xl font-bold text-gray-200 mb-2">
+                    No Cancelled Contests
+                  </h3>
                   <p className="text-gray-400 mb-6 max-w-md">
                     Good news! None of your contests have been cancelled.
                   </p>
-                  <Button onClick={() => navigate('/contests')} className="bg-dark-300 hover:bg-dark-400 text-white">
+                  <Button
+                    onClick={() => navigate("/contests")}
+                    className="bg-dark-300 hover:bg-dark-400 text-white"
+                  >
                     Browse All Contests
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {!loading && groupedContests.cancelled.map((contest) => (
-                  <ContestCard 
-                    key={contest.id} 
-                    contest={contest} 
-                    onClick={() => navigate(`/contests/${contest.id}`)}
-                  />
-                ))}
+                {!loading &&
+                  groupedContests.cancelled.map((contest) => (
+                    <ContestCard
+                      key={contest.id}
+                      contest={contest}
+                      onClick={() => navigate(`/contests/${contest.id}`)}
+                    />
+                  ))}
               </div>
             )}
           </TabsContent>

@@ -29,7 +29,7 @@ export const ServiceDebugPanel: React.FC = () => {
         type: DebugLog["type"];
         message: string;
         data?: any;
-      }>
+      }>,
     ) => {
       const { type, message, data } = event.detail;
       setLogs((prev) => [
@@ -46,12 +46,12 @@ export const ServiceDebugPanel: React.FC = () => {
 
     window.addEventListener(
       "serviceWebSocket",
-      handleDebugEvent as EventListener
+      handleDebugEvent as EventListener,
     );
     return () =>
       window.removeEventListener(
         "serviceWebSocket",
-        handleDebugEvent as EventListener
+        handleDebugEvent as EventListener,
       );
   }, []);
 

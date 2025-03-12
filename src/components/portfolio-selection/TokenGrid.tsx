@@ -1,10 +1,11 @@
 import React from "react";
 import { IconType } from "react-icons";
 import { FaCoins, FaDiscord, FaTelegram, FaTwitter } from "react-icons/fa";
+
+import { TokenSparkline } from "./TokenSparkline";
 import { formatCurrency, formatMarketCap } from "../../lib/utils";
 import { Token } from "../../types/index";
 import { Card, CardContent, CardHeader } from "../ui/Card";
-import { TokenSparkline } from "./TokenSparkline";
 
 interface TokenGridProps {
   tokens: Token[];
@@ -66,7 +67,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
   // Handle weight change
   const handleWeightChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    token: Token
+    token: Token,
   ) => {
     e.stopPropagation();
     onTokenSelect(token.contractAddress, Number(e.target.value));

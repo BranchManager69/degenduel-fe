@@ -1,5 +1,5 @@
-import { useStore } from "../store/useStore";
 import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
 interface ContestUpdate {
   type: "CONTEST_UPDATED";

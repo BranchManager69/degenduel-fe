@@ -1,4 +1,5 @@
 import * as THREE from "three";
+
 import ThreeManager from "./ThreeManager";
 
 /**
@@ -169,7 +170,7 @@ export class DodgeballScene {
     container: HTMLElement,
     particleCountRed: number = 300,
     particleCountGreen: number = 300,
-    particleCountBlueBalls: number = 75
+    particleCountBlueBalls: number = 75,
   ) {
     // Get ThreeManager instance
     const threeManager = ThreeManager.getInstance();
@@ -197,7 +198,7 @@ export class DodgeballScene {
         position: new THREE.Vector3(0, 15, 25),
         lookAt: new THREE.Vector3(0, 0, 0),
       },
-      10 // Render order - higher numbers render on top
+      10, // Render order - higher numbers render on top
     );
 
     this.scene = scene;
@@ -234,7 +235,7 @@ export class DodgeballScene {
     this.container.addEventListener(
       "touchstart",
       this.onTouchStart.bind(this),
-      { passive: false }
+      { passive: false },
     );
 
     // Mouse/touch move event - update drag position
@@ -357,13 +358,13 @@ export class DodgeballScene {
         const position = new THREE.Vector3(
           this.blueBallsPositions[idx],
           this.blueBallsPositions[idx + 1],
-          this.blueBallsPositions[idx + 2]
+          this.blueBallsPositions[idx + 2],
         );
 
         // Create temporary hit sphere for raycasting (we're not actually adding this to the scene)
         const hitSphere = new THREE.Mesh(
           new THREE.SphereGeometry(1), // Larger hit area for easier grabbing
-          new THREE.MeshBasicMaterial()
+          new THREE.MeshBasicMaterial(),
         );
         hitSphere.position.copy(position);
         hitSphere.userData = { ballIndex: i };
@@ -402,7 +403,7 @@ export class DodgeballScene {
     this.gameState.userInteraction.heldBallIndex = ballIndex;
     this.gameState.userInteraction.dragStartTime = this.time;
     this.gameState.userInteraction.dragStartPosition.copy(
-      this.gameState.userInteraction.currentPosition
+      this.gameState.userInteraction.currentPosition,
     );
 
     this.gameState.ballState[ballIndex] = "user-held";
@@ -442,7 +443,7 @@ export class DodgeballScene {
           emissiveIntensity: 0.7,
           roughness: 0.3,
           metalness: 0.8,
-        })
+        }),
     );
 
     // Apply mystical material to ball
@@ -492,7 +493,7 @@ export class DodgeballScene {
       this.gameState.userInteraction.throwVelocity.set(
         dx,
         -dy * 0.5, // Reverse Y and scale down
-        -dy * 0.5 // Forward/backward movement
+        -dy * 0.5, // Forward/backward movement
       );
     }
   }
@@ -516,7 +517,7 @@ export class DodgeballScene {
     const dragDistX = endPos.x - startPos.x;
     const dragDistY = endPos.y - startPos.y;
     const dragDistance = Math.sqrt(
-      dragDistX * dragDistX + dragDistY * dragDistY
+      dragDistX * dragDistX + dragDistY * dragDistY,
     );
 
     // Only throw if drag was long enough
@@ -563,7 +564,7 @@ export class DodgeballScene {
           emissiveIntensity: 0.5,
           roughness: 0.2,
           metalness: 0.8,
-        })
+        }),
     ) as THREE.MeshStandardMaterial;
 
     if (this.blueBalls) {
@@ -579,7 +580,7 @@ export class DodgeballScene {
     const position = new THREE.Vector3(
       this.blueBallsPositions[idx],
       this.blueBallsPositions[idx + 1],
-      this.blueBallsPositions[idx + 2]
+      this.blueBallsPositions[idx + 2],
     );
 
     // Create glow mesh if not exists
@@ -624,7 +625,7 @@ export class DodgeballScene {
     } else {
       // Update existing glow color
       (this.victoryGlow.material as THREE.MeshBasicMaterial).color.setHex(
-        color
+        color,
       );
     }
 
@@ -642,7 +643,7 @@ export class DodgeballScene {
     this.redVelocities = new Float32Array(this.particleCount.red * 3);
     this.redEnergies = new Float32Array(this.particleCount.red);
     this.gameState.playerStatus.red = new Array(this.particleCount.red).fill(
-      "active"
+      "active",
     );
 
     // Green team
@@ -650,29 +651,29 @@ export class DodgeballScene {
     this.greenVelocities = new Float32Array(this.particleCount.green * 3);
     this.greenEnergies = new Float32Array(this.particleCount.green);
     this.gameState.playerStatus.green = new Array(
-      this.particleCount.green
+      this.particleCount.green,
     ).fill("active");
 
     // Blue balls
     this.blueBallsPositions = new Float32Array(
-      this.particleCount.blueBalls * 3
+      this.particleCount.blueBalls * 3,
     );
     this.blueBallsVelocities = new Float32Array(
-      this.particleCount.blueBalls * 3
+      this.particleCount.blueBalls * 3,
     );
     this.gameState.ballOwnership = new Array(this.particleCount.blueBalls).fill(
-      -1
+      -1,
     );
     this.gameState.ballState = new Array(this.particleCount.blueBalls).fill(
-      "center"
+      "center",
     );
     this.gameState.ballTargets = new Array(this.particleCount.blueBalls).fill(
-      null
+      null,
     );
 
     // Player throw cooldown timers (prevents constant throwing)
     this.gameState.throwCooldown = new Array(
-      this.particleCount.red + this.particleCount.green
+      this.particleCount.red + this.particleCount.green,
     ).fill(0);
 
     // Game pacing
@@ -734,22 +735,22 @@ export class DodgeballScene {
     // Create shared geometries
     const playerGeometry = threeManager.getOrCreateGeometry(
       "dodgeball-player",
-      () => new THREE.IcosahedronGeometry(0.3, 1) // Low-poly sphere for players
+      () => new THREE.IcosahedronGeometry(0.3, 1), // Low-poly sphere for players
     );
 
     const ballGeometry = threeManager.getOrCreateGeometry(
       "dodgeball-ball",
-      () => new THREE.IcosahedronGeometry(0.4, 2) // Higher-detail sphere for balls
+      () => new THREE.IcosahedronGeometry(0.4, 2), // Higher-detail sphere for balls
     );
 
     const trailGeometry = threeManager.getOrCreateGeometry(
       "dodgeball-trail",
-      () => new THREE.IcosahedronGeometry(0.3, 1) // Low-poly sphere for trails
+      () => new THREE.IcosahedronGeometry(0.3, 1), // Low-poly sphere for trails
     );
 
     const collisionGeometry = threeManager.getOrCreateGeometry(
       "dodgeball-collision",
-      () => new THREE.IcosahedronGeometry(0.1, 1) // Small sphere for collision particles
+      () => new THREE.IcosahedronGeometry(0.1, 1), // Small sphere for collision particles
     );
 
     // Create shared materials
@@ -762,7 +763,7 @@ export class DodgeballScene {
           emissiveIntensity: 0.3,
           roughness: 0.4,
           metalness: 0.7,
-        })
+        }),
     ) as THREE.MeshStandardMaterial;
 
     const greenMaterial = threeManager.getOrCreateMaterial(
@@ -774,7 +775,7 @@ export class DodgeballScene {
           emissiveIntensity: 0.3,
           roughness: 0.4,
           metalness: 0.7,
-        })
+        }),
     ) as THREE.MeshStandardMaterial;
 
     const blueMaterial = threeManager.getOrCreateMaterial(
@@ -786,7 +787,7 @@ export class DodgeballScene {
           emissiveIntensity: 0.5,
           roughness: 0.2,
           metalness: 0.8,
-        })
+        }),
     ) as THREE.MeshStandardMaterial;
 
     const redTrailMaterial = threeManager.getOrCreateMaterial(
@@ -797,7 +798,7 @@ export class DodgeballScene {
           transparent: true,
           opacity: 0.3,
           blending: THREE.AdditiveBlending,
-        })
+        }),
     ) as THREE.MeshBasicMaterial;
 
     const greenTrailMaterial = threeManager.getOrCreateMaterial(
@@ -808,7 +809,7 @@ export class DodgeballScene {
           transparent: true,
           opacity: 0.3,
           blending: THREE.AdditiveBlending,
-        })
+        }),
     ) as THREE.MeshBasicMaterial;
 
     const blueTrailMaterial = threeManager.getOrCreateMaterial(
@@ -819,7 +820,7 @@ export class DodgeballScene {
           transparent: true,
           opacity: 0.5,
           blending: THREE.AdditiveBlending,
-        })
+        }),
     ) as THREE.MeshBasicMaterial;
 
     const collisionMaterial = threeManager.getOrCreateMaterial(
@@ -830,14 +831,14 @@ export class DodgeballScene {
           transparent: true,
           opacity: 0.7,
           blending: THREE.AdditiveBlending,
-        })
+        }),
     ) as THREE.MeshBasicMaterial;
 
     // Create instanced meshes
     this.redPlayers = new THREE.InstancedMesh(
       playerGeometry,
       redMaterial,
-      this.particleCount.red
+      this.particleCount.red,
     );
     this.redPlayers.name = "redPlayers";
     this.scene.add(this.redPlayers);
@@ -845,7 +846,7 @@ export class DodgeballScene {
     this.greenPlayers = new THREE.InstancedMesh(
       playerGeometry,
       greenMaterial,
-      this.particleCount.green
+      this.particleCount.green,
     );
     this.greenPlayers.name = "greenPlayers";
     this.scene.add(this.greenPlayers);
@@ -853,7 +854,7 @@ export class DodgeballScene {
     this.blueBalls = new THREE.InstancedMesh(
       ballGeometry,
       blueMaterial,
-      this.particleCount.blueBalls
+      this.particleCount.blueBalls,
     );
     this.blueBalls.name = "blueBalls";
     this.scene.add(this.blueBalls);
@@ -862,7 +863,7 @@ export class DodgeballScene {
     this.redTrails = new THREE.InstancedMesh(
       trailGeometry,
       redTrailMaterial,
-      this.particleCount.red * 3
+      this.particleCount.red * 3,
     );
     this.redTrails.name = "redTrails";
     this.scene.add(this.redTrails);
@@ -870,7 +871,7 @@ export class DodgeballScene {
     this.greenTrails = new THREE.InstancedMesh(
       trailGeometry,
       greenTrailMaterial,
-      this.particleCount.green * 3
+      this.particleCount.green * 3,
     );
     this.greenTrails.name = "greenTrails";
     this.scene.add(this.greenTrails);
@@ -878,7 +879,7 @@ export class DodgeballScene {
     this.blueTrails = new THREE.InstancedMesh(
       trailGeometry,
       blueTrailMaterial,
-      this.particleCount.blueBalls * 3
+      this.particleCount.blueBalls * 3,
     );
     this.blueTrails.name = "blueTrails";
     this.scene.add(this.blueTrails);
@@ -887,7 +888,7 @@ export class DodgeballScene {
     this.collisionEffects = new THREE.InstancedMesh(
       collisionGeometry,
       collisionMaterial,
-      this.maxCollisions
+      this.maxCollisions,
     );
     this.collisionEffects.name = "collisionEffects";
     this.scene.add(this.collisionEffects);
@@ -1336,7 +1337,7 @@ export class DodgeballScene {
 
     // Team imbalance affects tension
     const teamDifference = Math.abs(
-      this.gameState.redTeamActive - this.gameState.greenTeamActive
+      this.gameState.redTeamActive - this.gameState.greenTeamActive,
     );
     const totalPlayers =
       this.gameState.redTeamActive + this.gameState.greenTeamActive;
@@ -1354,7 +1355,7 @@ export class DodgeballScene {
 
     // Balls in play increase tension
     const ballsInMotion = this.gameState.ballState.filter(
-      (state) => state === "thrown"
+      (state) => state === "thrown",
     ).length;
     tension += 0.2 * (ballsInMotion / this.particleCount.blueBalls);
 
@@ -1623,7 +1624,7 @@ export class DodgeballScene {
       const distance = Math.sqrt(
         (targetX - throwX) * (targetX - throwX) +
           (targetY - throwY) * (targetY - throwY) +
-          (targetZ - throwZ) * (targetZ - throwZ)
+          (targetZ - throwZ) * (targetZ - throwZ),
       );
 
       // Normalize and scale by throw speed
@@ -1676,7 +1677,7 @@ export class DodgeballScene {
       const distance = Math.sqrt(
         (targetX - throwX) * (targetX - throwX) +
           (targetY - throwY) * (targetY - throwY) +
-          (targetZ - throwZ) * (targetZ - throwZ)
+          (targetZ - throwZ) * (targetZ - throwZ),
       );
 
       // Normalize and scale by throw speed
@@ -1876,7 +1877,7 @@ export class DodgeballScene {
                 // Increase tension
                 this.gameState.tensionFactor = Math.min(
                   1.0,
-                  this.gameState.tensionFactor + 0.2
+                  this.gameState.tensionFactor + 0.2,
                 );
               } else {
                 // Player gets hit!
@@ -1901,7 +1902,7 @@ export class DodgeballScene {
                 // Increase tension
                 this.gameState.tensionFactor = Math.min(
                   1.0,
-                  this.gameState.tensionFactor + 0.3
+                  this.gameState.tensionFactor + 0.3,
                 );
               }
             }
@@ -2014,7 +2015,7 @@ export class DodgeballScene {
             positions[idx],
             positions[idx + 1] + 0.5,
             positions[idx + 2],
-            team === "red"
+            team === "red",
           );
         }
       }
@@ -2073,7 +2074,7 @@ export class DodgeballScene {
       const speed = Math.sqrt(
         this.redVelocities[idx] * this.redVelocities[idx] +
           this.redVelocities[idx + 1] * this.redVelocities[idx + 1] +
-          this.redVelocities[idx + 2] * this.redVelocities[idx + 2]
+          this.redVelocities[idx + 2] * this.redVelocities[idx + 2],
       );
 
       // Update player rotation based on movement
@@ -2087,7 +2088,7 @@ export class DodgeballScene {
         const moveDir = new THREE.Vector3(
           this.redVelocities[idx],
           this.redVelocities[idx + 1],
-          this.redVelocities[idx + 2]
+          this.redVelocities[idx + 2],
         ).normalize();
 
         // Apply stretch in movement direction
@@ -2112,7 +2113,7 @@ export class DodgeballScene {
       this.position.set(
         this.redPositions[idx],
         this.redPositions[idx + 1],
-        this.redPositions[idx + 2]
+        this.redPositions[idx + 2],
       );
       this.quaternion.setFromEuler(this.rotation);
       this.matrix.compose(this.position, this.quaternion, this.scale);
@@ -2129,8 +2130,8 @@ export class DodgeballScene {
             new THREE.Vector3(
               -this.redVelocities[idx] * 3,
               -this.redVelocities[idx + 1] * 3,
-              -this.redVelocities[idx + 2] * 3
-            )
+              -this.redVelocities[idx + 2] * 3,
+            ),
           );
 
         // Set trail with decreasing scale
@@ -2142,7 +2143,7 @@ export class DodgeballScene {
           this.matrix.compose(
             this.redTrailPositions[i][t],
             this.quaternion,
-            this.scale
+            this.scale,
           );
           this.redTrails?.setMatrixAt(i * 3 + t, this.matrix);
 
@@ -2217,7 +2218,7 @@ export class DodgeballScene {
       const speed = Math.sqrt(
         this.greenVelocities[idx] * this.greenVelocities[idx] +
           this.greenVelocities[idx + 1] * this.greenVelocities[idx + 1] +
-          this.greenVelocities[idx + 2] * this.greenVelocities[idx + 2]
+          this.greenVelocities[idx + 2] * this.greenVelocities[idx + 2],
       );
 
       // Update player rotation based on movement
@@ -2231,7 +2232,7 @@ export class DodgeballScene {
         const moveDir = new THREE.Vector3(
           this.greenVelocities[idx],
           this.greenVelocities[idx + 1],
-          this.greenVelocities[idx + 2]
+          this.greenVelocities[idx + 2],
         ).normalize();
 
         // Apply stretch in movement direction
@@ -2256,7 +2257,7 @@ export class DodgeballScene {
       this.position.set(
         this.greenPositions[idx],
         this.greenPositions[idx + 1],
-        this.greenPositions[idx + 2]
+        this.greenPositions[idx + 2],
       );
       this.quaternion.setFromEuler(this.rotation);
       this.matrix.compose(this.position, this.quaternion, this.scale);
@@ -2273,8 +2274,8 @@ export class DodgeballScene {
             new THREE.Vector3(
               -this.greenVelocities[idx] * 3,
               -this.greenVelocities[idx + 1] * 3,
-              -this.greenVelocities[idx + 2] * 3
-            )
+              -this.greenVelocities[idx + 2] * 3,
+            ),
           );
 
         // Set trail with decreasing scale
@@ -2286,7 +2287,7 @@ export class DodgeballScene {
           this.matrix.compose(
             this.greenTrailPositions[i][t],
             this.quaternion,
-            this.scale
+            this.scale,
           );
           this.greenTrails?.setMatrixAt(i * 3 + t, this.matrix);
 
@@ -2328,7 +2329,7 @@ export class DodgeballScene {
         this.position.set(
           this.blueBallsPositions[idx],
           this.blueBallsPositions[idx + 1],
-          this.blueBallsPositions[idx + 2]
+          this.blueBallsPositions[idx + 2],
         );
 
         // Spin the ball
@@ -2375,7 +2376,7 @@ export class DodgeballScene {
             this.position.set(
               this.blueBallsPositions[idx],
               this.blueBallsPositions[idx + 1],
-              this.blueBallsPositions[idx + 2]
+              this.blueBallsPositions[idx + 2],
             );
 
             // Spin the ball slower when carried
@@ -2418,14 +2419,14 @@ export class DodgeballScene {
             this.blueBallsVelocities[idx + 1] *
               this.blueBallsVelocities[idx + 1] +
             this.blueBallsVelocities[idx + 2] *
-              this.blueBallsVelocities[idx + 2]
+              this.blueBallsVelocities[idx + 2],
         );
 
         // Update position
         this.position.set(
           this.blueBallsPositions[idx],
           this.blueBallsPositions[idx + 1],
-          this.blueBallsPositions[idx + 2]
+          this.blueBallsPositions[idx + 2],
         );
 
         // Fast spin when thrown
@@ -2440,7 +2441,7 @@ export class DodgeballScene {
         const moveDir = new THREE.Vector3(
           this.blueBallsVelocities[idx],
           this.blueBallsVelocities[idx + 1],
-          this.blueBallsVelocities[idx + 2]
+          this.blueBallsVelocities[idx + 2],
         ).normalize();
 
         // Apply stretch
@@ -2466,8 +2467,8 @@ export class DodgeballScene {
               new THREE.Vector3(
                 -this.blueBallsVelocities[idx] * 4,
                 -this.blueBallsVelocities[idx + 1] * 4,
-                -this.blueBallsVelocities[idx + 2] * 4
-              )
+                -this.blueBallsVelocities[idx + 2] * 4,
+              ),
             );
 
           // Set trail with decreasing scale - more prominent for thrown balls
@@ -2479,7 +2480,7 @@ export class DodgeballScene {
             this.matrix.compose(
               this.blueTrailPositions[i][t],
               this.quaternion,
-              this.scale
+              this.scale,
             );
             this.blueTrails?.setMatrixAt(i * 3 + t, this.matrix);
 
@@ -2520,7 +2521,7 @@ export class DodgeballScene {
           const speed = Math.sqrt(
             this.blueBallsVelocities[idx] * this.blueBallsVelocities[idx] +
               this.blueBallsVelocities[idx + 2] *
-                this.blueBallsVelocities[idx + 2]
+                this.blueBallsVelocities[idx + 2],
           );
 
           if (speed < 0.001) {
@@ -2536,7 +2537,7 @@ export class DodgeballScene {
         this.position.set(
           this.blueBallsPositions[idx],
           this.blueBallsPositions[idx + 1],
-          this.blueBallsPositions[idx + 2]
+          this.blueBallsPositions[idx + 2],
         );
 
         // Roll the ball
@@ -2548,13 +2549,13 @@ export class DodgeballScene {
           const rollAxis = new THREE.Vector3(
             -this.blueBallsVelocities[idx + 2],
             0,
-            this.blueBallsVelocities[idx]
+            this.blueBallsVelocities[idx],
           ).normalize();
 
           const rollSpeed = Math.sqrt(
             this.blueBallsVelocities[idx] * this.blueBallsVelocities[idx] +
               this.blueBallsVelocities[idx + 2] *
-                this.blueBallsVelocities[idx + 2]
+                this.blueBallsVelocities[idx + 2],
           );
 
           this.rotation.x += rollAxis.x * rollSpeed * 20 * deltaTime;
@@ -2624,7 +2625,7 @@ export class DodgeballScene {
             this.blueBallsVelocities[idx + 1] *
               this.blueBallsVelocities[idx + 1] +
             this.blueBallsVelocities[idx + 2] *
-              this.blueBallsVelocities[idx + 2]
+              this.blueBallsVelocities[idx + 2],
         );
 
         // Rotation based on velocity
@@ -2642,7 +2643,7 @@ export class DodgeballScene {
           const moveDir = new THREE.Vector3(
             this.blueBallsVelocities[idx],
             this.blueBallsVelocities[idx + 1],
-            this.blueBallsVelocities[idx + 2]
+            this.blueBallsVelocities[idx + 2],
           ).normalize();
 
           // Apply stretch in movement direction
@@ -2662,7 +2663,7 @@ export class DodgeballScene {
         this.position.set(
           this.blueBallsPositions[idx],
           this.blueBallsPositions[idx + 1],
-          this.blueBallsPositions[idx + 2]
+          this.blueBallsPositions[idx + 2],
         );
 
         this.matrix.compose(this.position, this.quaternion, this.scale);
@@ -2679,8 +2680,8 @@ export class DodgeballScene {
               new THREE.Vector3(
                 -this.blueBallsVelocities[idx] * 4,
                 -this.blueBallsVelocities[idx + 1] * 4,
-                -this.blueBallsVelocities[idx + 2] * 4
-              )
+                -this.blueBallsVelocities[idx + 2] * 4,
+              ),
             );
 
           // Set trail with decreasing scale - more prominent than player trails
@@ -2692,7 +2693,7 @@ export class DodgeballScene {
             this.matrix.compose(
               this.blueTrailPositions[i][t],
               this.quaternion,
-              this.scale
+              this.scale,
             );
             this.blueTrails?.setMatrixAt(i * 3 + t, this.matrix);
 
@@ -2726,7 +2727,7 @@ export class DodgeballScene {
     const checkRatio = 0.2; // Check 20% of particles per frame
     const redCheckCount = Math.floor(this.particleCount.red * checkRatio);
     const redStartIdx = Math.floor(
-      Math.random() * (this.particleCount.red - redCheckCount)
+      Math.random() * (this.particleCount.red - redCheckCount),
     );
 
     // Check red vs green collisions
@@ -2741,7 +2742,7 @@ export class DodgeballScene {
       // Check against a few random green players
       const greenCheck = Math.min(
         5,
-        Math.floor(this.particleCount.green * 0.1)
+        Math.floor(this.particleCount.green * 0.1),
       );
 
       for (let j = 0; j < greenCheck; j++) {
@@ -2768,7 +2769,7 @@ export class DodgeballScene {
             (rx + gx) / 2,
             (ry + gy) / 2,
             (rz + gz) / 2,
-            Math.random() > 0.5 // Random team color
+            Math.random() > 0.5, // Random team color
           );
 
           // Apply repulsion forces
@@ -2801,7 +2802,7 @@ export class DodgeballScene {
     // Blue balls collisions - check a subset each frame
     const blueCheckCount = Math.floor(this.particleCount.blueBalls * 0.5);
     const blueStartIdx = Math.floor(
-      Math.random() * (this.particleCount.blueBalls - blueCheckCount)
+      Math.random() * (this.particleCount.blueBalls - blueCheckCount),
     );
 
     for (let i = blueStartIdx; i < blueStartIdx + blueCheckCount; i++) {
@@ -2816,7 +2817,7 @@ export class DodgeballScene {
           this.blueBallsVelocities[blueIdx + 1] *
             this.blueBallsVelocities[blueIdx + 1] +
           this.blueBallsVelocities[blueIdx + 2] *
-            this.blueBallsVelocities[blueIdx + 2]
+            this.blueBallsVelocities[blueIdx + 2],
       );
 
       if (ballSpeed < 0.03) continue;
@@ -2840,7 +2841,7 @@ export class DodgeballScene {
             (bx + rx) / 2,
             (by + ry) / 2,
             (bz + rz) / 2,
-            false // Green team effect (red player hit)
+            false, // Green team effect (red player hit)
           );
 
           // Eliminate player with dramatic effect
@@ -2864,7 +2865,7 @@ export class DodgeballScene {
                 rx + Math.cos(angle) * radius,
                 ry + Math.random() * 0.7, // Higher vertical spread
                 rz + Math.sin(angle) * radius,
-                false // Green team color (red player hit)
+                false, // Green team color (red player hit)
               );
             }
           }
@@ -2898,7 +2899,7 @@ export class DodgeballScene {
             (bx + gx) / 2,
             (by + gy) / 2,
             (bz + gz) / 2,
-            true // Red team effect (green player hit)
+            true, // Red team effect (green player hit)
           );
 
           // Eliminate player with dramatic effect
@@ -2922,7 +2923,7 @@ export class DodgeballScene {
                 gx + Math.cos(angle) * radius,
                 gy + Math.random() * 0.7, // Higher vertical spread
                 gz + Math.sin(angle) * radius,
-                true // Red team color (green player hit)
+                true, // Red team color (green player hit)
               );
             }
           }
@@ -2945,7 +2946,7 @@ export class DodgeballScene {
     x: number,
     y: number,
     z: number,
-    isRed: boolean
+    isRed: boolean,
   ): void {
     if (this.activeCollisions >= this.maxCollisions) return;
 
@@ -2962,11 +2963,11 @@ export class DodgeballScene {
     // Use redish or greenish color for the collision
     if (isRed) {
       (this.collisionEffects?.material as THREE.MeshBasicMaterial).color.set(
-        0xff5555
+        0xff5555,
       );
     } else {
       (this.collisionEffects?.material as THREE.MeshBasicMaterial).color.set(
-        0x55ff55
+        0x55ff55,
       );
     }
 
@@ -2974,7 +2975,7 @@ export class DodgeballScene {
     this.rotation.set(
       Math.random() * Math.PI * 2,
       Math.random() * Math.PI * 2,
-      Math.random() * Math.PI * 2
+      Math.random() * Math.PI * 2,
     );
     this.quaternion.setFromEuler(this.rotation);
 
@@ -3117,10 +3118,10 @@ export class DodgeballScene {
 
     // Reset player status
     this.gameState.playerStatus.red = new Array(this.particleCount.red).fill(
-      "active"
+      "active",
     );
     this.gameState.playerStatus.green = new Array(
-      this.particleCount.green
+      this.particleCount.green,
     ).fill("active");
     this.gameState.redTeamActive = this.particleCount.red;
     this.gameState.greenTeamActive = this.particleCount.green;
@@ -3154,11 +3155,11 @@ export class DodgeballScene {
     if (this.container) {
       this.container.removeEventListener(
         "mousedown",
-        this.onMouseDown.bind(this)
+        this.onMouseDown.bind(this),
       );
       this.container.removeEventListener(
         "touchstart",
-        this.onTouchStart.bind(this)
+        this.onTouchStart.bind(this),
       );
     }
 
@@ -3177,7 +3178,7 @@ export class DodgeballScene {
   private processMysticalCatch(
     catchingTeam: "red" | "green",
     playerIdx: number,
-    ballIdx: number
+    ballIdx: number,
   ): void {
     // Enter mystical catch phase
     this.gameState.phase = "mystical-catch";
@@ -3208,12 +3209,12 @@ export class DodgeballScene {
         ? new THREE.Vector3(
             this.redPositions[playerIdx * 3],
             this.redPositions[playerIdx * 3 + 1],
-            this.redPositions[playerIdx * 3 + 2]
+            this.redPositions[playerIdx * 3 + 2],
           )
         : new THREE.Vector3(
             this.greenPositions[playerIdx * 3],
             this.greenPositions[playerIdx * 3 + 1],
-            this.greenPositions[playerIdx * 3 + 2]
+            this.greenPositions[playerIdx * 3 + 2],
           );
 
     // Create elimination wave if needed
@@ -3236,7 +3237,7 @@ export class DodgeballScene {
       // Update color for catching team
       const waveColor = catchingTeam === "red" ? 0xff3333 : 0x33ff33;
       (this.eliminationWave.material as THREE.MeshBasicMaterial).color.setHex(
-        waveColor
+        waveColor,
       );
     }
 
@@ -3265,7 +3266,7 @@ export class DodgeballScene {
       // Grow mystical glow intensity
       this.gameState.specialEffects.mysticalGlowIntensity = Math.min(
         1.0,
-        elapsedTime / 1.0
+        elapsedTime / 1.0,
       );
 
       if (this.mysticalBallGlow) {
@@ -3313,7 +3314,7 @@ export class DodgeballScene {
           // Calculate distance to wave origin
           const distToWave = Math.sqrt(
             (px - waveOrigin.x) * (px - waveOrigin.x) +
-              (pz - waveOrigin.z) * (pz - waveOrigin.z)
+              (pz - waveOrigin.z) * (pz - waveOrigin.z),
           );
 
           // If player is within wave radius but not too close to center
@@ -3333,7 +3334,7 @@ export class DodgeballScene {
           // Calculate distance to wave origin
           const distToWave = Math.sqrt(
             (px - waveOrigin.x) * (px - waveOrigin.x) +
-              (pz - waveOrigin.z) * (pz - waveOrigin.z)
+              (pz - waveOrigin.z) * (pz - waveOrigin.z),
           );
 
           // If player is within wave radius but not too close to center

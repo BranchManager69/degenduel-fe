@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { ContestSelect } from "./ContestContext";
 import { ResponseDisplay } from "./ResponseDisplay";
 
@@ -16,7 +17,7 @@ export function GetContestDetail() {
     try {
       setError(null);
       const response = await fetch(
-        `https://degenduel.me/api/contests/${selectedContestId}`
+        `https://degenduel.me/api/contests/${selectedContestId}`,
       );
       const data = await response.json();
       if (!response.ok) throw data;

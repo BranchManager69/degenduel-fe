@@ -1,11 +1,14 @@
 import React, { useState } from "react";
+
 import { useStore } from "../../../store/useStore";
 
 export const AlertsPanel: React.FC = () => {
   const { skyDuel, setSkyDuelSelectedNode } = useStore();
   const [showAll, setShowAll] = useState(false);
-  const [filter, setFilter] = useState<"all" | "critical" | "error" | "warning" | "info">("all");
-  
+  const [filter, setFilter] = useState<
+    "all" | "critical" | "error" | "warning" | "info"
+  >("all");
+
   // Collect all alerts from all nodes
   const allAlerts = skyDuel.nodes.flatMap((node) =>
     node.alerts.map((alert) => ({
@@ -13,29 +16,31 @@ export const AlertsPanel: React.FC = () => {
       nodeId: node.id,
       nodeName: node.name,
       nodeType: node.type,
-    }))
+    })),
   );
-  
+
   // Filter alerts
   const filteredAlerts = allAlerts.filter((alert) => {
     if (filter === "all") return true;
     return alert.severity === filter;
   });
-  
+
   // Sort alerts by timestamp (newest first)
   const sortedAlerts = [...filteredAlerts].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   );
-  
+
   // Limit number of alerts shown unless showAll is true
   const displayAlerts = showAll ? sortedAlerts : sortedAlerts.slice(0, 5);
-  
+
   // Get count of alerts by severity
-  const criticalCount = allAlerts.filter((a) => a.severity === "critical").length;
+  const criticalCount = allAlerts.filter(
+    (a) => a.severity === "critical",
+  ).length;
   const errorCount = allAlerts.filter((a) => a.severity === "error").length;
   const warningCount = allAlerts.filter((a) => a.severity === "warning").length;
   const infoCount = allAlerts.filter((a) => a.severity === "info").length;
-  
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "critical":
@@ -50,7 +55,7 @@ export const AlertsPanel: React.FC = () => {
         return "text-gray-400";
     }
   };
-  
+
   const getSeverityBg = (severity: string) => {
     switch (severity) {
       case "critical":
@@ -65,7 +70,7 @@ export const AlertsPanel: React.FC = () => {
         return "bg-gray-500/10 border-gray-500/20";
     }
   };
-  
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -73,7 +78,7 @@ export const AlertsPanel: React.FC = () => {
           System Alerts
         </h3>
       </div>
-      
+
       {/* Filter tabs */}
       <div className="flex border-b border-dark-600 mb-3">
         <button
@@ -127,7 +132,7 @@ export const AlertsPanel: React.FC = () => {
           Info ({infoCount})
         </button>
       </div>
-      
+
       {/* Alerts list */}
       <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
         {displayAlerts.length > 0 ? (
@@ -135,13 +140,13 @@ export const AlertsPanel: React.FC = () => {
             <div
               key={alert.id}
               className={`p-2 rounded-lg text-sm border ${getSeverityBg(
-                alert.severity
+                alert.severity,
               )}`}
             >
               <div className="flex items-start justify-between mb-1">
                 <div
                   className={`capitalize font-medium ${getSeverityColor(
-                    alert.severity
+                    alert.severity,
                   )}`}
                 >
                   {alert.severity}
@@ -169,7 +174,7 @@ export const AlertsPanel: React.FC = () => {
             No alerts{filter !== "all" ? ` with ${filter} severity` : ""}
           </div>
         )}
-        
+
         {/* Show more/less button */}
         {sortedAlerts.length > 5 && (
           <button

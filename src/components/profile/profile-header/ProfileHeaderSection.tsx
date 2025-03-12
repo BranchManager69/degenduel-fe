@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
+import { ProfileHeader } from "./ProfileHeader";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
-import { ProfileHeader } from "./ProfileHeader";
 
 interface UserData {
   wallet_address: string;
@@ -53,7 +54,7 @@ export const ProfileHeaderSection: React.FC = () => {
           return;
         }
         setError(
-          err instanceof Error ? err.message : "Failed to load user data"
+          err instanceof Error ? err.message : "Failed to load user data",
         );
       } finally {
         setLoading(false);
@@ -75,7 +76,7 @@ export const ProfileHeaderSection: React.FC = () => {
       setUser({ ...user, nickname: newNickname });
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to update nickname"
+        err instanceof Error ? err.message : "Failed to update nickname",
       );
       throw err;
     } finally {

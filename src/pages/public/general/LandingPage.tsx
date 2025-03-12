@@ -9,6 +9,7 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { Link, Link as RouterLink } from "react-router-dom";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 // Features import removed and controlled by feature flag
@@ -72,8 +73,8 @@ export const LandingPage: React.FC = () => {
         // Set open ('pending' / 'upcoming') contests
         setOpenContests(
           contestsArray.filter(
-            (contest: Contest) => contest.status === "pending"
-          )
+            (contest: Contest) => contest.status === "pending",
+          ),
         );
       } catch (err) {
         console.error(`Failed to load contests: ${err}`);
@@ -128,10 +129,10 @@ export const LandingPage: React.FC = () => {
               <div className="w-full h-[40vh] relative overflow-visible z-10">
                 <HeroTitle onComplete={() => {}} />
               </div>
-              
+
               {/* Spacer to push content below the hero animation - reduced since we have proper relative positioning now */}
               <div className="h-[10vh] min-h-[50px] w-full mb-4"></div>
-              
+
               {/* Original animated logo (commented out but preserved) */}
               {/*
               <div className="flex items-center justify-center space-x-4 mb-8">
@@ -346,7 +347,7 @@ export const LandingPage: React.FC = () => {
                     () =>
                       import(
                         "../../../components/landing/features-list/Features"
-                      )
+                      ),
                   );
                   return (
                     <React.Suspense fallback={<div>Loading features...</div>}>

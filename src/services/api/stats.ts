@@ -10,7 +10,7 @@ export const stats = {
   getHistory: async (wallet: string, limit = 10, offset = 0) => {
     const api = createApiClient();
     const response = await api.fetch(
-      `/stats/${wallet}/history?limit=${limit}&offset=${offset}`
+      `/stats/${wallet}/history?limit=${limit}&offset=${offset}`,
     );
     return response.json();
   },

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import React, { MouseEvent, useEffect, useRef, useState } from "react";
+
 import { useAuth } from "../../../hooks/useAuth";
 
 interface Particle {
@@ -145,7 +146,12 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
     },
   ];
 
-  type AnimationStyleType = "default" | "bounce" | "elastic" | "staggered" | "wave";
+  type AnimationStyleType =
+    | "default"
+    | "bounce"
+    | "elastic"
+    | "staggered"
+    | "wave";
 
   interface ConnectorStyle {
     type: "line" | "dot" | "cross" | "triangle" | "pulse";
@@ -172,7 +178,9 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
 
   const getCurrentFont = () => fonts[designVariant % fonts.length].name;
   const getCurrentColorScheme = () =>
-    colorSchemes[Math.floor(designVariant / fonts.length) % colorSchemes.length];
+    colorSchemes[
+      Math.floor(designVariant / fonts.length) % colorSchemes.length
+    ];
   const getCurrentConnector = (): ConnectorStyle => {
     const connector =
       connectorStyles[
@@ -189,16 +197,20 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
   const getCurrentAnimation = (): AnimationStyleType =>
     animationStyles[
       Math.floor(
-        designVariant / (fonts.length * colorSchemes.length * connectorStyles.length)
+        designVariant /
+          (fonts.length * colorSchemes.length * connectorStyles.length),
       ) % animationStyles.length
     ];
 
   const totalVariants =
-    fonts.length * colorSchemes.length * connectorStyles.length * animationStyles.length;
+    fonts.length *
+    colorSchemes.length *
+    connectorStyles.length *
+    animationStyles.length;
 
   // Define more granular phases for precise positioning (0-20)
   const TOTAL_PHASES = 20;
-  
+
   // Phase nav
   const advancePhase = () => {
     setPhase((prev) => (prev >= TOTAL_PHASES ? 0 : prev + 1));
@@ -214,60 +226,67 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
   const previousDesignVariant = () => {
     setDesignVariant((prev) => (prev <= 0 ? totalVariants - 1 : prev - 1));
   };
-  
+
   // Convert phase (0-20) to specific pixel positions for perfect alignment
-  const phaseToPosition = (currentPhase: number, side: "left" | "right"): string => {
+  const phaseToPosition = (
+    currentPhase: number,
+    side: "left" | "right",
+  ): string => {
     // Phase 0: Off-screen, Phase TOTAL_PHASES: Final position (connected)
     if (currentPhase === 0) return side === "left" ? "-100vw" : "100vw";
-    
+
     // When we reach phase 18 or above, keep the words centered with specific offsets for perfect alignment
     if (currentPhase >= 18) {
       // For left side (DUEL now)
       if (side === "left") {
         return "-48%"; // Slight offset to align perfectly with connector
-      } 
+      }
       // For right side (DEGEN now)
       else {
         return "48%"; // Slight offset to align perfectly with connector
       }
     }
-    
+
     if (side === "left") {
       // Left side (DUEL) positioning - needs to move from left edge to center
       // Map phases 1-20 to positions from -70% to -1%, with more granularity in the final approach
       if (currentPhase < TOTAL_PHASES / 4) {
         // First quarter: -70% to -50%
-        return `-${70 - (currentPhase * 20 / (TOTAL_PHASES / 4))}%`;
+        return `-${70 - (currentPhase * 20) / (TOTAL_PHASES / 4)}%`;
       } else if (currentPhase < TOTAL_PHASES / 2) {
         // Second quarter: -50% to -25%
         const progress = (currentPhase - TOTAL_PHASES / 4) / (TOTAL_PHASES / 4);
-        return `-${50 - (progress * 25)}%`;
+        return `-${50 - progress * 25}%`;
       } else if (currentPhase < TOTAL_PHASES * 0.75) {
         // Third quarter: -25% to -10%
-        const progress = (currentPhase - TOTAL_PHASES / 2) / (TOTAL_PHASES * 0.25);
-        return `-${25 - (progress * 15)}%`;
+        const progress =
+          (currentPhase - TOTAL_PHASES / 2) / (TOTAL_PHASES * 0.25);
+        return `-${25 - progress * 15}%`;
       } else {
         // Final quarter: -10% to exact connection point
-        const progress = (currentPhase - TOTAL_PHASES * 0.75) / (TOTAL_PHASES * 0.25);
-        return `-${10 - (progress * 10) - (progress * 38)}%`; // Additional shift for centering
+        const progress =
+          (currentPhase - TOTAL_PHASES * 0.75) / (TOTAL_PHASES * 0.25);
+        return `-${10 - progress * 10 - progress * 38}%`; // Additional shift for centering
       }
     } else {
       // Right side (DEGEN) positioning - needs to move from right edge to center
       if (currentPhase < TOTAL_PHASES / 4) {
         // First quarter: 70% to 50%
-        return `${70 - (currentPhase * 20 / (TOTAL_PHASES / 4))}%`;
+        return `${70 - (currentPhase * 20) / (TOTAL_PHASES / 4)}%`;
       } else if (currentPhase < TOTAL_PHASES / 2) {
         // Second quarter: 50% to 25%
         const progress = (currentPhase - TOTAL_PHASES / 4) / (TOTAL_PHASES / 4);
-        return `${50 - (progress * 25)}%`;
+        return `${50 - progress * 25}%`;
       } else if (currentPhase < TOTAL_PHASES * 0.75) {
         // Third quarter: 25% to 10%
-        const progress = (currentPhase - TOTAL_PHASES / 2) / (TOTAL_PHASES * 0.25);
-        return `${25 - (progress * 15)}%`;
+        const progress =
+          (currentPhase - TOTAL_PHASES / 2) / (TOTAL_PHASES * 0.25);
+        return `${25 - progress * 15}%`;
       } else {
         // Final quarter: 10% to exact connection point
-        const progress = (currentPhase - TOTAL_PHASES * 0.75) / (TOTAL_PHASES * 0.25);
-        return `${10 - (progress * 10) + (progress * 38)}%`; // Additional shift for centering
+        const progress =
+          (currentPhase - TOTAL_PHASES * 0.75) / (TOTAL_PHASES * 0.25);
+        return `${10 - progress * 10 + progress * 38}%`; // Additional shift for centering
       }
     }
   };
@@ -288,11 +307,14 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
     addTimeout(() => setPhase(Math.floor(TOTAL_PHASES * 0.2)), 1800);
     addTimeout(() => setPhase(Math.floor(TOTAL_PHASES * 0.4)), 2700);
     addTimeout(() => setPhase(Math.floor(TOTAL_PHASES * 0.6)), 3400);
-    
+
     // Distribute the remaining phases to create smooth motion
     for (let i = Math.floor(TOTAL_PHASES * 0.6) + 1; i <= TOTAL_PHASES; i++) {
       // Calculate a time point between 3500ms and 4000ms based on remaining phases
-      const timePoint = 3500 + ((i - Math.floor(TOTAL_PHASES * 0.6)) * 500 / (TOTAL_PHASES - Math.floor(TOTAL_PHASES * 0.6)));
+      const timePoint =
+        3500 +
+        ((i - Math.floor(TOTAL_PHASES * 0.6)) * 500) /
+          (TOTAL_PHASES - Math.floor(TOTAL_PHASES * 0.6));
       addTimeout(() => setPhase(i), timePoint);
     }
 
@@ -340,7 +362,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
             opacity: p.opacity - 0.02,
             life: p.life - 0.02,
           }))
-          .filter((p) => p.life > 0)
+          .filter((p) => p.life > 0),
       );
     }, 50);
 
@@ -379,19 +401,21 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
           className="absolute bottom-2 left-2 bg-black/80 text-white text-xs p-3 rounded-md z-50 flex flex-col gap-1 shadow-lg shadow-black/50"
           style={{ maxWidth: "220px" }}
         >
-          <div>Phase: {phase}/{TOTAL_PHASES}</div>
+          <div>
+            Phase: {phase}/{TOTAL_PHASES}
+          </div>
           <div>Font: {getCurrentFont()}</div>
           <div>
             Variant: {designVariant + 1}/{totalVariants}
           </div>
           <div>Animation: {getCurrentAnimation()}</div>
           <div>Connector: {getCurrentConnector().type}</div>
-          
+
           {/* Connector explanation */}
           {/* <div className="mt-1 text-xs opacity-75 border-t border-white/20 pt-1"> */}
           {/*   Connectors may look "bad" due to: */}
           {/*   <ul className="list-disc pl-3 mt-1 space-y-0.5"> */}
-          {/*     <li>Pixel-perfect alignment needed</li> */  }
+          {/*     <li>Pixel-perfect alignment needed</li> */}
           {/*     <li>Font variations affect spacing</li> */}
           {/*     <li>CSS transforms alter rendering</li> */}
           {/*     <li>Text baseline inconsistencies</li> */}
@@ -570,7 +594,8 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
             animate={{
               opacity: phase >= Math.floor(TOTAL_PHASES * 0.7) ? 1 : 0,
               scale: phase >= Math.floor(TOTAL_PHASES * 0.7) ? 1 : 0,
-              rotate: getCurrentConnector().type === "cross" ? [0, 180, 360] : 0,
+              rotate:
+                getCurrentConnector().type === "cross" ? [0, 180, 360] : 0,
             }}
             transition={{
               opacity: { duration: 0.3 },
@@ -641,7 +666,9 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                 <div className="absolute inset-0 flex items-center justify-center">
                   <motion.div
                     className="absolute w-[2px] h-full"
-                    style={{ backgroundColor: getCurrentColorScheme().connector }}
+                    style={{
+                      backgroundColor: getCurrentColorScheme().connector,
+                    }}
                     animate={{ opacity: [0.7, 1, 0.7] }}
                     transition={{
                       duration: 1.5,
@@ -651,7 +678,9 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                   />
                   <motion.div
                     className="absolute w-full h-[2px]"
-                    style={{ backgroundColor: getCurrentColorScheme().connector }}
+                    style={{
+                      backgroundColor: getCurrentColorScheme().connector,
+                    }}
                     animate={{ opacity: [0.7, 1, 0.7] }}
                     transition={{
                       duration: 1.5,
@@ -683,7 +712,11 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                   }}
                   transition={{
                     rotate: { duration: 8, repeat: Infinity, ease: "linear" },
-                    filter: { duration: 2, repeat: Infinity, repeatType: "reverse" },
+                    filter: {
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                    },
                   }}
                 />
               )}
@@ -794,8 +827,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                   getCurrentAnimation() === "bounce"
                     ? [0, -5, 0]
                     : 0,
-                rotate:
-                  getCurrentAnimation() === "elastic" ? [-1, 1, -1] : 0,
+                rotate: getCurrentAnimation() === "elastic" ? [-1, 1, -1] : 0,
               }}
               transition={{
                 opacity: { duration: 0.5 },
@@ -835,10 +867,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                     }),
                   }}
                 >
-                  <span
-                    className="relative"
-                    style={{ marginRight: "-0.15em" }}
-                  >
+                  <span className="relative" style={{ marginRight: "-0.15em" }}>
                     D
                   </span>
                   UEL
@@ -944,7 +973,11 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                         ],
                       }}
                       transition={{
-                        rotate: { duration: 8, repeat: Infinity, ease: "linear" },
+                        rotate: {
+                          duration: 8,
+                          repeat: Infinity,
+                          ease: "linear",
+                        },
                         filter: {
                           duration: 2,
                           repeat: Infinity,
@@ -999,10 +1032,7 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
                     }),
                   }}
                 >
-                  <span
-                    className="relative"
-                    style={{ marginLeft: "-0.15em" }}
-                  >
+                  <span className="relative" style={{ marginLeft: "-0.15em" }}>
                     D
                   </span>
                   EGEN

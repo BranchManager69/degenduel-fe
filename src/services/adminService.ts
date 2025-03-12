@@ -20,36 +20,36 @@ class AdminService {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
       const headers = new Headers({
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
         "X-Debug": "true",
-        "Origin": window.location.origin
+        Origin: window.location.origin,
       });
 
-      console.log('[Admin API Debug] Request Details:', {
+      console.log("[Admin API Debug] Request Details:", {
         url: `${API_URL}${endpoint}`,
-        method: options.method || 'GET',
+        method: options.method || "GET",
         headers: Object.fromEntries([...headers]),
         cookies: document.cookie,
-        parsedCookies: document.cookie.split(';').reduce((acc, cookie) => {
-          const [key, value] = cookie.split('=').map(c => c.trim());
+        parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
+          const [key, value] = cookie.split("=").map((c) => c.trim());
           return { ...acc, [key]: value };
         }, {}),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers,
         credentials: "include",
-        mode: "cors"
+        mode: "cors",
       });
 
-      console.log('[Admin API Debug] Response Details:', {
+      console.log("[Admin API Debug] Response Details:", {
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries([...response.headers]),
         url: response.url,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       if (!response.ok) {
@@ -59,20 +59,20 @@ class AdminService {
           headers: Object.fromEntries([...response.headers]),
           url: response.url,
           cookies: document.cookie,
-          parsedCookies: document.cookie.split(';').reduce((acc, cookie) => {
-            const [key, value] = cookie.split('=').map(c => c.trim());
+          parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
+            const [key, value] = cookie.split("=").map((c) => c.trim());
             return { ...acc, [key]: value };
-          }, {})
+          }, {}),
         });
         throw new Error("Admin API request failed");
       }
 
       return response;
-    }
+    },
   };
 
   async getActivities(
-    filters: AdminActivityFilters
+    filters: AdminActivityFilters,
   ): Promise<AdminActivitiesResponse> {
     const queryParams = new URLSearchParams();
     if (filters.limit) queryParams.append("limit", filters.limit.toString());
@@ -80,7 +80,7 @@ class AdminService {
     if (filters.action) queryParams.append("action", filters.action);
 
     const response = await this.apiClient.fetch(
-      `/admin/activities?${queryParams.toString()}`
+      `/admin/activities?${queryParams.toString()}`,
     );
 
     return response.json();
@@ -88,14 +88,14 @@ class AdminService {
 
   async adjustUserBalance(
     wallet_address: string,
-    amount: number
+    amount: number,
   ): Promise<BalanceAdjustmentResponse> {
     const response = await this.apiClient.fetch(
       `/admin/balance/${wallet_address}/adjust`,
       {
         method: "POST",
-        body: JSON.stringify({ amount })
-      }
+        body: JSON.stringify({ amount }),
+      },
     );
 
     return response.json();

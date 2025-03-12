@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+
 import CircuitBreakerPanel from "../../components/admin/CircuitBreakerPanel";
 import { FaucetManager } from "../../components/admin/FaucetManager";
 import { LiveUserActivityMap } from "../../components/admin/LiveUserActivityMap";
@@ -43,7 +44,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to ${newState ? "enable" : "disable"} maintenance mode`
+          `Failed to ${newState ? "enable" : "disable"} maintenance mode`,
         );
       }
 
@@ -69,7 +70,7 @@ export const SuperAdminDashboard: React.FC = () => {
         } catch (err) {
           console.warn(
             "Failed to set maintenance settings, but mode was toggled:",
-            err
+            err,
           );
         }
       }
@@ -86,7 +87,7 @@ export const SuperAdminDashboard: React.FC = () => {
         setError(
           `Failed to disable maintenance mode. Retrying in ${
             RETRY_DELAY / 1000
-          } seconds... (Attempt ${retryAttempt + 1}/${MAX_RETRIES})`
+          } seconds... (Attempt ${retryAttempt + 1}/${MAX_RETRIES})`,
         );
 
         setTimeout(() => {
@@ -101,7 +102,7 @@ export const SuperAdminDashboard: React.FC = () => {
             err instanceof Error && err.message.includes("network")
               ? "Please check your network connection."
               : "Please try again in a few seconds."
-          }`
+          }`,
         );
         setRetryAttempt(0);
       }
@@ -315,7 +316,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   value={maintenanceDuration}
                   onChange={(e) =>
                     setMaintenanceDuration(
-                      Math.max(1, parseInt(e.target.value) || 1)
+                      Math.max(1, parseInt(e.target.value) || 1),
                     )
                   }
                   className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
@@ -665,7 +666,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 <button
                   onClick={() =>
                     setSelectedSection(
-                      selectedSection === section.id ? null : section.id
+                      selectedSection === section.id ? null : section.id,
                     )
                   }
                   className="block w-full p-6 text-left"

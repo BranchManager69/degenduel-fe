@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { createPortal } from "react-dom";
 import { Controller, ControllerRenderProps, useForm } from "react-hook-form";
+
 import {
   contestFormSchema,
   type ContestFormData,
@@ -572,7 +573,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

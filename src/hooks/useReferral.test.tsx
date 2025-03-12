@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import React, { PropsWithChildren } from "react";
 import { BrowserRouter } from "react-router-dom";
+
 import { ReferralProvider, useReferral } from "./useReferral";
 
 // Extend the NodeJS namespace to include fetch

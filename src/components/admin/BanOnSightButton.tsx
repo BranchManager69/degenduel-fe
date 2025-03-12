@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
+
 import { UserBanModal } from "./BanUserModal";
+import { useAuth } from "../../hooks/useAuth";
 
 interface BanOnSightButtonProps {
   user: {
@@ -22,7 +23,7 @@ export function BanOnSightButton({
   variant = "button",
   className = "",
   onSuccess,
-  currentUserRole, // This parameter is now optional
+  // currentUserRole is unused but kept for backward compatibility
 }: BanOnSightButtonProps) {
   const [showBanModal, setShowBanModal] = useState(false);
   const { isAdmin, isSuperAdmin } = useAuth(); // Use the auth hook's built-in role checks
@@ -38,33 +39,37 @@ export function BanOnSightButton({
   const canBan = () => {
     // Don't allow banning already banned users
     if (user.is_banned) return false;
-    
+
     // Use case-insensitive role comparison for safety
     const getRole = (roleStr?: string) => roleStr?.toLowerCase() || "user";
     const targetUserRole = getRole(user.role);
-    
+
     // Log role information for debugging
     console.log("[BanOnSightButton] Checking ban permissions:", {
       targetUserRole,
       isSuperAdmin: isSuperAdmin(),
       isAdmin: isAdmin(),
-      targetIsBanned: user.is_banned
+      targetIsBanned: user.is_banned,
     });
-    
+
     // Check permission rules:
-    
+
     // 1. Only superadmins can ban other superadmins
     if (targetUserRole === "superadmin" && !isSuperAdmin()) {
-      console.log("[BanOnSightButton] Cannot ban superadmin: insufficient privileges");
+      console.log(
+        "[BanOnSightButton] Cannot ban superadmin: insufficient privileges",
+      );
       return false;
     }
-    
+
     // 2. Only superadmins can ban admins
     if (targetUserRole === "admin" && !isSuperAdmin()) {
-      console.log("[BanOnSightButton] Cannot ban admin: insufficient privileges");
+      console.log(
+        "[BanOnSightButton] Cannot ban admin: insufficient privileges",
+      );
       return false;
     }
-    
+
     // 3. Ensure current user has admin rights
     return isAdmin();
   };
@@ -80,7 +85,11 @@ export function BanOnSightButton({
               ? "bg-red-500 hover:bg-red-600 text-white"
               : "bg-dark-400 text-gray-400 cursor-not-allowed"
           } ${className}`}
-          title={user.is_banned ? "User is already banned" : "Ban this user immediately"}
+          title={
+            user.is_banned
+              ? "User is already banned"
+              : "Ban this user immediately"
+          }
         >
           {user.is_banned ? "Already Banned" : "Ban on Sight"}
         </button>
@@ -93,11 +102,17 @@ export function BanOnSightButton({
               ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
               : "bg-dark-400/20 text-gray-500 cursor-not-allowed"
           } ${className}`}
-          title={user.is_banned ? "User is already banned" : "Ban this user immediately"}
+          title={
+            user.is_banned
+              ? "User is already banned"
+              : "Ban this user immediately"
+          }
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={size === "sm" ? "h-4 w-4" : size === "md" ? "h-5 w-5" : "h-6 w-6"}
+            className={
+              size === "sm" ? "h-4 w-4" : size === "md" ? "h-5 w-5" : "h-6 w-6"
+            }
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
-import { useStore } from '../store/useStore';
+import { useEffect } from "react";
+
+import { useStore } from "../store/useStore";
 
 interface WebSocketMetrics {
   totalConnections: number;
@@ -19,7 +20,7 @@ interface WebSocketPerformance {
 
 interface WebSocketService {
   name: string;
-  status: 'operational' | 'degraded' | 'error';
+  status: "operational" | "degraded" | "error";
   metrics: WebSocketMetrics;
   performance: WebSocketPerformance;
   config?: {
@@ -30,7 +31,7 @@ interface WebSocketService {
 }
 
 interface WebSocketSystemHealth {
-  status: 'operational' | 'degraded' | 'error';
+  status: "operational" | "degraded" | "error";
   activeConnections: number;
   messageRate: number;
   activeIncidents: number;
@@ -49,21 +50,23 @@ export const useWebSocketMonitor = () => {
     let ws: WebSocket | null = null;
 
     const connect = () => {
-      ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/superadmin/ws/monitor`);
+      ws = new WebSocket(
+        `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/api/superadmin/ws/monitor`,
+      );
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           switch (data.type) {
-            case 'system:health':
+            case "system:health":
               setWebSocketState((prev) => ({
                 ...prev,
-                systemHealth: data.data
+                systemHealth: data.data,
               }));
               break;
 
-            case 'service:metrics':
+            case "service:metrics":
               setWebSocketState((prev) => ({
                 ...prev,
                 services: prev.services.map((service) =>
@@ -72,26 +75,26 @@ export const useWebSocketMonitor = () => {
                         ...service,
                         metrics: data.data.metrics,
                         performance: data.data.performance,
-                        status: data.data.status
+                        status: data.data.status,
                       }
-                    : service
-                )
+                    : service,
+                ),
               }));
               break;
 
-            case 'service:alert':
+            case "service:alert":
               addWebSocketAlert({
                 type: data.data.severity,
                 title: `${data.service} Alert`,
-                message: data.data.message
+                message: data.data.message,
               });
               break;
 
             default:
-              console.warn('Unknown WebSocket message type:', data.type);
+              console.warn("Unknown WebSocket message type:", data.type);
           }
         } catch (error) {
-          console.error('Error processing WebSocket message:', error);
+          console.error("Error processing WebSocket message:", error);
         }
       };
 
@@ -101,11 +104,11 @@ export const useWebSocketMonitor = () => {
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
         addWebSocketAlert({
-          type: 'error',
-          title: 'WebSocket Error',
-          message: 'Connection error occurred'
+          type: "error",
+          title: "WebSocket Error",
+          message: "Connection error occurred",
         });
       };
     };
@@ -126,5 +129,5 @@ export type {
   WebSocketPerformance,
   WebSocketService,
   WebSocketSystemHealth,
-  WebSocketState
-}; 
+  WebSocketState,
+};

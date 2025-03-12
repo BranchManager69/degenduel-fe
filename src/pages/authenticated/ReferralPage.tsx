@@ -1,4 +1,5 @@
 import React from "react";
+
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ReferralDashboard } from "../../components/referrals-dashboard/ReferralDashboard";
 

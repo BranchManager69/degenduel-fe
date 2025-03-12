@@ -32,11 +32,11 @@ export const getUserContests = async (): Promise<UserContest[]> => {
   try {
     // Get the current user from the store
     const { user } = useStore.getState();
-    
+
     if (!user?.wallet_address) {
       return [];
     }
-    
+
     const response = await fetch(
       `${API_URL}/contests/participations/${encodeURIComponent(user.wallet_address)}`,
       {
@@ -45,13 +45,13 @@ export const getUserContests = async (): Promise<UserContest[]> => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `Failed to fetch user contests: HTTP ${response.status}`;
-      
+
       try {
         // Try to parse as JSON for more detailed error info
         const errorJson = JSON.parse(errorText);
@@ -64,27 +64,34 @@ export const getUserContests = async (): Promise<UserContest[]> => {
           errorMessage += ` - ${errorText}`;
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
     const data = await response.json();
-    
+
     if (!data.participations || !Array.isArray(data.participations)) {
-      console.warn('Invalid response format from server:', data);
-      throw new Error(`Invalid response format from server: 'participations' array not found in response`);
+      console.warn("Invalid response format from server:", data);
+      throw new Error(
+        `Invalid response format from server: 'participations' array not found in response`,
+      );
     }
-    
+
     // Transform the data to match the expected UserContest format
-    const userContests: UserContest[] = data.participations.map((participation: ContestParticipation) => ({
-      contestId: participation.contest_id.toString(),
-      name: participation.contest.name,
-      status: participation.contest.status === 'pending' ? 'upcoming' : participation.contest.status,
-      startTime: participation.contest.start_time,
-      endTime: participation.contest.end_time,
-      participantCount: Number(participation.contest.participant_count) || 0,
-    }));
-    
+    const userContests: UserContest[] = data.participations.map(
+      (participation: ContestParticipation) => ({
+        contestId: participation.contest_id.toString(),
+        name: participation.contest.name,
+        status:
+          participation.contest.status === "pending"
+            ? "upcoming"
+            : participation.contest.status,
+        startTime: participation.contest.start_time,
+        endTime: participation.contest.end_time,
+        participantCount: Number(participation.contest.participant_count) || 0,
+      }),
+    );
+
     return userContests;
   } catch (error) {
     console.error("Error fetching user contests:", error);
@@ -95,7 +102,10 @@ export const getUserContests = async (): Promise<UserContest[]> => {
 /**
  * Gets detailed participation information for a specific user in a specific contest
  */
-export const getContestParticipation = async (contestId: string | number, walletAddress: string) => {
+export const getContestParticipation = async (
+  contestId: string | number,
+  walletAddress: string,
+) => {
   try {
     const response = await fetch(
       `${API_URL}/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(walletAddress)}`,
@@ -105,13 +115,13 @@ export const getContestParticipation = async (contestId: string | number, wallet
           "Content-Type": "application/json",
         },
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `Failed to fetch participation data: HTTP ${response.status}`;
-      
+
       try {
         const errorJson = JSON.parse(errorText);
         if (errorJson.message || errorJson.error) {
@@ -122,17 +132,20 @@ export const getContestParticipation = async (contestId: string | number, wallet
           errorMessage += ` - ${errorText}`;
         }
       }
-      
+
       throw new Error(errorMessage);
     }
 
     const data = await response.json();
     return {
       isParticipating: data.is_participating,
-      participantData: data.participant_data
+      participantData: data.participant_data,
     };
   } catch (error) {
-    console.error(`Error fetching participation for contest ${contestId}:`, error);
+    console.error(
+      `Error fetching participation for contest ${contestId}:`,
+      error,
+    );
     throw error;
   }
 };

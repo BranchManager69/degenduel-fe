@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useStore } from "../../store/useStore";
+
 import { ddApi } from "../../services/dd-api";
 import { UserLevel } from "../../services/userService";
+import { useStore } from "../../store/useStore";
 
 // Define tier colors for visual representation
 const TIER_COLORS = {
@@ -16,7 +17,9 @@ interface UserProgressProps {
   walletAddress?: string; // Optional for public profiles
 }
 
-export const UserProgress: React.FC<UserProgressProps> = ({ walletAddress }) => {
+export const UserProgress: React.FC<UserProgressProps> = ({
+  walletAddress,
+}) => {
   const { user } = useStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,16 +38,14 @@ export const UserProgress: React.FC<UserProgressProps> = ({ walletAddress }) => 
       try {
         setLoading(true);
         setError(null);
-        
+
         // Use our new getUserLevel API function
         const userData = await ddApi.users.getUserLevel(targetWallet);
         setLevelData(userData);
       } catch (err) {
         console.error("Error fetching user level data:", err);
         setError(
-          err instanceof Error 
-            ? err.message 
-            : "Failed to load user progress"
+          err instanceof Error ? err.message : "Failed to load user progress",
         );
       } finally {
         setLoading(false);
@@ -85,7 +86,7 @@ export const UserProgress: React.FC<UserProgressProps> = ({ walletAddress }) => 
     <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-dark-300/20 p-6 group relative overflow-hidden">
       {/* Fancy background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-      
+
       {/* Level Badge and Title */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 relative">
         <div className="flex items-center gap-4">
@@ -93,26 +94,30 @@ export const UserProgress: React.FC<UserProgressProps> = ({ walletAddress }) => 
           <div className="relative">
             <div className="h-16 w-16 rounded-full bg-gradient-to-r from-brand-400 to-brand-600 flex items-center justify-center">
               {current_level.icon_url ? (
-                <img 
-                  src={current_level.icon_url} 
+                <img
+                  src={current_level.icon_url}
                   alt={`Level ${current_level.level_number}`}
                   className="h-14 w-14 rounded-full object-cover"
                   onError={(e) => {
                     // If image fails to load, show the level number
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
               ) : (
-                <span className="text-2xl font-bold text-white">{current_level.level_number}</span>
+                <span className="text-2xl font-bold text-white">
+                  {current_level.level_number}
+                </span>
               )}
             </div>
-            
+
             {/* Level number overlay */}
             <div className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full bg-dark-100 border border-brand-400 flex items-center justify-center">
-              <span className="text-xs font-bold text-brand-400">{current_level.level_number}</span>
+              <span className="text-xs font-bold text-brand-400">
+                {current_level.level_number}
+              </span>
             </div>
           </div>
-          
+
           {/* Level Info */}
           <div>
             <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-600">
@@ -123,7 +128,7 @@ export const UserProgress: React.FC<UserProgressProps> = ({ walletAddress }) => 
             </p>
           </div>
         </div>
-        
+
         {/* XP Counter */}
         <div className="mt-4 md:mt-0 bg-dark-300/30 px-4 py-2 rounded-lg border border-dark-300/20">
           <p className="text-xs text-gray-400">Experience Points</p>
@@ -148,7 +153,10 @@ export const UserProgress: React.FC<UserProgressProps> = ({ walletAddress }) => 
         </div>
         <div className="flex justify-between text-xs text-gray-400">
           <span>Current Level</span>
-          <span>Level {current_level.level_number + 1} ({Math.floor(experience.percentage)}%)</span>
+          <span>
+            Level {current_level.level_number + 1} (
+            {Math.floor(experience.percentage)}%)
+          </span>
         </div>
       </div>
 
@@ -159,67 +167,68 @@ export const UserProgress: React.FC<UserProgressProps> = ({ walletAddress }) => 
           <span>Achievement Progress</span>
         </h4>
         <div className="grid grid-cols-5 gap-3">
-          {Object.entries(achievements).map(
-            ([tier, { current, required }]) => (
+          {Object.entries(achievements).map(([tier, { current, required }]) => (
+            <div key={tier} className="relative group/tier overflow-hidden">
               <div
-                key={tier}
-                className="relative group/tier overflow-hidden"
+                className={`text-center p-3 rounded bg-dark-300/30 border border-dark-300/20 transition-all duration-300 group-hover/tier:border-${tier}-500/40`}
               >
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover/tier:opacity-100 transition-opacity duration-500"></div>
+
+                {/* Tier Name */}
                 <div
-                  className={`text-center p-3 rounded bg-dark-300/30 border border-dark-300/20 transition-all duration-300 group-hover/tier:border-${tier}-500/40`}
+                  className={`text-xs font-medium mb-1 uppercase text-transparent bg-clip-text bg-gradient-to-r ${TIER_COLORS[tier as keyof typeof TIER_COLORS]}`}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover/tier:opacity-100 transition-opacity duration-500"></div>
-                  
-                  {/* Tier Name */}
-                  <div 
-                    className={`text-xs font-medium mb-1 uppercase text-transparent bg-clip-text bg-gradient-to-r ${TIER_COLORS[tier as keyof typeof TIER_COLORS]}`}
-                  >
-                    {tier}
-                  </div>
-                  
-                  {/* Count with Progress Indicator */}
-                  <div className="relative">
-                    <div className="text-lg font-bold text-white">
-                      {current}
-                      {required > 0 && (
-                        <span className="text-xs text-gray-400">/{required}</span>
-                      )}
-                    </div>
-                    
-                    {/* Progress circle for tiers with requirements */}
+                  {tier}
+                </div>
+
+                {/* Count with Progress Indicator */}
+                <div className="relative">
+                  <div className="text-lg font-bold text-white">
+                    {current}
                     {required > 0 && (
-                      <div className="absolute -top-1 -right-1 h-5 w-5">
-                        <svg viewBox="0 0 36 36" className="w-full h-full">
-                          <path
-                            d="M18 2.0845
-                              a 15.9155 15.9155 0 0 1 0 31.831
-                              a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="#444"
-                            strokeWidth="3"
-                            strokeDasharray="100, 100"
-                          />
-                          <path
-                            d="M18 2.0845
-                              a 15.9155 15.9155 0 0 1 0 31.831
-                              a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke={tier === 'bronze' ? '#B87333' : 
-                                   tier === 'silver' ? '#C0C0C0' : 
-                                   tier === 'gold' ? '#FFD700' : 
-                                   tier === 'platinum' ? '#E5E4E2' : 
-                                   '#B9F2FF'}
-                            strokeWidth="3"
-                            strokeDasharray={`${(current / required) * 100}, 100`}
-                          />
-                        </svg>
-                      </div>
+                      <span className="text-xs text-gray-400">/{required}</span>
                     )}
                   </div>
+
+                  {/* Progress circle for tiers with requirements */}
+                  {required > 0 && (
+                    <div className="absolute -top-1 -right-1 h-5 w-5">
+                      <svg viewBox="0 0 36 36" className="w-full h-full">
+                        <path
+                          d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#444"
+                          strokeWidth="3"
+                          strokeDasharray="100, 100"
+                        />
+                        <path
+                          d="M18 2.0845
+                              a 15.9155 15.9155 0 0 1 0 31.831
+                              a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke={
+                            tier === "bronze"
+                              ? "#B87333"
+                              : tier === "silver"
+                                ? "#C0C0C0"
+                                : tier === "gold"
+                                  ? "#FFD700"
+                                  : tier === "platinum"
+                                    ? "#E5E4E2"
+                                    : "#B9F2FF"
+                          }
+                          strokeWidth="3"
+                          strokeDasharray={`${(current / required) * 100}, 100`}
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </div>
-            )
-          )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

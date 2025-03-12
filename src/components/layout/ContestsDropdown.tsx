@@ -2,6 +2,7 @@ import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment } from "react";
 import { FaTrophy, FaChartPie, FaList } from "react-icons/fa";
 import { Link } from "react-router-dom";
+
 import { useStore } from "../../store/useStore";
 
 interface ContestsDropdownProps {
@@ -13,7 +14,7 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
 }) => {
   // Use direct store access for user authentication status
   const { user } = useStore();
-  
+
   const buttonStyles = {
     bg: "from-brand-500/20 to-brand-400/20",
     text: "text-gray-200",
@@ -34,7 +35,7 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
     to: string;
     protected?: boolean;
   }
-  
+
   const menuItems: MenuItem[] = [
     {
       label: "Browse Contests",
@@ -42,25 +43,25 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
       to: "/contests",
     },
   ];
-  
+
   // Add authenticated-only menu items
   // Simply check if user exists to determine authentication status
   console.log("[DEBUG] Current user:", user);
-  
+
   // Always add these items to the menu - we'll check authentication when rendering
   menuItems.push(
     {
       label: "My Contests",
       icon: FaTrophy,
       to: "/my-contests",
-      protected: true
+      protected: true,
     },
     {
       label: "My Portfolios",
       icon: FaChartPie,
       to: "/my-portfolios",
-      protected: true
-    }
+      protected: true,
+    },
   );
 
   return (
@@ -72,8 +73,8 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
               relative group overflow-hidden transition-all duration-300 ease-out
               ${isCompact ? "h-7 text-sm" : "h-8 text-base"} flex items-center px-3
               rounded-full backdrop-blur-lg border-[0.5px] ${buttonStyles.border} ${
-              buttonStyles.hover.border
-            }
+                buttonStyles.hover.border
+              }
               ${buttonStyles.hover.glow} transition-shadow duration-500
             `}
           >
@@ -137,7 +138,7 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
                   if (item.protected && !user) {
                     return null;
                   }
-                  
+
                   return (
                     <Menu.Item key={item.label}>
                       {({ active }) => (
@@ -152,10 +153,12 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
                             }
                           `}
                         >
-                          <span className={`
+                          <span
+                            className={`
                               w-4 h-4 transition-colors duration-300
                               ${active ? "text-brand-200" : "text-brand-300"}
-                            `}>
+                            `}
+                          >
                             <item.icon />
                           </span>
                           <span>{item.label}</span>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
 import { ddApi } from "../../services/dd-api";
 
 interface TransactionStats {
@@ -93,7 +94,7 @@ interface TransferFormData {
 
 export const FaucetManager: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
+    null,
   );
   const [wallets, setWallets] = useState<WalletData[]>([]);
   const [totalBalance, setTotalBalance] = useState<TotalBalance | null>(null);
@@ -101,7 +102,7 @@ export const FaucetManager: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTimeframe, setSelectedTimeframe] = useState<"24h" | "7d">(
-    "24h"
+    "24h",
   );
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferData, setTransferData] = useState<TransferFormData>({
@@ -152,7 +153,7 @@ export const FaucetManager: React.FC = () => {
 
       if (!walletsData.success || !balanceData.success) {
         throw new Error(
-          walletsData.message || balanceData.message || "Failed to fetch data"
+          walletsData.message || balanceData.message || "Failed to fetch data",
         );
       }
 
@@ -231,7 +232,7 @@ export const FaucetManager: React.FC = () => {
 
       if (data.success) {
         toast.success(
-          `Transferred ${bulkAmount} SOL to ${selectedWallets.length} wallets`
+          `Transferred ${bulkAmount} SOL to ${selectedWallets.length} wallets`,
         );
         setSelectedWallets([]);
         setBulkAmount(0);
@@ -609,7 +610,7 @@ export const FaucetManager: React.FC = () => {
               setSelectedWallets((prev) =>
                 prev.includes(wallet.wallet_address)
                   ? prev.filter((addr) => addr !== wallet.wallet_address)
-                  : [...prev, wallet.wallet_address]
+                  : [...prev, wallet.wallet_address],
               );
             }}
           >

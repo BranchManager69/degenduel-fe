@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
 import { ContestSort } from "../../../components/contest-browser/ContestSort";
@@ -42,7 +43,7 @@ export const ContestBrowser: React.FC = () => {
       // If in maintenance mode, don't fetch contests
       if (isInMaintenance) {
         setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
         );
         return;
       }
@@ -58,7 +59,7 @@ export const ContestBrowser: React.FC = () => {
       if (error instanceof Error && error.message.includes("503")) {
         setIsMaintenanceMode(true);
         setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
         );
       } else {
         setError("Failed to load contests");
@@ -78,7 +79,7 @@ export const ContestBrowser: React.FC = () => {
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
           );
         }
       } catch (err) {
@@ -141,7 +142,7 @@ export const ContestBrowser: React.FC = () => {
     // Apply difficulty filter
     if (activeDifficultyFilter) {
       filtered = filtered.filter(
-        (contest) => contest.settings.difficulty === activeDifficultyFilter
+        (contest) => contest.settings.difficulty === activeDifficultyFilter,
       );
     }
 
@@ -235,7 +236,7 @@ export const ContestBrowser: React.FC = () => {
             <span className="mx-2">›</span>
             <span className="text-gray-300">Contests</span>
           </div>
-          
+
           {/* Enhanced Header Section */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative group">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
@@ -334,7 +335,7 @@ export const ContestBrowser: React.FC = () => {
                       value={activeDifficultyFilter}
                       onChange={(e) =>
                         setActiveDifficultyFilter(
-                          e.target.value as ContestSettings["difficulty"] | ""
+                          e.target.value as ContestSettings["difficulty"] | "",
                         )
                       }
                     >

@@ -1,10 +1,11 @@
 import React from "react";
+
 import { Toast } from "./Toast";
 import { useToast } from "./ToastContext";
 
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useToast();
-  
+
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 flex flex-col-reverse items-center">
       <div className="relative w-full max-w-[800px] mx-auto">
@@ -14,7 +15,7 @@ export const ToastContainer: React.FC = () => {
           const translateX = index * 16;
           const translateY = -offset;
           const scale = 1 - index * 0.005;
-          
+
           return (
             <div
               key={toast.id}
@@ -25,7 +26,7 @@ export const ToastContainer: React.FC = () => {
                   rotate(${rotation}deg)
                   scale(${scale})
                 `,
-                zIndex: toasts.length - index
+                zIndex: toasts.length - index,
               }}
             >
               <Toast

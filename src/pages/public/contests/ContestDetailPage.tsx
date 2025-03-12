@@ -3,6 +3,7 @@
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestDetailHeader } from "../../../components/contest-detail/ContestDetailHeader";
 import { ContestRules } from "../../../components/contest-detail/ContestRules";
@@ -84,7 +85,7 @@ export const ContestDetails: React.FC = () => {
       // If in maintenance mode, don't fetch contest
       if (isInMaintenance) {
         setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
         );
         return;
       }
@@ -138,14 +139,14 @@ export const ContestDetails: React.FC = () => {
                   nickname,
                   score,
                 };
-              }
+              },
             )
           : [],
       };
 
       console.log(
         "Sanitized contest participants:",
-        sanitizedContest.participants
+        sanitizedContest.participants,
       );
 
       // Use the is_participating flag from the API response
@@ -159,7 +160,7 @@ export const ContestDetails: React.FC = () => {
       if (err instanceof Error && err.message.includes("503")) {
         setIsMaintenanceMode(true);
         setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
         );
       } else {
         setError("Failed to load duel details.");
@@ -179,7 +180,7 @@ export const ContestDetails: React.FC = () => {
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
           );
         }
       } catch (err) {
@@ -196,12 +197,12 @@ export const ContestDetails: React.FC = () => {
     if (isContestLive(contest)) {
       // Contest just ended
       setContest((prev: Contest | null) =>
-        prev ? { ...prev, status: "completed" } : null
+        prev ? { ...prev, status: "completed" } : null,
       );
     } else if (contest.status === "pending") {
       // Contest just started
       setContest((prev: Contest | null) =>
-        prev ? { ...prev, status: "active" } : null
+        prev ? { ...prev, status: "active" } : null,
       );
     }
   };
@@ -220,18 +221,18 @@ export const ContestDetails: React.FC = () => {
       console.log("No data available on this duel. Please try again later.");
       return;
     }
-    
+
     // Determine contest state for proper routing
     const now = new Date();
     const startTime = new Date(contest.start_time);
     const endTime = new Date(contest.end_time);
-    
+
     const hasStarted = now >= startTime;
     const hasEnded = now >= endTime;
-    
+
     // Get contest status for logic branching
     const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
-    
+
     // Not connected to wallet - need to connect first
     if (!isFullyConnected) {
       console.log("Wallet Connection Check Failed:", {
@@ -240,7 +241,7 @@ export const ContestDetails: React.FC = () => {
         walletAddress,
         timestamp: new Date().toISOString(),
       });
-      
+
       if (wallet && !connected) {
         // Trigger connect if wallet exists but not connected
         connect(wallet.name);
@@ -249,7 +250,7 @@ export const ContestDetails: React.FC = () => {
       }
       return;
     }
-    
+
     // User is already participating - determine where to navigate based on contest status
     if (isParticipating) {
       if (contestStatus === "ended") {
@@ -264,12 +265,14 @@ export const ContestDetails: React.FC = () => {
         return;
       } else {
         // For upcoming contests, allow portfolio modification
-        console.log("Navigating to portfolio token selection page for modification");
+        console.log(
+          "Navigating to portfolio token selection page for modification",
+        );
         navigate(`/contests/${contest.id}/select-tokens`);
         return;
       }
     }
-    
+
     // User is not participating
     if (contestStatus === "ended") {
       // Contest is over, can't join
@@ -277,7 +280,9 @@ export const ContestDetails: React.FC = () => {
       return;
     } else if (contestStatus === "live") {
       // Contest is in progress, can't join
-      setError("This contest is already in progress and not accepting new entries.");
+      setError(
+        "This contest is already in progress and not accepting new entries.",
+      );
       return;
     } else {
       // Contest is upcoming, allow joining
@@ -447,15 +452,15 @@ export const ContestDetails: React.FC = () => {
                       Info Only
                     </span>
                   </div>
-                  
+
                   <div className="relative overflow-hidden transition-all duration-300">
                     {contest?.settings?.rules &&
                     contest.settings.rules.length > 0 ? (
                       <ContestRules rules={contest.settings.rules} />
                     ) : (
                       <p className="text-gray-400">
-                        No rules in this duel; anything goes. It's every degen for
-                        himself.
+                        No rules in this duel; anything goes. It's every degen
+                        for himself.
                       </p>
                     )}
                   </div>
@@ -468,12 +473,13 @@ export const ContestDetails: React.FC = () => {
                       Token Whitelist
                     </h3>
                     <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                      {contest?.settings?.token_types && contest.settings.token_types.length > 0 
-                        ? "Restricted" 
+                      {contest?.settings?.token_types &&
+                      contest.settings.token_types.length > 0
+                        ? "Restricted"
                         : "Unrestricted"}
                     </span>
                   </div>
-                  
+
                   <div className="relative overflow-hidden transition-all duration-300">
                     {contest?.settings?.token_types &&
                     contest.settings.token_types.length > 0 ? (
@@ -490,43 +496,57 @@ export const ContestDetails: React.FC = () => {
                     ) : (
                       <div className="flex flex-col gap-2">
                         <p className="text-gray-400">
-                          <span className="text-brand-400">Selection Restrictions:</span> None (all tokens available)
+                          <span className="text-brand-400">
+                            Selection Restrictions:
+                          </span>{" "}
+                          None (all tokens available)
                         </p>
                         <p className="text-gray-400">
-                          <span className="text-brand-400">Allocation Limits:</span> Standard portfolio rules apply
+                          <span className="text-brand-400">
+                            Allocation Limits:
+                          </span>{" "}
+                          Standard portfolio rules apply
                         </p>
                         <p className="text-gray-400">
-                          <span className="text-brand-400">Token Categories:</span> All categories permitted
+                          <span className="text-brand-400">
+                            Token Categories:
+                          </span>{" "}
+                          All categories permitted
                         </p>
                         <div className="mt-2 text-xs text-gray-500 bg-dark-300/50 p-2 rounded">
-                          This contest allows you to select from all available tokens in the market.
+                          This contest allows you to select from all available
+                          tokens in the market.
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
-                
+
                 {/* Social Sharing Section */}
                 <div className="mt-8 pt-8 border-t border-dark-300/50">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <h3 className="text-xl font-bold text-gray-100">
                       Share this Duel
                     </h3>
-                    
+
                     <div className="flex items-center gap-3">
                       {/* Twitter/X Share Button */}
-                      <a 
-                        href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${walletAddress ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${walletAddress.slice(0, 8)}` : '&hashtags=DegenDuel,Crypto,Trading'}`}
+                      <a
+                        href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${walletAddress ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${walletAddress.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300"
                       >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
                           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                         </svg>
                         <span className="font-medium">Share</span>
                       </a>
-                      
+
                       {/* Copy Link Button */}
                       <button
                         onClick={() => {
@@ -536,17 +556,29 @@ export const ContestDetails: React.FC = () => {
                         }}
                         className="flex items-center gap-2 px-4 py-2 bg-dark-300/80 hover:bg-dark-300 text-gray-300 hover:text-white rounded-md transition-colors duration-300"
                       >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
                         </svg>
                         <span className="font-medium">Copy Link</span>
                       </button>
                     </div>
                   </div>
-                  
+
                   {walletAddress && (
                     <div className="mt-3 text-sm text-gray-400">
-                      <span className="text-brand-400">💰 Tip:</span> Sharing with your referral code can earn you rewards if new users join!
+                      <span className="text-brand-400">💰 Tip:</span> Sharing
+                      with your referral code can earn you rewards if new users
+                      join!
                     </div>
                   )}
                 </div>
@@ -558,8 +590,8 @@ export const ContestDetails: React.FC = () => {
               {/* Prize Structure - Enhanced with accurate calculations */}
               <div className="group relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
-                <PrizeStructure 
-                  prizePool={Number(contest?.prize_pool || 0)} 
+                <PrizeStructure
+                  prizePool={Number(contest?.prize_pool || 0)}
                   entryFee={Number(contest?.entry_fee || 0)}
                   maxParticipants={Number(contest?.max_participants || 0)}
                   currentParticipants={Number(contest?.participant_count || 0)}
@@ -595,8 +627,18 @@ export const ContestDetails: React.FC = () => {
                               disabled={!isWalletConnected}
                               className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
                             >
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                />
                               </svg>
                               <span>Be the First to Join</span>
                             </button>
@@ -619,8 +661,18 @@ export const ContestDetails: React.FC = () => {
                             disabled={!isWalletConnected}
                             className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
                           >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                              />
                             </svg>
                             <span>Be the First to Join</span>
                           </button>
@@ -642,18 +694,24 @@ export const ContestDetails: React.FC = () => {
               const now = new Date();
               const startTime = new Date(contest.start_time);
               const endTime = new Date(contest.end_time);
-              
+
               const hasStarted = now >= startTime;
               const hasEnded = now >= endTime;
-              
+
               // Contest status for UI display
-              const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
-              
+              const contestStatus = hasEnded
+                ? "ended"
+                : hasStarted
+                  ? "live"
+                  : "upcoming";
+
               // Not connected to wallet
               if (!isWalletConnected) {
                 return (
                   <button
-                    onClick={() => wallet ? connect(wallet.name) : handleJoinContest()}
+                    onClick={() =>
+                      wallet ? connect(wallet.name) : handleJoinContest()
+                    }
                     className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold animate-pulse-slow"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
@@ -664,7 +722,7 @@ export const ContestDetails: React.FC = () => {
                   </button>
                 );
               }
-              
+
               // Connected and participating
               if (isParticipating) {
                 if (contestStatus === "ended") {
@@ -721,7 +779,7 @@ export const ContestDetails: React.FC = () => {
                   );
                 }
               }
-              
+
               // Connected but not participating
               if (contestStatus === "ended") {
                 return (
@@ -753,9 +811,7 @@ export const ContestDetails: React.FC = () => {
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
                     <span className="relative flex items-center justify-center gap-2">
-                      <span className="font-medium">
-                        Select Your Portfolio
-                      </span>
+                      <span className="font-medium">Select Your Portfolio</span>
                       <span>
                         Starts in{" "}
                         <CountdownTimer
@@ -769,7 +825,7 @@ export const ContestDetails: React.FC = () => {
                 );
               }
             })()}
-            
+
             {error && (
               <div className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
                 {error}
@@ -777,7 +833,7 @@ export const ContestDetails: React.FC = () => {
             )}
           </div>
         </div>
-        
+
         {/* Floating Action Button (FAB) on desktop */}
         <div className="hidden md:block fixed top-24 md:top-32 right-6 md:right-10 z-40">
           {/* Determine the contest's current state */}
@@ -785,20 +841,24 @@ export const ContestDetails: React.FC = () => {
             const now = new Date();
             const startTime = new Date(contest.start_time);
             const endTime = new Date(contest.end_time);
-            
+
             const hasStarted = now >= startTime;
             const hasEnded = now >= endTime;
-            
+
             // Contest status for UI display
-            const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
-            
-            // Not connected to wallet - We'll show no button here, as the wallet connection 
+            const contestStatus = hasEnded
+              ? "ended"
+              : hasStarted
+                ? "live"
+                : "upcoming";
+
+            // Not connected to wallet - We'll show no button here, as the wallet connection
             // button is already handled in the mobile view at lines 654-666.
             // The ContestDetailHeader component also manages this already
             if (!isWalletConnected) {
               return null; // No additional button needed
             }
-            
+
             // Connected and participating
             if (isParticipating) {
               if (contestStatus === "ended") {
@@ -809,8 +869,19 @@ export const ContestDetails: React.FC = () => {
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
                     <span className="relative flex items-center justify-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
                       </svg>
                       <span>View Results</span>
                       <svg
@@ -837,9 +908,25 @@ export const ContestDetails: React.FC = () => {
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
                     <span className="relative flex items-center justify-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span>View Live Contest</span>
                       <svg
@@ -866,8 +953,19 @@ export const ContestDetails: React.FC = () => {
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
                     <span className="relative flex items-center justify-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
                       </svg>
                       <span>Modify Portfolio</span>
                       <svg
@@ -888,7 +986,7 @@ export const ContestDetails: React.FC = () => {
                 );
               }
             }
-            
+
             // Connected but not participating
             if (contestStatus === "ended" || contestStatus === "live") {
               // No button for ended or live contests if not participating
@@ -902,8 +1000,19 @@ export const ContestDetails: React.FC = () => {
                     onClick={handleJoinContest}
                     className="relative flex items-center gap-2 px-6 md:px-8 py-4 md:py-5 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-white/10 shadow-2xl"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 animate-bounce-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 mr-2 animate-bounce-slow"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
                     </svg>
                     <span>Select Your Portfolio</span>
                     <svg

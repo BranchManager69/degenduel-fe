@@ -1,33 +1,37 @@
 import React, { useState } from "react";
-import { useStore } from "../../../store/useStore";
+
 import { useSkyDuelWebSocket } from "../../../hooks/useSkyDuelWebSocket";
+import { useStore } from "../../../store/useStore";
 
 interface ServiceControlsProps {
   nodeId: string;
   socket: ReturnType<typeof useSkyDuelWebSocket>;
 }
 
-export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket }) => {
+export const ServiceControls: React.FC<ServiceControlsProps> = ({
+  nodeId,
+  socket,
+}) => {
   const { skyDuel } = useStore();
   const [isLoading, setIsLoading] = useState(false);
   const [operation, setOperation] = useState<string | null>(null);
-  
+
   // Find the selected node
   const node = skyDuel.nodes.find((n) => n.id === nodeId);
-  
+
   if (!node) return null;
-  
+
   const handleCommand = async (command: string) => {
     try {
       setIsLoading(true);
       setOperation(command);
-      
+
       const success = await socket.sendCommand(command, { nodeId });
-      
+
       if (!success) {
         throw new Error("Failed to send command");
       }
-      
+
       // Wait for a moment to allow the command to be processed
       setTimeout(() => {
         setIsLoading(false);
@@ -39,15 +43,17 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
       setOperation(null);
     }
   };
-  
+
   const canRestart = node.status !== "restarting";
   const canStop = node.status === "online" || node.status === "degraded";
   const canStart = node.status === "offline";
-  
+
   return (
     <div className="mt-6 border-t border-dark-600 pt-4">
-      <h4 className="text-sm uppercase tracking-wider text-gray-400 mb-3">Controls</h4>
-      
+      <h4 className="text-sm uppercase tracking-wider text-gray-400 mb-3">
+        Controls
+      </h4>
+
       <div className="grid grid-cols-3 gap-3">
         <button
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -60,9 +66,25 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
         >
           {isLoading && operation === "restart" ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Restarting...
             </span>
@@ -70,7 +92,7 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
             "Restart"
           )}
         </button>
-        
+
         <button
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
             canStop
@@ -82,9 +104,25 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
         >
           {isLoading && operation === "stop" ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Stopping...
             </span>
@@ -92,7 +130,7 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
             "Stop"
           )}
         </button>
-        
+
         <button
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
             canStart
@@ -104,9 +142,25 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
         >
           {isLoading && operation === "start" ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Starting...
             </span>
@@ -115,21 +169,39 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
           )}
         </button>
       </div>
-      
+
       {/* Additional command buttons */}
       <div className="grid grid-cols-2 gap-3 mt-3">
         <button
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-indigo-500 hover:bg-indigo-600 text-white ${
-            isLoading && operation === "diagnose" ? "opacity-75 cursor-wait" : ""
+            isLoading && operation === "diagnose"
+              ? "opacity-75 cursor-wait"
+              : ""
           }`}
           onClick={() => handleCommand("diagnose")}
           disabled={isLoading}
         >
           {isLoading && operation === "diagnose" ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Diagnosing...
             </span>
@@ -137,7 +209,7 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
             "Diagnose Issues"
           )}
         </button>
-        
+
         <button
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-violet-500 hover:bg-violet-600 text-white ${
             isLoading && operation === "reset" ? "opacity-75 cursor-wait" : ""
@@ -147,9 +219,25 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
         >
           {isLoading && operation === "reset" ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Resetting...
             </span>
@@ -157,7 +245,7 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
             "Reset Metrics"
           )}
         </button>
-        
+
         <button
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-500 hover:bg-blue-600 text-white ${
             isLoading && operation === "logs" ? "opacity-75 cursor-wait" : ""
@@ -167,9 +255,25 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
         >
           {isLoading && operation === "logs" ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Fetching...
             </span>
@@ -177,19 +281,37 @@ export const ServiceControls: React.FC<ServiceControlsProps> = ({ nodeId, socket
             "View Logs"
           )}
         </button>
-        
+
         <button
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-rose-500 hover:bg-rose-600 text-white ${
-            isLoading && operation === "clear_alerts" ? "opacity-75 cursor-wait" : ""
+            isLoading && operation === "clear_alerts"
+              ? "opacity-75 cursor-wait"
+              : ""
           }`}
           onClick={() => handleCommand("clear_alerts")}
           disabled={isLoading}
         >
           {isLoading && operation === "clear_alerts" ? (
             <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Clearing...
             </span>

@@ -4,7 +4,7 @@
  * This component creates a 3D dodgeball scene where crypto market tokens battle each other.
  * It uses THREE.InstancedMesh for highly efficient rendering of many 3D objects,
  * with proper trails, stretching, spinning, and lighting effects.
- * 
+ *
  * Performance Optimizations:
  * - Uses a shared THREE.js context for the entire application
  * - Renders all particles in a single draw call with InstancedMesh
@@ -13,8 +13,9 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { MeasureRender, usePerformanceMeasure } from "../../utils/performance";
+
 import { useStore } from "../../store/useStore";
+import { MeasureRender, usePerformanceMeasure } from "../../utils/performance";
 import DodgeballScene from "../../utils/three/DodgeballScene";
 
 // Performance settings
@@ -22,7 +23,7 @@ const OPACITY_MAGNITUDE = 0.7; // General opacity for the scene
 const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 export const ParticlesEffect: React.FC = () => {
-  const renderPerf = usePerformanceMeasure('ParticlesEffect-render');
+  const renderPerf = usePerformanceMeasure("ParticlesEffect-render");
   const { maintenanceMode, user } = useStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<DodgeballScene | null>(null);
@@ -54,19 +55,19 @@ export const ParticlesEffect: React.FC = () => {
     // Create the dodgeball scene
     if (containerRef.current) {
       renderPerf.start();
-      
+
       // Adjust particle counts based on device capabilities
       const particleCount = IS_MOBILE ? 100 : 150;
       const ballCount = IS_MOBILE ? 30 : 40;
-      
+
       // Create and store the scene instance
       sceneRef.current = new DodgeballScene(
         containerRef.current,
-        particleCount,   // red team count
-        particleCount,   // green team count
-        ballCount        // blue dodgeballs count
+        particleCount, // red team count
+        particleCount, // green team count
+        ballCount, // blue dodgeballs count
       );
-      
+
       renderPerf.end();
     }
 
@@ -82,7 +83,7 @@ export const ParticlesEffect: React.FC = () => {
   // Handle mouse/touch interaction for pulse waves
   useEffect(() => {
     if (hasWebGLError || !sceneRef.current) return;
-    
+
     // Handle mouse/touch movement to create pulse waves
     const handleInteraction = (e: MouseEvent | TouchEvent) => {
       // Only create pulse waves occasionally to avoid overloading
@@ -105,7 +106,9 @@ export const ParticlesEffect: React.FC = () => {
       const y = -((clientY / window.innerHeight) * 2 - 1);
 
       // Dispatch a custom event that our scene can listen for
-      const pulseStrength = IS_MOBILE ? 0.7 + Math.random() * 0.3 : 0.5 + Math.random() * 0.5;
+      const pulseStrength = IS_MOBILE
+        ? 0.7 + Math.random() * 0.3
+        : 0.5 + Math.random() * 0.5;
       const event = new CustomEvent("market-pulse", {
         detail: { x, y, strength: pulseStrength },
       });
@@ -116,7 +119,7 @@ export const ParticlesEffect: React.FC = () => {
     window.addEventListener("mousemove", handleInteraction, { passive: true });
     window.addEventListener("touchmove", handleInteraction, { passive: true });
     window.addEventListener("touchstart", handleInteraction, { passive: true });
-    
+
     return () => {
       // Clean up event listeners
       window.removeEventListener("mousemove", handleInteraction);
@@ -150,7 +153,9 @@ export const ParticlesEffect: React.FC = () => {
           height: "100%",
           pointerEvents: "none", // Don't capture clicks/taps
           zIndex: 10,
-          opacity: isMounted ? OPACITY_MAGNITUDE * 0.8 : OPACITY_MAGNITUDE * 0.2, // Fade in
+          opacity: isMounted
+            ? OPACITY_MAGNITUDE * 0.8
+            : OPACITY_MAGNITUDE * 0.2, // Fade in
           transition: "opacity 2s ease-out", // Smooth transition
           transform: "translateZ(0)", // Force GPU acceleration
           willChange: "opacity", // Hint for browser optimization

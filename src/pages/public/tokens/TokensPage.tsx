@@ -1,6 +1,7 @@
 // src/pages/public/tokens/TokensPage.tsx
 
 import React, { useEffect, useState } from "react";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { TokensGrid } from "../../../components/tokens-list/TokensGrid";
@@ -39,7 +40,7 @@ export const TokensPage: React.FC = () => {
         // If in maintenance mode, don't fetch tokens
         if (isInMaintenance) {
           setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
           );
           setLoading(false);
           return;
@@ -104,7 +105,7 @@ export const TokensPage: React.FC = () => {
         if (err instanceof Error && err.message.includes("503")) {
           setIsMaintenanceMode(true);
           setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
           );
         } else {
           setError("Failed to load tokens");
@@ -119,7 +120,7 @@ export const TokensPage: React.FC = () => {
     // Set up auto-refresh interval - 30s for fresh data, 5s for stale
     const refreshInterval = setInterval(
       checkMaintenanceAndFetchTokens,
-      metadata._stale ? 5000 : 30000
+      metadata._stale ? 5000 : 30000,
     );
 
     return () => clearInterval(refreshInterval);
@@ -129,7 +130,7 @@ export const TokensPage: React.FC = () => {
     .filter(
       (token) =>
         token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        token.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+        token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     .sort((a, b) => {
       const aValue = Number(a[sortField]) || 0;
@@ -286,7 +287,7 @@ export const TokensPage: React.FC = () => {
                   <button
                     onClick={() =>
                       setSortDirection((prev) =>
-                        prev === "asc" ? "desc" : "asc"
+                        prev === "asc" ? "desc" : "asc",
                       )
                     }
                     className="bg-dark-300/50 border border-dark-400 hover:border-brand-400/50 rounded-lg px-4 py-2 text-gray-100 transition-all duration-300 relative group/direction"
@@ -302,7 +303,7 @@ export const TokensPage: React.FC = () => {
                       value={imageSource}
                       onChange={(e) =>
                         setImageSource(
-                          e.target.value as "default" | "header" | "openGraph"
+                          e.target.value as "default" | "header" | "openGraph",
                         )
                       }
                       className="appearance-none bg-dark-300/50 border border-dark-400 hover:border-brand-400/50 rounded-lg px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300 pr-10"

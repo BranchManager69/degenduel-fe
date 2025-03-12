@@ -3,6 +3,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
+
 import { DD_PLATFORM_FEE } from "../../config/config";
 import { ddApi } from "../../services/dd-api";
 import { Contest, ContestSettings } from "../../types/index";
@@ -41,7 +42,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     const now = new Date();
     // Subtract 5 hours from the current time, then set to the next hour
     const adjustedTime = new Date(
-      now.setHours(now.getHours() - 5 + 1, 0, 0, 0)
+      now.setHours(now.getHours() - 5 + 1, 0, 0, 0),
     );
     return adjustedTime.toISOString().slice(0, 16);
   };
@@ -72,7 +73,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   const calculateCurrentPrizePool = (
     entryFee: string,
-    currentParticipants: number
+    currentParticipants: number,
   ) => {
     const fee = parseFloat(entryFee) || 0;
     return Math.floor(fee * currentParticipants * (1 - DD_PLATFORM_FEE));
@@ -104,7 +105,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     end_time: new Date(
       new Date(getNextHourDateTime()).getTime() +
         60 * 60 * 1000 -
-        5 * 60 * 60 * 1000
+        5 * 60 * 60 * 1000,
     )
       .toISOString()
       .slice(0, 16),
@@ -145,13 +146,16 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           entry_fee: formData.entry_fee,
           status: "pending" as const,
           prize_pool: String(
-            calculateMaxPrizePool(formData.entry_fee, formData.max_participants)
+            calculateMaxPrizePool(
+              formData.entry_fee,
+              formData.max_participants,
+            ),
           ),
           current_prize_pool: String(
             calculateCurrentPrizePool(
               formData.entry_fee,
-              formData.min_participants
-            )
+              formData.min_participants,
+            ),
           ),
           start_time: formData.start_time,
           end_time: formData.end_time,
@@ -219,7 +223,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                 color: "#fff",
                 border: "1px solid #262626",
               },
-            }
+            },
           );
 
           // Reset form and close modal
@@ -233,7 +237,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           break;
         } else {
           console.warn(
-            `Contest code mismatch. Expected: ${contestData.contest_code}, Got: ${response.contest_code}`
+            `Contest code mismatch. Expected: ${contestData.contest_code}, Got: ${response.contest_code}`,
           );
           toast.error(
             `Failed to create contest ${
@@ -247,7 +251,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                 color: "#fff",
                 border: "1px solid #262626",
               },
-            }
+            },
           );
         }
       } catch (err) {
@@ -262,8 +266,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           console.log(
             `Contest code ${generateContestCode(
               formData.name,
-              attempt
-            )} already exists. Retrying... (${attempt + 1}/${maxAttempts})`
+              attempt,
+            )} already exists. Retrying... (${attempt + 1}/${maxAttempts})`,
           );
           attempt++;
           continue;
@@ -296,7 +300,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
@@ -487,8 +491,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     {formatSolAmount(
                       calculateMaxPrizePool(
                         formData.entry_fee,
-                        formData.max_participants
-                      )
+                        formData.max_participants,
+                      ),
                     )}
                   </div>
                 </div>
@@ -627,6 +631,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
+
+import { DeleteTokenModal } from "./DeleteTokenModal";
 import { useStore } from "../../store/useStore";
 import { Token } from "../../types";
 import { formatNumber } from "../../utils/format";
 import { CopyToClipboard } from "../common/CopyToClipboard";
 import { Button } from "../ui/Button";
-import { DeleteTokenModal } from "./DeleteTokenModal";
 
 interface TokenCardProps {
   token: Token;
@@ -205,7 +206,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                       <p className="font-mono text-sm text-white/70 truncate mt-0.5 group-hover:text-white transition-colors duration-300">
                         {`${token.contractAddress.slice(
                           0,
-                          8
+                          8,
                         )}...${token.contractAddress.slice(-6)}`}
                       </p>
                     </div>

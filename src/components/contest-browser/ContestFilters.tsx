@@ -1,7 +1,8 @@
 import React from "react";
+
+import { ContestSort } from "./ContestSort";
 import type { ContestSettings } from "../../types/index";
 import type { SortDirection, SortField } from "../../types/sort";
-import { ContestSort } from "./ContestSort";
 
 interface ContestFiltersProps {
   activeStatusFilter: string;
@@ -10,7 +11,7 @@ interface ContestFiltersProps {
   sortDirection: SortDirection;
   onStatusFilterChange: (status: string) => void;
   onDifficultyFilterChange: (
-    difficulty: ContestSettings["difficulty"] | ""
+    difficulty: ContestSettings["difficulty"] | "",
   ) => void;
   onSortChange: (field: SortField, direction: SortDirection) => void;
 }
@@ -43,7 +44,7 @@ export const ContestFilters: React.FC<ContestFiltersProps> = ({
         value={activeDifficultyFilter}
         onChange={(e) =>
           onDifficultyFilterChange(
-            e.target.value as ContestSettings["difficulty"] | ""
+            e.target.value as ContestSettings["difficulty"] | "",
           )
         }
       >

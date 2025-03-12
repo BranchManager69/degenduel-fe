@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { API_URL } from "../../config/config";
 
 interface UserBanModalProps {
@@ -44,7 +45,7 @@ export function UserBanModal({
           },
           credentials: "include",
           body: mode === "ban" ? JSON.stringify({ reason: banReason }) : null,
-        }
+        },
       );
 
       const data = await banResponse.json();
@@ -53,11 +54,11 @@ export function UserBanModal({
         switch (banResponse.status) {
           case 400:
             throw new Error(
-              mode === "ban" ? "Ban reason is required" : "Invalid request"
+              mode === "ban" ? "Ban reason is required" : "Invalid request",
             );
           case 403:
             throw new Error(
-              "You don't have permission to modify this user's ban status"
+              "You don't have permission to modify this user's ban status",
             );
           case 404:
             throw new Error("User not found");
@@ -71,18 +72,19 @@ export function UserBanModal({
       setBanReason("");
     } catch (error) {
       console.error(`[BanUserModal] ${mode} user error:`, {
-        error: error instanceof Error ? 
-          { message: error.message, stack: error.stack } : 
-          error,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
         user: userToBan.wallet_address,
         nickname: userToBan.nickname,
         role: userToBan.role,
         roleUpperCase: userToBan.role?.toUpperCase(),
         mode,
-        reason: banReason
+        reason: banReason,
       });
       setError(
-        error instanceof Error ? error.message : `Failed to ${mode} user`
+        error instanceof Error ? error.message : `Failed to ${mode} user`,
       );
     } finally {
       setLoading(false);

@@ -1,11 +1,12 @@
-import React from 'react';
-import * as ToastPrimitive from '@radix-ui/react-toast';
-import { cn } from '../../lib/utils';
+import * as ToastPrimitive from "@radix-ui/react-toast";
+import React from "react";
+
+import { cn } from "../../lib/utils";
 
 interface ToastProps {
   title: string;
   description?: string;
-  variant?: 'default' | 'success' | 'error';
+  variant?: "default" | "success" | "error";
 }
 
 export const ToastProvider = ToastPrimitive.Provider;
@@ -16,8 +17,8 @@ export const ToastViewport = React.forwardRef<
   <ToastPrimitive.Viewport
     ref={ref}
     className={cn(
-      'fixed top-0 right-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:flex-col md:max-w-[420px]',
-      className
+      "fixed top-0 right-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:flex-col md:max-w-[420px]",
+      className,
     )}
     {...props}
   />
@@ -27,18 +28,18 @@ ToastViewport.displayName = ToastPrimitive.Viewport.displayName;
 export const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root> & ToastProps
->(({ className, variant = 'default', title, description, ...props }, ref) => {
+>(({ className, variant = "default", title, description, ...props }, ref) => {
   return (
     <ToastPrimitive.Root
       ref={ref}
       className={cn(
-        'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all',
+        "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all",
         {
-          'bg-dark-300 border-dark-200': variant === 'default',
-          'bg-green-900/50 border-green-800': variant === 'success',
-          'bg-red-900/50 border-red-800': variant === 'error',
+          "bg-dark-300 border-dark-200": variant === "default",
+          "bg-green-900/50 border-green-800": variant === "success",
+          "bg-red-900/50 border-red-800": variant === "error",
         },
-        className
+        className,
       )}
       {...props}
     >

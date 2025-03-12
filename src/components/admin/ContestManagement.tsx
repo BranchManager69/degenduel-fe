@@ -1,4 +1,5 @@
 import React from "react";
+
 import { formatCurrency } from "../../lib/utils";
 import { Contest } from "../../types/index";
 import { CreateContestButton } from "../contest-browser/CreateContestButton";

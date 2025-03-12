@@ -1,7 +1,8 @@
 import { formatDistanceToNow } from "date-fns";
 import React from "react";
-import { Card, CardContent, CardHeader } from "../ui/Card";
+
 import { BanOnSightButton } from "./BanOnSightButton";
+import { Card, CardContent, CardHeader } from "../ui/Card";
 
 interface ActivityWithDate {
   id: string;
@@ -63,12 +64,14 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
         <div className="space-y-4">
           {activities.map((activity) => {
             // If the activity has a user object, use it; otherwise try to extract wallet from details
-            const user = activity.user || (
-              extractWalletFromDetails(activity.details) 
-                ? { wallet_address: extractWalletFromDetails(activity.details)! }
-                : null
-            );
-            
+            const user =
+              activity.user ||
+              (extractWalletFromDetails(activity.details)
+                ? {
+                    wallet_address: extractWalletFromDetails(activity.details)!,
+                  }
+                : null);
+
             return (
               <div
                 key={activity.id}
@@ -88,7 +91,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
                     {user && (
                       <BanOnSightButton
                         user={user}
-                        size="sm" 
+                        size="sm"
                         variant="icon"
                         onSuccess={onUserBanned}
                         className="ml-2"

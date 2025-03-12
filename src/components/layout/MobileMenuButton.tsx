@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+
 import { useStore } from "../../store/useStore";
 
 interface MobileMenuButtonProps {
@@ -109,15 +110,21 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                 </MenuItem>
                 {user && (
                   <>
-                    <MenuItem to="/my-contests" onClick={() => setIsOpen(false)}>
+                    <MenuItem
+                      to="/my-contests"
+                      onClick={() => setIsOpen(false)}
+                    >
                       My Contests
                     </MenuItem>
-                    <MenuItem to="/my-portfolios" onClick={() => setIsOpen(false)}>
+                    <MenuItem
+                      to="/my-portfolios"
+                      onClick={() => setIsOpen(false)}
+                    >
                       My Portfolios
                     </MenuItem>
                   </>
                 )}
-                
+
                 {/* Tokens Section */}
                 <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
                   Tokens
@@ -125,18 +132,27 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                 <MenuItem to="/tokens" onClick={() => setIsOpen(false)}>
                   Browse Tokens
                 </MenuItem>
-                <MenuItem to="/tokens/whitelist" onClick={() => setIsOpen(false)}>
+                <MenuItem
+                  to="/tokens/whitelist"
+                  onClick={() => setIsOpen(false)}
+                >
                   Whitelist
                 </MenuItem>
-                
+
                 {/* Rankings Section */}
                 <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
                   Rankings
                 </div>
-                <MenuItem to="/rankings/global" onClick={() => setIsOpen(false)}>
+                <MenuItem
+                  to="/rankings/global"
+                  onClick={() => setIsOpen(false)}
+                >
                   Global Rankings
                 </MenuItem>
-                <MenuItem to="/rankings/performance" onClick={() => setIsOpen(false)}>
+                <MenuItem
+                  to="/rankings/performance"
+                  onClick={() => setIsOpen(false)}
+                >
                   Performance Rankings
                 </MenuItem>
 

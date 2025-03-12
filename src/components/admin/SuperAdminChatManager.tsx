@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from "react";
+
 import { useUserContests } from "../../hooks/useUserContests";
 import { FloatingContestChat } from "../contest-chat/FloatingContestChat";
 
@@ -24,7 +25,7 @@ export const SuperAdminChatManager: React.FC<
   const [selectedContests, setSelectedContests] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<ContestStatus | "all">(
-    "all"
+    "all",
   );
   const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [activeContestId, setActiveContestId] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export const SuperAdminChatManager: React.FC<
     setSelectedContests((prev) =>
       prev.includes(contestId)
         ? prev.filter((id) => id !== contestId)
-        : [...prev, contestId]
+        : [...prev, contestId],
     );
 
     // Initialize position for new chat if not already set
@@ -78,8 +79,8 @@ export const SuperAdminChatManager: React.FC<
     // Implementation would connect to your backend API
     console.log(
       `[SUPERADMIN BROADCAST] to contests ${selectedContests.join(
-        ", "
-      )}: ${broadcastMessage}`
+        ", ",
+      )}: ${broadcastMessage}`,
     );
 
     // Here you would call your API endpoint to send admin messages
@@ -100,7 +101,7 @@ export const SuperAdminChatManager: React.FC<
 
     // Implementation would connect to your backend API
     console.log(
-      `[SUPERADMIN GLOBAL BROADCAST] to ALL contests: ${broadcastMessage}`
+      `[SUPERADMIN GLOBAL BROADCAST] to ALL contests: ${broadcastMessage}`,
     );
 
     // Here you would call your API endpoint to send admin messages
@@ -129,10 +130,10 @@ export const SuperAdminChatManager: React.FC<
     // If the closed chat was active, set a new active chat
     if (activeContestId === contestId) {
       const remainingContests = selectedContests.filter(
-        (id) => id !== contestId
+        (id) => id !== contestId,
       );
       setActiveContestId(
-        remainingContests.length > 0 ? remainingContests[0] : null
+        remainingContests.length > 0 ? remainingContests[0] : null,
       );
     }
   };
@@ -353,8 +354,8 @@ export const SuperAdminChatManager: React.FC<
                     contest.status === "active"
                       ? "bg-green-900/50 text-green-400"
                       : contest.status === "upcoming"
-                      ? "bg-blue-900/50 text-blue-400"
-                      : "bg-gray-700 text-gray-400"
+                        ? "bg-blue-900/50 text-blue-400"
+                        : "bg-gray-700 text-gray-400"
                   }`}
                 >
                   {contest.status.charAt(0).toUpperCase() +

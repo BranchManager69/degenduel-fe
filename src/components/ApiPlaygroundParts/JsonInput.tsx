@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { JsonInputProps } from "./types";
 
 export function JsonInput({ value, onChange, placeholder }: JsonInputProps) {

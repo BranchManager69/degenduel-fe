@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+
 import { useStore } from "../store/useStore";
 
 export interface WebSocketConfig {
@@ -11,6 +12,7 @@ export interface WebSocketConfig {
   heartbeatInterval?: number;
   maxReconnectAttempts?: number;
   reconnectBackoff?: boolean;
+  requiresAuth?: boolean; // New option to make auth optional for public endpoints
 }
 
 export type ServiceStatus = "online" | "offline" | "degraded" | "error";
@@ -25,9 +27,9 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
     console.log(`[WebSocket:${config.socketType}] [${type}]`, {
       endpoint: config.endpoint,
       timestamp: new Date().toISOString(),
-      ...data
+      ...data,
     });
-    
+
     // Also dispatch event for potential WebSocket monitoring tools
     window.dispatchEvent(
       new CustomEvent("ws-debug", {
@@ -38,23 +40,29 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
           timestamp: new Date().toISOString(),
           data,
         },
-      })
+      }),
     );
   };
 
   useEffect(() => {
-    if (!user?.session_token) {
-      dispatchDebugEvent("error", { message: "No session token available" });
+    // Only check for authentication if the WebSocket endpoint requires it
+    if (config.requiresAuth !== false && !user?.session_token) {
+      dispatchDebugEvent("error", { 
+        message: "No session token available for authenticated WebSocket", 
+        requiresAuth: config.requiresAuth,
+        endpoint: config.endpoint,
+        socketType: config.socketType
+      });
       return;
     }
 
     const connect = () => {
       // Determine the WebSocket URL based on the current domain
       let baseWsUrl;
-      
+
       // Check if we're on the production domain
       const isProdDomain = window.location.hostname === "degenduel.me";
-      
+
       if (isProdDomain) {
         // In production on the main domain, use the same domain for WebSockets
         baseWsUrl = `wss://${window.location.hostname}`;
@@ -65,18 +73,35 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
         // Fallback to current host
         baseWsUrl = `wss://${window.location.host}`;
       }
-      
-      console.log(`[WebSocket:${config.socketType}] [Connecting] [URL: ${baseWsUrl}${config.endpoint}] [Token available: ${!!user.session_token}]`);
-      
-      // Create the WebSocket connection with token as subprotocol
-      const ws = new WebSocket(
-        `${baseWsUrl}${config.endpoint}`,
-        user.session_token
+
+      console.log(
+        `[WebSocket:${config.socketType}] [Connecting] [URL: ${baseWsUrl}${config.endpoint}] [Token available: ${!!user?.session_token}]`,
       );
+
+      // Create the WebSocket connection with token as subprotocol if auth is required
+      const ws = config.requiresAuth !== false && user?.session_token
+        ? new WebSocket(
+            `${baseWsUrl}${config.endpoint}`,
+            user.session_token,
+          )
+        : new WebSocket(`${baseWsUrl}${config.endpoint}`);
+        
+      // Add detailed debug info
+      console.debug(`[WebSocket:${config.socketType}] Connection details:`, {
+        url: `${baseWsUrl}${config.endpoint}`,
+        requiresAuth: config.requiresAuth,
+        usingAuth: config.requiresAuth !== false && !!user?.session_token,
+        tokenLength: user?.session_token ? user.session_token.length : 0,
+        readyState: ws.readyState,
+        protocol: ws.protocol,
+        timestamp: new Date().toISOString()
+      });
 
       ws.onopen = () => {
         reconnectAttempts.current = 0;
-        console.log(`[WebSocket:${config.socketType}] [Connected] [${config.endpoint}]`);
+        console.log(
+          `[WebSocket:${config.socketType}] [Connected] [${config.endpoint}]`,
+        );
         dispatchDebugEvent("connection");
       };
 
@@ -94,13 +119,18 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
       };
 
       ws.onclose = (event) => {
-        console.log(`[WebSocket:${config.socketType}] [Closed] [${config.endpoint}] [Code: ${event.code}] [Reason: ${event.reason || 'No reason provided'}]`);
+        console.log(
+          `[WebSocket:${config.socketType}] [Closed] [${config.endpoint}] [Code: ${event.code}] [Reason: ${event.reason || "No reason provided"}]`,
+        );
         dispatchDebugEvent("close", { code: event.code, reason: event.reason });
         handleReconnection();
       };
 
       ws.onerror = (error) => {
-        console.error(`[WebSocket:${config.socketType}] [Error] [${config.endpoint}]`, error);
+        console.error(
+          `[WebSocket:${config.socketType}] [Error] [${config.endpoint}]`,
+          error,
+        );
         dispatchDebugEvent("error", error);
       };
 
@@ -111,7 +141,7 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
       if (reconnectAttempts.current < (config.maxReconnectAttempts || 5)) {
         const delay = Math.min(
           1000 * Math.pow(2, reconnectAttempts.current),
-          30000
+          30000,
         );
         reconnectAttempts.current++;
         setTimeout(connect, delay);
@@ -136,7 +166,7 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
         wsRef.current = null;
       }
     };
-  }, [config.url, config.endpoint, user?.session_token]);
+  }, [config.url, config.endpoint, config.requiresAuth, user?.session_token]);
 
   // Implement heartbeat if interval is specified
   useEffect(() => {
@@ -148,7 +178,7 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
           JSON.stringify({
             type: "ping",
             timestamp: new Date().toISOString(),
-          })
+          }),
         );
         dispatchDebugEvent("heartbeat");
       }
@@ -176,11 +206,13 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
 
   const getStatus = (): ServiceStatus => {
     if (!wsRef.current) return "offline";
-    
+
     switch (wsRef.current.readyState) {
-      case WebSocket.CONNECTING: return "degraded";
-      case WebSocket.OPEN: return "online";
-      case WebSocket.CLOSING: 
+      case WebSocket.CONNECTING:
+        return "degraded";
+      case WebSocket.OPEN:
+        return "online";
+      case WebSocket.CLOSING:
       case WebSocket.CLOSED:
       default:
         return "offline";
@@ -191,6 +223,6 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
     wsRef,
     status: getStatus(),
     connect,
-    close
+    close,
   };
 };

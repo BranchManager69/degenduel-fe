@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useStore } from '../store/useStore';
+import { useEffect, useState } from "react";
+
+import { useStore } from "../store/useStore";
 // We'll need to update this once the analytics WebSocket is properly set up
 // import { useAnalyticsWebSocket } from './useAnalyticsWebSocket';
 
@@ -21,13 +22,16 @@ interface AnalyticsState {
     averageResponseTime: number;
     errorRate: number;
   };
-  userSegments: Record<string, {
-    userCount: number;
-    averageBalance: number;
-    activityScore: number;
-    retentionRate: number;
-    lastUpdated: string;
-  }>;
+  userSegments: Record<
+    string,
+    {
+      userCount: number;
+      averageBalance: number;
+      activityScore: number;
+      retentionRate: number;
+      lastUpdated: string;
+    }
+  >;
 }
 
 // Extended store type with analytics properties
@@ -39,7 +43,7 @@ interface ExtendedStore {
       last_action: string;
       current_zone: string;
       last_active: string;
-    }>
+    }>;
   };
   systemMetrics?: {
     total_contests: number;
@@ -49,21 +53,23 @@ interface ExtendedStore {
     average_response_time: number;
     error_rate: number;
   };
-  userSegments?: Array<{
-    segment: string;
-    user_count: number;
-    average_balance: number;
-    activity_score: number;
-    retention_rate: number;
-    timestamp: string;
-  }> | {
-    segment: string;
-    user_count: number;
-    average_balance: number;
-    activity_score: number;
-    retention_rate: number;
-    timestamp: string;
-  };
+  userSegments?:
+    | Array<{
+        segment: string;
+        user_count: number;
+        average_balance: number;
+        activity_score: number;
+        retention_rate: number;
+        timestamp: string;
+      }>
+    | {
+        segment: string;
+        user_count: number;
+        average_balance: number;
+        activity_score: number;
+        retention_rate: number;
+        timestamp: string;
+      };
 }
 
 export const useEnhancedAnalytics = () => {
@@ -72,7 +78,7 @@ export const useEnhancedAnalytics = () => {
   const liveUserActivity = store.liveUserActivity;
   const systemMetrics = store.systemMetrics;
   const userSegments = store.userSegments;
-  
+
   // Mocked for now until the real implementation is ready
   const connected = true;
   const [analyticsState, setAnalyticsState] = useState<AnalyticsState>({
@@ -89,7 +95,7 @@ export const useEnhancedAnalytics = () => {
     },
     userSegments: {},
   });
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,31 +108,33 @@ export const useEnhancedAnalytics = () => {
         const zone = user.current_zone;
         zoneMap[zone] = (zoneMap[zone] || 0) + 1;
       });
-      
+
       // Process recent activity
-      const recentActivity = liveUserActivity.users.slice(0, 20).map((user) => ({
-        wallet: user.wallet,
-        nickname: user.nickname,
-        action: user.last_action,
-        zone: user.current_zone,
-        timestamp: user.last_active,
-      }));
-      
-      setAnalyticsState(prev => ({
+      const recentActivity = liveUserActivity.users
+        .slice(0, 20)
+        .map((user) => ({
+          wallet: user.wallet,
+          nickname: user.nickname,
+          action: user.last_action,
+          zone: user.current_zone,
+          timestamp: user.last_active,
+        }));
+
+      setAnalyticsState((prev) => ({
         ...prev,
         activeUsers: liveUserActivity.users.length,
         usersByZone: zoneMap,
-        recentActivity
+        recentActivity,
       }));
-      
+
       setIsLoading(false);
     }
   }, [liveUserActivity]);
-  
+
   // Effect to process system metrics from the store
   useEffect(() => {
     if (systemMetrics) {
-      setAnalyticsState(prev => ({
+      setAnalyticsState((prev) => ({
         ...prev,
         metrics: {
           totalContests: systemMetrics.total_contests,
@@ -135,17 +143,17 @@ export const useEnhancedAnalytics = () => {
           peakConcurrentUsers: systemMetrics.peak_concurrent_users,
           averageResponseTime: systemMetrics.average_response_time,
           errorRate: systemMetrics.error_rate,
-        }
+        },
       }));
     }
   }, [systemMetrics]);
-  
+
   // Effect to process user segments from the store
   useEffect(() => {
     if (userSegments) {
       const segmentsMap: Record<string, any> = {};
       if (Array.isArray(userSegments)) {
-        userSegments.forEach(segment => {
+        userSegments.forEach((segment) => {
           segmentsMap[segment.segment] = {
             userCount: segment.user_count,
             averageBalance: segment.average_balance,
@@ -164,35 +172,35 @@ export const useEnhancedAnalytics = () => {
           lastUpdated: userSegments.timestamp,
         };
       }
-      
-      setAnalyticsState(prev => ({
+
+      setAnalyticsState((prev) => ({
         ...prev,
         userSegments: {
           ...prev.userSegments,
-          ...segmentsMap
-        }
+          ...segmentsMap,
+        },
       }));
     }
   }, [userSegments]);
-  
+
   // Function to reconnect WebSocket (will be implemented later)
   const reconnect = () => console.log("Reconnecting...");
-  
+
   // Handle connection errors
   useEffect(() => {
     if (!connected && !isLoading) {
-      setError('WebSocket connection lost. Attempting to reconnect...');
-      
+      setError("WebSocket connection lost. Attempting to reconnect...");
+
       // Auto-reconnect after 5 seconds
       const reconnectTimer = setTimeout(() => {
         reconnect();
         setError(null);
       }, 5000);
-      
+
       return () => clearTimeout(reconnectTimer);
     }
   }, [connected, isLoading]);
-  
+
   return {
     isLoading,
     error,

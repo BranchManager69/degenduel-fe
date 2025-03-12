@@ -2,7 +2,9 @@
 
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
+
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
+import { ServiceConnection, ServiceNode } from "../hooks/useSkyDuelWebSocket";
 import { WebSocketState } from "../hooks/useWebSocketMonitor";
 import { Contest, Token, User, WalletError } from "../types/index";
 
@@ -77,7 +79,6 @@ interface DebugConfig {
 }
 
 // Import SkyDuel types
-import { ServiceConnection, ServiceNode } from "../hooks/useSkyDuelWebSocket";
 
 // SkyDuel system state
 interface SkyDuelState {
@@ -309,18 +310,18 @@ interface State extends StateData {
   setMaintenanceMode: (enabled: boolean) => void;
   setServiceState: (
     status: "online" | "offline" | "degraded",
-    metrics: { uptime: number; latency: number; activeUsers: number }
+    metrics: { uptime: number; latency: number; activeUsers: number },
   ) => void;
   addServiceAlert: (
     type: "info" | "warning" | "error",
-    message: string
+    message: string,
   ) => void;
   setSkyDuelState: (state: Partial<SkyDuelState>) => void;
   updateSkyDuelNode: (nodeId: string, updates: Partial<ServiceNode>) => void;
   updateSkyDuelConnection: (
     sourceId: string,
     targetId: string,
-    updates: Partial<ServiceConnection>
+    updates: Partial<ServiceConnection>,
   ) => void;
   setSkyDuelSelectedNode: (nodeId: string | null) => void;
   setSkyDuelViewMode: (mode: SkyDuelState["viewMode"]) => void;
@@ -427,7 +428,7 @@ interface State extends StateData {
       last_active: string;
       session_duration: number;
       is_whale: boolean;
-    }>
+    }>,
   ) => void;
   updateSystemMetrics: (metrics: {
     active_users: number;
@@ -473,23 +474,23 @@ interface State extends StateData {
     timestamp: string;
   }) => void;
   updateUserProgress: (
-    progress: StateData["achievements"]["userProgress"]
+    progress: StateData["achievements"]["userProgress"],
   ) => void;
   addAchievement: (
-    achievement: StateData["achievements"]["unlockedAchievements"][0]
+    achievement: StateData["achievements"]["unlockedAchievements"][0],
   ) => void;
   addCelebration: (
-    celebration: StateData["achievements"]["pendingCelebrations"][0]
+    celebration: StateData["achievements"]["pendingCelebrations"][0],
   ) => void;
   clearCelebration: (timestamp: string) => void;
   toggleBackground: (name: keyof StateData["uiDebug"]["backgrounds"]) => void;
   updateBackgroundSetting: (
     name: keyof StateData["uiDebug"]["backgrounds"],
     setting: string,
-    value: number
+    value: number,
   ) => void;
   setWebSocketState: (
-    state: WebSocketState | ((prev: WebSocketState) => WebSocketState)
+    state: WebSocketState | ((prev: WebSocketState) => WebSocketState),
   ) => void;
   addWebSocketAlert: (alert: WebSocketAlert) => void;
 }
@@ -538,7 +539,7 @@ const retryFetch = async (
   url: string,
   options?: RequestInit,
   retries = 3,
-  delay = 1000
+  delay = 1000,
 ) => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -556,12 +557,12 @@ const retryFetch = async (
             headers: Object.fromEntries(response.headers.entries()),
             errorBody: errorText,
             timestamp: new Date().toISOString(),
-          }
+          },
         );
 
         if (i === retries - 1) {
           throw new Error(
-            `Failed after ${retries} attempts. Last error: ${errorText}`
+            `Failed after ${retries} attempts. Last error: ${errorText}`,
           );
         }
 
@@ -791,7 +792,7 @@ export const useStore = create<State>()(
                 "Cache-Control": "no-cache",
                 Pragma: "no-cache",
               },
-            }
+            },
           );
 
           if (!nonceRes.ok) {
@@ -808,12 +809,12 @@ export const useStore = create<State>()(
             // Handle 502 Bad Gateway specifically
             if (nonceRes.status === 502) {
               throw new Error(
-                "Server is currently unavailable. Please try again in a few minutes."
+                "Server is currently unavailable. Please try again in a few minutes.",
               );
             }
 
             throw new Error(
-              `Failed to get nonce after retries: ${nonceRes.status} ${errorText}`
+              `Failed to get nonce after retries: ${nonceRes.status} ${errorText}`,
             );
           }
 
@@ -830,7 +831,7 @@ export const useStore = create<State>()(
           console.log("Requesting message signature from wallet");
           const signedMessage = await solana.signMessage(
             encodedMessage,
-            "utf8"
+            "utf8",
           );
           console.log("Message signed successfully");
 
@@ -845,7 +846,7 @@ export const useStore = create<State>()(
           const authResponse = await verifyWallet(
             walletAddress,
             authPayload.signature,
-            authPayload.message
+            authPayload.message,
           );
 
           // 5) Set user in state
@@ -894,7 +895,7 @@ export const useStore = create<State>()(
 
           if (!user?.wallet_address) {
             console.warn(
-              "[Wallet Debug] No wallet address found for disconnect"
+              "[Wallet Debug] No wallet address found for disconnect",
             );
             // Still proceed with local cleanup
           } else {
@@ -915,7 +916,7 @@ export const useStore = create<State>()(
             } catch (error) {
               console.error(
                 "[Wallet Debug] Disconnect endpoint failed:",
-                error
+                error,
               );
               // Continue with local cleanup even if server call fails
             }
@@ -975,7 +976,7 @@ export const useStore = create<State>()(
             {
               method: "GET",
               credentials: "include",
-            }
+            },
           );
 
           if (!response.ok) {
@@ -986,7 +987,7 @@ export const useStore = create<State>()(
 
           if (backendStatus !== enabled) {
             console.warn(
-              "Maintenance mode state mismatch detected, syncing with backend"
+              "Maintenance mode state mismatch detected, syncing with backend",
             );
             set({ maintenanceMode: backendStatus });
           }
@@ -997,7 +998,7 @@ export const useStore = create<State>()(
             {
               method: "GET",
               credentials: "include",
-            }
+            },
           ).catch(() => null);
 
           if (response) {
@@ -1047,7 +1048,7 @@ export const useStore = create<State>()(
       updateSkyDuelNode: (nodeId, updates) =>
         set((prevState) => {
           const nodeIndex = prevState.skyDuel.nodes.findIndex(
-            (node) => node.id === nodeId
+            (node) => node.id === nodeId,
           );
           if (nodeIndex === -1) return prevState;
 
@@ -1068,7 +1069,7 @@ export const useStore = create<State>()(
       updateSkyDuelConnection: (sourceId, targetId, updates) =>
         set((prevState) => {
           const connectionIndex = prevState.skyDuel.connections.findIndex(
-            (conn) => conn.source === sourceId && conn.target === targetId
+            (conn) => conn.source === sourceId && conn.target === targetId,
           );
           if (connectionIndex === -1) return prevState;
 
@@ -1145,7 +1146,7 @@ export const useStore = create<State>()(
                 ...acc,
                 [user.wallet]: user,
               }),
-              state.analytics.userActivities
+              state.analytics.userActivities,
             ),
           },
         })),
@@ -1237,7 +1238,7 @@ export const useStore = create<State>()(
           achievements: {
             ...state.achievements,
             pendingCelebrations: state.achievements.pendingCelebrations.filter(
-              (c) => c.timestamp !== timestamp
+              (c) => c.timestamp !== timestamp,
             ),
           },
         })),
@@ -1293,7 +1294,7 @@ export const useStore = create<State>()(
             const { enabled: backendStatus } = await response.json();
             if (backendStatus !== state.maintenanceMode) {
               console.warn(
-                "Maintenance mode state mismatch on init, syncing with backend"
+                "Maintenance mode state mismatch on init, syncing with backend",
               );
               state.setMaintenanceMode(backendStatus);
             }
@@ -1302,14 +1303,14 @@ export const useStore = create<State>()(
           console.error("Failed to verify maintenance mode on init:", error);
         }
       },
-    }
-  )
+    },
+  ),
 );
 
 const verifyWallet = async (
   wallet: string,
   signature: any,
-  message: string
+  message: string,
 ) => {
   // If debug mode is enabled, log the request
   if (DDAPI_DEBUG_MODE === "true") {
@@ -1343,7 +1344,7 @@ const verifyWallet = async (
           acc[key.toLowerCase()] = value;
           return acc;
         },
-        {} as Record<string, string>
+        {} as Record<string, string>,
       ),
     });
   }
@@ -1352,7 +1353,7 @@ const verifyWallet = async (
     // Handle 502 Bad Gateway specifically
     if (response.status === 502) {
       throw new Error(
-        "Server is currently unavailable. Please try again in a few minutes."
+        "Server is currently unavailable. Please try again in a few minutes.",
       );
     }
 
@@ -1387,10 +1388,13 @@ const verifyWallet = async (
   if (DDAPI_DEBUG_MODE === "true") {
     console.log("[Auth Debug] Post-delay cookie check:", {
       cookies: document.cookie,
-      parsedCookies: document.cookie.split(";").reduce((acc, cookie) => {
-        const [key, value] = cookie.split("=").map((c) => c.trim());
-        return { ...acc, [key]: value };
-      }, {} as Record<string, string>),
+      parsedCookies: document.cookie.split(";").reduce(
+        (acc, cookie) => {
+          const [key, value] = cookie.split("=").map((c) => c.trim());
+          return { ...acc, [key]: value };
+        },
+        {} as Record<string, string>,
+      ),
     });
   }
 

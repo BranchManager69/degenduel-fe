@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
+
 import { API_URL } from "../../config/config";
 
 interface Contest {
@@ -54,7 +55,7 @@ export function StartContest() {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
 
       const data = await response.json();
@@ -71,7 +72,7 @@ export function StartContest() {
               selectedContest.participant_count
             } more participants (minimum ${
               selectedContest.min_participants
-            } required)`
+            } required)`,
           );
         } else {
           throw new Error(data.error || "Failed to start contest");
@@ -118,7 +119,7 @@ export function StartContest() {
     const startTime = new Date(contest.start_time);
     const now = new Date();
     const diffInMinutes = Math.floor(
-      (startTime.getTime() - now.getTime()) / (1000 * 60)
+      (startTime.getTime() - now.getTime()) / (1000 * 60),
     );
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);

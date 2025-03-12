@@ -2,9 +2,10 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+import { ReferralWelcomeModal } from "./ReferralWelcomeModal";
 import { useAuth } from "../../hooks/useAuth";
 import { useReferral } from "../../hooks/useReferral";
-import { ReferralWelcomeModal } from "./ReferralWelcomeModal";
 
 // Mock the hooks
 jest.mock("../../hooks/useAuth");

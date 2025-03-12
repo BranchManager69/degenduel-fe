@@ -1,6 +1,7 @@
 // src/components/visualization/MarketVerse.tsx
 
 import React, { useEffect, useRef, useState } from "react";
+
 import { useTokenData } from "../../contexts/TokenDataContext";
 import { useStore } from "../../store/useStore";
 import MarketVerseScene from "../../utils/three/MarketVerseScene";
@@ -15,7 +16,9 @@ export const MarketVerse: React.FC = () => {
   // Effect to check for maintenance mode and handle accordingly
   useEffect(() => {
     if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
-      setError("System is currently in maintenance mode. Please check back later.");
+      setError(
+        "System is currently in maintenance mode. Please check back later.",
+      );
       return;
     } else if (error?.includes("maintenance mode")) {
       setError(null);
@@ -25,14 +28,14 @@ export const MarketVerse: React.FC = () => {
   // Initialize scene
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     try {
       sceneRef.current = new MarketVerseScene(containerRef.current);
     } catch (err) {
       console.error("[MarketVerse] Error initializing scene:", err);
       setError("Failed to initialize visualization");
     }
-    
+
     return () => {
       if (sceneRef.current) {
         sceneRef.current.dispose();
@@ -51,7 +54,7 @@ export const MarketVerse: React.FC = () => {
     ) {
       return;
     }
-    
+
     // Update scene with new token data
     sceneRef.current.updateMarketData(tokens);
   }, [tokens, isConnected, lastUpdate, maintenanceMode, user]);
@@ -85,7 +88,8 @@ export const MarketVerse: React.FC = () => {
       )}
       {sceneRef.current?.getLastUpdateTime() && !error && (
         <div className="absolute bottom-4 right-4 text-xs text-gray-500">
-          Last updated: {sceneRef.current.getLastUpdateTime()?.toLocaleTimeString()}
+          Last updated:{" "}
+          {sceneRef.current.getLastUpdateTime()?.toLocaleTimeString()}
         </div>
       )}
     </div>

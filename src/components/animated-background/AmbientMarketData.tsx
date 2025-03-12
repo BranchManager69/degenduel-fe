@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
+
 import { useTokenData } from "../../contexts/TokenDataContext";
 
 interface TokenUpdate {
@@ -31,7 +32,7 @@ interface TokenMetrics {
 export const AmbientMarketData: React.FC = () => {
   const [updates, setUpdates] = useState<TokenUpdate[]>([]);
   const [lastMetrics, setLastMetrics] = useState<Record<string, TokenMetrics>>(
-    {}
+    {},
   );
   const { tokens, isConnected, lastUpdate } = useTokenData();
   const prevTokensRef = useRef<{
@@ -138,7 +139,7 @@ export const AmbientMarketData: React.FC = () => {
         const crossedMilestone = milestones.find(
           (m) =>
             (lastMetric.price < m && currentPrice >= m) ||
-            (lastMetric.price >= m && currentPrice < m)
+            (lastMetric.price >= m && currentPrice < m),
         );
 
         if (crossedMilestone) {
@@ -245,7 +246,7 @@ export const AmbientMarketData: React.FC = () => {
               ease: [0.4, 0, 0.2, 1],
             }}
             className={`absolute flex items-center gap-2 bg-dark-200/80 backdrop-blur-sm border ${getUpdateStyles(
-              update.updateType
+              update.updateType,
             )} rounded-lg px-3 py-2 shadow-lg shadow-brand-400/5`}
           >
             <div className="relative">
@@ -276,10 +277,10 @@ export const AmbientMarketData: React.FC = () => {
                       ? "text-green-400"
                       : "text-red-400"
                     : update.updateType === "volume"
-                    ? "text-purple-400"
-                    : update.updateType === "volatility"
-                    ? "text-red-400"
-                    : "text-cyan-400"
+                      ? "text-purple-400"
+                      : update.updateType === "volatility"
+                        ? "text-red-400"
+                        : "text-cyan-400"
                 }`}
               >
                 {update.description}

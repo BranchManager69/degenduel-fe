@@ -2,6 +2,7 @@
 
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+
 import { Contest, type ContestStatus } from "../types/index";
 
 // Helper: Merge classes
@@ -86,7 +87,7 @@ export const formatDate = (dateString: string): string => {
 
 // Contest statuses
 export const mapContestStatus = (
-  status: Contest["status"]
+  status: Contest["status"],
 ): "upcoming" | "live" | "completed" => {
   switch (status) {
     case "pending":

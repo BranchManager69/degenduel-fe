@@ -19,7 +19,7 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface ServiceState {
@@ -85,8 +85,8 @@ export const ServiceStateMetrics: React.FC<ServiceStateMetricsProps> = ({
     const timestamps = Object.keys(stateHistory).sort();
     const services = Array.from(
       new Set(
-        Object.values(stateHistory).flatMap((state) => Object.keys(state))
-      )
+        Object.values(stateHistory).flatMap((state) => Object.keys(state)),
+      ),
     );
 
     const datasets = services.map((service) => ({

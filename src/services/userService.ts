@@ -58,13 +58,13 @@ class UserService {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          errorData?.error || `Failed to search users: ${response.status}`
+          errorData?.error || `Failed to search users: ${response.status}`,
         );
       }
 
@@ -77,23 +77,20 @@ class UserService {
         : new Error("Failed to search users");
     }
   }
-  
+
   async getUserLevel(walletAddress: string): Promise<UserLevel> {
     try {
-      const response = await fetch(
-        `${API_URL}/users/${walletAddress}/level`,
-        {
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/users/${walletAddress}/level`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          errorData?.error || `Failed to fetch user level: ${response.status}`
+          errorData?.error || `Failed to fetch user level: ${response.status}`,
         );
       }
 

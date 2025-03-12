@@ -1,6 +1,7 @@
 import React from "react";
-import { Token } from "../../types";
+
 import { TokenCard } from "./TokenCard";
+import { Token } from "../../types";
 
 interface TokensGridProps {
   tokens: Token[];

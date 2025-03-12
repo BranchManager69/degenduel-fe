@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { ResponseDisplay } from "./ResponseDisplay";
 
 interface TokenFilters {
@@ -33,16 +34,16 @@ export function TokensList() {
             k === "minMarketCap"
               ? "min_market_cap"
               : k === "minLiquidity"
-              ? "min_liquidity"
-              : k === "minVolume"
-              ? "min_volume"
-              : k,
+                ? "min_liquidity"
+                : k === "minVolume"
+                  ? "min_volume"
+                  : k,
             v,
-          ])
+          ]),
       ).toString();
 
       const response = await fetch(
-        `https://degenduel.me/api/tokens${query ? `?${query}` : ""}`
+        `https://degenduel.me/api/tokens${query ? `?${query}` : ""}`,
       );
       const data = await response.json();
       if (!response.ok) throw data;

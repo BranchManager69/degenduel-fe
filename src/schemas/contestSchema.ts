@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import type { ContestSettings, ContestStatus } from "../types/index";
 
 // Use the existing ContestStatus type
@@ -28,7 +29,7 @@ const contestSettingsSchema = z.object({
       id: z.string(),
       title: z.string(),
       description: z.string(),
-    })
+    }),
   ),
 }) satisfies z.ZodType<ContestSettings>;
 

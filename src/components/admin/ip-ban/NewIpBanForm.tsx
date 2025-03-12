@@ -1,19 +1,20 @@
 // src/components/admin/ip-ban/NewIpBanForm.tsx
 
-import React, { useState } from 'react';
-import { admin } from '../../../services/api/admin';
-import { IpBanCreateParams } from '../../../types';
-import { toast } from 'react-hot-toast';
+import React, { useState } from "react";
+import { toast } from "react-hot-toast";
+
+import { admin } from "../../../services/api/admin";
+import { IpBanCreateParams } from "../../../types";
 
 interface NewIpBanFormProps {
   onBanAdded: () => void;
 }
 
 export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
-  const [ipAddress, setIpAddress] = useState('');
-  const [reason, setReason] = useState('');
+  const [ipAddress, setIpAddress] = useState("");
+  const [reason, setReason] = useState("");
   const [isPermanent, setIsPermanent] = useState(false);
-  const [expiresAt, setExpiresAt] = useState('');
+  const [expiresAt, setExpiresAt] = useState("");
   const [trollLevel, setTrollLevel] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +28,8 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
 
   // Reset form to initial state
   const resetForm = () => {
-    setIpAddress('');
-    setReason('');
+    setIpAddress("");
+    setReason("");
     setIsPermanent(false);
     setExpiresAt(setDefaultExpiresAt());
     setTrollLevel(1);
@@ -39,16 +40,16 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
   const isValidIpAddress = (ip: string) => {
     // IPv4 regex pattern
     const ipv4Pattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-    
+
     if (!ipv4Pattern.test(ip)) return false;
-    
+
     // Validate each octet
-    const octets = ip.split('.');
+    const octets = ip.split(".");
     for (const octet of octets) {
       const num = parseInt(octet, 10);
       if (num < 0 || num > 255) return false;
     }
-    
+
     return true;
   };
 
@@ -58,19 +59,19 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
 
     // Validate IP address
     if (!isValidIpAddress(ipAddress)) {
-      setError('Please enter a valid IPv4 address');
+      setError("Please enter a valid IPv4 address");
       return;
     }
 
     // Validate reason
     if (!reason.trim()) {
-      setError('Ban reason is required');
+      setError("Ban reason is required");
       return;
     }
 
     // Validate expiration for temporary bans
     if (!isPermanent && !expiresAt) {
-      setError('Expiration date is required for temporary bans');
+      setError("Expiration date is required for temporary bans");
       return;
     }
 
@@ -90,12 +91,12 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
     try {
       setLoading(true);
       await admin.ipBan.add(banData);
-      toast.success('IP address banned successfully');
+      toast.success("IP address banned successfully");
       resetForm();
       onBanAdded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to ban IP address');
-      toast.error('Failed to ban IP address');
+      setError(err instanceof Error ? err.message : "Failed to ban IP address");
+      toast.error("Failed to ban IP address");
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,10 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
 
       {/* IP Address */}
       <div>
-        <label htmlFor="ipAddress" className="block text-sm font-medium text-gray-400 mb-1">
+        <label
+          htmlFor="ipAddress"
+          className="block text-sm font-medium text-gray-400 mb-1"
+        >
           IP Address *
         </label>
         <input
@@ -127,7 +131,10 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
 
       {/* Ban Reason */}
       <div>
-        <label htmlFor="reason" className="block text-sm font-medium text-gray-400 mb-1">
+        <label
+          htmlFor="reason"
+          className="block text-sm font-medium text-gray-400 mb-1"
+        >
           Reason *
         </label>
         <textarea
@@ -180,7 +187,10 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
       {/* Expiration Date (only for temporary bans) */}
       {!isPermanent && (
         <div>
-          <label htmlFor="expiresAt" className="block text-sm font-medium text-gray-400 mb-1">
+          <label
+            htmlFor="expiresAt"
+            className="block text-sm font-medium text-gray-400 mb-1"
+          >
             Expires At *
           </label>
           <input
@@ -196,7 +206,10 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
 
       {/* Troll Level */}
       <div>
-        <label htmlFor="trollLevel" className="block text-sm font-medium text-gray-400 mb-1">
+        <label
+          htmlFor="trollLevel"
+          className="block text-sm font-medium text-gray-400 mb-1"
+        >
           Troll Level
         </label>
         <select
@@ -211,7 +224,9 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
           <option value={4}>Level 4 - Severe</option>
           <option value={5}>Level 5 - Maximum</option>
         </select>
-        <p className="mt-1 text-xs text-gray-500">Determines trolling response level to banned users.</p>
+        <p className="mt-1 text-xs text-gray-500">
+          Determines trolling response level to banned users.
+        </p>
       </div>
 
       {/* Submit Button */}
@@ -224,7 +239,7 @@ export const NewIpBanForm: React.FC<NewIpBanFormProps> = ({ onBanAdded }) => {
           {loading && (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           )}
-          {loading ? 'Banning...' : 'Ban IP Address'}
+          {loading ? "Banning..." : "Ban IP Address"}
         </button>
       </div>
     </form>

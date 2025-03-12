@@ -2,7 +2,10 @@ import React, { useState } from "react";
 
 interface ReportGenerationModalProps {
   onClose: () => void;
-  onGenerate: (withAi: boolean, reportType: "service" | "db" | "prisma") => Promise<void>;
+  onGenerate: (
+    withAi: boolean,
+    reportType: "service" | "db" | "prisma",
+  ) => Promise<void>;
 }
 
 export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
@@ -10,7 +13,9 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
   onGenerate,
 }) => {
   const [withAi, setWithAi] = useState(false);
-  const [reportType, setReportType] = useState<"service" | "db" | "prisma">("service");
+  const [reportType, setReportType] = useState<"service" | "db" | "prisma">(
+    "service",
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,11 +37,13 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
       <div className="bg-dark-200/90 rounded-lg shadow-2xl w-full max-w-md overflow-hidden border border-dark-300 animate-fade-in">
         <div className="p-6 relative">
           <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-cyber-500/5 opacity-70 pointer-events-none" />
-          
+
           <div className="relative">
-            <h2 className="text-xl font-semibold mb-2 text-gray-100 font-heading">Generate System Report</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-100 font-heading">
+              Generate System Report
+            </h2>
             <div className="h-1 w-24 bg-gradient-to-r from-brand-500 to-cyber-500 rounded mb-4"></div>
-            
+
             <p className="text-gray-300 mb-6">
               Generate a new system report to analyze the current state of the
               application.
@@ -45,8 +52,18 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
             {error && (
               <div className="mb-6 p-4 bg-red-900/20 text-red-400 rounded-md text-sm border border-red-900/40">
                 <div className="flex items-start">
-                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  <svg
+                    className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
                   </svg>
                   <span>{error}</span>
                 </div>
@@ -55,14 +72,16 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
 
             <div className="bg-dark-300/50 rounded-lg p-4 mb-6 border border-dark-300/70">
               <div className="mb-4">
-                <label className="text-gray-200 font-medium mb-2 block">Report Type</label>
+                <label className="text-gray-200 font-medium mb-2 block">
+                  Report Type
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setReportType("service")}
                     className={`px-3 py-2 rounded-md text-center text-sm ${
-                      reportType === "service" 
-                        ? "bg-brand-500 text-white" 
+                      reportType === "service"
+                        ? "bg-brand-500 text-white"
                         : "bg-dark-300/70 text-gray-300 hover:bg-dark-300"
                     }`}
                   >
@@ -72,8 +91,8 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
                     type="button"
                     onClick={() => setReportType("db")}
                     className={`px-3 py-2 rounded-md text-center text-sm ${
-                      reportType === "db" 
-                        ? "bg-brand-500 text-white" 
+                      reportType === "db"
+                        ? "bg-brand-500 text-white"
                         : "bg-dark-300/70 text-gray-300 hover:bg-dark-300"
                     }`}
                   >
@@ -83,8 +102,8 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
                     type="button"
                     onClick={() => setReportType("prisma")}
                     className={`px-3 py-2 rounded-md text-center text-sm ${
-                      reportType === "prisma" 
-                        ? "bg-brand-500 text-white" 
+                      reportType === "prisma"
+                        ? "bg-brand-500 text-white"
                         : "bg-dark-300/70 text-gray-300 hover:bg-dark-300"
                     }`}
                   >
@@ -92,12 +111,15 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
                   </button>
                 </div>
                 <p className="text-gray-400 text-xs mt-2">
-                  {reportType === "service" && "Analyze service health and configuration"}
-                  {reportType === "db" && "Compare database schema with expected state"}
-                  {reportType === "prisma" && "Reconcile Prisma schema with database"}
+                  {reportType === "service" &&
+                    "Analyze service health and configuration"}
+                  {reportType === "db" &&
+                    "Compare database schema with expected state"}
+                  {reportType === "prisma" &&
+                    "Reconcile Prisma schema with database"}
                 </p>
               </div>
-              
+
               <div className="border-t border-dark-300/40 pt-4 mt-4">
                 <div className="flex items-center">
                   <input
@@ -107,16 +129,30 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
                     onChange={(e) => setWithAi(e.target.checked)}
                     className="mr-3 h-5 w-5 accent-brand-500"
                   />
-                  <label htmlFor="withAi" className="text-gray-200 font-medium flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <label
+                    htmlFor="withAi"
+                    className="text-gray-200 font-medium flex items-center"
+                  >
+                    <svg
+                      className="w-5 h-5 mr-2 text-brand-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
                     </svg>
                     Include AI analysis
                   </label>
                 </div>
                 {withAi && (
                   <p className="text-gray-400 text-sm mt-3 ml-8">
-                    AI will analyze the report data and provide insights on system performance and potential issues.
+                    AI will analyze the report data and provide insights on
+                    system performance and potential issues.
                   </p>
                 )}
               </div>
@@ -139,17 +175,42 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
                 <span className="relative flex items-center">
                   {isGenerating ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Generating...
                     </>
                   ) : (
                     <>
                       Generate Report
-                      <svg className="ml-2 -mr-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      <svg
+                        className="ml-2 -mr-1 w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
                       </svg>
                     </>
                   )}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
 import { ddApi } from "../../services/dd-api";
 
 interface ComplexityAnalysis {
@@ -35,7 +36,7 @@ export const VanityPool: React.FC = () => {
   const [pattern, setPattern] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [position, setPosition] = useState<"start" | "end" | "anywhere">(
-    "start"
+    "start",
   );
   const [isCaseSensitive, setIsCaseSensitive] = useState(false);
   const [metadata, setMetadata] = useState("");
@@ -43,7 +44,7 @@ export const VanityPool: React.FC = () => {
   const [workerStatus, setWorkerStatus] = useState<WorkerStatus | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedWallets, setGeneratedWallets] = useState<GeneratedWallet[]>(
-    []
+    [],
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -75,7 +76,7 @@ export const VanityPool: React.FC = () => {
   const fetchWorkerStatus = async () => {
     try {
       const response = await ddApi.fetch(
-        "/api/admin/vanity-wallets/pool/workers"
+        "/api/admin/vanity-wallets/pool/workers",
       );
       const data = await response.json();
 
@@ -136,7 +137,7 @@ export const VanityPool: React.FC = () => {
     } catch (err) {
       console.error(err);
       toast.error(
-        err instanceof Error ? err.message : "Failed to generate vanity wallet"
+        err instanceof Error ? err.message : "Failed to generate vanity wallet",
       );
       setErrorMessage(err instanceof Error ? err.message : "Generation failed");
     } finally {
@@ -233,7 +234,7 @@ export const VanityPool: React.FC = () => {
                 {complexity.estimatedTime.estimatedSeconds < 60
                   ? `${complexity.estimatedTime.estimatedSeconds}s`
                   : `${Math.ceil(
-                      complexity.estimatedTime.estimatedSeconds / 60
+                      complexity.estimatedTime.estimatedSeconds / 60,
                     )}m`}
               </div>
             )}

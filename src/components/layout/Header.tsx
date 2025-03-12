@@ -2,6 +2,12 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+
+import { ContestsDropdown } from "./ContestsDropdown";
+import { LiveContestTicker } from "./LiveContestTicker";
+import { MobileMenuButton } from "./MobileMenuButton";
+import { RankingsDropdown } from "./RankingsDropdown";
+import { TokensDropdown } from "./TokensDropdown";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotificationWebSocket } from "../../hooks/useNotificationWebSocket";
 import { useScrollHeader } from "../../hooks/useScrollHeader";
@@ -11,11 +17,6 @@ import { useStore } from "../../store/useStore";
 import type { Contest } from "../../types/index";
 import { ConnectWalletButton } from "../auth/ConnectWalletButton";
 import Logo from "../ui/Logo";
-import { ContestsDropdown } from "./ContestsDropdown";
-import { LiveContestTicker } from "./LiveContestTicker";
-import { MobileMenuButton } from "./MobileMenuButton";
-import { RankingsDropdown } from "./RankingsDropdown";
-import { TokensDropdown } from "./TokensDropdown";
 import { UserMenu } from "./user-menu/UserMenu";
 
 export const Header: React.FC = () => {
@@ -58,10 +59,9 @@ export const Header: React.FC = () => {
         //    (active, pending, completed, and cancelled)
         // 4. This is an easy temporary solution until the evaluation service is fixed
         //setActiveContests(contests || []);
-        
+
         // NEVERMIND! C.E.S. should be back up and running now:
         setActiveContests(contests.filter(isContestLive) || []);
-        
       } catch (err: any) {
         if (err?.status === 503 || err?.message?.includes("503")) {
           handleMaintenanceTransition();
@@ -114,7 +114,7 @@ export const Header: React.FC = () => {
             } catch (err) {
               console.error(
                 "Failed to fetch contests during maintenance exit:",
-                err
+                err,
               );
               // Don't update maintenance mode if we can't fetch contests
               return;
@@ -253,13 +253,13 @@ export const Header: React.FC = () => {
             {/* Left section: Logo and Nav */}
             <div className="flex items-center">
               {/* Logo - New clean version */}
-              <div 
+              <div
                 className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
                   ${isCompact ? "scale-[0.9]" : "scale-100"}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Logo 
-                  size={isCompact ? "sm" : "md"} 
+                <Logo
+                  size={isCompact ? "sm" : "md"}
                   asLink={true}
                   animated={true}
                 />

@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 
 interface DividerProps {
   children?: ReactNode;
@@ -9,7 +9,10 @@ interface DividerProps {
  * Divider component with optional text content
  * Used for separating sections with an optional label in the middle
  */
-export const Divider: React.FC<DividerProps> = ({ children, className = '' }) => {
+export const Divider: React.FC<DividerProps> = ({
+  children,
+  className = "",
+}) => {
   // If there are no children, render a simple divider
   if (!children) {
     return (

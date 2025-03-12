@@ -118,51 +118,62 @@ export const ContestDifficulty: React.FC<ContestDifficultyProps> = ({
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10">
       {/* Expandable drawer */}
-      <div 
+      <div
         onClick={(e) => e.stopPropagation()}
         className={`
           overflow-hidden transition-all duration-300 ease-in-out
-          ${isExpanded ? 'max-h-36' : 'max-h-0'}
+          ${isExpanded ? "max-h-36" : "max-h-0"}
         `}
       >
-        <div className={`
+        <div
+          className={`
           bg-gradient-to-b ${config.colors.from} to-black/90
           p-4 backdrop-blur-md border-t ${config.colors.border}
           transform transition-all duration-300
-          ${isExpanded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-        `}>
+          ${isExpanded ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}
+        `}
+        >
           <div className="flex items-center gap-3 mb-2">
             <span className="text-2xl">{config.icon}</span>
             <div>
-              <h4 className={`text-sm font-bold ${config.colors.text}`}>{config.label} Mode</h4>
-              <p className="text-xs text-gray-300">For {config.label === "Unknown" ? "players of all levels" : `${config.label} level players`}</p>
+              <h4 className={`text-sm font-bold ${config.colors.text}`}>
+                {config.label} Mode
+              </h4>
+              <p className="text-xs text-gray-300">
+                For{" "}
+                {config.label === "Unknown"
+                  ? "players of all levels"
+                  : `${config.label} level players`}
+              </p>
             </div>
           </div>
           <p className="text-xs text-gray-400">
-            {config.label === "Unknown" 
+            {config.label === "Unknown"
               ? "Standard contest with no special rules or restrictions."
               : `A ${config.label.toLowerCase()}-tier contest with special mechanics for experienced players.`}
           </p>
         </div>
       </div>
-      
+
       {/* Colored bar indicator */}
-      <div 
+      <div
         onClick={toggleExpand}
         className={`
           cursor-pointer h-4 w-full
           bg-gradient-to-r ${config.colors.from} ${config.colors.to}
           transition-all duration-300 ease-in-out
           group border-t ${config.colors.border}
-          ${isExpanded ? 'h-1.5' : 'hover:h-5'}
+          ${isExpanded ? "h-1.5" : "hover:h-5"}
         `}
       >
         <div className="absolute inset-x-0 bottom-0 flex justify-center">
-          <span className={`
+          <span
+            className={`
             transform transition-transform duration-300
-            ${isExpanded ? 'rotate-180 translate-y-1' : 'translate-y-0'}
+            ${isExpanded ? "rotate-180 translate-y-1" : "translate-y-0"}
             ${config.colors.text} opacity-70 text-xs
-          `}>
+          `}
+          >
             ▲
           </span>
         </div>

@@ -1,8 +1,9 @@
 import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { ddApi } from "../../services/dd-api";
+
 import { ReferralDashboard } from "./ReferralDashboard";
+import { ddApi } from "../../services/dd-api";
 
 // Mock the API
 jest.mock("../../services/dd-api");
@@ -169,7 +170,7 @@ describe("ReferralDashboard Leaderboard", () => {
         expect(screen.getByText(/Current Period:/)).toBeInTheDocument();
         expect(screen.getByText(/1,500/)).toBeInTheDocument();
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
   });
 
@@ -183,7 +184,7 @@ describe("ReferralDashboard Leaderboard", () => {
         expect(screen.getByText(/100 Referrals/)).toBeInTheDocument();
         expect(screen.getByText(/Reward: 1,000 DUEL/)).toBeInTheDocument();
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
   });
 
@@ -201,7 +202,7 @@ describe("ReferralDashboard Leaderboard", () => {
         // Find qualified referrals
         expect(screen.getByText(/30 have dueled/)).toBeInTheDocument();
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
   });
 });

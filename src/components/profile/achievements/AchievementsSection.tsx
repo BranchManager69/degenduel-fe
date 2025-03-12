@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
+
+import { AchievementsList } from "./AchievementsList";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Achievement } from "../../../types/profile";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
-import { AchievementsList } from "./AchievementsList";
 
 export const AchievementsSection: React.FC = () => {
   const { user, maintenanceMode } = useStore();
@@ -22,7 +23,7 @@ export const AchievementsSection: React.FC = () => {
       try {
         setError(null);
         const achievementsResponse = await ddApi.stats.getAchievements(
-          user.wallet_address
+          user.wallet_address,
         );
         setAchievements(achievementsResponse);
       } catch (err) {
@@ -31,7 +32,7 @@ export const AchievementsSection: React.FC = () => {
           return;
         }
         setError(
-          err instanceof Error ? err.message : "Failed to load achievements"
+          err instanceof Error ? err.message : "Failed to load achievements",
         );
       } finally {
         setLoading(false);

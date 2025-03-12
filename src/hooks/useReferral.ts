@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+
 import { ddApi } from "../services/dd-api";
 import { ReferralAnalytics } from "../types/referral.types";
 
@@ -51,7 +52,7 @@ const getDeviceType = () => {
   }
   if (
     /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(
-      ua
+      ua,
     )
   ) {
     return "mobile";
@@ -68,8 +69,10 @@ export const ReferralProvider = ({
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<ReferralAnalytics | null>(null);
-  const [referrerProfile, setReferrerProfile] = useState<ReferrerProfile | null>(null);
-  const [referralRewards, setReferralRewards] = useState<ReferralRewards | null>(null);
+  const [referrerProfile, setReferrerProfile] =
+    useState<ReferrerProfile | null>(null);
+  const [referralRewards, setReferralRewards] =
+    useState<ReferralRewards | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -104,23 +107,27 @@ export const ReferralProvider = ({
   const fetchReferrerDetails = async (code: string) => {
     try {
       console.log("[Referral] Fetching referrer details for code:", code);
-      const response = await fetch(`/api/referrals/details?code=${encodeURIComponent(code)}`);
-      
+      const response = await fetch(
+        `/api/referrals/details?code=${encodeURIComponent(code)}`,
+      );
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch referrer details: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch referrer details: ${response.status} ${response.statusText}`,
+        );
       }
-      
+
       const data = await response.json();
       console.log("[Referral] Received referrer details:", data);
-      
+
       if (data.referrer) {
         setReferrerProfile(data.referrer);
       }
-      
+
       if (data.rewards) {
         setReferralRewards(data.rewards);
       }
-      
+
       return data;
     } catch (error) {
       console.error("[Referral] Error fetching referrer details:", error);
@@ -136,28 +143,37 @@ export const ReferralProvider = ({
     // Secondary method: Check if the URL path contains a referral code
     // For example, a URL like "degenduel.me/join/ABC123" or just "degenduel.me/ABC123"
     if (!ref) {
-      const pathSegments = location.pathname.split('/').filter(Boolean);
+      const pathSegments = location.pathname.split("/").filter(Boolean);
       if (pathSegments.length > 0) {
         const lastSegment = pathSegments[pathSegments.length - 1];
         // Check if the last path segment looks like a referral code
         if (/^[A-Z0-9-_]{3,32}$/i.test(lastSegment)) {
-          console.log("[Referral] Found potential referral code in URL path:", lastSegment);
+          console.log(
+            "[Referral] Found potential referral code in URL path:",
+            lastSegment,
+          );
           ref = lastSegment;
         }
       }
     }
 
     // Enhanced logging for troubleshooting
-    console.log("[Referral] Processing URL:", location.href);
+    console.log("[Referral] Processing URL:", window.location.href);
     console.log("[Referral] URL Path:", location.pathname);
     console.log("[Referral] URL Search:", location.search);
     console.log("[Referral] URL Hash:", location.hash);
-    console.log("[Referral] Found referral code:", ref);
-    
+    console.log("[Referral] Found referral code:", ref ?? "none");
+
     // Debug info for developers
     if (import.meta.env.DEV) {
-      console.log("[Referral Debug] All URL params:", Object.fromEntries(params.entries()));
-      console.log("[Referral Debug] Path segments:", location.pathname.split('/').filter(Boolean));
+      console.log(
+        "[Referral Debug] All URL params:",
+        Object.fromEntries(params.entries()),
+      );
+      console.log(
+        "[Referral Debug] Path segments:",
+        location.pathname.split("/").filter(Boolean),
+      );
     }
 
     if (ref) {
@@ -171,8 +187,8 @@ export const ReferralProvider = ({
       const source = location.pathname.includes("/contests/")
         ? "contest"
         : location.pathname.includes("/profile/")
-        ? "profile"
-        : "direct";
+          ? "profile"
+          : "direct";
 
       // Capture UTM parameters
       const utmSource = params.get("utm_source");
@@ -202,21 +218,21 @@ export const ReferralProvider = ({
 
       console.log(
         "Referral Click Tracking - Request Payload:",
-        JSON.stringify(requestPayload, null, 2)
+        JSON.stringify(requestPayload, null, 2),
       );
 
       // Save everything to localStorage
       localStorage.setItem("referral_code", ref);
       localStorage.setItem(
         "referral_metrics",
-        JSON.stringify(requestPayload.clickData)
+        JSON.stringify(requestPayload.clickData),
       );
 
       // Update state
       setReferralCode(ref);
 
       // Fetch referrer profile details
-      fetchReferrerDetails(ref).catch(error => {
+      fetchReferrerDetails(ref).catch((error) => {
         console.error("[Referral] Failed to fetch referrer details:", error);
       });
 
@@ -250,7 +266,7 @@ export const ReferralProvider = ({
           });
           if (!response.ok) {
             throw new Error(
-              `API Error: ${responseData?.error || response.statusText}`
+              `API Error: ${responseData?.error || response.statusText}`,
             );
           }
         })

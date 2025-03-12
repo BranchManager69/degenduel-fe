@@ -18,6 +18,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import styled from "styled-components";
+
 import { WebSocketCard } from "../../components/admin/WebSocketCard";
 
 interface WebSocketService {
@@ -60,8 +61,8 @@ const ServiceNode = ({ data }: ServiceNodeProps) => (
       data.status === "operational"
         ? "bg-green-500/20 border-green-500/30"
         : data.status === "degraded"
-        ? "bg-yellow-500/20 border-yellow-500/30"
-        : "bg-red-500/20 border-red-500/30"
+          ? "bg-yellow-500/20 border-yellow-500/30"
+          : "bg-red-500/20 border-red-500/30"
     } border`}
   >
     <Handle type="target" position={Position.Top} />
@@ -206,7 +207,7 @@ export const ServiceCommandCenter: React.FC = () => {
     direction: "asc" | "desc";
   }>({ field: "status", direction: "desc" });
   const [transitionTest, setTransitionTest] = useState<TransitionTest | null>(
-    null
+    null,
   );
   const [hasWebGLError, setHasWebGLError] = useState(false);
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
@@ -247,7 +248,7 @@ export const ServiceCommandCenter: React.FC = () => {
 
     const nodes: Node[] = webSocketServices.map((service, index) => {
       const serviceData = services.find((s) =>
-        s.name.toLowerCase().includes(service.id)
+        s.name.toLowerCase().includes(service.id),
       ) || {
         status: "error" as const,
         metrics: { averageLatency: 0 },
@@ -277,7 +278,7 @@ export const ServiceCommandCenter: React.FC = () => {
           type: "smoothstep",
           animated: true,
           style: { stroke: "#4f46e5", strokeWidth: 2, opacity: 0.5 },
-        }))
+        })),
     );
 
     return { nodes, edges };
@@ -298,7 +299,7 @@ export const ServiceCommandCenter: React.FC = () => {
         }
 
         ws = new WebSocket(
-          `wss://${window.location.host}/api/superadmin/ws/monitor`
+          `wss://${window.location.host}/api/superadmin/ws/monitor`,
         );
         setConnectionStatus("connecting");
 
@@ -326,8 +327,8 @@ export const ServiceCommandCenter: React.FC = () => {
                 prev.map((service) =>
                   service.name === data.service
                     ? { ...service, ...data.updates }
-                    : service
-                )
+                    : service,
+                ),
               );
               setLastUpdate(new Date());
             }
@@ -380,7 +381,7 @@ export const ServiceCommandCenter: React.FC = () => {
     connect();
     messageProcessorInterval = setInterval(
       processMessageQueue,
-      1000 / RATE_LIMIT
+      1000 / RATE_LIMIT,
     );
 
     return () => {
@@ -410,13 +411,13 @@ export const ServiceCommandCenter: React.FC = () => {
 
   const selectedServiceData = selectedService
     ? services.find((s) =>
-        s.name.toLowerCase().includes(selectedService.toLowerCase())
+        s.name.toLowerCase().includes(selectedService.toLowerCase()),
       )
     : null;
 
   const handleServiceControl = async (
     serviceId: string,
-    action: "start" | "stop" | "restart"
+    action: "start" | "stop" | "restart",
   ) => {
     try {
       setPendingOperation(serviceId);
@@ -442,11 +443,11 @@ export const ServiceCommandCenter: React.FC = () => {
             };
           }
           return service;
-        })
+        }),
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to control service"
+        err instanceof Error ? err.message : "Failed to control service",
       );
     } finally {
       setPendingOperation(null);
@@ -461,7 +462,7 @@ export const ServiceCommandCenter: React.FC = () => {
           e.stopPropagation();
           handleServiceControl(
             service.name.toLowerCase().split(" ")[0],
-            "start"
+            "start",
           );
         }}
         disabled={pendingOperation === service.name.toLowerCase().split(" ")[0]}
@@ -480,7 +481,7 @@ export const ServiceCommandCenter: React.FC = () => {
           e.stopPropagation();
           handleServiceControl(
             service.name.toLowerCase().split(" ")[0],
-            "stop"
+            "stop",
           );
         }}
         disabled={pendingOperation === service.name.toLowerCase().split(" ")[0]}
@@ -499,7 +500,7 @@ export const ServiceCommandCenter: React.FC = () => {
           e.stopPropagation();
           handleServiceControl(
             service.name.toLowerCase().split(" ")[0],
-            "restart"
+            "restart",
           );
         }}
         disabled={pendingOperation === service.name.toLowerCase().split(" ")[0]}
@@ -612,12 +613,12 @@ export const ServiceCommandCenter: React.FC = () => {
 
   // Add group status calculation
   const getGroupStatus = (
-    groupServices: string[]
+    groupServices: string[],
   ): "operational" | "degraded" | "error" => {
     const serviceStates = groupServices.map(
       (serviceId) =>
         services.find((s) => s.name.toLowerCase().includes(serviceId))
-          ?.status || "error"
+          ?.status || "error",
     );
 
     if (serviceStates.includes("error")) return "error";
@@ -659,8 +660,8 @@ export const ServiceCommandCenter: React.FC = () => {
                 connectionStatus === "connected"
                   ? "bg-green-500/10 text-green-400"
                   : connectionStatus === "connecting"
-                  ? "bg-yellow-500/10 text-yellow-400"
-                  : "bg-red-500/10 text-red-400"
+                    ? "bg-yellow-500/10 text-yellow-400"
+                    : "bg-red-500/10 text-red-400"
               }`}
             >
               <div
@@ -669,8 +670,8 @@ export const ServiceCommandCenter: React.FC = () => {
                   connectionStatus === "connected"
                     ? "bg-green-500 animate-pulse"
                     : connectionStatus === "connecting"
-                    ? "bg-yellow-500"
-                    : "bg-red-500"
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
                 }`}
               />
               <span className="text-xs font-mono">
@@ -766,8 +767,8 @@ export const ServiceCommandCenter: React.FC = () => {
                     selectedServiceData.status === "operational"
                       ? "text-green-400"
                       : selectedServiceData.status === "degraded"
-                      ? "text-yellow-400"
-                      : "text-red-400"
+                        ? "text-yellow-400"
+                        : "text-red-400"
                   }`}
                 >
                   Status:{" "}
@@ -809,8 +810,8 @@ export const ServiceCommandCenter: React.FC = () => {
                         selectedServiceData.performance.errorRate > 5
                           ? "text-red-400"
                           : selectedServiceData.performance.errorRate > 1
-                          ? "text-yellow-400"
-                          : "text-green-400"
+                            ? "text-yellow-400"
+                            : "text-green-400"
                       }`}
                     >
                       {selectedServiceData.performance.errorRate}%
@@ -823,8 +824,8 @@ export const ServiceCommandCenter: React.FC = () => {
                         selectedServiceData.metrics.averageLatency > 1000
                           ? "text-red-400"
                           : selectedServiceData.metrics.averageLatency > 500
-                          ? "text-yellow-400"
-                          : "text-green-400"
+                            ? "text-yellow-400"
+                            : "text-green-400"
                       }`}
                     >
                       {selectedServiceData.metrics.averageLatency}ms
@@ -870,8 +871,8 @@ export const ServiceCommandCenter: React.FC = () => {
                         selectedServiceData.metrics.cacheHitRate > 90
                           ? "text-green-400"
                           : selectedServiceData.metrics.cacheHitRate > 70
-                          ? "text-yellow-400"
-                          : "text-red-400"
+                            ? "text-yellow-400"
+                            : "text-red-400"
                       }`}
                     >
                       {selectedServiceData.metrics.cacheHitRate}%
@@ -881,7 +882,7 @@ export const ServiceCommandCenter: React.FC = () => {
                     <span className="text-gray-400">Last Update</span>
                     <span className="text-gray-200">
                       {new Date(
-                        selectedServiceData.metrics.lastUpdate
+                        selectedServiceData.metrics.lastUpdate,
                       ).toLocaleTimeString()}
                     </span>
                   </div>
@@ -913,8 +914,8 @@ export const ServiceCommandCenter: React.FC = () => {
                         100 - selectedServiceData.performance.errorRate > 99
                           ? "text-green-400"
                           : 100 - selectedServiceData.performance.errorRate > 95
-                          ? "text-yellow-400"
-                          : "text-red-400"
+                            ? "text-yellow-400"
+                            : "text-red-400"
                       }`}
                     >
                       {(
@@ -937,7 +938,7 @@ export const ServiceCommandCenter: React.FC = () => {
                         0,
                         100 -
                           selectedServiceData.metrics.averageLatency / 10 -
-                          selectedServiceData.performance.errorRate * 10
+                          selectedServiceData.performance.errorRate * 10,
                       ).toFixed(0)}
                       %
                     </span>
@@ -1025,7 +1026,7 @@ export const ServiceCommandCenter: React.FC = () => {
               onChange={(e) => {
                 const [field, direction] = e.target.value.split("-") as [
                   "status" | "lastUpdate" | "errorRate" | "latency",
-                  "asc" | "desc"
+                  "asc" | "desc",
                 ];
                 setSortBy({ field, direction });
               }}
@@ -1072,9 +1073,9 @@ export const ServiceCommandCenter: React.FC = () => {
           const groupServices = getSortedServices(
             services.filter((s) =>
               group.services.some((groupService) =>
-                s.name.toLowerCase().includes(groupService)
-              )
-            )
+                s.name.toLowerCase().includes(groupService),
+              ),
+            ),
           );
 
           return (
@@ -1087,8 +1088,8 @@ export const ServiceCommandCenter: React.FC = () => {
                     groupStatus === "operational"
                       ? "bg-green-500/10 text-green-400"
                       : groupStatus === "degraded"
-                      ? "bg-yellow-500/10 text-yellow-400"
-                      : "bg-red-500/10 text-red-400"
+                        ? "bg-yellow-500/10 text-yellow-400"
+                        : "bg-red-500/10 text-red-400"
                   }`}
                 >
                   <div
@@ -1097,8 +1098,8 @@ export const ServiceCommandCenter: React.FC = () => {
                       groupStatus === "operational"
                         ? "bg-green-500 animate-pulse"
                         : groupStatus === "degraded"
-                        ? "bg-yellow-500"
-                        : "bg-red-500"
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
                     }`}
                   />
                   <span className="text-xs font-mono">
@@ -1116,7 +1117,7 @@ export const ServiceCommandCenter: React.FC = () => {
                     onPowerAction={() =>
                       handleServiceControl(
                         service.name.toLowerCase().split(" ")[0],
-                        service.status === "operational" ? "stop" : "start"
+                        service.status === "operational" ? "stop" : "start",
                       )
                     }
                     isDisabled={

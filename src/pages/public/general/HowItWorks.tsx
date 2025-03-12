@@ -1,6 +1,7 @@
 // src/pages/public/general/HowItWorks.tsx
 
 import React from "react";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { Card, CardContent } from "../../../components/ui/Card";
 

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+
 import { ddApi } from "../../services/dd-api";
 
 interface ServiceStatus {
@@ -44,7 +45,7 @@ export const ServiceStatusBanner: React.FC = () => {
           setStatus({
             isDegraded: true,
             message: `Some services are having issues: ${data.degraded_services.join(
-              ", "
+              ", ",
             )}`,
             lastChecked: Date.now(),
           });

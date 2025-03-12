@@ -1,6 +1,7 @@
 import { useRef } from "react";
-import { useStore } from "../store/useStore";
+
 import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
 interface ServiceMessage {
   type: "service:state" | "service:metrics" | "service:alert";
@@ -45,7 +46,7 @@ interface ServiceState {
 
 // Map service status to store status
 const mapServiceStatus = (
-  status: ServiceState["status"]
+  status: ServiceState["status"],
 ): "online" | "offline" | "degraded" => {
   switch (status) {
     case "active":
@@ -75,7 +76,7 @@ const mapAlertType = (severity: string): "info" | "warning" | "error" => {
 const dispatchDebugEvent = (
   type: "connection" | "state" | "alert" | "error" | "metrics",
   message: string,
-  data?: any
+  data?: any,
 ) => {
   window.dispatchEvent(
     new CustomEvent("ws-debug", {
@@ -86,7 +87,7 @@ const dispatchDebugEvent = (
         data,
         timestamp: new Date().toISOString(),
       },
-    })
+    }),
   );
 };
 
@@ -101,15 +102,15 @@ export const useServiceWebSocket = () => {
     // Calculate exponential backoff delay
     const delay = Math.min(
       1000 * Math.pow(2, reconnectAttempts.current),
-      maxReconnectDelay
+      maxReconnectDelay,
     );
     reconnectAttempts.current++;
 
     addServiceAlert(
       "error",
       `WebSocket connection lost. Retrying in ${Math.round(
-        delay / 1000
-      )} seconds...`
+        delay / 1000,
+      )} seconds...`,
     );
 
     // Update service state to show disconnected status
@@ -137,7 +138,7 @@ export const useServiceWebSocket = () => {
           dispatchDebugEvent(
             "state",
             `Service status mapped: ${serviceState.status} -> ${mappedStatus}`,
-            { original: serviceState.status, mapped: mappedStatus }
+            { original: serviceState.status, mapped: mappedStatus },
           );
 
           setServiceState(
@@ -146,7 +147,7 @@ export const useServiceWebSocket = () => {
               uptime: 0,
               latency: 0,
               activeUsers: 0,
-            }
+            },
           );
           break;
         }
@@ -157,7 +158,7 @@ export const useServiceWebSocket = () => {
             dispatchDebugEvent(
               "alert",
               `Service alert mapped: ${message.data.alert.type} -> ${mappedType}`,
-              { original: message.data.alert.type, mapped: mappedType }
+              { original: message.data.alert.type, mapped: mappedType },
             );
 
             addServiceAlert(mappedType, message.data.alert.message);
@@ -167,7 +168,7 @@ export const useServiceWebSocket = () => {
           dispatchDebugEvent(
             "metrics",
             "Received service metrics",
-            message.data.metrics
+            message.data.metrics,
           );
           break;
       }

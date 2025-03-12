@@ -1,5 +1,6 @@
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/solid";
 import React from "react";
+
 import { formatCurrency } from "../../lib/utils";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 

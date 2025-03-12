@@ -10,8 +10,9 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useStore } from "../store/useStore";
+
 import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
 /* Contest chat WebSocket */
 
@@ -151,7 +152,7 @@ export const useContestChatWebSocket = (contestId: string) => {
         break;
       case "PARTICIPANT_LEFT":
         setParticipants((prev) =>
-          prev.filter((p) => p.userId !== message.userId)
+          prev.filter((p) => p.userId !== message.userId),
         );
         break;
       case "ERROR":
@@ -222,7 +223,7 @@ export const useContestChatWebSocket = (contestId: string) => {
         socket.send(JSON.stringify(message));
       }
     },
-    [ws, contestId, isRateLimited]
+    [ws, contestId, isRateLimited],
   );
 
   // Join room when component mounts and WebSocket is ready

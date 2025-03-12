@@ -7,11 +7,16 @@ import {
 import React, { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Input } from "../../../components/ui/Input";
-import { NODE_ENV, TOKEN_SUBMISSION_COST, TREASURY_WALLET } from "../../../config/config";
+import {
+  NODE_ENV,
+  TOKEN_SUBMISSION_COST,
+  TREASURY_WALLET,
+} from "../../../config/config";
 import { useStore } from "../../../store/useStore";
 // Provide types for window.solana
 declare global {
@@ -21,19 +26,22 @@ declare global {
       connect: () => Promise<{ publicKey: { toString: () => string } }>;
       signMessage: (
         message: Uint8Array,
-        encoding: string
+        encoding: string,
       ) => Promise<{ signature: Uint8Array }>;
       signTransaction: (transaction: Transaction) => Promise<Transaction>;
-      signAndSendTransaction: (options: { transaction: Transaction }) => Promise<{ signature: string }>;
+      signAndSendTransaction: (options: {
+        transaction: Transaction;
+      }) => Promise<{ signature: string }>;
       publicKey?: { toString: () => string };
     };
   }
 }
 
 // Development mode has a lower submission cost
-const BASE_SUBMISSION_COST = NODE_ENV === "development" 
-  ? TOKEN_SUBMISSION_COST * 0.01 
-  : TOKEN_SUBMISSION_COST;
+const BASE_SUBMISSION_COST =
+  NODE_ENV === "development"
+    ? TOKEN_SUBMISSION_COST * 0.01
+    : TOKEN_SUBMISSION_COST;
 
 const RECIPIENT_WALLET = new PublicKey(TREASURY_WALLET);
 const RPC_ENDPOINT =
@@ -48,13 +56,20 @@ export const TokenWhitelistPage: React.FC = () => {
   const [contractAddress, setContractAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transactionState, setTransactionState] = useState<{
-    status: 'idle' | 'preparing' | 'signing' | 'sending' | 'confirming' | 'success' | 'error';
+    status:
+      | "idle"
+      | "preparing"
+      | "signing"
+      | "sending"
+      | "confirming"
+      | "success"
+      | "error";
     message: string;
     error?: string;
     signature?: string;
   }>({
-    status: 'idle',
-    message: '',
+    status: "idle",
+    message: "",
   });
   const navigate = useNavigate();
   const walletAddress = user?.wallet_address;
@@ -110,30 +125,32 @@ export const TokenWhitelistPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       setTransactionState({
-        status: 'preparing',
-        message: 'Preparing transaction...',
+        status: "preparing",
+        message: "Preparing transaction...",
       });
 
       // 1. Create and send payment transaction
       const connection = new Connection(RPC_ENDPOINT, "confirmed");
-      
+
       // Get the user's public key
       const walletPublicKey = new PublicKey(walletAddress);
 
       const transaction = new Transaction();
-      
+
       // Add transfer instruction with discounted amount
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: walletPublicKey,
           toPubkey: RECIPIENT_WALLET,
           lamports: finalCost * 1e9, // Convert SOL to lamports with discount applied
-        })
+        }),
       );
 
       // Check if window.solana is available for transaction signing
       if (!window.solana?.signAndSendTransaction) {
-        throw new Error("Wallet does not support the required transaction signing method");
+        throw new Error(
+          "Wallet does not support the required transaction signing method",
+        );
       }
 
       // Get the latest blockhash for transaction freshness
@@ -143,19 +160,19 @@ export const TokenWhitelistPage: React.FC = () => {
 
       // Use Phantom's recommended unified method to sign and send the transaction
       setTransactionState({
-        status: 'signing',
-        message: 'Please confirm the transaction in your wallet...',
+        status: "signing",
+        message: "Please confirm the transaction in your wallet...",
       });
-      
+
       // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
       // Use signAndSendTransaction in a single call with the transaction object as a property
       const { signature } = await window.solana.signAndSendTransaction({
-        transaction // Must be passed as a property of an options object
+        transaction, // Must be passed as a property of an options object
       });
 
       setTransactionState({
-        status: 'sending',
-        message: 'Transaction sent, waiting for confirmation...',
+        status: "sending",
+        message: "Transaction sent, waiting for confirmation...",
         signature,
       });
 
@@ -163,9 +180,9 @@ export const TokenWhitelistPage: React.FC = () => {
         <div>
           <div>Transaction sent!</div>
           <div className="text-xs mt-1">
-            <a 
-              href={`https://solscan.io/tx/${signature}`} 
-              target="_blank" 
+            <a
+              href={`https://solscan.io/tx/${signature}`}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-brand-400 hover:text-brand-300"
             >
@@ -173,27 +190,27 @@ export const TokenWhitelistPage: React.FC = () => {
             </a>
           </div>
         </div>,
-        { duration: 5000 }
+        { duration: 5000 },
       );
 
       // Wait for confirmation with blockhash details
       setTransactionState({
-        status: 'confirming',
-        message: 'Waiting for blockchain confirmation...',
+        status: "confirming",
+        message: "Waiting for blockchain confirmation...",
         signature,
       });
-      
+
       const confirmation = await connection.confirmTransaction({
         signature,
         blockhash: latestBlockhash.blockhash,
         lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
       });
-      
+
       if (confirmation.value.err) {
         setTransactionState({
-          status: 'error',
-          message: 'Transaction failed on the blockchain',
-          error: 'Please check Solscan for details',
+          status: "error",
+          message: "Transaction failed on the blockchain",
+          error: "Please check Solscan for details",
           signature,
         });
         throw new Error("Transaction failed!");
@@ -219,7 +236,7 @@ export const TokenWhitelistPage: React.FC = () => {
             // 2. That the transaction was successful and sent to the correct wallet
           }),
           credentials: "include",
-        }
+        },
       );
 
       console.log(response);
@@ -228,25 +245,27 @@ export const TokenWhitelistPage: React.FC = () => {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.error ||
-            `API Error: ${response.status} ${response.statusText}`
+            `API Error: ${response.status} ${response.statusText}`,
         );
       }
 
       // 3. Show success and redirect
       setTransactionState({
-        status: 'success',
-        message: 'Transaction confirmed! Token submitted successfully.',
+        status: "success",
+        message: "Transaction confirmed! Token submitted successfully.",
         signature,
       });
 
       toast.success(
         <div>
           <div>Successfully submitted token!</div>
-          <div className="text-xs mt-1">It will be available in games shortly.</div>
           <div className="text-xs mt-1">
-            <a 
-              href={`https://solscan.io/tx/${signature}`} 
-              target="_blank" 
+            It will be available in games shortly.
+          </div>
+          <div className="text-xs mt-1">
+            <a
+              href={`https://solscan.io/tx/${signature}`}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-brand-400 hover:text-brand-300"
             >
@@ -261,7 +280,7 @@ export const TokenWhitelistPage: React.FC = () => {
             color: "#fff",
             border: "1px solid #262626",
           },
-        }
+        },
       );
 
       // Add delay before navigation
@@ -271,16 +290,17 @@ export const TokenWhitelistPage: React.FC = () => {
       }, REDIRECT_DELAY * 1000);
     } catch (error) {
       console.error("Submission error:", error);
-      
+
       setTransactionState({
-        status: 'error',
-        message: 'An error occurred',
-        error: error instanceof Error ? error.message : "Failed to submit token",
+        status: "error",
+        message: "An error occurred",
+        error:
+          error instanceof Error ? error.message : "Failed to submit token",
         signature: transactionState.signature,
       });
-      
+
       toast.error(
-        error instanceof Error ? error.message : "Failed to submit token"
+        error instanceof Error ? error.message : "Failed to submit token",
       );
     } finally {
       setIsSubmitting(false);
@@ -300,8 +320,9 @@ export const TokenWhitelistPage: React.FC = () => {
               <h1 className="text-4xl font-bold text-white">List Your Token</h1>
               <p className="text-gray-400 max-w-2xl mx-auto">
                 List your token on DegenDuel for immediate exposure and
-                inclusion in our contests. Your token will be tracked and available
-                for all players to use in their portfolios within minutes.
+                inclusion in our contests. Your token will be tracked and
+                available for all players to use in their portfolios within
+                minutes.
               </p>
             </div>
 
@@ -355,7 +376,6 @@ export const TokenWhitelistPage: React.FC = () => {
                   </div>
 
                   <div className="bg-dark-300/30 rounded-lg p-4">
-
                     {/* Listing Fee */}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-400">DegenDuel Listing</span>
@@ -365,25 +385,36 @@ export const TokenWhitelistPage: React.FC = () => {
                         </span>
                         {discountPercent <= 0 && (
                           <div className="text-xs text-brand-400">
-                            <span className="text-white">Did you know?</span> Token listing fees are 
-                            discounted based on your Degen Level 👀😵 
+                            <span className="text-white">Did you know?</span>{" "}
+                            Token listing fees are discounted based on your
+                            Degen Level 👀😵
                             <br />
                             <br />
                             <span className="text-white">
-                              <a href="/leaderboard" className="text-brand-400 hover:text-brand-300">
-                                Check your <span className="font-bold">Degen Level</span> to see your discount
+                              <a
+                                href="/leaderboard"
+                                className="text-brand-400 hover:text-brand-300"
+                              >
+                                Check your{" "}
+                                <span className="font-bold">Degen Level</span>{" "}
+                                to see your discount
                               </a>
                             </span>
                             <br />
                             <br />
                             <span className="text-white">
-                              The discount is applied automatically based on your level so the more you level up, the more you save 🤑📶
+                              The discount is applied automatically based on
+                              your level so the more you level up, the more you
+                              save 🤑📶
                             </span>
                           </div>
                         )}
                         {discountPercent > 0 && (
                           <div className="text-xs text-brand-400">
-                            Your discount: <span className="font-bold">{discountPercent}%</span>
+                            Your discount:{" "}
+                            <span className="font-bold">
+                              {discountPercent}%
+                            </span>
                           </div>
                         )}
                       </div>
@@ -400,44 +431,56 @@ export const TokenWhitelistPage: React.FC = () => {
                   </div>
 
                   {/* Transaction Status Indicators */}
-                  {transactionState.status !== 'idle' && (
-                    <div className={`mb-4 p-3 rounded-lg border ${
-                      transactionState.status === 'error' ? 'border-red-500/30 bg-red-500/10' : 
-                      transactionState.status === 'success' ? 'border-green-500/30 bg-green-500/10' : 
-                      'border-brand-500/30 bg-brand-500/10'
-                    }`}>
+                  {transactionState.status !== "idle" && (
+                    <div
+                      className={`mb-4 p-3 rounded-lg border ${
+                        transactionState.status === "error"
+                          ? "border-red-500/30 bg-red-500/10"
+                          : transactionState.status === "success"
+                            ? "border-green-500/30 bg-green-500/10"
+                            : "border-brand-500/30 bg-brand-500/10"
+                      }`}
+                    >
                       <div className="flex items-center gap-3">
-                        {transactionState.status === 'preparing' && (
+                        {transactionState.status === "preparing" && (
                           <div className="animate-pulse text-brand-400">⚙️</div>
                         )}
-                        {transactionState.status === 'signing' && (
-                          <div className="animate-bounce text-brand-400">✍️</div>
+                        {transactionState.status === "signing" && (
+                          <div className="animate-bounce text-brand-400">
+                            ✍️
+                          </div>
                         )}
-                        {transactionState.status === 'sending' && (
+                        {transactionState.status === "sending" && (
                           <div className="animate-spin text-brand-400">🔄</div>
                         )}
-                        {transactionState.status === 'confirming' && (
+                        {transactionState.status === "confirming" && (
                           <div className="animate-pulse text-brand-400">⏳</div>
                         )}
-                        {transactionState.status === 'success' && (
+                        {transactionState.status === "success" && (
                           <div className="text-green-400">✅</div>
                         )}
-                        {transactionState.status === 'error' && (
+                        {transactionState.status === "error" && (
                           <div className="text-red-400">❌</div>
                         )}
                         <div>
-                          <p className={`font-medium ${
-                            transactionState.status === 'error' ? 'text-red-400' : 
-                            transactionState.status === 'success' ? 'text-green-400' : 
-                            'text-brand-400'
-                          }`}>
+                          <p
+                            className={`font-medium ${
+                              transactionState.status === "error"
+                                ? "text-red-400"
+                                : transactionState.status === "success"
+                                  ? "text-green-400"
+                                  : "text-brand-400"
+                            }`}
+                          >
                             {transactionState.message}
                           </p>
                           {transactionState.error && (
-                            <p className="text-xs text-red-400 mt-1">{transactionState.error}</p>
+                            <p className="text-xs text-red-400 mt-1">
+                              {transactionState.error}
+                            </p>
                           )}
                           {transactionState.signature && (
-                            <a 
+                            <a
                               href={`https://solscan.io/tx/${transactionState.signature}`}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -487,12 +530,14 @@ export const TokenWhitelistPage: React.FC = () => {
                 </div>
               </div>
             </Card>
-            
+
             {/* Link to Virtual Agent Page */}
             <div className="mt-8 text-center">
-              <p className="text-gray-400 mb-4">Need help with tokens or have questions?</p>
-              <a 
-                href="/game/virtual-agent" 
+              <p className="text-gray-400 mb-4">
+                Need help with tokens or have questions?
+              </p>
+              <a
+                href="/game/virtual-agent"
                 className="inline-block bg-brand-500 hover:bg-brand-600 text-white py-2 px-6 rounded-lg transition-colors"
               >
                 Chat with our Virtual Game Agent

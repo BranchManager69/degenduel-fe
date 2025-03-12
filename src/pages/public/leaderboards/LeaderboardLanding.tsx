@@ -90,7 +90,7 @@ export const LeaderboardLanding = () => {
             </div>
           </div>
         </Link>
-        
+
         {/* Degen Level Rankings Button */}
         <Link to="/leaderboard" className="group perspective-1000 relative">
           <div className="relative transform transition-all duration-500 group-hover:scale-105">
@@ -122,7 +122,6 @@ export const LeaderboardLanding = () => {
           </div>
         </Link>
       </div>
-      
     </div>
   );
 };

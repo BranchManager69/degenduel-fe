@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { ContestSelect } from "./ContestContext";
 import { ResponseDisplay } from "./ResponseDisplay";
 import { WalletInput } from "./WalletInput";
@@ -56,7 +57,7 @@ export function SetPortfolio() {
     // Validate total weight is 100%
     const totalWeight = selectedTokens.reduce(
       (sum, token) => sum + token.weight,
-      0
+      0,
     );
     if (totalWeight !== 100) {
       alert("Total weight must equal 100%");
@@ -76,7 +77,7 @@ export function SetPortfolio() {
             wallet_address: walletAddress,
             tokens: selectedTokens,
           }),
-        }
+        },
       );
       const data = await response.json();
       if (!response.ok) throw data;
@@ -99,22 +100,24 @@ export function SetPortfolio() {
 
   const handleRemoveToken = (contractAddress: string) => {
     setSelectedTokens(
-      selectedTokens.filter((t) => t.contractAddress !== contractAddress)
+      selectedTokens.filter((t) => t.contractAddress !== contractAddress),
     );
   };
 
   const handleWeightChange = (contractAddress: string, weight: number) => {
     setSelectedTokens(
       selectedTokens.map((token) =>
-        token.contractAddress === contractAddress ? { ...token, weight } : token
-      )
+        token.contractAddress === contractAddress
+          ? { ...token, weight }
+          : token,
+      ),
     );
   };
 
   const filteredTokens = tokens.filter(
     (token) =>
       token.symbol.toLowerCase().includes(tokenSearch.toLowerCase()) ||
-      token.name.toLowerCase().includes(tokenSearch.toLowerCase())
+      token.name.toLowerCase().includes(tokenSearch.toLowerCase()),
   );
 
   return (
@@ -190,7 +193,7 @@ export function SetPortfolio() {
                   onChange={(e) =>
                     handleWeightChange(
                       token.contractAddress,
-                      Number(e.target.value)
+                      Number(e.target.value),
                     )
                   }
                 />

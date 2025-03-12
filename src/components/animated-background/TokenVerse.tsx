@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+
 import { useTokenData } from "../../contexts/TokenDataContext";
 import { useStore } from "../../store/useStore";
 import TokenVerseScene from "../../utils/three/TokenVerseScene";
@@ -21,22 +22,22 @@ export const TokenVerse: React.FC = () => {
   // Initialize scene when component mounts and enabled is true
   useEffect(() => {
     if (!containerRef.current || !enabled) return;
-    
+
     try {
       sceneRef.current = new TokenVerseScene(containerRef.current);
-      
+
       // Set initial settings
       sceneRef.current.updateSettings({
         intensity,
         starIntensity,
         bloomStrength,
         particleCount,
-        updateFrequency
+        updateFrequency,
       });
     } catch (error) {
       console.error("[TokenVerse] Initialization error:", error);
     }
-    
+
     return () => {
       if (sceneRef.current) {
         sceneRef.current.dispose();
@@ -48,20 +49,20 @@ export const TokenVerse: React.FC = () => {
   // Update settings when they change
   useEffect(() => {
     if (!sceneRef.current) return;
-    
+
     sceneRef.current.updateSettings({
       intensity,
       starIntensity,
       bloomStrength,
       particleCount,
-      updateFrequency
+      updateFrequency,
     });
   }, [intensity, starIntensity, bloomStrength, particleCount, updateFrequency]);
 
   // Update with token data when available
   useEffect(() => {
     if (!isConnected || !tokens.length || !sceneRef.current) return;
-    
+
     // Update the scene with new token data
     sceneRef.current.updateTokenData(tokens);
   }, [tokens, isConnected, lastUpdate]);

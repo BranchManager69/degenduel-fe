@@ -39,7 +39,7 @@ class SystemReportsService {
   };
 
   async getReports(
-    filters: SystemReportFilters = {}
+    filters: SystemReportFilters = {},
   ): Promise<SystemReportListResponse> {
     const queryParams = new URLSearchParams();
 
@@ -60,7 +60,7 @@ class SystemReportsService {
     }
 
     const response = await this.apiClient.fetch(
-      `/admin/system-reports?${queryParams.toString()}`
+      `/admin/system-reports?${queryParams.toString()}`,
     );
 
     return response.json();
@@ -68,7 +68,7 @@ class SystemReportsService {
 
   async getServiceReport(reportId: string): Promise<ServiceReportResponse> {
     const response = await this.apiClient.fetch(
-      `/admin/system-reports/${reportId}/service`
+      `/admin/system-reports/${reportId}/service`,
     );
 
     return response.json();
@@ -76,29 +76,29 @@ class SystemReportsService {
 
   async getDbReport(reportId: string): Promise<DbReportResponse> {
     const response = await this.apiClient.fetch(
-      `/admin/system-reports/${reportId}/db`
+      `/admin/system-reports/${reportId}/db`,
     );
 
     return response.json();
   }
-  
+
   async getPrismaReport(reportId: string): Promise<DbReportResponse> {
     const response = await this.apiClient.fetch(
-      `/admin/system-reports/${reportId}/prisma`
+      `/admin/system-reports/${reportId}/prisma`,
     );
 
     return response.json();
   }
 
   async generateReport(
-    options: GenerateReportRequest = { withAi: false, reportType: "service" }
+    options: GenerateReportRequest = { withAi: false, reportType: "service" },
   ): Promise<GenerateReportResponse> {
     const response = await this.apiClient.fetch(
       `/admin/system-reports/generate`,
       {
         method: "POST",
         body: JSON.stringify(options),
-      }
+      },
     );
 
     return response.json();

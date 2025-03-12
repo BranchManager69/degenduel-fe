@@ -16,7 +16,10 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   return (
-    <div className={`animate-spin ${sizeClasses[size]} ${className}`}>
+    <div
+      data-testid="loading-spinner"
+      className={`animate-spin ${sizeClasses[size]} ${className}`}
+    >
       <svg className="text-blue-500" viewBox="0 0 24 24">
         <circle
           className="opacity-25"

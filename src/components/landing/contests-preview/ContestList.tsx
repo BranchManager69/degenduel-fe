@@ -1,5 +1,6 @@
 // src/components/landing/contests/ContestList.tsx
 import React from "react";
+
 import { Contest } from "../../../types/index";
 import { ContestCard } from "../../contest-browser/ContestCard"; // THIS IS TAKING A DIFFERNT CONTEST CARD THAN THE ONE IN THIS FOLDER, WHY?
 

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+
 import { ddApi } from "../../services/dd-api";
 import { User } from "../../types/index";
 import { Button } from "../ui/Button";
@@ -30,14 +31,14 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
 
   const formatBalance = (balance: number) => {
     return `${Math.round(balance).toLocaleString(
-      "en-US"
+      "en-US",
     )} Bonus Points (Updated)`;
   };
 
   const handleUserChange = async (walletAddress: string) => {
     try {
       const selectedUser = users.find(
-        (u) => u.wallet_address === walletAddress
+        (u) => u.wallet_address === walletAddress,
       );
       setSelectedUser(walletAddress);
       if (selectedUser) {
@@ -78,8 +79,8 @@ export const UserBalanceManagement: React.FC<UserBalanceManagementProps> = ({
 
       setSuccess(
         `Successfully adjusted balance for user. Current balance: ${formatBalance(
-          newBalance
-        )}`
+          newBalance,
+        )}`,
       );
       setAmount("");
     } catch (err) {

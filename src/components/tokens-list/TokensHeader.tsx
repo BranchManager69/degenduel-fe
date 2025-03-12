@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { TokenResponseMetadata } from "../../types";
+
 import { DataStatus } from "./DataStatus";
+import { TokenResponseMetadata } from "../../types";
 
 interface TokensHeaderProps {
   metadata: TokenResponseMetadata;

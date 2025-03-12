@@ -1,6 +1,7 @@
 // src/pages/public/leaderboards/GlobalRankings.tsx
 
 import { useEffect, useState } from "react";
+
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import type { GlobalRankingEntry } from "../../../types/leaderboard";
 
@@ -26,7 +27,7 @@ export const GlobalRankings = () => {
         // If in maintenance mode, don't fetch rankings
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later.",
           );
           setLoading(false);
           return;
@@ -39,20 +40,20 @@ export const GlobalRankings = () => {
       try {
         const data = await ddApi.leaderboard.getGlobalRankings(
           PAGE_SIZE,
-          page * PAGE_SIZE
+          page * PAGE_SIZE,
         );
-        
+
         if (!data || !data.rankings) {
           throw new Error("Invalid data format received from API");
         }
-        
+
         setRankings(data.rankings);
         setTotal(data.total || 0);
       } catch (dataErr) {
         if (dataErr instanceof Error && dataErr.message.includes("503")) {
           setIsMaintenanceMode(true);
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later.",
           );
         } else {
           setError("Failed to load rankings. Please try again later.");
@@ -78,7 +79,7 @@ export const GlobalRankings = () => {
         setIsMaintenanceMode(isInMaintenance);
         if (isInMaintenance) {
           setError(
-            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later."
+            "⚙️ DegenDuel is currently undergoing scheduled maintenance. Please try again later.",
           );
         }
       } catch (err) {
@@ -109,9 +110,7 @@ export const GlobalRankings = () => {
     return (
       <div className="max-w-7xl mx-auto p-8">
         <h1 className="text-3xl font-bold text-gray-100 mb-4 relative group">
-          <span className="relative z-10">
-            Global Rankings
-          </span>
+          <span className="relative z-10">Global Rankings</span>
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </h1>
         <div className="text-center py-8 text-gray-400">
@@ -172,19 +171,22 @@ export const GlobalRankings = () => {
       <div className="max-w-7xl mx-auto p-8">
         <div className="mb-8 relative group">
           <h1 className="text-3xl font-bold text-gray-100 mb-4 relative">
-            <span className="relative z-10">
-              Global Rankings
-            </span>
+            <span className="relative z-10">Global Rankings</span>
             <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </h1>
           <p className="text-gray-400">
-            View the top traders ranked by their performance across all contests.
+            View the top traders ranked by their performance across all
+            contests.
           </p>
         </div>
-        
+
         <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-8 text-center">
-          <p className="text-gray-400 text-lg">No ranking data available yet.</p>
-          <p className="text-sm text-gray-500 mt-2">Check back soon as players complete more contests!</p>
+          <p className="text-gray-400 text-lg">
+            No ranking data available yet.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Check back soon as players complete more contests!
+          </p>
         </div>
       </div>
     );
@@ -194,9 +196,7 @@ export const GlobalRankings = () => {
     <div className="max-w-7xl mx-auto p-8">
       <div className="mb-8 relative group">
         <h1 className="text-3xl font-bold text-gray-100 mb-4 relative">
-          <span className="relative z-10">
-            Global Rankings
-          </span>
+          <span className="relative z-10">Global Rankings</span>
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </h1>
         <p className="text-gray-400">
@@ -237,20 +237,20 @@ export const GlobalRankings = () => {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <span className="text-gray-100">
-                        #{entry.rank}
-                      </span>
+                      <span className="text-gray-100">#{entry.rank}</span>
                       <span className="text-sm text-gray-400 group-hover/row:text-brand-400 transition-colors">
-                        (Top {entry.percentile?.toFixed(1) || '0.0'}%)
+                        (Top {entry.percentile?.toFixed(1) || "0.0"}%)
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="text-gray-100">{entry.nickname || 'Anonymous'}</span>
+                      <span className="text-gray-100">
+                        {entry.nickname || "Anonymous"}
+                      </span>
                       <span className="text-sm text-gray-400">
-                        {entry.wallet_address?.slice(0, 6) || ''}...
-                        {entry.wallet_address?.slice(-4) || ''}
+                        {entry.wallet_address?.slice(0, 6) || ""}...
+                        {entry.wallet_address?.slice(-4) || ""}
                       </span>
                     </div>
                   </td>
@@ -262,7 +262,7 @@ export const GlobalRankings = () => {
                   </td>
                   <td
                     className={`px-6 py-4 text-right ${getTrendColor(
-                      entry.trend || "→"
+                      entry.trend || "→",
                     )}`}
                   >
                     {entry.trend || "→"}
@@ -275,7 +275,8 @@ export const GlobalRankings = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className="text-brand-400 font-medium">
-                      {parseInt(entry.total_earnings || '0').toLocaleString()} pts
+                      {parseInt(entry.total_earnings || "0").toLocaleString()}{" "}
+                      pts
                     </span>
                   </td>
                 </tr>

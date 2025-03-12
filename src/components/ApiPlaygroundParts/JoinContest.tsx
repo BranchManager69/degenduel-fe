@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { ContestSelect } from "./ContestContext";
 import { ResponseDisplay } from "./ResponseDisplay";
 import { WalletInput } from "./WalletInput";
@@ -27,7 +28,7 @@ export function JoinContest() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ wallet_address: walletAddress }),
-        }
+        },
       );
       const data = await response.json();
       if (!response.ok) throw data;

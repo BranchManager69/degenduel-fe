@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+
 import { useDebounce } from "../../hooks/useDebounce";
 import type { User } from "../../services/userService";
 import { userService } from "../../services/userService";
@@ -53,7 +54,7 @@ export const UserSearch: React.FC<UserSearchProps> = ({
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to fetch users. Please try again."
+            : "Failed to fetch users. Please try again.",
         );
         setSuggestions([]);
       } finally {
@@ -113,11 +114,11 @@ export const UserSearch: React.FC<UserSearchProps> = ({
     if (loading) {
       return <div className="p-3 text-gray-400 text-sm">Searching...</div>;
     }
-    
+
     if (error) {
       return <div className="p-3 text-red-400 text-sm">{error}</div>;
     }
-    
+
     if (suggestions.length > 0) {
       return (
         <ul className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-dark-300 scrollbar-track-dark-200">
@@ -126,7 +127,9 @@ export const UserSearch: React.FC<UserSearchProps> = ({
               key={user.wallet_address}
               onClick={() => handleSuggestionClick(user)}
               className={`px-4 py-2 hover:bg-dark-300/50 cursor-pointer transition-colors border-b border-dark-300/50 last:border-0 ${
-                variant === "modern" ? "hover:border-l-2 hover:border-l-brand-400" : ""
+                variant === "modern"
+                  ? "hover:border-l-2 hover:border-l-brand-400"
+                  : ""
               }`}
             >
               <div className="flex justify-between items-start">
@@ -140,7 +143,10 @@ export const UserSearch: React.FC<UserSearchProps> = ({
                     )}
                   </div>
                   <div className="text-sm text-gray-400 font-mono mt-1">
-                    {user.wallet_address.substring(0, 6)}...{user.wallet_address.substring(user.wallet_address.length - 4)}
+                    {user.wallet_address.substring(0, 6)}...
+                    {user.wallet_address.substring(
+                      user.wallet_address.length - 4,
+                    )}
                   </div>
                 </div>
                 {variant !== "minimal" && (
@@ -175,11 +181,11 @@ export const UserSearch: React.FC<UserSearchProps> = ({
         </ul>
       );
     }
-    
+
     if (query.length >= 2) {
       return <div className="p-3 text-gray-400 text-sm">No users found</div>;
     }
-    
+
     return (
       <div className="p-3 text-gray-400 text-sm">
         Type at least 2 characters to search

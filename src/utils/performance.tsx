@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useRef } from "react";
+
 import { NODE_ENV } from "../config/config";
 
 // Config
@@ -45,13 +46,14 @@ export const MeasureRender = ({
     if (NODE_ENV === "development") {
       // Only log if the render time exceeds the threshold
       if (logToConsole && timeSinceLastRender > logThreshold) {
-        console.log(`
+        console.log(
+          `
           %c[${id}] Render #${
             renderCount.current
           }: ${timeSinceLastRender.toFixed(2)}ms`,
           timeSinceLastRender > 16.67
             ? "color:red;font-weight:bold"
-            : "color:green"
+            : "color:green",
         );
       }
     }
@@ -62,7 +64,7 @@ export const MeasureRender = ({
     performance.measure(
       `${id}-render-time`,
       `${id}-render-start`,
-      `${id}-render-end`
+      `${id}-render-end`,
     );
 
     lastRender.current = now;
@@ -76,9 +78,9 @@ export const MeasureRender = ({
       console.log(
         `%c[${id}] Stats after ${renderCount.current} renders: 
         Avg: ${avg.toFixed(2)}ms, Min: ${min.toFixed(2)}ms, Max: ${max.toFixed(
-          2
+          2,
         )}ms`,
-        "color:blue;font-weight:bold"
+        "color:blue;font-weight:bold",
       );
     }
 
@@ -114,7 +116,7 @@ export const usePerformanceMeasure = (id: string) => {
         `%c[${id}] Operation took: ${latestEntry.duration.toFixed(2)}ms`,
         latestEntry.duration > 16.67
           ? "color:red;font-weight:bold"
-          : "color:green"
+          : "color:green",
       );
 
       // Clean up

@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { ContestSelect } from "./ContestContext";
 import { ResponseDisplay } from "./ResponseDisplay";
 import { WalletInput } from "./WalletInput";
@@ -27,7 +28,7 @@ export function GetPortfolio() {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       const data = await response.json();
       if (!response.ok) throw data;

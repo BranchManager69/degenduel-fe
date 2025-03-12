@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
+
 import { useContestChatWebSocket } from "../../hooks/useContestChatWebSocket";
 
 // Default profile picture URL
@@ -245,7 +246,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   <img
                     src={getProfilePicture(
                       participant.userId,
-                      participant.profilePicture
+                      participant.profilePicture,
                     )}
                     alt={participant.nickname}
                     className="w-6 h-6 rounded-full mr-2"
@@ -300,8 +301,8 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                     msg.isAdmin
                       ? getAdminMessageStyle()
                       : msg.userId === currentUserId
-                      ? "self-message bg-brand-900/20 border-l-2 border-brand-500"
-                      : "bg-gray-800/50"
+                        ? "self-message bg-brand-900/20 border-l-2 border-brand-500"
+                        : "bg-gray-800/50"
                   } animate-fade-in`}
                 >
                   <div className="flex items-start">
@@ -313,8 +314,8 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                           msg.isAdmin
                             ? "ring-2 ring-purple-500"
                             : msg.userId === currentUserId
-                            ? "ring-2 ring-brand-500"
-                            : ""
+                              ? "ring-2 ring-brand-500"
+                              : ""
                         }`}
                       />
                     </div>
@@ -325,8 +326,8 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                             msg.isAdmin
                               ? getAdminTextColor()
                               : msg.userId === currentUserId
-                              ? "text-brand-400"
-                              : "text-white"
+                                ? "text-brand-400"
+                                : "text-white"
                           }`}
                         >
                           {msg.nickname}

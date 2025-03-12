@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { getUserContests, UserContest } from "../services/contestService";
 
 export const useUserContests = () => {

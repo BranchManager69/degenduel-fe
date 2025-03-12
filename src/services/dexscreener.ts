@@ -1,7 +1,7 @@
 // src/services/dexscreener.ts
 
 // Fallback token for when no Hot Tokens are found (probably not a good idea)
-export const FALLBACK_TOKEN = 'DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t';
+export const FALLBACK_TOKEN = "DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t";
 
 // Define the type for a token with market data
 /*interface TokenWithMarketData {
@@ -18,60 +18,60 @@ export const FALLBACK_TOKEN = 'DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t';
     priceChange24h?: number;
 }*/
 export interface TokenWithMarketData {
-    // Basic Info
-    address: string;
-    name: string;
-    symbol: string;
-    currentPrice: number;
-    circulatingSupply?: number;
-    totalSupply?: number;
+  // Basic Info
+  address: string;
+  name: string;
+  symbol: string;
+  currentPrice: number;
+  circulatingSupply?: number;
+  totalSupply?: number;
 
-    // Market Data
-    priceChange24h?: number;
-    volume24h?: number;
-    marketCap?: number;
-    fdv?: number;  // Fully Diluted Valuation
-    liquidity?: number;
-    
-    // Rich Token Info
-    imageUrl?: string;
-    websites?: { 
-        url: string;
-        type?: 'official' | 'community' | 'other';
-    }[];
-    
-    // Social Media & Community
-    socials?: {
-        platform: 'twitter' | 'telegram' | 'discord' | 'medium' | 'github' | string;
-        handle: string;
-        url?: string;
-        followers?: number;
-    }[];
-    
-    // Trading Info
-    dexUrl?: string;
-    pairAddress?: string;
-    dexId?: string;  // raydium, orca, etc.
-    
-    // Additional Metadata
-    lastUpdated?: number;
-    priceSource?: string;
+  // Market Data
+  priceChange24h?: number;
+  volume24h?: number;
+  marketCap?: number;
+  fdv?: number; // Fully Diluted Valuation
+  liquidity?: number;
+
+  // Rich Token Info
+  imageUrl?: string;
+  websites?: {
+    url: string;
+    type?: "official" | "community" | "other";
+  }[];
+
+  // Social Media & Community
+  socials?: {
+    platform: "twitter" | "telegram" | "discord" | "medium" | "github" | string;
+    handle: string;
+    url?: string;
+    followers?: number;
+  }[];
+
+  // Trading Info
+  dexUrl?: string;
+  pairAddress?: string;
+  dexId?: string; // raydium, orca, etc.
+
+  // Additional Metadata
+  lastUpdated?: number;
+  priceSource?: string;
 }
 
 // Color codes for console output
 const colors = {
-    reset: '\x1b[0m',     // RESET
-    header_blue: '\x1b[46m\x1b[1m\x1b[30m',    // Cyan bg with black text
-    header_green: '\x1b[42m\x1b[1m\x1b[30m',   // Green bg with black text
-    header_purple: '\x1b[45m\x1b[1m\x1b[30m',  // Purple bg with black text
-    header_yellow: '\x1b[43m\x1b[1m\x1b[30m',  // Yellow bg with black text
-    header_white: '\x1b[47m\x1b[1m\x1b[30m',  // White bg with black text
-    header_black: '\x1b[40m\x1b[1m\x1b[37m',  // Black bg with white text
-    header_cyan: '\x1b[46m\x1b[1m\x1b[30m',    // Cyan bg with black text
-    header_magenta: '\x1b[45m\x1b[1m\x1b[30m',  // Magenta bg with black text
-    header_red: '\x1b[41m\x1b[1m\x1b[30m',    // Red bg with black text
-    warning: '\x1b[33m',  // Yellow/Orange if single source missing
-    error: '\x1b[31m',    // Red if both sources missing
+  reset: "\x1b[0m", // RESET
+  header_blue: "\x1b[46m\x1b[1m\x1b[30m", // Cyan bg with black text
+  header_green: "\x1b[42m\x1b[1m\x1b[30m", // Green bg with black text
+  header_purple: "\x1b[45m\x1b[1m\x1b[30m", // Purple bg with black text
+  header_yellow: "\x1b[43m\x1b[1m\x1b[30m", // Yellow bg with black text
+  header_white: "\x1b[47m\x1b[1m\x1b[30m", // White bg with black text
+  header_black: "\x1b[40m\x1b[1m\x1b[37m", // Black bg with white text
+  header_cyan: "\x1b[46m\x1b[1m\x1b[30m", // Cyan bg with black text
+  header_magenta: "\x1b[45m\x1b[1m\x1b[30m", // Magenta bg with black text
+  header_red: "\x1b[41m\x1b[1m\x1b[30m", // Red bg with black text
+  warning: "\x1b[33m", // Yellow/Orange if single source missing
+  error: "\x1b[31m", // Red if both sources missing
 };
 
 // Define the type for a DexScreener pair
@@ -130,7 +130,7 @@ export interface DebugInfo {
 let lastDebugInfo: DebugInfo = {
   totalPairs: 0,
   filteredPairs: 0,
-  timestamp: Date.now()
+  timestamp: Date.now(),
 };
 
 export function getLastDebugInfo(): DebugInfo {
@@ -138,47 +138,54 @@ export function getLastDebugInfo(): DebugInfo {
 }
 
 // Search for tokens by name or symbol
-export async function searchTokens(query: string): Promise<Partial<TokenWithMarketData>[]> {
+export async function searchTokens(
+  query: string,
+): Promise<Partial<TokenWithMarketData>[]> {
   try {
     const response = await fetch(
       `https://api.dexscreener.com/latest/dex/search?q=${encodeURIComponent(query)}`,
-      { headers: { 'Accept': 'application/json' } }
+      { headers: { Accept: "application/json" } },
     );
 
     if (!response.ok) {
-      throw new Error('Failed to search tokens');
+      throw new Error("Failed to search tokens");
     }
 
     const data: DexScreenerResponse = await response.json();
-    
+
     // Filter for Solana pairs with SOL as quote token
-    const solanaPairs = data.pairs?.filter(pair => 
-      pair.chainId === 'solana' &&
-      pair.quoteToken.symbol === 'SOL' &&
-      parseFloat(pair.priceUsd) > 0
+    const solanaPairs = data.pairs?.filter(
+      (pair) =>
+        pair.chainId === "solana" &&
+        pair.quoteToken.symbol === "SOL" &&
+        parseFloat(pair.priceUsd) > 0,
     );
 
     // Sort by volume and get highest volume pair
-    const sortedPairs = solanaPairs?.sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
+    const sortedPairs = solanaPairs?.sort(
+      (a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0),
+    );
     const bestPair = sortedPairs?.[0];
 
     if (!bestPair) return [];
 
-    return [{
-      address: bestPair.baseToken.address,
-      name: bestPair.baseToken.name,
-      symbol: bestPair.baseToken.symbol,
-      currentPrice: parseFloat(bestPair.priceUsd),
-      imageUrl: bestPair.info?.imageUrl,
-      volume24h: bestPair.volume?.h24,
-      marketCap: bestPair.marketCap,
-      websites: bestPair.info?.websites || [],
-      socials: bestPair.info?.socials || [],
-      dexUrl: bestPair.url,
-      priceChange24h: bestPair.priceChange?.h24
-    }];
+    return [
+      {
+        address: bestPair.baseToken.address,
+        name: bestPair.baseToken.name,
+        symbol: bestPair.baseToken.symbol,
+        currentPrice: parseFloat(bestPair.priceUsd),
+        imageUrl: bestPair.info?.imageUrl,
+        volume24h: bestPair.volume?.h24,
+        marketCap: bestPair.marketCap,
+        websites: bestPair.info?.websites || [],
+        socials: bestPair.info?.socials || [],
+        dexUrl: bestPair.url,
+        priceChange24h: bestPair.priceChange?.h24,
+      },
+    ];
   } catch (error) {
-    console.error('Failed to search tokens:', error);
+    console.error("Failed to search tokens:", error);
     return [];
   }
 }
@@ -228,83 +235,86 @@ export async function fetchTokenInfo(tokenAddress: string): Promise<TokenWithMar
   }
 }
 */
-export async function fetchTokenInfo(tokenAddress: string): Promise<TokenWithMarketData | null> {
-    try {
-      const response = await fetch(
-        `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
-        { headers: { 'Accept': 'application/json' } }
-      );
-  
-      if (!response.ok) {
-        throw new Error('Failed to fetch token information');
-      }
-  
-      const data: DexScreenerResponse = await response.json();
-      
-      // Filter for Solana pairs with SOL as quote token
-      const solanaPairs = data.pairs?.filter(pair => 
-        pair.chainId === 'solana' && 
-        pair.quoteToken.symbol === 'SOL'
-      );
-  
-      // Get the highest volume pair
-      const pair = solanaPairs?.sort((a, b) => 
-        (b.volume?.h24 || 0) - (a.volume?.h24 || 0)
-      )[0];
-  
-      if (!pair) {
-        throw new Error('No valid trading pairs found');
-      }
-  
-      return {
-        // Basic Info
-        address: tokenAddress,
-        name: pair.baseToken.name,
-        symbol: pair.baseToken.symbol,
-        currentPrice: parseFloat(pair.priceUsd),
-        
-        // Market Data
-        priceChange24h: pair.priceChange?.h24,
-        volume24h: pair.volume?.h24,
-        marketCap: pair.marketCap,
-        fdv: pair.fdv,
-        liquidity: pair.liquidity?.usd,
-        
-        // Rich Token Info
-        imageUrl: pair.info?.imageUrl,
-        websites: pair.info?.websites?.map(w => ({ url: w.url })),
-        
-        // Social Media & Community (expanded from pair.info.socials)
-        socials: pair.info?.socials?.map(s => ({
-          platform: s.platform,
-          handle: s.handle,
-          url: s.url
-        })),
-        
-        // Trading Info
-        dexUrl: pair.url,
-        pairAddress: pair.pairAddress,
-        dexId: pair.dexId,
-        
-        // Metadata
-        lastUpdated: Date.now(),
-        priceSource: 'dexscreener'
-      };
-    } catch (error) {
-        ////console.log(`\n${colors.error} ⛔ Not found on DexScreener or CoinGecko!${colors.reset}\n\t${colors.header_red} ERROR ${colors.reset} ${colors.warning}${error}.${colors.reset}`);
-        console.log(`\n    ${colors.header_red} ERROR ${colors.reset} ${colors.warning}${error}.${colors.reset}`);
-        return null;
+export async function fetchTokenInfo(
+  tokenAddress: string,
+): Promise<TokenWithMarketData | null> {
+  try {
+    const response = await fetch(
+      `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
+      { headers: { Accept: "application/json" } },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch token information");
     }
+
+    const data: DexScreenerResponse = await response.json();
+
+    // Filter for Solana pairs with SOL as quote token
+    const solanaPairs = data.pairs?.filter(
+      (pair) => pair.chainId === "solana" && pair.quoteToken.symbol === "SOL",
+    );
+
+    // Get the highest volume pair
+    const pair = solanaPairs?.sort(
+      (a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0),
+    )[0];
+
+    if (!pair) {
+      throw new Error("No valid trading pairs found");
+    }
+
+    return {
+      // Basic Info
+      address: tokenAddress,
+      name: pair.baseToken.name,
+      symbol: pair.baseToken.symbol,
+      currentPrice: parseFloat(pair.priceUsd),
+
+      // Market Data
+      priceChange24h: pair.priceChange?.h24,
+      volume24h: pair.volume?.h24,
+      marketCap: pair.marketCap,
+      fdv: pair.fdv,
+      liquidity: pair.liquidity?.usd,
+
+      // Rich Token Info
+      imageUrl: pair.info?.imageUrl,
+      websites: pair.info?.websites?.map((w) => ({ url: w.url })),
+
+      // Social Media & Community (expanded from pair.info.socials)
+      socials: pair.info?.socials?.map((s) => ({
+        platform: s.platform,
+        handle: s.handle,
+        url: s.url,
+      })),
+
+      // Trading Info
+      dexUrl: pair.url,
+      pairAddress: pair.pairAddress,
+      dexId: pair.dexId,
+
+      // Metadata
+      lastUpdated: Date.now(),
+      priceSource: "dexscreener",
+    };
+  } catch (error) {
+    ////console.log(`\n${colors.error} ⛔ Not found on DexScreener or CoinGecko!${colors.reset}\n\t${colors.header_red} ERROR ${colors.reset} ${colors.warning}${error}.${colors.reset}`);
+    console.log(
+      `\n    ${colors.header_red} ERROR ${colors.reset} ${colors.warning}${error}.${colors.reset}`,
+    );
+    return null;
+  }
 }
 
 export async function fetchHotTokens(): Promise<TokenWithMarketData[]> {
   try {
-    console.log('Fetching hot tokens...');
-    
+    console.log("Fetching hot tokens...");
+
     // Use the token boosts endpoint to get trending tokens
     const response = await fetch(
-      'https://api.dexscreener.com/token-boosts/top/v1',
-      { headers: { 'Accept': 'application/json' } }
+      "https://api.dexscreener.com/token-boosts/top/v1",
+      { headers: { Accept: "application/json" } },
     );
 
     if (!response.ok) {
@@ -312,31 +322,33 @@ export async function fetchHotTokens(): Promise<TokenWithMarketData[]> {
     }
 
     const boosts: TokenBoost[] = await response.json();
-    const solanaBoosts = boosts.filter(boost => boost.chainId === 'solana');
+    const solanaBoosts = boosts.filter((boost) => boost.chainId === "solana");
 
     // Fetch detailed info for each boosted token
     const tokens = await Promise.all(
-      solanaBoosts.map(async boost => {
+      solanaBoosts.map(async (boost) => {
         try {
           const info = await fetchTokenInfo(boost.tokenAddress);
           return info;
         } catch {
           return null;
         }
-      })
+      }),
     );
 
-    const validTokens = tokens.filter((t): t is TokenWithMarketData => t !== null);
+    const validTokens = tokens.filter(
+      (t): t is TokenWithMarketData => t !== null,
+    );
 
     lastDebugInfo = {
       totalPairs: boosts.length,
       filteredPairs: validTokens.length,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // If no tokens found, use fallback
     if (validTokens.length === 0) {
-      console.log('No hot tokens found, using fallback');
+      console.log("No hot tokens found, using fallback");
       const fallbackInfo = await fetchTokenInfo(FALLBACK_TOKEN);
       if (fallbackInfo) {
         validTokens.push(fallbackInfo);
@@ -345,12 +357,12 @@ export async function fetchHotTokens(): Promise<TokenWithMarketData[]> {
 
     return validTokens;
   } catch (error) {
-    console.error('Failed to fetch hot tokens:', error);
+    console.error("Failed to fetch hot tokens:", error);
     lastDebugInfo = {
       totalPairs: 0,
       filteredPairs: 0,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: Date.now()
+      error: error instanceof Error ? error.message : "Unknown error",
+      timestamp: Date.now(),
     };
 
     // Try fallback token
@@ -361,104 +373,115 @@ export async function fetchHotTokens(): Promise<TokenWithMarketData[]> {
 
 // Define the type for contest-relevant market data
 interface TokenMarketData {
-    marketCap: number | null;
-    price: number | null;
-    liquidity: number | null;
-    volume24h: number | null;
-}  
+  marketCap: number | null;
+  price: number | null;
+  liquidity: number | null;
+  volume24h: number | null;
+}
 
 // Service class for fetching market data
 export class DexScreenerService {
-    private static cache = new Map<string, {
+  private static cache = new Map<
+    string,
+    {
       data: TokenMarketData;
       timestamp: number;
-    }>();
-    private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  
-    // Need a special method for SOL price
-    private static async getSolPrice(): Promise<number | null> {
-        try {
-            // -- [OPTION 1] CoinGecko --
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-            const data = await response.json();
-            return data.solana.usd;
-
-            // [OPTION 2] DexScreener (must use USDC/SOL pair directly) --
-            // const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/solana/USDC/SOL');
-            // const data = await response.json();
-            // return parseFloat(data.pairs[0]?.priceUsd);
-        } catch (error) {
-            console.error('Failed to fetch SOL price:', error);
-            return null;
-        }
     }
+  >();
+  private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-    // Simple getter for contest-relevant market data
-    static async getMarketData(tokenAddress: string): Promise<TokenMarketData> {
-        // Special handling for SOL
-        if (tokenAddress === 'So11111111111111111111111111111111111111111') {
-            const solPrice = await this.getSolPrice();
-            return {
-                marketCap: null, // Could fetch from CoinGecko if needed
-                price: solPrice,
-                liquidity: null,
-                volume24h: null
-            };
-        }
-
-        try {
-            // Check cache first
-            const cached = this.cache.get(tokenAddress);
-            if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-                return cached.data;
-            }
-    
-            const tokenInfo = await fetchTokenInfo(tokenAddress);
-            
-            const marketData: TokenMarketData = {
-                marketCap: tokenInfo?.marketCap || null,
-                price: tokenInfo?.currentPrice  || null,
-                liquidity: tokenInfo?.volume24h || null,
-                volume24h: tokenInfo?.volume24h || null,
-            };
-    
-            // Update cache
-            this.cache.set(tokenAddress, {
-                data: marketData,
-                timestamp: Date.now()
-            });
-    
-            return marketData;
-        } catch (error) {
-            console.error(`Failed to fetch market data for ${tokenAddress}:`, error);
-            return {
-                marketCap: null,
-                price: null,
-                liquidity: null,
-                volume24h: null
-            };
-        }
-    }
-  
-    // Bulk fetch for contest tokens
-    static async getContestTokensData(tokenAddresses: string[]): Promise<Map<string, TokenMarketData>> {
-      const results = new Map();
-      await Promise.all(
-        tokenAddresses.map(async (address) => {
-          results.set(address, await this.getMarketData(address));
-        })
+  // Need a special method for SOL price
+  private static async getSolPrice(): Promise<number | null> {
+    try {
+      // -- [OPTION 1] CoinGecko --
+      const response = await fetch(
+        "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
       );
-      return results;
+      const data = await response.json();
+      return data.solana.usd;
+
+      // [OPTION 2] DexScreener (must use USDC/SOL pair directly) --
+      // const response = await fetch('https://api.dexscreener.com/latest/dex/pairs/solana/USDC/SOL');
+      // const data = await response.json();
+      // return parseFloat(data.pairs[0]?.priceUsd);
+    } catch (error) {
+      console.error("Failed to fetch SOL price:", error);
+      return null;
     }
-  
-    // Treat standalone functions as static methods
-    static async searchTokens(query: string): Promise<Partial<TokenWithMarketData>[]> {
-        return searchTokens(query);
+  }
+
+  // Simple getter for contest-relevant market data
+  static async getMarketData(tokenAddress: string): Promise<TokenMarketData> {
+    // Special handling for SOL
+    if (tokenAddress === "So11111111111111111111111111111111111111111") {
+      const solPrice = await this.getSolPrice();
+      return {
+        marketCap: null, // Could fetch from CoinGecko if needed
+        price: solPrice,
+        liquidity: null,
+        volume24h: null,
+      };
     }
-    static async fetchTokenInfo(tokenAddress: string): Promise<TokenWithMarketData | null> {
+
+    try {
+      // Check cache first
+      const cached = this.cache.get(tokenAddress);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        return cached.data;
+      }
+
+      const tokenInfo = await fetchTokenInfo(tokenAddress);
+
+      const marketData: TokenMarketData = {
+        marketCap: tokenInfo?.marketCap || null,
+        price: tokenInfo?.currentPrice || null,
+        liquidity: tokenInfo?.volume24h || null,
+        volume24h: tokenInfo?.volume24h || null,
+      };
+
+      // Update cache
+      this.cache.set(tokenAddress, {
+        data: marketData,
+        timestamp: Date.now(),
+      });
+
+      return marketData;
+    } catch (error) {
+      console.error(`Failed to fetch market data for ${tokenAddress}:`, error);
+      return {
+        marketCap: null,
+        price: null,
+        liquidity: null,
+        volume24h: null,
+      };
+    }
+  }
+
+  // Bulk fetch for contest tokens
+  static async getContestTokensData(
+    tokenAddresses: string[],
+  ): Promise<Map<string, TokenMarketData>> {
+    const results = new Map();
+    await Promise.all(
+      tokenAddresses.map(async (address) => {
+        results.set(address, await this.getMarketData(address));
+      }),
+    );
+    return results;
+  }
+
+  // Treat standalone functions as static methods
+  static async searchTokens(
+    query: string,
+  ): Promise<Partial<TokenWithMarketData>[]> {
+    return searchTokens(query);
+  }
+  static async fetchTokenInfo(
+    tokenAddress: string,
+  ): Promise<TokenWithMarketData | null> {
     return fetchTokenInfo(tokenAddress);
-    }
-    static async fetchHotTokens(): Promise<TokenWithMarketData[]> {
+  }
+  static async fetchHotTokens(): Promise<TokenWithMarketData[]> {
     return fetchHotTokens();
-    }
+  }
 }

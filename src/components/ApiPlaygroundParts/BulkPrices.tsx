@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { JsonInput } from "./JsonInput";
 import { ResponseDisplay } from "./ResponseDisplay";
 
@@ -51,7 +52,7 @@ export function BulkPrices() {
               "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
             ],
             null,
-            2
+            2,
           )}
         />
       </div>

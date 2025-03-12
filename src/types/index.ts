@@ -284,7 +284,7 @@ export interface IpBanParams {
   page?: number;
   limit?: number;
   sort?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
   filter?: string;
 }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
 import { ddApi } from "../../services/dd-api";
 
 interface TradeData {
@@ -248,7 +249,7 @@ export const PortfolioTrades: React.FC<PortfolioTradesProps> = ({
                         <div className="flex justify-center">
                           <span
                             className={`px-2 py-1 rounded-full text-xs border ${getStatusBadgeClass(
-                              trade.status
+                              trade.status,
                             )}`}
                           >
                             {trade.status.toUpperCase()}
