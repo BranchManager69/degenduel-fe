@@ -3,6 +3,14 @@
   "private": true,
   "version": "0.1.1",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "overrides": {
+    "@react-three/postprocessing": {
+      "@react-three/fiber": "^8.0.0"
+    }
+  },
   "scripts": {
     "build": "npm run build:prod",
     "build:dev": "tsc && VITE_FORCE_DISABLE_MINIFY=true vite build --mode development",
