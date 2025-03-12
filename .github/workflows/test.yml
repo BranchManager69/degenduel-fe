@@ -2,9 +2,9 @@ name: DegenDuel CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   # Add scheduled runs to detect issues even when no PRs are active
   schedule:
     - cron: '0 5 * * 1' # Run at 5 AM UTC every Monday
@@ -181,11 +181,11 @@ jobs:
         state: success
         deployment-id: ${{ steps.deployment-dev.outputs.deployment_id }}
         
-    # Only run auto-deploy on pushes to develop, not PRs
-    - name: Prepare Auto-deployment (develop branch only)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && steps.verify-build.outputs.build_success == 'true'
+    # Auto-deploy development builds for feature branches
+    - name: Prepare Development Auto-deployment
+      if: github.event_name == 'push' && github.ref != 'refs/heads/main' && steps.verify-build.outputs.build_success == 'true'
       run: |
-        echo "Ready to auto-deploy to development environment"
+        echo "Ready to auto-deploy feature branch to development environment"
         echo "AUTO_DEPLOY=true" >> $GITHUB_ENV
 
   build-prod:
