@@ -1,6 +1,13 @@
 import "@testing-library/jest-dom";
 import { fetch } from "cross-fetch";
 
+// Add polyfills for TextEncoder/TextDecoder (needed for some crypto libs)
+if (typeof globalThis.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  globalThis.TextEncoder = TextEncoder;
+  globalThis.TextDecoder = TextDecoder;
+}
+
 // Add fetch to global scope
 (globalThis as any).fetch = fetch;
 

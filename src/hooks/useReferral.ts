@@ -148,11 +148,11 @@ export const ReferralProvider = ({
     }
 
     // Enhanced logging for troubleshooting
-    console.log("[Referral] Processing URL:", location.href);
+    console.log("[Referral] Processing URL:", window.location.href);
     console.log("[Referral] URL Path:", location.pathname);
     console.log("[Referral] URL Search:", location.search);
     console.log("[Referral] URL Hash:", location.hash);
-    console.log("[Referral] Found referral code:", ref);
+    console.log("[Referral] Found referral code:", ref ?? "none");
     
     // Debug info for developers
     if (import.meta.env.DEV) {

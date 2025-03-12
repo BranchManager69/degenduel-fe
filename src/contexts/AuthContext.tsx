@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
 
 // Create a type for the context
-interface AuthContextType {
+export interface AuthContextType {
   // User state
   user: any | null;
   loading: boolean;
