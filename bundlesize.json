@@ -1,0 +1,29 @@
+{
+  "files": [
+    {
+      "path": "dist/*.js",
+      "maxSize": "300 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/*.css",
+      "maxSize": "50 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/assets/index*.js",
+      "maxSize": "150 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/assets/react-vendor*.js",
+      "maxSize": "150 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/assets/three-vendor*.js",
+      "maxSize": "250 kB",
+      "compression": "gzip"
+    }
+  ]
+}
