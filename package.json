@@ -23,8 +23,8 @@
     "dev:local": "vite --mode dev-local",
     "type-check": "tsc --noEmit",
     "test": "jest --config jest.config.ts --verbose",
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx src",
-    "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx src --fix"
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx --config .eslintrc.json src",
+    "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx --config .eslintrc.json src --fix"
   },
   "dependencies": {
     "@aptos-labs/wallet-adapter-react": "^3.7.9",
