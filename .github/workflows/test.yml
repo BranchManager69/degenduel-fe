@@ -172,7 +172,12 @@ jobs:
           
     - name: Install dependencies
       if: steps.npm-cache.outputs.cache-hit != 'true'
-      run: npm ci ${{ env.NPM_FLAGS }}
+      run: |
+        npm ci ${{ env.NPM_FLAGS }}
+        # Install Storybook dependencies if .storybook directory exists
+        if [ -d ".storybook" ]; then
+          npm install -D @storybook/addon-essentials @storybook/addon-interactions @storybook/addon-links @storybook/blocks @storybook/manager-api @storybook/react @storybook/react-vite @storybook/testing-library
+        fi
       
     - name: Build development version
       run: |
@@ -209,19 +214,23 @@ jobs:
         retention-days: 7
         
     - name: Create GitHub deployment for development
-      uses: chrnorm/deployment-action@v2
+      uses: bobheadxi/deployments@v1
       id: deployment-dev
       with:
+        step: start
         token: ${{ github.token }}
-        environment-url: https://dev.degenduel.me
-        environment: "development (dev.degenduel.me)"
+        env: "development (dev.degenduel.me)"
+        no_override: false
         
     - name: Mark development deployment as successful
-      uses: chrnorm/deployment-status@v2
+      uses: bobheadxi/deployments@v1
       with:
+        step: finish
         token: ${{ github.token }}
-        state: success
-        deployment-id: ${{ steps.deployment-dev.outputs.deployment_id }}
+        env: "development (dev.degenduel.me)"
+        status: ${{ job.status }}
+        deployment_id: ${{ steps.deployment-dev.outputs.deployment_id }}
+        env_url: https://dev.degenduel.me
         
     # Auto-deploy development builds for feature branches
     - name: Prepare Development Auto-deployment
@@ -297,19 +306,23 @@ jobs:
         retention-days: 7
         
     - name: Create GitHub deployment for production
-      uses: chrnorm/deployment-action@v2
+      uses: bobheadxi/deployments@v1
       id: deployment-prod
       with:
+        step: start
         token: ${{ github.token }}
-        environment-url: https://degenduel.me
-        environment: "production (degenduel.me)"
+        env: "production (degenduel.me)"
+        no_override: false
         
     - name: Mark production deployment as successful
-      uses: chrnorm/deployment-status@v2
+      uses: bobheadxi/deployments@v1
       with:
+        step: finish
         token: ${{ github.token }}
-        state: success
-        deployment-id: ${{ steps.deployment-prod.outputs.deployment_id }}
+        env: "production (degenduel.me)"
+        status: ${{ job.status }}
+        deployment_id: ${{ steps.deployment-prod.outputs.deployment_id }}
+        env_url: https://degenduel.me
         
     # Only run auto-deploy on pushes to main, not PRs
     - name: Prepare Auto-deployment (main branch only)
@@ -517,7 +530,10 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci ${{ env.NPM_FLAGS }}
+      run: |
+        npm ci ${{ env.NPM_FLAGS }}
+        # Install Storybook CLI and addon dependencies
+        npm install -D @storybook/cli @storybook/addon-essentials @storybook/addon-interactions @storybook/addon-links @storybook/blocks @storybook/manager-api @storybook/react @storybook/react-vite @storybook/testing-library storybook
       
     - name: Check for Storybook
       id: check-storybook
