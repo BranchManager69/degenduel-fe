@@ -62,6 +62,23 @@ jobs:
     - name: Build development version
       run: npm run build:dev
       
+    - name: Verify build output
+      id: verify-build
+      run: |
+        if [ -d "dist-dev" ] && [ "$(find dist-dev -type f | wc -l)" -gt 0 ]; then
+          echo "✅ Development build successful!"
+        else
+          echo "❌ Development build failed!"
+          exit 1
+        fi
+    
+    - name: Upload development build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-dev
+        path: dist-dev
+        retention-days: 7
+      
     - name: Create GitHub deployment for development
       uses: chrnorm/deployment-action@v2
       id: deployment-dev
@@ -98,6 +115,23 @@ jobs:
       
     - name: Build production version
       run: npm run build:prod
+      
+    - name: Verify build output
+      id: verify-build
+      run: |
+        if [ -d "dist" ] && [ "$(find dist -type f | wc -l)" -gt 0 ]; then
+          echo "✅ Production build successful!"
+        else
+          echo "❌ Production build failed!"
+          exit 1
+        fi
+    
+    - name: Upload production build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-prod
+        path: dist
+        retention-days: 7
       
     - name: Create GitHub deployment for production
       uses: chrnorm/deployment-action@v2
