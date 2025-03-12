@@ -64,7 +64,20 @@ jobs:
       run: |
         # Skip TypeScript check in build
         echo "Building development version, bypassing TypeScript check..."
-        VITE_FORCE_DISABLE_MINIFY=true npx vite build --mode development
+        # Create a temporary vite config with react-hot-toast as external
+        echo 'import { defineConfig } from "vite";
+        import config from "./vite.config.js";
+        export default defineConfig({
+          ...config,
+          build: {
+            ...config.build,
+            rollupOptions: {
+              ...config.build?.rollupOptions,
+              external: ["react-hot-toast"]
+            }
+          }
+        });' > vite.config.build.js
+        VITE_FORCE_DISABLE_MINIFY=true npx vite build --mode development --config vite.config.build.js
       
     - name: Verify build output
       run: |
@@ -118,7 +131,22 @@ jobs:
       run: |
         # Skip TypeScript check in build
         echo "Building production version, bypassing TypeScript check..."
-        npx vite build --mode production
+        # Create a temporary vite config with react-hot-toast as external (if not already created)
+        if [ ! -f vite.config.build.js ]; then
+          echo 'import { defineConfig } from "vite";
+          import config from "./vite.config.js";
+          export default defineConfig({
+            ...config,
+            build: {
+              ...config.build,
+              rollupOptions: {
+                ...config.build?.rollupOptions,
+                external: ["react-hot-toast"]
+              }
+            }
+          });' > vite.config.build.js
+        fi
+        npx vite build --mode production --config vite.config.build.js
       
     - name: Verify build output
       run: |
