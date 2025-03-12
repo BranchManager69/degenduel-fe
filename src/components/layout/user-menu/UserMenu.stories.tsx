@@ -44,7 +44,7 @@ const meta: Meta<typeof UserMenu> = {
     layout: 'centered',
   },
   decorators: [
-    (Story) => (
+    (Story: StoryObj<typeof UserMenu>) => (
       <BrowserRouter>
         <div className="bg-gray-900 p-10">
           <Story />
@@ -96,7 +96,7 @@ export const Compact: Story = {
 export const HighLevel: Story = {
   args: {},
   decorators: [
-    (Story) => {
+    (Story: StoryObj<typeof UserMenu>) => {
       // Override the mock for this specific story
       mockStoreHook.achievements.userProgress.level = 25;
       return <Story />;
@@ -107,7 +107,7 @@ export const HighLevel: Story = {
 export const Admin: Story = {
   args: {},
   decorators: [
-    (Story) => {
+    (Story: StoryObj<typeof UserMenu>) => {
       // Override the mock for this specific story
       mockAuthHook.isAdmin = () => true;
       mockAuthHook.isSuperAdmin = () => false;
@@ -119,7 +119,7 @@ export const Admin: Story = {
 export const SuperAdmin: Story = {
   args: {},
   decorators: [
-    (Story) => {
+    (Story: StoryObj<typeof UserMenu>) => {
       // Override the mock for this specific story
       mockAuthHook.isAdmin = () => true;
       mockAuthHook.isSuperAdmin = () => true;

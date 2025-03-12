@@ -47,6 +47,7 @@
     "@react-three/postprocessing": "^3.0.4",
     "@solana/spl-token": "^0.4.12",
     "@solana/wallet-adapter-react": "^0.15.35",
+    "@storybook/react": "^8.6.4",
     "@telegram-apps/bridge": "^2.3.2",
     "@types/date-fns": "^2.5.3",
     "@types/react-syntax-highlighter": "^15.5.13",
