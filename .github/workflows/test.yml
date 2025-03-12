@@ -3,6 +3,11 @@ name: DegenDuel CI/CD
 # This workflow handles testing, building, and deployment verification for the DegenDuel frontend
 # It creates the necessary deployment records for GitHub branch protection requirements
 # Main flow: test -> build-dev -> build-prod -> performance monitoring
+# 
+# IMPORTANT: GitHub environment names must be EXACTLY:
+#   - "development (dev.degenduel.me)" - for development environment
+#   - "production (degenduel.me)" - for production environment
+# These exact names are required by branch protection rules
 #
 # Additional jobs:
 # - specialized-builds: For preview builds with experimental features
@@ -119,6 +124,7 @@ jobs:
   build-dev:
     name: Development Build
     runs-on: ubuntu-latest
+    # CRITICAL: This exact environment name is required by branch protection
     environment: "development (dev.degenduel.me)"
     needs: test
     
@@ -178,11 +184,13 @@ jobs:
         retention-days: 7
         
     - name: Create GitHub deployment for development
+      # CRITICAL: This creates the deployment required by branch protection
       uses: chrnorm/deployment-action@v2
       id: deployment-dev
       with:
         token: ${{ github.token }}
         environment-url: https://dev.degenduel.me
+        # CRITICAL: This exact environment name is required by branch protection
         environment: "development (dev.degenduel.me)"
         ref: ${{ github.head_ref || github.ref }}
         
@@ -199,6 +207,7 @@ jobs:
   build-prod:
     name: Production Build
     runs-on: ubuntu-latest
+    # CRITICAL: This exact environment name is required by branch protection
     environment: "production (degenduel.me)"
     needs: [test, build-dev]
     
@@ -262,11 +271,13 @@ jobs:
         retention-days: 7
         
     - name: Create GitHub deployment for production
+      # CRITICAL: This creates the deployment required by branch protection
       uses: chrnorm/deployment-action@v2
       id: deployment-prod
       with:
         token: ${{ github.token }}
         environment-url: https://degenduel.me
+        # CRITICAL: This exact environment name is required by branch protection
         environment: "production (degenduel.me)"
         ref: ${{ github.head_ref || github.ref }}
         
@@ -299,55 +310,7 @@ jobs:
             });
           }
           
-  # Add a separate performance monitoring job
-  performance:
-    name: Performance Monitoring
-    runs-on: ubuntu-latest
-    needs: [build-prod]
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download production build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist-prod
-        path: dist
-        
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        
-    - name: Install Lighthouse CI
-      run: npm install -g @lhci/cli
-      
-    - name: Run Lighthouse CI
-      run: |
-        lhci autorun --upload.target=temporary-public-storage || true
-      continue-on-error: true
-      
-    - name: Analyze first load experience
-      run: |
-        echo "Analyzing critical path rendering..."
-        # Check the sizes of initial JS and CSS payload
-        find dist -type f -name "*.js" -o -name "*.css" | sort -rh | head -5 | xargs ls -la
-        
-        # Output a summary report
-        echo "Performance Summary:" > performance-report.txt
-        echo "====================" >> performance-report.txt
-        echo "Date: $(date)" >> performance-report.txt
-        echo "Branch: ${{ github.ref }}" >> performance-report.txt
-        echo "Total JS size: $(find dist -name "*.js" -type f -exec du -ch {} \; | grep total$)" >> performance-report.txt
-        echo "Total CSS size: $(find dist -name "*.css" -type f -exec du -ch {} \; | grep total$)" >> performance-report.txt
-        
-    - name: Upload performance report
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-report
-        path: performance-report.txt
-        retention-days: 30
+# Performance monitoring job removed to simplify workflow
         
   # Add a separate job for specialized builds/previews
   specialized-builds:
