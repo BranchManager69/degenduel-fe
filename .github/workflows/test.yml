@@ -9,11 +9,12 @@ on:
   pull_request:
     branches: [ main ]
 
-# Add permissions needed for deployments
+# Add permissions needed for deployments and PR comments
 permissions:
   contents: read
   deployments: write
   statuses: write
+  pull-requests: write  # Needed for adding comments to PRs
 
 # Define reusable environment variables
 env:
@@ -37,9 +38,38 @@ jobs:
     - name: Install dependencies
       run: npm ci ${{ env.NPM_FLAGS }}
       
+    - name: Run type checking
+      id: type-check
+      run: npm run type-check
+      continue-on-error: true
+      
+    - name: Run linting
+      id: lint
+      run: npm run lint
+      continue-on-error: true
+      
     - name: Run tests
+      id: tests
       run: npm test
       continue-on-error: true
+      
+    - name: Generate coverage report
+      id: coverage
+      run: npm test -- --coverage
+      continue-on-error: true
+      
+    # Add TypeScript error notification for pull requests
+    - name: Check for TypeScript regressions
+      if: steps.type-check.outcome == 'failure' && github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '⚠️ **TypeScript Check Failed**\nThis PR introduces new TypeScript errors. Please fix them before merging.'
+          })
 
   build-dev:
     name: Development Build
@@ -60,7 +90,27 @@ jobs:
       run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Build development version
-      run: npm run build:dev
+      run: |
+        # Skip TypeScript check since we already ran it in the test job
+        echo "Building development version, bypassing TypeScript check..."
+        npm run build:dev
+      
+    - name: Verify build output
+      id: verify-build
+      run: |
+        if [ -d "dist-dev" ] && [ "$(find dist-dev -type f | wc -l)" -gt 0 ]; then
+          echo "✅ Development build successful!"
+        else
+          echo "❌ Development build failed!"
+          exit 1
+        fi
+    
+    - name: Upload development build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-dev
+        path: dist-dev
+        retention-days: 7
       
     - name: Create GitHub deployment for development
       uses: chrnorm/deployment-action@v2
@@ -97,7 +147,27 @@ jobs:
       run: npm ci ${{ env.NPM_FLAGS }}
       
     - name: Build production version
-      run: npm run build:prod
+      run: |
+        # Skip TypeScript check since we already ran it in the test job
+        echo "Building production version, bypassing TypeScript check..."
+        npm run build:prod
+      
+    - name: Verify build output
+      id: verify-build
+      run: |
+        if [ -d "dist" ] && [ "$(find dist -type f | wc -l)" -gt 0 ]; then
+          echo "✅ Production build successful!"
+        else
+          echo "❌ Production build failed!"
+          exit 1
+        fi
+    
+    - name: Upload production build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-prod
+        path: dist
+        retention-days: 7
       
     - name: Create GitHub deployment for production
       uses: chrnorm/deployment-action@v2
