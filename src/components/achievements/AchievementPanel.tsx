@@ -1,11 +1,82 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Card } from '../../components/ui/card';
-import { Progress } from '../../components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
-import { Badge } from '../../components/ui/badge';
-import { useWallet } from '../../hooks/useWallet';
+import { useEffect, useState } from 'react';
+import { useStore } from '../../store/useStore';
+import { Badge } from '../ui/Badge';
+import { Card } from '../ui/Card';
+/**
+ * Custom Progress component for achievement tracking
+ * Features gradient backgrounds, animations, and tier-specific styling
+ */
+const Progress = ({ value, variant }: { value: number, variant?: string }) => {
+  // Get tier-specific styles
+  const getProgressStyles = (variant?: string) => {
+    const styles = {
+      background: '',
+      shadow: '',
+      animation: ''
+    };
+    
+    switch (variant) {
+      case 'bronze':
+        styles.background = 'bg-gradient-to-r from-amber-700 to-yellow-600';
+        styles.shadow = 'shadow-amber-700/40';
+        break;
+      case 'silver':
+        styles.background = 'bg-gradient-to-r from-gray-400 to-gray-300';
+        styles.shadow = 'shadow-gray-400/40';
+        break;
+      case 'gold':
+        styles.background = 'bg-gradient-to-r from-yellow-500 to-amber-300';
+        styles.shadow = 'shadow-yellow-500/40';
+        break;
+      case 'platinum':
+        styles.background = 'bg-gradient-to-r from-gray-300 via-gray-100 to-gray-300';
+        styles.shadow = 'shadow-white/30';
+        break;
+      case 'diamond':
+        styles.background = 'bg-gradient-to-r from-cyan-300 via-blue-200 to-cyan-300';
+        styles.shadow = 'shadow-cyan-300/40';
+        break;
+      default:
+        styles.background = 'bg-gradient-to-r from-brand-600 to-brand-400';
+        styles.shadow = 'shadow-brand-500/40';
+    }
+    
+    return styles;
+  };
+  
+  const { background, shadow } = getProgressStyles(variant);
+  
+  return (
+    <div className="relative w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+      <div 
+        className={`absolute top-0 left-0 h-full ${background} rounded-full transition-all duration-500 ease-out shadow-lg ${shadow}`}
+        style={{ width: `${Math.min(value, 100)}%` }}
+      >
+        {/* Add subtle animation with pseudo-element */}
+        {value > 30 && (
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 opacity-30 animate-pulse-slow"></div>
+          </div>
+        )}
+      </div>
+      
+      {/* Progress marker dots for visual interest */}
+      <div className="absolute inset-0 flex items-center">
+        {[25, 50, 75].map(marker => (
+          <div 
+            key={marker} 
+            className={`absolute w-1 h-1 rounded-full bg-white/50 transition-opacity duration-300 ${value >= marker ? 'opacity-100' : 'opacity-30'}`} 
+            style={{ left: `${marker}%` }}
+          ></div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
 
 interface Achievement {
   id: number;
@@ -67,27 +138,30 @@ interface LevelProgress {
   };
 }
 
-// Add type for badge variants
-type BadgeVariant = 'default' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'secondary' | 'destructive' | 'outline';
+// Add type for badge variants based on Badge component's supported variants
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'gold' | 'success' | 'warning' | 'error';
+type TierVariant = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+
 
 export default function AchievementPanel() {
-  const { wallet } = useWallet();
+  const user = useStore(state => state.user);
+  const walletAddress = user?.wallet_address;
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [summary, setSummary] = useState<AchievementSummary | null>(null);
   const [levelProgress, setLevelProgress] = useState<LevelProgress | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  // No need to track activeTab manually since Tabs component handles it internally
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!wallet) return;
+    if (!walletAddress) return;
 
     const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch achievements and level data in parallel
         const [achievementsData, levelData] = await Promise.all([
-          fetch(`/api/users/${wallet}/achievements`).then(res => res.json()),
-          fetch(`/api/users/${wallet}/level`).then(res => res.json())
+          fetch(`/api/users/${walletAddress}/achievements`).then(res => res.json()),
+          fetch(`/api/users/${walletAddress}/level`).then(res => res.json())
         ]);
 
         setAchievements(achievementsData.achievements);
@@ -101,15 +175,43 @@ export default function AchievementPanel() {
     };
 
     fetchData();
-  }, [wallet]);
+  }, [walletAddress]);
 
-  // Helper function to ensure tier name is a valid badge variant
-  const getTierVariant = (tier: string): BadgeVariant => {
-    const lowerTier = tier.toLowerCase() as BadgeVariant;
-    return ['bronze', 'silver', 'gold', 'platinum', 'diamond'].includes(lowerTier) ? lowerTier : 'default';
+  /**
+   * Enhanced badge styling with custom classes for each tier
+   * Returns both a valid badge variant and custom CSS classes
+   */
+  const getTierStyling = (tier: string): { variant: BadgeVariant, className: string } => {
+    const lowerTier = tier.toLowerCase();
+    
+    // Map each tier to a valid badge variant and add spectacular styling
+    const tierStyles: Record<string, { variant: BadgeVariant, className: string }> = {
+      'bronze': { 
+        variant: 'secondary',
+        className: 'bg-gradient-to-r from-amber-700 to-yellow-600 text-white font-bold shadow-md shadow-amber-700/30 border border-amber-600'
+      },
+      'silver': { 
+        variant: 'default',
+        className: 'bg-gradient-to-r from-gray-400 to-gray-300 text-dark-900 font-bold shadow-md shadow-gray-400/30 border border-gray-300'
+      },
+      'gold': { 
+        variant: 'gold',
+        className: 'bg-gradient-to-r from-yellow-500 to-amber-300 text-dark-900 font-bold shadow-md shadow-yellow-500/30 border border-yellow-400'
+      },
+      'platinum': { 
+        variant: 'warning',
+        className: 'bg-gradient-to-r from-gray-300 via-white to-gray-300 text-dark-900 font-bold shadow-md shadow-white/30 border border-gray-200'
+      },
+      'diamond': { 
+        variant: 'success',
+        className: 'bg-gradient-to-r from-cyan-300 via-blue-200 to-cyan-300 text-dark-900 font-bold shadow-md shadow-cyan-300/30 border border-cyan-200'
+      }
+    };
+    
+    return tierStyles[lowerTier] || { variant: 'default', className: '' };
   };
 
-  if (!wallet || loading) {
+  if (!walletAddress || loading) {
     return (
       <Card className="p-6">
         <div className="animate-pulse">
@@ -169,8 +271,7 @@ export default function AchievementPanel() {
 
       {/* Achievement Tabs */}
       <Tabs 
-        value={activeTab}
-        onValueChange={setActiveTab}
+        defaultValue="overview"
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-3">
@@ -192,7 +293,7 @@ export default function AchievementPanel() {
               <div className="grid grid-cols-5 gap-4">
                 {Object.entries(summary.by_tier).map(([tier, count]) => (
                   <div key={tier} className="text-center">
-                    <Badge variant={getTierVariant(tier)}>{count}</Badge>
+                    <Badge variant={getTierStyling(tier).variant} className={getTierStyling(tier).className}>{count}</Badge>
                     <p className="text-sm mt-1">{tier}</p>
                   </div>
                 ))}
@@ -226,8 +327,8 @@ export default function AchievementPanel() {
                     </p>
                   </div>
                   <Badge 
-                    variant={getTierVariant(achievement.tier)}
-                    style={{ backgroundColor: achievement.achievement_tiers.color_hex }}
+                    variant={getTierStyling(achievement.tier).variant}
+                    className={`bg-[${achievement.achievement_tiers.color_hex}]`}
                   >
                     {achievement.tier}
                   </Badge>
@@ -253,7 +354,7 @@ export default function AchievementPanel() {
                   </div>
                   <Progress 
                     value={Math.min((current / required) * 100, 100)}
-                    variant={tier as 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'}
+                    variant={tier.toLowerCase() as TierVariant}
                   />
                 </div>
               ))}
