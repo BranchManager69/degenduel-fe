@@ -84,8 +84,14 @@ export const SYSTEM_SETTINGS = {
     ENABLED: true,
     SCENES: [
       {
-        name: "Dodgeball",
+        name: "CyberGrid",
         enabled: true,
+        zIndex: 0,
+        blendMode: "normal",
+      },
+      {
+        name: "Dodgeball",
+        enabled: false,
         zIndex: 4,
         blendMode: "screen",
       },
