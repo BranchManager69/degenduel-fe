@@ -19,9 +19,16 @@ const TokenDataContext = createContext<TokenDataContextType | undefined>(
 export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const tokenData = useTokenDataWebSocket("all");
-
-  const value = useMemo(() => tokenData, [tokenData]);
+  const tokenData = useTokenDataWebSocket(["all"]);
+  
+  const value = useMemo(() => {
+    return {
+      tokens: [], // Add missing required property
+      error: null, // Add missing required property
+      lastUpdate: null, // Add missing required property
+      ...tokenData,
+    };
+  }, [tokenData]);
 
   return (
     <TokenDataContext.Provider value={value}>
