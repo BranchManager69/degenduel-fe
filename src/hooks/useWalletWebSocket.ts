@@ -1,105 +1,144 @@
-import { useBaseWebSocket } from "./useBaseWebSocket";
-import { useStore } from "../store/useStore";
+import { useState, useEffect, useCallback } from 'react';
+import { useStore } from '../store/useStore';
+import { useWebSocket } from './websocket/useWebSocket';
 
-interface WalletUpdate {
-  type: "WALLET_UPDATED";
-  data: {
-    type: "created" | "statusChanged" | "balanceChanged";
-    publicKey: string;
-    balance?: number;
-    status?: "active" | "inactive" | "locked";
-    timestamp: string;
-  };
+export interface WalletStatus {
+  type: 'created' | 'statusChanged' | 'balanceChanged';
+  publicKey: string;
+  balance?: number;
+  status?: 'active' | 'inactive' | 'locked';
+  last_updated: string;
 }
 
-interface TransferStarted {
-  type: "TRANSFER_STARTED";
-  data: {
-    transfer_id: string;
-    from: string;
-    to: string;
-    amount: number;
-    token?: string;
-    estimated_completion?: string;
-    timestamp: string;
-  };
+export interface WalletTransfer {
+  transfer_id: string;
+  from: string;
+  to: string;
+  amount: number;
+  status: 'pending' | 'success' | 'failed';
+  timestamp: string;
+  token?: string;
+  error?: string;
 }
 
-interface TransferComplete {
-  type: "TRANSFER_COMPLETE";
-  data: {
-    transfer_id: string;
-    from: string;
-    to: string;
-    amount: number;
-    status: "success" | "failed";
-    final_amount?: number;
-    fee?: number;
-    error?: string;
-    timestamp: string;
-  };
+export interface WalletActivity {
+  wallet: string;
+  activity_type: 'login' | 'logout' | 'connect' | 'disconnect';
+  device_info?: string;
+  ip_address?: string;
+  location?: string;
+  timestamp: string;
 }
 
-interface WalletActivity {
-  type: "WALLET_ACTIVITY";
-  data: {
-    wallet: string;
-    activity_type: "login" | "logout" | "connect" | "disconnect";
-    device_info?: string;
-    ip_address?: string;
-    location?: string;
-    timestamp: string;
-  };
-}
+export function useWalletWebSocket() {
+  const [walletStatus, setWalletStatus] = useState<WalletStatus | null>(null);
+  const [walletTransfers, setWalletTransfers] = useState<Record<string, WalletTransfer>>({});
+  const [walletActivities, setWalletActivities] = useState<WalletActivity[]>([]);
+  
+  const { user } = useStore();
+  const token = user?.jwt || user?.session_token;
 
-type WalletMessage =
-  | WalletUpdate
-  | TransferStarted
-  | TransferComplete
-  | WalletActivity;
+  // Initialize WebSocket connection using the new hook
+  const {
+    isConnected,
+    sendMessage,
+    disconnect
+  } = useWebSocket('wallet', {
+    token,
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    onMessage: handleMessage,
+    debug: true,
+  });
 
-export const useWalletWebSocket = () => {
-  const { updateWalletStatus, trackTransfer, updateWalletActivity } =
-    useStore();
-
-  const handleMessage = (message: WalletMessage) => {
-    switch (message.type) {
-      case "WALLET_UPDATED":
-        updateWalletStatus(message.data);
-        break;
-      case "TRANSFER_STARTED":
-        trackTransfer({
-          transfer_id: message.data.transfer_id,
-          from: message.data.from,
-          to: message.data.to,
-          amount: message.data.amount,
-          token: message.data.token,
-          timestamp: message.data.timestamp,
+  // Handle incoming messages
+  function handleMessage(data: any) {
+    switch(data.type) {
+      case 'wallet_status':
+        setWalletStatus({
+          type: data.status_type || 'statusChanged',
+          publicKey: data.wallet,
+          balance: data.balance,
+          status: data.wallet_status,
+          last_updated: data.timestamp
         });
         break;
-      case "TRANSFER_COMPLETE":
-        trackTransfer({
-          transfer_id: message.data.transfer_id,
-          from: message.data.from,
-          to: message.data.to,
-          amount: message.data.amount,
-          status: message.data.status,
-          error: message.data.error,
-          timestamp: message.data.timestamp,
-        });
+        
+      case 'wallet_transfer':
+        setWalletTransfers(prev => ({
+          ...prev,
+          [data.transfer_id]: {
+            transfer_id: data.transfer_id,
+            from: data.from,
+            to: data.to,
+            amount: data.amount,
+            status: data.status || 'pending',
+            timestamp: data.timestamp,
+            token: data.token,
+            error: data.error
+          }
+        }));
         break;
-      case "WALLET_ACTIVITY":
-        updateWalletActivity(message.data);
+        
+      case 'wallet_activity':
+        setWalletActivities(prev => [
+          {
+            wallet: data.wallet,
+            activity_type: data.activity_type,
+            device_info: data.device_info,
+            ip_address: data.ip_address,
+            location: data.location,
+            timestamp: data.timestamp
+          },
+          ...prev.slice(0, 19) // Keep last 20 activities
+        ]);
         break;
     }
-  };
+  }
 
-  return useBaseWebSocket({
-    url: import.meta.env.VITE_WS_URL,
-    endpoint: "/v2/ws/wallet",
-    socketType: "wallet",
-    onMessage: handleMessage,
-    heartbeatInterval: 30000, // 30 second heartbeat
-    maxReconnectAttempts: 5,
-  });
-};
+  // Request wallet data when connected
+  useEffect(() => {
+    if (isConnected && user) {
+      sendMessage({
+        type: 'get_wallet_status',
+        wallet: user.wallet_address
+      });
+    }
+  }, [isConnected, user, sendMessage]);
+
+  // Function to initiate a transfer
+  const initiateTransfer = useCallback((toWallet: string, amount: number, token?: string) => {
+    if (isConnected && user) {
+      const transferId = `transfer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      sendMessage({
+        type: 'wallet_transfer',
+        transfer_id: transferId,
+        from: user.wallet_address,
+        to: toWallet,
+        amount,
+        token
+      });
+      
+      return transferId;
+    }
+    return null;
+  }, [isConnected, user, sendMessage]);
+
+  // Get the status of a transfer
+  const getTransferStatus = useCallback((transferId: string) => {
+    return walletTransfers[transferId] || null;
+  }, [walletTransfers]);
+
+  return {
+    walletStatus,
+    walletTransfers,
+    walletActivities,
+    isConnected,
+    initiateTransfer,
+    getTransferStatus,
+    close: disconnect
+  };
+}
+
+export default useWalletWebSocket;

@@ -1,192 +1,100 @@
-import { useRef } from "react";
+import { useCallback } from 'react';
+import { useStore } from '../store/useStore';
+import { useWebSocket } from './websocket/useWebSocket';
 
-import { useBaseWebSocket } from "./useBaseWebSocket";
-import { useStore } from "../store/useStore";
-
-interface ServiceMessage {
-  type: "service:state" | "service:metrics" | "service:alert";
+export interface ServiceCommand {
   service: string;
-  data: {
-    status: string;
-    metrics?: {
-      uptime: number;
-      latency: number;
-      activeUsers: number;
-    };
-    alert?: {
-      type: "info" | "warning" | "error";
-      message: string;
-    };
-  };
-  timestamp: string;
+  command: 'start' | 'stop' | 'restart' | 'healthcheck';
+  options?: Record<string, any>;
 }
 
-interface ServiceState {
-  enabled: boolean;
-  status: "active" | "stopped" | "error";
-  last_started: string | null;
-  last_stopped: string | null;
-  last_error: string | null;
-  stats: {
-    operations: {
-      total: number;
-      successful: number;
-      failed: number;
-    };
-    performance: {
-      averageOperationTimeMs: number;
-    };
-    circuitBreaker?: {
-      failures: number;
-      isOpen: boolean;
-      lastFailure: string | null;
-    };
-  };
+export interface ServiceWebSocketReturn {
+  isConnected: boolean;
+  sendCommand: (command: ServiceCommand) => boolean;
+  close: () => void;
 }
 
-// Map service status to store status
-const mapServiceStatus = (
-  status: ServiceState["status"],
-): "online" | "offline" | "degraded" => {
-  switch (status) {
-    case "active":
-      return "online";
-    case "stopped":
-      return "offline";
-    case "error":
-      return "degraded";
-    default:
-      return "offline";
-  }
-};
+export const useServiceWebSocket = (): ServiceWebSocketReturn => {
+  const { setServices, addServiceAlert, services } = useStore();
+  const { user } = useStore();
+  const token = user?.jwt || user?.session_token;
 
-// Map alert severity to store alert type
-const mapAlertType = (severity: string): "info" | "warning" | "error" => {
-  switch (severity) {
-    case "critical":
-      return "error";
-    case "warning":
-      return "warning";
-    default:
-      return "info";
-  }
-};
-
-// Add helper function for dispatching debug events
-const dispatchDebugEvent = (
-  type: "connection" | "state" | "alert" | "error" | "metrics",
-  message: string,
-  data?: any,
-) => {
-  window.dispatchEvent(
-    new CustomEvent("ws-debug", {
-      detail: {
-        type,
-        service: "service-websocket",
-        message,
-        data,
-        timestamp: new Date().toISOString(),
-      },
-    }),
-  );
-};
-
-export const useServiceWebSocket = () => {
-  const { setServiceState, addServiceAlert } = useStore();
-  const reconnectAttempts = useRef(0);
-  const maxReconnectDelay = 30000; // 30 seconds
-
-  const handleConnectionError = (error: Error) => {
-    console.warn("[ServiceWebSocket] Connection error:", error);
-
-    // Calculate exponential backoff delay
-    const delay = Math.min(
-      1000 * Math.pow(2, reconnectAttempts.current),
-      maxReconnectDelay,
-    );
-    reconnectAttempts.current++;
-
-    addServiceAlert(
-      "error",
-      `WebSocket connection lost. Retrying in ${Math.round(
-        delay / 1000,
-      )} seconds...`,
-    );
-
-    // Update service state to show disconnected status
-    setServiceState("offline", {
-      uptime: 0,
-      latency: -1,
-      activeUsers: 0,
-    });
-  };
-
-  const handleReconnect = () => {
-    reconnectAttempts.current = 0;
-    addServiceAlert("info", "WebSocket connection restored");
-  };
-
-  const handleMessage = (message: ServiceMessage) => {
-    try {
-      dispatchDebugEvent("state", "Received service message", message);
-
-      switch (message.type) {
-        case "service:state": {
-          const serviceState = message.data as ServiceState;
-          const mappedStatus = mapServiceStatus(serviceState.status);
-
-          dispatchDebugEvent(
-            "state",
-            `Service status mapped: ${serviceState.status} -> ${mappedStatus}`,
-            { original: serviceState.status, mapped: mappedStatus },
-          );
-
-          setServiceState(
-            mappedStatus,
-            message.data.metrics || {
-              uptime: 0,
-              latency: 0,
-              activeUsers: 0,
-            },
-          );
-          break;
+  // Handle incoming messages
+  const handleMessage = useCallback((data: any) => {
+    switch (data.type) {
+      case 'services:state':
+        if (data.services) {
+          const servicesMap = data.services.reduce((acc: Record<string, any>, service: any) => {
+            acc[service.name] = {
+              enabled: service.enabled,
+              status: service.status,
+              last_started: service.last_started,
+              last_check: service.last_check,
+              last_operation_time_ms: service.last_operation_time_ms,
+              stats: service.stats
+            };
+            return acc;
+          }, {});
+          
+          setServices(servicesMap);
         }
-        case "service:alert":
-          if (message.data.alert) {
-            const mappedType = mapAlertType(message.data.alert.type);
-
-            dispatchDebugEvent(
-              "alert",
-              `Service alert mapped: ${message.data.alert.type} -> ${mappedType}`,
-              { original: message.data.alert.type, mapped: mappedType },
-            );
-
-            addServiceAlert(mappedType, message.data.alert.message);
-          }
-          break;
-        case "service:metrics":
-          dispatchDebugEvent(
-            "metrics",
-            "Received service metrics",
-            message.data.metrics,
-          );
-          break;
-      }
-    } catch (error) {
-      console.error("[ServiceWebSocket] Error processing message:", error);
-      addServiceAlert("error", "Error processing WebSocket message");
+        break;
+        
+      case 'service:update':
+        if (data.service) {
+          // Create a new services object with the updated service
+          const updatedServices = {
+            ...services,
+            [data.service]: {
+              enabled: data.enabled,
+              status: data.status,
+              last_started: data.last_started,
+              last_check: data.last_check,
+              last_operation_time_ms: data.last_operation_time_ms,
+              stats: data.stats
+            }
+          };
+          
+          setServices(updatedServices);
+        }
+        break;
+        
+      case 'service:alert':
+        if (data.alert) {
+          addServiceAlert(data.alert.type, data.alert.message);
+        }
+        break;
     }
-  };
+  }, [setServices, addServiceAlert, services]);
 
-  return useBaseWebSocket({
-    url: import.meta.env.VITE_WS_URL,
-    endpoint: "/api/admin/services",
-    socketType: "service",
-    onMessage: handleMessage,
-    onError: handleConnectionError,
-    onReconnect: handleReconnect,
-    heartbeatInterval: 30000, // 30 second heartbeat
+  // Initialize WebSocket connection
+  const {
+    isConnected,
+    sendMessage,
+    disconnect
+  } = useWebSocket('services', {
+    token,
+    reconnect: true,
     maxReconnectAttempts: 10,
-    reconnectBackoff: true,
+    onMessage: handleMessage,
+    debug: true,
   });
+
+  // Send a command to a service
+  const sendCommand = useCallback((command: ServiceCommand): boolean => {
+    if (!isConnected) return false;
+    
+    return sendMessage({
+      type: 'service:command',
+      service: command.service,
+      command: command.command,
+      options: command.options || {}
+    });
+  }, [isConnected, sendMessage]);
+
+  return {
+    isConnected,
+    sendCommand,
+    close: disconnect
+  };
 };

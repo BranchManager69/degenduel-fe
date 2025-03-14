@@ -136,6 +136,20 @@ export const ReferralProvider = ({
   };
 
   useEffect(() => {
+    // Check if we already have a referral code in state or localStorage
+    // If so, avoid further processing to prevent infinite loops
+    const savedReferralCode = localStorage.getItem("referral_code");
+    
+    // Only process URL params if:
+    // 1. We're on the landing page (/) or join page (/join) OR
+    // 2. We don't already have a referral code saved
+    const isLandingOrJoinPage = location.pathname === "/" || location.pathname === "/join";
+    
+    if (!isLandingOrJoinPage && savedReferralCode === referralCode) {
+      // Skip processing for non-landing pages when we already have the saved code
+      return;
+    }
+    
     // Primary method: Check for referral code in URL query parameters
     const params = new URLSearchParams(location.search);
     let ref = params.get("ref");
@@ -155,6 +169,25 @@ export const ReferralProvider = ({
           ref = lastSegment;
         }
       }
+    }
+
+    // Only continue processing if we found a new referral code or we're on the landing page with a saved code
+    if (!ref && !(isLandingOrJoinPage && savedReferralCode)) {
+      return;
+    }
+    
+    // If no new code but we're on landing page with saved code, ensure the referrer details are loaded
+    if (!ref && isLandingOrJoinPage && savedReferralCode && !referrerProfile) {
+      // Use the saved code to populate the UI for landing/join pages
+      fetchReferrerDetails(savedReferralCode).catch((error) => {
+        console.error("[Referral] Failed to fetch referrer details for saved code:", error);
+      });
+      return;
+    }
+
+    // Skip if we're processing the same code we already have
+    if (ref === referralCode) {
+      return;
     }
 
     // Enhanced logging for troubleshooting
@@ -278,7 +311,7 @@ export const ReferralProvider = ({
           });
         });
     }
-  }, [location, navigate]);
+  }, [location, navigate, referralCode, referrerProfile]);
 
   const trackConversion = async () => {
     if (referralCode && sessionId) {

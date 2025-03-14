@@ -21,7 +21,7 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
 /* Components */
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { ContestChatManager } from "./components/contest-chat/ContestChatManager";
-import { WebSocketManager } from "./components/core/WebSocketManager";
+// WebSocketManager is now provided by WebSocketProvider
 import { GameDebugPanel } from "./components/debug/game/GameDebugPanel";
 import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
 import { UiDebugPanel } from "./components/debug/ui/UiDebugPanel";
@@ -33,11 +33,13 @@ import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
-import { ToastContainer, ToastProvider } from "./components/toast";
+import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
 import { MovingBackground } from "./components/ui/MovingBackground";
 /* Contexts */
 import { AuthProvider } from "./contexts/AuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
+/* WebSocket */
+import { WebSocketProvider } from "./hooks/websocket/WebSocketManager";
 /* Pages */
 import { useAuth } from "./hooks/useAuth";
 import { ReferralProvider } from "./hooks/useReferral";
@@ -153,12 +155,16 @@ export const App: React.FC = () => {
         <ReferralProvider>
           {/* Token Data Provider */}
           <TokenDataProvider>
-            {/* Toast Provider */}
-            <ToastProvider>
+            {/* WebSocket Provider */}
+            <WebSocketProvider>
+              {/* Toast Provider */}
+              <ToastProvider>
               {/* Main container */}
               <div className="min-h-screen flex flex-col">
-                {/* WebSocketManager (at the root) */}
-                <WebSocketManager />
+                {/* Old WebSocketManager is replaced by the WebSocketProvider */}
+                
+                {/* Toast event listener for global toast notifications */}
+                <ToastListener />
 
                 {/* Debug Panels (superadmin only) */}
                 {user?.is_superadmin && <UiDebugPanel />}
@@ -654,6 +660,7 @@ export const App: React.FC = () => {
                 <ToastContainer />
               </div>
             </ToastProvider>
+            </WebSocketProvider>
           </TokenDataProvider>
         </ReferralProvider>
       </AuthProvider>

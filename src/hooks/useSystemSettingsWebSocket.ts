@@ -1,163 +1,82 @@
-// src/hooks/useSystemSettingsWebSocket.ts
+import { useState, useEffect, useCallback } from 'react';
+import { useStore } from "../store/useStore";
+import { useWebSocket } from './websocket/useWebSocket';
 
-/**
- * This hook is used to get the system settings from the admin API.
- * It uses a WebSocket connection to get the settings and a fallback to the Admin API if the WebSocket connection fails.
- *
- * @returns {Object} An object containing the system settings, loading state, error state, and a function to refresh the settings.
- */
-
-import { useEffect, useState } from "react";
-
-import { useBaseWebSocket } from "./useBaseWebSocket";
-import { WS_URL } from "../config/config";
-
-// SPECIFICALLY FOR BACKGROUND SCENE SETTINGS
 interface SystemSettings {
-  background_scene?:
-    | string
-    | {
-        enabled: boolean;
-        scenes: Array<{
-          name: string;
-          enabled: boolean;
-          zIndex: number;
-          blendMode: string;
-        }>;
-      };
   [key: string]: any;
 }
 
-export function useSystemSettingsWebSocket() {
-  const [settings, setSettings] = useState<SystemSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+export interface SettingsWebSocketState {
+  settings: SystemSettings;
+  isConnected: boolean;
+  updateSetting: (key: string, value: any) => boolean;
+  reset: () => boolean;
+  close: () => void;
+}
 
-  // Use the proper WebSocket URL from config
-  //const { WS_URL } = require("../config/config"); // Moved to imports (top of file)
+export function useSystemSettingsWebSocket(): SettingsWebSocketState {
+  const [settings, setSettings] = useState<SystemSettings>({});
+  const { user } = useStore();
+  const token = user?.jwt || user?.session_token;
 
-  // Connect to the admin WebSocket endpoint
-  const { wsRef, status } = useBaseWebSocket({
-    url: WS_URL,
-    endpoint: "/api/admin/system-settings",
-    socketType: "system-settings",
-    onMessage: (message) => {
-      try {
-        // Only process relevant messages
-        if (message.type === "SYSTEM_SETTINGS_UPDATE") {
-          console.log("Received system settings update:", message.data);
-          setSettings(message.data);
-          setLoading(false);
-          setLastUpdated(new Date());
-        }
-      } catch (err) {
-        console.error("Error processing system settings update:", err);
-        setError(err instanceof Error ? err : new Error("Unknown error"));
-      }
-    },
+  // Handle WebSocket messages
+  const handleMessage = useCallback((data: any) => {
+    if (data.type === 'settings') {
+      setSettings(data.settings || {});
+    }
+    else if (data.type === 'setting_updated') {
+      setSettings(prev => ({
+        ...prev,
+        [data.key]: data.value
+      }));
+    }
+  }, []);
+
+  // Initialize WebSocket
+  const {
+    isConnected,
+    sendMessage,
+    disconnect
+  } = useWebSocket('settings', {
+    token,
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    onMessage: handleMessage,
+    debug: true,
   });
 
-  // Request settings when connection is established
+  // Request settings when connected
   useEffect(() => {
-    const requestSettings = () => {
-      if (wsRef.current?.readyState === WebSocket.OPEN && loading) {
-        wsRef.current.send(
-          JSON.stringify({
-            type: "GET_SYSTEM_SETTINGS",
-            timestamp: Date.now(),
-          }),
-        );
-      }
-    };
-
-    if (status === "online") {
-      requestSettings();
+    if (isConnected) {
+      sendMessage({ type: 'get_settings' });
     }
-  }, [status, loading, wsRef]);
+  }, [isConnected, sendMessage]);
 
-  // Fallback to REST API if WebSocket fails
-  useEffect(() => {
-    // Only use fallback if WebSocket is not connected after a timeout
-    const fallbackTimer = setTimeout(async () => {
-      if (loading && status !== "online") {
-        try {
-          console.log(
-            "WebSocket fallback: Fetching system settings via Admin API",
-          );
-          const { admin } = await import("../services/api/admin");
-          const data = await admin.getSystemSettings();
-          setSettings(data);
-          setLastUpdated(new Date());
-        } catch (err) {
-          console.error("Fallback fetch error:", err);
-          setError(err instanceof Error ? err : new Error("Unknown error"));
-        } finally {
-          setLoading(false);
-        }
-      }
-    }, 3000); // 3 second timeout before fallback
+  // Function to update a single setting
+  const updateSetting = useCallback((key: string, value: any): boolean => {
+    if (!isConnected) return false;
+    
+    return sendMessage({
+      type: 'update_setting',
+      key,
+      value
+    });
+  }, [isConnected, sendMessage]);
 
-    return () => clearTimeout(fallbackTimer);
-  }, [loading, status]);
-
-  // Safety: Add function to manually refresh settings
-  const refreshSettings = () => {
-    setLoading(true);
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: "GET_SYSTEM_SETTINGS",
-          timestamp: Date.now(),
-        }),
-      );
-    } else {
-      // Fallback to API if WebSocket is not connected
-      import("../services/api/admin")
-        .then(({ admin }) => admin.getSystemSettings())
-        .then((data) => {
-          setSettings(data);
-          setLastUpdated(new Date());
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err instanceof Error ? err : new Error("Unknown error"));
-          setLoading(false);
-        });
-    }
-  };
-
-  // Utility method to update background scene settings
-  const updateBackgroundScene = async (value: any) => {
-    try {
-      setLoading(true);
-      const { admin } = await import("../services/api/admin");
-      const result = await admin.updateSystemSettings(
-        "background_scene",
-        value,
-      );
-      setSettings((prev) =>
-        prev
-          ? { ...prev, background_scene: value }
-          : { background_scene: value },
-      );
-      setLastUpdated(new Date());
-      setLoading(false);
-      return result;
-    } catch (err) {
-      console.error("Error updating background scene:", err);
-      setError(err instanceof Error ? err : new Error("Unknown error"));
-      setLoading(false);
-      throw err;
-    }
-  };
+  // Function to reset all settings to defaults
+  const reset = useCallback((): boolean => {
+    if (!isConnected) return false;
+    
+    return sendMessage({
+      type: 'reset_settings'
+    });
+  }, [isConnected, sendMessage]);
 
   return {
     settings,
-    loading,
-    error,
-    lastUpdated,
-    refreshSettings,
-    updateBackgroundScene,
+    isConnected,
+    updateSetting,
+    reset,
+    close: disconnect
   };
 }

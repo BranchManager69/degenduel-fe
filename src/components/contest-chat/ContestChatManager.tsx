@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { FloatingContestChat } from "./FloatingContestChat";
+import { useCustomToast } from "../../components/toast";
 import { useUserContests } from "../../hooks/useUserContests";
 import { UserContest } from "../../services/contestService";
+import { shouldThrottleErrorToast } from "../../utils/wsMonitor";
 
 export const ContestChatManager: React.FC = () => {
   const { contests, loading } = useUserContests();
+  const { addToast } = useCustomToast();
   const [openChats, setOpenChats] = useState<string[]>([]);
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [minimizedChats] = useState<Record<string, boolean>>({});
@@ -19,6 +22,7 @@ export const ContestChatManager: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const contestSelectorRef = useRef<HTMLDivElement>(null);
   const chatButtonRef = useRef<HTMLButtonElement>(null);
+  const lastToastRef = useRef<string | null>(null); // Track last error to prevent duplicate toasts
 
   // Check if device is mobile
   useEffect(() => {
@@ -86,19 +90,40 @@ export const ContestChatManager: React.FC = () => {
   // Handle WebSocket connection errors
   useEffect(() => {
     const handleWSError = (e: CustomEvent) => {
-      if (e.detail.type === "error") {
+      if (e.detail?.type === "error") {
         console.log("Connection error");
         // If the connection error is due to a missing contestId, show a different message
-        if (e.detail.message.includes("Missing contestId")) {
+        if (e.detail?.message && typeof e.detail.message === 'string' && e.detail.message.includes("Missing contestId")) {
           console.log("Missing contestId");
-          setConnectionError("Please select a contest to start chatting.");
+          const errorMsg = "Please select a contest to start chatting.";
+          setConnectionError(errorMsg);
+          
+          // Only show toast if we haven't shown this error recently
+          if (lastToastRef.current !== errorMsg) {
+            addToast("info", errorMsg, "Contest Chat");
+            lastToastRef.current = errorMsg;
+          }
         } else {
           console.log("Chat connection lost. Trying to reconnect...");
-          setConnectionError("Chat connection lost. Trying to reconnect...");
+          const errorMsg = "Chat connection lost. Trying to reconnect...";
+          setConnectionError(errorMsg);
+          
+          // Only show toast if not throttled by our central system
+          // Use a longer throttle time for these reconnection messages (code 1006)
+          if (!shouldThrottleErrorToast("contest-chat", 1006)) {
+            addToast("warning", errorMsg, "WebSocket Connection");
+            lastToastRef.current = errorMsg;
+          }
         }
-      } else if (e.detail.type === "connection") {
+      } else if (e.detail?.type === "connection") {
         console.log("Connection established");
         setConnectionError(null);
+        
+        // If we had an error before, show connection success toast
+        if (lastToastRef.current !== null) {
+          addToast("success", "Chat connection restored", "WebSocket Connection");
+          lastToastRef.current = null;
+        }
       }
     };
 

@@ -1,255 +1,163 @@
-// src/hooks/useContestChatWebSocket.ts
+import { useState, useEffect, useCallback } from 'react';
+import { useStore } from '../store/useStore';
+import { useWebSocket } from './websocket/useWebSocket';
 
-/**
- * This hook is used to connect to the contest chat WebSocket.
- * It is used to send and receive messages to and from the contest chat.
- * It is also used to join and leave the contest chat.
- *
- * @param contestId - The ID of the contest to connect to.
- * @returns An object containing the participants, messages, isRateLimited, error, sendMessage, joinRoom, and leaveRoom functions.
- */
-
-import { useCallback, useEffect, useState } from "react";
-
-import { useBaseWebSocket } from "./useBaseWebSocket";
-import { useStore } from "../store/useStore";
-
-/* Contest chat WebSocket */
-
-// Message types from server
-interface RoomStateMessage {
-  type: "ROOM_STATE";
-  participants: Array<{
-    userId: string;
-    nickname: string;
-    isAdmin: boolean;
-    profilePicture?: string;
-  }>;
-}
-
-interface ChatMessage {
-  type: "CHAT_MESSAGE";
-  messageId: string;
+export interface ChatMessage {
+  id: string;
+  contestId: string;
   userId: string;
-  nickname: string;
-  isAdmin: boolean;
-  text: string;
+  username: string;
+  avatar?: string;
+  content: string;
   timestamp: string;
-  profilePicture?: string;
+  isSystemMessage?: boolean;
+  isModerated?: boolean;
+  reactionCount?: number;
+  userReacted?: boolean;
 }
 
-interface ParticipantJoinedMessage {
-  type: "PARTICIPANT_JOINED";
-  participant: {
-    userId: string;
-    nickname: string;
-    isAdmin: boolean;
-    profilePicture?: string;
-  };
+export interface ContestChatState {
+  messages: ChatMessage[];
+  participants: number;
+  isConnected: boolean;
+  error: Error | null;
 }
 
-interface ParticipantLeftMessage {
-  type: "PARTICIPANT_LEFT";
-  userId: string;
+export interface ContestChatHook extends ContestChatState {
+  sendMessage: (content: string) => boolean;
+  reactToMessage: (messageId: string) => boolean;
+  deleteMessage: (messageId: string) => boolean;
+  close: () => void;
 }
 
-// Error message from server
-interface ErrorMessage {
-  type: "ERROR";
-  error: string;
-  code: number;
-}
-
-// Message types to server
-interface JoinRoomMessage {
-  type: "JOIN_ROOM";
-  contestId: string;
-}
-
-// Leave room message to server
-interface LeaveRoomMessage {
-  type: "LEAVE_ROOM";
-  contestId: string;
-}
-
-// Send chat message to server
-interface SendChatMessage {
-  type: "SEND_CHAT_MESSAGE";
-  contestId: string;
-  text: string;
-}
-
-// Participant activity message from server
-// interface ParticipantActivityMessage {
-//   type: "PARTICIPANT_ACTIVITY";
-//   contestId: string;
-//   activityType: string;
-//   details?: Record<string, any>;
-// }
-
-// Data structure for a server message
-type ServerMessage =
-  | RoomStateMessage
-  | ChatMessage
-  | ParticipantJoinedMessage
-  | ParticipantLeftMessage
-  | ErrorMessage;
-// Client message types
-// | JoinRoomMessage
-// | LeaveRoomMessage
-// | SendChatMessage
-// | ParticipantActivityMessage
-
-// Data structure for a chat participant
-export interface ChatParticipant {
-  userId: string;
-  nickname: string;
-  isAdmin: boolean;
-  profilePicture?: string;
-}
-
-// Data structure for a chat message
-export interface ChatMessageData {
-  messageId: string;
-  userId: string;
-  nickname: string;
-  isAdmin: boolean;
-  text: string;
-  timestamp: string;
-  profilePicture?: string;
-}
-
-// Custom hook for the contest chat WebSocket connection
-export const useContestChatWebSocket = (contestId: string) => {
+export function useContestChatWebSocket(contestId: string): ContestChatHook {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [participants, setParticipants] = useState<number>(0);
+  const [error, setError] = useState<Error | null>(null);
+  
   const { user } = useStore();
-  const [participants, setParticipants] = useState<ChatParticipant[]>([]);
-  const [messages, setMessages] = useState<ChatMessageData[]>([]);
-  const [isRateLimited, setIsRateLimited] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const token = user?.jwt || user?.session_token;
 
-  // Handle incoming messages from the server
-  const handleMessage = useCallback((message: ServerMessage) => {
-    switch (message.type) {
-      case "ROOM_STATE":
-        setParticipants(message.participants);
-        break;
-      case "CHAT_MESSAGE":
-        setMessages((prev) => [
-          ...prev,
+  // Handle incoming messages
+  const handleMessage = useCallback((data: any) => {
+    switch (data.type) {
+      case 'chat_message':
+        // Add a new message to the list
+        setMessages(prev => [
           {
-            messageId: message.messageId,
-            userId: message.userId,
-            nickname: message.nickname,
-            isAdmin: message.isAdmin,
-            text: message.text,
-            timestamp: message.timestamp,
-            profilePicture: message.profilePicture,
+            id: data.id,
+            contestId: data.contestId,
+            userId: data.userId,
+            username: data.username,
+            avatar: data.avatar,
+            content: data.content,
+            timestamp: data.timestamp,
+            isSystemMessage: data.isSystemMessage,
+            isModerated: data.isModerated,
+            reactionCount: data.reactionCount || 0,
+            userReacted: data.userReacted || false
           },
+          ...prev.slice(0, 199) // Keep max 200 messages
         ]);
         break;
-      case "PARTICIPANT_JOINED":
-        setParticipants((prev) => [...prev, message.participant]);
+        
+      case 'message_deleted':
+        // Remove a message from the list
+        setMessages(prev => prev.filter(msg => msg.id !== data.messageId));
         break;
-      case "PARTICIPANT_LEFT":
-        setParticipants((prev) =>
-          prev.filter((p) => p.userId !== message.userId),
-        );
+        
+      case 'reaction_updated':
+        // Update reaction count for a message
+        setMessages(prev => prev.map(msg => 
+          msg.id === data.messageId 
+            ? {
+                ...msg, 
+                reactionCount: data.reactionCount, 
+                userReacted: data.userReacted
+              }
+            : msg
+        ));
         break;
-      case "ERROR":
-        setError(message.error);
-        if (message.code === 4290) {
-          setIsRateLimited(true);
-          // Reset rate limit after 10 seconds
-          setTimeout(() => setIsRateLimited(false), 10000);
+        
+      case 'participant_count':
+        setParticipants(data.count);
+        break;
+        
+      case 'chat_history':
+        // Replace messages with history
+        if (Array.isArray(data.messages)) {
+          setMessages(data.messages);
         }
+        break;
+        
+      case 'error':
+        setError(new Error(data.message));
         break;
     }
   }, []);
 
-  // Initialize the WebSocket connection
-  const ws = useBaseWebSocket({
-    url: import.meta.env.VITE_WS_URL,
-    endpoint: `/v2/ws/contest`,
-    socketType: "contest-chat",
+  // Initialize WebSocket connection
+  const {
+    isConnected,
+    sendMessage: sendToSocket,
+    disconnect
+  } = useWebSocket(`contest-chat/${contestId}`, {
+    token,
+    reconnect: true,
+    maxReconnectAttempts: 10,
     onMessage: handleMessage,
-    heartbeatInterval: 30000, // 30 second heartbeat
-    maxReconnectAttempts: 5,
+    debug: true,
   });
 
-  // Join the room
-  const joinRoom = useCallback(() => {
-    const socket = ws.wsRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      const message: JoinRoomMessage = {
-        type: "JOIN_ROOM",
-        contestId: contestId.toString(),
-      };
-      socket.send(JSON.stringify(message));
-    }
-  }, [ws, contestId]);
-
-  // Leave the room
-  const leaveRoom = useCallback(() => {
-    const socket = ws.wsRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      const message: LeaveRoomMessage = {
-        type: "LEAVE_ROOM",
-        contestId: contestId.toString(),
-      };
-      socket.send(JSON.stringify(message));
-    }
-  }, [ws, contestId]);
-
-  // Send a message to the room
-  const sendMessage = useCallback(
-    (text: string) => {
-      if (isRateLimited) {
-        setError("You're sending messages too quickly. Please wait a moment.");
-        return;
-      }
-
-      if (text.length > 200) {
-        setError("Message too long (max 200 characters)");
-        return;
-      }
-
-      const socket = ws.wsRef.current;
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        const message: SendChatMessage = {
-          type: "SEND_CHAT_MESSAGE",
-          contestId: contestId.toString(),
-          text,
-        };
-        socket.send(JSON.stringify(message));
-      }
-    },
-    [ws, contestId, isRateLimited],
-  );
-
-  // Join room when component mounts and WebSocket is ready
+  // Request chat history when connected
   useEffect(() => {
-    const socket = ws.wsRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      joinRoom();
+    if (isConnected) {
+      sendToSocket({
+        type: 'get_chat_history',
+        contestId
+      });
     }
+  }, [isConnected, contestId, sendToSocket]);
 
-    // Leave room when component unmounts
-    return () => {
-      const socket = ws.wsRef.current;
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        leaveRoom();
-      }
-    };
-  }, [ws, joinRoom, leaveRoom]);
+  // Function to send a chat message
+  const sendMessage = useCallback((content: string): boolean => {
+    if (!isConnected || !content.trim()) return false;
+    
+    return sendToSocket({
+      type: 'send_message',
+      contestId,
+      content: content.trim()
+    });
+  }, [isConnected, contestId, sendToSocket]);
+
+  // Function to react to a message
+  const reactToMessage = useCallback((messageId: string): boolean => {
+    if (!isConnected) return false;
+    
+    return sendToSocket({
+      type: 'toggle_reaction',
+      messageId
+    });
+  }, [isConnected, sendToSocket]);
+
+  // Function to delete a message (admin/mod only)
+  const deleteMessage = useCallback((messageId: string): boolean => {
+    if (!isConnected) return false;
+    
+    return sendToSocket({
+      type: 'delete_message',
+      messageId
+    });
+  }, [isConnected, sendToSocket]);
 
   return {
-    participants,
     messages,
-    isRateLimited,
+    participants,
+    isConnected,
     error,
     sendMessage,
-    joinRoom,
-    leaveRoom,
-    currentUserId: user?.wallet_address || "",
+    reactToMessage,
+    deleteMessage,
+    close: disconnect
   };
-};
+}

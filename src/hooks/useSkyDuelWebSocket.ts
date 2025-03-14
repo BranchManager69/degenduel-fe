@@ -1,7 +1,6 @@
-import { useRef } from "react";
-
-import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useRef, useCallback } from "react";
 import { useStore } from "../store/useStore";
+import { useWebSocket } from "./websocket/useWebSocket";
 
 // SkyDuel service types
 export interface ServiceNode {
@@ -83,6 +82,8 @@ export const useSkyDuelWebSocket = () => {
   const { setSkyDuelState, addServiceAlert } = useStore();
   const reconnectAttempts = useRef(0);
   const maxReconnectDelay = 30000; // 30 seconds
+  const { user } = useStore();
+  const token = user?.jwt || user?.session_token;
 
   const handleConnectionError = (error: Error) => {
     console.warn("[SkyDuelWebSocket] Connection error:", error);
@@ -110,7 +111,7 @@ export const useSkyDuelWebSocket = () => {
     dispatchDebugEvent("connection", "Connection restored");
   };
 
-  const handleMessage = (message: SkyDuelMessage) => {
+  const handleMessage = useCallback((message: SkyDuelMessage) => {
     try {
       dispatchDebugEvent("state", "Received SkyDuel message", message);
 
@@ -160,24 +161,27 @@ export const useSkyDuelWebSocket = () => {
       addServiceAlert("error", "Error processing SkyDuel WebSocket message");
       dispatchDebugEvent("error", "Message processing error", { error });
     }
-  };
+  }, [setSkyDuelState, addServiceAlert]);
 
-  const webSocket = useBaseWebSocket({
-    url: import.meta.env.VITE_WS_URL,
-    endpoint: "/api/admin/skyduel",
-    socketType: "skyduel",
+  const { 
+    socket, 
+    isConnected, 
+    sendMessage,
+    connect,
+    disconnect
+  } = useWebSocket('admin/skyduel', {
+    token,
+    reconnect: true,
+    maxReconnectAttempts: 10,
     onMessage: handleMessage,
     onError: handleConnectionError,
-    onReconnect: handleReconnect,
-    heartbeatInterval: 15000, // 15 second heartbeat
-    maxReconnectAttempts: 10,
-    reconnectBackoff: true,
+    onConnect: handleReconnect,
+    debug: true,
   });
 
   // Send a command to the SkyDuel system
-  const sendCommand = (command: string, params: Record<string, any> = {}) => {
-    const socket = webSocket.wsRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
+  const sendCommand = useCallback((command: string, params: Record<string, any> = {}) => {
+    if (!isConnected) {
       console.error(
         "[SkyDuelWebSocket] Cannot send command: socket not connected",
       );
@@ -192,7 +196,7 @@ export const useSkyDuelWebSocket = () => {
         timestamp: new Date().toISOString(),
       };
 
-      socket.send(JSON.stringify(commandMessage));
+      sendMessage(commandMessage);
       dispatchDebugEvent("command", `Command sent: ${command}`, {
         command,
         params,
@@ -207,10 +211,14 @@ export const useSkyDuelWebSocket = () => {
       });
       return false;
     }
-  };
+  }, [isConnected, sendMessage]);
 
   return {
-    ...webSocket,
+    socket,
+    isConnected,
     sendCommand,
+    status: isConnected ? 'online' : 'offline',
+    connect,
+    close: disconnect
   };
 };

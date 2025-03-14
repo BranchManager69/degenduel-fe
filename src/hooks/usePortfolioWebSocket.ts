@@ -1,83 +1,116 @@
-// src/hooks/usePortfolioWebSocket.ts
+import { useState, useEffect, useCallback } from 'react';
+import { useStore } from '../store/useStore';
+import { useWebSocket } from './websocket/useWebSocket';
 
-/**
- * This hook is used to get the portfolio updates from the portfolio service.
- * It uses a WebSocket connection to get the updates and a fallback to the Admin API if the WebSocket connection fails.
- *
- * @returns {Object} An object containing the portfolio updates, loading state, error state, and a function to refresh the updates.
- */
-
-import { useBaseWebSocket } from "./useBaseWebSocket";
-import { WS_URL } from "../config/config";
-import { useStore } from "../store/useStore";
-
-interface PortfolioUpdate {
-  type: "PORTFOLIO_UPDATED";
-  data: {
-    tokens: Array<{
-      symbol: string;
-      name: string;
-      amount: number;
-      value: number;
-    }>;
-    total_value: number;
-    performance_24h: number;
-  };
-  timestamp: string;
+export interface PortfolioToken {
+  symbol: string;
+  name: string;
+  amount: number;
+  value: number;
+  price: number;
+  change_24h: number;
 }
 
-interface TradeExecution {
-  type: "TRADE_EXECUTED";
-  data: {
-    trade_id: string;
-    wallet_address: string;
-    symbol: string;
-    amount: number;
-    price: number;
-    timestamp: string;
-    contest_id?: string;
-  };
+export interface PortfolioData {
+  id?: string;
+  userId?: string;
+  contestId?: string;
+  tokens: PortfolioToken[];
+  total_value: number;
+  performance_24h: number;
+  lastUpdated: string;
 }
 
-interface PriceUpdate {
-  type: "PRICE_UPDATED";
-  data: {
-    symbol: string;
-    price: number;
-    change_24h: number;
-    timestamp: string;
-  };
-}
-
-type PortfolioMessage = PortfolioUpdate | TradeExecution | PriceUpdate;
-
-export const usePortfolioWebSocket = () => {
-  const { updatePortfolio, updateTokenPrice, addTradeNotification } =
-    useStore();
-
-  const handleMessage = (message: PortfolioMessage) => {
-    switch (message.type) {
-      case "PORTFOLIO_UPDATED":
-        updatePortfolio(message.data);
-        break;
-      case "TRADE_EXECUTED":
-        addTradeNotification(message.data);
-        break;
-      case "PRICE_UPDATED":
-        updateTokenPrice(message.data);
-        break;
-    }
-  };
-
-  // Use WS_URL from config which handles proper environment detection
-  //const { WS_URL } = require("../config/config"); // Moved to imports (top of file)
-
-  return useBaseWebSocket({
-    url: WS_URL,
-    endpoint: "/v2/ws/portfolio", // Append specific endpoint for portfolio service
-    socketType: "portfolio",
-    onMessage: handleMessage,
-    heartbeatInterval: 30000, // 30 second heartbeat
-    maxReconnectAttempts: 5,
+export function usePortfolioWebSocket(contestId?: string) {
+  const [portfolio, setPortfolio] = useState<PortfolioData>({
+    tokens: [],
+    total_value: 0,
+    performance_24h: 0,
+    lastUpdated: new Date().toISOString()
   });
-};
+  
+  const { user } = useStore();
+  const token = user?.jwt || user?.session_token;
+
+  // Initialize WebSocket connection using the new hook
+  const {
+    isConnected,
+    sendMessage,
+    disconnect
+  } = useWebSocket('portfolio', {
+    token,
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    onMessage: handleMessage,
+    debug: true,
+  });
+
+  // Handle incoming messages
+  function handleMessage(data: any) {
+    // Handle portfolio updates
+    if (data.type === 'portfolio_update') {
+      setPortfolio({
+        ...data.data,
+        lastUpdated: data.timestamp
+      });
+    }
+    // Handle token value updates
+    else if (data.type === 'token_value_update') {
+      // Update a single token in the portfolio
+      setPortfolio(prev => {
+        const updatedTokens = prev.tokens.map(token => {
+          if (token.symbol === data.symbol) {
+            return {
+              ...token,
+              price: data.price,
+              value: token.amount * data.price,
+              change_24h: data.change_24h
+            };
+          }
+          return token;
+        });
+        
+        // Calculate new total value and performance
+        const newTotalValue = updatedTokens.reduce((sum, token) => sum + token.value, 0);
+        
+        return {
+          ...prev,
+          tokens: updatedTokens,
+          total_value: newTotalValue,
+          lastUpdated: data.timestamp
+        };
+      });
+    }
+  }
+
+  // Request portfolio data when connected and contest changes
+  useEffect(() => {
+    if (isConnected && user) {
+      sendMessage({
+        type: 'get_portfolio',
+        contestId
+      });
+    }
+  }, [isConnected, contestId, user, sendMessage]);
+
+  // Function to manually refresh the portfolio
+  const refreshPortfolio = useCallback(() => {
+    if (isConnected) {
+      sendMessage({
+        type: 'get_portfolio',
+        contestId
+      });
+      return true;
+    }
+    return false;
+  }, [isConnected, contestId, sendMessage]);
+
+  return {
+    portfolio,
+    isConnected,
+    refreshPortfolio,
+    close: disconnect
+  };
+}
+
+export default usePortfolioWebSocket;
