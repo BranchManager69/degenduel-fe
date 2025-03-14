@@ -2,7 +2,6 @@ import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
 
 import { useContestChatWebSocket } from "../../hooks/useContestChatWebSocket";
-import { useStore } from "../../store/useStore";
 
 // Default profile picture URL
 const DEFAULT_PROFILE_PICTURE =
@@ -24,22 +23,20 @@ export const ContestChat: React.FC<ContestChatProps> = ({
   const {
     participants,
     messages,
+    isRateLimited,
     error,
     sendMessage,
-    close, // Get the close function from the hook
+    leaveRoom, // Use leaveRoom instead of close
+    currentUserId
   } = useContestChatWebSocket(contestId);
-  
-  // Add missing properties that are referenced in the component but not in the hook
-  const isRateLimited = false; // Default value
-  const currentUserId = useStore().user?.wallet_address || ""; // Get current user wallet address from the store
   
   // Properly clean up the WebSocket connection when component unmounts
   useEffect(() => {
     return () => {
       console.log(`[ContestChat] Closing WebSocket for contest ${contestId}`);
-      close(); // Close the WebSocket connection
+      leaveRoom(); // Leave the room when unmounting
     };
-  }, [contestId, close]);
+  }, [contestId, leaveRoom]);
 
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -207,7 +204,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
         <h3 className="text-lg font-bold text-white">Contest Chat</h3>
         <div className="text-sm text-gray-400 flex items-center">
           <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-          {participants} online
+          {participants.length} online
           {adminType && (
             <span
               className={`ml-2 px-2 py-0.5 rounded text-xs ${getAdminBadgeStyle()}`}
@@ -250,11 +247,27 @@ export const ContestChat: React.FC<ContestChatProps> = ({
               Participants
             </h4>
             <div className="space-y-1">
-              <div className="flex items-center p-2 rounded-md">
-                <span className="text-sm text-gray-300">
-                  {participants} online user{participants !== 1 ? 's' : ''}
-                </span>
-              </div>
+              {participants.map((participant) => (
+                <div
+                  key={participant.userId}
+                  className="flex items-center p-2 rounded-md hover:bg-gray-700/50 transition-colors"
+                >
+                  <img
+                    src={getProfilePicture(
+                      participant.userId,
+                      participant.profilePicture,
+                    )}
+                    alt={participant.nickname}
+                    className="w-6 h-6 rounded-full mr-2"
+                  />
+                  <span className="text-sm text-gray-300 truncate">
+                    {participant.nickname}
+                  </span>
+                  {participant.isAdmin && (
+                    <span className="ml-1 text-xs text-purple-400">★</span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -292,9 +305,9 @@ export const ContestChat: React.FC<ContestChatProps> = ({
             <>
               {messages.map((msg) => (
                 <div
-                  key={msg.id}
+                  key={msg.messageId}
                   className={`message mb-4 rounded-lg p-3 transition-all duration-300 hover:shadow-md ${
-                    (msg.isSystemMessage)
+                    (msg.isAdmin)
                       ? getAdminMessageStyle()
                       : msg.userId === currentUserId
                         ? "self-message bg-brand-900/20 border-l-2 border-brand-500"
@@ -304,10 +317,10 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   <div className="flex items-start">
                     <div className="flex-shrink-0 mr-3">
                       <img
-                        src={getProfilePicture(msg.userId, msg.avatar)}
-                        alt={msg.username}
+                        src={getProfilePicture(msg.userId, msg.profilePicture)}
+                        alt={msg.nickname}
                         className={`w-8 h-8 rounded-full ${
-                          msg.isSystemMessage
+                          msg.isAdmin
                             ? "ring-2 ring-purple-500"
                             : msg.userId === currentUserId
                               ? "ring-2 ring-brand-500"
@@ -319,16 +332,16 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                       <div className="flex items-center">
                         <span
                           className={`font-medium ${
-                            msg.isSystemMessage
+                            msg.isAdmin
                               ? getAdminTextColor()
                               : msg.userId === currentUserId
                                 ? "text-brand-400"
                                 : "text-white"
                           }`}
                         >
-                          {msg.username}
+                          {msg.nickname}
                         </span>
-                        {msg.isSystemMessage && (
+                        {msg.isAdmin && (
                           <span
                             className={`ml-2 px-1.5 py-0.5 rounded text-xs ${getAdminBadgeStyle()}`}
                           >
@@ -340,7 +353,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                         </span>
                       </div>
                       <p className="mt-1 text-gray-300 break-words">
-                        {msg.content}
+                        {msg.text}
                       </p>
                     </div>
                   </div>
@@ -359,7 +372,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
       >
         {error && (
           <div className="mb-2 text-red-500 text-sm bg-red-900/20 p-2 rounded">
-            {error.message || "An error occurred"}
+            {error}
           </div>
         )}
         {isRateLimited && (

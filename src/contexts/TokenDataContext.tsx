@@ -22,12 +22,15 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const tokenData = useTokenDataWebSocket(["all"]);
   
   const value = useMemo(() => {
-    return {
-      tokens: [], // Add missing required property
-      error: null, // Add missing required property
-      lastUpdate: null, // Add missing required property
+    const mergedValue = {
       ...tokenData,
     };
+    // Only add these properties if they don't already exist in tokenData
+    if (!('tokens' in tokenData)) mergedValue.tokens = [];
+    if (!('error' in tokenData)) mergedValue.error = null;
+    if (!('lastUpdate' in tokenData)) mergedValue.lastUpdate = null;
+    
+    return mergedValue;
   }, [tokenData]);
 
   return (

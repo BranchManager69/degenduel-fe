@@ -4,14 +4,11 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import { useScrollFooter } from "../../hooks/useScrollFooter";
-import {
-  ServerStatus,
-  useServerStatusWebSocket,
-} from "../../hooks/useServerStatusWebSocket";
+import { useServerStatusWebSocket } from "../../hooks/useServerStatusWebSocket";
 
 export const Footer: React.FC = () => {
   // Use our new WebSocket hook for server status
-  const { serverStatus, isConnected } = useServerStatusWebSocket();
+  const status = useServerStatusWebSocket();
   // Use our new scroll hook for footer
   const { isCompact } = useScrollFooter(50);
   
@@ -37,10 +34,8 @@ export const Footer: React.FC = () => {
   }, []);
 
   // Get color scheme and animation based on status
-  const getStatusStyles = (
-    serverStatus: ServerStatus,
-    isConnected: boolean,
-  ) => {
+  // Get styles based directly on the status hook values
+  const getStatusStyles = () => {
     // Base styles depending on status
     const baseStyles = {
       online: {
@@ -74,10 +69,10 @@ export const Footer: React.FC = () => {
     };
 
     // Get base styles for current status
-    const currentStyles = baseStyles[serverStatus?.status as keyof typeof baseStyles] || baseStyles.offline;
+    const currentStyles = baseStyles[status.status as keyof typeof baseStyles] || baseStyles.offline;
 
     // Add WebSocket-specific enhancements when connected
-    if (isConnected) {
+    if (status.isWebSocketConnected) {
       return {
         ...currentStyles,
         // Enhanced styles for WebSocket connection
@@ -96,7 +91,7 @@ export const Footer: React.FC = () => {
     };
   };
 
-  const styles = getStatusStyles(serverStatus, isConnected);
+  const styles = getStatusStyles();
 
   return (
     <footer
@@ -181,7 +176,7 @@ export const Footer: React.FC = () => {
                   statusDropdown.classList.toggle('block');
                 }
               }}
-              title={serverStatus.message} // Show the detailed message on hover
+              title={status.message} // Show the detailed message on hover
             >
               {/* WebSocket-specific shine effect */}
               {styles.wsIndicator && (
@@ -200,7 +195,7 @@ export const Footer: React.FC = () => {
                 cursor-pointer
               `}
               >
-                {serverStatus.status.toUpperCase()}
+                {status.status.toUpperCase()}
                 {styles.wsIndicator && (
                   <span className="ml-0.5 text-cyan-400 text-opacity-70 text-[8px] align-top">
                     ⚡
@@ -220,7 +215,7 @@ export const Footer: React.FC = () => {
               >
                 <div className="flex justify-between items-center mb-1">
                   <div className="font-semibold">
-                    Server Status: {serverStatus.status.toUpperCase()}
+                    Server Status: {status.status.toUpperCase()}
                   </div>
                   <button 
                     className="bg-gray-800 hover:bg-gray-700 text-[10px] px-2 py-1 rounded text-cyan-400 transition-colors"
@@ -229,9 +224,9 @@ export const Footer: React.FC = () => {
                       const statusDropdown = document.getElementById('status-dropdown');
                       if (statusDropdown) {
                         const technicalInfo = `
-Server Status: ${serverStatus.status.toUpperCase()}
-Message: ${serverStatus.message}
-WebSocket Connected: ${isConnected ? "Yes" : "No"}
+Server Status: ${status.status.toUpperCase()}
+Message: ${status.message}
+WebSocket Connected: ${status.isWebSocketConnected ? "Yes" : "No"}
 Endpoint: /api/v69/ws/monitor
 Connection URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor
 Last Checked: ${new Date().toLocaleTimeString()}
@@ -253,7 +248,7 @@ WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-statu
                     Copy Debug Info
                   </button>
                 </div>
-                <div className="mb-2">{serverStatus.message}</div>
+                <div className="mb-2">{status.message}</div>
 
                 <div className="border-t border-gray-700 my-2 pt-2">
                   <div className="font-semibold mb-1">
@@ -261,13 +256,13 @@ WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-statu
                   </div>
                   {/* Connection Status */}
                   <div
-                    className={`flex items-center ${isConnected ? "text-green-400" : "text-red-400"} mb-1`}
+                    className={`flex items-center ${status.isWebSocketConnected ? "text-green-400" : "text-red-400"} mb-1`}
                   >
                     <div
-                      className={`w-2 h-2 rounded-full mr-2 ${isConnected ? "bg-green-500" : "bg-red-500"}`}
+                      className={`w-2 h-2 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
                     />
                     Server Status WS:{" "}
-                    {isConnected ? "Connected" : "Disconnected"}
+                    {status.isWebSocketConnected ? "Connected" : "Disconnected"}
                   </div>
 
                   {/* Connection Details */}
@@ -282,10 +277,10 @@ WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-statu
                     <div className="break-all">{import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor</div>
                     
                     <div className="font-semibold">Connected Since:</div> 
-                    <div>{isConnected ? new Date().toLocaleTimeString() : "Not connected"}</div>
+                    <div>{status.isWebSocketConnected ? new Date().toLocaleTimeString() : "Not connected"}</div>
                     
                     <div className="font-semibold">Connection ID:</div> 
-                    <div>{isConnected ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
+                    <div>{status.isWebSocketConnected ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
                     
                     <div className="font-semibold">Protocol:</div> 
                     <div>WSS (Secure WebSocket)</div>
@@ -329,15 +324,15 @@ WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-statu
                       <div>{Object.keys(localStorage).join(', ').substring(0, 30)}...</div>
                       
                       <div className="font-semibold">API Status:</div>
-                      <div className={serverStatus.status === 'online' ? 'text-green-400' : 'text-red-400'}>
-                        {serverStatus.status === 'online' ? 'Available' : 'Unavailable'}
+                      <div className={status.status === 'online' ? 'text-green-400' : 'text-red-400'}>
+                        {status.status === 'online' ? 'Available' : 'Unavailable'}
                       </div>
                       
                       <div className="font-semibold">Event Dispatch:</div>
                       <div>window.DDActiveWebSockets: {window.DDActiveWebSockets ? 'Exists' : 'Missing'}</div>
                       
                       <div className="font-semibold">Last Error:</div>
-                      <div className="text-red-400">{serverStatus.message === 'error' ? serverStatus.message : 'None'}</div>
+                      <div className="text-red-400">{status.message === 'error' ? status.message : 'None'}</div>
                     </div>
                   </div>
 

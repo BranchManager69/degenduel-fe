@@ -39,7 +39,8 @@ import { MovingBackground } from "./components/ui/MovingBackground";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* WebSocket */
-import { WebSocketProvider } from "./hooks/websocket/WebSocketManager";
+// WebSocket provider temporarily disabled
+// import { WebSocketProvider } from "./hooks/websocket/WebSocketManager";
 /* Pages */
 import { useAuth } from "./hooks/useAuth";
 import { ReferralProvider } from "./hooks/useReferral";
@@ -155,8 +156,8 @@ export const App: React.FC = () => {
         <ReferralProvider>
           {/* Token Data Provider */}
           <TokenDataProvider>
-            {/* WebSocket Provider */}
-            <WebSocketProvider>
+            {/* WebSocket Provider temporarily disabled */}
+            {/* <WebSocketProvider> */}
               {/* Toast Provider */}
               <ToastProvider>
               {/* Main container */}
@@ -660,7 +661,7 @@ export const App: React.FC = () => {
                 <ToastContainer />
               </div>
             </ToastProvider>
-            </WebSocketProvider>
+            {/* </WebSocketProvider> */}
           </TokenDataProvider>
         </ReferralProvider>
       </AuthProvider>
