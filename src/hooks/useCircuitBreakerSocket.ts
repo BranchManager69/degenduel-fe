@@ -1,143 +1,75 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useStore } from '../store/useStore';
-import { useWebSocket } from './websocket/useWebSocket';
+import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
-export interface CircuitBreakerService {
-  name: string;
-  status: 'healthy' | 'degraded' | 'failed';
-  circuit: {
-    state: 'closed' | 'open' | 'half-open';
-    failureCount: number;
-    lastFailure: string | null;
-    recoveryAttempts: number;
+interface CircuitBreakerMessage {
+  type: "health:update" | "metrics:update" | "breaker:trip" | "breaker:reset";
+  service: string;
+  data: {
+    status: "healthy" | "degraded" | "failed";
+    circuit: {
+      state: "closed" | "open" | "half-open";
+      failureCount: number;
+      lastFailure: string | null;
+      recoveryAttempts: number;
+    };
+    config?: {
+      failureThreshold: number;
+      recoveryTimeout: number;
+      requestLimit: number;
+    };
+    metrics?: {
+      failureRate: number;
+      latency: number;
+      throughput: number;
+    };
+    error?: string;
   };
-  config?: {
-    failureThreshold: number;
-    recoveryTimeout: number;
-    requestLimit: number;
-  };
+  timestamp: string;
 }
 
-export interface CircuitBreakerState {
-  services: CircuitBreakerService[];
-  systemHealth?: {
-    status: 'operational' | 'degraded' | 'critical';
-    activeIncidents: number;
-    lastIncident: string | null;
+export const useCircuitBreakerSocket = () => {
+  const { setCircuitBreakerState, addCircuitAlert } = useStore();
+
+  const handleMessage = (message: CircuitBreakerMessage) => {
+    switch (message.type) {
+      case "health:update":
+      case "metrics:update":
+        setCircuitBreakerState({
+          services: [
+            {
+              name: message.service,
+              status: message.data.status,
+              circuit: message.data.circuit,
+              config: message.data.config,
+            },
+          ],
+        });
+        break;
+      case "breaker:trip":
+        addCircuitAlert({
+          type: "error",
+          title: `Circuit Breaker Tripped - ${message.service}`,
+          message: message.data.error || "Service protection activated",
+          details: message.data,
+        });
+        break;
+      case "breaker:reset":
+        addCircuitAlert({
+          type: "info",
+          title: `Circuit Breaker Reset - ${message.service}`,
+          message: "Service protection deactivated",
+          details: message.data,
+        });
+        break;
+    }
   };
-}
 
-export function useCircuitBreakerSocket() {
-  const { user } = useStore();
-  const token = user?.jwt || user?.session_token;
-  const [circuitState, setCircuitState] = useState<CircuitBreakerState>({ services: [] });
-
-  // Initialize WebSocket using the new hook
-  const {
-    isConnected,
-    sendMessage,
-    disconnect
-  } = useWebSocket('circuit-breaker', {
-    token,
-    reconnect: true,
-    maxReconnectAttempts: 10,
+  return useBaseWebSocket({
+    url: import.meta.env.VITE_WS_URL,
+    endpoint: "/api/v69/ws/circuit-breaker",
+    socketType: "circuit-breaker",
     onMessage: handleMessage,
-    debug: true,
+    heartbeatInterval: 15000, // 15 second heartbeat
+    maxReconnectAttempts: 5,
   });
-
-  // Handle incoming messages
-  function handleMessage(data: any) {
-    switch (data.type) {
-      case 'circuit_breaker_state':
-        setCircuitState(data.data);
-        break;
-        
-      case 'service:update': {
-        // Update a single service in the list
-        const updatedService = {
-          name: data.service,
-          status: data.status,
-          circuit: data.circuit_breaker
-        };
-        
-        setCircuitState(prev => {
-          const serviceIndex = prev.services.findIndex(s => s.name === data.service);
-          
-          if (serviceIndex >= 0) {
-            // Update existing service
-            const updatedServices = [...prev.services];
-            updatedServices[serviceIndex] = {
-              ...updatedServices[serviceIndex],
-              ...updatedService
-            };
-            
-            return {
-              ...prev,
-              services: updatedServices
-            };
-          } else {
-            // Add new service
-            return {
-              ...prev,
-              services: [...prev.services, updatedService]
-            };
-          }
-        });
-        break;
-      }
-      
-      case 'services:state':
-        // Full services list update
-        setCircuitState({
-          services: data.services || [],
-          systemHealth: data.systemHealth
-        });
-        break;
-    }
-  }
-
-  // Request circuit breaker state when connected
-  useEffect(() => {
-    if (isConnected) {
-      sendMessage({
-        type: 'get_circuit_breaker_state'
-      });
-    }
-  }, [isConnected, sendMessage]);
-
-  // Function to reset a circuit breaker
-  const resetCircuit = useCallback((serviceName: string) => {
-    if (isConnected) {
-      sendMessage({
-        type: 'reset_circuit_breaker',
-        service: serviceName
-      });
-      
-      return true;
-    }
-    return false;
-  }, [isConnected, sendMessage]);
-
-  // Function to perform health check on a service
-  const checkHealth = useCallback((serviceName: string) => {
-    if (isConnected) {
-      sendMessage({
-        type: 'health_check',
-        service: serviceName
-      });
-      
-      return true;
-    }
-    return false;
-  }, [isConnected, sendMessage]);
-
-  return {
-    circuitState,
-    isConnected,
-    resetCircuit,
-    checkHealth,
-    close: disconnect
-  };
-}
-
-export default useCircuitBreakerSocket;
+};

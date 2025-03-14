@@ -1,121 +1,88 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useStore } from '../store/useStore';
-import { useWebSocket } from './websocket/useWebSocket';
+// src/hooks/useMarketDataWebSocket.ts
 
-export interface TokenMarketData {
-  symbol: string;
-  price: number;
-  change_24h: number;
-  volume_24h: number;
-  high_24h: number;
-  low_24h: number;
-  last_updated: string;
-}
+/**
+ * This hook is used to connect to the market data WebSocket.
+ * It is used to receive market data for a given symbol.
+ *
+ * @param symbols - An array of symbols to subscribe to.
+ * @returns An object containing the market price, volume, and sentiment functions.
+ */
 
-export interface MarketData {
-  [symbol: string]: TokenMarketData;
-}
+import { useBaseWebSocket } from "./useBaseWebSocket";
+import { useStore } from "../store/useStore";
 
-export function useMarketDataWebSocket(symbols: string[] = []) {
-  const [marketData, setMarketData] = useState<MarketData>({});
-  const { user } = useStore();
-  const token = user?.jwt || user?.session_token;
+/* Market data WebSocket */
 
-  // Initialize WebSocket connection using the new hook
-  const {
-    isConnected,
-    sendMessage,
-    subscribe,
-    unsubscribe,
-    disconnect
-  } = useWebSocket('market-data', {
-    token,
-    reconnect: true,
-    maxReconnectAttempts: 10,
-    onMessage: handleMessage,
-    debug: true,
-  });
-
-  // Handle incoming messages
-  function handleMessage(data: any) {
-    // Handle market price updates
-    if (data.type === 'market_price_update') {
-      setMarketData(prev => ({
-        ...prev,
-        [data.symbol]: {
-          ...(prev[data.symbol] || {}),
-          symbol: data.symbol,
-          price: data.price,
-          change_24h: data.change_24h,
-          volume_24h: data.volume_24h || prev[data.symbol]?.volume_24h || 0,
-          high_24h: data.high_24h || prev[data.symbol]?.high_24h || 0,
-          low_24h: data.low_24h || prev[data.symbol]?.low_24h || 0,
-          last_updated: data.timestamp
-        }
-      }));
-    }
-    // Handle bulk market data
-    else if (data.type === 'market_data') {
-      const newMarketData: MarketData = {};
-      
-      data.data.forEach((tokenData: any) => {
-        newMarketData[tokenData.symbol] = {
-          symbol: tokenData.symbol,
-          price: tokenData.price,
-          change_24h: tokenData.change_24h,
-          volume_24h: tokenData.volume_24h || 0,
-          high_24h: tokenData.high_24h || 0,
-          low_24h: tokenData.low_24h || 0,
-          last_updated: data.timestamp
-        };
-      });
-      
-      setMarketData(newMarketData);
-    }
-  }
-
-  // Subscribe to symbols when connected and symbols change
-  useEffect(() => {
-    if (isConnected && symbols.length > 0) {
-      // Request initial data for all symbols
-      sendMessage({
-        type: 'get_market_data',
-        symbols
-      });
-      
-      // Subscribe to updates for each symbol
-      symbols.forEach(symbol => {
-        subscribe(`market.${symbol}`);
-      });
-      
-      // Return cleanup function to unsubscribe when component unmounts
-      // or when symbols change
-      return () => {
-        symbols.forEach(symbol => {
-          unsubscribe(`market.${symbol}`);
-        });
-      };
-    }
-  }, [isConnected, symbols, sendMessage, subscribe, unsubscribe]);
-
-  // Function to manually refresh data for specific symbols
-  const refreshMarketData = useCallback((symbolsToRefresh: string[] = symbols) => {
-    if (isConnected && symbolsToRefresh.length > 0) {
-      sendMessage({
-        type: 'get_market_data',
-        symbols: symbolsToRefresh
-      });
-      return true;
-    }
-    return false;
-  }, [isConnected, symbols, sendMessage]);
-
-  return {
-    marketData,
-    isConnected,
-    refreshMarketData,
-    close: disconnect
+// Data structure for a market price message
+interface MarketPrice {
+  type: "MARKET_PRICE";
+  data: {
+    symbol: string;
+    price: number;
+    change_24h: number;
+    volume_24h: number;
+    high_24h: number;
+    low_24h: number;
+    timestamp: string;
   };
 }
 
-export default useMarketDataWebSocket;
+// Data structure for a market volume message
+interface MarketVolume {
+  type: "MARKET_VOLUME";
+  data: {
+    symbol: string;
+    volume: number;
+    trades_count: number;
+    buy_volume: number;
+    sell_volume: number;
+    interval: "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+    timestamp: string;
+  };
+}
+
+// Data structure for a market sentiment message
+interface MarketSentiment {
+  type: "MARKET_SENTIMENT";
+  data: {
+    symbol: string;
+    sentiment_score: number; // -1 to 1
+    buy_pressure: number; // 0 to 1
+    sell_pressure: number; // 0 to 1
+    volume_trend: "increasing" | "decreasing" | "stable";
+    timestamp: string;
+  };
+}
+
+// Data structure for a market data message
+type MarketDataMessage = MarketPrice | MarketVolume | MarketSentiment;
+
+export const useMarketDataWebSocket = (symbols: string[]) => {
+  const { updateMarketPrice, updateMarketVolume, updateMarketSentiment } =
+    useStore();
+
+  // Handle incoming messages from the server
+  const handleMessage = (message: MarketDataMessage) => {
+    switch (message.type) {
+      case "MARKET_PRICE":
+        updateMarketPrice(message.data);
+        break;
+      case "MARKET_VOLUME":
+        updateMarketVolume(message.data);
+        break;
+      case "MARKET_SENTIMENT":
+        updateMarketSentiment(message.data);
+        break;
+    }
+  };
+
+  // Initialize the WebSocket connection
+  return useBaseWebSocket({
+    url: import.meta.env.VITE_WS_URL,
+    endpoint: `/v2/ws/market?symbols=${symbols.join(",")}`,
+    socketType: "market",
+    onMessage: handleMessage,
+    heartbeatInterval: 15000, // 15 second heartbeat for market data
+    maxReconnectAttempts: 5,
+  });
+};

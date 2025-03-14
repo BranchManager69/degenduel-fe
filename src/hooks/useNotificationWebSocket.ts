@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useStore } from "../store/useStore";
-import { useWebSocket } from "./websocket/useWebSocket";
+
+import { useAuth } from "./useAuth";
+import { useBaseWebSocket, WebSocketConfig } from "./useBaseWebSocket";
 
 export interface Notification {
   id: string;
@@ -28,7 +29,6 @@ interface NotificationActions {
   markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
   refreshNotifications: () => void;
-  close: () => void;
 }
 
 export function useNotificationWebSocket(): NotificationState &
@@ -37,27 +37,24 @@ export function useNotificationWebSocket(): NotificationState &
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
-  const { user } = useStore();
-  const token = user?.jwt || user?.session_token;
+  const { user } = useAuth();
 
   // Handle WebSocket messages
   const handleMessage = useCallback((message: any) => {
     setLastMessage(message);
   }, []);
 
-  // Initialize WebSocket connection using the new hook
-  const { 
-    isConnected, 
-    sendMessage, 
-    disconnect 
-  } = useWebSocket('notifications', {
-    token,
-    reconnect: true,
-    maxReconnectAttempts: 10,
+  // Initialize WebSocket connection
+  const config: WebSocketConfig = {
+    url: import.meta.env.VITE_WS_URL || "",
+    endpoint: "/api/v69/ws/notifications",
+    socketType: "notifications",
     onMessage: handleMessage,
-    debug: true,
-  });
+  };
+
+  const { wsRef, status } = useBaseWebSocket(config);
 
   // Update unread count whenever notifications change
   useEffect(() => {
@@ -66,6 +63,11 @@ export function useNotificationWebSocket(): NotificationState &
     ).length;
     setUnreadCount(count);
   }, [notifications]);
+
+  // Update connection status when WebSocket status changes
+  useEffect(() => {
+    setIsConnected(status === "online");
+  }, [status]);
 
   // Process incoming WebSocket messages
   useEffect(() => {
@@ -126,7 +128,36 @@ export function useNotificationWebSocket(): NotificationState &
     }
   }, [isConnected, user, isLoading]);
 
-  // Mark a notification as read
+  // Send message helper function
+  const sendMessage = useCallback(
+    (message: any) => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          wsRef.current.send(
+            typeof message === "string" ? message : JSON.stringify(message),
+          );
+          return true;
+        } catch (err) {
+          console.error("Error sending message to WebSocket:", err);
+          setError(
+            err instanceof Error
+              ? err
+              : new Error("Failed to send WebSocket message"),
+          );
+          return false;
+        }
+      } else {
+        console.warn("WebSocket is not connected, cannot send message");
+        setError(
+          new Error("Unable to send message: WebSocket is not connected"),
+        );
+        return false;
+      }
+    },
+    [wsRef],
+  );
+
+  // Actions
   const markAsRead = useCallback(
     (notificationId: string) => {
       try {
@@ -157,7 +188,6 @@ export function useNotificationWebSocket(): NotificationState &
     [sendMessage],
   );
 
-  // Mark all notifications as read
   const markAllAsRead = useCallback(() => {
     try {
       const success = sendMessage({
@@ -180,7 +210,6 @@ export function useNotificationWebSocket(): NotificationState &
     }
   }, [sendMessage]);
 
-  // Refresh notifications
   const refreshNotifications = useCallback(() => {
     try {
       setIsLoading(true);
@@ -225,6 +254,5 @@ export function useNotificationWebSocket(): NotificationState &
     markAsRead,
     markAllAsRead,
     refreshNotifications,
-    close: disconnect, // Expose the WebSocket disconnect method
   };
 }
