@@ -13,6 +13,10 @@ declare global {
       [key: string]: number;
       total: number;
     };
+    DDConnectionAttempts: {
+      [key: string]: number;
+      total: number;
+    };
     DDLastWebSocketErrors: {
       [key: string]: {
         timestamp: number;
@@ -30,7 +34,16 @@ export const initializeWebSocketTracking = (): void => {
       total: 0
     };
     
-    console.log('[WSMonitor] WebSocket tracking initialized');
+    console.log('[WSMonitor] WebSocket connection tracking initialized');
+  }
+  
+  // Initialize connection attempt tracking
+  if (!window.DDConnectionAttempts) {
+    window.DDConnectionAttempts = {
+      total: 0
+    };
+    
+    console.log('[WSMonitor] WebSocket connection attempt tracking initialized');
   }
   
   // Initialize error tracking
@@ -39,6 +52,33 @@ export const initializeWebSocketTracking = (): void => {
     
     console.log('[WSMonitor] WebSocket error tracking initialized');
   }
+};
+
+// Track a connection attempt
+export const trackConnectionAttempt = (type: string): void => {
+  initializeWebSocketTracking();
+  
+  // Initialize counter for this type if it doesn't exist
+  if (typeof window.DDConnectionAttempts[type] !== 'number') {
+    window.DDConnectionAttempts[type] = 0;
+  }
+  
+  // Ensure total is initialized
+  if (typeof window.DDConnectionAttempts.total !== 'number') {
+    window.DDConnectionAttempts.total = 0;
+  }
+  
+  // Increment counters
+  window.DDConnectionAttempts[type]++;
+  window.DDConnectionAttempts.total++;
+  
+  console.log(`[WSMonitor] ${type} connection attempt. Attempts: ${window.DDConnectionAttempts[type]}, Total attempts: ${window.DDConnectionAttempts.total}`);
+  
+  dispatchWebSocketEvent('connection-attempt', {
+    socketType: type,
+    attemptCount: window.DDConnectionAttempts[type],
+    totalAttempts: window.DDConnectionAttempts.total
+  });
 };
 
 // Track a new WebSocket connection
@@ -64,7 +104,8 @@ export const trackWebSocketConnection = (type: string): void => {
   dispatchWebSocketEvent('connection-tracking', {
     socketType: type,
     activeCount: window.DDActiveWebSockets[type],
-    totalCount: window.DDActiveWebSockets.total
+    totalCount: window.DDActiveWebSockets.total,
+    attemptCount: window.DDConnectionAttempts[type] || 0
   });
 };
 
@@ -111,6 +152,19 @@ export const getWebSocketCount = (type?: string): number => {
   return window.DDActiveWebSockets.total || 0;
 };
 
+// Get connection attempt count by type
+export const getConnectionAttemptCount = (type?: string): number => {
+  if (!window.DDConnectionAttempts) {
+    return 0;
+  }
+  
+  if (type) {
+    return window.DDConnectionAttempts[type] || 0;
+  }
+  
+  return window.DDConnectionAttempts.total || 0;
+};
+
 // Get all active WebSocket connection counts
 export const getAllWebSocketCounts = (): Record<string, number> => {
   if (!window.DDActiveWebSockets) {
@@ -120,12 +174,25 @@ export const getAllWebSocketCounts = (): Record<string, number> => {
   return { ...window.DDActiveWebSockets };
 };
 
+// Get all connection attempts
+export const getAllConnectionAttempts = (): Record<string, number> => {
+  if (!window.DDConnectionAttempts) {
+    return { total: 0 };
+  }
+  
+  return { ...window.DDConnectionAttempts };
+};
+
 // Dispatch WebSocket event for monitoring
 export const dispatchWebSocketEvent = (type: string, data?: any): void => {
+  // Ensure data includes socketType if provided
+  const socketType = data?.socketType || null;
+  
   window.dispatchEvent(
     new CustomEvent('ws-debug', {
       detail: {
         type,
+        socketType,
         timestamp: new Date().toISOString(),
         data
       }
@@ -171,27 +238,44 @@ export const logWebSocketEvent = (type: string, socketType: string, message: str
 
 // Reset all WebSocket tracking (useful for testing or recovering from errors)
 export const resetWebSocketTracking = (): void => {
+  // Reset active connections
   if (!window.DDActiveWebSockets) {
     window.DDActiveWebSockets = { total: 0 };
-    return;
+  } else {
+    const previousCounts = { ...window.DDActiveWebSockets };
+    
+    // Reset all counters
+    Object.keys(window.DDActiveWebSockets).forEach(key => {
+      window.DDActiveWebSockets[key] = 0;
+    });
+    
+    console.log('[WSMonitor] Active WebSocket connections reset. Previous counts:', previousCounts);
   }
   
-  const previousCounts = { ...window.DDActiveWebSockets };
+  // Reset connection attempts
+  if (!window.DDConnectionAttempts) {
+    window.DDConnectionAttempts = { total: 0 };
+  } else {
+    const previousAttempts = { ...window.DDConnectionAttempts };
+    
+    // Reset all counters
+    Object.keys(window.DDConnectionAttempts).forEach(key => {
+      window.DDConnectionAttempts[key] = 0;
+    });
+    
+    console.log('[WSMonitor] Connection attempts reset. Previous counts:', previousAttempts);
+  }
   
-  // Reset all counters
-  Object.keys(window.DDActiveWebSockets).forEach(key => {
-    window.DDActiveWebSockets[key] = 0;
-  });
-  
-  // Also reset error tracking
+  // Reset error tracking
   if (window.DDLastWebSocketErrors) {
     window.DDLastWebSocketErrors = {};
   }
   
-  console.log('[WSMonitor] WebSocket tracking reset. Previous counts:', previousCounts);
+  console.log('[WSMonitor] WebSocket tracking completely reset');
   
   dispatchWebSocketEvent('reset', {
-    previousCounts
+    message: 'WebSocket tracking completely reset',
+    timestamp: new Date().toISOString()
   });
 };
 

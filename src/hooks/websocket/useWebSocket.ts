@@ -6,10 +6,10 @@
  */
 
 import { useRef, useState } from 'react';
-import { useBaseWebSocket } from '../useBaseWebSocket';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { WebSocketMessage, WebSocketStatus } from './types';
 import { WS_URL } from '../../config/config';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { useBaseWebSocket } from '../useBaseWebSocket';
+import { WebSocketMessage, WebSocketStatus } from './types';
 
 interface UseWebSocketOptions {
   endpoint: string;

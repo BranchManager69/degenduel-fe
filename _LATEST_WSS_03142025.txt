@@ -1,0 +1,214 @@
+  WebSocket System Flow in DegenDuel Frontend
+
+  1. Files & Components Overview
+
+  Configuration Files:
+  - /src/config/config.ts - Defines WebSocket URL based on environment (localhost, dev, prod)
+
+  Core WebSocket Infrastructure:
+  - /src/utils/wsMonitor.ts - Central monitoring and tracking for all WebSockets
+  - /src/hooks/useBaseWebSocket.ts - Base hook with connection/reconnection logic
+  - /src/hooks/websocket/useWebSocket.ts - Standardized implementation wrapper around base hook
+  - /src/hooks/websocket/WebSocketManager.tsx - Centralized component for initializing WebSockets
+  - /src/hooks/websocket/types.ts - Common types and WebSocket endpoints
+
+  Authentication:
+  - /src/hooks/useAuth.ts - Provides authentication methods including:
+    - Session token access (stored in user object)
+    - Access token retrieval via API
+
+  Monitoring Interface:
+  - /src/components/debug/websocket/WebSocketMonitor.tsx - Admin-only UI for monitoring
+
+  Individual WebSocket Implementations:
+  - Various /src/hooks/use*WebSocket.ts hooks for different data types
+  - V69-standardized implementations in /src/hooks/websocket/ directory
+
+  2. System Startup Flow from User Perspective
+
+  1. App Initialization
+
+  When a user loads the app (App.tsx), the following happens:
+
+  1. React Providers Initialize:
+    - AuthProvider - Handles authentication state
+    - ReferralProvider - Manages referral functionality
+    - TokenDataProvider - Provides token data context
+    - ToastProvider - Manages notifications
+  2. WebSocketManager Mounts:
+    - Placed high in the component tree to manage WebSocket connections
+    - Initializes global WebSocket tracking via initializeWebSocketTracking()
+    - Sets up core WebSockets that should always be connected:
+        - Server status WebSocket (public, no auth)
+      - Token data WebSocket (public, no auth)
+  3. Monitoring System Initializes:
+    - wsMonitor.ts creates global tracking objects in the window:
+        - window.DDActiveWebSockets - Tracks active connections
+      - window.DDConnectionAttempts - Tracks connection attempts
+      - window.DDLastWebSocketErrors - Tracks recent errors
+
+  2. Authentication Flow
+
+  1. User Connects Wallet:
+    - After wallet connection, user gets authenticated
+    - Server issues a session token stored in the user object
+  2. Session Token Availability:
+    - Stored in store: user.session_token
+    - Used for WebSocket subprotocol authentication
+  3. Access Token Availability:
+    - Available via getAccessToken() method in useAuth hook
+    - Used for message-based authentication in some WebSockets
+
+  3. WebSocket Connection Establishment
+
+  For each WebSocket connection, the flow is:
+
+  1. Connection Request:
+    - useWebSocket hook calls useBaseWebSocket
+    - useBaseWebSocket constructs WebSocket URL: ${baseWsUrl}${config.endpoint}
+    - If requiresAuth is true and session token is available, it's passed as subprotocol:
+    new WebSocket(`${baseWsUrl}${config.endpoint}`, user.session_token)
+    - Otherwise, connection is established without authentication:
+    new WebSocket(`${baseWsUrl}${config.endpoint}`)
+  2. Connection Tracking:
+    - trackConnectionAttempt() is called to log the attempt
+    - On successful connection, trackWebSocketConnection() is called
+    - Events dispatched to monitoring system via dispatchWebSocketEvent()
+  3. Initial Handshake & Authentication:
+    - Two different authentication methods exist:
+        - Subprotocol Method: Session token passed during connection (in useBaseWebSocket.ts)
+      - Message Method: Access token sent after connection (in original useTokenDataWebSocket.ts)
+    - For the message method, authentication sequence is:
+    wsRef.current.send(JSON.stringify({
+    type: "authenticate",
+    token: token
+  }));
+  4. Data Subscription:
+    - After successful connection, WebSockets subscribe to relevant data
+    - Example from useTokenDataWebSocket:
+    // Request all tokens
+  send({ type: "get_all_tokens" });
+
+  // Subscribe to specific tokens
+  if (tokensToSubscribe !== "all") {
+    send({
+      type: "subscribe_tokens",
+      symbols: tokensToSubscribe
+    });
+  }
+
+  4. Message Processing Flow
+
+  1. Incoming Messages:
+    - WebSocket onmessage handler parses JSON messages
+    - Messages dispatched to monitoring system
+    - Data passed to consumer components via state hooks
+  2. Message Types:
+    - System messages: ping, pong, status, error
+    - Data messages: token_data, portfolio, contest, etc.
+    - Authentication messages: authenticate, authorized
+  3. Error Handling:
+    - Connection errors trigger reconnection logic
+    - Throttling applied for rapid disconnects
+    - Errors dispatched to monitoring system
+    - Toast notifications shown to users (with throttling)
+
+  5. Heartbeat & Connection Maintenance
+
+  1. Heartbeat System:
+    - Periodic ping messages sent to server (configurable interval)
+    - Expects pong responses to confirm connection health
+    - Tracks missed heartbeats to detect "zombie" connections
+    - Zombie connections (3+ missed heartbeats) are forcibly closed and reconnected
+  2. Reconnection Logic:
+    - Reconnection with exponential backoff
+    - Additional throttling for rapidly failing connections
+    - Example backoff calculation:
+    let delay = Math.min(
+    1000 * Math.pow(2, reconnectAttempts.current),
+    30000 // Maximum 30 second base delay
+  );
+  3. Connection Monitoring:
+    - All connection events tracked centrally
+    - Admin users can view real-time connection status
+    - Active connections vs. connection attempts tracked
+
+  6. Admin Monitoring Interface
+
+  Admin users have access to:
+
+  1. WebSocket Monitor UI:
+    - Real-time view of all active connections
+    - Connection counts by type
+    - Event log with filtering
+    - Authentication token debugging
+  2. Detailed Logging:
+    - Connection events
+    - Message traffic
+    - Error details
+    - Authentication status
+
+  3. WebSocket Authentication Methods
+
+  The system uses two different authentication approaches:
+
+  Method 1: Session Token as WebSocket Subprotocol
+
+  - Used in standardized V69 pattern (useBaseWebSocket.ts)
+  - Session token passed during WebSocket creation:
+  new WebSocket(url, user.session_token)
+  - Server extracts token from WebSocket protocol
+  - All future messages on this connection are authenticated
+
+  Method 2: Access Token via Message
+
+  - Used in some original implementations (useTokenDataWebSocket.ts)
+  - Connection established first, then auth message sent:
+  wsRef.current.send(JSON.stringify({
+    type: "authenticate",
+    token: token
+  }));
+  - Server authenticates based on this message
+  - All subsequent messages on this connection are authenticated
+
+  4. The Two WebSocket Implementation Patterns
+
+  Pattern 1: Original/Legacy Pattern
+
+  - Direct WebSocket management in individual hooks
+  - Custom reconnection logic
+  - Message-based authentication using getAccessToken()
+  - Custom event handling
+  - Less standardized monitoring
+
+  Pattern 2: V69 Standardized Pattern
+
+  - Uses useBaseWebSocket as foundation
+  - Implements useWebSocket wrapper for consistency
+  - Session token subprotocol authentication
+  - Standardized endpoints in WEBSOCKET_ENDPOINTS
+  - Integrated with central monitoring via wsMonitor.ts
+  - Consistent event handling and reconnection
+
+  5. Conclusion: Complete Request → Response Flow
+
+  Let's trace a complete flow from user perspective:
+
+  1. User loads app → App.tsx renders → WebSocketManager initializes
+  2. WebSocketManager starts core connections (server status, token data)
+  3. When connecting to a WebSocket:
+    - URL determined from config: wss://domain.com/api/v69/ws/endpoint
+    - Authentication method chosen based on implementation pattern
+    - Connection tracked in monitoring system
+    - Heartbeat initialized
+  4. Messages flow from server to client:
+    - Parsed by appropriate message handlers
+    - State updated in respective hooks
+    - UI reacts to state changes
+  5. If connection fails:
+    - Reconnection logic activates with backoff
+    - Fallbacks provided where appropriate
+    - Error notifications shown (with throttling)
+  6. Admin monitoring shows real-time connection status and debugging info
+
+  This complete system provides robust real-time data communication with monitoring, reconnection, and consistent behavior across different data types.

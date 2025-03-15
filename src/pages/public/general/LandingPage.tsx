@@ -15,9 +15,9 @@ import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 // Import WebSocketMonitor conditionally only for admins
 // Features import removed and controlled by feature flag
 import { FEATURE_FLAGS } from "../../../config/config";
+import { useAuth } from "../../../hooks/useAuth";
 import { formatCurrency, isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
-import { useStore } from "../../../store/useStore";
 import { Contest } from "../../../types";
 
 // TODO: move to separate file
@@ -39,22 +39,22 @@ export const LandingPage: React.FC = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0);
   
-  // Get user from store to determine admin status
-  const { user } = useStore();
+  // Use auth hook for proper admin status checks
+  const { user, isAdmin } = useAuth();
   
   // Log user status for debugging
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[LandingPage] User permissions:', { 
         loggedIn: !!user,
-        isAdmin: user?.is_admin,
-        isSuperAdmin: user?.is_superadmin
+        isAdmin: isAdmin(),
+        role: user?.role
       });
     }
-  }, [user]);
+  }, [user, isAdmin]);
   
-  // WebSocket Monitor visibility state (not shown by default)
-  const [showWebSocketMonitor, setShowWebSocketMonitor] = useState(false);
+  // Shared debug mode state - controls both HeroTitle debug panel and WebSocketMonitor visibility
+  const [debugMode, setDebugMode] = useState(false);
 
   // useEffect for the animation phases
   useEffect(() => {
@@ -144,13 +144,13 @@ export const LandingPage: React.FC = () => {
           <div className="text-center space-y-4">
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
-              {/* WebSocket Monitor for debugging - only shown to admins/superadmins */}
-              {showWebSocketMonitor && (user?.is_admin || user?.is_superadmin) && (
+              {/* WebSocket Monitor for debugging - only shown to admins */}
+              {debugMode && isAdmin() && (
                 <div className="w-full mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <h2 className="text-xl font-bold text-brand-400">WebSocket Connection Monitor</h2>
                     <button 
-                      onClick={() => setShowWebSocketMonitor(false)} 
+                      onClick={() => setDebugMode(false)} 
                       className="px-2 py-1 bg-red-600 text-white rounded text-sm"
                     >
                       Hide Monitor
@@ -167,9 +167,9 @@ export const LandingPage: React.FC = () => {
               )}
               
               {/* Admin-only button to show WebSocket Monitor - with improved visibility */}
-              {!showWebSocketMonitor && (user?.is_admin || user?.is_superadmin) && (
+              {!debugMode && isAdmin() && (
                 <button
-                  onClick={() => setShowWebSocketMonitor(true)}
+                  onClick={() => setDebugMode(true)}
                   className="mb-4 px-4 py-2 bg-brand-600 text-white rounded font-medium hover:bg-brand-500 transition-colors shadow-md"
                 >
                   Show WebSocket Monitor
@@ -178,7 +178,11 @@ export const LandingPage: React.FC = () => {
               
               {/* HeroTitle component solely for hero animation */}
               <div className="w-full h-[40vh] relative overflow-visible z-10">
-                <HeroTitle onComplete={() => {}} />
+                <HeroTitle 
+                  onComplete={() => {}} 
+                  debugMode={debugMode}
+                  setDebugMode={setDebugMode}
+                />
               </div>
 
               {/* Spacer to push content below the hero animation - reduced since we have proper relative positioning now */}

@@ -1,7 +1,7 @@
 import { useRef } from "react";
 
-import { useBaseWebSocket } from "./useBaseWebSocket";
 import { useStore } from "../store/useStore";
+import { useBaseWebSocket } from "./useBaseWebSocket";
 
 interface ServiceMessage {
   type: "service:state" | "service:metrics" | "service:alert";
