@@ -258,13 +258,8 @@ export const ContestChatManager: React.FC = () => {
 
   return (
     <>
-      {/* Connection error notification */}
-      {connectionError && (
-        <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-md shadow-lg z-50 animate-pulse">
-          {connectionError}
-        </div>
-      )}
-
+      {/* Connection error notification - Removed to avoid duplication with toast system */}
+      
       {/* Chat toggle button - positioned higher on the page */}
       <div className="fixed bottom-1/3 right-4 z-50">
         <button
