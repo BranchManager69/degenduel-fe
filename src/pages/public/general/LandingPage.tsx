@@ -38,10 +38,23 @@ export const LandingPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0);
-  const [showWebSocketMonitor, setShowWebSocketMonitor] = useState(false);
   
   // Get user from store to determine admin status
   const { user } = useStore();
+  
+  // Log user status for debugging
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[LandingPage] User permissions:', { 
+        loggedIn: !!user,
+        isAdmin: user?.is_admin,
+        isSuperAdmin: user?.is_superadmin
+      });
+    }
+  }, [user]);
+  
+  // WebSocket Monitor visibility state (not shown by default)
+  const [showWebSocketMonitor, setShowWebSocketMonitor] = useState(false);
 
   // useEffect for the animation phases
   useEffect(() => {
@@ -131,8 +144,8 @@ export const LandingPage: React.FC = () => {
           <div className="text-center space-y-4">
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
-              {/* WebSocket Monitor for debugging - only shown to admins */}
-              {showWebSocketMonitor && user?.is_admin && (
+              {/* WebSocket Monitor for debugging - only shown to admins/superadmins */}
+              {showWebSocketMonitor && (user?.is_admin || user?.is_superadmin) && (
                 <div className="w-full mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <h2 className="text-xl font-bold text-brand-400">WebSocket Connection Monitor</h2>
@@ -153,11 +166,11 @@ export const LandingPage: React.FC = () => {
                 </div>
               )}
               
-              {/* Admin-only button to show WebSocket Monitor */}
+              {/* Admin-only button to show WebSocket Monitor - with improved visibility */}
               {!showWebSocketMonitor && (user?.is_admin || user?.is_superadmin) && (
                 <button
                   onClick={() => setShowWebSocketMonitor(true)}
-                  className="mb-4 px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm hover:bg-gray-600"
+                  className="mb-4 px-4 py-2 bg-brand-600 text-white rounded font-medium hover:bg-brand-500 transition-colors shadow-md"
                 >
                   Show WebSocket Monitor
                 </button>
