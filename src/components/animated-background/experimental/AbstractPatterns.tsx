@@ -74,18 +74,19 @@ export const AbstractPatterns: React.FC = () => {
 
     // Group tokens into positive and negative performers
     const positiveTokens = tokens
-      .filter((token) => parseFloat(token.change24h || "0") > 0)
+      .filter((token) => parseFloat(token.change24h?.toString() || "0") > 0)
       .slice(0, 8); // Limit to prevent performance issues
 
     const negativeTokens = tokens
-      .filter((token) => parseFloat(token.change24h || "0") < 0)
+      .filter((token) => parseFloat(token.change24h?.toString() || "0") < 0)
       .slice(0, 8);
 
     // Get tokens by market cap
     const highCapTokens = [...tokens]
       .sort(
         (a, b) =>
-          parseFloat(b.marketCap || "0") - parseFloat(a.marketCap || "0"),
+          parseFloat(b.marketCap?.toString() || "0") -
+          parseFloat(a.marketCap?.toString() || "0"),
       )
       .slice(0, 5);
 
@@ -97,7 +98,7 @@ export const AbstractPatterns: React.FC = () => {
     // Create segments based on positive tokens
     for (let i = 0; i < positiveTokens.length; i++) {
       const token = positiveTokens[i];
-      const change = parseFloat(token.change24h || "0");
+      const change = parseFloat(token.change24h?.toString() || "0");
       const angle = (i / positiveTokens.length) * Math.PI * 2;
 
       // Determine color intensity based on change percentage
@@ -122,7 +123,7 @@ export const AbstractPatterns: React.FC = () => {
     // Create segments based on negative tokens
     for (let i = 0; i < negativeTokens.length; i++) {
       const token = negativeTokens[i];
-      const change = parseFloat(token.change24h || "0");
+      const change = parseFloat(token.change24h?.toString() || "0");
       const angle = (i / negativeTokens.length) * Math.PI * 2;
 
       // Determine color intensity
@@ -149,8 +150,8 @@ export const AbstractPatterns: React.FC = () => {
     // Create circles based on high cap tokens
     for (let i = 0; i < highCapTokens.length; i++) {
       const token = highCapTokens[i];
-      const marketCap = parseFloat(token.marketCap || "0");
-      const change = parseFloat(token.change24h || "0");
+      const marketCap = parseFloat(token.marketCap?.toString() || "0");
+      const change = parseFloat(token.change24h?.toString() || "0");
       const angle = (i / highCapTokens.length) * Math.PI * 2;
 
       // Circle position on a ring around center
@@ -181,7 +182,7 @@ export const AbstractPatterns: React.FC = () => {
       }
 
       // Pulse properties based on trading activity
-      const volume = parseFloat(token.volume24h || "0");
+      const volume = parseFloat(token.volume24h?.toString() || "0");
       const volumeToMarketCap = volume / marketCap;
       const pulseSpeed = 0.5 + volumeToMarketCap * 10;
 
@@ -202,8 +203,8 @@ export const AbstractPatterns: React.FC = () => {
 
     for (let i = 0; i < remainingTokens.length; i++) {
       const token = remainingTokens[i];
-      const change = parseFloat(token.change24h || "0");
-      const marketCap = parseFloat(token.marketCap || "0");
+      const change = parseFloat(token.change24h?.toString() || "0");
+      const marketCap = parseFloat(token.marketCap?.toString() || "0");
 
       // Position around the outer edges
       const angle = (i / remainingTokens.length) * Math.PI * 2;

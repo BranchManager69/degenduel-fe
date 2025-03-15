@@ -129,21 +129,22 @@ export const NeonGrid: React.FC = () => {
     const sortedTokens = [...tokens]
       .sort(
         (a, b) =>
-          parseFloat(b.marketCap || "0") - parseFloat(a.marketCap || "0"),
+          parseFloat(b.marketCap?.toString() || "0") -
+          parseFloat(a.marketCap?.toString() || "0"),
       )
       .slice(0, 15); // Limit to top 15 tokens
 
     // Create nodes for each token
     const nodes = sortedTokens.map((token) => {
       // Get token properties
-      const marketCap = parseFloat(token.marketCap || "0");
+      const marketCap = parseFloat(token.marketCap?.toString() || "0");
 
       // Calculate size based on market cap
       const sizeFactor = Math.log10(marketCap) / 12;
       const size = Math.max(15, Math.min(30, sizeFactor * 50));
 
       // Only use 5-minute change for dynamic animations
-      const change5m = parseFloat(token.change5m || "0");
+      const change5m = parseFloat(token.change5m?.toString() || "0");
 
       // Base color purely on 5m change
       let color;
@@ -188,7 +189,7 @@ export const NeonGrid: React.FC = () => {
         targetY = gridRef.current.horizontalLines[targetGridY].y;
 
         // Speed based on token volume
-        const volume = parseFloat(token.volume24h || "0");
+        const volume = parseFloat(token.volume24h?.toString() || "0");
         const volumeToMarketCapRatio = volume / marketCap;
         speed = Math.max(5, Math.min(40, volumeToMarketCapRatio * 100));
       }

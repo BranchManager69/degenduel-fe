@@ -298,6 +298,42 @@ const WebSocketDashboard: React.FC = () => {
                   </code>
                 </div>
               </div>
+              
+              <div className="mb-4">
+                <h3 className="text-lg font-medium mb-2">Authentication Status</h3>
+                <div className="bg-dark-300 p-3 rounded-md">
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Session Token:</span>
+                      <code className={user?.session_token ? "text-green-400" : "text-red-400"}>
+                        {user?.session_token 
+                          ? user.session_token.substring(0, 15) + "..." 
+                          : "Not available"}
+                      </code>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">JWT Token:</span>
+                      <code className={user?.jwt ? "text-green-400" : "text-red-400"}>
+                        {user?.jwt 
+                          ? user.jwt.substring(0, 15) + "..." 
+                          : "Not available"}
+                      </code>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Authentication Method:</span>
+                      <code className="text-brand-400">
+                        {user?.jwt && user?.session_token 
+                          ? "Both (JWT + Session)" 
+                          : user?.jwt 
+                            ? "JWT Only" 
+                            : user?.session_token 
+                              ? "Session Only" 
+                              : "None"}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <div>
                 <h3 className="text-lg font-medium mb-2">

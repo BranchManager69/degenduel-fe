@@ -5,7 +5,7 @@ import { useContestChatWebSocket } from "../../hooks/useContestChatWebSocket";
 
 // Default profile picture URL
 const DEFAULT_PROFILE_PICTURE =
-  "https://api.dicebear.com/7.x/avataaars/svg?seed=";
+  "https://api.dicebear.com/7.x/avataaars/svg?seed="; // TODO: change to user's profile picture
 
 interface ContestChatProps {
   contestId: string;
@@ -26,8 +26,17 @@ export const ContestChat: React.FC<ContestChatProps> = ({
     isRateLimited,
     error,
     sendMessage,
-    currentUserId,
+    leaveRoom, // Use leaveRoom instead of close
+    currentUserId
   } = useContestChatWebSocket(contestId);
+  
+  // Properly clean up the WebSocket connection when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log(`[ContestChat] Closing WebSocket for contest ${contestId}`);
+      leaveRoom(); // Leave the room when unmounting
+    };
+  }, [contestId, leaveRoom]);
 
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -298,12 +307,12 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                 <div
                   key={msg.messageId}
                   className={`message mb-4 rounded-lg p-3 transition-all duration-300 hover:shadow-md ${
-                    msg.isAdmin
+                    (msg.isAdmin)
                       ? getAdminMessageStyle()
                       : msg.userId === currentUserId
                         ? "self-message bg-brand-900/20 border-l-2 border-brand-500"
                         : "bg-gray-800/50"
-                  } animate-fade-in`}
+                  }`}
                 >
                   <div className="flex items-start">
                     <div className="flex-shrink-0 mr-3">

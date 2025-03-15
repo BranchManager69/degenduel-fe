@@ -12,6 +12,7 @@ import { Link, Link as RouterLink } from "react-router-dom";
 
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
+import WebSocketMonitor from "../../../components/debug/websocket/WebSocketMonitor";
 // Features import removed and controlled by feature flag
 import { FEATURE_FLAGS } from "../../../config/config";
 import { formatCurrency, isContestLive } from "../../../lib/utils";
@@ -36,6 +37,7 @@ export const LandingPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0);
+  const [showWebSocketMonitor, setShowWebSocketMonitor] = useState(true);
 
   // useEffect for the animation phases
   useEffect(() => {
@@ -125,6 +127,22 @@ export const LandingPage: React.FC = () => {
           <div className="text-center space-y-4">
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
+              {/* WebSocket Monitor for debugging */}
+              {showWebSocketMonitor && (
+                <div className="w-full mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="text-xl font-bold text-brand-400">WebSocket Connection Monitor</h2>
+                    <button 
+                      onClick={() => setShowWebSocketMonitor(false)} 
+                      className="px-2 py-1 bg-red-600 text-white rounded text-sm"
+                    >
+                      Hide Monitor
+                    </button>
+                  </div>
+                  <WebSocketMonitor />
+                </div>
+              )}
+              
               {/* HeroTitle component solely for hero animation */}
               <div className="w-full h-[40vh] relative overflow-visible z-10">
                 <HeroTitle onComplete={() => {}} />
