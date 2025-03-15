@@ -2,7 +2,12 @@
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    "./index.html", 
+    "./src/**/*.{js,ts,jsx,tsx}",
+    // Add this to include the component library
+    "./node_modules/degen-components/**/*.{js,ts,jsx,tsx}"
+  ],
   darkMode: "class",
   theme: {
     extend: {
@@ -15,6 +20,7 @@ export default {
         numbers: ["var(--font-numbers, 'DM Mono')", "monospace"],
         accent: ["var(--font-accent, 'Plus Jakarta Sans')", "sans-serif"],
         pressStart: ["'Press Start 2P'", "cursive"],
+        orbitron: ["'Orbitron'", "sans-serif"],
       },
       colors: {
         brand: {

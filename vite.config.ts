@@ -6,6 +6,8 @@ import { defineConfig, LogLevel, UserConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }): UserConfig => {
+  // Resolve path to degen-components
+  const degenComponentsPath = path.resolve(__dirname, 'node_modules/degen-components/dist/index.esm.js');
   // Force development mode when running dev server
   const isDev = command === "serve" || mode === "development";
   // Add local dev mode check
@@ -32,6 +34,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
   // For local dev, use simplified config
   if (isLocalDev) {
     return {
+      resolve: {
+        alias: {
+          'degen-components': degenComponentsPath
+        }
+      },
       server: {
         port: 3010,
         host: true,
@@ -165,7 +172,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       plugins: [react()],
       optimizeDeps: {
         include: ["react", "react-dom", "react-router-dom"],
-        exclude: ["@react-three/fiber", "@react-three/drei"],
+        exclude: ["@react-three/fiber", "@react-three/drei", "degen-components"],
         esbuildOptions: {
           target: "esnext",
         },
@@ -173,6 +180,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
       build: {
         minify: false,
         sourcemap: true,
+        rollupOptions: {
+          external: ['degen-components']
+        }
       },
     };
   }
@@ -202,6 +212,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
   }
 
   const config: UserConfig = {
+    resolve: {
+      alias: {
+        'degen-components': degenComponentsPath
+      }
+    },
     server: {
       port: isDev ? 3005 : 3004,
       host: true,
@@ -362,7 +377,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "graphql",
         "@telegram-apps/bridge",
       ],
-      exclude: ["@react-three/fiber", "@react-three/drei"],
+      exclude: ["@react-three/fiber", "@react-three/drei", "degen-components"],
       esbuildOptions: {
         target: "esnext",
       },
@@ -376,7 +391,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         cache: true,
-        external: [],
+        external: ['degen-components'],
         output: {
           manualChunks: {
             "react-vendor": ["react", "react-dom", "react-router-dom"],

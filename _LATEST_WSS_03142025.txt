@@ -212,3 +212,405 @@
   6. Admin monitoring shows real-time connection status and debugging info
 
   This complete system provides robust real-time data communication with monitoring, reconnection, and consistent behavior across different data types.
+
+## 6. Backend WebSocket Server Implementation
+
+### Server Architecture
+
+The DegenDuel backend WebSocket system is built on a Node.js server that implements the following components:
+
+1. **Core WebSocket Server**
+   - Implemented using `ws` or `socket.io` library
+   - Handles connection establishment, messaging, and disconnections
+   - Maintains connection pool for efficient resource management
+
+2. **Authentication Middleware**
+   - Validates session tokens provided via WebSocket subprotocols
+   - Verifies access tokens sent in authentication messages
+   - Associates WebSocket connections with authenticated users
+
+3. **Service-Specific Endpoints**
+   - Each service exposes a specific WebSocket endpoint (e.g., `/api/v69/ws/token-data`)
+   - Endpoints handle domain-specific message formats and data streams
+
+4. **Message Handling System**
+   - Processes incoming client messages by type
+   - Validates message payloads against schemas
+   - Routes messages to appropriate service handlers
+
+5. **Broadcast/Publication System**
+   - Manages topic subscriptions for selective data distribution
+   - Efficiently broadcasts updates to interested clients
+   - Implements message queuing for handling high load
+
+### Connection Protocol
+
+1. **Connection Establishment**
+
+   When a client attempts to connect to a WebSocket endpoint, the server:
+
+   ```
+   Client                                  Server
+   ------                                  ------
+   WebSocket(url, [session_token]) -----> Check WebSocket subprotocols for token
+                                           Validate token with auth service
+                                           Associate connection with user ID
+   <----- Connection accepted or rejected
+   ```
+
+2. **Authentication Methods**
+
+   The server supports two authentication methods:
+
+   a. **Session Token as Subprotocol**:
+   ```javascript
+   // Server-side code (Node.js)
+   wss.on('connection', function(ws, request) {
+     // Extract session token from protocols array
+     const sessionToken = ws.protocol;
+
+     // Validate the token
+     if (sessionToken) {
+       validateToken(sessionToken)
+         .then(user => {
+           // Store user information with the connection
+           ws.user = user;
+           
+           // Send confirmation message
+           ws.send(JSON.stringify({
+             type: 'connection_status',
+             status: 'authenticated',
+             userId: user.id
+           }));
+         })
+         .catch(err => {
+           // Authentication failed
+           ws.close(1008, 'Authentication failed');
+         });
+     } else if (isPublicEndpoint(request.url)) {
+       // Allow unauthenticated connections to public endpoints
+       ws.send(JSON.stringify({
+         type: 'connection_status',
+         status: 'connected',
+         authenticated: false
+       }));
+     } else {
+       // Reject connection to protected endpoint
+       ws.close(1008, 'Authentication required');
+     }
+   });
+   ```
+
+   b. **Message-Based Authentication**:
+   ```javascript
+   // Server-side code (Node.js)
+   wss.on('connection', function(ws, request) {
+     // Set a timeout for authentication
+     const authTimeout = setTimeout(() => {
+       if (!ws.authenticated && !isPublicEndpoint(request.url)) {
+         ws.close(1008, 'Authentication timeout');
+       }
+     }, 30000); // 30 seconds
+
+     // Handle authentication message
+     ws.on('message', function(message) {
+       const data = JSON.parse(message);
+       
+       if (data.type === 'authenticate') {
+         validateToken(data.token)
+           .then(user => {
+             // Store user information with the connection
+             ws.user = user;
+             ws.authenticated = true;
+             clearTimeout(authTimeout);
+             
+             // Send confirmation message
+             ws.send(JSON.stringify({
+               type: 'authentication_result',
+               status: 'success',
+               userId: user.id
+             }));
+           })
+           .catch(err => {
+             // Authentication failed
+             ws.send(JSON.stringify({
+               type: 'authentication_result',
+               status: 'failed',
+               error: 'Invalid token'
+             }));
+           });
+       }
+     });
+   });
+   ```
+
+3. **Message Format**
+
+   All messages between client and server follow this JSON format:
+
+   ```javascript
+   {
+     "type": "message_type",   // Required: indicates the message purpose
+     ...payload fields...,     // Varies by message type
+     "timestamp": "ISO date"   // Optional: timestamp of message creation
+   }
+   ```
+
+   Common message types include:
+   - System messages: `ping`, `pong`, `error`, `status`
+   - Authentication messages: `authenticate`, `authentication_result`
+   - Subscription messages: `subscribe_tokens`, `unsubscribe_tokens`
+   - Data messages: `token_data`, `token_update`, `portfolio_update`
+
+### Data Flow Implementation
+
+1. **Data Publication**
+
+   When new data is available for distribution:
+
+   ```javascript
+   // Server-side data publishing
+   function publishTokenUpdate(token) {
+     // Find all clients subscribed to this token
+     const subscribedClients = clients.filter(client => 
+       client.subscriptions && client.subscriptions.includes(token.symbol)
+     );
+     
+     // Send update to each subscribed client
+     subscribedClients.forEach(client => {
+       if (client.readyState === WebSocket.OPEN) {
+         client.send(JSON.stringify({
+           type: 'token_data',
+           symbol: token.symbol,
+           data: token,
+           timestamp: new Date().toISOString()
+         }));
+       }
+     });
+   }
+   ```
+
+2. **Subscription Management**
+
+   Handling client subscriptions:
+
+   ```javascript
+   // Server-side subscription handling
+   function handleSubscription(ws, message) {
+     // Initialize subscriptions array if not exists
+     if (!ws.subscriptions) ws.subscriptions = [];
+     
+     // Add new subscriptions
+     const newSubscriptions = message.symbols.filter(symbol => 
+       !ws.subscriptions.includes(symbol)
+     );
+     
+     ws.subscriptions = [...ws.subscriptions, ...newSubscriptions];
+     
+     // Send confirmation to client
+     ws.send(JSON.stringify({
+       type: 'tokens_subscribed',
+       symbols: newSubscriptions,
+       count: newSubscriptions.length,
+       timestamp: new Date().toISOString()
+     }));
+     
+     // Send initial data for newly subscribed tokens
+     sendInitialTokenData(ws, newSubscriptions);
+   }
+   ```
+
+3. **Error Handling**
+
+   When errors occur during message processing:
+
+   ```javascript
+   // Server-side error handling
+   function handleMessageError(ws, error, messageType) {
+     console.error(`Error processing ${messageType} message:`, error);
+     
+     ws.send(JSON.stringify({
+       type: 'error',
+       code: error.code || 'PROCESSING_ERROR',
+       message: 'Failed to process message',
+       details: error.message,
+       originalType: messageType,
+       timestamp: new Date().toISOString()
+     }));
+   }
+   ```
+
+### Connection Maintenance
+
+1. **Heartbeat System**
+
+   The server implements a ping/pong heartbeat system:
+
+   ```javascript
+   // Server-side heartbeat implementation
+   function setupHeartbeat(ws) {
+     // Clear any existing timers
+     if (ws.pingInterval) clearInterval(ws.pingInterval);
+     if (ws.pingTimeout) clearTimeout(ws.pingTimeout);
+     
+     // Send a ping every 30 seconds
+     ws.pingInterval = setInterval(() => {
+       if (ws.readyState === WebSocket.OPEN) {
+         // Mark the connection as awaiting a pong
+         ws.isAlive = false;
+         
+         // Send ping
+         ws.send(JSON.stringify({
+           type: 'ping',
+           timestamp: new Date().toISOString()
+         }));
+         
+         // Set timeout for pong response
+         ws.pingTimeout = setTimeout(() => {
+           if (!ws.isAlive) {
+             console.log('Terminating connection - heartbeat failed');
+             ws.terminate();
+           }
+         }, 10000); // 10 second timeout
+       }
+     }, 30000); // 30 second interval
+     
+     // Handle pong messages
+     ws.on('message', (message) => {
+       try {
+         const data = JSON.parse(message);
+         if (data.type === 'pong') {
+           ws.isAlive = true;
+         }
+       } catch (e) {
+         // Not a JSON message or not a pong
+       }
+     });
+   }
+   ```
+
+2. **Connection Cleanup**
+
+   Proper cleanup when connections close:
+
+   ```javascript
+   // Server-side connection cleanup
+   ws.on('close', (code, reason) => {
+     // Clear heartbeat timers
+     if (ws.pingInterval) clearInterval(ws.pingInterval);
+     if (ws.pingTimeout) clearTimeout(ws.pingTimeout);
+     
+     // Remove from any subscription tracking
+     removeFromSubscriptionRegistry(ws);
+     
+     // Log closure
+     console.log(`WebSocket closed: ${code} ${reason}`);
+   });
+   ```
+
+### Server Scaling Considerations
+
+1. **Load Balancing**
+   - Use sticky sessions to ensure WebSocket connections stay on the same server
+   - Implement Redis or similar for shared state across multiple server instances
+
+2. **Connection Limits**
+   - Default to 10,000 concurrent connections per server instance
+   - Set appropriate timeouts for idle connections (typically 2-5 minutes)
+   - Implement rate limiting for connection attempts (max 10/minute per IP)
+
+3. **Message Queue**
+   - For high-throughput systems, use a message queue (RabbitMQ, Kafka)
+   - Publish updates to the queue and have workers distribute to connected clients
+
+4. **Monitoring & Metrics**
+   - Track connection counts, message rates, errors, and latency
+   - Set up alerts for abnormal connection patterns or error rates
+   - Log connection lifecycle events for debugging
+
+### Configuration Example
+
+```javascript
+// Example server configuration
+const WebSocket = require('ws');
+const http = require('http');
+const jwt = require('jsonwebtoken');
+
+// Create HTTP server
+const server = http.createServer();
+
+// Create WebSocket server
+const wss = new WebSocket.Server({
+  server: server,
+  // Validate the origin if needed
+  verifyClient: (info, callback) => {
+    const origin = info.origin || info.req.headers.origin;
+    // Allow connections from our domains
+    const allowedOrigins = [
+      'https://degenduel.me',
+      'https://dev.degenduel.me',
+      'http://localhost:3000'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(true);
+    } else {
+      callback(false, 401, 'Origin not allowed');
+    }
+  },
+  // Handle protocol selection for authentication
+  handleProtocols: (protocols, request) => {
+    // If no protocols provided, accept connection without auth
+    if (!protocols || protocols.length === 0) {
+      return '';
+    }
+    
+    // Return the first protocol (the session token)
+    return protocols[0];
+  }
+});
+
+// Connection handler
+wss.on('connection', (ws, req) => {
+  // Extract token from protocol or URL
+  const sessionToken = ws.protocol;
+  
+  // Get the endpoint from the URL
+  const endpoint = new URL(req.url, 'http://localhost').pathname;
+  
+  // Check if this endpoint requires authentication
+  const requiresAuth = !publicEndpoints.includes(endpoint);
+  
+  // Handle session token authentication
+  if (sessionToken && sessionToken.length > 10) {
+    jwt.verify(sessionToken, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        if (requiresAuth) {
+          ws.close(1008, 'Invalid session token');
+          return;
+        }
+      } else {
+        // Authentication successful
+        ws.user = decoded;
+        ws.authenticated = true;
+      }
+      
+      // Complete connection setup
+      setupConnection(ws, endpoint);
+    });
+  } else if (requiresAuth) {
+    // No token provided for protected endpoint
+    ws.close(1008, 'Authentication required');
+  } else {
+    // Public endpoint, no auth needed
+    setupConnection(ws, endpoint);
+  }
+});
+
+// Start the server
+server.listen(8080, () => {
+  console.log('WebSocket server is running on port 8080');
+});
+```
+
+This backend implementation works in conjunction with the frontend WebSocket architecture to provide a robust, secure, and scalable real-time communication system.
