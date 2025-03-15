@@ -2,7 +2,6 @@
 import { formatDistanceToNow } from "date-fns";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import * as config from "../../config/config";
 
 /*
 
@@ -105,7 +104,8 @@ const LogViewer: React.FC = () => {
   const fetchLogs = async (filename: string) => {
     try {
       // Get the superadmin token from wherever I store it
-      const superadminToken = config.SUPERADMIN_SECRET; ////localStorage.getItem("superadminToken");
+      //const superadminToken = config.SUPERADMIN_SECRET; ////localStorage.getItem("superadminToken");
+      const superadminToken = "REMOVED_FOR_SECURITY_REASONS"; ////localStorage.getItem("superadminToken"); 
 
       // Handle case where token doesn't exist
       if (!superadminToken) {

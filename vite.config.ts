@@ -260,9 +260,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
           rewrite: (path) => path.replace(/^\/api/, ""),
         },
         "/portfolio": {
-          target: isDev
-            ? "wss://dev.degenduel.me/api/v2/ws"
-            : "wss://degenduel.me/api/v2/ws",
+          target: isDev ? "wss://dev.degenduel.me/api/v2/ws" : "wss://degenduel.me/api/v2/ws",
           ws: true,
           changeOrigin: true,
           secure: true,
