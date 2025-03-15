@@ -145,6 +145,30 @@ export const BackgroundEffects: React.FC = () => {
         enabledScenes.join(" \n\t"),
       );
     }
+    
+    // Log if CyberGrid is enabled with 3D scenes
+    if (cyberGridEnabled && enabledScenes.length > 0) {
+      console.warn(
+        "PERFORMANCE WARNING: CyberGrid (CSS) is enabled along with 3D scenes: \n\t",
+        enabledScenes.join(" \n\t"),
+        "\nThis may be unnecessary - consider using only CyberGrid without 3D scenes."
+      );
+    }
+  }
+  
+  // Skip loading any 3D background components if only CyberGrid is enabled
+  const only_cybergrid_enabled = cyberGridEnabled && 
+    !particlesEffectEnabled && 
+    !tokenVerseEnabled && 
+    !marketVerseEnabled && 
+    !marketBrainEnabled && 
+    !ambientMarketDataEnabled;
+    
+  // Log in development mode to help developers understand what's happening
+  if (process.env.NODE_ENV !== "production" && only_cybergrid_enabled) {
+    console.log(
+      "PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized."
+    );
   }
 
   return (
@@ -171,110 +195,120 @@ export const BackgroundEffects: React.FC = () => {
           </div>
         )}
 
-        {/* (1) TOKENVERSE - Base layer */}
-        {tokenVerseEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{
-              zIndex: tokenVerseZIndex,
-              mixBlendMode: tokenVerseBlendMode,
-            }}
-          >
-            <TokenVerse />
-          </div>
-        )}
+        {/* Skip loading all 3D components if only CyberGrid is enabled */}
+        {!only_cybergrid_enabled && (
+          <>
+            {/* (1) TOKENVERSE - Base layer */}
+            {tokenVerseEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{
+                  zIndex: tokenVerseZIndex,
+                  mixBlendMode: tokenVerseBlendMode,
+                }}
+              >
+                <TokenVerse />
+              </div>
+            )}
 
-        {/* (2) MARKETVERSE - Blended layer of market data and token data */}
-        {marketVerseEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{
-              zIndex: marketVerseZIndex,
-              mixBlendMode: marketVerseBlendMode,
-            }}
-          >
-            <MarketVerse />
-          </div>
-        )}
+            {/* (2) MARKETVERSE - Blended layer of market data and token data */}
+            {marketVerseEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{
+                  zIndex: marketVerseZIndex,
+                  mixBlendMode: marketVerseBlendMode,
+                }}
+              >
+                <MarketVerse />
+              </div>
+            )}
 
-        {/* (3) MARKETBRAIN - Neural network visualization */}
-        {marketBrainEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{
-              zIndex: marketBrainZIndex,
-              mixBlendMode: marketBrainBlendMode,
-            }}
-          >
-            <MarketBrain />
-          </div>
-        )}
+            {/* (3) MARKETBRAIN - Neural network visualization */}
+            {marketBrainEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{
+                  zIndex: marketBrainZIndex,
+                  mixBlendMode: marketBrainBlendMode,
+                }}
+              >
+                <MarketBrain />
+              </div>
+            )}
 
-        {/* (4) PARTICLE EFFECTS - Particle effects based on token data */}
-        {particlesEffectEnabled && (
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              zIndex: particlesZIndex,
-              mixBlendMode: particlesBlendMode,
-            }}
-          >
-            <ParticlesEffect />
-          </div>
-        )}
+            {/* (4) PARTICLE EFFECTS - Particle effects based on token data */}
+            {particlesEffectEnabled && (
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  zIndex: particlesZIndex,
+                  mixBlendMode: particlesBlendMode,
+                }}
+              >
+                <ParticlesEffect />
+              </div>
+            )}
 
-        {/* (5) AMBIENT MARKET DATA NOTIFICATIONS */}
-        {ambientMarketDataEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{ zIndex: ambientMarketDataZIndex }}
-          >
-            <AmbientMarketData />
-          </div>
+            {/* (5) AMBIENT MARKET DATA NOTIFICATIONS */}
+            {ambientMarketDataEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{ zIndex: ambientMarketDataZIndex }}
+              >
+                <AmbientMarketData />
+              </div>
+            )}
+          </>
         )}
 
         {/* =================================================== */}
         {/* EXPERIMENTAL VISUALIZATIONS                         */}
         {/* =================================================== */}
 
-        {/* (E1) GRADIENT WAVES - Flowing organic gradients based on market activity */}
-        {experimentalMode && gradientWavesEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{ zIndex: 6, mixBlendMode: gradientWavesBlendMode }}
-          >
-            <GradientWaves />
-          </div>
-        )}
+        {/* Only load experimental visualizations if we're not in CyberGrid-only mode */}
+        {!only_cybergrid_enabled && experimentalMode && (
+          <>
+            {/* (E1) GRADIENT WAVES - Flowing organic gradients based on market activity */}
+            {gradientWavesEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{ zIndex: 6, mixBlendMode: gradientWavesBlendMode }}
+              >
+                <GradientWaves />
+              </div>
+            )}
 
-        {/* (E2) FLUID TOKENS - Fluid dynamics simulation with token interaction */}
-        {experimentalMode && fluidTokensEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{ zIndex: 7, mixBlendMode: fluidTokensBlendMode }}
-          >
-            <FluidTokens />
-          </div>
-        )}
+            {/* (E2) FLUID TOKENS - Fluid dynamics simulation with token interaction */}
+            {fluidTokensEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{ zIndex: 7, mixBlendMode: fluidTokensBlendMode }}
+              >
+                <FluidTokens />
+              </div>
+            )}
 
-        {/* (E3) ABSTRACT PATTERNS - Geometric patterns derived from market data */}
-        {experimentalMode && abstractPatternsEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{ zIndex: 8, mixBlendMode: abstractPatternsBlendMode }}
-          >
-            <AbstractPatterns />
-          </div>
-        )}
+            {/* (E3) ABSTRACT PATTERNS - Geometric patterns derived from market data */}
+            {abstractPatternsEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{ zIndex: 8, mixBlendMode: abstractPatternsBlendMode }}
+              >
+                <AbstractPatterns />
+              </div>
+            )}
 
-        {/* (E4) NEON GRID - Retro-futuristic neon grid with token data nodes */}
-        {experimentalMode && neonGridEnabled && (
-          <div
-            className="absolute inset-0"
-            style={{ zIndex: 9, mixBlendMode: neonGridBlendMode }}
-          >
-            <NeonGrid />
-          </div>
+            {/* (E4) NEON GRID - Retro-futuristic neon grid with token data nodes */}
+            {neonGridEnabled && (
+              <div
+                className="absolute inset-0"
+                style={{ zIndex: 9, mixBlendMode: neonGridBlendMode }}
+              >
+                <NeonGrid />
+              </div>
+            )}
+          </>
         )}
 
         {/* (6) MISC. CYBERPUNK OVERLAY EFFECTS */}
