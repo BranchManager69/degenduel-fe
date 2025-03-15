@@ -300,8 +300,8 @@ export const MarketBrain: React.FC = () => {
     if (isConnected && tokens.length > 0) {
       // Process tokens
       tokens.forEach((token) => {
-        const currentPrice = parseFloat(token.price || "0");
-        const currentVolume = parseFloat(token.volume24h || "0");
+        const currentPrice = parseFloat(token.price?.toString() || "0");
+        const currentVolume = parseFloat(token.volume24h?.toString() || "0");
         const prevToken = prevTokensRef.current[token.symbol];
         const prevPrice = prevToken
           ? parseFloat(prevToken.price || "0")
@@ -328,8 +328,8 @@ export const MarketBrain: React.FC = () => {
 
         // Save current values for next comparison
         prevTokensRef.current[token.symbol] = {
-          price: token.price,
-          volume24h: token.volume24h,
+          price: token.price?.toString() || "0",
+          volume24h: token.volume24h?.toString() || "0",
         };
       });
     }

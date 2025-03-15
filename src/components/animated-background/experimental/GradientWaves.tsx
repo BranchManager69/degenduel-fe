@@ -46,7 +46,7 @@ export const GradientWaves: React.FC = () => {
 
     // Group 1: Positive change tokens (green waves)
     const positiveTokens = tokens
-      .filter((token) => parseFloat(token.change24h || "0") > 0)
+      .filter((token) => parseFloat(token.change24h?.toString() || "0") > 0)
       .slice(0, 5); // Limit to prevent performance issues
 
     if (positiveTokens.length) {
@@ -63,7 +63,7 @@ export const GradientWaves: React.FC = () => {
 
     // Group 2: Negative change tokens (red waves)
     const negativeTokens = tokens
-      .filter((token) => parseFloat(token.change24h || "0") < 0)
+      .filter((token) => parseFloat(token.change24h?.toString() || "0") < 0)
       .slice(0, 5);
 
     if (negativeTokens.length) {
@@ -82,7 +82,8 @@ export const GradientWaves: React.FC = () => {
     const highCapTokens = tokens
       .sort(
         (a, b) =>
-          parseFloat(b.marketCap || "0") - parseFloat(a.marketCap || "0"),
+          parseFloat(b.marketCap?.toString() || "0") -
+          parseFloat(a.marketCap?.toString() || "0"),
       )
       .slice(0, 3);
 
@@ -102,7 +103,8 @@ export const GradientWaves: React.FC = () => {
     const highVolumeTokens = tokens
       .sort(
         (a, b) =>
-          parseFloat(b.volume24h || "0") - parseFloat(a.volume24h || "0"),
+          parseFloat(b.volume24h?.toString() || "0") -
+          parseFloat(a.volume24h?.toString() || "0"),
       )
       .slice(0, 3);
 

@@ -54,6 +54,18 @@ export default {
           900: "var(--color-neon-900, #002333)",
         },
 
+        mauve: {
+          light: '#9D4EDD',
+          DEFAULT: '#7B2CBF',
+          dark: '#5A189A',
+        },
+        darkGrey: {
+          light: '#2D2D2D',
+          DEFAULT: '#1A1A1A',
+          dark: '#0D0D0D',
+        },
+
+
         /* 
         // SCHEME 1 - Neon Green (Matrix)
         brand: {
@@ -401,6 +413,10 @@ export default {
         "slide-in-bottom": "slideInBottom 0.3s ease-in-out",
         "slide-out-bottom": "slideOutBottom 0.3s ease-in-out",
         "bounce-in": "bounceIn 0.5s ease-in-out",
+        "cybergrid-float": "cybergrid-float 6s ease-in-out infinite",
+        "cybergrid-glow": "cybergrid-glow 2s ease-in-out infinite",
+        "cybergrid-pulse-slow": "cybergrid-pulse-slow 4s ease-in-out infinite",
+
       },
       keyframes: {
         shine: {
@@ -619,6 +635,24 @@ export default {
           "70%": { transform: "scale(1.05)", opacity: "1" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        "cybergrid-float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-20px)" },
+        },
+        "cybergrid-glow": {
+          "0%, 100%": {
+            textShadow:
+              "0 0 20px rgba(157, 78, 221, 0.5), 0 0 40px rgba(157, 78, 221, 0.2)",
+          },
+          "50%": {
+            textShadow:
+              "0 0 40px rgba(157, 78, 221, 0.8), 0 0 80px rgba(157, 78, 221, 0.4)",
+          },
+        },
+        "cybergrid-pulse-slow": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.8" },
+        },
       },
       animationDelay: {
         100: "100ms",
@@ -681,3 +715,25 @@ export default {
     },
   ],
 };
+// module.exports = {
+//   theme: {
+//     extend: {
+//       colors: {
+//         mauve: {
+//           light: '#9D4EDD',
+//           DEFAULT: '#7B2CBF',
+//           dark: '#5A189A',
+//         },
+//         darkGrey: {
+//           light: '#2D2D2D',
+//           DEFAULT: '#1A1A1A',
+//           dark: '#0D0D0D',
+//         },
+//       },
+//       animation: {
+//       },
+//       keyframes: {
+//       },
+//     },
+//   },
+// };

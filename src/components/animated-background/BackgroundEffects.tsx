@@ -15,6 +15,8 @@ import { SYSTEM_SETTINGS } from "../../config/config";
 import { useSystemSettingsWebSocket } from "../../hooks/useSystemSettingsWebSocket";
 import { useStore } from "../../store/useStore";
 import { extractBackgroundSettings } from "../../utils/extractBackgroundSettings";
+// Brand New Backgrounds
+import { CyberGrid } from "./CyberGrid";
 
 // Define valid CSS mix blend modes to fix TypeScript errors
 type MixBlendMode =
@@ -60,6 +62,10 @@ export const BackgroundEffects: React.FC = () => {
   const sceneConfigs = SYSTEM_SETTINGS.BACKGROUND_SCENE.SCENES || [];
 
   // Get scene configuration objects
+
+  const cyberGridConfig = sceneConfigs.find(
+    (scene) => scene.name === "CyberGrid",
+  );
   const particlesEffectConfig = sceneConfigs.find(
     (scene) => scene.name === "Dodgeball",
   );
@@ -77,6 +83,7 @@ export const BackgroundEffects: React.FC = () => {
   );
 
   // Determine if scenes are enabled
+  const cyberGridEnabled = cyberGridConfig?.enabled ?? false;
   const particlesEffectEnabled = particlesEffectConfig?.enabled ?? false;
   const tokenVerseEnabled = tokenVerseConfig?.enabled ?? false;
   const marketVerseEnabled = marketVerseConfig?.enabled ?? false;
@@ -97,6 +104,8 @@ export const BackgroundEffects: React.FC = () => {
 
   // === BLEND MODES ===
   // Get blend modes from configuration or use defaults
+  const cyberGridBlendMode = (cyberGridConfig?.blendMode ||
+    "normal") as MixBlendMode;
   const tokenVerseBlendMode = (tokenVerseConfig?.blendMode ||
     "normal") as MixBlendMode;
   const marketVerseBlendMode = (marketVerseConfig?.blendMode ||
@@ -107,6 +116,7 @@ export const BackgroundEffects: React.FC = () => {
     "screen") as MixBlendMode;
 
   // Get z-indices from configuration or use defaults
+  const cyberGridZIndex = cyberGridConfig?.zIndex || 0;
   const tokenVerseZIndex = tokenVerseConfig?.zIndex || 1;
   const marketVerseZIndex = marketVerseConfig?.zIndex || 2;
   const marketBrainZIndex = marketBrainConfig?.zIndex || 3;
@@ -147,6 +157,19 @@ export const BackgroundEffects: React.FC = () => {
         {/* =================================================== */}
         {/* STANDARD VISUALIZATIONS                             */}
         {/* =================================================== */}
+
+        {/* (0) CYBERGRID - Cyberpunk grid overlay */}
+        {cyberGridEnabled && (
+          <div
+            className="absolute inset-0"
+            style={{
+              zIndex: cyberGridZIndex,
+              mixBlendMode: cyberGridBlendMode,
+            }}
+          >
+            <CyberGrid>{null}</CyberGrid>
+          </div>
+        )}
 
         {/* (1) TOKENVERSE - Base layer */}
         {tokenVerseEnabled && (

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
-import ThreeManager from "./ThreeManager";
 import { TokenData } from "../../hooks/useTokenDataWebSocket";
+import ThreeManager from "./ThreeManager";
 
 interface TokenNode {
   id: number;
@@ -205,10 +205,10 @@ export class TokenVerseScene {
       id: index,
       symbol: token.symbol,
       name: token.name,
-      price: parseFloat(token.price || "0"),
-      marketCap: parseFloat(token.marketCap || "0"),
-      volume24h: parseFloat(token.volume24h || "0"),
-      change24h: parseFloat(token.change5m || "0"), // Use 5m for animations
+      price: parseFloat(token.price.toString() || "0"),
+      marketCap: parseFloat(token.marketCap?.toString() || "0"),
+      volume24h: parseFloat(token.volume24h?.toString() || "0"),
+      change24h: parseFloat(token.change5m?.toString() || "0"), // Use 5m for animations
       position: new THREE.Vector3(
         (Math.random() - 0.5) * 50,
         (Math.random() - 0.5) * 50,

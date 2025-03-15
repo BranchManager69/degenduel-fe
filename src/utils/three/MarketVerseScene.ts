@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
-import ThreeManager from "./ThreeManager";
 import { TokenData } from "../../hooks/useTokenDataWebSocket";
+import ThreeManager from "./ThreeManager";
 
 export class MarketVerseScene {
   // Component ID for ThreeManager
@@ -127,9 +127,9 @@ export class MarketVerseScene {
     const threeManager = ThreeManager.getInstance();
 
     marketData.forEach((token) => {
-      const price = parseFloat(token.price || "0");
-      const volume = parseFloat(token.volume24h || "0");
-      const change = parseFloat(token.change24h || "0");
+      const price = parseFloat(token.price?.toString() || "0");
+      const volume = parseFloat(token.volume24h?.toString() || "0");
+      const change = parseFloat(token.change24h?.toString() || "0");
 
       // Scale sphere size based on volume
       const size = Math.max(0.5, Math.min(5, Math.log10(volume + 1) * 0.5));

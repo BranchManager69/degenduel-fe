@@ -1,25 +1,41 @@
 // src/components/layout/Footer.tsx
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import { useScrollFooter } from "../../hooks/useScrollFooter";
-import {
-  ServerStatus,
-  useServerStatusWebSocket,
-} from "../../hooks/useServerStatusWebSocket";
+import { useServerStatusWebSocket } from "../../hooks/useServerStatusWebSocket";
 
 export const Footer: React.FC = () => {
   // Use our new WebSocket hook for server status
-  const { status, message, isWebSocketConnected } = useServerStatusWebSocket();
+  const status = useServerStatusWebSocket();
   // Use our new scroll hook for footer
   const { isCompact } = useScrollFooter(50);
+  
+  // Click outside handler to close the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const statusDropdown = document.getElementById('status-dropdown');
+      const statusIndicator = document.getElementById('status-indicator');
+      
+      if (statusDropdown && 
+          !statusDropdown.contains(event.target as Node) && 
+          statusIndicator && 
+          !statusIndicator.contains(event.target as Node)) {
+        statusDropdown.classList.add('hidden');
+        statusDropdown.classList.remove('block');
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Get color scheme and animation based on status
-  const getStatusStyles = (
-    status: ServerStatus,
-    isWebSocketConnected: boolean,
-  ) => {
+  // Get styles based directly on the status hook values
+  const getStatusStyles = () => {
     // Base styles depending on status
     const baseStyles = {
       online: {
@@ -53,10 +69,10 @@ export const Footer: React.FC = () => {
     };
 
     // Get base styles for current status
-    const currentStyles = baseStyles[status] || baseStyles.offline;
+    const currentStyles = baseStyles[status.status as keyof typeof baseStyles] || baseStyles.offline;
 
     // Add WebSocket-specific enhancements when connected
-    if (isWebSocketConnected) {
+    if (status.isWebSocketConnected) {
       return {
         ...currentStyles,
         // Enhanced styles for WebSocket connection
@@ -75,7 +91,7 @@ export const Footer: React.FC = () => {
     };
   };
 
-  const styles = getStatusStyles(status, isWebSocketConnected);
+  const styles = getStatusStyles();
 
   return (
     <footer
@@ -146,12 +162,21 @@ export const Footer: React.FC = () => {
           {/* Right side - Status Indicator */}
           <div className="flex items-center gap-2 pl-4 shrink-0 group">
             <div
+              id="status-indicator"
               className={`
                 flex items-center gap-2 px-3 py-1 rounded-full 
                 transition-all duration-300 ${styles.bgColor} ${styles.wsBorder}
-                ${styles.wsEffect} relative overflow-hidden
+                ${styles.wsEffect} relative overflow-hidden cursor-pointer
               `}
-              title={message} // Show the detailed message on hover
+              onClick={() => {
+                // Toggle status dropdown visibility when clicked
+                const statusDropdown = document.getElementById('status-dropdown');
+                if (statusDropdown) {
+                  statusDropdown.classList.toggle('hidden');
+                  statusDropdown.classList.toggle('block');
+                }
+              }}
+              title={status.message} // Show the detailed message on hover
             >
               {/* WebSocket-specific shine effect */}
               {styles.wsIndicator && (
@@ -167,9 +192,10 @@ export const Footer: React.FC = () => {
                 className={`
                 text-xs font-cyber tracking-wide ${styles.textColor} z-10
                 ${styles.wsIndicator ? "text-shadow-sm" : ""}
+                cursor-pointer
               `}
               >
-                {status.toUpperCase()}
+                {status.status.toUpperCase()}
                 {styles.wsIndicator && (
                   <span className="ml-0.5 text-cyan-400 text-opacity-70 text-[8px] align-top">
                     ⚡
@@ -178,15 +204,51 @@ export const Footer: React.FC = () => {
               </span>
             </div>
 
-            {/* Enhanced tooltip showing detailed status message and WebSocket info on hover */}
-            <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block pointer-events-none z-50">
+            {/* Enhanced tooltip showing detailed status message and WebSocket info - CLICKABLE VERSION */}
+            <div 
+              id="status-dropdown"
+              className="absolute bottom-full right-0 mb-2 hidden z-50 cursor-auto"
+              onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
+            >
               <div
                 className={`${styles.bgColor} p-3 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder} max-w-[450px] overflow-auto max-h-[500px]`}
               >
-                <div className="font-semibold mb-1">
-                  Server Status: {status.toUpperCase()}
+                <div className="flex justify-between items-center mb-1">
+                  <div className="font-semibold">
+                    Server Status: {status.status.toUpperCase()}
+                  </div>
+                  <button 
+                    className="bg-gray-800 hover:bg-gray-700 text-[10px] px-2 py-1 rounded text-cyan-400 transition-colors"
+                    onClick={() => {
+                      // Copy all technical info to clipboard
+                      const statusDropdown = document.getElementById('status-dropdown');
+                      if (statusDropdown) {
+                        const technicalInfo = `
+Server Status: ${status.status.toUpperCase()}
+Message: ${status.message}
+WebSocket Connected: ${status.isWebSocketConnected ? "Yes" : "No"}
+Endpoint: /api/v69/ws/monitor
+Connection URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor
+Last Checked: ${new Date().toLocaleTimeString()}
+Host: ${window.location.hostname}
+Environment: ${import.meta.env.MODE || "production"}
+WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-status", requiresAuth: false }
+                        `.trim();
+                        
+                        navigator.clipboard.writeText(technicalInfo)
+                          .then(() => {
+                            alert('Debug info copied to clipboard!');
+                          })
+                          .catch(err => {
+                            console.error('Failed to copy:', err);
+                          });
+                      }
+                    }}
+                  >
+                    Copy Debug Info
+                  </button>
                 </div>
-                <div className="mb-2">{message}</div>
+                <div className="mb-2">{status.message}</div>
 
                 <div className="border-t border-gray-700 my-2 pt-2">
                   <div className="font-semibold mb-1">
@@ -194,13 +256,13 @@ export const Footer: React.FC = () => {
                   </div>
                   {/* Connection Status */}
                   <div
-                    className={`flex items-center ${isWebSocketConnected ? "text-green-400" : "text-red-400"} mb-1`}
+                    className={`flex items-center ${status.isWebSocketConnected ? "text-green-400" : "text-red-400"} mb-1`}
                   >
                     <div
-                      className={`w-2 h-2 rounded-full mr-2 ${isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
+                      className={`w-2 h-2 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
                     />
                     Server Status WS:{" "}
-                    {isWebSocketConnected ? "Connected" : "Disconnected"}
+                    {status.isWebSocketConnected ? "Connected" : "Disconnected"}
                   </div>
 
                   {/* Connection Details */}
@@ -212,13 +274,13 @@ export const Footer: React.FC = () => {
                     <div className="text-yellow-400">Yes - Session Token</div>
                     
                     <div className="font-semibold">Connection URL:</div> 
-                    <div className="break-all">{import.meta.env.VITE_WS_URL || "wss://api.degenduel.me"}/api/v69/ws/monitor</div>
+                    <div className="break-all">{import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor</div>
                     
                     <div className="font-semibold">Connected Since:</div> 
-                    <div>{isWebSocketConnected ? new Date().toLocaleTimeString() : "Not connected"}</div>
+                    <div>{status.isWebSocketConnected ? new Date().toLocaleTimeString() : "Not connected"}</div>
                     
                     <div className="font-semibold">Connection ID:</div> 
-                    <div>{isWebSocketConnected ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
+                    <div>{status.isWebSocketConnected ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
                     
                     <div className="font-semibold">Protocol:</div> 
                     <div>WSS (Secure WebSocket)</div>
@@ -239,17 +301,39 @@ export const Footer: React.FC = () => {
                     </ul>
                   </div>
 
-                  {/* Connection Troubleshooting */}
+                  {/* Connection Troubleshooting - More Technical */}
                   <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
-                    <div className="font-semibold mb-1 text-yellow-400">Troubleshooting Steps:</div>
-                    <ol className="list-decimal list-inside text-gray-300 space-y-1">
-                      <li>Check browser console for WebSocket errors</li>
-                      <li>Verify no Content Security Policy blocking WebSockets</li>
-                      <li>Try disabling browser extensions</li>
-                      <li>Look for "ws-debug" events in console</li>
-                      <li>Check if backend service is running: <code>GET /api/status</code></li>
-                      <li>Ensure you're logged in with valid wallet</li>
-                    </ol>
+                    <div className="font-semibold mb-1 text-yellow-400">Technical Diagnostics:</div>
+                    <div className="grid grid-cols-[80px_1fr] gap-y-1 text-gray-300">
+                      <div className="font-semibold">WS URL:</div>
+                      <div className="break-all">{import.meta.env.VITE_WS_URL || `wss://${window.location.hostname}`}</div>
+                      
+                      <div className="font-semibold">Browser:</div>
+                      <div>{window.navigator.userAgent.split(' ').slice(-1)[0]}</div>
+                      
+                      <div className="font-semibold">Origin:</div>
+                      <div>{window.location.origin}</div>
+                      
+                      <div className="font-semibold">Protocol:</div>
+                      <div>{window.location.protocol}</div>
+                      
+                      <div className="font-semibold">Current Path:</div>
+                      <div>{window.location.pathname}</div>
+                      
+                      <div className="font-semibold">LocalStorage:</div>
+                      <div>{Object.keys(localStorage).join(', ').substring(0, 30)}...</div>
+                      
+                      <div className="font-semibold">API Status:</div>
+                      <div className={status.status === 'online' ? 'text-green-400' : 'text-red-400'}>
+                        {status.status === 'online' ? 'Available' : 'Unavailable'}
+                      </div>
+                      
+                      <div className="font-semibold">Event Dispatch:</div>
+                      <div>window.DDActiveWebSockets: {window.DDActiveWebSockets ? 'Exists' : 'Missing'}</div>
+                      
+                      <div className="font-semibold">Last Error:</div>
+                      <div className="text-red-400">{status.message === 'error' ? status.message : 'None'}</div>
+                    </div>
                   </div>
 
                   {/* Development Note */}
@@ -274,11 +358,36 @@ export const Footer: React.FC = () => {
 
                 {/* Technical details for developers */}
                 <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
-                  <div className="font-semibold text-cyan-400">Raw WebSocket Config:</div>
+                  <div className="flex justify-between items-center">
+                    <div className="font-semibold text-cyan-400">Raw WebSocket Config:</div>
+                    <button 
+                      className="bg-gray-800 hover:bg-gray-700 text-[10px] px-2 py-0.5 rounded text-cyan-400 transition-colors"
+                      onClick={() => {
+                        const config = `// Current WebSocket Configuration
+{
+  url: "${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}",  // Determined automatically
+  endpoint: "/api/v69/ws/monitor",
+  socketType: "server-status",
+  heartbeatInterval: 30000,
+  maxReconnectAttempts: 5, 
+  requiresAuth: false  // Modified value - was true 
+}`;
+                        navigator.clipboard.writeText(config)
+                          .then(() => {
+                            alert('Config copied to clipboard!');
+                          })
+                          .catch(err => {
+                            console.error('Failed to copy:', err);
+                          });
+                      }}
+                    >
+                      Copy Config
+                    </button>
+                  </div>
                   <pre className="whitespace-pre-wrap break-all text-[8px] text-gray-400 bg-gray-800/50 p-2 mt-1 rounded">
 {`// Current WebSocket Configuration
 {
-  url: "",  // Determined automatically
+  url: "${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}",  // Determined automatically
   endpoint: "/api/v69/ws/monitor",
   socketType: "server-status",
   heartbeatInterval: 30000,
@@ -287,10 +396,33 @@ export const Footer: React.FC = () => {
 }`}
                   </pre>
                   
-                  <div className="font-semibold text-cyan-400 mt-3">Browser WebSocket Debug:</div>
+                  <div className="flex justify-between items-center mt-3">
+                    <div className="font-semibold text-cyan-400">Browser WebSocket Debug:</div>
+                    <button 
+                      className="bg-gray-800 hover:bg-gray-700 text-[10px] px-2 py-0.5 rounded text-cyan-400 transition-colors"
+                      onClick={() => {
+                        const debugCode = `// Check WebSocket object in console
+const socket = new WebSocket("${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor");
+socket.onopen = () => console.log("Connected!");
+socket.onerror = (e) => console.error("Error:", e);
+
+// Monitor events in Network tab
+// Look for failed WS connections in Console`;
+                        navigator.clipboard.writeText(debugCode)
+                          .then(() => {
+                            alert('Debug code copied to clipboard!');
+                          })
+                          .catch(err => {
+                            console.error('Failed to copy:', err);
+                          });
+                      }}
+                    >
+                      Copy Code
+                    </button>
+                  </div>
                   <pre className="whitespace-pre-wrap break-all text-[8px] text-gray-400 bg-gray-800/50 p-2 mt-1 rounded">
 {`// Check WebSocket object in console
-const socket = new WebSocket("${import.meta.env.VITE_WS_URL || "wss://api.degenduel.me"}/api/v69/ws/monitor");
+const socket = new WebSocket("${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor");
 socket.onopen = () => console.log("Connected!");
 socket.onerror = (e) => console.error("Error:", e);
 

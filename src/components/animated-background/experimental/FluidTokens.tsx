@@ -89,7 +89,8 @@ export const FluidTokens: React.FC = () => {
     const relevantTokens = tokens
       .sort(
         (a, b) =>
-          parseFloat(b.marketCap || "0") - parseFloat(a.marketCap || "0"),
+          parseFloat(b.marketCap?.toString() || "0") -
+          parseFloat(a.marketCap?.toString() || "0"),
       )
       .slice(0, 10);
 
@@ -103,7 +104,7 @@ export const FluidTokens: React.FC = () => {
       const y = dimensions.height / 2 + Math.sin(angle) * radius;
 
       // Use 5-minute change instead of 24h for more dynamic animations
-      const change = parseFloat(token.change5m || token.change24h || "0");
+      const change = parseFloat(token.change5m?.toString() || token.change24h?.toString() || "0");
       let color: [number, number, number];
 
       if (change > 1) {
@@ -117,7 +118,7 @@ export const FluidTokens: React.FC = () => {
       }
 
       // Determine strength of influence based on market cap
-      const marketCap = parseFloat(token.marketCap || "0");
+      const marketCap = parseFloat(token.marketCap?.toString() || "0");
       const strength = Math.min(1, Math.log10(marketCap) / 12);
 
       return {

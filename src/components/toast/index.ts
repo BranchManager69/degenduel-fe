@@ -5,6 +5,7 @@ export type { ToastType, ToastMessage } from "./ToastContext";
 // Export components
 export * from "./Toast";
 export * from "./ToastContainer";
+export * from "./ToastListener";
 
 // Export compat layer with its useToast
 export * from "./compat";

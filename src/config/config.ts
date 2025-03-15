@@ -38,14 +38,12 @@ export const API_URL = isDev
   : `${PROD_URL}/api`;
 
 /* WebSocket Base URL */
-export const WS_URL = isDev
-  ? window.location.hostname === "localhost" ||
+export const WS_URL = window.location.hostname === "localhost" ||
     window.location.hostname.startsWith("127.0.0.1")
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
         window.location.host
       }`
-    : import.meta.env.VITE_WS_URL || `wss://${window.location.hostname}` // Use current hostname instead of hardcoded domain
-  : import.meta.env.VITE_WS_URL || `wss://${window.location.hostname}`; // Use current hostname instead of hardcoded domain
+    : `wss://${window.location.hostname}`; // Always use current hostname to avoid cross-domain issues
 
 /* Platform Fees */
 export const TOKEN_SUBMISSION_COST = isDev // New token whitelisting cost
@@ -86,8 +84,14 @@ export const SYSTEM_SETTINGS = {
     ENABLED: true,
     SCENES: [
       {
-        name: "Dodgeball",
+        name: "CyberGrid",
         enabled: true,
+        zIndex: 0,
+        blendMode: "normal",
+      },
+      {
+        name: "Dodgeball",
+        enabled: false,
         zIndex: 4,
         blendMode: "screen",
       },
