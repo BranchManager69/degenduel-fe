@@ -5,7 +5,7 @@
  * It follows the standardized WebSocket pattern for monitoring.
  */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
 import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
@@ -43,18 +43,21 @@ export function useServerStatusWebSocket() {
   const [loading, setLoading] = useState(true);
   const { maintenanceMode } = useStore();
 
+  // Memoize WebSocket options to prevent constant re-creation
+  const wsOptions = React.useMemo(() => ({
+    endpoint: WEBSOCKET_ENDPOINTS.SERVER_STATUS,
+    socketType: SOCKET_TYPES.SERVER_STATUS,
+    requiresAuth: true, // Backend expects authenticated requests
+    heartbeatInterval: 30000, // 30-second heartbeat
+    maxReconnectAttempts: 5
+  }), []);
+
   // Connect to the WebSocket using the standardized hook
   const { 
     status: socketStatus, 
     data, 
     error 
-  } = useWebSocket<ServerStatusMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.SERVER_STATUS,
-    socketType: SOCKET_TYPES.SERVER_STATUS,
-    requiresAuth: false, // Status information should be public
-    heartbeatInterval: 30000, // 30-second heartbeat
-    maxReconnectAttempts: 5
-  });
+  } = useWebSocket<ServerStatusMessage>(wsOptions);
 
   // If maintenance mode is active in the store, always show maintenance status
   useEffect(() => {

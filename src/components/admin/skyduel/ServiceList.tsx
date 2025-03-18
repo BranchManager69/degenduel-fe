@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { ServiceNode } from "../../../hooks/useSkyDuelWebSocket";
+import { ServiceNode } from "../../../hooks/websocket/useSkyDuelWebSocket";
 import { useStore } from "../../../store/useStore";
 
 export const ServiceList: React.FC = () => {

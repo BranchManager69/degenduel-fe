@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
 
-import { useContestChatWebSocket } from "../../hooks/useContestChatWebSocket";
+import { useContestChatWebSocket } from "../../hooks/websocket/useContestChatWebSocket";
 
 // Default profile picture URL
 const DEFAULT_PROFILE_PICTURE =

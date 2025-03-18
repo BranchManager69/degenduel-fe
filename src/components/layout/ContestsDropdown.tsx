@@ -12,8 +12,8 @@ interface ContestsDropdownProps {
 export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
   isCompact = false,
 }) => {
-  // Use direct store access for user authentication status
-  const { user } = useStore();
+  // Use selective subscription to only get the user state
+  const user = useStore((state) => state.user);
 
   const buttonStyles = {
     bg: "from-brand-500/20 to-brand-400/20",
@@ -46,7 +46,6 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
 
   // Add authenticated-only menu items
   // Simply check if user exists to determine authentication status
-  console.log("[DEBUG] Current user:", user);
 
   // Always add these items to the menu - we'll check authentication when rendering
   menuItems.push(

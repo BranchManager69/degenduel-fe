@@ -34,7 +34,9 @@ export const initializeWebSocketTracking = (): void => {
       total: 0
     };
     
-    console.log('[WSMonitor] WebSocket connection tracking initialized');
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[WSMonitor] WebSocket connection tracking initialized');
+    }
   }
   
   // Initialize connection attempt tracking
@@ -43,14 +45,18 @@ export const initializeWebSocketTracking = (): void => {
       total: 0
     };
     
-    console.log('[WSMonitor] WebSocket connection attempt tracking initialized');
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[WSMonitor] WebSocket connection attempt tracking initialized');
+    }
   }
   
   // Initialize error tracking
   if (!window.DDLastWebSocketErrors) {
     window.DDLastWebSocketErrors = {};
     
-    console.log('[WSMonitor] WebSocket error tracking initialized');
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[WSMonitor] WebSocket error tracking initialized');
+    }
   }
 };
 
@@ -72,7 +78,9 @@ export const trackConnectionAttempt = (type: string): void => {
   window.DDConnectionAttempts[type]++;
   window.DDConnectionAttempts.total++;
   
-  console.log(`[WSMonitor] ${type} connection attempt. Attempts: ${window.DDConnectionAttempts[type]}, Total attempts: ${window.DDConnectionAttempts.total}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[WSMonitor] ${type} connection attempt. Attempts: ${window.DDConnectionAttempts[type]}, Total attempts: ${window.DDConnectionAttempts.total}`);
+  }
   
   dispatchWebSocketEvent('connection-attempt', {
     socketType: type,
@@ -99,7 +107,9 @@ export const trackWebSocketConnection = (type: string): void => {
   window.DDActiveWebSockets[type]++;
   window.DDActiveWebSockets.total++;
   
-  console.log(`[WSMonitor] ${type} connection opened. Active: ${window.DDActiveWebSockets[type]}, Total: ${window.DDActiveWebSockets.total}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[WSMonitor] ${type} connection opened. Active: ${window.DDActiveWebSockets[type]}, Total: ${window.DDActiveWebSockets.total}`);
+  }
   
   dispatchWebSocketEvent('connection-tracking', {
     socketType: type,
@@ -118,7 +128,9 @@ export const untrackWebSocketConnection = (type: string): void => {
   // Initialize counter for this type if it doesn't exist
   if (typeof window.DDActiveWebSockets[type] !== 'number') {
     window.DDActiveWebSockets[type] = 0;
-    console.warn(`[WSMonitor] Trying to untrack ${type} connection, but it's not being tracked - initializing to 0`);
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`[WSMonitor] Trying to untrack ${type} connection, but it's not being tracked - initializing to 0`);
+    }
   }
   
   // Ensure total is initialized
@@ -130,7 +142,9 @@ export const untrackWebSocketConnection = (type: string): void => {
   window.DDActiveWebSockets[type] = Math.max(0, window.DDActiveWebSockets[type] - 1);
   window.DDActiveWebSockets.total = Math.max(0, window.DDActiveWebSockets.total - 1);
   
-  console.log(`[WSMonitor] ${type} connection closed. Active: ${window.DDActiveWebSockets[type]}, Total: ${window.DDActiveWebSockets.total}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[WSMonitor] ${type} connection closed. Active: ${window.DDActiveWebSockets[type]}, Total: ${window.DDActiveWebSockets.total}`);
+  }
   
   dispatchWebSocketEvent('connection-tracking', {
     socketType: type,
@@ -227,7 +241,9 @@ export const shouldThrottleErrorToast = (socketType: string, errorCode?: number)
 
 // Log WebSocket event with consistent formatting
 export const logWebSocketEvent = (type: string, socketType: string, message: string, data?: any): void => {
-  console.log(`[WebSocket:${socketType}] [${type}] ${message}`, data);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[WebSocket:${socketType}] [${type}] ${message}`, data);
+  }
   
   dispatchWebSocketEvent(type, {
     socketType,
@@ -249,7 +265,9 @@ export const resetWebSocketTracking = (): void => {
       window.DDActiveWebSockets[key] = 0;
     });
     
-    console.log('[WSMonitor] Active WebSocket connections reset. Previous counts:', previousCounts);
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[WSMonitor] Active WebSocket connections reset. Previous counts:', previousCounts);
+    }
   }
   
   // Reset connection attempts
@@ -263,7 +281,9 @@ export const resetWebSocketTracking = (): void => {
       window.DDConnectionAttempts[key] = 0;
     });
     
-    console.log('[WSMonitor] Connection attempts reset. Previous counts:', previousAttempts);
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[WSMonitor] Connection attempts reset. Previous counts:', previousAttempts);
+    }
   }
   
   // Reset error tracking
@@ -271,7 +291,9 @@ export const resetWebSocketTracking = (): void => {
     window.DDLastWebSocketErrors = {};
   }
   
-  console.log('[WSMonitor] WebSocket tracking completely reset');
+  if (process.env.NODE_ENV !== "production") {
+    console.log('[WSMonitor] WebSocket tracking completely reset');
+  }
   
   dispatchWebSocketEvent('reset', {
     message: 'WebSocket tracking completely reset',

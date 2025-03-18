@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { SkyDuelDashboard } from "../../components/admin/skyduel/SkyDuelDashboard";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { useAuth } from "../../hooks/useAuth";
-import { useSkyDuelWebSocket } from "../../hooks/useSkyDuelWebSocket";
+import { useSkyDuelWebSocket } from "../../hooks/websocket/useSkyDuelWebSocket";
 //import { useStore } from "../../store/useStore";
 
 export const SkyDuelPage: React.FC = () => {

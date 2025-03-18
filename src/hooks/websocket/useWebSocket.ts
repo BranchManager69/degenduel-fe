@@ -5,8 +5,9 @@
  * the monitoring system. All hooks should follow this pattern for consistency.
  */
 
-import { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { WS_URL } from '../../config/config';
+import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
 import { useBaseWebSocket } from '../useBaseWebSocket';
 import { WebSocketMessage, WebSocketStatus } from './types';
@@ -37,6 +38,7 @@ interface UseWebSocketResult<T> {
  * @returns Object containing status, data, error, and methods to interact with the WebSocket
  */
 export function useWebSocket<T = any>(options: UseWebSocketOptions): UseWebSocketResult<T> {
+  // Destructure options with defaults
   const {
     endpoint = '',
     socketType,
@@ -46,12 +48,26 @@ export function useWebSocket<T = any>(options: UseWebSocketOptions): UseWebSocke
     maxReconnectAttempts = 5,
   } = options;
   
+  // Memoize options to prevent unnecessary re-renders
+  const memoizedOptions = React.useMemo(() => ({
+    endpoint,
+    socketType,
+    requiresAuth,
+    autoConnect,
+    heartbeatInterval,
+    maxReconnectAttempts
+  }), [endpoint, socketType, requiresAuth, autoConnect, heartbeatInterval, maxReconnectAttempts]);
+  
+  const { user } = useStore(state => ({ user: state.user }));
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const wsRef = useRef<ReturnType<typeof useBaseWebSocket> | null>(null);
   
-  // Message handler for incoming WebSocket messages
-  const handleMessage = (message: WebSocketMessage) => {
+  // Only attempt connection if we have auth when required
+  const shouldConnect = !requiresAuth || (requiresAuth && !!user?.jwt);
+  
+  // Memoize message handler to prevent needless recreation
+  const handleMessage = useCallback((message: WebSocketMessage) => {
     try {
       // Dispatch the event for monitoring
       dispatchWebSocketEvent('message', {
@@ -72,31 +88,67 @@ export function useWebSocket<T = any>(options: UseWebSocketOptions): UseWebSocke
         error: err
       });
     }
-  };
+  }, [socketType]);
   
-  // Error handler for WebSocket errors
-  const handleError = (err: Error) => {
+  // Memoize error handler to prevent needless recreation
+  const handleError = useCallback((err: Error) => {
     setError(err);
     dispatchWebSocketEvent('error', {
       socketType,
       message: err.message,
       error: err
     });
-  };
+  }, [socketType]);
+  
+  // Get authentication token once
+  const authToken = user?.jwt || '';
+  
+  // Log authentication details when required for specific WebSockets
+  useEffect(() => {
+    if (requiresAuth && endpoint) {
+      // Debug connection exactly as recommended by backend team
+      console.group(`WebSocket Connection Debug: ${socketType}`);
+      console.log("Auth State:", { 
+        requiresAuth, 
+        hasToken: !!authToken,
+        isAuthenticated: !!user,
+        shouldConnect
+      });
+      if (authToken) {
+        console.log("Token (truncated):", 
+          `${authToken.substring(0, 10)}...${authToken.substring(authToken.length - 10)}`);
+      } else {
+        console.log("Token: NONE");
+      }
+      console.log("URL Construction:", {
+        base: window.location.host,
+        protocol: window.location.protocol === 'https:' ? 'wss:' : 'ws:',
+        path: endpoint
+      });
+      
+      if (authToken) {
+        const wsUrlObj = new URL(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${endpoint}`);
+        wsUrlObj.searchParams.append('token', authToken);
+        console.log("Final URL with token (redacted):", 
+          wsUrlObj.toString().replace(authToken, `${authToken.substring(0, 5)}...${authToken.substring(authToken.length - 5)}`));
+      }
+      console.groupEnd();
+    }
+  }, [endpoint, requiresAuth, authToken, user, socketType, shouldConnect]);
   
   // Initialize WebSocket with baseWebSocket hook, but only establish 
-  // connection if autoConnect is true
+  // connection if autoConnect is true and we have authentication when needed
   const wsHook = useBaseWebSocket({
     url: WS_URL,
-    endpoint,
-    socketType,
+    endpoint: memoizedOptions.endpoint,
+    socketType: memoizedOptions.socketType,
     onMessage: handleMessage,
     onError: handleError,
-    heartbeatInterval,
-    maxReconnectAttempts,
-    requiresAuth,
-    // Add a disableAutoConnect option if autoConnect is false
-    disableAutoConnect: !autoConnect
+    heartbeatInterval: memoizedOptions.heartbeatInterval,
+    maxReconnectAttempts: memoizedOptions.maxReconnectAttempts,
+    requiresAuth: memoizedOptions.requiresAuth,
+    // Only connect if we have auth when needed and autoConnect is true
+    disableAutoConnect: !memoizedOptions.autoConnect || (memoizedOptions.requiresAuth && !authToken)
   });
   
   // Store reference for cleanup

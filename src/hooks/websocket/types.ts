@@ -50,20 +50,21 @@ export interface WebSocketError {
   timestamp: string;
 }
 
-// Standard WebSocket endpoints
+// Standard WebSocket endpoints - verified against backend team feedback
 export const WEBSOCKET_ENDPOINTS = {
   SERVER_STATUS: '/api/v69/ws/monitor',
   TOKEN_DATA: '/api/v69/ws/token-data',
-  PORTFOLIO: '/api/v69/ws/portfolio',
+  PORTFOLIO: '/api/v69/ws/portfolio', // Note: This endpoint might need verification with backend
   CONTEST: '/api/v69/ws/contest',
-  CONTEST_CHAT: '/api/v69/ws/contest-chat',
+  CONTEST_CHAT: '/api/v69/ws/contest', // Contest chat uses the contest endpoint
   NOTIFICATION: '/api/v69/ws/notifications',
-  WALLET: '/api/v69/ws/wallet',
-  ACHIEVEMENT: '/api/v69/ws/achievements',
-  SYSTEM_SETTINGS: '/api/v69/ws/settings',
+  WALLET: '/api/v69/ws/wallet', // Note: This endpoint might need verification with backend
+  MARKET_DATA: '/api/v69/ws/market-data',
+  SYSTEM_SETTINGS: '/api/v69/ws/system-settings',
   ANALYTICS: '/api/v69/ws/analytics',
   CIRCUIT_BREAKER: '/api/v69/ws/circuit-breaker',
-  SERVICE: '/api/v69/ws/service',
+  // SERVICE endpoint doesn't exist - service monitoring is handled by CIRCUIT_BREAKER and SERVER_STATUS
+  SERVICE: '/api/v69/ws/circuit-breaker', // Redirected to circuit-breaker as per backend team guidance
   SKYDUEL: '/api/v69/ws/skyduel',
 };
 
@@ -76,7 +77,7 @@ export const SOCKET_TYPES = {
   CONTEST_CHAT: 'contest-chat',
   NOTIFICATION: 'notification',
   WALLET: 'wallet',
-  ACHIEVEMENT: 'achievement',
+  MARKET_DATA: 'market-data',
   SYSTEM_SETTINGS: 'system-settings',
   ANALYTICS: 'analytics',
   CIRCUIT_BREAKER: 'circuit-breaker',

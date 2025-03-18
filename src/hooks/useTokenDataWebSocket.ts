@@ -18,8 +18,8 @@ import { useStore } from "../store/useStore";
 // Config for WebSocket - using ONLY the new v69 endpoint
 //    No fallbacks, no progressive attempts - just the one we want
 
-// Enable for detailed WebSocket debugging
-const WS_DEBUG = true;
+// Enable for detailed WebSocket debugging in development only
+const WS_DEBUG = process.env.NODE_ENV !== "production";
 
 // Token data WebSocket endpoint path - updated to match v69 documentation
 const TOKEN_DATA_WSS_PATH = `/api/v69/ws/token-data`;
@@ -162,7 +162,7 @@ export function useTokenDataWebSocket(
         );
       }
 
-      // Create WebSocket connection
+      // Create WebSocket connection - token data doesn't require auth
       wsRef.current = new WebSocket(wsUrl);
 
       // Handle connection open

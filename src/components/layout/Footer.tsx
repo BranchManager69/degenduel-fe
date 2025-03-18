@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import { useScrollFooter } from "../../hooks/useScrollFooter";
-import { useServerStatusWebSocket } from "../../hooks/useServerStatusWebSocket";
+import { useServerStatusWebSocket } from "../../hooks/websocket/useServerStatusWebSocket";
 
 export const Footer: React.FC = () => {
   // Use our new WebSocket hook for server status

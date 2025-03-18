@@ -5,7 +5,7 @@
  * token price and market data updates.
  */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
 import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
 import useWebSocket from './useWebSocket';
@@ -185,15 +185,89 @@ export function useTokenDataWebSocket(tokensToSubscribe: string[] | "all" = "all
     }
   }, [data]);
   
-  // Handle errors
+  // Track consecutive abnormal closures
+  const consecutiveAbnormalClosures = React.useRef<number>(0);
+  const MAX_CONSECUTIVE_ABNORMAL_CLOSURES = 5;
+
+  // Handle errors with improved diagnostics
   useEffect(() => {
     if (error) {
-      console.error('Token data WebSocket error:', error);
+      // Analyze error type for better diagnostics
+      const isClosedError = error.message?.includes('CLOSED') || error.message?.includes('code 1006');
+      const isAuthError = error.message?.includes('Authentication') || error.message?.includes('auth');
+      const isConnectError = error.message?.includes('connect') || error.message?.includes('Connection');
+      
+      // Log different error types with detailed information
+      if (isClosedError) {
+        // Track consecutive abnormal closures to prevent infinite reconnection loops
+        consecutiveAbnormalClosures.current++;
+        
+        if (consecutiveAbnormalClosures.current >= MAX_CONSECUTIVE_ABNORMAL_CLOSURES) {
+          console.error(`Token data WebSocket closed unexpectedly ${consecutiveAbnormalClosures.current} times in a row:`, {
+            message: error.message,
+            consecutiveClosures: consecutiveAbnormalClosures.current,
+            maxAllowed: MAX_CONSECUTIVE_ABNORMAL_CLOSURES,
+            action: 'Temporarily disabling reconnection to prevent loop',
+            timestamp: new Date().toISOString()
+          });
+          
+          // After MAX_CONSECUTIVE_ABNORMAL_CLOSURES failures, pause reconnection attempts
+          if (consecutiveAbnormalClosures.current === MAX_CONSECUTIVE_ABNORMAL_CLOSURES) {
+            // Create a one-time timeout to reset the counter after 2 minutes
+            setTimeout(() => {
+              console.log('Resetting token data WebSocket abnormal closure counter after cooling period');
+              consecutiveAbnormalClosures.current = 0;
+              setInitialized(false); // Reset initialization to trigger subscription on next connection
+            }, 120000); // 2 minute cooling period
+          }
+        } else {
+          console.warn('Token data WebSocket closed unexpectedly:', {
+            message: error.message,
+            consecutiveClosures: consecutiveAbnormalClosures.current,
+            reconnecting: 'Automatic reconnection will be attempted',
+            timestamp: new Date().toISOString()
+          });
+        }
+      } else if (isAuthError) {
+        // Not an abnormal closure, reset the counter
+        consecutiveAbnormalClosures.current = 0;
+        
+        console.error('Token data WebSocket authentication error:', {
+          message: error.message,
+          isPublicEndpoint: true, // This shouldn't happen for token data which is public
+          requiresAuth: false,
+          timestamp: new Date().toISOString()
+        });
+      } else if (isConnectError) {
+        // Not an abnormal closure, reset the counter
+        consecutiveAbnormalClosures.current = 0;
+        
+        console.error('Token data WebSocket connection error:', {
+          message: error.message,
+          endpoint: WEBSOCKET_ENDPOINTS.TOKEN_DATA,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        // Not an abnormal closure, reset the counter
+        consecutiveAbnormalClosures.current = 0;
+        
+        console.error('Token data WebSocket error:', error);
+      }
+      
+      // Dispatch event with enriched error information
       dispatchWebSocketEvent('error', {
         socketType: SOCKET_TYPES.TOKEN_DATA,
         message: error.message,
+        errorType: isClosedError ? 'connection_closed' : 
+                  isAuthError ? 'authentication_error' : 
+                  isConnectError ? 'connection_error' : 'unknown_error',
+        consecutiveClosures: isClosedError ? consecutiveAbnormalClosures.current : 0,
+        timestamp: new Date().toISOString(),
         error
       });
+    } else {
+      // Connection success or no error, reset the counter
+      consecutiveAbnormalClosures.current = 0;
     }
   }, [error]);
   

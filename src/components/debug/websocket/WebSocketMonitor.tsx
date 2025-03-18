@@ -273,7 +273,7 @@ export const WebSocketMonitor: React.FC = () => {
   const filteredEvents = filterAndSortEvents();
   
   // Get authentication tokens for debugging  
-  const { user } = useStore();
+  const user = useStore(state => state.user);
   const sessionToken = user?.session_token || null;
   const jwtToken = user?.jwt || null;
 
