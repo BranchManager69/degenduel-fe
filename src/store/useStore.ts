@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
-import { ServiceConnection, ServiceNode } from "../hooks/useSkyDuelWebSocket";
+import { ServiceConnection, ServiceNode } from "../hooks/websocket/useSkyDuelWebSocket";
 import { WebSocketState } from "../hooks/useWebSocketMonitor";
 import { Contest, Token, User, WalletError } from "../types/index";
 

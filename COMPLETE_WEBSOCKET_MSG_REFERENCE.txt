@@ -1,0 +1,159 @@
+● Complete WebSocket Endpoints Reference
+
+  V69 WebSocket Implementations
+
+  1. Analytics WebSocket
+
+  - Path: /api/v69/ws/analytics
+  - Requires Auth: Yes
+  - Client → Server:
+    - track_event: Track a client-side event
+    - subscribe_dashboard: Admin-only: subscribe to dashboard updates
+    - unsubscribe_dashboard: Unsubscribe from dashboard
+    - subscribe_metric: Admin-only: subscribe to specific metric
+    - unsubscribe_metric: Unsubscribe from metric updates
+    - get_active_users: Admin-only: get current active users
+    - get_server_stats: Admin-only: get current server stats
+    - heartbeat: Update user's active status
+  - Server → Client:
+    - welcome: Initial connection welcome message
+    - server_stats: Current server statistics
+    - event_tracked: Confirmation that an event was tracked
+    - dashboard_update: Dashboard information update
+    - active_users: List of currently active users
+    - metric_update: Updates for specific metrics
+
+  2. Circuit Breaker WebSocket
+
+  - Path: /api/v69/ws/circuit-breaker
+  - Requires Auth: Yes
+  - Client → Server:
+    - subscribe_all / subscribe:services: Subscribe to all services
+    - subscribe:layer: Subscribe to a specific layer
+    - subscribe:service: Subscribe to a specific service
+    - service:health_check: Check health of a service
+    - service:reset_circuit_breaker: Reset circuit breaker
+  - Server → Client:
+    - service:update: Updates about a specific service
+    - services:state: Current state of all services
+    - service:health_check_result: Result of a health check
+    - layer:status: Status of a service layer
+    - service:alert: Critical service alerts
+
+  3. Contest WebSocket
+
+  - Path: /api/v69/ws/contest
+  - Requires Auth: Yes (with public endpoints)
+  - Client → Server:
+    - get_contest_state: Get current contest state
+    - get_participant_status: Get participant status
+    - get_leaderboard: Get contest leaderboard
+    - send_chat_message: Send a chat message
+    - join_contest_room: Join a contest room
+    - leave_contest_room: Leave a contest room
+    - set_admin_presence: Set admin presence in contest
+    - get_all_contests: Get all active contests
+  - Server → Client:
+    - contest_state: Current contest state
+    - participant_update: Update about a participant
+    - leaderboard_update: Leaderboard update
+    - chat_message: Chat message
+    - admin_presence: Admin presence notification
+    - spectator_count: Number of spectators
+    - all_contests: List of all contests
+
+  4. Market Data WebSocket
+
+  - Path: /api/v69/ws/market-data
+  - Requires Auth: No (public)
+  - Client → Server:
+    - SUBSCRIBE_SYMBOLS: Subscribe to symbols
+    - UNSUBSCRIBE_SYMBOLS: Unsubscribe from symbols
+  - Server → Client:
+    - MARKET_PRICE: Market price updates
+    - MARKET_VOLUME: Market volume updates
+    - MARKET_SENTIMENT: Market sentiment updates
+    - token_update: Token metadata updates
+    - ERROR: Error messages
+
+  5. Monitor WebSocket
+
+  - Path: /api/v69/ws/monitor
+  - Requires Auth: Yes
+  - Client → Server:
+    - get_system_status: Get system status
+    - get_maintenance_status: Get maintenance status
+    - get_system_settings: Get system settings
+    - get_service_status: Get service status
+    - get_all_services: Get all services
+    - get_recent_errors: Get recent errors
+  - Server → Client:
+    - SERVER_STATUS_UPDATE: System status updates
+    - maintenance_status: Maintenance status
+    - system_settings: System settings
+    - service_status: Service status
+    - all_services: All services
+    - error_alert: Error alerts
+
+  6. SkyDuel WebSocket
+
+  - Path: /api/v69/ws/skyduel
+  - Requires Auth: Yes
+  - Client → Server:
+    - get_services: Get all services
+    - subscribe_service: Subscribe to a service
+    - unsubscribe_service: Unsubscribe from a service
+    - service_command: Execute a command on a service
+    - heartbeat: Client heartbeat
+  - Server → Client:
+    - welcome: Initial connection message
+    - service_data: Service data
+    - service_subscribed: Service subscription confirmation
+    - service_update: Service update
+
+  7. System Settings WebSocket
+
+  - Path: /api/v69/ws/system-settings
+  - Requires Auth: Yes
+  - Client → Server:
+    - get_all_settings: Get all settings
+    - get_setting: Get a specific setting
+    - get_category_settings: Get settings in a category
+    - subscribe_setting: Subscribe to a setting
+    - subscribe_category: Subscribe to a category
+    - unsubscribe_setting: Unsubscribe from a setting
+    - unsubscribe_category: Unsubscribe from a category
+    - update_setting: Update a setting (admin only)
+  - Server → Client:
+    - all_settings: All settings
+    - setting: A specific setting
+    - category_settings: Settings in a category
+    - setting_update: Setting update notification
+
+  8. Token Data WebSocket
+
+  - Path: /api/v69/ws/token-data
+  - Requires Auth: No (public)
+  - Client → Server:
+    - SUBSCRIBE_SYMBOLS: Subscribe to symbols
+    - UNSUBSCRIBE_SYMBOLS: Unsubscribe from symbols
+  - Server → Client:
+    - token_update: Token updates
+    - MARKET_PRICE: Market price updates
+    - MARKET_VOLUME: Market volume updates
+    - MARKET_SENTIMENT: Market sentiment updates
+
+  9. User Notification WebSocket
+
+  - Path: /api/v69/ws/notifications
+  - Requires Auth: Yes
+  - Client → Server:
+    - mark_read: Mark a notification as read
+    - mark_all_read: Mark all notifications as read
+    - get_unread: Get unread notifications
+    - get_notifications: Get all notifications
+  - Server → Client:
+    - notification: Single notification (includes achievements)
+    - notification_batch: Batch of notifications
+    - unread_count: Number of unread notifications
+    - read_confirmed: Confirmation that notifications were marked as read

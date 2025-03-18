@@ -14,16 +14,27 @@ interface Particle {
   life: number;
 }
 
-export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
+export const HeroTitle: React.FC<{ 
+  onComplete?: () => void;
+  debugMode?: boolean;
+  setDebugMode?: (value: boolean) => void;
+}> = ({
   onComplete = () => {},
+  debugMode = false,
+  setDebugMode = () => {},
 }) => {
   const { isSuperAdmin } = useAuth();
 
   const [phase, setPhase] = useState(0);
-  const [debugMode, setDebugMode] = useState(false);
+  // Internal state only used if no external debugMode control is provided
+  const [internalDebugMode, setInternalDebugMode] = useState(false);
   const [manualPhaseControl, setManualPhaseControl] = useState(false);
   const [designVariant, setDesignVariant] = useState(0);
   const [particles, setParticles] = useState<Particle[]>([]); // Particle system for extra pizzazz
+
+  // Use internal state if no external control is provided
+  const effectiveDebugMode = setDebugMode === (() => {}) ? internalDebugMode : debugMode;
+  const effectiveSetDebugMode = setDebugMode === (() => {}) ? setInternalDebugMode : setDebugMode;
 
   // Track mouse position for an interactive effect
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -89,8 +100,8 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
 
   // Toggle debug mode
   const toggleDebugMode = () => {
-    const newDebugMode = !debugMode;
-    setDebugMode(newDebugMode);
+    const newDebugMode = !effectiveDebugMode;
+    effectiveSetDebugMode(newDebugMode);
 
     if (newDebugMode) {
       // In debug mode, stop the normal timed sequence and allow manual stepping
@@ -390,13 +401,13 @@ export const HeroTitle: React.FC<{ onComplete?: () => void }> = ({
             className="bg-black/50 text-white text-xs p-1 rounded-md"
             onClick={toggleDebugMode}
           >
-            {debugMode ? "🛠️" : "🐛"}
+            {effectiveDebugMode ? "🛠️" : "🐛"}
           </button>
         </div>
       )}
 
       {/* Debug overlay with controls */}
-      {debugMode && (
+      {effectiveDebugMode && (
         <div
           className="absolute bottom-2 left-2 bg-black/80 text-white text-xs p-3 rounded-md z-50 flex flex-col gap-1 shadow-lg shadow-black/50"
           style={{ maxWidth: "220px" }}

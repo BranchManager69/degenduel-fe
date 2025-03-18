@@ -91,10 +91,14 @@ export const useWebSocketMonitor = () => {
               break;
 
             default:
-              console.warn("Unknown WebSocket message type:", data.type);
+              if (process.env.NODE_ENV !== "production") {
+                console.warn("Unknown WebSocket message type:", data.type);
+              }
           }
         } catch (error) {
-          console.error("Error processing WebSocket message:", error);
+          if (process.env.NODE_ENV !== "production") {
+            console.error("Error processing WebSocket message:", error);
+          }
         }
       };
 
@@ -104,7 +108,9 @@ export const useWebSocketMonitor = () => {
       };
 
       ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("WebSocket error:", error);
+        }
         addWebSocketAlert({
           type: "error",
           title: "WebSocket Error",

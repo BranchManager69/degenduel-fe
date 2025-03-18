@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router-dom";
 
 import { Button } from "../../components/ui/Button";
-import { useNotificationWebSocket } from "../../hooks/useNotificationWebSocket";
+import { useNotificationWebSocket } from "../../hooks/websocket/useNotificationWebSocket";
 
 const NotificationsPage: React.FC = () => {
   const {
@@ -163,7 +163,7 @@ const NotificationsPage: React.FC = () => {
               <h3 className="text-red-400 font-bold mb-1">
                 Error loading notifications
               </h3>
-              <p className="text-red-300">{error.message}</p>
+              <p className="text-red-300">{typeof error === 'string' ? error : (error as Error).message}</p>
               <div className="mt-3">
                 <Button
                   onClick={refreshNotifications}
@@ -199,7 +199,7 @@ const NotificationsPage: React.FC = () => {
 
       {/* Notifications List */}
       <div className="space-y-4">
-        {notifications.map((notification) => (
+        {notifications.map((notification: any) => (
           <div
             key={notification.id}
             className={`relative border rounded-lg p-4 transition-all duration-300 group ${

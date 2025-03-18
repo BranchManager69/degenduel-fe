@@ -9,7 +9,7 @@ import { MobileMenuButton } from "./MobileMenuButton";
 import { RankingsDropdown } from "./RankingsDropdown";
 import { TokensDropdown } from "./TokensDropdown";
 import { useAuth } from "../../hooks/useAuth";
-import { useNotificationWebSocket } from "../../hooks/useNotificationWebSocket";
+import { useNotificationWebSocket } from "../../hooks/websocket/useNotificationWebSocket";
 import { useScrollHeader } from "../../hooks/useScrollHeader";
 import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
