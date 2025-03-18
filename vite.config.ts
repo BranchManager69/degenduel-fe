@@ -6,6 +6,8 @@ import { defineConfig, LogLevel, UserConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }): UserConfig => {
+  // Resolve path to degen-components
+  const degenComponentsPath = path.resolve(__dirname, 'node_modules/degen-components/dist/index.esm.js');
   // Force development mode when running dev server
   const isDev = command === "serve" || mode === "development";
   // Add local dev mode check
@@ -32,6 +34,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
   // For local dev, use simplified config
   if (isLocalDev) {
     return {
+      resolve: {
+        alias: {
+          'degen-components': degenComponentsPath
+        }
+      },
       server: {
         port: 3010,
         host: true,
@@ -94,67 +101,75 @@ export default defineConfig(({ command, mode }): UserConfig => {
             changeOrigin: true,
             secure: true,
           },
-          "^/api/v2/ws": {
+          "^/api/v69/ws": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/v2/ws/contest": {
+          "^/api/v69/ws/monitor": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/api/admin/skyduel": {
+          "^/api/v69/ws/token-data": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/v2/ws/wallet": {
+          "^/api/v69/ws/contest": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/v2/ws/market": {
+          "^/api/v69/ws/skyduel": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/v2/ws/achievements": {
+          "^/api/v69/ws/wallet": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/v2/ws/portfolio": {
+          "^/api/v69/ws/market-data": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/api/admin/circuit-breaker": {
+          "^/api/v69/ws/notifications": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/api/admin/services": {
+          "^/api/v69/ws/portfolio": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/analytics": {
+          "^/api/v69/ws/circuit-breaker": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
             secure: true,
           },
-          "^/api/v2/ws/tokenData": {
+          // "^/api/v69/ws/services" endpoint doesn't exist - removed as per backend team guidance
+          // Service monitoring is handled by /api/v69/ws/circuit-breaker and /api/v69/ws/monitor
+          "^/api/v69/ws/system-settings": {
+            target: "wss://degenduel.me", // MANUAL OVERRIDE
+            ws: true,
+            changeOrigin: true,
+            secure: true,
+          },
+          "^/api/v69/ws/analytics": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
@@ -165,7 +180,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       plugins: [react()],
       optimizeDeps: {
         include: ["react", "react-dom", "react-router-dom"],
-        exclude: ["@react-three/fiber", "@react-three/drei"],
+        exclude: ["@react-three/fiber", "@react-three/drei", "degen-components"],
         esbuildOptions: {
           target: "esnext",
         },
@@ -173,12 +188,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
       build: {
         minify: false,
         sourcemap: true,
+        rollupOptions: {
+          external: ['degen-components']
+        }
       },
     };
   }
 
   // Try to load SSL certs - both domains use the same certificate
-  const certPath = "/etc/letsencrypt/live/degenduel.me-0001";
+  const certPath = "/etc/letsencrypt/live/beta.degenduel.me";
   const domain = isDev ? "dev.degenduel.me" : "degenduel.me";
   let hasCerts = false;
   let httpsConfig = undefined;
@@ -202,6 +220,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
   }
 
   const config: UserConfig = {
+    resolve: {
+      alias: {
+        'degen-components': degenComponentsPath
+      }
+    },
     server: {
       port: isDev ? 3005 : 3004,
       host: true,
@@ -245,85 +268,92 @@ export default defineConfig(({ command, mode }): UserConfig => {
           rewrite: (path) => path.replace(/^\/api/, ""),
         },
         "/portfolio": {
-          target: isDev
-            ? "wss://dev.degenduel.me/api/v2/ws"
-            : "wss://degenduel.me/api/v2/ws",
+          target: isDev ? "wss://dev.degenduel.me/api/v69/ws" : "wss://degenduel.me/api/v69/ws",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/api/v2/ws": {
+        "/api/v69/ws": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/v2/ws/contest": {
+        "/api/v69/ws/monitor": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/api/admin/skyduel": {
+        "/api/v69/ws/token-data": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/v2/ws/wallet": {
+        "/api/v69/ws/contest": {
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/api/v69/ws/skyduel": {
+          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+          cookieDomainRewrite: "localhost",
+        },
+        "/api/v69/ws/wallet": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",  
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/v2/ws/market": {
+        "/api/v69/ws/market-data": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/v2/ws/achievements": {
+        "/api/v69/ws/notifications": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/v2/ws/portfolio": {
+        "/api/v69/ws/portfolio": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/api/admin/circuit-breaker": {
+        "/api/v69/ws/circuit-breaker": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/api/admin/services": {
+        // "/api/v69/ws/services" endpoint doesn't exist - removed as per backend team guidance
+        // Service monitoring is handled by /api/v69/ws/circuit-breaker and /api/v69/ws/monitor
+        "/api/v69/ws/system-settings": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/analytics": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v2/ws/tokenData": {
+        "/api/v69/ws/analytics": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
           changeOrigin: true,
@@ -362,7 +392,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "graphql",
         "@telegram-apps/bridge",
       ],
-      exclude: ["@react-three/fiber", "@react-three/drei"],
+      exclude: ["@react-three/fiber", "@react-three/drei", "degen-components"],
       esbuildOptions: {
         target: "esnext",
       },
@@ -376,7 +406,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         cache: true,
-        external: [],
+        external: ['degen-components'],
         output: {
           manualChunks: {
             "react-vendor": ["react", "react-dom", "react-router-dom"],

@@ -1,0 +1,1 @@
+export { Terminal, createConfig } from './Terminal';

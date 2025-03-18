@@ -11,6 +11,7 @@ import { useStore } from '../../../store/useStore';
 import {
   dispatchWebSocketEvent,
   getAllWebSocketCounts,
+  getAllConnectionAttempts,
   resetWebSocketTracking
 } from '../../../utils/wsMonitor';
 
@@ -28,18 +29,28 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   close: 'text-red-400',
   error: 'text-red-500 font-semibold bg-red-900/30',
   reconnect: 'text-yellow-400',
+  'reconnect_throttled': 'text-orange-400 font-semibold',
+  'reconnect_rate_limited': 'text-amber-400 font-semibold',
+  'reconnect_severe_throttling': 'text-red-400 font-semibold',
+  'connection-attempt': 'text-teal-300',
   message: 'text-blue-400',
+  pong: 'text-blue-300',
+  heartbeat: 'text-blue-200',
   'connection-tracking': 'text-cyan-400',
+  'zombie_connection': 'text-red-300 font-semibold',
+  'forced_reconnect': 'text-pink-300 font-semibold',
   system: 'text-purple-400',
   init: 'text-teal-400',
   cleanup: 'text-orange-400',
   auth: 'text-indigo-400',
-  reset: 'text-pink-400',
+  reset: 'text-pink-400', 
+  sent: 'text-green-300',
   default: 'text-gray-300'
 };
 
 export const WebSocketMonitor: React.FC = () => {
   const [connectionCounts, setConnectionCounts] = useState<Record<string, number>>({});
+  const [connectionAttempts, setConnectionAttempts] = useState<Record<string, number>>({});
   const [events, setEvents] = useState<WebSocketEvent[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(false); // Default to OFF
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -56,10 +67,11 @@ export const WebSocketMonitor: React.FC = () => {
   // Keep track of the interval
   const intervalRef = useRef<number | null>(null);
   
-  // Update connection counts - but only if auto-refresh is on
+  // Update connection counts and attempts - but only if auto-refresh is on
   const updateCounts = useCallback(() => {
     if (!isPaused) {
       setConnectionCounts(getAllWebSocketCounts());
+      setConnectionAttempts(getAllConnectionAttempts());
     }
   }, [isPaused]);
   
@@ -261,7 +273,7 @@ export const WebSocketMonitor: React.FC = () => {
   const filteredEvents = filterAndSortEvents();
   
   // Get authentication tokens for debugging  
-  const { user } = useStore();
+  const user = useStore(state => state.user);
   const sessionToken = user?.session_token || null;
   const jwtToken = user?.jwt || null;
 
@@ -270,6 +282,29 @@ export const WebSocketMonitor: React.FC = () => {
     if (!token) return 'Not available';
     return `${token.substring(0, 10)}...`;
   };
+  
+  // Log full token details to console for debugging
+  useEffect(() => {
+    if (user) {
+      console.log('WebSocketMonitor - Authentication details:', {
+        sessionToken: {
+          available: !!sessionToken,
+          value: sessionToken,
+          length: sessionToken?.length
+        },
+        jwt: {
+          available: !!jwtToken,
+          value: jwtToken,
+          length: jwtToken?.length
+        },
+        user: {
+          id: user.wallet_address,
+          isAdmin: user.is_admin,
+          isSuperAdmin: user.is_superadmin
+        }
+      });
+    }
+  }, [user, sessionToken, jwtToken]);
 
   return (
     <div className={`bg-gray-800 text-white rounded-lg shadow-lg transition-all duration-300 ${expandedView ? 'w-full h-full fixed inset-0 z-50 overflow-auto' : 'p-4'}`}>
@@ -286,11 +321,39 @@ export const WebSocketMonitor: React.FC = () => {
                   <span className={sessionToken ? 'text-green-400' : 'text-red-400'}>
                     {truncateToken(sessionToken)}
                   </span>
+                  {sessionToken && (
+                    <button 
+                      className="ml-2 text-xs px-1 bg-blue-800/50 hover:bg-blue-700/50 rounded"
+                      onClick={() => {
+                        console.log('Full session token:', sessionToken);
+                        alert('Full session token logged to console');
+                      }}
+                    >
+                      Log Full
+                    </button>
+                  )}
                 </div>
                 <div className="flex">
                   <span className="text-blue-300 w-20 font-medium">JWT:</span>
                   <span className={jwtToken ? 'text-green-400' : 'text-red-400'}>
                     {truncateToken(jwtToken)}
+                  </span>
+                  {jwtToken && (
+                    <button 
+                      className="ml-2 text-xs px-1 bg-blue-800/50 hover:bg-blue-700/50 rounded"
+                      onClick={() => {
+                        console.log('Full JWT token:', jwtToken);
+                        alert('Full JWT token logged to console');
+                      }}
+                    >
+                      Log Full
+                    </button>
+                  )}
+                </div>
+                <div className="flex">
+                  <span className="text-blue-300 w-20 font-medium">User ID:</span>
+                  <span className={user?.wallet_address ? 'text-green-400' : 'text-red-400'}>
+                    {user?.wallet_address ? `${user.wallet_address.substring(0, 10)}...` : 'Not available'}
                   </span>
                 </div>
               </div>
@@ -410,28 +473,43 @@ export const WebSocketMonitor: React.FC = () => {
         
         {/* Connection Stats */}
         <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Active Connections</h3>
+          <div className="flex items-center mb-2">
+            <h3 className="text-lg font-semibold">Active Connections</h3>
+            <span className="text-xs text-gray-400 ml-2">(active / attempts)</span>
+          </div>
+          
           <div className="flex flex-wrap gap-2">
             {Object.entries(connectionCounts)
               .filter(([key]) => key !== 'total')
-              .map(([type, count]) => (
-                <div 
-                  key={type}
-                  className={`flex items-center px-3 py-1 rounded transition-colors
-                    ${selectedType === type ? 'bg-brand-600/50 border border-brand-500/30' : 'bg-gray-700 hover:bg-gray-600'}`}
-                  onClick={() => setSelectedType(type !== selectedType ? type : null)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className={`w-3 h-3 rounded-full mr-2 ${getStatusClass(count)}`}></div>
-                  <span className="font-medium">{type}:</span>
-                  <span className={`ml-1 ${count > 0 ? 'text-white' : 'text-gray-400'}`}>{count}</span>
-                </div>
-              ))}
+              .map(([type, count]) => {
+                const attempts = connectionAttempts[type] || 0;
+                return (
+                  <div 
+                    key={type}
+                    className={`flex items-center px-3 py-1 rounded transition-colors
+                      ${selectedType === type ? 'bg-brand-600/50 border border-brand-500/30' : 'bg-gray-700 hover:bg-gray-600'}`}
+                    onClick={() => setSelectedType(type !== selectedType ? type : null)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className={`w-3 h-3 rounded-full mr-2 ${getStatusClass(count)}`}></div>
+                    <span className="font-medium">{type}:</span>
+                    <span className={`ml-1 ${count > 0 ? 'text-white' : 'text-gray-400'}`}>
+                      {count}
+                      {attempts > 0 && (
+                        <span className="text-xs text-gray-400 ml-1">/ {attempts}</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             <div className="flex items-center bg-gray-900 px-3 py-1 rounded">
               <div className={`w-3 h-3 rounded-full mr-2 ${connectionCounts.total > 0 ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
               <span className="font-medium">Total:</span>
               <span className={`ml-1 ${connectionCounts.total > 0 ? 'text-white font-bold' : 'text-gray-400'}`}>
                 {connectionCounts.total || 0}
+                {connectionAttempts.total > 0 && (
+                  <span className="text-xs text-gray-400 ml-1">/ {connectionAttempts.total}</span>
+                )}
               </span>
             </div>
           </div>

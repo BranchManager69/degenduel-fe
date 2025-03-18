@@ -11,7 +11,7 @@ import ReactFlow, {
 } from "reactflow";
 
 import "reactflow/dist/style.css";
-import { ServiceNode } from "../../../hooks/useSkyDuelWebSocket";
+import { ServiceNode } from "../../../hooks/websocket/useSkyDuelWebSocket";
 import { useStore } from "../../../store/useStore";
 
 // Custom node component

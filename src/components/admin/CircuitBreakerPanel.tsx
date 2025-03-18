@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 
 import CircuitBreakerCard from "./CircuitBreakerCard";
-import { useCircuitBreakerSocket } from "../../hooks/useCircuitBreakerSocket";
+import { useCircuitBreakerSocket } from "../../hooks/websocket/useCircuitBreakerSocket";
 import { useStore } from "../../store/useStore";
 
 const CircuitBreakerPanel: React.FC = () => {

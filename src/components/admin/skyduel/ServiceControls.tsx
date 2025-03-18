@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { useSkyDuelWebSocket } from "../../../hooks/useSkyDuelWebSocket";
+import { useSkyDuelWebSocket } from "../../../hooks/websocket/useSkyDuelWebSocket";
 import { useStore } from "../../../store/useStore";
 
 interface ServiceControlsProps {

@@ -14,7 +14,7 @@ export const ContestChatManager: React.FC = () => {
   const [minimizedChats] = useState<Record<string, boolean>>({});
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
+  // Removed connectionError state as we're now only using the toast system for notifications
   const [isMobile, setIsMobile] = useState(false);
   const [showContestSelector, setShowContestSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -96,7 +96,7 @@ export const ContestChatManager: React.FC = () => {
         if (e.detail?.message && typeof e.detail.message === 'string' && e.detail.message.includes("Missing contestId")) {
           console.log("Missing contestId");
           const errorMsg = "Please select a contest to start chatting.";
-          setConnectionError(errorMsg);
+          // Show error through toast system only
           
           // Only show toast if we haven't shown this error recently
           if (lastToastRef.current !== errorMsg) {
@@ -106,7 +106,7 @@ export const ContestChatManager: React.FC = () => {
         } else {
           console.log("Chat connection lost. Trying to reconnect...");
           const errorMsg = "Chat connection lost. Trying to reconnect...";
-          setConnectionError(errorMsg);
+          // Show error through toast system only
           
           // Only show toast if not throttled by our central system
           // Use a longer throttle time for these reconnection messages (code 1006)
@@ -117,7 +117,7 @@ export const ContestChatManager: React.FC = () => {
         }
       } else if (e.detail?.type === "connection") {
         console.log("Connection established");
-        setConnectionError(null);
+        // Connection restored, cleared by toast system
         
         // If we had an error before, show connection success toast
         if (lastToastRef.current !== null) {
@@ -258,13 +258,8 @@ export const ContestChatManager: React.FC = () => {
 
   return (
     <>
-      {/* Connection error notification */}
-      {connectionError && (
-        <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-md shadow-lg z-50 animate-pulse">
-          {connectionError}
-        </div>
-      )}
-
+      {/* Connection error notification - Removed to avoid duplication with toast system */}
+      
       {/* Chat toggle button - positioned higher on the page */}
       <div className="fixed bottom-1/3 right-4 z-50">
         <button

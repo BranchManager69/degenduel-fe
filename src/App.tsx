@@ -39,8 +39,8 @@ import { MovingBackground } from "./components/ui/MovingBackground";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* WebSocket */
-// WebSocket provider temporarily disabled
-// import { WebSocketProvider } from "./hooks/websocket/WebSocketManager";
+// WebSocket Manager
+import WebSocketManager from './hooks/websocket/WebSocketManager';
 /* Pages */
 import { useAuth } from "./hooks/useAuth";
 import { ReferralProvider } from "./hooks/useReferral";
@@ -162,7 +162,8 @@ export const App: React.FC = () => {
               <ToastProvider>
               {/* Main container */}
               <div className="min-h-screen flex flex-col">
-                {/* Old WebSocketManager is replaced by the WebSocketProvider */}
+                {/* WebSocketManager - centralized WebSocket management */}
+                <WebSocketManager />
                 
                 {/* Toast event listener for global toast notifications */}
                 <ToastListener />

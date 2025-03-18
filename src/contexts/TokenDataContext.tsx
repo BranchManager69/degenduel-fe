@@ -1,15 +1,17 @@
 import React, { createContext, useContext, useMemo } from "react";
 
+// Import the standardized v69 WebSocket hook instead of the original
 import {
   TokenData,
   useTokenDataWebSocket,
-} from "../hooks/useTokenDataWebSocket";
+} from "../hooks/websocket/useTokenDataWebSocket";
 
 interface TokenDataContextType {
   tokens: TokenData[];
   isConnected: boolean;
   error: string | null;
   lastUpdate: Date | null;
+  refresh: () => void; // Add refresh function to the context
 }
 
 const TokenDataContext = createContext<TokenDataContextType | undefined>(
@@ -19,7 +21,8 @@ const TokenDataContext = createContext<TokenDataContextType | undefined>(
 export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const tokenData = useTokenDataWebSocket(["all"]);
+  // Use the standardized v69 WebSocket hook
+  const tokenData = useTokenDataWebSocket("all");
   
   const value = useMemo(() => {
     const mergedValue = {
@@ -29,6 +32,7 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!('tokens' in tokenData)) mergedValue.tokens = [];
     if (!('error' in tokenData)) mergedValue.error = null;
     if (!('lastUpdate' in tokenData)) mergedValue.lastUpdate = null;
+    if (!('refresh' in tokenData)) mergedValue.refresh = () => {};
     
     return mergedValue;
   }, [tokenData]);

@@ -130,3 +130,167 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(157, 78, 221, 0.5) rgba(0, 0, 0, 0.3);
 }
+
+/* Terminal Component Styling */
+
+/* Terminal custom scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px; /* Narrower scrollbar */
+  height: 4px;
+  opacity: 0.7; /* Slightly more visible even when not hovering */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(13, 13, 13, 0.95); /* Darker track - almost black */
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(157, 78, 221, 0.8); /* Brighter purple */
+  border-radius: 2px;
+  border: 0.5px solid rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 3px rgba(157, 78, 221, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 78, 221, 1); /* Full brightness on hover */
+  box-shadow: 0 0 5px rgba(157, 78, 221, 0.6);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: rgba(13, 13, 13, 0.95);
+}
+
+.scrollbar-hidden::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Apply styling with more specificity for the console element */
+.console-output::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+  opacity: 1 !important;
+}
+
+.console-output::-webkit-scrollbar-track {
+  background: rgba(13, 13, 13, 0.95) !important;
+  border-radius: 2px !important;
+}
+
+.console-output::-webkit-scrollbar-thumb {
+  background: rgba(157, 78, 221, 1) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 3px rgba(157, 78, 221, 0.6) !important;
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95) !important;
+}
+
+.scrollbar-hidden {
+  scrollbar-color: transparent transparent !important;
+}
+
+/* Terminal custom colors */
+.text-mauve-light {
+  color: #9D4EDD;
+}
+
+.text-mauve {
+  color: #7B2CBF;
+}
+
+.bg-mauve {
+  background-color: #7B2CBF;
+}
+
+.bg-mauve\/80 {
+  background-color: rgba(123, 44, 191, 0.8);
+}
+
+.bg-mauve\/50 {
+  background-color: rgba(123, 44, 191, 0.5);
+}
+
+.bg-mauve\/30 {
+  background-color: rgba(123, 44, 191, 0.3);
+}
+
+.bg-mauve\/20 {
+  background-color: rgba(123, 44, 191, 0.2);
+}
+
+.bg-mauve\/5 {
+  background-color: rgba(123, 44, 191, 0.05);
+}
+
+.border-mauve {
+  border-color: #7B2CBF;
+}
+
+.border-mauve\/50 {
+  border-color: rgba(123, 44, 191, 0.5);
+}
+
+.border-mauve\/30 {
+  border-color: rgba(123, 44, 191, 0.3);
+}
+
+.border-mauve\/20 {
+  border-color: rgba(123, 44, 191, 0.2);
+}
+
+.text-darkGrey {
+  color: #1A1A1A;
+}
+
+.bg-darkGrey-dark {
+  background-color: #0D0D0D;
+}
+
+.bg-darkGrey-dark\/90 {
+  background-color: rgba(13, 13, 13, 0.9);
+}
+
+.bg-darkGrey-dark\/80 {
+  background-color: rgba(13, 13, 13, 0.8);
+}
+
+.bg-darkGrey-dark\/30 {
+  background-color: rgba(13, 13, 13, 0.3);
+}
+
+/* Font fixes */
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif;
+}
+
+.font-cyber {
+  font-family: 'Orbitron', 'Chakra Petch', sans-serif;
+}
+
+.font-russo {
+  font-family: 'Russo One', sans-serif;
+}
+
+.font-mono-terminal {
+  font-family: 'Source Code Pro', 'Fira Code', monospace;
+}
+
+/* Terminal cursor */
+.terminal-input::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background-color: #9D4EDD;
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
