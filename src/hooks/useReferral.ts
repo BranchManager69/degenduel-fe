@@ -107,6 +107,12 @@ export const ReferralProvider = ({
   const fetchReferrerDetails = async (code: string) => {
     try {
       console.log("[Referral] Fetching referrer details for code:", code);
+      // Only fetch referrer details if the code passes validation (A-Z, 0-9, underscore, 4-20 chars)
+      if (!/^[A-Z0-9_]{4,20}$/.test(code)) {
+        console.warn("[Referral] Invalid code format, skipping details fetch:", code);
+        return null;
+      }
+      
       const response = await fetch(
         `/api/referrals/details?code=${encodeURIComponent(code)}`,
       );
@@ -140,22 +146,9 @@ export const ReferralProvider = ({
     const params = new URLSearchParams(location.search);
     let ref = params.get("ref");
 
-    // Secondary method: Check if the URL path contains a referral code
-    // For example, a URL like "degenduel.me/join/ABC123" or just "degenduel.me/ABC123"
-    if (!ref) {
-      const pathSegments = location.pathname.split("/").filter(Boolean);
-      if (pathSegments.length > 0) {
-        const lastSegment = pathSegments[pathSegments.length - 1];
-        // Check if the last path segment looks like a referral code
-        if (/^[A-Z0-9-_]{3,32}$/i.test(lastSegment)) {
-          console.log(
-            "[Referral] Found potential referral code in URL path:",
-            lastSegment,
-          );
-          ref = lastSegment;
-        }
-      }
-    }
+    // No secondary method - we ONLY support ?ref=CODE in query parameters
+    // The old code incorrectly processed URL path segments as potential referral codes
+    // which caused regular navigation to trigger unintended referral tracking
 
     // Enhanced logging for troubleshooting
     console.log("[Referral] Processing URL:", window.location.href);
@@ -177,8 +170,9 @@ export const ReferralProvider = ({
     }
 
     if (ref) {
-      // Validate referral code format
-      if (!/^[A-Z0-9-_]{3,32}$/i.test(ref)) {
+      // Validate referral code format - only uppercase letters, numbers, and underscores allowed
+      // Must be 4-20 characters in length and UPPERCASE only (not case-insensitive)
+      if (!/^[A-Z0-9_]{4,20}$/.test(ref)) {
         console.warn("[Referral] Invalid referral code format:", ref);
         return;
       }
@@ -251,10 +245,13 @@ export const ReferralProvider = ({
       }`;
       navigate(newUrl, { replace: true });
 
-      // Send initial referral event to backend
+      // Send initial referral event to backend - only called for valid ?ref=CODE params
       ddApi
         .fetch("/api/referrals/analytics/click", {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify(requestPayload),
         })
         .then(async (response) => {
@@ -308,6 +305,9 @@ export const ReferralProvider = ({
         // Track conversion
         const response = await ddApi.fetch("/referrals/analytics/conversion", {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify(conversionPayload),
         });
 
