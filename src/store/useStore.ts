@@ -791,7 +791,10 @@ export const useStore = create<State>()(
                 Accept: "application/json",
                 "Cache-Control": "no-cache",
                 Pragma: "no-cache",
+                "X-Requested-With": "XMLHttpRequest", // For better CORS compatibility
               },
+              mode: "cors",
+              cache: "no-cache",
             },
           );
 
