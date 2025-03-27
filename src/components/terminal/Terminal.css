@@ -272,8 +272,24 @@
 
 /* Improve console scrollbar appearance */
 .console-output::-webkit-scrollbar {
-  width: 4px !important;
+  width: 8px !important;
   height: 0 !important; /* Hide horizontal scrollbar */
+}
+
+/* Add scrollbar styles for Firefox */
+.console-output {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 78, 221, 0.7) rgba(13, 13, 13, 0.3);
+}
+
+/* Hidden scrollbar class */
+.scrollbar-hidden::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.scrollbar-hidden {
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
 }
 
 /* Ensure text is properly contained */

@@ -242,23 +242,56 @@ const ReferralLink: React.FC<{
 
 const AnalyticsSection: React.FC = () => {
   const { analytics, refreshAnalytics } = useReferral();
+  const [errorState, setErrorState] = React.useState<boolean>(false);
 
   useEffect(() => {
-    refreshAnalytics();
+    const fetchAnalytics = async () => {
+      try {
+        await refreshAnalytics();
+        setErrorState(false);
+      } catch (error) {
+        console.error("Error refreshing analytics:", error);
+        setErrorState(true);
+      }
+    };
+    
+    fetchAnalytics();
   }, [refreshAnalytics]);
 
-  if (!analytics) return null;
+  // Handle missing data gracefully
+  if (errorState || !analytics) {
+    return (
+      <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
+        <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+          <FaChartBar className="text-brand-400" />
+          Referral Analytics
+        </h3>
+        <div className="py-6 text-center text-gray-400">
+          Analytics data is currently unavailable. Please check back later.
+        </div>
+      </div>
+    );
+  }
 
-  const totalClicks = Object.values(analytics.clicks?.by_source || {}).reduce(
-    (a, b) => a + b,
-    0,
-  );
-  const totalConversions = Object.values(
-    analytics.conversions?.by_source || {},
-  ).reduce((a, b) => a + b, 0);
-  const conversionRate = totalClicks
-    ? ((totalConversions / totalClicks) * 100).toFixed(1)
-    : "0";
+  // Safely calculate metrics with error handling
+  let totalClicks = 0;
+  let totalConversions = 0;
+  let conversionRate = "0";
+  
+  try {
+    totalClicks = Object.values(analytics.clicks?.by_source || {}).reduce(
+      (a, b) => a + b,
+      0,
+    );
+    totalConversions = Object.values(
+      analytics.conversions?.by_source || {},
+    ).reduce((a, b) => a + b, 0);
+    conversionRate = totalClicks
+      ? ((totalConversions / totalClicks) * 100).toFixed(1)
+      : "0";
+  } catch (error) {
+    console.error("Error calculating analytics metrics:", error);
+  }
 
   const getDeviceIcon = (device: string) => {
     switch (device.toLowerCase()) {
@@ -433,18 +466,41 @@ const ReferralLeaderboard: React.FC = () => {
   React.useEffect(() => {
     const fetchLeaderboardData = async () => {
       try {
-        const [statsRes, leaderboardRes] = await Promise.all([
-          ddApi
-            .fetch("/api/referrals/leaderboard/stats")
-            .then((res) => res.json()),
-          ddApi
-            .fetch("/api/referrals/leaderboard/rankings")
-            .then((res) => res.json()),
-        ]);
-        setLeaderboardStats(statsRes);
-        setLeaderboard(leaderboardRes);
+        // First try to get leaderboard stats
+        let statsRes;
+        try {
+          const statsResponse = await ddApi.fetch("/api/referrals/leaderboard/stats");
+          statsRes = await statsResponse.json();
+          setLeaderboardStats(statsRes);
+        } catch (statsError) {
+          console.error("Error fetching leaderboard stats:", statsError);
+          // Set some default data to prevent UI crashes
+          setLeaderboardStats({
+            total_global_referrals: 0,
+            current_period: {
+              start_date: new Date().toISOString(),
+              end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              days_remaining: 30,
+            },
+            next_payout_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          });
+        }
+
+        // Then try to get leaderboard rankings
+        try {
+          const rankingsResponse = await ddApi.fetch("/api/referrals/leaderboard/rankings");
+          const leaderboardRes = await rankingsResponse.json();
+          setLeaderboard(leaderboardRes);
+        } catch (rankingsError) {
+          console.error("Error fetching leaderboard rankings:", rankingsError);
+          // Set empty array to prevent UI crashes
+          setLeaderboard([]);
+        }
       } catch (error) {
-        console.error("Error fetching leaderboard data:", error);
+        console.error("Error in fetchLeaderboardData:", error);
+        // Ensure we have default values if anything fails
+        setLeaderboardStats(null);
+        setLeaderboard([]);
       }
     };
 
@@ -453,7 +509,16 @@ const ReferralLeaderboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (!leaderboardStats) return null;
+  // Handle missing data gracefully instead of returning null (which causes component not to render)
+  if (!leaderboardStats) {
+    return (
+      <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
+        <div className="py-4 text-center text-gray-400">
+          Referral rankings are currently unavailable. Please check back later.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
@@ -574,15 +639,39 @@ export const ReferralDashboard: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [statsResponse, codeResponse] = await Promise.all([
-          ddApi.fetch("/api/referrals/stats").then((res) => res.json()),
-          ddApi.fetch("/api/referrals/code").then((res) => res.json()),
-        ]);
-
-        setStats(statsResponse);
-        setReferralCode(codeResponse.referral_code);
+        
+        // Fetch stats with error handling
+        let userStats = null;
+        try {
+          const statsResponse = await ddApi.fetch("/api/referrals/stats");
+          userStats = await statsResponse.json();
+          setStats(userStats);
+        } catch (statsError) {
+          console.error("Error fetching referral stats:", statsError);
+          // Set default stats to prevent UI crashes
+          setStats({
+            total_referrals: 0,
+            qualified_referrals: 0,
+            pending_referrals: 0,
+            total_rewards: 0,
+            recent_referrals: [],
+            recent_rewards: []
+          });
+        }
+        
+        // Fetch referral code with error handling
+        try {
+          const codeResponse = await ddApi.fetch("/api/referrals/code");
+          const codeData = await codeResponse.json();
+          setReferralCode(codeData.referral_code || "ERROR");
+        } catch (codeError) {
+          console.error("Error fetching referral code:", codeError);
+          // Set a placeholder code to prevent UI crashes
+          setReferralCode("PLACEHOLDER");
+          toast.error("🚨 Couldn't load your referral code");
+        }
       } catch (error) {
-        console.error("Error fetching referral data:", error);
+        console.error("Error in overall referral data fetch:", error);
         toast.error("🚨 Couldn't load your referral data");
       } finally {
         setLoading(false);

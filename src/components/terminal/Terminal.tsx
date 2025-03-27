@@ -219,7 +219,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
   // Contract teaser displayed when not revealed
   const contractTeaser = "[     REDACTED     ]";
 
-  // Scrollbar auto-hide effect
+  // Enhanced scrollbar auto-hide effect specifically for console output
   const scrollbarAutoHide = (element: HTMLElement | null, timeout = 2000) => {
     if (!element) return;
     
@@ -239,15 +239,20 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
       element.classList.add('scrollbar-hidden');
     }, timeout);
     
+    // Show scrollbar on all interaction events
     element.addEventListener('scroll', showScrollbar);
     element.addEventListener('mouseover', showScrollbar);
     element.addEventListener('mousedown', showScrollbar);
+    element.addEventListener('touchstart', showScrollbar);
+    element.addEventListener('focus', showScrollbar, true);
     
     return () => {
       clearTimeout(timer);
       element.removeEventListener('scroll', showScrollbar);
       element.removeEventListener('mouseover', showScrollbar);
       element.removeEventListener('mousedown', showScrollbar);
+      element.removeEventListener('touchstart', showScrollbar);
+      element.removeEventListener('focus', showScrollbar, true);
     };
   };
 
@@ -301,9 +306,9 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     return () => {};
   }, [isReleaseTime, secretPhrases]);
 
-  // Apply the scrollbar auto-hide to our scrollable areas
+  // Apply the scrollbar auto-hide to only the console output area
   useEffect(() => {
-    const terminalCleanup = scrollbarAutoHide(terminalContentRef.current);
+    // Only apply auto-hide to the console output which is scrollable
     const consoleCleanup = scrollbarAutoHide(consoleOutputRef.current);
     
     // Ensure the scrollbars use our custom styling
@@ -316,7 +321,6 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     }
     
     return () => {
-      if (terminalCleanup) terminalCleanup();
       if (consoleCleanup) consoleCleanup();
     };
   }, []);
@@ -466,8 +470,19 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
           whileHover={{
             rotateX: 0,
             rotateY: 0,
-            scale: 1.02,
-            transition: { duration: 0.3 }
+            boxShadow: [
+              '0 0 15px rgba(157, 78, 221, 0.4)',
+              '0 0 25px rgba(157, 78, 221, 0.6)',
+              '0 0 30px rgba(157, 78, 221, 0.7)'
+            ],
+            transition: { 
+              duration: 0.3,
+              boxShadow: {
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }
+            }
           }}
           onAnimationComplete={(definition) => {
             // When the exit animation completes
@@ -521,13 +536,11 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
             </motion.div>
           </div>
         
-          {/* Terminal content with custom scrollbar styling and CRT effect */}
+          {/* Terminal content with CRT effect - no scrolling on the container */}
           <div 
             ref={terminalContentRef} 
-            className="terminal-crt text-white/70 max-h-[480px] overflow-y-auto p-3 pr-3 pb-4 custom-scrollbar console-output text-sm"
+            className="terminal-crt text-white/70 p-3 pr-3 pb-4 text-sm"
             style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
               backgroundImage: 'radial-gradient(rgba(0, 0, 0, 0.1) 15%, transparent 16%), radial-gradient(rgba(0, 0, 0, 0.1) 15%, transparent 16%)',
               backgroundSize: '4px 4px',
               backgroundPosition: '0 0, 2px 2px'
@@ -649,15 +662,15 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
               </div>
             </div>
             
-            {/* Console output display (merged with AI chat responses) */}
+            {/* Console output display (merged with AI chat responses) - only this part should scroll */}
             <div 
               ref={consoleOutputRef} 
-              className="mt-3 text-green-400/80 overflow-y-auto overflow-x-hidden h-[140px] py-2 text-left custom-scrollbar console-output"
+              className="mt-3 text-green-400/80 overflow-y-auto overflow-x-hidden h-[180px] max-h-[25vh] py-2 text-left custom-scrollbar console-output"
               style={{
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
                 background: 'rgba(0, 0, 0, 0.2)',
-                boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.3)',
+                boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                 borderRadius: '4px'
               }}
             >
