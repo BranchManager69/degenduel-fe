@@ -1,3 +1,12 @@
+// src/hooks/websocket/types.ts
+
+/**
+ * 
+ * THIS FILE IS WOEFULLY IN NEED OF AN UPDATE AND OVERHAUL!
+ * ALL WSS ENDPOINTS AND SOCKET TYPES ARE NOT UP TO DATE!
+ * 
+ */
+
 /**
  * Common Types for WebSocket System
  * 
@@ -52,35 +61,40 @@ export interface WebSocketError {
 
 // Standard WebSocket endpoints - verified against backend team feedback
 export const WEBSOCKET_ENDPOINTS = {
-  SERVER_STATUS: '/api/v69/ws/monitor',
+  MONITOR: '/api/v69/ws/monitor',
   TOKEN_DATA: '/api/v69/ws/token-data',
+  MARKET_DATA: '/api/v69/ws/market-data',
   PORTFOLIO: '/api/v69/ws/portfolio', // Note: This endpoint might need verification with backend
   CONTEST: '/api/v69/ws/contest',
-  CONTEST_CHAT: '/api/v69/ws/contest', // Contest chat uses the contest endpoint
+  CONTEST_CHAT: '/api/v69/ws/contest', // Contest chat uses the contest endpoint // TODO: Deprecate this endpoint; use CONTEST instead
   NOTIFICATION: '/api/v69/ws/notifications',
   WALLET: '/api/v69/ws/wallet', // Note: This endpoint might need verification with backend
-  MARKET_DATA: '/api/v69/ws/market-data',
   SYSTEM_SETTINGS: '/api/v69/ws/system-settings',
   ANALYTICS: '/api/v69/ws/analytics',
   CIRCUIT_BREAKER: '/api/v69/ws/circuit-breaker',
   // SERVICE endpoint doesn't exist - service monitoring is handled by CIRCUIT_BREAKER and SERVER_STATUS
   SERVICE: '/api/v69/ws/circuit-breaker', // Redirected to circuit-breaker as per backend team guidance
   SKYDUEL: '/api/v69/ws/skyduel',
+  SERVER_STATUS: '/api/v69/ws/monitor',
 };
 
 // Socket types for tracking
 export const SOCKET_TYPES = {
-  SERVER_STATUS: 'server-status',
+  MONITOR: 'monitor',
   TOKEN_DATA: 'token-data',
+  MARKET_DATA: 'market-data',
   PORTFOLIO: 'portfolio',
   CONTEST: 'contest',
-  CONTEST_CHAT: 'contest-chat',
+  CONTEST_CHAT: 'contest-chat', // deprecating; use CONTEST instead
   NOTIFICATION: 'notification',
   WALLET: 'wallet',
-  MARKET_DATA: 'market-data',
   SYSTEM_SETTINGS: 'system-settings',
   ANALYTICS: 'analytics',
   CIRCUIT_BREAKER: 'circuit-breaker',
+
   SERVICE: 'service',
   SKYDUEL: 'skyduel',
+  SERVER_STATUS: 'server-status',
+
+  TEST: 'test',
 };

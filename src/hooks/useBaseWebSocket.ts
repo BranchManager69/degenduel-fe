@@ -5,7 +5,8 @@ import {
   trackWebSocketConnection,
   trackConnectionAttempt,
   untrackWebSocketConnection, 
-  dispatchWebSocketEvent
+  dispatchWebSocketEvent,
+  trackSuspendedWebSocket
 } from "../utils/wsMonitor";
 
 export interface WebSocketConfig {
@@ -207,8 +208,56 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
           closeReason = "No status received";
           break;
         case 1006:
-          closeReason = "Abnormal closure";
+          closeReason = "Abnormal closure - limiting reconnection attempts";
           isAbnormalClose = true;
+          
+          // Special handling for 1006 (abnormal closure) to limit excessive reconnection attempts
+          // Track the 1006 error count in localStorage with expiration
+          const storageKey = `ws_1006_error_${config.socketType}`;
+          let errorCount = 1;
+          
+          try {
+            // Get existing error count if any
+            const storedData = localStorage.getItem(storageKey);
+            if (storedData) {
+              const data = JSON.parse(storedData);
+              // Only count errors within the last hour
+              if (Date.now() - data.timestamp < 3600000) {
+                errorCount = data.count + 1;
+              }
+            }
+            
+            // Store updated count
+            localStorage.setItem(storageKey, JSON.stringify({
+              count: errorCount,
+              timestamp: Date.now()
+            }));
+            
+            // If we've seen too many 1006 errors for this socket, stop reconnecting until page refresh
+            if (errorCount >= 3) {
+              console.error(`[WebSocket:${config.socketType}] Multiple 1006 errors detected. Stopping reconnection attempts for this session.`);
+              dispatchWebSocketEvent("error", {
+                socketType: config.socketType,
+                message: "Multiple abnormal closures (1006) detected - reconnection attempts suspended",
+                errorCount,
+                severity: "high"
+              });
+              
+              // Track this socket as suspended in our monitoring system
+              trackSuspendedWebSocket(
+                config.socketType, 
+                "Multiple 1006 (abnormal closure) errors",
+                errorCount
+              );
+              
+              // Don't reconnect anymore for this socket type during this session
+              return;
+            }
+          } catch (storageError) {
+            // If localStorage fails, just continue with normal reconnection
+            console.warn("Failed to track WebSocket 1006 errors:", storageError);
+          }
+          
           break;
         case 1007:
           closeReason = "Invalid frame payload data";
@@ -556,6 +605,19 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
 
   // Public API
   const connect = () => {
+    // Check if this socket type is suspended due to multiple errors
+    const suspendedSockets = window.DDSuspendedWebSockets || {};
+    if (suspendedSockets[config.socketType]) {
+      const { timestamp, reason } = suspendedSockets[config.socketType];
+      // Only log if we haven't logged recently (prevents console spam)
+      if (Date.now() - timestamp > 10000) { // Log at most once every 10 seconds
+        console.warn(`[WebSocket:${config.socketType}] Connection suspended due to: ${reason}. Will not attempt reconnection until page refresh.`);
+        // Update timestamp so we don't spam logs
+        suspendedSockets[config.socketType].timestamp = Date.now();
+      }
+      return;
+    }
+  
     // Don't attempt to connect if we already have an open connection
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       if (process.env.NODE_ENV !== "production") {
@@ -595,11 +657,12 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
     // CRITICAL CHECK: Don't attempt authenticated connections when no auth token is available
     if (config.requiresAuth !== false) {
       const user = useStore.getState().user;
-      if (!user?.jwt) {
+      // Check for WebSocket token first, then fall back to JWT for backward compatibility
+      if (!user?.wsToken && !user?.jwt) {
         if (process.env.NODE_ENV !== "production") {
-          console.warn(`[WebSocket:${config.socketType}] Cannot establish authenticated connection: No JWT token available`);
+          console.warn(`[WebSocket:${config.socketType}] Cannot establish authenticated connection: No WebSocket token available`);
         }
-        throw new Error(`Cannot connect to ${config.endpoint}: Authentication required but no JWT token available`);
+        throw new Error(`Cannot connect to ${config.endpoint}: Authentication required but no WebSocket token available`);
       }
     }
     
@@ -635,11 +698,12 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
     if (config.requiresAuth !== false) {
       // Get user from store to access all possible tokens
       const user = useStore.getState().user;
-      const jwt = user?.jwt;
+      const wsToken = user?.wsToken;  // Dedicated WebSocket token (preferred)
+      const jwt = user?.jwt;          // Legacy JWT (as fallback)
       const sessionToken = user?.session_token || userSessionToken;
       
-      // Choose the best token to use (prefer JWT)
-      const authToken = jwt || sessionToken;
+      // Choose the best token to use (prefer WebSocket token, then JWT, then session token)
+      const authToken = wsToken || jwt || sessionToken;
       
       // Debug connection exactly as recommended by backend team
       console.group("⭐⭐⭐ WebSocket Connection Debug ⭐⭐⭐");
@@ -662,11 +726,13 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
       // Log auth token details in development
       if (process.env.NODE_ENV !== "production") {
         console.log(`[WebSocket:${config.socketType}] Auth tokens:`, {
+          hasWsToken: !!wsToken,
+          wsTokenLength: wsToken ? wsToken.length : 0,
           hasJwt: !!jwt,
           jwtLength: jwt ? jwt.length : 0,
           hasSessionToken: !!sessionToken,
           sessionTokenLength: sessionToken ? sessionToken.length : 0,
-          selectedTokenType: jwt ? "JWT" : "SESSION",
+          selectedTokenType: wsToken ? "WS_TOKEN" : jwt ? "JWT" : "SESSION",
           selectedTokenLength: authToken ? authToken.length : 0
         });
       }

@@ -276,6 +276,7 @@ export const WebSocketMonitor: React.FC = () => {
   const user = useStore(state => state.user);
   const sessionToken = user?.session_token || null;
   const jwtToken = user?.jwt || null;
+  const wsToken = user?.wsToken || null;
 
   // Safely truncate token for display (first 10 chars only)
   const truncateToken = (token: string | null): string => {
@@ -297,6 +298,11 @@ export const WebSocketMonitor: React.FC = () => {
           value: jwtToken,
           length: jwtToken?.length
         },
+        wsToken: {
+          available: !!wsToken,
+          value: wsToken,
+          length: wsToken?.length
+        },
         user: {
           id: user.wallet_address,
           isAdmin: user.is_admin,
@@ -304,7 +310,7 @@ export const WebSocketMonitor: React.FC = () => {
         }
       });
     }
-  }, [user, sessionToken, jwtToken]);
+  }, [user, sessionToken, jwtToken, wsToken]);
 
   return (
     <div className={`bg-gray-800 text-white rounded-lg shadow-lg transition-all duration-300 ${expandedView ? 'w-full h-full fixed inset-0 z-50 overflow-auto' : 'p-4'}`}>
@@ -318,20 +324,11 @@ export const WebSocketMonitor: React.FC = () => {
               <div className="flex flex-col mt-1 space-y-1">
                 <div className="flex">
                   <span className="text-blue-300 w-20 font-medium">Session:</span>
-                  <span className={sessionToken ? 'text-green-400' : 'text-red-400'}>
-                    {truncateToken(sessionToken)}
+                  <span className="text-blue-400">
+                    <span title="Session cookies are managed by the browser and not stored in JavaScript">
+                      Using HTTP-only cookie
+                    </span>
                   </span>
-                  {sessionToken && (
-                    <button 
-                      className="ml-2 text-xs px-1 bg-blue-800/50 hover:bg-blue-700/50 rounded"
-                      onClick={() => {
-                        console.log('Full session token:', sessionToken);
-                        alert('Full session token logged to console');
-                      }}
-                    >
-                      Log Full
-                    </button>
-                  )}
                 </div>
                 <div className="flex">
                   <span className="text-blue-300 w-20 font-medium">JWT:</span>
@@ -344,6 +341,23 @@ export const WebSocketMonitor: React.FC = () => {
                       onClick={() => {
                         console.log('Full JWT token:', jwtToken);
                         alert('Full JWT token logged to console');
+                      }}
+                    >
+                      Log Full
+                    </button>
+                  )}
+                </div>
+                <div className="flex">
+                  <span className="text-blue-300 w-20 font-medium">WS Token:</span>
+                  <span className={wsToken ? 'text-green-400' : 'text-orange-400'}>
+                    {truncateToken(wsToken)}
+                  </span>
+                  {wsToken && (
+                    <button 
+                      className="ml-2 text-xs px-1 bg-blue-800/50 hover:bg-blue-700/50 rounded"
+                      onClick={() => {
+                        console.log('Full WebSocket token:', wsToken);
+                        alert('Full WebSocket token logged to console');
                       }}
                     >
                       Log Full

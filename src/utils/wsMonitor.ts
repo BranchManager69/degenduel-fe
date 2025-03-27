@@ -24,6 +24,13 @@ declare global {
         message?: string;
       };
     };
+    DDSuspendedWebSockets: {
+      [key: string]: {
+        timestamp: number;
+        reason: string;
+        errorCount: number;
+      };
+    };
   }
 }
 
@@ -56,6 +63,15 @@ export const initializeWebSocketTracking = (): void => {
     
     if (process.env.NODE_ENV !== "production") {
       console.log('[WSMonitor] WebSocket error tracking initialized');
+    }
+  }
+  
+  // Initialize suspended websockets tracking
+  if (!window.DDSuspendedWebSockets) {
+    window.DDSuspendedWebSockets = {};
+    
+    if (process.env.NODE_ENV !== "production") {
+      console.log('[WSMonitor] WebSocket suspension tracking initialized');
     }
   }
 };
@@ -164,6 +180,40 @@ export const getWebSocketCount = (type?: string): number => {
   }
   
   return window.DDActiveWebSockets.total || 0;
+};
+
+// Track a WebSocket suspension
+export const trackSuspendedWebSocket = (type: string, reason: string, errorCount: number): void => {
+  if (!window.DDSuspendedWebSockets) {
+    window.DDSuspendedWebSockets = {};
+  }
+  
+  window.DDSuspendedWebSockets[type] = {
+    timestamp: Date.now(),
+    reason,
+    errorCount
+  };
+  
+  // Log the suspension
+  console.warn(`[WSMonitor] WebSocket ${type} suspended due to: ${reason} (Error count: ${errorCount})`);
+  
+  // Also log to our WebSocket event system
+  dispatchWebSocketEvent('suspension', {
+    socketType: type,
+    reason,
+    errorCount,
+    timestamp: new Date().toISOString()
+  });
+};
+
+// Check if a WebSocket type is suspended
+export const isWebSocketSuspended = (type: string): boolean => {
+  return !!(window.DDSuspendedWebSockets && window.DDSuspendedWebSockets[type]);
+};
+
+// Get all suspended WebSockets
+export const getSuspendedWebSockets = (): Record<string, {timestamp: number, reason: string, errorCount: number}> => {
+  return window.DDSuspendedWebSockets || {};
 };
 
 // Get connection attempt count by type
