@@ -265,11 +265,13 @@ export const Header: React.FC = () => {
                 />
               </div>
 
-              {/* Main Navigation */}
-              <nav className="hidden md:flex items-center space-x-6 ml-8">
-                <ContestsDropdown isCompact={isCompact} />
-                <TokensDropdown isCompact={isCompact} />
-                <RankingsDropdown isCompact={isCompact} />
+              {/* Main Navigation - new streamlined version */}
+              <nav className="hidden md:flex items-center ml-6">
+                <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20">
+                  <ContestsDropdown isCompact={isCompact} />
+                  <TokensDropdown isCompact={isCompact} />
+                  <RankingsDropdown isCompact={isCompact} />
+                </div>
               </nav>
             </div>
 

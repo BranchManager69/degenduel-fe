@@ -3,21 +3,22 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 // Logo sizes for different viewports with proper aspect ratio
+// The original logo image has approximately a 3.4:1 width-to-height ratio
 const LOGO_SIZES = {
-  xs: { height: 40, width: 120 }, // Mobile extra small (very tight spaces)
-  sm: { height: 48, width: 144 }, // Mobile/compact header
-  md: { height: 56, width: 168 }, // Default header size
-  lg: { height: 80, width: 240 }, // Large displays/hero areas
-  xl: { height: 120, width: 360 }, // Extra large showcase
+  xs: { height: 30, width: 102 }, // Mobile extra small (very tight spaces)
+  sm: { height: 36, width: 122 }, // Mobile/compact header
+  md: { height: 42, width: 143 }, // Default header size
+  lg: { height: 60, width: 204 }, // Large displays/hero areas
+  xl: { height: 90, width: 306 }, // Extra large showcase
 };
 
 interface LogoProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
-  textOnly?: boolean;
+  textOnly?: boolean; // Deprecated
   asLink?: boolean;
   animated?: boolean;
-  highlightColor?: string;
+  highlightColor?: string; // Deprecated
 }
 
 /**
@@ -25,55 +26,34 @@ interface LogoProps {
  *
  * @param size - Predefined size (xs, sm, md, lg, xl)
  * @param className - Additional CSS classes
- * @param textOnly - If true, displays only the text without connector elements
  * @param asLink - If true, wraps the logo in a Link to home page
  * @param animated - If true, applies subtle animations to the logo
- * @param highlightColor - Custom color for the connector/highlight
  */
 const Logo: React.FC<LogoProps> = ({
   size = "md",
   className = "",
-  textOnly = false,
   asLink = false,
   animated = false,
-  highlightColor = "#06b6d4", // Cyan default
+  // Unused parameters are removed but kept in the interface for backward compatibility
 }) => {
   const { height, width } = LOGO_SIZES[size];
 
-  // Default aspect ratio is 3:1 (width:height)
+  // Default container style based on the logo's aspect ratio
   const containerStyle = {
     height: `${height}px`,
     width: `${width}px`,
+    maxWidth: "100%",
   };
 
   // Simple subtle pulse animation
   const pulseAnimation = animated
     ? {
         animate: {
-          opacity: [0.8, 1, 0.8],
-          scale: [0.995, 1.005, 0.995],
+          opacity: [0.92, 1, 0.92],
+          scale: [0.98, 1.02, 0.98],
         },
         transition: {
           duration: 4,
-          repeat: Infinity,
-          repeatType: "reverse" as const,
-        },
-      }
-    : {};
-
-  // Connector animation
-  const connectorAnimation = animated
-    ? {
-        animate: {
-          opacity: [0.7, 1, 0.7],
-          filter: [
-            `drop-shadow(0 0 2px ${highlightColor})`,
-            `drop-shadow(0 0 5px ${highlightColor})`,
-            `drop-shadow(0 0 2px ${highlightColor})`,
-          ],
-        },
-        transition: {
-          duration: 2,
           repeat: Infinity,
           repeatType: "reverse" as const,
         },
@@ -87,42 +67,30 @@ const Logo: React.FC<LogoProps> = ({
       style={containerStyle}
       {...pulseAnimation}
     >
-      <div className="flex items-center justify-center h-full">
-        {/* DEGEN part */}
-        <div
-          className="text-brand-500 font-bold tracking-tight"
+      <div className="flex items-center justify-center h-full w-full">
+        {/* Image logo */}
+        <motion.img
+          src="/assets/media/logos/transparent_WHITE.png"
+          alt="DegenDuel Logo"
+          className="w-full h-full object-contain"
           style={{
-            fontSize: `${height * 0.5}px`,
-            fontFamily: "'Silkscreen', monospace",
+            filter: animated 
+              ? "drop-shadow(0 0 3px rgba(255, 255, 255, 0.5))" 
+              : "none",
           }}
-        >
-          DEGEN
-        </div>
-
-        {/* Middle connector */}
-        {!textOnly && (
-          <motion.div
-            className="mx-1"
-            style={{
-              height: `${height * 0.4}px`,
-              width: `${height * 0.08}px`,
-              backgroundColor: highlightColor,
-              borderRadius: `${height * 0.02}px`,
-            }}
-            {...connectorAnimation}
-          />
-        )}
-
-        {/* DUEL part */}
-        <div
-          className="text-white font-bold tracking-tight"
-          style={{
-            fontSize: `${height * 0.5}px`,
-            fontFamily: "'Silkscreen', monospace",
-          }}
-        >
-          DUEL
-        </div>
+          animate={animated ? {
+            filter: [
+              "drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))",
+              "drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))",
+              "drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))",
+            ]
+          } : undefined}
+          transition={animated ? {
+            duration: 2.5,
+            repeat: Infinity,
+            repeatType: "reverse",
+          } : undefined}
+        />
 
         {/* SEO text (hidden visually) */}
         <span className="sr-only">DegenDuel</span>

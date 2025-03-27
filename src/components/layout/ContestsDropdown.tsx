@@ -15,20 +15,6 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
   // Use selective subscription to only get the user state
   const user = useStore((state) => state.user);
 
-  const buttonStyles = {
-    bg: "from-brand-500/20 to-brand-400/20",
-    text: "text-gray-200",
-    border: "border-brand-400/20",
-    hover: {
-      bg: "group-hover:from-brand-400/25 group-hover:to-brand-300/25",
-      text: "group-hover:text-white",
-      border: "group-hover:border-brand-400/30",
-      glow: "group-hover:shadow-[0_0_8px_rgba(153,51,255,0.15)]",
-    },
-    ring: "ring-brand-400/20 group-hover:ring-brand-400/30",
-    shine: "via-white/20",
-  };
-
   interface MenuItem {
     label: string;
     icon: React.ComponentType;
@@ -69,32 +55,18 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
         <>
           <Menu.Button
             className={`
-              relative group overflow-hidden transition-all duration-300 ease-out
-              ${isCompact ? "h-7 text-sm" : "h-8 text-base"} flex items-center px-3
-              rounded-full backdrop-blur-lg border-[0.5px] ${buttonStyles.border} ${
-                buttonStyles.hover.border
-              }
-              ${buttonStyles.hover.glow} transition-shadow duration-500
+              group relative flex items-center 
+              ${isCompact ? "h-8 text-sm px-3" : "h-10 text-base px-4"}
+              hover:bg-brand-400/10 border-r border-brand-400/20
+              transition-all duration-200
             `}
           >
-            {/* Background gradient */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300 opacity-80`}
-            />
-
-            {/* Shine effect */}
-            <div className="absolute inset-0">
-              <div
-                className={`absolute inset-0 bg-gradient-to-r from-transparent ${buttonStyles.shine} to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000`}
-              />
-            </div>
-
             {/* Content */}
-            <div className="relative flex items-center w-full">
+            <div className="flex items-center">
               <span
                 className={`
-                  ${buttonStyles.text} ${buttonStyles.hover.text}
-                  font-medium tracking-wide transition-all duration-300
+                  text-gray-200 group-hover:text-white
+                  font-medium tracking-wide transition-all duration-200
                 `}
               >
                 Contests
@@ -127,8 +99,8 @@ export const ContestsDropdown: React.FC<ContestsDropdownProps> = ({
             leaveFrom="transform opacity-100 scale-100"
             leaveTo="transform opacity-0 scale-95"
           >
-            <Menu.Items className="absolute left-0 mt-1 w-48 origin-top-left bg-dark-200/80 backdrop-blur-xl border-[0.5px] border-brand-500/30 rounded-xl shadow-lg overflow-hidden z-50">
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left bg-dark-200/95 backdrop-blur-xl border border-brand-500/30 rounded-md shadow-lg overflow-hidden z-50">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5" />
 
               <div className="relative p-1">
                 {menuItems.map((item) => {
