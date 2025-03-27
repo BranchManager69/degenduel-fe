@@ -2,14 +2,16 @@
  * Release Date Service
  * 
  * This service handles fetching the release date from the backend
- * with a fallback to a hardcoded date.
+ * with a fallback to the date defined in environment variables.
  */
 
-// Fallback release date: March 15th, 6:00 PM Eastern Standard Time
-export const FALLBACK_RELEASE_DATE = new Date('2025-03-15T22:00:00Z'); // 6:00 PM EST in UTC
+// Get API URL from environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'https://degenduel.me';
 
-// Mock delay to simulate API request (in milliseconds)
-const MOCK_DELAY = 800;
+// Fallback release date from environment variables or default to March 15th, 6:00 PM Eastern
+export const FALLBACK_RELEASE_DATE = new Date(
+  import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-03-15T22:00:00Z'
+);
 
 // Cache for the fetched release date
 let cachedReleaseDate: Date | null = null;
@@ -25,13 +27,11 @@ export const fetchReleaseDate = async (): Promise<Date> => {
   }
   
   // API endpoint for fetching the release date
-  const endpoint = '/api/v1/release-date';
+  const endpoint = `${API_URL}/api/v1/release-date`;
   
   try {
     console.log(`Fetching release date from endpoint: ${endpoint}`);
     
-    // In a real implementation, you would use this:
-    /*
     const response = await fetch(endpoint);
     
     if (!response.ok) {
@@ -53,26 +53,6 @@ export const fetchReleaseDate = async (): Promise<Date> => {
       console.warn('Release date not available from API, using fallback');
       return FALLBACK_RELEASE_DATE;
     }
-    */
-    
-    // For demonstration purposes, use a mock implementation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock server response - in production, your server would return the actual date
-        // This simulates a successful API response with a release date
-        const mockServerDate = null; // Set to null to simulate no date from server
-        
-        if (mockServerDate) {
-          const releaseDate = new Date(mockServerDate);
-          cachedReleaseDate = releaseDate;
-          console.log(`Release date fetched from server: ${releaseDate.toISOString()}`);
-          resolve(releaseDate);
-        } else {
-          console.log(`No release date from server, using fallback: ${FALLBACK_RELEASE_DATE.toISOString()}`);
-          resolve(FALLBACK_RELEASE_DATE);
-        }
-      }, MOCK_DELAY);
-    });
   } catch (error) {
     console.error('Error fetching release date:', error);
     console.log(`Using fallback release date: ${FALLBACK_RELEASE_DATE.toISOString()}`);

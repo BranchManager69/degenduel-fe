@@ -146,18 +146,17 @@ export const ReferralProvider = ({
     const params = new URLSearchParams(location.search);
     let ref = params.get("ref");
 
-    // No secondary method - we ONLY support ?ref=CODE in query parameters
-    // The old code incorrectly processed URL path segments as potential referral codes
-    // which caused regular navigation to trigger unintended referral tracking
+    // Skip all processing if no referral code is present - this prevents unnecessary logging and operations
+    if (!ref) return;
 
-    // Enhanced logging for troubleshooting
-    console.log("[Referral] Processing URL:", window.location.href);
+    // Only log when we have an actual referral code to process
+    console.log("[Referral] Processing URL with referral:", window.location.href);
     console.log("[Referral] URL Path:", location.pathname);
     console.log("[Referral] URL Search:", location.search);
     console.log("[Referral] URL Hash:", location.hash);
-    console.log("[Referral] Found referral code:", ref ?? "none");
+    console.log("[Referral] Found referral code:", ref);
 
-    // Debug info for developers
+    // Debug info for developers - only shown when a referral code is present
     if (import.meta.env.DEV) {
       console.log(
         "[Referral Debug] All URL params:",
@@ -169,113 +168,111 @@ export const ReferralProvider = ({
       );
     }
 
-    if (ref) {
-      // Validate referral code format - only uppercase letters, numbers, and underscores allowed
-      // Must be 4-20 characters in length and UPPERCASE only (not case-insensitive)
-      if (!/^[A-Z0-9_]{4,20}$/.test(ref)) {
-        console.warn("[Referral] Invalid referral code format:", ref);
-        return;
-      }
-
-      // Determine referral source
-      const source = location.pathname.includes("/contests/")
-        ? "contest"
-        : location.pathname.includes("/profile/")
-          ? "profile"
-          : "direct";
-
-      // Capture UTM parameters
-      const utmSource = params.get("utm_source");
-      const utmMedium = params.get("utm_medium");
-      const utmCampaign = params.get("utm_campaign");
-
-      // Generate session ID
-      const newSessionId = uuidv4();
-      setSessionId(newSessionId);
-      localStorage.setItem("referral_session_id", newSessionId);
-
-      // Create request payload
-      const requestPayload = {
-        referralCode: ref,
-        sessionId: newSessionId,
-        clickData: {
-          source,
-          device: getDeviceType(),
-          browser: getBrowserInfo(),
-          landingPage: location.pathname,
-          ...(utmSource && { utmSource }),
-          ...(utmMedium && { utmMedium }),
-          ...(utmCampaign && { utmCampaign }),
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      console.log(
-        "Referral Click Tracking - Request Payload:",
-        JSON.stringify(requestPayload, null, 2),
-      );
-
-      // Save everything to localStorage
-      localStorage.setItem("referral_code", ref);
-      localStorage.setItem(
-        "referral_metrics",
-        JSON.stringify(requestPayload.clickData),
-      );
-
-      // Update state
-      setReferralCode(ref);
-
-      // Fetch referrer profile details
-      fetchReferrerDetails(ref).catch((error) => {
-        console.error("[Referral] Failed to fetch referrer details:", error);
-      });
-
-      // Only show welcome modal if user hasn't seen it before
-      const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
-      if (!hasSeenWelcome) {
-        setShowWelcomeModal(true);
-      }
-
-      // Remove ref and UTM params from URL without triggering a refresh
-      ["ref", "utm_source", "utm_medium", "utm_campaign"].forEach((param) => {
-        params.delete(param);
-      });
-      const newUrl = `${location.pathname}${
-        params.toString() ? `?${params.toString()}` : ""
-      }`;
-      navigate(newUrl, { replace: true });
-
-      // Send initial referral event to backend - only called for valid ?ref=CODE params
-      ddApi
-        .fetch("/api/referrals/analytics/click", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(requestPayload),
-        })
-        .then(async (response) => {
-          const responseData = await response.json().catch(() => null);
-          console.log("Referral Click Tracking - Response:", {
-            status: response.status,
-            statusText: response.statusText,
-            data: responseData,
-          });
-          if (!response.ok) {
-            throw new Error(
-              `API Error: ${responseData?.error || response.statusText}`,
-            );
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to track referral click:", {
-            error: error.message,
-            stack: error.stack,
-            requestPayload,
-          });
-        });
+    // Validate referral code format - only uppercase letters, numbers, and underscores allowed
+    // Must be 4-20 characters in length and UPPERCASE only (not case-insensitive)
+    if (!/^[A-Z0-9_]{4,20}$/.test(ref)) {
+      console.warn("[Referral] Invalid referral code format:", ref);
+      return;
     }
-  }, [location, navigate]);
+
+    // Determine referral source
+    const source = location.pathname.includes("/contests/")
+      ? "contest"
+      : location.pathname.includes("/profile/")
+        ? "profile"
+        : "direct";
+
+    // Capture UTM parameters
+    const utmSource = params.get("utm_source");
+    const utmMedium = params.get("utm_medium");
+    const utmCampaign = params.get("utm_campaign");
+
+    // Generate session ID
+    const newSessionId = uuidv4();
+    setSessionId(newSessionId);
+    localStorage.setItem("referral_session_id", newSessionId);
+
+    // Create request payload
+    const requestPayload = {
+      referralCode: ref,
+      sessionId: newSessionId,
+      clickData: {
+        source,
+        device: getDeviceType(),
+        browser: getBrowserInfo(),
+        landingPage: location.pathname,
+        ...(utmSource && { utmSource }),
+        ...(utmMedium && { utmMedium }),
+        ...(utmCampaign && { utmCampaign }),
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    console.log(
+      "Referral Click Tracking - Request Payload:",
+      JSON.stringify(requestPayload, null, 2),
+    );
+
+    // Save everything to localStorage
+    localStorage.setItem("referral_code", ref);
+    localStorage.setItem(
+      "referral_metrics",
+      JSON.stringify(requestPayload.clickData),
+    );
+
+    // Update state
+    setReferralCode(ref);
+
+    // Fetch referrer profile details
+    fetchReferrerDetails(ref).catch((error) => {
+      console.error("[Referral] Failed to fetch referrer details:", error);
+    });
+
+    // Only show welcome modal if user hasn't seen it before
+    const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
+    if (!hasSeenWelcome) {
+      setShowWelcomeModal(true);
+    }
+
+    // Remove ref and UTM params from URL without triggering a refresh
+    ["ref", "utm_source", "utm_medium", "utm_campaign"].forEach((param) => {
+      params.delete(param);
+    });
+    const newUrl = `${location.pathname}${
+      params.toString() ? `?${params.toString()}` : ""
+    }`;
+    navigate(newUrl, { replace: true });
+
+    // Send initial referral event to backend - only called for valid ?ref=CODE params
+    ddApi
+      .fetch("/api/referrals/analytics/click", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestPayload),
+      })
+      .then(async (response) => {
+        const responseData = await response.json().catch(() => null);
+        console.log("Referral Click Tracking - Response:", {
+          status: response.status,
+          statusText: response.statusText,
+          data: responseData,
+        });
+        if (!response.ok) {
+          throw new Error(
+            `API Error: ${responseData?.error || response.statusText}`,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to track referral click:", {
+          error: error.message,
+          stack: error.stack,
+          requestPayload,
+        });
+      });
+  }, [location.search, navigate]);
 
   const trackConversion = async () => {
     if (referralCode && sessionId) {
