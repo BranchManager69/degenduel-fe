@@ -634,6 +634,23 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
       return;
     }
     
+    // Clear any existing WebSocket before creating a new one
+    if (wsRef.current) {
+      try {
+        wsRef.current.close();
+        wsRef.current = null;
+      } catch (err) {
+        console.error(`[WebSocket:${config.socketType}] Error closing previous connection:`, err);
+      }
+    }
+    
+    console.log(`[WebSocket:${config.socketType}] Initiating new connection attempt to ${config.endpoint}`, {
+      timestamp: new Date().toISOString(),
+      socketType: config.socketType,
+      requiresAuth: config.requiresAuth,
+      attempt: reconnectAttempts.current + 1
+    });
+    
     // Track this connection attempt
     trackConnectionAttempt(config.socketType);
     
