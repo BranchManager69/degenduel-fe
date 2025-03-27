@@ -1,7 +1,7 @@
 
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getChatResponse, getFallbackResponse } from '../../utils/openai';
+import { aiService, AIMessage } from '../../services/ai';
 
 // We need to port the DecryptionTimer component as well
 export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:00') }: { targetDate?: Date }) => {
@@ -134,6 +134,8 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
   const [terminalMinimized, setTerminalMinimized] = useState(false);
   const [terminalExitComplete, setTerminalExitComplete] = useState(false);
   const [currentPhrase, setCurrentPhrase] = useState('');
+  const [easterEggActive, setEasterEggActive] = useState(false);
+  const [glitchActive, setGlitchActive] = useState(false);
 
   // Refs
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -376,7 +378,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
         <motion.div 
           ref={terminalRef}
           key="terminal"
-          className="bg-darkGrey-dark/80 border border-mauve/30 font-mono text-sm relative p-4 rounded-md max-w-full w-full"
+          className={`bg-darkGrey-dark/80 border ${easterEggActive ? 'border-green-400/60' : 'border-mauve/30'} font-mono text-sm relative p-4 rounded-md max-w-full w-full`}
           style={{ 
             perspective: "1000px",
             transformStyle: "preserve-3d",
@@ -396,14 +398,28 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
             opacity: 1,
             scale: 1,
             y: 0,
-            filter: "brightness(1) blur(0px)",
-            boxShadow: [
-              '0 0 10px rgba(157, 78, 221, 0.2)',
-              '0 0 20px rgba(157, 78, 221, 0.4)',
-              '0 0 10px rgba(157, 78, 221, 0.2)',
-            ],
-            rotateX: [-1, 1, -1],
-            rotateY: [-2, 0, 2, 0, -2]
+            filter: glitchActive 
+              ? ["brightness(1.2) blur(1px)", "brightness(1) blur(0px)", "brightness(1.5) blur(2px)", "brightness(1) blur(0px)"]
+              : "brightness(1) blur(0px)",
+            boxShadow: easterEggActive 
+              ? [
+                '0 0 15px rgba(74, 222, 128, 0.4)',
+                '0 0 25px rgba(74, 222, 128, 0.6)',
+                '0 0 15px rgba(74, 222, 128, 0.4)',
+              ]
+              : glitchActive
+                ? [
+                  '0 0 10px rgba(255, 50, 50, 0.3)',
+                  '0 0 20px rgba(255, 50, 50, 0.5)',
+                  '0 0 10px rgba(255, 50, 50, 0.3)',
+                ]
+                : [
+                  '0 0 10px rgba(157, 78, 221, 0.2)',
+                  '0 0 20px rgba(157, 78, 221, 0.4)',
+                  '0 0 10px rgba(157, 78, 221, 0.2)',
+                ],
+            rotateX: glitchActive ? [-2, 0, 2, -1, 1] : [-1, 1, -1],
+            rotateY: glitchActive ? [-4, 0, 4, -2, 2, 0] : [-2, 0, 2, 0, -2]
           }}
           exit={showContractReveal ? {
             opacity: 0,
@@ -535,6 +551,19 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 ],
                 scale: [1, 1.1],
                 y: [0, -5]
+              } : glitchActive ? {
+                opacity: [0.3, 0.9, 0.3],
+                color: [
+                  'rgba(157, 78, 221, 0.3)',
+                  'rgba(255, 50, 50, 0.8)',
+                  'rgba(157, 78, 221, 0.3)'
+                ],
+                x: [-2, 2, -2, 0],
+                textShadow: [
+                  "0 0 2px rgba(157, 78, 221, 0.5)",
+                  "0 0 8px rgba(255, 50, 50, 0.8)",
+                  "0 0 2px rgba(157, 78, 221, 0.5)"
+                ]
               } : {
                 opacity: [0.3, 0.8, 0.3],
                 color: [
@@ -546,6 +575,10 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
               transition={showContractReveal ? {
                 duration: 1.5,
                 times: [0, 1],
+                ease: "easeInOut"
+              } : glitchActive ? {
+                duration: 0.8,
+                repeat: 5,
                 ease: "easeInOut"
               } : { 
                 duration: 3, 
@@ -560,8 +593,10 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
               style={{
                 textShadow: showContractReveal 
                   ? "0 0 10px rgba(0, 255, 0, 0.6)"
-                  : "0 0 2px rgba(157, 78, 221, 0.5)",
-                filter: !showContractReveal ? `blur(${glitchAmount}px)` : undefined,
+                  : glitchActive
+                    ? "0 0 8px rgba(255, 50, 50, 0.6)"
+                    : "0 0 2px rgba(157, 78, 221, 0.5)",
+                filter: (!showContractReveal || glitchActive) ? `blur(${glitchAmount}px)` : undefined,
               }}
               onMouseEnter={() => {
                 if (!showContractReveal) {
@@ -618,13 +653,70 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)'
               }}
             >
-              {consoleOutput.map((output, i) => (
-                <div key={i} className={`mb-1 break-words whitespace-pre-wrap ${output.startsWith('> ') ? 'text-mauve-light/80' : output.startsWith('Error:') ? 'text-red-400/90' : output.startsWith('[AI]') ? 'text-cyan-400/90' : 'text-white/80'}`}>
-                  {output}
-                </div>
-              ))}
+              {consoleOutput.map((output, i) => {
+                // Check the type of message to apply appropriate styling
+                const isUserInput = output.startsWith('> ');
+                const isError = output.startsWith('Error:');
+                const isAI = output.startsWith('[AI]');
+                
+                // Easter egg responses by category
+                const isAccessGranted = !isUserInput && !isError && !isAI && 
+                  (output.includes('ACCESS GRANTED') ||
+                   output.includes('EARLY ACCESS PROTOCOL ACTIVATED'));
+                
+                const isEmergencyOverride = !isUserInput && !isError && !isAI && !isAccessGranted &&
+                  (output.includes('EMERGENCY OVERRIDE INITIATED') ||
+                   output.includes('ADMINISTRATOR'));
+                   
+                const isWarning = !isUserInput && !isError && !isAI && !isEmergencyOverride && !isAccessGranted &&
+                  (output.includes('LEVEL: CRITICAL') ||
+                   output.includes('WARNING') ||
+                   output.includes('COMPROMISED'));
+                
+                const isPositive = !isUserInput && !isError && !isAI && !isEmergencyOverride && !isWarning &&
+                  (output.includes('SYSTEM SCAN INITIATED') || 
+                   output.includes('RUNNING FULL SYSTEM DIAGNOSTIC'));
+                
+                // Check for and activate special effects
+                if (isAccessGranted && !easterEggActive) {
+                  setEasterEggActive(true);
+                  // Auto-disable after some time
+                  setTimeout(() => setEasterEggActive(false), 8000);
+                }
+                
+                if ((isEmergencyOverride || isWarning) && !glitchActive) {
+                  setGlitchActive(true);
+                  // Auto-disable after some time
+                  setTimeout(() => setGlitchActive(false), 5000);
+                }
+                
+                return (
+                  <div 
+                    key={i} 
+                    className={`mb-1 break-words whitespace-pre-wrap ${isUserInput || isError ? '' : 'text-right'}`}
+                  >
+                    <span 
+                      className={
+                        isUserInput ? 'text-mauve-light/80' : 
+                        isError ? 'text-red-400/90' : 
+                        isAI ? 'text-cyan-400/90' : 
+                        isAccessGranted ? 'text-green-500/90 font-bold' :
+                        isEmergencyOverride ? 'text-red-500/90 font-bold' :
+                        isWarning ? 'text-amber-400/90' :
+                        isPositive ? 'text-teal-300/90' :
+                        'text-teal-200/90'
+                      }
+                    >
+                      {output}
+                    </span>
+                  </div>
+                );
+              })}
               {consoleOutput.length === 0 && (
-                <div className="text-white/40 italic text-xs">Type commands below or ask AI questions. Try 'help' to see available options.</div>
+                <div className="text-mauve-light/60 italic text-xs text-center py-2">
+                  <span className="block">Type commands below or ask AI questions.</span>
+                  <span className="block mt-1">Try <span className="text-mauve-light">help</span> to see available options.</span>
+                </div>
               )}
             </div>
             
@@ -713,7 +805,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                             // Remove the "Processing..." message
                             setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
                             
-                            const response = await getChatResponse([
+                            const messages: AIMessage[] = [
                               {
                                 role: 'system',
                                 content: 'You are the AI assistant for DegenDuel, a high-stakes trading competition platform on Solana. You are speaking to a user through the Terminal interface on the website. Keep your answers concise and related to crypto trading, DegenDuel platform features, or general blockchain questions. The platform is launching on March 15th, 2025.'
@@ -722,15 +814,20 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                                 role: 'user',
                                 content: command
                               }
-                            ]);
+                            ];
+                            
+                            const aiResponse = await aiService.chat(messages, {
+                              temperature: 0.7,
+                              maxTokens: 150
+                            });
                             
                             // Add AI response to console
-                            setConsoleOutput(prev => [...prev, `[AI] ${response}`]);
+                            setConsoleOutput(prev => [...prev, `[AI] ${aiResponse.content}`]);
                             scrollConsoleToBottom();
                           } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
                             console.error('Error getting AI response:', error);
                             setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
-                            setConsoleOutput(prev => [...prev, `[AI] ${getFallbackResponse()}`]);
+                            setConsoleOutput(prev => [...prev, `[AI] Sorry, I'm degenning right now. Check with me again later.`]);
                             scrollConsoleToBottom();
                           }
                         }, 500);
@@ -756,7 +853,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                     setTimeout(scrollConsoleToBottom, 50);
                   }
                 }}
-                className="bg-transparent border-none outline-none text-white/90 w-full font-mono text-sm terminal-input"
+                className="bg-transparent border-none outline-none text-white/90 w-full font-mono text-sm terminal-input placeholder-mauve-light/70"
                 placeholder="$ Enter command or ask AI a question..."
                 style={{ color: 'rgba(255, 255, 255, 0.9)', caretColor: 'rgb(34, 211, 238)' }}
                 autoComplete="off"
@@ -771,7 +868,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.5, duration: 1 }}
             >
-              <div className="text-white/40 text-xs uppercase tracking-wider mb-1 text-left">Commands:</div>
+              <div className="text-mauve-light/70 text-xs uppercase tracking-wider mb-1 text-left">Commands:</div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-sm">
                 {/* Show all commands up to current reveal stage */}
                 {timeGatedCommands.slice(0, revealStage + 1).flat().map((cmd, index) => (

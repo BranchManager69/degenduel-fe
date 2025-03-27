@@ -106,6 +106,14 @@ export const Footer: React.FC = () => {
           {/* Left side - Links with horizontal scroll if needed */}
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0">
             <div className="flex items-center space-x-4 shrink-0">
+              <a
+                href="https://status.degenduel.me/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
+              >
+                Status
+              </a>
               <Link
                 to="/platform"
                 className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
