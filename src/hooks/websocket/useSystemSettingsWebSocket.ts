@@ -50,7 +50,7 @@ export function useSystemSettingsWebSocket() {
   } = useWebSocket<SystemSettingsMessage>({
     endpoint: WEBSOCKET_ENDPOINTS.SYSTEM_SETTINGS,
     socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
-    requiresAuth: true, // System settings requires admin authentication
+    requiresAuth: false, // Changed to false to match status WebSocket and allow connection without auth
     heartbeatInterval: 30000
   });
 

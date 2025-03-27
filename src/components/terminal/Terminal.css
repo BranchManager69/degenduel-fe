@@ -1,4 +1,135 @@
-/* Terminal Component Styles */
+/* Terminal Component Styles - Enhanced Version */
+
+/* Custom scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(13, 13, 13, 0.3);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(157, 78, 221, 0.7);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 78, 221, 0.9);
+}
+
+/* Terminal CRT effect */
+.terminal-crt {
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-crt::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.1) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.terminal-crt::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(18, 16, 16, 0.1);
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+/* Terminal CRT flicker effect */
+@keyframes flicker {
+  0% { opacity: 0.27861; }
+  5% { opacity: 0.34769; }
+  10% { opacity: 0.23604; }
+  15% { opacity: 0.90626; }
+  20% { opacity: 0.18128; }
+  25% { opacity: 0.83891; }
+  30% { opacity: 0.65583; }
+  35% { opacity: 0.67807; }
+  40% { opacity: 0.26559; }
+  45% { opacity: 0.84693; }
+  50% { opacity: 0.96019; }
+  55% { opacity: 0.08594; }
+  60% { opacity: 0.20313; }
+  65% { opacity: 0.71988; }
+  70% { opacity: 0.53455; }
+  75% { opacity: 0.37288; }
+  80% { opacity: 0.71428; }
+  85% { opacity: 0.70419; }
+  90% { opacity: 0.7003; }
+  95% { opacity: 0.36108; }
+  100% { opacity: 0.24387; }
+}
+
+/* Message styling */
+.console-prompt {
+  color: rgba(157, 78, 221, 0.9);
+  font-weight: bold;
+}
+
+.console-user-input {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.console-ai-response {
+  color: rgba(34, 211, 238, 0.9);
+  border-left: 2px solid rgba(34, 211, 238, 0.5);
+  padding-left: 8px;
+  margin-left: 4px;
+}
+
+.console-error {
+  color: rgba(239, 68, 68, 0.9);
+  border-left: 2px solid rgba(239, 68, 68, 0.5);
+  padding-left: 8px;
+}
+
+.console-success {
+  color: rgba(74, 222, 128, 0.9);
+  border-left: 2px solid rgba(74, 222, 128, 0.5);
+  padding-left: 8px;
+}
+
+.console-warning {
+  color: rgba(234, 179, 8, 0.9);
+  border-left: 2px solid rgba(234, 179, 8, 0.5);
+  padding-left: 8px;
+}
+
+/* Typing animation */
+.typing-animation::after {
+  content: '▋';
+  display: inline-block;
+  margin-left: 4px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
 
 /* Prevent scrolling in the terminal container */
 .terminal-container {

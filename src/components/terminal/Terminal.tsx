@@ -270,6 +270,8 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
       // Type out current phrase
       const typeInterval = setInterval(() => {
         const currentText = secretPhrases[phraseIndex].substring(0, charIndex + 1);
+        
+        // Simply update the content without any scrolling
         setCurrentPhrase(currentText);
         
         charIndex++;
@@ -519,21 +521,24 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
             </motion.div>
           </div>
         
-          {/* Terminal content with custom scrollbar styling */}
+          {/* Terminal content with custom scrollbar styling and CRT effect */}
           <div 
             ref={terminalContentRef} 
-            className="text-white/70 max-h-[480px] overflow-y-auto p-3 pr-3 pb-4 custom-scrollbar console-output text-sm"
+            className="terminal-crt text-white/70 max-h-[480px] overflow-y-auto p-3 pr-3 pb-4 custom-scrollbar console-output text-sm"
             style={{
               scrollbarWidth: 'thin',
-              scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)'
+              scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
+              backgroundImage: 'radial-gradient(rgba(0, 0, 0, 0.1) 15%, transparent 16%), radial-gradient(rgba(0, 0, 0, 0.1) 15%, transparent 16%)',
+              backgroundSize: '4px 4px',
+              backgroundPosition: '0 0, 2px 2px'
             }}
           >
             <motion.div
               animate={{ opacity: [1, 0.7, 1] }}
               transition={{ duration: 0.5, repeat: Infinity }}
             >
-              {currentPhrase}
-              <span className="ml-1 inline-block w-2 h-4 bg-mauve-light animate-pulse"></span>
+              <span style={{ pointerEvents: 'none' }}>{currentPhrase}</span>
+              <span className="ml-1 inline-block w-2 h-4 bg-mauve-light animate-pulse" style={{ pointerEvents: 'none' }}></span>
             </motion.div>
             
             {/* Contract address teaser */}
@@ -624,7 +629,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
             </motion.div>
             
             {/* Prominent countdown timer */}
-            <div className="mt-6 mb-6 border-y border-mauve/30 py-4">
+            <div className="mt-6 mb-6">
               <div className="text-center">
                 <motion.div 
                   className="uppercase tracking-[0.3em] text-sm text-white/60 font-orbitron mb-3"
@@ -647,10 +652,13 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
             {/* Console output display (merged with AI chat responses) */}
             <div 
               ref={consoleOutputRef} 
-              className="mt-3 text-green-400/80 overflow-y-auto overflow-x-hidden h-[140px] border-t border-b border-mauve/20 py-2 text-left custom-scrollbar console-output"
+              className="mt-3 text-green-400/80 overflow-y-auto overflow-x-hidden h-[140px] py-2 text-left custom-scrollbar console-output"
               style={{
                 scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)'
+                scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
+                background: 'rgba(0, 0, 0, 0.2)',
+                boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.3)',
+                borderRadius: '4px'
               }}
             >
               {consoleOutput.map((output, i) => {
@@ -693,21 +701,25 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 return (
                   <div 
                     key={i} 
-                    className={`mb-1 break-words whitespace-pre-wrap ${isUserInput || isError ? '' : 'text-right'}`}
+                    className={`mb-1 break-words whitespace-pre-wrap ${isUserInput ? '' : isAI ? 'ml-2' : isError ? '' : 'ml-1'}`}
                   >
                     <span 
                       className={
-                        isUserInput ? 'text-mauve-light/80' : 
-                        isError ? 'text-red-400/90' : 
-                        isAI ? 'text-cyan-400/90' : 
-                        isAccessGranted ? 'text-green-500/90 font-bold' :
-                        isEmergencyOverride ? 'text-red-500/90 font-bold' :
-                        isWarning ? 'text-amber-400/90' :
-                        isPositive ? 'text-teal-300/90' :
+                        isUserInput ? 'console-user-input console-prompt' : 
+                        isError ? 'console-error' : 
+                        isAI ? 'console-ai-response' : 
+                        isAccessGranted ? 'console-success font-bold' :
+                        isEmergencyOverride ? 'console-error font-bold' :
+                        isWarning ? 'console-warning' :
+                        isPositive ? 'console-success' :
                         'text-teal-200/90'
                       }
                     >
-                      {output}
+                      {isAI && output.startsWith('[AI] Processing...') ? (
+                        <span className="typing-animation">{output}</span>
+                      ) : (
+                        output
+                      )}
                     </span>
                   </div>
                 );
@@ -721,8 +733,8 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
             </div>
             
             {/* Unified user input area - always visible at bottom */}
-            <div className="mt-4 flex items-center bg-gradient-to-r from-mauve/5 to-darkGrey-dark/30 rounded px-2 py-1.5 border border-mauve/20 focus-within:border-mauve/40 focus-within:shadow-sm focus-within:shadow-mauve/30">
-              <span className="text-mauve-light font-mono font-bold mr-2">$</span>
+            <div className="mt-4 flex items-center bg-gradient-to-r from-mauve/5 to-darkGrey-dark/30 rounded px-2 py-1.5 border border-mauve/20 focus-within:border-mauve/40 focus-within:shadow-sm focus-within:shadow-mauve/30 transition-all duration-300 hover:border-mauve/30">
+              <span className="text-mauve-light font-mono font-bold mr-2 animate-pulse">$</span>
               <input
                 ref={inputRef}
                 type="text"
@@ -800,16 +812,40 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                         setConsoleOutput(prev => [...prev, `[AI] Processing...`]);
                         
                         // Get AI response
+                        const processingMessage = `[AI] Processing...`;
+                        
+                        // Clear duplicate processing message
+                        setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
+                        
+                        // Reference to detect user scroll
+                        let userHasScrolled = false;
+                        const detectUserScroll = () => {
+                          if (consoleOutputRef.current) {
+                            userHasScrolled = true;
+                            // Remove the scroll listener after detecting user interaction
+                            consoleOutputRef.current.removeEventListener('wheel', detectUserScroll);
+                            consoleOutputRef.current.removeEventListener('touchmove', detectUserScroll);
+                          }
+                        };
+                        
+                        // Add scroll detection
+                        if (consoleOutputRef.current) {
+                          consoleOutputRef.current.addEventListener('wheel', detectUserScroll);
+                          consoleOutputRef.current.addEventListener('touchmove', detectUserScroll);
+                        }
+                        
                         setTimeout(async () => {
                           try {
+                            // Remove event listeners
+                            if (consoleOutputRef.current) {
+                              consoleOutputRef.current.removeEventListener('wheel', detectUserScroll);
+                              consoleOutputRef.current.removeEventListener('touchmove', detectUserScroll);
+                            }
+                            
                             // Remove the "Processing..." message
-                            setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
+                            setConsoleOutput(prev => prev.filter(msg => msg !== processingMessage));
                             
                             const messages: AIMessage[] = [
-                              {
-                                role: 'system',
-                                content: 'You are the AI assistant for DegenDuel, a high-stakes trading competition platform on Solana. You are speaking to a user through the Terminal interface on the website. Keep your answers concise and related to crypto trading, DegenDuel platform features, or general blockchain questions. The platform is launching on March 15th, 2025.'
-                              },
                               {
                                 role: 'user',
                                 content: command
@@ -817,18 +853,25 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                             ];
                             
                             const aiResponse = await aiService.chat(messages, {
-                              temperature: 0.7,
-                              maxTokens: 150
+                              context: 'trading' // Use trading context for terminal interface
                             });
                             
-                            // Add AI response to console
+                            // Add AI response to console without force scrolling if user has scrolled
                             setConsoleOutput(prev => [...prev, `[AI] ${aiResponse.content}`]);
-                            scrollConsoleToBottom();
+                            
+                            // Only auto-scroll if user hasn't manually scrolled
+                            if (!userHasScrolled) {
+                              setTimeout(scrollConsoleToBottom, 10);
+                            }
                           } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
                             console.error('Error getting AI response:', error);
-                            setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
+                            setConsoleOutput(prev => prev.filter(msg => msg !== processingMessage));
                             setConsoleOutput(prev => [...prev, `[AI] Sorry, I'm degenning right now. Check with me again later.`]);
-                            scrollConsoleToBottom();
+                            
+                            // Only auto-scroll if user hasn't manually scrolled
+                            if (!userHasScrolled) {
+                              setTimeout(scrollConsoleToBottom, 10);
+                            }
                           }
                         }, 500);
                       }
@@ -842,7 +885,18 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                     // Scroll only the console output element, not the window
                     const scrollConsoleToBottom = () => {
                       if (consoleOutputRef.current) {
-                        consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+                        // Save current scroll position
+                        const currentScrollTop = consoleOutputRef.current.scrollTop;
+                        const currentScrollHeight = consoleOutputRef.current.scrollHeight;
+                        const currentClientHeight = consoleOutputRef.current.clientHeight;
+                        
+                        // Only auto-scroll if user was already at bottom (or close to it)
+                        // This prevents fighting against user's manual scrolling
+                        const isNearBottom = currentScrollTop + currentClientHeight >= currentScrollHeight - 50;
+                        
+                        if (isNearBottom) {
+                          consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+                        }
                       }
                     };
                     
@@ -854,27 +908,34 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                   }
                 }}
                 className="bg-transparent border-none outline-none text-white/90 w-full font-mono text-sm terminal-input placeholder-mauve-light/70"
-                placeholder="$ Enter command or ask AI a question..."
-                style={{ color: 'rgba(255, 255, 255, 0.9)', caretColor: 'rgb(34, 211, 238)' }}
+                placeholder="Enter command or ask AI a question..."
+                style={{ 
+                  color: 'rgba(255, 255, 255, 0.9)', 
+                  caretColor: 'rgb(34, 211, 238)',
+                  textShadow: '0 0 3px rgba(34, 211, 238, 0.3)'
+                }}
                 autoComplete="off"
                 spellCheck="false"
+                autoFocus
               />
             </div>
             
             {/* Time-gated commands */}
             <motion.div 
-              className="mt-3 pt-2 border-t border-mauve/20 text-left"
+              className="mt-3 pt-2 text-left"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.5, duration: 1 }}
             >
-              <div className="text-mauve-light/70 text-xs uppercase tracking-wider mb-1 text-left">Commands:</div>
+              <div className="text-mauve-light/70 text-xs uppercase tracking-wider mb-2 text-left">
+                <span className="bg-mauve/20 px-2 py-0.5 rounded-sm">Commands</span>
+              </div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-sm">
                 {/* Show all commands up to current reveal stage */}
                 {timeGatedCommands.slice(0, revealStage + 1).flat().map((cmd, index) => (
                   <motion.div 
                     key={index}
-                    className="text-mauve-light/60 hover:text-mauve-light cursor-pointer text-xs"
+                    className="text-mauve-light/60 hover:text-mauve-light cursor-pointer text-xs flex items-center"
                     initial={{ opacity: 0, x: -5 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ 
@@ -883,6 +944,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                     }}
                     whileHover={{
                       x: 3,
+                      scale: 1.05,
                       textShadow: "0 0 8px rgba(157, 78, 221, 0.8)"
                     }}
                     onClick={() => {
@@ -903,7 +965,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                       }
                     }}
                   >
-                    {cmd}
+                    <span className="text-cyan-400/30 mr-1">❯</span> {cmd}
                   </motion.div>
                 ))}
               </div>

@@ -1,17 +1,45 @@
 // src/components/layout/Footer.tsx
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useScrollFooter } from "../../hooks/useScrollFooter";
 import { useServerStatusWebSocket } from "../../hooks/websocket/useServerStatusWebSocket";
+import { useSystemSettingsWebSocket } from "../../hooks/websocket/useSystemSettingsWebSocket";
 
 export const Footer: React.FC = () => {
-  // Use our new WebSocket hook for server status
+  // Use our WebSocket hooks for server status and system settings
   const status = useServerStatusWebSocket();
-  // Use our new scroll hook for footer
+  const systemSettings = useSystemSettingsWebSocket();
+  
+  // Track combined WebSocket connection status
+  const [combinedWsStatus, setCombinedWsStatus] = useState({
+    isConnected: false,
+    connectedSockets: 0
+  });
+  
+  // Use our scroll hook for footer
   const { isCompact } = useScrollFooter(50);
   
+  // Update combined WebSocket status when individual statuses change
+  useEffect(() => {
+    const serverConnected = status.isWebSocketConnected;
+    const systemConnected = systemSettings.loading === false && !systemSettings.error;
+    
+    const connectedCount = (serverConnected ? 1 : 0) + (systemConnected ? 1 : 0);
+    
+    setCombinedWsStatus({
+      isConnected: connectedCount > 0,
+      connectedSockets: connectedCount
+    });
+    
+    console.log("WebSocket Connection Status:", {
+      server: serverConnected ? "Connected" : "Disconnected",
+      systemSettings: systemConnected ? "Connected" : "Disconnected",
+      combined: connectedCount > 0 ? "At least one connected" : "All disconnected"
+    });
+  }, [status.isWebSocketConnected, systemSettings.loading, systemSettings.error]);
+
   // Click outside handler to close the dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,14 +99,16 @@ export const Footer: React.FC = () => {
     // Get base styles for current status
     const currentStyles = baseStyles[status.status as keyof typeof baseStyles] || baseStyles.offline;
 
-    // Add WebSocket-specific enhancements when connected
-    if (status.isWebSocketConnected) {
+    // Add WebSocket-specific enhancements when any WebSocket is connected
+    if (combinedWsStatus.isConnected) {
       return {
         ...currentStyles,
         // Enhanced styles for WebSocket connection
         wsBorder: "border border-brand-500/30",
         wsEffect: "animate-shine-websocket",
         wsIndicator: true,
+        // Add the number of connected sockets
+        connectedSockets: combinedWsStatus.connectedSockets
       };
     }
 
@@ -88,6 +118,7 @@ export const Footer: React.FC = () => {
       wsBorder: "",
       wsEffect: "",
       wsIndicator: false,
+      connectedSockets: 0
     };
   };
 
@@ -206,7 +237,7 @@ export const Footer: React.FC = () => {
                 {status.status.toUpperCase()}
                 {styles.wsIndicator && (
                   <span className="ml-0.5 text-cyan-400 text-opacity-70 text-[8px] align-top">
-                    ⚡
+                    ⚡{styles.connectedSockets > 1 ? styles.connectedSockets : ''}
                   </span>
                 )}
               </span>
@@ -234,13 +265,15 @@ export const Footer: React.FC = () => {
                         const technicalInfo = `
 Server Status: ${status.status.toUpperCase()}
 Message: ${status.message}
-WebSocket Connected: ${status.isWebSocketConnected ? "Yes" : "No"}
-Endpoint: /api/v69/ws/monitor
-Connection URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor
+Monitor WebSocket: ${status.isWebSocketConnected ? "Connected" : "Disconnected"}
+System Settings WebSocket: ${!systemSettings.loading && !systemSettings.error ? "Connected" : "Disconnected"}
+Total Connected Sockets: ${combinedWsStatus.connectedSockets}
+Endpoints: /api/v69/ws/monitor, /api/v69/ws/system-settings
+Connection URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}
 Last Checked: ${new Date().toLocaleTimeString()}
 Host: ${window.location.hostname}
 Environment: ${import.meta.env.MODE || "production"}
-WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-status", requiresAuth: false }
+WS Config: { requiresAuth: false, maxReconnectAttempts: 5 }
                         `.trim();
                         
                         navigator.clipboard.writeText(technicalInfo)
@@ -263,35 +296,52 @@ WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-statu
                     WebSocket Debug Information:
                   </div>
                   {/* Connection Status */}
-                  <div
-                    className={`flex items-center ${status.isWebSocketConnected ? "text-green-400" : "text-red-400"} mb-1`}
-                  >
+                  <div className="flex flex-col gap-1">
                     <div
-                      className={`w-2 h-2 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
-                    />
-                    Server Status WS:{" "}
-                    {status.isWebSocketConnected ? "Connected" : "Disconnected"}
+                      className={`flex items-center ${status.isWebSocketConnected ? "text-green-400" : "text-red-400"}`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
+                      />
+                      Monitor WS:{" "}
+                      {status.isWebSocketConnected ? "Connected" : "Disconnected"}
+                    </div>
+                    
+                    <div
+                      className={`flex items-center ${!systemSettings.loading && !systemSettings.error ? "text-green-400" : "text-red-400"}`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full mr-2 ${!systemSettings.loading && !systemSettings.error ? "bg-green-500" : "bg-red-500"}`}
+                      />
+                      System Settings WS:{" "}
+                      {!systemSettings.loading && !systemSettings.error ? "Connected" : "Disconnected"}
+                    </div>
                   </div>
 
                   {/* Connection Details */}
                   <div className="text-gray-300 mt-1 text-[10px] grid grid-cols-[100px_1fr] gap-1">
-                    <div className="font-semibold">Endpoint:</div> 
-                    <div>/api/v69/ws/monitor</div>
+                    <div className="font-semibold">Endpoints:</div> 
+                    <div>/api/v69/ws/monitor, /api/v69/ws/system-settings</div>
                     
                     <div className="font-semibold">Auth Required:</div> 
-                    <div className="text-yellow-400">Yes - Session Token</div>
+                    <div className="text-green-400">No - Public Endpoints</div>
                     
                     <div className="font-semibold">Connection URL:</div> 
-                    <div className="break-all">{import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor</div>
+                    <div className="break-all">{import.meta.env.VITE_WS_URL || "wss://degenduel.me"}{combinedWsStatus.connectedSockets > 0 ? " (Connected!)" : " (Disconnected)"}</div>
                     
                     <div className="font-semibold">Connected Since:</div> 
-                    <div>{status.isWebSocketConnected ? new Date().toLocaleTimeString() : "Not connected"}</div>
+                    <div>{combinedWsStatus.connectedSockets > 0 ? new Date().toLocaleTimeString() : "Not connected"}</div>
                     
                     <div className="font-semibold">Connection ID:</div> 
-                    <div>{status.isWebSocketConnected ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
+                    <div>{combinedWsStatus.connectedSockets > 0 ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
                     
                     <div className="font-semibold">Protocol:</div> 
                     <div>WSS (Secure WebSocket)</div>
+                    
+                    <div className="font-semibold">Total Connected:</div> 
+                    <div className={combinedWsStatus.connectedSockets > 0 ? "text-green-400" : "text-red-400"}>
+                      {combinedWsStatus.connectedSockets} of 2 sockets
+                    </div>
                     
                     <div className="font-semibold">Last Message:</div> 
                     <div>{new Date().toLocaleTimeString()}</div>
@@ -299,13 +349,13 @@ WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-statu
 
                   {/* Authentication Debugging */}
                   <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
-                    <div className="font-semibold mb-1 text-yellow-400">Authentication Issues:</div>
+                    <div className="font-semibold mb-1 text-green-400">Authentication Status:</div>
                     <ul className="list-disc list-inside text-gray-300 space-y-1">
-                      <li>WebSocket requires authentication via session_token</li>
-                      <li>Check localStorage for "dd_session" or "user" objects</li>
-                      <li>Check Network tab for 401 errors on WebSocket connection</li>
-                      <li>JWT token may be expired (should auto-refresh)</li>
-                      <li>Try reconnecting wallet if using web3 auth</li>
+                      <li>WebSockets now configured for <span className="text-green-400">public access</span> - no auth required</li>
+                      <li>Auth settings updated to prevent 401 errors</li>
+                      <li>Using two WebSocket connections for redundancy</li>
+                      <li>Fixed localStorage key to "degenduel-storage"</li>
+                      <li>If issues persist, try clearing browser cache or refreshing</li>
                     </ul>
                   </div>
 
@@ -393,14 +443,35 @@ WS Config: { url: "", endpoint: "/api/v69/ws/monitor", socketType: "server-statu
                     </button>
                   </div>
                   <pre className="whitespace-pre-wrap break-all text-[8px] text-gray-400 bg-gray-800/50 p-2 mt-1 rounded">
-{`// Current WebSocket Configuration
+{`// UPDATED WebSocket Configuration
+// Monitor WebSocket
 {
-  url: "${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}",  // Determined automatically
+  // URL uses environment-specific value:
+  // Development: wss://dev.degenduel.me (from .env.development)
+  // Production: wss://degenduel.me (from .env)
+  url: "${import.meta.env.VITE_WS_URL || window.location.hostname === "dev.degenduel.me" 
+    ? "wss://dev.degenduel.me" 
+    : "wss://degenduel.me"}",
   endpoint: "/api/v69/ws/monitor",
   socketType: "server-status",
   heartbeatInterval: 30000,
   maxReconnectAttempts: 5, 
-  requiresAuth: false  // Modified value - was true 
+  requiresAuth: false  // Changed from true to false
+}
+
+// System Settings WebSocket 
+{
+  // URL uses environment-specific value:
+  // Development: wss://dev.degenduel.me (from .env.development)
+  // Production: wss://degenduel.me (from .env)
+  url: "${import.meta.env.VITE_WS_URL || window.location.hostname === "dev.degenduel.me" 
+    ? "wss://dev.degenduel.me" 
+    : "wss://degenduel.me"}",
+  endpoint: "/api/v69/ws/system-settings",
+  socketType: "system-settings",
+  heartbeatInterval: 30000,
+  maxReconnectAttempts: 5,
+  requiresAuth: false  // Changed from true to false
 }`}
                   </pre>
                   

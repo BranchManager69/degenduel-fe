@@ -17,14 +17,10 @@ export interface AIBaseOptions {
 
 // Chat-specific options
 export interface ChatOptions extends AIBaseOptions {
-  // Model to use (default determined by backend)
-  model?: string;
-  // Temperature controls randomness (0-1)
-  temperature?: number;
-  // Max tokens to generate (when supported)
-  maxTokens?: number;
   // Custom conversation ID for tracking conversations
   conversationId?: string;
+  // Conversation context (determines system prompt)
+  context?: 'default' | 'trading';
 }
 
 // Image generation options (future use)
@@ -99,6 +95,9 @@ class AIService {
       if (options.debug) {
         console.log('AI Chat Request:', { messages, options });
       }
+
+      // Filter out system messages as they're now handled by the backend
+      const filteredMessages = messages.filter(msg => msg.role !== 'system');
       
       const response = await fetch(`${this.API_BASE}/chat`, {
         method: 'POST',
@@ -106,10 +105,8 @@ class AIService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages,
-          model: options.model,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
+          messages: filteredMessages,
+          context: options.context || 'default',
           conversationId: options.conversationId
         }),
       });

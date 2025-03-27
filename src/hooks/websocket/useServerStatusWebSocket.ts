@@ -47,7 +47,7 @@ export function useServerStatusWebSocket() {
   const wsOptions = React.useMemo(() => ({
     endpoint: WEBSOCKET_ENDPOINTS.SERVER_STATUS,
     socketType: SOCKET_TYPES.SERVER_STATUS,
-    requiresAuth: true, // Backend expects authenticated requests
+    requiresAuth: false, // Changed to false as authentication is no longer required
     heartbeatInterval: 30000, // 30-second heartbeat
     maxReconnectAttempts: 5
   }), []);
