@@ -21,9 +21,9 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
     <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] group
-          ${isCompact ? "h-6 px-1.5" : "h-8 px-2"}
-          hover:bg-dark-300/20 active:bg-dark-300/30 rounded-full relative z-50`}
+        className={`flex items-center justify-center transition-all duration-200 group
+          ${isCompact ? "w-8 h-8" : "w-9 h-9"}
+          hover:bg-dark-300/30 active:bg-dark-300/40 rounded-md relative z-50`}
       >
         <div
           className={`flex flex-col gap-[3px] items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
@@ -75,9 +75,8 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className={`absolute right-0 mt-1 w-48 bg-dark-200/80 border-[0.5px] border-brand-500/30 
-                rounded-xl shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-xl
-                ${isCompact ? "mt-0.5" : "mt-1"}`}
+              className={`absolute right-0 mt-2 w-56 bg-dark-200/95 border border-brand-500/30 
+                rounded-md shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-xl`}
             >
               {/* Enhanced gradient overlays */}
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-transparent to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
