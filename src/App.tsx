@@ -102,50 +102,65 @@ export const App: React.FC = () => {
   const { user } = useStore();
 
   useEffect(() => {
-    // Only set up auth checks if we don't have a user
-    if (!user) {
-      // Check auth every 60 seconds in production, 30 in development
-      const checkInterval = import.meta.env.PROD ? 60 * 1000 : 30 * 1000;
-      const authCheckInterval = setInterval(checkAuth, checkInterval);
-
-      // Debounced handlers for visibility and online status
-      let visibilityTimeout: NodeJS.Timeout;
-      let onlineTimeout: NodeJS.Timeout;
-
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === "visible" && !user) {
-          // Clear any existing timeout
-          clearTimeout(visibilityTimeout);
-          // Wait 2 seconds before checking auth
-          visibilityTimeout = setTimeout(checkAuth, 2000);
+    // Always validate auth on startup, regardless of stored user state
+    const validateAuth = async () => {
+      console.log("[Auth] Validating authentication status on app startup");
+      try {
+        await checkAuth();
+      } catch (error) {
+        console.error("[Auth] Failed to validate authentication:", error);
+        // If validation fails and we have a stored user, clear it
+        if (user) {
+          console.log("[Auth] Stored user found but validation failed, logging out");
+          useStore.getState().disconnectWallet();
         }
-      };
+      }
+    };
 
-      const handleOnlineStatus = () => {
-        if (navigator.onLine && !user) {
-          // Clear any existing timeout
-          clearTimeout(onlineTimeout);
-          // Wait 2 seconds before checking auth
-          onlineTimeout = setTimeout(checkAuth, 2000);
-        }
-      };
+    // Run validation immediately on page load
+    validateAuth();
 
-      // Add event listeners for auth checks
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-      window.addEventListener("online", handleOnlineStatus);
+    // Set up regular auth checks
+    const checkInterval = import.meta.env.PROD ? 60 * 1000 : 30 * 1000;
+    const authCheckInterval = setInterval(checkAuth, checkInterval);
 
-      // Cleanup
-      return () => {
-        clearInterval(authCheckInterval);
+    // Debounced handlers for visibility and online status
+    let visibilityTimeout: NodeJS.Timeout;
+    let onlineTimeout: NodeJS.Timeout;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Clear any existing timeout
         clearTimeout(visibilityTimeout);
+        // Wait 2 seconds before checking auth
+        visibilityTimeout = setTimeout(checkAuth, 2000);
+      }
+    };
+
+    const handleOnlineStatus = () => {
+      if (navigator.onLine) {
+        // Clear any existing timeout
         clearTimeout(onlineTimeout);
-        document.removeEventListener(
-          "visibilitychange",
-          handleVisibilityChange,
-        );
-        window.removeEventListener("online", handleOnlineStatus);
-      };
-    }
+        // Wait 2 seconds before checking auth
+        onlineTimeout = setTimeout(checkAuth, 2000);
+      }
+    };
+
+    // Add event listeners for auth checks
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnlineStatus);
+
+    // Cleanup
+    return () => {
+      clearInterval(authCheckInterval);
+      clearTimeout(visibilityTimeout);
+      clearTimeout(onlineTimeout);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+      window.removeEventListener("online", handleOnlineStatus);
+    };
   }, [checkAuth, user]);
 
   return (

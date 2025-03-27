@@ -4,16 +4,15 @@
 const isDev =
   window.location.hostname === "localhost" ||
   ////window.location.hostname.startsWith("127.0.0.1") ||
-  window.location.hostname === "dev.degenduel.me"; // Use dev subdomain for development
-
+  window.location.hostname === "dev.degenduel.me"; // if window is localhost or dev.degenduel.me, then isDev = TRUE
+// Base URLs
 const PROD_URL = "https://degenduel.me";
 const DEV_URL = "https://dev.degenduel.me";
-
 // Use correct ports for each environment
 const PROD_PORT = "3004";
 const DEV_PORT = "3005";
-const LOCAL_PORT = "3006";
-
+const LOCAL_PORT = "3006"; // almost NEVER if EVER used
+// NODE_ENV gets set and exported; is either "development" or "production"
 export const NODE_ENV = isDev ? "development" : "production";
 
 /* Debug Mode */
@@ -24,7 +23,7 @@ export const PORT_CONFIG = isDev
   ? window.location.hostname === "localhost"
     ? LOCAL_PORT // Use 3006 for local development
     : DEV_PORT // Use 3005 for deve
-  : PROD_PORT;
+  : PROD_PORT; // Use 3004 for production
 
 export const PROD_URL_CONFIG = PROD_URL;
 export const DEV_URL_CONFIG = DEV_URL;
