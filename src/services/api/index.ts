@@ -8,6 +8,7 @@ console.log("API_URL configuration in use:", {
 
 // Import all API modules
 import { admin } from "./admin";
+import { ai } from "./ai";
 import { balance } from "./balance";
 import { contests } from "./contests";
 import { portfolio } from "./portfolio";
@@ -26,6 +27,7 @@ export const ddApi = {
   portfolio,
   balance,
   transactions,
+  ai,
 };
 
 // Export utility functions

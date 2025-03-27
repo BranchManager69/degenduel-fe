@@ -1,0 +1,189 @@
+/* Terminal Component Styles */
+
+/* Prevent scrolling in the terminal container */
+.terminal-container {
+  overflow: hidden !important;
+  max-width: 100% !important;
+  transition: transform 0.3s ease;
+}
+
+/* Glitch animation for Easter egg discovery */
+@keyframes terminal-glitch {
+  0% {
+    transform: translate(0);
+    text-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+  }
+  2% {
+    transform: translate(-2px, 2px);
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+  }
+  4% {
+    transform: translate(2px, -2px);
+    text-shadow: 0 0 8px rgba(157, 78, 221, 0.8);
+  }
+  5% {
+    transform: translate(-2px, 2px);
+    text-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+  }
+  6% {
+    transform: translate(0);
+    text-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+  }
+  8% {
+    transform: translate(5px, -3px);
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+  }
+  10% {
+    transform: translate(-2px, 2px);
+    text-shadow: 0 0 8px rgba(157, 78, 221, 0.8);
+  }
+  12% {
+    transform: translate(0);
+    text-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+  }
+  100% {
+    transform: translate(0);
+    text-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+  }
+}
+
+.terminal-glitch {
+  animation: terminal-glitch 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Apply custom styling to all child elements */
+.terminal-container * {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Style the terminal component that scales on hover */
+.terminal-container motion.div[key="terminal"] {
+  transition: all 0.3s ease;
+  transform-origin: center center;
+}
+
+/* More strict controls for animations to prevent scrollbars */
+.terminal-container motion.div {
+  overflow: visible !important;
+  max-height: fit-content;
+}
+
+/* Ensure content doesn't cause unwanted scrollbars during animations */
+.terminal-container .bg-darkGrey-dark\/80 {
+  overflow: hidden !important;
+}
+
+/* Hide default scrollbars completely */
+.terminal-container::-webkit-scrollbar,
+.terminal-container *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.terminal-container {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+/* Specifically target the TimeUnit components to prevent any scrollbar issues */
+.terminal-container .flex-col {
+  overflow: visible !important;
+}
+
+.terminal-container .flex-col * {
+  overflow: visible !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Additional fix for the countdown numbers */
+.terminal-container motion-div,
+.terminal-container .font-orbitron,
+.terminal-container .font-bold {
+  overflow: visible !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Optimize for mobile display */
+@media (max-width: 640px) {
+  .terminal-container .text-mauve-light {
+    font-size: 0.75rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Contract address styling */
+.terminal-container .contract-address {
+  width: 100%;
+  text-align: center !important;
+  display: block;
+  margin: 0 auto;
+  padding: 0.25rem 0.5rem;
+  overflow-x: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Console output container - prevent x overflow */
+.console-output {
+  overflow-x: hidden !important;
+  word-break: break-word;
+  word-wrap: break-word;
+  white-space: pre-wrap !important;
+}
+
+/* Improve console scrollbar appearance */
+.console-output::-webkit-scrollbar {
+  width: 4px !important;
+  height: 0 !important; /* Hide horizontal scrollbar */
+}
+
+/* Ensure text is properly contained */
+.text-white\/70, .text-white\/50, .text-mauve\/50 {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Center the contract address */
+.terminal-container [class*="Contract address"] {
+  text-align: center !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Better display of contract address on mobile */
+@media (max-width: 640px) {
+  .terminal-container span.bg-green-500\/30,
+  .terminal-container span.bg-mauve\/20 {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    position: relative;
+  }
+  
+  /* Hide the "Click to copy" text on very small screens */
+  .terminal-container .group:hover span.absolute.right-2 {
+    display: none;
+  }
+  
+  /* Adjust font size on mobile */
+  .contract-address {
+    font-size: 0.8rem;
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+  }
+}

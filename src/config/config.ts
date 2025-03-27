@@ -122,9 +122,41 @@ export const SYSTEM_SETTINGS = {
   },
 };
 
-/* Done */
+// Official Contract Address
+const CONTRACT_ADDRESS_REAL = process.env.VITE_CONTRACT_ADDRESS_REAL || '0x1111111111111111111111111111111111111111';
+const CONTRACT_ADDRESS_FAKE = process.env.VITE_CONTRACT_ADDRESS_FAKE || '0x42069';
+// Token Launch Date/Time
+const RELEASE_DATE_TOKEN_LAUNCH_DATETIME = new Date(process.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-04-01T15:00:00-05:00'); // April 1, 2025 at 3:00 PM EST
+const RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL = process.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL || 'April 1, 2025';
+const RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT = process.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT || 'Apr 1, 2025';
+const RELEASE_DATE_DISPLAY_LAUNCH_TIME = process.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_TIME || '15:00:00'; // 3:00 PM EST
+const RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_START = new Date(RELEASE_DATE_TOKEN_LAUNCH_DATETIME.getTime() - ((60 * 60 * 1000) * Number(process.env.VITE_RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_HOURS) || 6)); // hours before token launch
+const RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES = new Date(RELEASE_DATE_TOKEN_LAUNCH_DATETIME.getTime() + ((60 * 60 * 1000) * Number(process.env.VITE_RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES_HOURS) || 1)); // hours after token launch
+
+// ------------------------------------------------------------
+
+// Config export
+export const config = {
+  CONTRACT_ADDRESS: {
+    REAL: CONTRACT_ADDRESS_REAL,
+    FAKE: CONTRACT_ADDRESS_FAKE
+  },
+  RELEASE_DATE: {
+    PRE_LAUNCH_COUNTDOWN_START: RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_START,
+    TOKEN_LAUNCH_DATETIME: RELEASE_DATE_TOKEN_LAUNCH_DATETIME,
+    END_OF_LAUNCH_PARTY_FESTIVITIES: RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES,
+    DISPLAY: {
+      LAUNCH_DATE_SHORT: RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT,
+      LAUNCH_DATE_FULL: RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL,
+      LAUNCH_TIME: RELEASE_DATE_DISPLAY_LAUNCH_TIME,
+    }
+  }
+};
+
+// Log successful config export
+console.log("⚔️ DegenDuel client configuration successful:");
 if (NODE_ENV === "development") {
-  console.log("API_URL configuration in use:", {
+  console.log("Using:", {
     environment: NODE_ENV,
     apiUrl: API_URL,
     wsUrl: WS_URL,
@@ -133,7 +165,7 @@ if (NODE_ENV === "development") {
     featureFlags: FEATURE_FLAGS,
   });
 } else {
-  console.log("API_URL configuration in use:", {
+  console.log("Using:", {
     environment: NODE_ENV,
     hostname: window.location.hostname,
   });

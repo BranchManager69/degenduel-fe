@@ -1,6 +1,11 @@
 /**
  * OpenAI API utility functions for the Terminal component
+ * 
+ * @deprecated This file is deprecated. Use the aiService from '../../services/ai' instead.
+ * This file is kept for backward compatibility and will be removed in a future update.
  */
+
+import { aiService, AIMessage } from '../services/ai';
 
 interface Message {
   role: string;
@@ -11,52 +16,44 @@ interface Message {
  * Calls the OpenAI API to get a chat response
  * @param messages Array of chat messages with role and content
  * @returns Promise with the AI response text
+ * @deprecated Use aiService.chat() instead
  */
 export const getChatResponse = async (messages: Message[]): Promise<string> => {
   try {
-    // Call the V69 chat endpoint
-    const response = await fetch('/api/v69/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ messages }),
+    console.warn(
+      'Using deprecated getChatResponse from utils/openai.ts. ' +
+      'Please update to use aiService.chat() from services/ai.ts instead.'
+    );
+    
+    // Convert to AIMessage[] to ensure type safety
+    const aiMessages = messages.map(msg => ({
+      role: msg.role as AIMessage['role'],
+      content: msg.content
+    }));
+    
+    // Use the new AI service
+    const response = await aiService.chat(aiMessages, {
+      temperature: 0.7,
+      maxTokens: 150
     });
     
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Handle V69 response format
-    if (data.response) {
-      return data.response;
-    } else if (data.message) {
-      return data.message;
-    } else if (data.content) {
-      return data.content;
-    } else {
-      console.warn('Unexpected response format from V69 chat endpoint:', data);
-      return 'No response from AI service';
-    }
+    return response.content;
   } catch (error) {
-    console.error('Error calling OpenAI API:', error);
-    return getFallbackResponse();
+    console.error('Error calling AI service:', error);
+    return "Sorry, I'm degenning right now. Check with me again later.";
   }
 };
 
 /**
  * Returns a fallback response when the OpenAI API call fails
- * @returns A random fallback response
+ * @returns A simple error message
+ * @deprecated Use direct error handling instead
  */
 export const getFallbackResponse = (): string => {
-  const fallbacks = [
-    "I'm having trouble connecting to the AI services right now. Please try again later.",
-    "AI services are currently experiencing high demand. Please try again in a moment.",
-    "Connection to AI services temporarily unavailable. Try asking a different question.",
-    "The DegenDuel AI is currently upgrading. Your patience is appreciated.",
-    "AI response limit reached. Please try again soon."
-  ];
-  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  console.warn(
+    'Using deprecated getFallbackResponse from utils/openai.ts. ' +
+    'Use direct error handling instead.'
+  );
+  
+  return "Sorry, I'm degenning right now. Check with me again later.";
 };
