@@ -74,6 +74,7 @@ export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 /* Feature Flags */
 export const FEATURE_FLAGS = {
   SHOW_FEATURES_SECTION: true, // Set to false to hide the FeatureCards on the landing page
+  SHOW_HERO_TITLE: false, // Set to false to hide the animated HeroTitle component
 };
 
 /* System Settings */

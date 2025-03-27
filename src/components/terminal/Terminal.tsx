@@ -503,10 +503,10 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                   title="Maximize terminal"
                 />
               </div>
-              root@degenduel:~$ ./decrypt.sh
+              <span className="whitespace-nowrap">root@degenduel:~$ ./decrypt.sh</span>
             </div>
             <motion.div
-              className="text-white/40 text-xs font-mono uppercase tracking-wider cursor-help relative group"
+              className="text-white/40 text-xs font-mono uppercase tracking-wider cursor-help relative group whitespace-nowrap"
               whileHover={{ 
                 color: "rgba(157, 78, 221, 0.9)",
                 textShadow: "0 0 5px rgba(157, 78, 221, 0.5)"
@@ -643,7 +643,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                   }}
                   transition={{ duration: 4, repeat: Infinity }}
                 >
-                  Decryption Protocol
+                  DegenDuel Decryption Protocol
                 </motion.div>
                 <DecryptionTimer targetDate={config.RELEASE_DATE} />
               </div>
@@ -725,16 +725,54 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 );
               })}
               {consoleOutput.length === 0 && (
-                <div className="text-mauve-light/60 italic text-xs text-center py-2">
-                  <span className="block">Type commands below or ask AI questions.</span>
-                  <span className="block mt-1">Try <span className="text-mauve-light">help</span> to see available options.</span>
+                <div className="text-mauve-light/80 text-xs py-2 px-1">
+                  <div className="flex items-center mb-2">
+                    <span className="text-cyan-400 mr-2">▓▒░</span>
+                    <span className="text-cyan-400/90 font-mono font-bold tracking-wide">DEGENDUEL TERMINAL v3.7.25</span> 
+                    <span className="text-cyan-400 ml-2">░▒▓</span>
+                  </div>
+                  
+                  <motion.div 
+                    className="mb-1.5 border-l-2 border-mauve/30 pl-2"
+                    animate={{ 
+                      borderColor: ["rgba(157, 78, 221, 0.3)", "rgba(157, 78, 221, 0.6)", "rgba(157, 78, 221, 0.3)"] 
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <span className="text-yellow-400/90">SYS_INIT:</span> <span className="text-gray-400">Quantum crypto protocols loaded...</span>
+                  </motion.div>
+                  
+                  <motion.div 
+                    className="mb-1.5 border-l-2 border-mauve/30 pl-2"
+                    animate={{ 
+                      borderColor: ["rgba(157, 78, 221, 0.3)", "rgba(157, 78, 221, 0.6)", "rgba(157, 78, 221, 0.3)"] 
+                    }}
+                    transition={{ duration: 2, delay: 0.3, repeat: Infinity }}
+                  >
+                    <span className="text-green-400/90">READY:</span> <span className="text-gray-400">Terminal awaiting command sequence...</span>
+                  </motion.div>
+                  
+                  <div className="mb-1.5 border-l-2 border-red-400/30 pl-2">
+                    <span className="text-red-400/90">WARNING:</span> <span className="text-gray-400">Unauthorized access will be traced & logged</span>
+                  </div>
+                  
+                  <div className="mt-3 mb-2 text-gray-400/90 flex justify-between items-center">
+                    <span>Execute <span className="text-cyan-400">help</span> for command list</span>
+                    <span className="text-cyan-400/50 text-[10px]">[SECURE-CHANNEL-ACTIVE]</span>
+                  </div>
                 </div>
               )}
             </div>
             
             {/* Unified user input area - always visible at bottom */}
-            <div className="mt-4 flex items-center bg-gradient-to-r from-mauve/5 to-darkGrey-dark/30 rounded px-2 py-1.5 border border-mauve/20 focus-within:border-mauve/40 focus-within:shadow-sm focus-within:shadow-mauve/30 transition-all duration-300 hover:border-mauve/30">
-              <span className="text-mauve-light font-mono font-bold mr-2 animate-pulse">$</span>
+            <div className="mt-4 flex items-center bg-gradient-to-r from-mauve/10 to-darkGrey-dark/50 rounded px-2 py-1.5 border border-mauve/30 focus-within:border-mauve/70 focus-within:shadow focus-within:shadow-mauve/40 transition-all duration-300 hover:border-mauve/50">
+              <motion.span 
+                className="text-mauve-light font-mono font-bold mr-2" 
+                animate={{ opacity: [1, 0.4, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                &gt;_
+              </motion.span>
               <input
                 ref={inputRef}
                 type="text"
@@ -907,12 +945,13 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                     setTimeout(scrollConsoleToBottom, 50);
                   }
                 }}
-                className="bg-transparent border-none outline-none text-white/90 w-full font-mono text-sm terminal-input placeholder-mauve-light/70"
-                placeholder="Enter command or ask AI a question..."
+                className="bg-transparent border-none outline-none text-white/95 w-full font-mono text-sm terminal-input placeholder-mauve-light/70"
+                placeholder="EXECUTE COMMAND::_"
                 style={{ 
-                  color: 'rgba(255, 255, 255, 0.9)', 
-                  caretColor: 'rgb(34, 211, 238)',
-                  textShadow: '0 0 3px rgba(34, 211, 238, 0.3)'
+                  color: 'rgba(255, 255, 255, 0.95)', 
+                  caretColor: 'rgb(157, 78, 221)',
+                  textShadow: '0 0 4px rgba(157, 78, 221, 0.4)',
+                  backgroundColor: 'rgba(20, 20, 30, 0.3)'
                 }}
                 autoComplete="off"
                 spellCheck="false"
@@ -950,19 +989,78 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                     onClick={() => {
                       // Extract just the command part (remove the $ prefix)
                       const command = cmd.trim().replace(/^\$\s*/, '');
-                      // Set the user input to the command
-                      setUserInput(command);
-                      // Focus on the input
-                      inputRef.current?.focus();
-                      // Auto-execute the command by triggering Enter key press event
-                      if (inputRef.current) {
-                        const enterEvent = new KeyboardEvent('keydown', {
-                          key: 'Enter',
-                          code: 'Enter',
-                          bubbles: true
-                        });
-                        inputRef.current.dispatchEvent(enterEvent);
+                      
+                      // Process command directly without requiring input field interaction
+                      // Same code as in the input handler but executed directly
+                      setUserInput(''); // Clear input field
+                      
+                      let response: string;
+                      
+                      // Command responses - same as defined in the input handler
+                      const commandResponses: Record<string, string> = {
+                        help: "Available commands: help, status, ping, decrypt, access, about, contract, clear\nAI: Type any question to speak with the AI assistant.",
+                        status: "System status: ENCRYPTED | Awaiting authorization.",
+                        ping: "Connection established. Signal strength: STRONG.",
+                        decrypt: "Decryption failed: Missing authentication key. Try again after launch.",
+                        "01-rh4-t5p": ">>> SYSTEM SCAN INITIATED <<<\n\n█████████████████████████████████ 100%\n\nSECURITY LEVEL: CRITICAL\nDIAGNOSTIC: Restricted memory sector breach detected\nTARGET: Sector 447\nRECOMMENDED ACTION: Execute sector-breach-447 protocol",
+                        diagnostics: ">>> RUNNING FULL SYSTEM DIAGNOSTIC <<<\n\n[Systems Check]:  ONLINE\n[Security]:       WARNING\n[Access Control]: COMPROMISED\n[Protocol]:       sector-breach activated\n\nANOMALY DETECTED: Unauthorized entry point at sector 447",
+                        "sector-breach-447": ">>> EMERGENCY OVERRIDE INITIATED <<<\n\nACCESS LEVEL: ADMINISTRATOR\nSTATUS: GRANTED\nCODE: DEGEN-PHOENIX-447\n\n>>> EARLY ACCESS PROTOCOL ACTIVATED <<<\nGenesis position confirmed. Store this access code securely.\n\nTHIS MESSAGE IS CLASSIFIED. TERMINAL ACCESS WILL BE WIPED.",
+                        access: "Access denied: Clearance level insufficient.",
+                        about: "DegenDuel: Next-generation competitive platform for crypto enthusiasts.",
+                        contract: "Contract access restricted until official launch date.",
+                        "scan-network": "Scanning network... Network status: 245 nodes active. All systems operational.",
+                        "check-wallet-balance": "Wallet balance check initiated. Current balance: 0.00 DEGEN tokens. Tokens will be available after launch.",
+                        "decrypt-partial --level=1": "Partial decryption successful (Level 1). Fragment recovered: 'Community allocation: 50%, Launch mechanism: Dutch auction'",
+                        "decrypt-partial --level=2": "Partial decryption successful (Level 2). Fragment recovered: 'Initial liquidity: 30% locked for 6 months. Anti-bot measures active.'",
+                        "decrypt-partial --level=3": "Partial decryption successful (Level 3). Fragment recovered: 'Token utility: Governance + Staking rewards. Buyback mechanism initialized.'",
+                        "view-roadmap": "DegenDuel Roadmap:\nPhase 1: Initial Launch\nPhase 2: Tournament system\nPhase 3: Partner integrations\nPhase 4: Mobile application\nPhase 5: Cross-chain expansion",
+                        "load-preview": "Loading preview... Preview access restricted. Join Discord for early preview eligibility.",
+                        "check-whitelist": "Whitelist status: Not found. Visit Discord for whitelist opportunities.",
+                        "prepare-launch-sequence": "Launch sequence preparation in progress. T-minus 15 minutes to protocol activation."
+                      };
+                      
+                      // For the sector-breach command, add ASCII art
+                      if (command.toLowerCase() === 'sector-breach-447') {
+                        const accessGrantedArt = `
+   _____                             _____                    _           _ 
+  / ____|                           / ____|                  | |         | |
+ | |     ___  _ __ ___  _ __  _   _| |  __ _ __ __ _ _ __ ___| |_ ___  __| |
+ | |    / _ \\| '_ \` _ \\| '_ \\| | | | | |_ | '__/ _\` | '__/ _ \\ __/ _ \\/ _\` |
+ | |___| (_) | | | | | | |_) | |_| | |__| | | | (_| | | |  __/ ||  __/ (_| |
+  \\_____\\___/|_| |_| |_| .__/ \\__, |\\_____|_|  \\__,_|_|  \\___|\\__\\___|\\__,_|
+                       | |     __/ |                                        
+                       |_|    |___/                                         
+`;
+                        
+                        setConsoleOutput(prev => [
+                          ...prev, 
+                          `> ${command}`, 
+                          accessGrantedArt,
+                          commandResponses[command.toLowerCase()]
+                        ]);
+                      } else if (command.toLowerCase() === 'clear') {
+                        setConsoleOutput([]);
+                        return;
+                      } else if (command.toLowerCase() in commandResponses) {
+                        response = commandResponses[command.toLowerCase()];
+                        setConsoleOutput(prev => [...prev, `> ${command}`, response]);
+                      } else {
+                        // For unrecognized commands, display error
+                        response = `Error: Command '${command}' not recognized. Type 'help' for available commands.`;
+                        setConsoleOutput(prev => [...prev, `> ${command}`, response]);
                       }
+                      
+                      // Notify parent component if callback provided
+                      if (onCommandExecuted && command.toLowerCase() in commandResponses) {
+                        onCommandExecuted(command, commandResponses[command.toLowerCase()]);
+                      }
+                      
+                      // Scroll console to bottom
+                      setTimeout(() => {
+                        if (consoleOutputRef.current) {
+                          consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+                        }
+                      }, 50);
                     }}
                   >
                     <span className="text-cyan-400/30 mr-1">❯</span> {cmd}
