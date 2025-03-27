@@ -1,16 +1,24 @@
 # DegenDuel Frontend Development Guide
 
+## IMPORTANT - COMMAND EXECUTION POLICY FOR CLAUDE
+
+# STRONGLY ENCOURAGED:
+- `npm run type-check` - Claude SHOULD run this frequently after making code changes
+ 
+# STRICTLY PROHIBITED WITHOUT EXPLICIT REQUEST:
+- Any build commands (`npm run build:*`)
+- Any server commands (`npm run dev*`)
+- Any test commands (`npm test*`)
+
 ## Build & Test Commands
 
-- `npm run build:prod &` - Build for production and output to `dist/` (ALWAYS RUN IN BACKGROUND)
-- `npm run build:dev &` - Build for development (unminified) and output to `dist-dev/` (ALWAYS RUN IN BACKGROUND)
-- `npm run build:local &` - Build unminified development version and serve on port 3010 (ALWAYS RUN IN BACKGROUND)
-- `npm run dev` - Start development server (for local development only)
-- `npm run dev:local` - Start development server in local mode (connects to dev.degenduel.me API)
-- `npm run type-check` - Run TypeScript checks
-- `npm run test` - Run all tests
-- `npm test -- -t "test name"` - Run specific test
-- `npm test -- src/path/to/file.test.tsx` - Run tests in specific file
+- `npm run build:prod &` - Build for production and output to `dist/` (ALWAYS RUN IN BACKGROUND, BUT ONLY WHEN EXPLICITLY REQUESTED)
+- `npm run build:dev &` - Build for development (unminified) and output to `dist-dev/` (ALWAYS RUN IN BACKGROUND, BUT ONLY WHEN EXPLICITLY REQUESTED)
+- `npm run dev` - Start development server (NEVER RUN WITHOUT EXPLICIT REQUEST)
+- `npm run type-check` - Run TypeScript checks (STRONGLY ENCOURAGED after code changes)
+- `npm run test` - Run all tests (NEVER RUN WITHOUT EXPLICIT REQUEST)
+- `npm test -- -t "test name"` - Run specific test (NEVER RUN WITHOUT EXPLICIT REQUEST)
+- `npm test -- src/path/to/file.test.tsx` - Run tests in specific file (NEVER RUN WITHOUT EXPLICIT REQUEST)
 
 ## Deployment Architecture
 
