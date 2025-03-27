@@ -31,10 +31,9 @@ export const getChatResponse = async (messages: Message[]): Promise<string> => {
       content: msg.content
     }));
     
-    // Use the new AI service
+    // Use the new AI service with updated options
     const response = await aiService.chat(aiMessages, {
-      temperature: 0.7,
-      maxTokens: 150
+      context: 'trading'
     });
     
     return response.content;

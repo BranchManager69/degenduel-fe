@@ -13,19 +13,8 @@ export interface AIApi {
   chat(
     messages: AIMessage[], 
     options?: {
-      model?: string;
-      temperature?: number;
-      maxTokens?: number;
       conversationId?: string;
+      context?: 'default' | 'trading';
     }
   ): Promise<ChatResponse>;
-
-  /**
-   * Legacy v69 chat API for backward compatibility
-   * @param messages Array of messages with role and content
-   * @returns Promise with the AI response text
-   */
-  legacyChat(
-    messages: AIMessage[]
-  ): Promise<string>;
 }

@@ -6,6 +6,13 @@
 import { API_URL } from "../../config/config";
 import { AIMessage, AIErrorType, AIServiceError, ChatResponse } from "../../services/ai";
 
+// Log AI service initialization
+console.log("AI Service configuration in use:", {
+  apiUrl: `${API_URL}/ai`,
+  initialized: new Date().toISOString(),
+  capabilities: ['chat', 'trading']
+});
+
 /**
  * AI API service
  */
@@ -19,13 +26,17 @@ export const ai = {
   chat: async (
     messages: AIMessage[], 
     options: {
-      model?: string;
-      temperature?: number;
-      maxTokens?: number;
       conversationId?: string;
+      context?: 'default' | 'trading';
     } = {}
   ): Promise<ChatResponse> => {
     try {
+      console.log(`[AI Service] Chat request initiated with context: ${options.context || 'default'}`, {
+        messageCount: messages.length,
+        conversationId: options.conversationId || 'new-conversation',
+        timestamp: new Date().toISOString()
+      });
+
       const response = await fetch(`${API_URL}/ai/chat`, {
         method: "POST",
         headers: {
@@ -33,16 +44,21 @@ export const ai = {
         },
         credentials: "include",
         body: JSON.stringify({
-          messages,
-          model: options.model,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
+          messages: messages.filter(msg => msg.role !== 'system'), // Filter out system messages
+          context: options.context || 'default',
           conversationId: options.conversationId
         }),
       });
 
       // Note: API client will throw if non-200 status is received
       const data = await response.json();
+      
+      console.log(`[AI Service] Chat response received`, {
+        success: true,
+        conversationId: data.conversationId || options.conversationId || 'new-conversation',
+        usageStats: data.usage || 'not provided',
+        responseTime: new Date().toISOString()
+      });
       
       return {
         content: data.content || data.response || data.message || "",
@@ -51,11 +67,13 @@ export const ai = {
       };
     } catch (error: any) {
       // Log the error with additional context
-      console.error("[AI API] Chat error:", {
+      console.error("[AI Service] Chat error:", {
         error,
         errorType: error instanceof Error ? error.constructor.name : "Unknown",
         message: error instanceof Error ? error.message : String(error),
         status: error.status,
+        context: options.context || 'default',
+        conversationId: options.conversationId || 'new-conversation',
         timestamp: new Date().toISOString(),
       });
 

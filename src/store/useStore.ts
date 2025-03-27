@@ -934,7 +934,7 @@ export const useStore = create<State>()(
 
           // 3. Clear local storage and cookies
           console.log("[Wallet Debug] Clearing storage and cookies");
-          localStorage.removeItem("degen-duel-storage");
+          localStorage.removeItem("degenduel-storage"); // Use the same key as defined in persistConfig
 
           // Clear cookies for all possible domains/paths
           const domains = [
@@ -966,7 +966,7 @@ export const useStore = create<State>()(
         } catch (error) {
           console.error("[Wallet Debug] Disconnect failed:", error);
           // Still clear local state even if something fails
-          localStorage.removeItem("degen-duel-storage");
+          localStorage.removeItem("degenduel-storage");
           set({ user: null, isConnecting: false });
         }
       },
