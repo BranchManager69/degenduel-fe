@@ -186,7 +186,7 @@
   - Uses useBaseWebSocket as foundation
   - Implements useWebSocket wrapper for consistency
   - Session token subprotocol authentication
-  - Standardized endpoints in WEBSOCKET_ENDPOINTS
+  - Standardized endpoints in WEBSOCKET_ENDPOINT
   - Integrated with central monitoring via wsMonitor.ts
   - Consistent event handling and reconnection
 

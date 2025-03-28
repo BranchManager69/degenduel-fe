@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 interface WalletUpdate {
   type: "WALLET_UPDATED";
@@ -76,7 +76,7 @@ export function useWalletWebSocket() {
     connect,
     close
   } = useWebSocket<WalletMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.WALLET,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.WALLET,
     requiresAuth: true, // Wallet WebSocket requires authentication
     heartbeatInterval: 30000

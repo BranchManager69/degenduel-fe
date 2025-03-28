@@ -76,38 +76,10 @@ export interface WebSocketAuthMessage {
 }
 
 /**
- * Official WebSocket endpoints - verified against backend API documentation
- * All endpoints use the v69 API version and are relative paths that should be
- * appended to the base WebSocket URL.
- * 
- * Example: wss://degenduel.me/api/v69/ws/monitor
+ * Unified WebSocket endpoint - March 2025 WebSocket System
+ * All communication now goes through a single WebSocket endpoint
  */
-export const WEBSOCKET_ENDPOINTS = {
-  // Core platform monitoring WebSockets
-  MONITOR: '/api/v69/ws/monitor',
-  SERVER_STATUS: '/api/v69/ws/monitor', // Same as MONITOR
-  SYSTEM_SETTINGS: '/api/v69/ws/system-settings',
-  
-  // Market and token data WebSockets
-  TOKEN_DATA: '/api/v69/ws/token-data',
-  MARKET_DATA: '/api/v69/ws/market-data',
-  
-  // User-related WebSockets
-  PORTFOLIO: '/api/v69/ws/portfolio',
-  WALLET: '/api/v69/ws/wallet',
-  NOTIFICATION: '/api/v69/ws/notifications',
-  ACHIEVEMENT: '/api/v69/ws/achievements', // New in v69
-  
-  // Contest-related WebSockets
-  CONTEST: '/api/v69/ws/contest',
-  CONTEST_CHAT: '/api/v69/ws/contest', // Shared endpoint with CONTEST
-  
-  // Admin and analytics WebSockets
-  ANALYTICS: '/api/v69/ws/analytics',
-  CIRCUIT_BREAKER: '/api/v69/ws/circuit-breaker',
-  SERVICE: '/api/v69/ws/circuit-breaker', // Alias for CIRCUIT_BREAKER
-  SKYDUEL: '/api/v69/ws/skyduel',
-};
+export const WEBSOCKET_ENDPOINT = '/api/v69/ws';
 
 /**
  * Socket types for tracking and monitoring

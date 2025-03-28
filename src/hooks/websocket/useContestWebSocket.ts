@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 interface ContestUpdate {
   type: "CONTEST_UPDATED";
@@ -70,7 +70,7 @@ export function useContestWebSocket(contestId: string) {
     connect,
     close
   } = useWebSocket<ContestMessage>({
-    endpoint: `${WEBSOCKET_ENDPOINTS.CONTEST}`,
+    endpoint: `${WEBSOCKET_ENDPOINT}`,
     socketType: SOCKET_TYPES.CONTEST,
     requiresAuth: true, // Contest WebSocket requires authentication
     heartbeatInterval: 30000
