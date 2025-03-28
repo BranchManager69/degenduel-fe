@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT, MessageType } from './types';
 import useWebSocket from './useWebSocket';
 
 export interface Notification {
@@ -25,7 +25,7 @@ export interface Notification {
 }
 
 interface NotificationMessage {
-  type: string;
+  type: string; // Using string since server may send application-specific types
   notifications?: Notification[];
   notification?: Notification;
   notificationId?: string;
@@ -52,7 +52,8 @@ export function useNotificationWebSocket() {
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.NOTIFICATION,
     requiresAuth: true, // Notifications require authentication
-    heartbeatInterval: 30000
+    heartbeatInterval: 30000,
+    autoConnect: true // Ensure we try to connect automatically
   });
 
   // When the connection status changes, log it
@@ -147,7 +148,7 @@ export function useNotificationWebSocket() {
           });
           break;
           
-        case "ERROR":
+        case MessageType.ERROR:
           console.error('Notification error:', data.error || data.message);
           dispatchWebSocketEvent('error', {
             socketType: SOCKET_TYPES.NOTIFICATION,

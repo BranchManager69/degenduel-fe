@@ -21,7 +21,7 @@ interface ServerStatusData {
 }
 
 interface ServerStatusMessage {
-  type: 'SERVER_STATUS_UPDATE';
+  type: string; // Accept both the unified MessageType enum and service-specific types
   data: {
     status: ServerStatus;
     message: string;
