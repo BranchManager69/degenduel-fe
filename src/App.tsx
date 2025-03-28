@@ -9,6 +9,8 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+// Example pages
+import ContestChatExample from "./pages/examples/ContestChatExample";
 
 // Helper component to redirect while preserving query parameters
 const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
@@ -658,6 +660,13 @@ export const App: React.FC = () => {
 
                     {/* Maintenance Mode Page */}
                     <Route path="/maintenance" element={<Maintenance />} />
+
+                    {/* Examples */}
+                    <Route path="/examples/contest-chat" element={
+                      <React.Suspense fallback={<div>Loading...</div>}>
+                        <ContestChatExample />
+                      </React.Suspense>
+                    } />
                   </Routes>
                 </main>
 
