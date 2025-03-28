@@ -126,7 +126,7 @@ export function useContestChatWebSocket(contestId: string) {
             });
             break;
             
-          case "ERROR":
+          case MessageType.ERROR:
             if (data.code === 4290) {
               setIsRateLimited(true);
               // Reset rate limit after 10 seconds

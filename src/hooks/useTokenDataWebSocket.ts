@@ -53,34 +53,49 @@ export function useTokenDataWebSocket(
           return;
         }
 
-        if (message.type === "token_update" || message.type === "market_update") {
-          if (message.data && Array.isArray(message.data)) {
-            setTokens(message.data);
-            setLastUpdate(new Date());
-          }
-        } else if (message.type === "token_data") {
-          if (message.symbol && message.data) {
-            setTokens((prev) => {
-              // Update single token
-              const updatedTokens = prev.map((token) => {
-                if (token.symbol === message.symbol) {
-                  return { ...token, ...message.data };
-                }
-                return token;
-              });
-              return updatedTokens;
-            });
-            setLastUpdate(new Date());
-          }
-        } else if (message.type === "token_metadata") {
-          if (message.symbol && message.data) {
-            setTokens((prev) =>
-              prev.map((token) =>
-                token.symbol === message.symbol
-                  ? { ...token, ...message.data }
-                  : token
-              )
-            );
+        // Handle DATA messages exactly as specified in WS.TXT:
+        // "1. DATA Message
+        //  {
+        //    "type": "DATA",
+        //    "topic": "market-data",
+        //    "action": "getToken",     // Optional: indicates which request/action this data is for
+        //    "requestId": "req123",    // Optional: matches client requestId if this is a response
+        //    "data": { ... },
+        //    "timestamp": "2025-03-27T12:34:56.789Z",
+        //    "initialData": false      // Optional: true if this is initial data after subscription
+        //  }"
+        if (message.type === MessageType.DATA) {
+          // Process market-data topic messages
+          if (message.topic === TopicType.MARKET_DATA) {
+            if (message.data && Array.isArray(message.data)) {
+              // Array data format - token list
+              setTokens(message.data);
+              setLastUpdate(new Date());
+              console.log(`[TokenDataWebSocket] Received token list with ${message.data.length} tokens`);
+            } else if (message.action === 'getAllTokens' && message.data && Array.isArray(message.data)) {
+              // This is the response to getAllTokens request
+              setTokens(message.data);
+              setLastUpdate(new Date());
+              console.log(`[TokenDataWebSocket] Received getAllTokens response with ${message.data.length} tokens`);
+            } else if (message.action === 'getToken' && message.data) {
+              // Single token update - follow the example in WS.TXT
+              const tokenData = message.data;
+              if (tokenData && tokenData.symbol) {
+                setTokens((prev) => {
+                  // Update existing token or add new one
+                  const existingIndex = prev.findIndex(token => token.symbol === tokenData.symbol);
+                  if (existingIndex >= 0) {
+                    const updated = [...prev];
+                    updated[existingIndex] = { ...prev[existingIndex], ...tokenData };
+                    return updated;
+                  } else {
+                    return [...prev, tokenData];
+                  }
+                });
+                setLastUpdate(new Date());
+                console.log(`[TokenDataWebSocket] Received token update for ${tokenData.symbol}`);
+              }
+            }
           }
         }
       } catch (err) {

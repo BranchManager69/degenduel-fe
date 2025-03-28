@@ -8,60 +8,46 @@
  * Last updated: March 27, 2025
  */
 
-// Standardized message types from the server
-export type MessageType = 
+// Standardized message types from the server - all uppercase as expected by the server
+export enum MessageType {
   // System & status messages
-  | 'system' 
-  | 'error'
-  | 'status'
-  | 'ping'
-  | 'pong'
-  | 'auth'
-  | 'auth_success'
-  | 'authenticated'
+  SYSTEM = 'SYSTEM',
+  ERROR = 'ERROR',
+  PING = 'PING',
+  PONG = 'PONG',
+  AUTH = 'AUTH',
+  AUTH_SUCCESS = 'AUTH_SUCCESS',
+  ACKNOWLEDGMENT = 'ACKNOWLEDGMENT',
+  
   // Data messages
-  | 'data'
-  | 'update'
-  | 'price'
-  | 'price_update'
-  | 'token_data'
-  | 'portfolio'
-  | 'portfolio_update'
-  | 'contest'
-  | 'contest_update'
-  | 'chat'
-  | 'chat_message'
-  | 'achievement'
-  | 'achievement_unlocked'
-  | 'server_status'
-  | 'server_status_update'
-  | 'notification'
-  | 'settings'
-  | 'system_settings_update'
-  | 'wallet'
-  | 'wallet_update'
-  // Admin messages
-  | 'admin'
-  | 'circuit_breaker'
-  | 'service_status'
-  | 'get_system_settings';
+  DATA = 'DATA',
+  SUBSCRIBE = 'SUBSCRIBE',
+  UNSUBSCRIBE = 'UNSUBSCRIBE',
+  REQUEST = 'REQUEST',
+  COMMAND = 'COMMAND'
+}
   
 // Standardized WebSocket connection status types
 export type WebSocketStatus = 'connecting' | 'online' | 'offline' | 'error' | 'reconnecting';
 
 // Base message interface for all WebSocket messages
 export interface WebSocketMessage {
-  type: MessageType;
+  type: string; // Using string to catch all message types since it's an enum
   timestamp?: string;
   data?: any;
   error?: string;
   message?: string;
   code?: number;
+  topic?: string;
+  action?: string;
+  authToken?: string;
+  topics?: string[];
+  initialData?: boolean;
 }
 
 // Standardized error message structure
 export interface WebSocketError {
-  type: 'error';
+  type: 'ERROR';
   code?: number;
   message: string;
   details?: string;

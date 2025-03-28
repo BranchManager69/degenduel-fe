@@ -287,6 +287,25 @@ const WebSocketManagerComponent: React.FC = () => {
           timestamp: new Date().toISOString()
         });
         return;
+      } else if (message.type === MessageType.SYSTEM) {
+        // Handle all SYSTEM message types according to WS.TXT documentation
+        console.log("WebSocketManager: Processing SYSTEM message:", message);
+        
+        // For heartbeat messages - reset counter as documented
+        if (message.action === 'heartbeat') {
+          missedHeartbeatsRef.current = 0;
+        }
+        
+        // Track all system messages for monitoring
+        dispatchWebSocketEvent('system_message', {
+          action: message.action || 'unknown',
+          message: message.message || '',
+          timestamp: new Date().toISOString()
+        });
+        
+        // Per the WS.TXT documentation, SYSTEM messages are public and
+        // "Subscription: Automatic for all connections"
+        // So we process them for all users regardless of authentication state
       } else if (message.type === MessageType.ERROR) {
         console.error("WebSocketManager: Received error message:", message);
         dispatchWebSocketEvent('error_message', {
@@ -296,7 +315,8 @@ const WebSocketManagerComponent: React.FC = () => {
         
         // If this is an authentication error, don't propagate to listeners
         if ((message.error && message.error.includes('auth')) || 
-            (message.message && message.message.includes('auth'))) {
+            (message.message && message.message.includes('auth')) ||
+            (typeof message.error === 'number' && message.error === 4002)) { // Code 4002 is "Unknown message type"
           return;
         }
       }
