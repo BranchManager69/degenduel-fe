@@ -310,42 +310,47 @@ export const LandingPage: React.FC = () => {
               
               {/* WebSocket Demo Section */}
               <div className="w-full mb-10">
-                <h3 className="text-xl font-semibold mb-4 text-white">Unified WebSocket Demos</h3>
-                <p className="text-sm text-gray-400 mb-6">
-                  These components demonstrate the new unified WebSocket system with different topics.
-                </p>
-                
-                {/* Token Data Demo */}
-                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800 mb-6">
-                  <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
-                  <React.Suspense fallback={<div>Loading token data...</div>}>
-                    {(() => {
-                      const TokenDataDebug = React.lazy(() => import("../../../components/debug/websocket/TokenDataDebug"));
-                      return <TokenDataDebug />;
-                    })()}
-                  </React.Suspense>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-4 text-white">Unified WebSocket Demos</h3>
+                  <p className="text-sm text-gray-400">
+                    These components demonstrate the new unified WebSocket system with different topics.
+                  </p>
                 </div>
                 
-                {/* System Status Demo */}
-                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800 mb-6">
-                  <h4 className="text-xl font-semibold mb-4 text-cyan-400">System Topic</h4>
-                  <React.Suspense fallback={<div>Loading system status...</div>}>
-                    {(() => {
-                      const SystemStatusDebug = React.lazy(() => import("../../../components/debug/websocket/SystemStatusDebug"));
-                      return <SystemStatusDebug />;
-                    })()}
-                  </React.Suspense>
-                </div>
-                
-                {/* User Profile Demo */}
-                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                  <h4 className="text-xl font-semibold mb-4 text-purple-400">User Topic (Requires Auth)</h4>
-                  <React.Suspense fallback={<div>Loading user profile...</div>}>
-                    {(() => {
-                      const UserProfileDebug = React.lazy(() => import("../../../components/debug/websocket/UserProfileDebug"));
-                      return <UserProfileDebug />;
-                    })()}
-                  </React.Suspense>
+                {/* Responsive grid layout - one column on mobile, three columns on large screens */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Token Data Demo */}
+                  <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                    <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
+                    <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading token data...</div>}>
+                      {(() => {
+                        const TokenDataDebug = React.lazy(() => import("../../../components/debug/websocket/TokenDataDebug"));
+                        return <TokenDataDebug />;
+                      })()}
+                    </React.Suspense>
+                  </div>
+                  
+                  {/* System Status Demo */}
+                  <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                    <h4 className="text-xl font-semibold mb-4 text-cyan-400">System Topic</h4>
+                    <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading system status...</div>}>
+                      {(() => {
+                        const SystemStatusDebug = React.lazy(() => import("../../../components/debug/websocket/SystemStatusDebug"));
+                        return <SystemStatusDebug />;
+                      })()}
+                    </React.Suspense>
+                  </div>
+                  
+                  {/* User Profile Demo */}
+                  <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                    <h4 className="text-xl font-semibold mb-4 text-purple-400">User Topic (Requires Auth)</h4>
+                    <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading user profile...</div>}>
+                      {(() => {
+                        const UserProfileDebug = React.lazy(() => import("../../../components/debug/websocket/UserProfileDebug"));
+                        return <UserProfileDebug />;
+                      })()}
+                    </React.Suspense>
+                  </div>
                 </div>
               </div>
               
