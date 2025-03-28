@@ -34,8 +34,8 @@ export function useTokenDataWebSocket(
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  // Unique ID for this hook instance
-  const wsId = `token-data-${Math.random().toString(36).substring(2, 9)}`;
+  // Unique ID for this hook instance - use a better ID that doesn't reference token-data directly
+  const wsId = `market-data-${Math.random().toString(36).substring(2, 9)}`;
 
   // Use the unified WebSocket with the MARKET_DATA topic
   // CRITICAL: Also listen for SYSTEM messages since they contain connection info
