@@ -4,8 +4,8 @@ name: DegenDuel CI/CD
 # It creates the necessary deployment records for GitHub branch protection requirements
 
 on:
-  push:
-    branches: [ main ]
+  # Removed push trigger to prevent duplicate workflow runs after PR merges
+  # Branch protections remain fully intact through GitHub repository settings
   pull_request:
     branches: [ main ]
 
@@ -19,7 +19,7 @@ permissions:
 # Define reusable environment variables
 env:
   NODE_VERSION: '18'
-  NPM_FLAGS: '--legacy-peer-deps'
+  NPM_FLAGS: '--legacy-peer-deps --prefer-offline'
 
 jobs:
   test:
@@ -127,12 +127,13 @@ jobs:
         token: ${{ github.token }}
         state: success
         deployment-id: ${{ steps.deployment-dev.outputs.deployment_id }}
+        environment-url: https://dev.degenduel.me
 
   build-prod:
     name: Production Build
     runs-on: ubuntu-latest
     environment: "production (degenduel.me)"
-    needs: [test, build-dev]
+    needs: [test]  # Removed dependency on build-dev to allow parallel execution
     
     steps:
     - uses: actions/checkout@v4
@@ -184,6 +185,7 @@ jobs:
         token: ${{ github.token }}
         state: success
         deployment-id: ${{ steps.deployment-prod.outputs.deployment_id }}
+        environment-url: https://degenduel.me
 
   # Add a storybook job for component documentation and testing
   storybook:
