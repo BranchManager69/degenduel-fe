@@ -39,8 +39,8 @@ import { MovingBackground } from "./components/ui/MovingBackground";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* WebSocket */
-// WebSocket Manager
-import WebSocketManager from './hooks/websocket/WebSocketManager';
+// Import WebSocketManager from the unified WebSocket system
+import { WebSocketManager } from './hooks/websocket';
 /* Hooks */
 import { useAuth } from "./hooks/useAuth";
 import { useScrollbarVisibility } from "./hooks/useScrollbarVisibility";
@@ -175,13 +175,11 @@ export const App: React.FC = () => {
         <ReferralProvider>
           {/* Token Data Provider */}
           <TokenDataProvider>
-            {/* WebSocket Provider temporarily disabled */}
-            {/* <WebSocketProvider> */}
               {/* Toast Provider */}
               <ToastProvider>
               {/* Main container */}
               <div className="min-h-screen flex flex-col">
-                {/* WebSocketManager - centralized WebSocket management */}
+                {/* Unified WebSocketManager - centralized WebSocket connection */}
                 <WebSocketManager />
                 
                 {/* Toast event listener for global toast notifications */}
@@ -681,7 +679,6 @@ export const App: React.FC = () => {
                 <ToastContainer />
               </div>
             </ToastProvider>
-            {/* </WebSocketProvider> */}
           </TokenDataProvider>
         </ReferralProvider>
       </AuthProvider>

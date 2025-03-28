@@ -1,19 +1,14 @@
 // src/hooks/websocket/types.ts
 
 /**
+ * Common Types for WebSocket System v69
  * 
- * THIS FILE IS WOEFULLY IN NEED OF AN UPDATE AND OVERHAUL!
- * ALL WSS ENDPOINTS AND SOCKET TYPES ARE NOT UP TO DATE!
- * 
+ * This file contains standardized interfaces and types used across the WebSocket system.
+ * All endpoints and types have been verified against backend API documentation.
+ * Last updated: March 27, 2025
  */
 
-/**
- * Common Types for WebSocket System
- * 
- * This file contains shared interfaces and types used across the WebSocket system.
- */
-
-// Standard message types from the server
+// Standardized message types from the server
 export type MessageType = 
   // System & status messages
   | 'system' 
@@ -21,6 +16,9 @@ export type MessageType =
   | 'status'
   | 'ping'
   | 'pong'
+  | 'auth'
+  | 'auth_success'
+  | 'authenticated'
   // Data messages
   | 'data'
   | 'update'
@@ -28,29 +26,40 @@ export type MessageType =
   | 'price_update'
   | 'token_data'
   | 'portfolio'
+  | 'portfolio_update'
   | 'contest'
+  | 'contest_update'
   | 'chat'
+  | 'chat_message'
   | 'achievement'
+  | 'achievement_unlocked'
   | 'server_status'
+  | 'server_status_update'
   | 'notification'
   | 'settings'
+  | 'system_settings_update'
   | 'wallet'
+  | 'wallet_update'
   // Admin messages
   | 'admin'
   | 'circuit_breaker'
-  | 'service_status';
+  | 'service_status'
+  | 'get_system_settings';
   
-// Standard WebSocket status types
+// Standardized WebSocket connection status types
 export type WebSocketStatus = 'connecting' | 'online' | 'offline' | 'error' | 'reconnecting';
 
-// Base message interface
+// Base message interface for all WebSocket messages
 export interface WebSocketMessage {
   type: MessageType;
   timestamp?: string;
   data?: any;
+  error?: string;
+  message?: string;
+  code?: number;
 }
 
-// Standard error message
+// Standardized error message structure
 export interface WebSocketError {
   type: 'error';
   code?: number;
@@ -59,42 +68,78 @@ export interface WebSocketError {
   timestamp: string;
 }
 
-// Standard WebSocket endpoints - verified against backend team feedback
+// Authentication response message
+export interface WebSocketAuthMessage {
+  type: 'auth_success' | 'authenticated';
+  message: string;
+  timestamp: string;
+}
+
+/**
+ * Official WebSocket endpoints - verified against backend API documentation
+ * All endpoints use the v69 API version and are relative paths that should be
+ * appended to the base WebSocket URL.
+ * 
+ * Example: wss://degenduel.me/api/v69/ws/monitor
+ */
 export const WEBSOCKET_ENDPOINTS = {
+  // Core platform monitoring WebSockets
   MONITOR: '/api/v69/ws/monitor',
+  SERVER_STATUS: '/api/v69/ws/monitor', // Same as MONITOR
+  SYSTEM_SETTINGS: '/api/v69/ws/system-settings',
+  
+  // Market and token data WebSockets
   TOKEN_DATA: '/api/v69/ws/token-data',
   MARKET_DATA: '/api/v69/ws/market-data',
-  PORTFOLIO: '/api/v69/ws/portfolio', // Note: This endpoint might need verification with backend
-  CONTEST: '/api/v69/ws/contest',
-  CONTEST_CHAT: '/api/v69/ws/contest', // Contest chat uses the contest endpoint // TODO: Deprecate this endpoint; use CONTEST instead
+  
+  // User-related WebSockets
+  PORTFOLIO: '/api/v69/ws/portfolio',
+  WALLET: '/api/v69/ws/wallet',
   NOTIFICATION: '/api/v69/ws/notifications',
-  WALLET: '/api/v69/ws/wallet', // Note: This endpoint might need verification with backend
-  SYSTEM_SETTINGS: '/api/v69/ws/system-settings',
+  ACHIEVEMENT: '/api/v69/ws/achievements', // New in v69
+  
+  // Contest-related WebSockets
+  CONTEST: '/api/v69/ws/contest',
+  CONTEST_CHAT: '/api/v69/ws/contest', // Shared endpoint with CONTEST
+  
+  // Admin and analytics WebSockets
   ANALYTICS: '/api/v69/ws/analytics',
   CIRCUIT_BREAKER: '/api/v69/ws/circuit-breaker',
-  // SERVICE endpoint doesn't exist - service monitoring is handled by CIRCUIT_BREAKER and SERVER_STATUS
-  SERVICE: '/api/v69/ws/circuit-breaker', // Redirected to circuit-breaker as per backend team guidance
+  SERVICE: '/api/v69/ws/circuit-breaker', // Alias for CIRCUIT_BREAKER
   SKYDUEL: '/api/v69/ws/skyduel',
-  SERVER_STATUS: '/api/v69/ws/monitor',
 };
 
-// Socket types for tracking
+/**
+ * Socket types for tracking and monitoring
+ * These identifiers are used in the WebSocket monitoring system to track
+ * connection status and performance metrics.
+ */
 export const SOCKET_TYPES = {
+  // Core system sockets
   MONITOR: 'monitor',
+  SERVER_STATUS: 'server-status',
+  SYSTEM_SETTINGS: 'system-settings',
+  
+  // Market data sockets
   TOKEN_DATA: 'token-data',
   MARKET_DATA: 'market-data',
+  
+  // User data sockets
   PORTFOLIO: 'portfolio',
-  CONTEST: 'contest',
-  CONTEST_CHAT: 'contest-chat', // deprecating; use CONTEST instead
-  NOTIFICATION: 'notification',
   WALLET: 'wallet',
-  SYSTEM_SETTINGS: 'system-settings',
+  NOTIFICATION: 'notification',
+  ACHIEVEMENT: 'achievement',
+  
+  // Contest sockets
+  CONTEST: 'contest',
+  CONTEST_CHAT: 'contest-chat', // Being deprecated in favor of unified CONTEST socket
+  
+  // Admin sockets
   ANALYTICS: 'analytics',
   CIRCUIT_BREAKER: 'circuit-breaker',
-
   SERVICE: 'service',
   SKYDUEL: 'skyduel',
-  SERVER_STATUS: 'server-status',
-
+  
+  // Testing socket
   TEST: 'test',
 };

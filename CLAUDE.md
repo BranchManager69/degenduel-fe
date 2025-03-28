@@ -1,5 +1,15 @@
 # DegenDuel Frontend Development Guide
 
+## CRITICAL WEBSOCKET DEVELOPMENT APPROACH
+
+NEVER REWRITE THE WEBSOCKET SYSTEM FROM SCRATCH. Always work incrementally with the existing implementation:
+- Diagnose issues methodically by tracing the chain of events in the existing code
+- Fix problems through careful, targeted changes that maintain compatibility
+- Understand the interconnections between components before making changes
+- Address false positives and edge cases in indicators without disrupting core functionality
+- Test all modifications thoroughly to ensure they fix the specific issue without introducing new ones
+- Document changes clearly for future maintenance
+
 ## IMPORTANT - COMMAND EXECUTION POLICY FOR CLAUDE
 
 # STRONGLY ENCOURAGED:

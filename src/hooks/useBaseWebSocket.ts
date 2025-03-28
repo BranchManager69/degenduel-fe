@@ -666,32 +666,53 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
       }
     }
     
-    // Determine the WebSocket URL based on the current domain
+    // CRITICAL FIX: Use a consistent, reliable WebSocket URL construction
+    // 1. Always prioritize the VITE_WS_URL environment variable if available
+    // 2. Fall back to a domain-specific default if needed
     let baseWsUrl;
-
-    // Check if we're on the production domain
-    const isProdDomain = window.location.hostname === "degenduel.me";
-
-    if (isProdDomain) {
-      // In production on the main domain, use the same domain for WebSockets
-      baseWsUrl = `wss://${window.location.hostname}`;
-    } else if (config.url) {
-      // Use the provided URL from config (for dev environments)
-      baseWsUrl = config.url;
+    
+    // Check if we have a configured WebSocket URL in environment
+    const configuredWsUrl = import.meta.env.VITE_WS_URL;
+    
+    if (configuredWsUrl) {
+      // Use the explicitly configured WebSocket URL from environment
+      baseWsUrl = configuredWsUrl;
+      console.log(`[WebSocket:${config.socketType}] Using configured WS_URL from environment: ${baseWsUrl}`);
     } else {
-      // Fallback to current host
-      baseWsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`;
+      // Determine based on the current domain (fallback)
+      const isProdDomain = window.location.hostname === "degenduel.me";
+      
+      if (isProdDomain) {
+        baseWsUrl = `wss://degenduel.me`;
+      } else if (window.location.hostname === "dev.degenduel.me") {
+        baseWsUrl = `wss://dev.degenduel.me`;
+      } else if (config.url) {
+        // Use the provided URL from config (for custom environments)
+        baseWsUrl = config.url;
+      } else {
+        // Last resort fallback to current host
+        baseWsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`;
+      }
+      
+      console.log(`[WebSocket:${config.socketType}] No VITE_WS_URL found, using derived URL: ${baseWsUrl}`);
     }
+    
+    // ALWAYS log the full URL construction to help with debugging
+    console.log(`[WebSocket:${config.socketType}] [Connecting] URL Construction:`, {
+      baseWsUrl,
+      endpoint: config.endpoint,
+      fullUrl: `${baseWsUrl}${config.endpoint}`,
+      authRequired: config.requiresAuth !== false,
+      hasToken: !!userSessionToken
+    });
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `[WebSocket:${config.socketType}] [Connecting] [Base URL: ${baseWsUrl}${config.endpoint}] [Auth Required: ${config.requiresAuth !== false}] [Token available: ${!!userSessionToken}]`,
-      );
-    }
-
-    // Create the WebSocket connection with token as query parameter if auth is required
-    // Using query parameter method as recommended by backend team for maximum browser compatibility
+    // Create the WebSocket connection with enhanced logging
+    // Construct the full WebSocket URL using the baseWsUrl and endpoint
     let wsUrl = `${baseWsUrl}${config.endpoint}`;
+    
+    // Add comprehensive debugging information to console
+    console.log(`[WebSocket:${config.socketType}] Full WebSocket URL (pre-auth): ${wsUrl}`);
+    
     let ws: WebSocket;
     
     // Implement the authentication strategy recommended by the backend team
