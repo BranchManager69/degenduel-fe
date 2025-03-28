@@ -4,8 +4,8 @@ name: DegenDuel CI/CD
 # It creates the necessary deployment records for GitHub branch protection requirements
 
 on:
-  push:
-    branches: [ main ]
+  # Removed push trigger to prevent duplicate workflow runs after PR merges
+  # Branch protections remain fully intact through GitHub repository settings
   pull_request:
     branches: [ main ]
 
