@@ -52,7 +52,8 @@ export function useNotificationWebSocket() {
     endpoint: WEBSOCKET_ENDPOINTS.NOTIFICATION,
     socketType: SOCKET_TYPES.NOTIFICATION,
     requiresAuth: true, // Notifications require authentication
-    heartbeatInterval: 30000
+    heartbeatInterval: 30000,
+    autoConnect: true // Ensure we try to connect automatically
   });
 
   // When the connection status changes, log it

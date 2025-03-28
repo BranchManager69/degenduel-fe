@@ -11,7 +11,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent, initializeWebSocketTracking } from '../../utils/wsMonitor';
 
-// Single unified WebSocket URL
+// Single unified WebSocket URL - this is the exact path specified in WS.TXT
 const UNIFIED_WS_ENDPOINT = '/api/v69/ws';
 
 // Message types for the unified WebSocket - from backend specs
@@ -204,19 +204,35 @@ const WebSocketManagerComponent: React.FC = () => {
       reconnectTimeoutRef.current = null;
     }
     
-    // Determine WebSocket URL based on environment
-    let baseWsUrl;
+    // Critical fix for WebSocket URL construction
+    let wsUrl;
+    // Get configured WebSocket URL from environment
     const configuredWsUrl = import.meta.env.VITE_WS_URL;
     
     if (configuredWsUrl) {
-      baseWsUrl = configuredWsUrl;
+      // First attempt: Direct use of environment variable with endpoint
+      wsUrl = `${configuredWsUrl}${UNIFIED_WS_ENDPOINT}`;
+      console.log("WebSocketManager: Using configured WS_URL from environment:", configuredWsUrl);
     } else {
-      // Fallback to current host
-      baseWsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`;
+      // Fallback mechanism based on hostname
+      const hostname = window.location.hostname;
+      const isProd = hostname === "degenduel.me";
+      const isDev = hostname === "dev.degenduel.me";
+      
+      if (isProd) {
+        wsUrl = `wss://degenduel.me${UNIFIED_WS_ENDPOINT}`;
+        console.log("WebSocketManager: Using production WebSocket URL based on hostname");
+      } else if (isDev) {
+        wsUrl = `wss://dev.degenduel.me${UNIFIED_WS_ENDPOINT}`;
+        console.log("WebSocketManager: Using development WebSocket URL based on hostname"); 
+      } else {
+        // Local development or unknown environment
+        wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${UNIFIED_WS_ENDPOINT}`;
+        console.log("WebSocketManager: Using local WebSocket URL based on current host");
+      }
     }
     
-    // Construct full URL
-    const wsUrl = `${baseWsUrl}${UNIFIED_WS_ENDPOINT}`;
+    console.log("WebSocketManager: Final WebSocket URL:", wsUrl);
     console.log(`WebSocketManager: Connecting to ${wsUrl}`);
     
     try {
@@ -303,9 +319,10 @@ const WebSocketManagerComponent: React.FC = () => {
           timestamp: new Date().toISOString()
         });
         
+        // CRITICAL: Never filter out SYSTEM messages for unauthenticated users
         // Per the WS.TXT documentation, SYSTEM messages are public and
         // "Subscription: Automatic for all connections"
-        // So we process them for all users regardless of authentication state
+        // Distribution to listeners happens below
       } else if (message.type === MessageType.ERROR) {
         console.error("WebSocketManager: Received error message:", message);
         dispatchWebSocketEvent('error_message', {
@@ -313,15 +330,16 @@ const WebSocketManagerComponent: React.FC = () => {
           timestamp: new Date().toISOString()
         });
         
-        // If this is an authentication error, don't propagate to listeners
+        // Only filter out auth-related error messages
         if ((message.error && message.error.includes('auth')) || 
-            (message.message && message.message.includes('auth')) ||
-            (typeof message.error === 'number' && message.error === 4002)) { // Code 4002 is "Unknown message type"
+            (message.message && message.message.includes('auth'))) {
+          console.log("WebSocketManager: Filtering out authentication error message from listeners");
           return;
         }
       }
       
-      // Distribute message to listeners - filter by both type and topic
+      // Distribute all messages to listeners - filter by both type and topic
+      // This happens for ALL message types, including SYSTEM messages regardless of auth state
       distributeMessage(message);
       
     } catch (error) {
@@ -555,6 +573,12 @@ const WebSocketManagerComponent: React.FC = () => {
   const distributeMessage = (message: WebSocketMessage) => {
     const { type, topic } = message;
     
+    // Log the message for better debugging
+    console.log(`WebSocketManager: Distributing message of type ${type} ${topic ? `with topic ${topic}` : 'without a topic'}`);
+    
+    // SYSTEM messages should be distributed to all listeners regardless of auth state
+    const isSystemMessage = type === MessageType.SYSTEM;
+    
     // Find listeners for this message type and topic (if specified)
     const listeners = listenersRef.current.filter(listener => {
       // First check if listener is interested in this message type
@@ -564,6 +588,11 @@ const WebSocketManagerComponent: React.FC = () => {
       // If listener has topic filters AND message has a topic, check for match
       if (listener.topics && topic) {
         return listener.topics.includes(topic);
+      }
+      
+      // For SYSTEM messages, always distribute regardless of topic filters
+      if (isSystemMessage) {
+        return true;
       }
       
       // If listener has no topic filters or message has no topic, match by type only
@@ -588,6 +617,8 @@ const WebSocketManagerComponent: React.FC = () => {
         listenerIds: listeners.map(l => l.id),
         timestamp: new Date().toISOString()
       });
+    } else {
+      console.log(`WebSocketManager: No listeners found for message type ${type} ${topic ? `with topic ${topic}` : ''}`);
     }
   };
   

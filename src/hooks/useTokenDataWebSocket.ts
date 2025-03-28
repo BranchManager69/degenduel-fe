@@ -38,9 +38,10 @@ export function useTokenDataWebSocket(
   const wsId = `token-data-${Math.random().toString(36).substring(2, 9)}`;
 
   // Use the unified WebSocket with the MARKET_DATA topic
+  // CRITICAL: Also listen for SYSTEM messages since they contain connection info
   const ws = useUnifiedWebSocket(
     wsId,
-    [MessageType.DATA, MessageType.ERROR],
+    [MessageType.DATA, MessageType.ERROR, MessageType.SYSTEM], // Added SYSTEM
     (message: any) => {
       // Handle message based on type
       try {
@@ -51,6 +52,19 @@ export function useTokenDataWebSocket(
         if (message.type === MessageType.ERROR) {
           setError(message.error || message.message || "Unknown WebSocket error");
           return;
+        }
+        
+        // Process SYSTEM messages (connection status, etc.)
+        if (message.type === MessageType.SYSTEM) {
+          console.log(`[TokenDataWebSocket] Received SYSTEM message:`, message);
+          
+          // Handle specific actions in system messages
+          if (message.message && message.message.includes("Connected")) {
+            console.log("[TokenDataWebSocket] Connection confirmed by system message");
+          }
+          
+          // Note: We don't return here, allowing the message to be distributed
+          // to ensure any listeners for SYSTEM messages receive them
         }
 
         // Handle DATA messages exactly as specified in WS.TXT:
@@ -113,22 +127,34 @@ export function useTokenDataWebSocket(
     } else if (ws.isConnected) {
       setError(null);
     }
-  }, [ws.isConnected, ws.error]);
+    
+    // Log connection state changes for debugging
+    console.log(`[TokenDataWebSocket] Connection state changed: ${ws.isConnected ? 'Connected' : 'Disconnected'}`, {
+      connectionState: ws.connectionState,
+      isAuthenticated: ws.isAuthenticated,
+      error: ws.error
+    });
+  }, [ws.isConnected, ws.isAuthenticated, ws.connectionState, ws.error]);
 
   // Subscribe to tokens if specified
   useEffect(() => {
     if (ws.isConnected) {
+      console.log("[TokenDataWebSocket] Connected, subscribing to topics and requesting data");
+      
       // First subscribe to the market-data topic
-      ws.subscribe([TopicType.MARKET_DATA]);
+      const subscribeSuccess = ws.subscribe([TopicType.MARKET_DATA]);
+      console.log(`[TokenDataWebSocket] Subscription to MARKET_DATA ${subscribeSuccess ? 'succeeded' : 'failed'}`);
       
       // Then request all tokens if needed
       if (tokensToSubscribe === "all") {
-        ws.request(TopicType.MARKET_DATA, "get_all_tokens");
+        const requestSuccess = ws.request(TopicType.MARKET_DATA, "get_all_tokens");
+        console.log(`[TokenDataWebSocket] Request for all tokens ${requestSuccess ? 'succeeded' : 'failed'}`);
       } else if (Array.isArray(tokensToSubscribe) && tokensToSubscribe.length > 0) {
         // Request specific tokens
-        ws.request(TopicType.MARKET_DATA, "subscribe_tokens", {
+        const requestSuccess = ws.request(TopicType.MARKET_DATA, "subscribe_tokens", {
           symbols: tokensToSubscribe
         });
+        console.log(`[TokenDataWebSocket] Request for specific tokens ${requestSuccess ? 'succeeded' : 'failed'}`);
       }
     }
   }, [ws.isConnected, tokensToSubscribe]);
