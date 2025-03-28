@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 interface CircuitBreakerMessage {
   type: "health:update" | "metrics:update" | "breaker:trip" | "breaker:reset";
@@ -49,7 +49,7 @@ export function useCircuitBreakerSocket() {
     connect,
     close
   } = useWebSocket<CircuitBreakerMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.CIRCUIT_BREAKER,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.CIRCUIT_BREAKER,
     requiresAuth: true, // Circuit breaker requires admin authentication
     heartbeatInterval: 15000 // 15 second heartbeat

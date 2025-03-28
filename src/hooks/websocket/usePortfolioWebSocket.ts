@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 interface PortfolioUpdate {
   type: "PORTFOLIO_UPDATED";
@@ -63,7 +63,7 @@ export function usePortfolioWebSocket() {
     connect,
     close
   } = useWebSocket<PortfolioMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.PORTFOLIO,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.PORTFOLIO,
     requiresAuth: true, // Portfolio updates require authentication
     heartbeatInterval: 30000

@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
 import useWebSocket from './useWebSocket';
 
 // SPECIFICALLY FOR BACKGROUND SCENE SETTINGS
@@ -48,7 +48,7 @@ export function useSystemSettingsWebSocket() {
     connect,
     close
   } = useWebSocket<SystemSettingsMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.SYSTEM_SETTINGS,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
     requiresAuth: false, // Changed to false to match status WebSocket and allow connection without auth
     heartbeatInterval: 30000

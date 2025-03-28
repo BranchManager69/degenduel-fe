@@ -6,10 +6,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 // SkyDuel service types
 export interface ServiceNode {
@@ -81,7 +81,7 @@ export function useSkyDuelWebSocket() {
     connect,
     close
   } = useWebSocket<SkyDuelMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.SKYDUEL,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.SKYDUEL,
     requiresAuth: true, // SkyDuel requires admin authentication
     heartbeatInterval: 15000 // 15 second heartbeat

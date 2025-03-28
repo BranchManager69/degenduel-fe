@@ -8,7 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
 import useWebSocket from './useWebSocket';
 
 export type ServerStatus = 'online' | 'maintenance' | 'offline' | 'error';
@@ -45,7 +45,7 @@ export function useServerStatusWebSocket() {
 
   // Memoize WebSocket options to prevent constant re-creation
   const wsOptions = React.useMemo(() => ({
-    endpoint: WEBSOCKET_ENDPOINTS.SERVER_STATUS,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.SERVER_STATUS,
     requiresAuth: false, // Changed to false as authentication is no longer required
     heartbeatInterval: 30000, // 30-second heartbeat

@@ -8,10 +8,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 interface AchievementMessage {
   type: "achievement:unlock" | "user:progress" | "user:levelup";
@@ -31,7 +31,7 @@ export function useAchievementWebSocket() {
     connect,
     close
   } = useWebSocket<AchievementMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.NOTIFICATION,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.NOTIFICATION,
     requiresAuth: true, // Achievement notifications require authentication
     heartbeatInterval: 30000

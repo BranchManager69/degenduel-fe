@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS, MessageType } from './types';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
 import useWebSocket from './useWebSocket';
 
 export interface Notification {
@@ -49,7 +49,7 @@ export function useNotificationWebSocket() {
     connect,
     close
   } = useWebSocket<NotificationMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.NOTIFICATION,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.NOTIFICATION,
     requiresAuth: true, // Notifications require authentication
     heartbeatInterval: 30000
