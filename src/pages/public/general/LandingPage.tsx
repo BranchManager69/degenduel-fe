@@ -274,27 +274,7 @@ export const LandingPage: React.FC = () => {
           <div className="text-center space-y-4">
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
-              {/* WebSocket Monitor for debugging - only shown to admins */}
-              {debugMode && isAdmin() && (
-                <div className="w-full mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-xl font-bold text-brand-400">WebSocket Connection Monitor</h2>
-                    <button 
-                      onClick={() => setDebugMode(false)} 
-                      className="px-2 py-1 bg-red-600 text-white rounded text-sm"
-                    >
-                      Hide Monitor
-                    </button>
-                  </div>
-                  {/* Import UnifiedWebSocketMonitor dynamically only when needed and user is admin */}
-                  <React.Suspense fallback={<div>Loading unified monitor...</div>}>
-                    {(() => {
-                      const UnifiedWebSocketMonitor = React.lazy(() => import("../../../components/debug/websocket/UnifiedWebSocketMonitor"));
-                      return <UnifiedWebSocketMonitor />;
-                    })()}
-                  </React.Suspense>
-                </div>
-              )}
+              {/* Admin button now only shows the three topic-specific monitors */}
               
               {/* Admin debug button - visible even when HeroTitle is hidden */}
               {isAdmin() && (
