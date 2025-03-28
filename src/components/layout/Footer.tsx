@@ -243,279 +243,241 @@ export const Footer: React.FC = () => {
               </span>
             </div>
 
-            {/* Enhanced tooltip showing detailed status message and WebSocket info - CLICKABLE VERSION */}
+            {/* Simplified diagnostic popup with live status and ping test */}
             <div 
               id="status-dropdown"
               className="absolute bottom-full right-0 mb-2 hidden z-50 cursor-auto"
               onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
             >
               <div
-                className={`${styles.bgColor} p-3 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder} max-w-[450px] overflow-auto max-h-[500px]`}
+                className={`${styles.bgColor} p-3 rounded shadow-lg text-xs ${styles.textColor} whitespace-nowrap ${styles.wsBorder} max-w-[300px]`}
               >
                 <div className="flex justify-between items-center mb-1">
                   <div className="font-semibold">
-                    Server Status: {status.status.toUpperCase()}
+                    Status: {status.status.toUpperCase()}
                   </div>
                   <button 
                     className="bg-gray-800 hover:bg-gray-700 text-[10px] px-2 py-1 rounded text-cyan-400 transition-colors"
                     onClick={() => {
-                      // Copy all technical info to clipboard
-                      const statusDropdown = document.getElementById('status-dropdown');
-                      if (statusDropdown) {
-                        const technicalInfo = `
-Server Status: ${status.status.toUpperCase()}
-Message: ${status.message}
-Monitor WebSocket: ${status.isWebSocketConnected ? "Connected" : "Disconnected"}
-System Settings WebSocket: ${!systemSettings.loading && !systemSettings.error ? "Connected" : "Disconnected"}
-Total Connected Sockets: ${combinedWsStatus.connectedSockets}
-Endpoints: /api/v69/ws/monitor, /api/v69/ws/system-settings
-Connection URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}
-Last Checked: ${new Date().toLocaleTimeString()}
-Host: ${window.location.hostname}
-Environment: ${import.meta.env.MODE || "production"}
-WS Config: { requiresAuth: false, maxReconnectAttempts: 5 }
-                        `.trim();
-                        
-                        navigator.clipboard.writeText(technicalInfo)
-                          .then(() => {
-                            alert('Debug info copied to clipboard!');
-                          })
-                          .catch(err => {
-                            console.error('Failed to copy:', err);
-                          });
-                      }
+                      // Copy technical info to clipboard
+                      const technicalInfo = `
+Status: ${status.status.toUpperCase()}
+Connected Sockets: ${combinedWsStatus.connectedSockets}/2
+Monitor: ${status.isWebSocketConnected ? "✅" : "❌"}
+Settings: ${!systemSettings.loading && !systemSettings.error ? "✅" : "❌"}
+URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}
+Last Check: ${new Date().toLocaleTimeString()}
+                      `.trim();
+                      
+                      navigator.clipboard.writeText(technicalInfo)
+                        .then(() => {
+                          alert('Connection status copied!');
+                        })
+                        .catch(err => {
+                          console.error('Failed to copy:', err);
+                        });
                     }}
                   >
-                    Copy Debug Info
+                    Copy Status
                   </button>
                 </div>
-                <div className="mb-2">{status.message}</div>
 
-                <div className="border-t border-gray-700 my-2 pt-2">
-                  <div className="font-semibold mb-1">
-                    WebSocket Debug Information:
-                  </div>
-                  {/* Connection Status */}
-                  <div className="flex flex-col gap-1">
-                    <div
-                      className={`flex items-center ${status.isWebSocketConnected ? "text-green-400" : "text-red-400"}`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
-                      />
-                      Monitor WS:{" "}
-                      {status.isWebSocketConnected ? "Connected" : "Disconnected"}
-                    </div>
-                    
-                    <div
-                      className={`flex items-center ${!systemSettings.loading && !systemSettings.error ? "text-green-400" : "text-red-400"}`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full mr-2 ${!systemSettings.loading && !systemSettings.error ? "bg-green-500" : "bg-red-500"}`}
-                      />
-                      System Settings WS:{" "}
-                      {!systemSettings.loading && !systemSettings.error ? "Connected" : "Disconnected"}
-                    </div>
-                  </div>
-
-                  {/* Connection Details */}
-                  <div className="text-gray-300 mt-1 text-[10px] grid grid-cols-[100px_1fr] gap-1">
-                    <div className="font-semibold">Endpoints:</div> 
-                    <div>/api/v69/ws/monitor, /api/v69/ws/system-settings</div>
-                    
-                    <div className="font-semibold">Auth Required:</div> 
-                    <div className="text-green-400">No - Public Endpoints</div>
-                    
-                    <div className="font-semibold">Connection URL:</div> 
-                    <div className="break-all">{import.meta.env.VITE_WS_URL || "wss://degenduel.me"}{combinedWsStatus.connectedSockets > 0 ? " (Connected!)" : " (Disconnected)"}</div>
-                    
-                    <div className="font-semibold">Connected Since:</div> 
-                    <div>{combinedWsStatus.connectedSockets > 0 ? new Date().toLocaleTimeString() : "Not connected"}</div>
-                    
-                    <div className="font-semibold">Connection ID:</div> 
-                    <div>{combinedWsStatus.connectedSockets > 0 ? "WS-" + Math.random().toString(36).substring(2, 10) : "None"}</div>
-                    
-                    <div className="font-semibold">Protocol:</div> 
-                    <div>WSS (Secure WebSocket)</div>
-                    
-                    <div className="font-semibold">Total Connected:</div> 
-                    <div className={combinedWsStatus.connectedSockets > 0 ? "text-green-400" : "text-red-400"}>
-                      {combinedWsStatus.connectedSockets} of 2 sockets
-                    </div>
-                    
-                    <div className="font-semibold">Last Message:</div> 
-                    <div>{new Date().toLocaleTimeString()}</div>
-                  </div>
-
-                  {/* Authentication Debugging */}
-                  <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
-                    <div className="font-semibold mb-1 text-green-400">Authentication Status:</div>
-                    <ul className="list-disc list-inside text-gray-300 space-y-1">
-                      <li>WebSockets now configured for <span className="text-green-400">public access</span> - no auth required</li>
-                      <li>Auth settings updated to prevent 401 errors</li>
-                      <li>Using two WebSocket connections for redundancy</li>
-                      <li>Fixed localStorage key to "degenduel-storage"</li>
-                      <li>If issues persist, try clearing browser cache or refreshing</li>
-                    </ul>
-                  </div>
-
-                  {/* Connection Troubleshooting - More Technical */}
-                  <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
-                    <div className="font-semibold mb-1 text-yellow-400">Technical Diagnostics:</div>
-                    <div className="grid grid-cols-[80px_1fr] gap-y-1 text-gray-300">
-                      <div className="font-semibold">WS URL:</div>
-                      <div className="break-all">{import.meta.env.VITE_WS_URL || `wss://${window.location.hostname}`}</div>
-                      
-                      <div className="font-semibold">Browser:</div>
-                      <div>{window.navigator.userAgent.split(' ').slice(-1)[0]}</div>
-                      
-                      <div className="font-semibold">Origin:</div>
-                      <div>{window.location.origin}</div>
-                      
-                      <div className="font-semibold">Protocol:</div>
-                      <div>{window.location.protocol}</div>
-                      
-                      <div className="font-semibold">Current Path:</div>
-                      <div>{window.location.pathname}</div>
-                      
-                      <div className="font-semibold">LocalStorage:</div>
-                      <div>{Object.keys(localStorage).join(', ').substring(0, 30)}...</div>
-                      
-                      <div className="font-semibold">API Status:</div>
-                      <div className={status.status === 'online' ? 'text-green-400' : 'text-red-400'}>
-                        {status.status === 'online' ? 'Available' : 'Unavailable'}
-                      </div>
-                      
-                      <div className="font-semibold">Event Dispatch:</div>
-                      <div>window.DDActiveWebSockets: {window.DDActiveWebSockets ? 'Exists' : 'Missing'}</div>
-                      
-                      <div className="font-semibold">Last Error:</div>
-                      <div className="text-red-400">{status.message === 'error' ? status.message : 'None'}</div>
-                    </div>
-                  </div>
-
-                  {/* Development Note */}
-                  <div className="mt-2 text-gray-400 text-[10px] border-t border-gray-700 pt-2">
-                    <div className="font-semibold text-red-400">WebSocket Security Warning:</div>
-                    <p>
-                      Current implementation requires authentication for status WebSockets
-                      (might be unnecessary for public status information).
-                      WebSocket migration to v69 is in progress. Some services may
-                      be temporarily unavailable.
-                    </p>
-                    
-                    <div className="mt-2">
-                      <div className="font-semibold text-yellow-400">Browser WebSocket Limits:</div>
-                      <p>
-                        Browsers limit concurrent WebSocket connections (2-6 per origin).
-                        Status WebSocket may compete with other app WebSockets.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Technical details for developers */}
-                <div className="mt-3 text-[10px] border-t border-gray-700 pt-2">
-                  <div className="flex justify-between items-center">
-                    <div className="font-semibold text-cyan-400">Raw WebSocket Config:</div>
-                    <button 
-                      className="bg-gray-800 hover:bg-gray-700 text-[10px] px-2 py-0.5 rounded text-cyan-400 transition-colors"
-                      onClick={() => {
-                        const config = `// Current WebSocket Configuration
-{
-  url: "${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}",  // Determined automatically
-  endpoint: "/api/v69/ws/monitor",
-  socketType: "server-status",
-  heartbeatInterval: 30000,
-  maxReconnectAttempts: 5, 
-  requiresAuth: false  // Modified value - was true 
-}`;
-                        navigator.clipboard.writeText(config)
-                          .then(() => {
-                            alert('Config copied to clipboard!');
-                          })
-                          .catch(err => {
-                            console.error('Failed to copy:', err);
-                          });
-                      }}
-                    >
-                      Copy Config
-                    </button>
-                  </div>
-                  <pre className="whitespace-pre-wrap break-all text-[8px] text-gray-400 bg-gray-800/50 p-2 mt-1 rounded">
-{`// UPDATED WebSocket Configuration
-// Monitor WebSocket
-{
-  // URL uses environment-specific value:
-  // Development: wss://dev.degenduel.me (from .env.development)
-  // Production: wss://degenduel.me (from .env)
-  url: "${import.meta.env.VITE_WS_URL || window.location.hostname === "dev.degenduel.me" 
-    ? "wss://dev.degenduel.me" 
-    : "wss://degenduel.me"}",
-  endpoint: "/api/v69/ws/monitor",
-  socketType: "server-status",
-  heartbeatInterval: 30000,
-  maxReconnectAttempts: 5, 
-  requiresAuth: false  // Changed from true to false
-}
-
-// System Settings WebSocket 
-{
-  // URL uses environment-specific value:
-  // Development: wss://dev.degenduel.me (from .env.development)
-  // Production: wss://degenduel.me (from .env)
-  url: "${import.meta.env.VITE_WS_URL || window.location.hostname === "dev.degenduel.me" 
-    ? "wss://dev.degenduel.me" 
-    : "wss://degenduel.me"}",
-  endpoint: "/api/v69/ws/system-settings",
-  socketType: "system-settings",
-  heartbeatInterval: 30000,
-  maxReconnectAttempts: 5,
-  requiresAuth: false  // Changed from true to false
-}`}
-                  </pre>
+                {/* Live Connection Status with Visual Indicators */}
+                <div className="bg-gray-800/50 p-2 rounded mb-2">
+                  <div className="text-sm mb-2 font-semibold">Live WebSocket Status:</div>
                   
-                  <div className="flex justify-between items-center mt-3">
-                    <div className="font-semibold text-cyan-400">Browser WebSocket Debug:</div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <div className={`w-3 h-3 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></div>
+                      <div>Monitor Socket</div>
+                    </div>
+                    <div className={status.isWebSocketConnected ? "text-green-400" : "text-red-400"}>
+                      {status.isWebSocketConnected ? "LIVE" : "OFFLINE"}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className={`w-3 h-3 rounded-full mr-2 ${!systemSettings.loading && !systemSettings.error ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></div>
+                      <div>Settings Socket</div>
+                    </div>
+                    <div className={!systemSettings.loading && !systemSettings.error ? "text-green-400" : "text-red-400"}>
+                      {!systemSettings.loading && !systemSettings.error ? "LIVE" : "OFFLINE"}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Connection Details - Visual Metrics */}
+                <div className="flex justify-between items-center mb-3">
+                  <div className="text-sm">Connected Sockets:</div>
+                  <div className="flex items-center">
+                    {Array(2).fill(0).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className={`w-4 h-4 mx-0.5 rounded-sm flex items-center justify-center ${i < combinedWsStatus.connectedSockets ? "bg-green-500/80" : "bg-gray-700"}`}
+                      >
+                        {i < combinedWsStatus.connectedSockets && 
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        }
+                      </div>
+                    ))}
+                    <div className="ml-2 text-sm">{combinedWsStatus.connectedSockets}/2</div>
+                  </div>
+                </div>
+                
+                {/* Live Connection Tester */}
+                <div className="border-t border-gray-700 pt-2 pb-1">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="text-sm font-semibold">Connection Test:</div>
                     <button 
-                      className="bg-gray-800 hover:bg-gray-700 text-[10px] px-2 py-0.5 rounded text-cyan-400 transition-colors"
+                      className="bg-brand-500 hover:bg-brand-600 text-white text-[10px] px-2 py-1 rounded transition-colors"
                       onClick={() => {
-                        const debugCode = `// Check WebSocket object in console
-const socket = new WebSocket("${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor");
-socket.onopen = () => console.log("Connected!");
-socket.onerror = (e) => console.error("Error:", e);
-
-// Monitor events in Network tab
-// Look for failed WS connections in Console`;
-                        navigator.clipboard.writeText(debugCode)
-                          .then(() => {
-                            alert('Debug code copied to clipboard!');
-                          })
-                          .catch(err => {
-                            console.error('Failed to copy:', err);
-                          });
+                        // Create temporary ping tests to both websockets
+                        const testMonitor = () => {
+                          try {
+                            const monitorUrl = `${import.meta.env.VITE_WS_URL || "wss://" + window.location.hostname}/api/v69/ws/monitor`;
+                            const ws = new WebSocket(monitorUrl);
+                            
+                            // Update UI to show test in progress
+                            const monitorResult = document.getElementById('monitor-ping-result');
+                            if (monitorResult) {
+                              monitorResult.textContent = "Testing...";
+                              monitorResult.className = "text-yellow-400 animate-pulse";
+                            }
+                            
+                            // Set timeout for connection
+                            const timeout = setTimeout(() => {
+                              try {
+                                ws.close();
+                                if (monitorResult) {
+                                  monitorResult.textContent = "Timeout";
+                                  monitorResult.className = "text-red-400";
+                                }
+                              } catch (e) {}
+                            }, 3000);
+                            
+                            // Handle connection success
+                            ws.onopen = () => {
+                              clearTimeout(timeout);
+                              if (monitorResult) {
+                                monitorResult.textContent = "Connected!";
+                                monitorResult.className = "text-green-400";
+                              }
+                              setTimeout(() => ws.close(), 1000);
+                            };
+                            
+                            // Handle errors
+                            ws.onerror = () => {
+                              clearTimeout(timeout);
+                              if (monitorResult) {
+                                monitorResult.textContent = "Failed";
+                                monitorResult.className = "text-red-400";
+                              }
+                            };
+                          } catch (e) {
+                            console.error("Monitor test failed:", e);
+                          }
+                        };
+                        
+                        const testSettings = () => {
+                          try {
+                            const settingsUrl = `${import.meta.env.VITE_WS_URL || "wss://" + window.location.hostname}/api/v69/ws/system-settings`;
+                            const ws = new WebSocket(settingsUrl);
+                            
+                            // Update UI to show test in progress
+                            const settingsResult = document.getElementById('settings-ping-result');
+                            if (settingsResult) {
+                              settingsResult.textContent = "Testing...";
+                              settingsResult.className = "text-yellow-400 animate-pulse";
+                            }
+                            
+                            // Set timeout for connection
+                            const timeout = setTimeout(() => {
+                              try {
+                                ws.close();
+                                if (settingsResult) {
+                                  settingsResult.textContent = "Timeout";
+                                  settingsResult.className = "text-red-400";
+                                }
+                              } catch (e) {}
+                            }, 3000);
+                            
+                            // Handle connection success
+                            ws.onopen = () => {
+                              clearTimeout(timeout);
+                              if (settingsResult) {
+                                settingsResult.textContent = "Connected!";
+                                settingsResult.className = "text-green-400";
+                              }
+                              setTimeout(() => ws.close(), 1000);
+                            };
+                            
+                            // Handle errors
+                            ws.onerror = () => {
+                              clearTimeout(timeout);
+                              if (settingsResult) {
+                                settingsResult.textContent = "Failed";
+                                settingsResult.className = "text-red-400";
+                              }
+                            };
+                          } catch (e) {
+                            console.error("Settings test failed:", e);
+                          }
+                        };
+                        
+                        // Run both tests
+                        testMonitor();
+                        testSettings();
                       }}
                     >
-                      Copy Code
+                      Test Now
                     </button>
                   </div>
-                  <pre className="whitespace-pre-wrap break-all text-[8px] text-gray-400 bg-gray-800/50 p-2 mt-1 rounded">
-{`// Check WebSocket object in console
-const socket = new WebSocket("${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}/api/v69/ws/monitor");
-socket.onopen = () => console.log("Connected!");
-socket.onerror = (e) => console.error("Error:", e);
-
-// Monitor events in Network tab
-// Look for failed WS connections in Console`}
-                  </pre>
+                  
+                  <div className="flex flex-col gap-1 text-[10px] bg-black/30 p-2 rounded">
+                    <div className="flex justify-between items-center">
+                      <div>Monitor Socket:</div>
+                      <div id="monitor-ping-result" className="text-gray-400">Not tested</div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div>Settings Socket:</div>
+                      <div id="settings-ping-result" className="text-gray-400">Not tested</div>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="text-right mt-2 text-[8px] text-gray-500 border-t border-gray-700 pt-2">
+                
+                <div className="border-t border-gray-700 mt-2 pt-2 text-right text-[9px] text-gray-400">
                   Last checked: {new Date().toLocaleTimeString()}
                   <br />
-                  <span className="text-yellow-400">Enhanced Debugging Mode</span>
-                  <br />
-                  <span className="text-green-400">Auth requirement removed</span>
+                  <button 
+                    className="text-cyan-400 hover:text-cyan-300 mt-1 text-[9px] underline"
+                    onClick={() => {
+                      // Force reload both websockets
+                      if (systemSettings.close && typeof systemSettings.close === 'function') {
+                        try {
+                          systemSettings.close();
+                          setTimeout(() => {
+                            if (systemSettings.connect && typeof systemSettings.connect === 'function') {
+                              systemSettings.connect();
+                            }
+                          }, 500);
+                        } catch (e) {
+                          console.error("Failed to reset settings socket:", e);
+                        }
+                      }
+                      // Clear status dropdown
+                      const statusDropdown = document.getElementById('status-dropdown');
+                      if (statusDropdown) {
+                        statusDropdown.classList.add('hidden');
+                      }
+                      // Force page refresh to reset all connections
+                      window.location.reload();
+                    }}
+                  >
+                    Reset Connections
+                  </button>
                 </div>
               </div>
             </div>

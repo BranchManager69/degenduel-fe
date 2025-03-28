@@ -104,7 +104,86 @@
 
 /* ---------------------- NEW ---------------------- */
 
-/* Main styles for cyberpunk scrollbar */
+/* Global scrollbar styling */
+:root {
+  --scrollbar-track: rgba(13, 13, 13, 0.95);
+  --scrollbar-thumb: rgba(157, 78, 221, 0.7);
+  --scrollbar-thumb-hover: rgba(157, 78, 221, 1);
+}
+
+/* Apply to entire site with auto-hide behavior */
+@media (min-width: 640px) {
+  /* Only apply autohide on non-mobile devices */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.5s ease;
+  }
+  
+  html:hover, html:focus, html:focus-within, html.scrolling {
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+  
+  html::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  html::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  
+  html::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    transition: background 0.5s ease;
+  }
+  
+  html:hover::-webkit-scrollbar-thumb,
+  html:focus::-webkit-scrollbar-thumb,
+  html:focus-within::-webkit-scrollbar-thumb,
+  html.scrolling::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+  
+  html:hover::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    box-shadow: 0 0 8px rgba(157, 78, 221, 0.5);
+  }
+}
+
+/* For mobile, always show scrollbars when needed */
+@media (max-width: 639px) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+  
+  html::-webkit-scrollbar {
+    width: 8px; /* Slightly smaller on mobile */
+    height: 8px;
+  }
+  
+  html::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  
+  html::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+  }
+  
+  html::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+}
+
+html::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+/* Main styles for cyberpunk scrollbar class */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
   opacity: 1;

@@ -41,8 +41,9 @@ import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* WebSocket */
 // WebSocket Manager
 import WebSocketManager from './hooks/websocket/WebSocketManager';
-/* Pages */
+/* Hooks */
 import { useAuth } from "./hooks/useAuth";
+import { useScrollbarVisibility } from "./hooks/useScrollbarVisibility";
 import { ReferralProvider } from "./hooks/useReferral";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AiTesting } from "./pages/admin/AiTesting";
@@ -100,6 +101,9 @@ const AdminChatDashboard = lazy(
 export const App: React.FC = () => {
   const { checkAuth } = useAuth();
   const { user } = useStore();
+  
+  // Initialize scrollbar visibility
+  useScrollbarVisibility();
 
   useEffect(() => {
     // Always validate auth on startup, regardless of stored user state
