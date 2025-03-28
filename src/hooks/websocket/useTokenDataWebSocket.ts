@@ -6,10 +6,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { TokenData as OriginalTokenData } from '../../hooks/useTokenDataWebSocket';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 // Keep the same interface for compatibility
 export interface TokenData extends OriginalTokenData {}
@@ -19,28 +19,10 @@ const FALLBACK_TOKENS: TokenData[] = [
   {
     symbol: "SOL",
     name: "Solana",
-    price: "112.50",
-    marketCap: "50000000000",
-    volume24h: "3500000000",
-    change24h: "2.5",
-    status: "active",
-  },
-  {
-    symbol: "BONK",
-    name: "Bonk",
-    price: "0.00002156",
-    marketCap: "1250000000",
-    volume24h: "450000000",
-    change24h: "5.2",
-    status: "active",
-  },
-  {
-    symbol: "JUP",
-    name: "Jupiter",
-    price: "0.95",
-    marketCap: "3800000000",
-    volume24h: "980000000",
-    change24h: "-0.75",
+    price: "420.69",
+    marketCap: "420420069",
+    volume24h: "420420069",
+    change24h: "42069.69",
     status: "active",
   },
 ];
@@ -70,7 +52,7 @@ export function useTokenDataWebSocket(tokensToSubscribe: string[] | "all" = "all
     error,
     send
   } = useWebSocket<TokenDataMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.TOKEN_DATA,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.TOKEN_DATA,
     requiresAuth: false, // Token data is public
     heartbeatInterval: 30000
@@ -244,7 +226,7 @@ export function useTokenDataWebSocket(tokensToSubscribe: string[] | "all" = "all
         
         console.error('Token data WebSocket connection error:', {
           message: error.message,
-          endpoint: WEBSOCKET_ENDPOINTS.TOKEN_DATA,
+          endpoint: WEBSOCKET_ENDPOINT,
           timestamp: new Date().toISOString()
         });
       } else {

@@ -6,10 +6,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 // Data structure for a market price message
 interface MarketPrice {
@@ -61,7 +61,7 @@ export function useMarketDataWebSocket(symbols: string[] = ["SOL", "BULLY", "JUP
   const { updateMarketPrice, updateMarketVolume, updateMarketSentiment } = useStore();
 
   // Create custom endpoint with symbols as query parameters
-  const endpoint = `${WEBSOCKET_ENDPOINTS.MARKET_DATA}`;
+  const endpoint = `${WEBSOCKET_ENDPOINT}`;
 
   // Connect to the WebSocket using the standardized hook
   const { 

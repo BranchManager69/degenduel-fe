@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 interface UserActivityUpdate {
   type: "user_activity_update";
@@ -74,7 +74,7 @@ export function useAnalyticsWebSocket() {
     connect,
     close
   } = useWebSocket<AnalyticsMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.ANALYTICS,
+    endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.ANALYTICS,
     requiresAuth: true, // Analytics requires admin authentication
     heartbeatInterval: 30000

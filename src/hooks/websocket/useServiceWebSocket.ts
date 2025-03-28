@@ -8,10 +8,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
 import { useStore } from '../../store/useStore';
+import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import useWebSocket from './useWebSocket';
 
 interface ServiceMessage {
   type: "service:state" | "service:metrics" | "service:alert";
@@ -71,7 +71,7 @@ export function useServiceWebSocket() {
     connect,
     close
   } = useWebSocket<ServiceMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.SERVICE, // This maps to circuit-breaker as per types.ts
+    endpoint: WEBSOCKET_ENDPOINT, // This maps to circuit-breaker as per types.ts
     socketType: SOCKET_TYPES.SERVICE,
     requiresAuth: true, // Service monitoring requires admin authentication
     heartbeatInterval: 30000
