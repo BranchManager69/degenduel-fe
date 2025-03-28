@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS, MessageType } f
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT, MessageType } from './types';
 import useWebSocket from './useWebSocket';
 
 export interface Notification {
