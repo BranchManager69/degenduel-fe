@@ -332,7 +332,8 @@ const WebSocketManagerComponent: React.FC = () => {
         
         // Only filter out auth-related error messages
         if ((message.error && message.error.includes('auth')) || 
-            (message.message && message.message.includes('auth'))) {
+            (message.message && message.message.includes('auth')) ||
+            (typeof message.error === 'number' && message.error === 4002)) { // Code 4002 is "Unknown message type"
           console.log("WebSocketManager: Filtering out authentication error message from listeners");
           return;
         }
