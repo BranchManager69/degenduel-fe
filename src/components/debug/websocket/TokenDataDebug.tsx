@@ -39,9 +39,7 @@ const TokenDataDebug: React.FC = () => {
   };
   
   return (
-    <div className="bg-gray-900 p-4 rounded-lg text-white">
-      <h2 className="text-xl font-bold mb-4">Token Data WebSocket Debug</h2>
-      
+    <div className="text-white">
       {/* Connection Status */}
       <div className="mb-4">
         <div className="flex items-center">

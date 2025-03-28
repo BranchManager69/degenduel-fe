@@ -316,8 +316,8 @@ export const LandingPage: React.FC = () => {
                 </p>
                 
                 {/* Token Data Demo */}
-                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-4 border border-gray-800 mb-6">
-                  <h4 className="text-lg font-semibold mb-3 text-brand-400">Market Data Topic</h4>
+                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800 mb-6">
+                  <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
                   <React.Suspense fallback={<div>Loading token data...</div>}>
                     {(() => {
                       const TokenDataDebug = React.lazy(() => import("../../../components/debug/websocket/TokenDataDebug"));
@@ -327,8 +327,8 @@ export const LandingPage: React.FC = () => {
                 </div>
                 
                 {/* System Status Demo */}
-                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-4 border border-gray-800 mb-6">
-                  <h4 className="text-lg font-semibold mb-3 text-cyan-400">System Topic</h4>
+                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800 mb-6">
+                  <h4 className="text-xl font-semibold mb-4 text-cyan-400">System Topic</h4>
                   <React.Suspense fallback={<div>Loading system status...</div>}>
                     {(() => {
                       const SystemStatusDebug = React.lazy(() => import("../../../components/debug/websocket/SystemStatusDebug"));
@@ -338,8 +338,8 @@ export const LandingPage: React.FC = () => {
                 </div>
                 
                 {/* User Profile Demo */}
-                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-4 border border-gray-800">
-                  <h4 className="text-lg font-semibold mb-3 text-purple-400">User Topic (Requires Auth)</h4>
+                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                  <h4 className="text-xl font-semibold mb-4 text-purple-400">User Topic (Requires Auth)</h4>
                   <React.Suspense fallback={<div>Loading user profile...</div>}>
                     {(() => {
                       const UserProfileDebug = React.lazy(() => import("../../../components/debug/websocket/UserProfileDebug"));
