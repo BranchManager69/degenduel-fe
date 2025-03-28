@@ -243,6 +243,9 @@ export function useSystemSettingsWebSocket() {
     refreshSettings,
     updateBackgroundScene,
     connect,
-    close
+    close,
+    // CRITICAL FIX: Explicitly expose whether we're using a WebSocket connection
+    // This is used by Footer to determine whether to show the WebSocket indicator (lightning bolt)
+    webSocketConnected: status === 'online'
   };
 }

@@ -1,67 +1,24 @@
 /**
- * Contest Chat WebSocket Hook - V69 Standardized Version
+ * Contest Chat WebSocket Hook - Using Unified WebSocket System
  * 
- * This hook connects to the contest chat WebSocket service and provides real-time
- * chat messaging, participant tracking, and room management for contest chats.
+ * This hook connects to the unified WebSocket service with the CONTEST topic
+ * and provides real-time chat messaging, participant tracking, and room management.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINTS } from './types';
-import useWebSocket from './useWebSocket';
+import { MessageType, TopicType, useUnifiedWebSocket } from './index';
 import { useStore } from '../../store/useStore';
 
-// Message types from server
-interface RoomStateMessage {
-  type: "ROOM_STATE";
-  participants: Array<{
-    userId: string;
-    nickname: string;
-    isAdmin: boolean;
-    profilePicture?: string;
-  }>;
+// These interface definitions are used internally in the component
+// and will be needed when we fully implement the contest chat system
+export interface ContestChatMessageTypes {
+  ROOM_STATE: "ROOM_STATE";
+  CHAT_MESSAGE: "CHAT_MESSAGE";
+  PARTICIPANT_JOINED: "PARTICIPANT_JOINED";
+  PARTICIPANT_LEFT: "PARTICIPANT_LEFT";
+  ERROR: "ERROR";
 }
-
-interface ChatMessage {
-  type: "CHAT_MESSAGE";
-  messageId: string;
-  userId: string;
-  nickname: string;
-  isAdmin: boolean;
-  text: string;
-  timestamp: string;
-  profilePicture?: string;
-}
-
-interface ParticipantJoinedMessage {
-  type: "PARTICIPANT_JOINED";
-  participant: {
-    userId: string;
-    nickname: string;
-    isAdmin: boolean;
-    profilePicture?: string;
-  };
-}
-
-interface ParticipantLeftMessage {
-  type: "PARTICIPANT_LEFT";
-  userId: string;
-}
-
-// Error message from server
-interface ErrorMessage {
-  type: "ERROR";
-  error: string;
-  code: number;
-}
-
-// Server message types
-type ServerMessage =
-  | RoomStateMessage
-  | ChatMessage
-  | ParticipantJoinedMessage
-  | ParticipantLeftMessage
-  | ErrorMessage;
 
 // Data structure for a chat participant
 export interface ChatParticipant {
@@ -88,81 +45,172 @@ export function useContestChatWebSocket(contestId: string) {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Connect to the WebSocket using the standardized hook
-  const { 
-    status, 
-    data, 
-    error,
-    send,
-    connect,
-    close
-  } = useWebSocket<ServerMessage>({
-    endpoint: WEBSOCKET_ENDPOINTS.CONTEST_CHAT,
-    socketType: SOCKET_TYPES.CONTEST_CHAT,
-    requiresAuth: true, // Contest chat requires authentication
-    heartbeatInterval: 30000
-  });
+  // Connect to the unified WebSocket using the topic filter for contest
+  const ws = useUnifiedWebSocket(
+    `contest-chat-${contestId}`, // Unique ID for this connection
+    [MessageType.DATA], // We want to receive DATA messages
+    (message) => {
+      // Message handler for contest-related messages
+      if (message.topic !== TopicType.CONTEST) return;
+      if (!message.data) return;
+      
+      try {
+        const data = message.data;
+        // Process the message based on its type
+        switch (data.type) {
+          case "ROOM_STATE":
+            setParticipants(data.participants);
+            setLastUpdate(new Date());
+            
+            dispatchWebSocketEvent('contest_chat_room_state', {
+              socketType: 'contest',
+              message: `Room state received with ${data.participants.length} participants`,
+              contestId,
+              participantCount: data.participants.length,
+              timestamp: new Date().toISOString()
+            });
+            break;
+            
+          case "CHAT_MESSAGE":
+            setMessages(prev => [
+              ...prev,
+              {
+                messageId: data.messageId,
+                userId: data.userId,
+                nickname: data.nickname,
+                isAdmin: data.isAdmin,
+                text: data.text,
+                timestamp: data.timestamp,
+                profilePicture: data.profilePicture,
+              },
+            ]);
+            setLastUpdate(new Date());
+            
+            dispatchWebSocketEvent('contest_chat_message', {
+              socketType: 'contest',
+              message: 'Chat message received',
+              contestId,
+              messageId: data.messageId,
+              userId: data.userId,
+              timestamp: new Date().toISOString()
+            });
+            break;
+            
+          case "PARTICIPANT_JOINED":
+            setParticipants(prev => [...prev, data.participant]);
+            setLastUpdate(new Date());
+            
+            dispatchWebSocketEvent('contest_chat_participant_joined', {
+              socketType: 'contest',
+              message: 'Participant joined',
+              contestId,
+              userId: data.participant.userId,
+              timestamp: new Date().toISOString()
+            });
+            break;
+            
+          case "PARTICIPANT_LEFT":
+            setParticipants(prev => 
+              prev.filter(p => p.userId !== data.userId)
+            );
+            setLastUpdate(new Date());
+            
+            dispatchWebSocketEvent('contest_chat_participant_left', {
+              socketType: 'contest',
+              message: 'Participant left',
+              contestId,
+              userId: data.userId,
+              timestamp: new Date().toISOString()
+            });
+            break;
+            
+          case "ERROR":
+            if (data.code === 4290) {
+              setIsRateLimited(true);
+              // Reset rate limit after 10 seconds
+              setTimeout(() => setIsRateLimited(false), 10000);
+            }
+            
+            setError(data.error || "Unknown chat error");
+            
+            dispatchWebSocketEvent('contest_chat_error', {
+              socketType: 'contest',
+              message: data.error,
+              contestId,
+              code: data.code,
+              timestamp: new Date().toISOString()
+            });
+            break;
+        }
+      } catch (err) {
+        console.error('Error processing contest chat message:', err);
+        setError(err instanceof Error ? err.message : String(err));
+        dispatchWebSocketEvent('error', {
+          socketType: 'contest',
+          message: 'Error processing contest chat data',
+          error: err instanceof Error ? err.message : String(err),
+          contestId
+        });
+      }
+    },
+    [TopicType.CONTEST] // Only listen to CONTEST topic
+  );
 
-  // When the connection status changes, log it
+  // Subscribe to the CONTEST topic when the WebSocket is connected
   useEffect(() => {
-    dispatchWebSocketEvent('contest_chat_status', {
-      socketType: SOCKET_TYPES.CONTEST_CHAT,
-      status,
-      message: `Contest chat WebSocket is ${status}`,
-      contestId
-    });
-    
-    // Join the specific contest room when connected
-    if (status === 'online') {
+    if (ws.isConnected) {
+      // Subscribe to the CONTEST topic
+      ws.subscribe([TopicType.CONTEST]);
+      
+      // Join the specific contest room
       joinRoom();
     }
-  }, [status, contestId]);
+  }, [ws.isConnected, contestId]);
 
   // Join the chat room
   const joinRoom = useCallback(() => {
-    if (status !== 'online') {
+    if (!ws.isConnected) {
       console.warn('Cannot join contest chat room: WebSocket not connected');
       return;
     }
     
-    send({
-      type: "JOIN_ROOM",
+    // Send a request to join the contest room
+    ws.request(TopicType.CONTEST, 'JOIN_ROOM', {
       contestId: contestId.toString()
     });
     
     dispatchWebSocketEvent('contest_chat_join_room', {
-      socketType: SOCKET_TYPES.CONTEST_CHAT,
+      socketType: 'contest',
       message: `Joining contest chat room: ${contestId}`,
       contestId,
       timestamp: new Date().toISOString()
     });
-  }, [status, send, contestId]);
+  }, [ws.isConnected, contestId, ws.request]);
 
   // Leave the chat room
   const leaveRoom = useCallback(() => {
-    if (status !== 'online') {
-      return;
-    }
+    if (!ws.isConnected) return;
     
-    send({
-      type: "LEAVE_ROOM",
+    // Send a request to leave the contest room
+    ws.request(TopicType.CONTEST, 'LEAVE_ROOM', {
       contestId: contestId.toString()
     });
     
     dispatchWebSocketEvent('contest_chat_leave_room', {
-      socketType: SOCKET_TYPES.CONTEST_CHAT,
+      socketType: 'contest',
       message: `Leaving contest chat room: ${contestId}`,
       contestId,
       timestamp: new Date().toISOString()
     });
-  }, [status, send, contestId]);
+  }, [ws.isConnected, contestId, ws.request]);
 
   // Send a chat message
   const sendMessage = useCallback((text: string) => {
     if (isRateLimited) {
       dispatchWebSocketEvent('contest_chat_rate_limited', {
-        socketType: SOCKET_TYPES.CONTEST_CHAT,
+        socketType: 'contest',
         message: 'Rate limited: Cannot send message',
         contestId,
         timestamp: new Date().toISOString()
@@ -171,8 +219,9 @@ export function useContestChatWebSocket(contestId: string) {
     }
 
     if (text.length > 200) {
+      setError('Message too long (max 200 characters)');
       dispatchWebSocketEvent('contest_chat_error', {
-        socketType: SOCKET_TYPES.CONTEST_CHAT,
+        socketType: 'contest',
         message: 'Message too long (max 200 characters)',
         contestId,
         timestamp: new Date().toISOString()
@@ -180,137 +229,24 @@ export function useContestChatWebSocket(contestId: string) {
       return;
     }
 
-    if (status !== 'online') {
+    if (!ws.isConnected) {
       console.warn('Cannot send message: WebSocket not connected');
       return;
     }
     
-    send({
-      type: "SEND_CHAT_MESSAGE",
+    // Send a request to send a chat message
+    ws.request(TopicType.CONTEST, 'SEND_CHAT_MESSAGE', {
       contestId: contestId.toString(),
       text
     });
     
     dispatchWebSocketEvent('contest_chat_send_message', {
-      socketType: SOCKET_TYPES.CONTEST_CHAT,
+      socketType: 'contest',
       message: 'Sending chat message',
       contestId,
       timestamp: new Date().toISOString()
     });
-  }, [status, send, contestId, isRateLimited]);
-
-  // Process messages from the WebSocket
-  useEffect(() => {
-    if (!data) return;
-    
-    try {
-      // Process the message based on its type
-      switch (data.type) {
-        case "ROOM_STATE":
-          setParticipants(data.participants);
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('contest_chat_room_state', {
-            socketType: SOCKET_TYPES.CONTEST_CHAT,
-            message: `Room state received with ${data.participants.length} participants`,
-            contestId,
-            participantCount: data.participants.length,
-            timestamp: new Date().toISOString()
-          });
-          break;
-          
-        case "CHAT_MESSAGE":
-          setMessages(prev => [
-            ...prev,
-            {
-              messageId: data.messageId,
-              userId: data.userId,
-              nickname: data.nickname,
-              isAdmin: data.isAdmin,
-              text: data.text,
-              timestamp: data.timestamp,
-              profilePicture: data.profilePicture,
-            },
-          ]);
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('contest_chat_message', {
-            socketType: SOCKET_TYPES.CONTEST_CHAT,
-            message: 'Chat message received',
-            contestId,
-            messageId: data.messageId,
-            userId: data.userId,
-            timestamp: new Date().toISOString()
-          });
-          break;
-          
-        case "PARTICIPANT_JOINED":
-          setParticipants(prev => [...prev, data.participant]);
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('contest_chat_participant_joined', {
-            socketType: SOCKET_TYPES.CONTEST_CHAT,
-            message: 'Participant joined',
-            contestId,
-            userId: data.participant.userId,
-            timestamp: new Date().toISOString()
-          });
-          break;
-          
-        case "PARTICIPANT_LEFT":
-          setParticipants(prev => 
-            prev.filter(p => p.userId !== data.userId)
-          );
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('contest_chat_participant_left', {
-            socketType: SOCKET_TYPES.CONTEST_CHAT,
-            message: 'Participant left',
-            contestId,
-            userId: data.userId,
-            timestamp: new Date().toISOString()
-          });
-          break;
-          
-        case "ERROR":
-          if (data.code === 4290) {
-            setIsRateLimited(true);
-            // Reset rate limit after 10 seconds
-            setTimeout(() => setIsRateLimited(false), 10000);
-          }
-          
-          dispatchWebSocketEvent('contest_chat_error', {
-            socketType: SOCKET_TYPES.CONTEST_CHAT,
-            message: data.error,
-            contestId,
-            code: data.code,
-            timestamp: new Date().toISOString()
-          });
-          break;
-      }
-    } catch (err) {
-      console.error('Error processing contest chat message:', err);
-      dispatchWebSocketEvent('error', {
-        socketType: SOCKET_TYPES.CONTEST_CHAT,
-        message: 'Error processing contest chat data',
-        error: err instanceof Error ? err.message : String(err),
-        contestId
-      });
-    }
-  }, [data, contestId]);
-  
-  // Handle errors
-  useEffect(() => {
-    if (error) {
-      console.error('Contest chat WebSocket error:', error);
-      dispatchWebSocketEvent('error', {
-        socketType: SOCKET_TYPES.CONTEST_CHAT,
-        message: error.message,
-        error,
-        contestId
-      });
-    }
-  }, [error, contestId]);
+  }, [ws.isConnected, contestId, ws.request, isRateLimited]);
   
   // Leave room on component unmount
   useEffect(() => {
@@ -323,14 +259,14 @@ export function useContestChatWebSocket(contestId: string) {
     participants,
     messages,
     isRateLimited,
-    isConnected: status === 'online',
-    error: error ? error.message : null,
+    isConnected: ws.isConnected,
+    error,
     lastUpdate,
     sendMessage,
     joinRoom,
     leaveRoom,
     currentUserId: user?.wallet_address || "",
-    connect,
-    close
+    connect: () => {}, // No-op since we use the unified system
+    close: () => {}    // No-op since we use the unified system
   };
 }

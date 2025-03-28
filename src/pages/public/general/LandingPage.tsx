@@ -286,11 +286,11 @@ export const LandingPage: React.FC = () => {
                       Hide Monitor
                     </button>
                   </div>
-                  {/* Import WebSocketMonitor dynamically only when needed and user is admin */}
-                  <React.Suspense fallback={<div>Loading monitor...</div>}>
+                  {/* Import UnifiedWebSocketMonitor dynamically only when needed and user is admin */}
+                  <React.Suspense fallback={<div>Loading unified monitor...</div>}>
                     {(() => {
-                      const WebSocketMonitor = React.lazy(() => import("../../../components/debug/websocket/WebSocketMonitor"));
-                      return <WebSocketMonitor />;
+                      const UnifiedWebSocketMonitor = React.lazy(() => import("../../../components/debug/websocket/UnifiedWebSocketMonitor"));
+                      return <UnifiedWebSocketMonitor />;
                     })()}
                   </React.Suspense>
                 </div>
@@ -307,6 +307,47 @@ export const LandingPage: React.FC = () => {
                   </button>
                 </div>
               )}
+              
+              {/* WebSocket Demo Section */}
+              <div className="w-full mb-10">
+                <h3 className="text-xl font-semibold mb-4 text-white">Unified WebSocket Demos</h3>
+                <p className="text-sm text-gray-400 mb-6">
+                  These components demonstrate the new unified WebSocket system with different topics.
+                </p>
+                
+                {/* Token Data Demo */}
+                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-4 border border-gray-800 mb-6">
+                  <h4 className="text-lg font-semibold mb-3 text-brand-400">Market Data Topic</h4>
+                  <React.Suspense fallback={<div>Loading token data...</div>}>
+                    {(() => {
+                      const TokenDataDebug = React.lazy(() => import("../../../components/debug/websocket/TokenDataDebug"));
+                      return <TokenDataDebug />;
+                    })()}
+                  </React.Suspense>
+                </div>
+                
+                {/* System Status Demo */}
+                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-4 border border-gray-800 mb-6">
+                  <h4 className="text-lg font-semibold mb-3 text-cyan-400">System Topic</h4>
+                  <React.Suspense fallback={<div>Loading system status...</div>}>
+                    {(() => {
+                      const SystemStatusDebug = React.lazy(() => import("../../../components/debug/websocket/SystemStatusDebug"));
+                      return <SystemStatusDebug />;
+                    })()}
+                  </React.Suspense>
+                </div>
+                
+                {/* User Profile Demo */}
+                <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-4 border border-gray-800">
+                  <h4 className="text-lg font-semibold mb-3 text-purple-400">User Topic (Requires Auth)</h4>
+                  <React.Suspense fallback={<div>Loading user profile...</div>}>
+                    {(() => {
+                      const UserProfileDebug = React.lazy(() => import("../../../components/debug/websocket/UserProfileDebug"));
+                      return <UserProfileDebug />;
+                    })()}
+                  </React.Suspense>
+                </div>
+              </div>
               
               {/* HeroTitle component with better Terminal coordination - conditionally rendered based on feature flag */}
               {FEATURE_FLAGS.SHOW_HERO_TITLE && (
