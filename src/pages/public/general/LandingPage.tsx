@@ -184,14 +184,18 @@ export const LandingPage: React.FC = () => {
 
   // useEffect for the animation phases with better HeroTitle/Terminal coordination
   useEffect(() => {
-    // Animation phases for the title - slight delay to allow HeroTitle to initialize
+    // Adjust animation timing based on whether HeroTitle is shown
+    const initialDelay = FEATURE_FLAGS.SHOW_HERO_TITLE ? 1200 : 300;
+    const secondDelay = FEATURE_FLAGS.SHOW_HERO_TITLE ? 2400 : 800;
+    
+    // Animation phases for the title - timing adjusted based on HeroTitle visibility
     const phaseOneTimer = setTimeout(() => {
       setAnimationPhase(1); // Initial reveal 
-    }, 1200); // Increased delay for better coordination with HeroTitle
+    }, initialDelay);
 
     const phaseTwoTimer = setTimeout(() => {
       setAnimationPhase(2); // Full animation
-    }, 2400); // Increased delay to better synchronize with Terminal appearance
+    }, secondDelay);
 
     // Fetch contests
     const fetchContests = async () => {
@@ -292,24 +296,38 @@ export const LandingPage: React.FC = () => {
                 </div>
               )}
               
-              {/* Admin debug button is now the sole control for WebSocket Monitor */}
+              {/* Admin debug button - visible even when HeroTitle is hidden */}
+              {isAdmin() && (
+                <div className="flex justify-end mb-2">
+                  <button
+                    className="bg-black/50 text-white text-xs p-1 rounded-md"
+                    onClick={() => setDebugMode(!debugMode)}
+                  >
+                    {debugMode ? "🛠️" : "🐛"}
+                  </button>
+                </div>
+              )}
               
-              {/* HeroTitle component with better Terminal coordination */}
-              <div className="w-full h-[15vh] relative overflow-visible z-10">
-                <HeroTitle 
-                  onComplete={() => {
-                    // When HeroTitle animation is complete, we could trigger Terminal actions
-                    console.log('HeroTitle animation completed');
-                  }} 
-                  debugMode={debugMode}
-                  setDebugMode={setDebugMode}
-                />
-              </div>
+              {/* HeroTitle component with better Terminal coordination - conditionally rendered based on feature flag */}
+              {FEATURE_FLAGS.SHOW_HERO_TITLE && (
+                <>
+                  <div className="w-full h-[15vh] relative overflow-visible z-10">
+                    <HeroTitle 
+                      onComplete={() => {
+                        // When HeroTitle animation is complete, we could trigger Terminal actions
+                        console.log('HeroTitle animation completed');
+                      }} 
+                      debugMode={debugMode}
+                      setDebugMode={setDebugMode}
+                    />
+                  </div>
 
-              {/* Better spacing between hero and terminal - increased vertical space */}
-              <div className="h-[8vh] min-h-[40px] w-full"></div>
+                  {/* Spacing between hero and terminal - only shown when HeroTitle is visible */}
+                  <div className="h-[8vh] min-h-[40px] w-full"></div>
+                </>
+              )}
               
-              {/* Terminal Component - Better integration with HeroTitle */}
+              {/* Terminal Component - Animation adjusted based on HeroTitle presence */}
               <motion.div
                 className="w-full max-w-4xl mx-auto mb-10 relative z-20"
                 initial={{ opacity: 0, y: 20 }}
@@ -317,12 +335,13 @@ export const LandingPage: React.FC = () => {
                   opacity: animationPhase > 0 ? 1 : 0,
                   y: animationPhase > 0 ? 0 : 20,
                   transition: {
-                    delay: 0.3,
+                    // When HeroTitle is hidden, start Terminal animation immediately
+                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.3 : 0.1,
                     duration: 0.8,
                   },
                 }}
                 onAnimationComplete={() => {
-                  // When terminal animation completes, it signals completion to HeroTitle
+                  // When terminal animation completes, it signals completion
                   console.log('Terminal animation completed');
                 }}
               >
