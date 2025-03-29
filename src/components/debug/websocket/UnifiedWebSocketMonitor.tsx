@@ -1,8 +1,15 @@
 /**
- * UnifiedWebSocketMonitor Component
+ * DEPRECATED: UnifiedWebSocketMonitor Component
  * 
- * A streamlined monitor specifically for the unified WebSocket system.
- * Shows connection status, active subscriptions, and message flow.
+ * This component is deprecated in favor of the new topic-specific monitors:
+ * - TokenDataDebug - for market data
+ * - SystemStatusDebug - for system monitoring
+ * - UserProfileDebug - for user data
+ * 
+ * This was designed for the old WebSocket system and is kept for reference only.
+ * Please use the new topic-specific monitors for better usability and design.
+ * 
+ * @deprecated Use topic-specific WebSocket monitors instead
  */
 
 import React, { useEffect, useState, useRef } from 'react';

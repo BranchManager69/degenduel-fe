@@ -1,14 +1,17 @@
 /**
- * SkyDuel WebSocket Hook - V69 Standardized Version
+ * SkyDuel WebSocket Hook for v69 Unified WebSocket System
  * 
- * This hook connects to the SkyDuel WebSocket service and provides real-time
- * monitoring and control of the SkyDuel service network visualization.
+ * This hook connects to the SkyDuel topic of the unified WebSocket system and provides
+ * real-time monitoring and control of the SkyDuel service network visualization.
+ * 
+ * Last updated: March 28, 2025
+ * Based on the v69 Unified WebSocket System specification
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import { MessageType, SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
 import useWebSocket from './useWebSocket';
 
 // SkyDuel service types
@@ -56,20 +59,25 @@ interface SkyDuelState {
   };
 }
 
-// WebSocket message types
-interface SkyDuelMessage {
-  type:
-    | "state_update"
-    | "node_update"
-    | "connection_update"
-    | "alert"
-    | "command_response";
-  data: any;
-  timestamp: string;
+// Message types from v69 Unified WebSocket System
+interface UnifiedMessage {
+  type: string;
+  topic?: string;
+  data?: any;
+  message?: string;
+  timestamp?: string;
+  initialData?: boolean;
+  error?: string;
+  code?: number;
+  action?: string;
+  requestId?: string;
+  operation?: string; // For acknowledgment messages
+  topics?: string[]; // For subscription-related messages
 }
 
 export function useSkyDuelWebSocket() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const { setSkyDuelState, addServiceAlert } = useStore();
 
   // Connect to the WebSocket using the standardized hook
@@ -80,11 +88,11 @@ export function useSkyDuelWebSocket() {
     send,
     connect,
     close
-  } = useWebSocket<SkyDuelMessage>({
+  } = useWebSocket<UnifiedMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.SKYDUEL,
     requiresAuth: true, // SkyDuel requires admin authentication
-    heartbeatInterval: 15000 // 15 second heartbeat
+    heartbeatInterval: 30000 // 30 second heartbeat as per v69 spec
   });
 
   // When the connection status changes, log it
@@ -94,77 +102,169 @@ export function useSkyDuelWebSocket() {
       status,
       message: `SkyDuel WebSocket is ${status}`
     });
-  }, [status]);
+
+    // Subscribe to the skyduel topic when connected
+    if (status === 'online' && !isSubscribed) {
+      // Subscribe to the skyduel topic
+      subscribeToSkyDuelTopic();
+    }
+  }, [status, isSubscribed]);
+
+  // Subscribe to the skyduel topic
+  const subscribeToSkyDuelTopic = useCallback(() => {
+    if (status !== 'online') {
+      console.warn('[SkyDuelWebSocket] Cannot subscribe: socket not connected');
+      return;
+    }
+
+    try {
+      // Subscribe message format according to v69 spec
+      const subscribeMessage = {
+        type: MessageType.SUBSCRIBE,
+        topics: ['skyduel'],
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('[SkyDuelWebSocket] Subscribing to skyduel topic');
+      send(subscribeMessage);
+      
+      dispatchWebSocketEvent('skyduel_subscribe', {
+        socketType: SOCKET_TYPES.SKYDUEL,
+        message: 'Subscribing to skyduel topic',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('[SkyDuelWebSocket] Error subscribing to topic:', error);
+      
+      dispatchWebSocketEvent('error', {
+        socketType: SOCKET_TYPES.SKYDUEL,
+        message: 'Error subscribing to skyduel topic',
+        error
+      });
+    }
+  }, [status, send]);
 
   // Process messages from the WebSocket
   useEffect(() => {
     if (!data) return;
     
     try {
-      // Process the message based on its type
+      // Process the message based on its type according to v69 unified system
       switch (data.type) {
-        case "state_update":
-          const skyDuelState = data.data as SkyDuelState;
-          setSkyDuelState(skyDuelState);
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('skyduel_state_update', {
-            socketType: SOCKET_TYPES.SKYDUEL,
-            message: 'SkyDuel state updated',
-            nodeCount: skyDuelState.nodes.length,
-            connectionCount: skyDuelState.connections.length,
-            systemStatus: skyDuelState.systemStatus.overall,
-            timestamp: new Date().toISOString()
-          });
-          break;
-          
-        case "node_update":
-          // Individual node updates are handled in the store
-          dispatchWebSocketEvent('skyduel_node_update', {
-            socketType: SOCKET_TYPES.SKYDUEL,
-            message: `Node update for ${data.data.name || data.data.id}`,
-            nodeId: data.data.id,
-            nodeStatus: data.data.status,
-            timestamp: new Date().toISOString()
-          });
-          break;
-          
-        case "connection_update":
-          // Individual connection updates are handled in the store
-          dispatchWebSocketEvent('skyduel_connection_update', {
-            socketType: SOCKET_TYPES.SKYDUEL,
-            message: `Connection update for ${data.data.source} → ${data.data.target}`,
-            source: data.data.source,
-            target: data.data.target,
-            status: data.data.status,
-            timestamp: new Date().toISOString()
-          });
-          break;
-          
-        case "alert":
-          if (data.data.alert) {
-            const { severity, content } = data.data.alert;
-            addServiceAlert(severity, content);
-            setLastUpdate(new Date());
+        case MessageType.ACKNOWLEDGMENT:
+          // Handle subscription acknowledgment
+          if (data.operation === 'SUBSCRIBE' && data.topics?.includes('skyduel')) {
+            console.log('[SkyDuelWebSocket] Successfully subscribed to skyduel topic');
+            setIsSubscribed(true);
             
-            dispatchWebSocketEvent('skyduel_alert', {
+            dispatchWebSocketEvent('skyduel_subscribed', {
               socketType: SOCKET_TYPES.SKYDUEL,
-              message: 'SkyDuel alert received',
-              severity,
-              content,
+              message: 'Successfully subscribed to skyduel topic',
               timestamp: new Date().toISOString()
             });
           }
           break;
           
-        case "command_response":
-          dispatchWebSocketEvent('skyduel_command_response', {
+        case MessageType.DATA:
+          // Handle data messages for the skyduel topic
+          if (data.topic === 'skyduel') {
+            // Mark as receiving initial data if specified
+            if (data.initialData) {
+              console.log('[SkyDuelWebSocket] Received initial skyduel data');
+              dispatchWebSocketEvent('skyduel_initial_data', {
+                socketType: SOCKET_TYPES.SKYDUEL,
+                message: 'Received initial skyduel data',
+                timestamp: new Date().toISOString()
+              });
+            }
+            
+            // Process the skyduel data based on its content
+            const skyDuelData = data.data;
+            
+            if (skyDuelData.fullState) {
+              // Full state update
+              const skyDuelState = skyDuelData.fullState as SkyDuelState;
+              setSkyDuelState(skyDuelState);
+              setLastUpdate(new Date());
+              
+              dispatchWebSocketEvent('skyduel_state_update', {
+                socketType: SOCKET_TYPES.SKYDUEL,
+                message: 'SkyDuel state updated',
+                nodeCount: skyDuelState.nodes.length,
+                connectionCount: skyDuelState.connections.length,
+                systemStatus: skyDuelState.systemStatus.overall,
+                timestamp: new Date().toISOString()
+              });
+            } else if (skyDuelData.nodeUpdate) {
+              // Individual node update
+              const nodeUpdate = skyDuelData.nodeUpdate;
+              dispatchWebSocketEvent('skyduel_node_update', {
+                socketType: SOCKET_TYPES.SKYDUEL,
+                message: `Node update for ${nodeUpdate.name || nodeUpdate.id}`,
+                nodeId: nodeUpdate.id,
+                nodeStatus: nodeUpdate.status,
+                timestamp: new Date().toISOString()
+              });
+            } else if (skyDuelData.connectionUpdate) {
+              // Individual connection update
+              const connUpdate = skyDuelData.connectionUpdate;
+              dispatchWebSocketEvent('skyduel_connection_update', {
+                socketType: SOCKET_TYPES.SKYDUEL,
+                message: `Connection update for ${connUpdate.source} → ${connUpdate.target}`,
+                source: connUpdate.source,
+                target: connUpdate.target,
+                status: connUpdate.status,
+                timestamp: new Date().toISOString()
+              });
+            } else if (skyDuelData.alert) {
+              // Alert notification
+              const { severity, content } = skyDuelData.alert;
+              addServiceAlert(severity, content);
+              setLastUpdate(new Date());
+              
+              dispatchWebSocketEvent('skyduel_alert', {
+                socketType: SOCKET_TYPES.SKYDUEL,
+                message: 'SkyDuel alert received',
+                severity,
+                content,
+                timestamp: new Date().toISOString()
+              });
+            }
+          }
+          break;
+          
+        case MessageType.ERROR:
+          // Handle error messages
+          console.error(`[SkyDuelWebSocket] Error (${data.code}): ${data.message}`);
+          addServiceAlert("error", `SkyDuel WebSocket error (${data.code}): ${data.message}`);
+          
+          dispatchWebSocketEvent('error', {
             socketType: SOCKET_TYPES.SKYDUEL,
-            message: 'Command response received',
-            command: data.data.command,
-            status: data.data.status,
+            message: data.message || 'Unknown error',
+            code: data.code,
             timestamp: new Date().toISOString()
           });
+          break;
+          
+        case MessageType.SYSTEM:
+          // Handle system messages
+          if (data.action === 'heartbeat') {
+            // Heartbeat message
+            dispatchWebSocketEvent('skyduel_heartbeat', {
+              socketType: SOCKET_TYPES.SKYDUEL,
+              message: 'Received heartbeat',
+              timestamp: data.timestamp
+            });
+          } else {
+            // Other system messages
+            console.log(`[SkyDuelWebSocket] System message: ${data.message}`);
+            
+            dispatchWebSocketEvent('skyduel_system', {
+              socketType: SOCKET_TYPES.SKYDUEL,
+              message: data.message || 'System message received',
+              timestamp: new Date().toISOString()
+            });
+          }
           break;
       }
     } catch (err) {
@@ -193,18 +293,74 @@ export function useSkyDuelWebSocket() {
     }
   }, [error, addServiceAlert]);
   
+  // Send a request for data to the SkyDuel system
+  const requestData = useCallback((action: string, params: Record<string, any> = {}) => {
+    if (status !== 'online') {
+      console.error("[SkyDuelWebSocket] Cannot request data: socket not connected");
+      return false;
+    }
+
+    if (!isSubscribed) {
+      console.error("[SkyDuelWebSocket] Cannot request data: not subscribed to skyduel topic");
+      return false;
+    }
+
+    try {
+      // Format according to v69 unified system REQUEST message
+      const requestMessage = {
+        type: MessageType.REQUEST,
+        topic: 'skyduel',
+        action,
+        ...params,
+        requestId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+      };
+
+      send(requestMessage);
+      
+      dispatchWebSocketEvent('skyduel_request', {
+        socketType: SOCKET_TYPES.SKYDUEL,
+        message: `Data request sent: ${action}`,
+        action,
+        params,
+        timestamp: new Date().toISOString()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("[SkyDuelWebSocket] Error sending data request:", error);
+      
+      dispatchWebSocketEvent('error', {
+        socketType: SOCKET_TYPES.SKYDUEL,
+        message: 'Error sending data request',
+        action,
+        params,
+        error
+      });
+      
+      return false;
+    }
+  }, [status, isSubscribed, send]);
+  
   // Send a command to the SkyDuel system
-  const sendCommand = useCallback((command: string, params: Record<string, any> = {}) => {
+  const sendCommand = useCallback((action: string, params: Record<string, any> = {}) => {
     if (status !== 'online') {
       console.error("[SkyDuelWebSocket] Cannot send command: socket not connected");
       return false;
     }
 
+    if (!isSubscribed) {
+      console.error("[SkyDuelWebSocket] Cannot send command: not subscribed to skyduel topic");
+      return false;
+    }
+
     try {
+      // Format according to v69 unified system COMMAND message
       const commandMessage = {
-        type: "command",
-        command,
-        params,
+        type: MessageType.COMMAND,
+        topic: 'skyduel',
+        action,
+        ...params,
         timestamp: new Date().toISOString(),
       };
 
@@ -212,8 +368,8 @@ export function useSkyDuelWebSocket() {
       
       dispatchWebSocketEvent('skyduel_command', {
         socketType: SOCKET_TYPES.SKYDUEL,
-        message: `Command sent: ${command}`,
-        command,
+        message: `Command sent: ${action}`,
+        action,
         params,
         timestamp: new Date().toISOString()
       });
@@ -225,20 +381,21 @@ export function useSkyDuelWebSocket() {
       dispatchWebSocketEvent('error', {
         socketType: SOCKET_TYPES.SKYDUEL,
         message: 'Error sending command',
-        command,
+        action,
         params,
         error
       });
       
       return false;
     }
-  }, [status, send]);
+  }, [status, isSubscribed, send]);
   
   return {
-    isConnected: status === 'online',
+    isConnected: status === 'online' && isSubscribed,
     error: error ? error.message : null,
     lastUpdate,
     sendCommand,
+    requestData,
     connect,
     close
   };

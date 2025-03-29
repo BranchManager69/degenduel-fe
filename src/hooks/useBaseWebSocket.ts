@@ -549,10 +549,14 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
       // Only send heartbeats on open connections
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         try {
-          // Send heartbeat ping
+          // Send heartbeat ping as a REQUEST message with 'ping' action
+          // This follows the v69 protocol format for client-to-server messages
           wsRef.current.send(
             JSON.stringify({
-              type: "ping",
+              type: "REQUEST",
+              topic: "system",
+              action: "ping",
+              requestId: crypto.randomUUID(),
               timestamp: new Date().toISOString(),
             }),
           );

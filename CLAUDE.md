@@ -72,6 +72,96 @@ NEVER REWRITE THE WEBSOCKET SYSTEM FROM SCRATCH. Always work incrementally with 
 - API endpoints proxy through /api to the configured backend
 - All WebSocket connections use secure wss:// protocol
 
+## Unified WebSocket System (v69)
+
+> **IMPORTANT**: This documentation is based on WEBSOCKET_UNIFIED_SYSTEM.md as of commit 717a481 (March 28, 2025). Refer to the original document for the most up-to-date information.
+
+### Overview
+
+The DegenDuel Unified WebSocket System provides a centralized WebSocket implementation using a topic-based subscription model through a single connection.
+
+- **Connection Path**: `/api/v69/ws`
+- **Max Payload Size**: 50KB
+
+### Key Features
+
+- **Single Connection**: One WebSocket connection for all data types
+- **Topic-Based Subscriptions**: Subscribe to specific data channels
+- **Unified Authentication**: JWT-based authentication across all topics
+- **Centralized Error Handling**: Consistent error management with error codes
+- **Rate Limiting**: Built-in protection against excessive requests
+- **No Compression**: Explicitly disables frame compression for client compatibility
+- **Heartbeats**: Automatic heartbeat messages to keep connections alive
+
+### Available Topics
+
+| Topic ID | Name | Description | Authentication Required |
+|----------|------|-------------|-------------------------|
+| `market-data` | Market Data | Real-time market data for tokens | No |
+| `portfolio` | Portfolio | User portfolio information | Yes |
+| `system` | System | System-wide notifications and events | No |
+| `contest` | Contest | Contest information and updates | No (Public), Yes (User-specific) |
+| `user` | User | User profile and statistics | Yes |
+| `admin` | Admin | Administrative functions | Yes (Admin role) |
+| `wallet` | Wallet | Wallet information and transactions | Yes |
+| `skyduel` | SkyDuel | SkyDuel game data | No (Public), Yes (User-specific) |
+
+### Message Types
+
+#### Client to Server
+
+| Type | Description | Example Use |
+|------|-------------|-------------|
+| `SUBSCRIBE` | Subscribe to topics | Subscribe to market data |
+| `UNSUBSCRIBE` | Unsubscribe from topics | Stop receiving portfolio updates |
+| `REQUEST` | Request specific data | Get token details |
+| `COMMAND` | Execute an action | Execute a trade |
+
+#### Server to Client
+
+| Type | Description | Example Use |
+|------|-------------|-------------|
+| `DATA` | Data payload | Market data updates |
+| `ERROR` | Error information | Authentication failure |
+| `SYSTEM` | System messages | Connection status |
+| `ACKNOWLEDGMENT` | Confirm client action | Subscription confirmation |
+
+### Connection & Authentication
+
+1. **Connect to WebSocket**:
+   ```javascript
+   const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
+   ```
+
+2. **Authentication**:
+   - Include auth token when subscribing to restricted topics:
+   ```javascript
+   socket.send(JSON.stringify({
+     type: 'SUBSCRIBE',
+     topics: ['portfolio', 'user'],
+     authToken: 'your-jwt-token'
+   }));
+   ```
+   - Authentication required for: `portfolio`, `user`, `wallet`, and `admin` topics
+
+### Error Codes
+
+| Code Range | Type | Description |
+|------------|------|-------------|
+| 4000-4099 | Client Error | Issues with client requests |
+| 5000-5099 | Server Error | Server-side issues |
+
+Key client errors:
+- 4000: Invalid message format
+- 4010: Authentication required for restricted topics
+- 4011: Invalid authentication token
+- 4012: Admin role required for admin topics
+
+Key server errors:
+- 5000: Internal server error
+- 5002: Error processing request
+- 5004: Error processing command
+
 ## Environment Setup
 
 - `.env` - Production configuration

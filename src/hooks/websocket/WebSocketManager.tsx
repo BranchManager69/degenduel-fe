@@ -395,8 +395,10 @@ const WebSocketManagerComponent: React.FC = () => {
         // Send ping
         try {
           wsRef.current.send(JSON.stringify({
-            type: MessageType.SYSTEM,
+            type: MessageType.REQUEST,
+            topic: TopicType.SYSTEM,
             action: 'ping',
+            requestId: crypto.randomUUID(),
             timestamp: new Date().toISOString()
           }));
           
