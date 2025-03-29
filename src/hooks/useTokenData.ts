@@ -184,6 +184,17 @@ export function useTokenData(
     return token;
   }, [tokens, ws.isConnected]);
   
+  // Safer refresh function that checks connection state
+  const refreshTokens = useCallback(() => {
+    if (ws.isConnected) {
+      console.log("[TokenData] Requesting all tokens, WebSocket is connected");
+      return ws.request("getAllTokens");
+    } else {
+      console.warn("[TokenData] Cannot refresh tokens: WebSocket not connected (state:", ws.connectionState, ")");
+      return false;
+    }
+  }, [ws.isConnected, ws.connectionState, ws.request]);
+  
   return {
     // Current token data
     tokens: filteredTokens,
@@ -191,14 +202,15 @@ export function useTokenData(
     
     // Connection state
     isConnected: ws.isConnected,
+    connectionState: ws.connectionState,
     error: ws.error,
     lastUpdate,
     
     // Helper methods
     getToken,
     
-    // For debugging
-    _refresh: () => ws.request("getAllTokens")
+    // For debugging and manual refresh
+    _refresh: refreshTokens
   };
 }
 

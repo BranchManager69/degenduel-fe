@@ -113,14 +113,15 @@ const WebSocketManagerComponent: React.FC = () => {
   const missedHeartbeatsRef = useRef<number>(0);
   const maxMissedHeartbeats = 3;
   
-  // Authentication state
+  // Authentication state with better token tracking
   const authState = React.useMemo(() => ({
     isLoggedIn: !!user,
     isAdmin: authContext.isAdmin?.() || false,
     hasWsToken: !!user?.wsToken,
     hasJwt: !!user?.jwt,
+    hasSessionToken: !!user?.session_token,
     canAuthenticate: !!user
-  }), [user?.wallet_address, user?.jwt, user?.wsToken, authContext]);
+  }), [user?.wallet_address, user?.jwt, user?.wsToken, user?.session_token, authContext]);
   
   // Initialize WebSocket tracking on mount
   useEffect(() => {
@@ -311,6 +312,12 @@ const WebSocketManagerComponent: React.FC = () => {
         // Handle all SYSTEM message types according to WS.TXT documentation
         console.log("WebSocketManager: Processing SYSTEM message:", message);
         
+        // Check if this is a connected message and set state even if not authenticated yet
+        if (message.message?.includes('Connected to DegenDuel') && connectionState === ConnectionState.CONNECTING) {
+          console.log("WebSocketManager: Connection confirmed by server, setting state to CONNECTED");
+          setConnectionState(ConnectionState.CONNECTED);
+        }
+        
         // For heartbeat messages - reset counter as documented
         if (message.action === 'heartbeat') {
           missedHeartbeatsRef.current = 0;
@@ -334,11 +341,23 @@ const WebSocketManagerComponent: React.FC = () => {
           timestamp: new Date().toISOString()
         });
         
-        // Only filter out auth-related error messages
-        if ((message.error && message.error.includes('auth')) || 
-            (message.message && message.message.includes('auth')) ||
-            (typeof message.error === 'number' && message.error === 4002)) { // Code 4002 is "Unknown message type"
+        // Handle authentication errors (code 4011 is "Invalid authentication token")
+        if ((message as any).code === 4011 || 
+            (message.error && typeof message.error === 'string' && message.error.includes('auth')) || 
+            (message.message && typeof message.message === 'string' && message.message.includes('auth'))) {
+          
+          console.log("WebSocketManager: Authentication failed, but setting connection state to CONNECTED to allow public data");
+          // Even though authentication failed, we're still connected and can get public data
+          setConnectionState(ConnectionState.CONNECTED);
+          
+          // Filter out auth error messages from listeners
           console.log("WebSocketManager: Filtering out authentication error message from listeners");
+          return;
+        }
+        
+        // Filter out other known error types that should be hidden from components
+        if (typeof message.error === 'number' && message.error === 4002) { // Code 4002 is "Unknown message type"
+          console.log("WebSocketManager: Filtering out 'Unknown message type' error from listeners");
           return;
         }
       }
@@ -507,6 +526,16 @@ const WebSocketManagerComponent: React.FC = () => {
     const jwt = user?.jwt;
     const sessionToken = user?.session_token;
     
+    // Log all available tokens for debugging
+    console.log("WebSocketManager: Authentication tokens available:", {
+      hasWsToken: !!wsToken,
+      hasJwt: !!jwt,
+      hasSessionToken: !!sessionToken,
+      wsTokenLength: wsToken ? wsToken.length : 0,
+      jwtLength: jwt ? jwt.length : 0,
+      sessionTokenLength: sessionToken ? sessionToken.length : 0
+    });
+    
     // Choose token in order of preference
     const authToken = wsToken || jwt || sessionToken;
     
@@ -515,17 +544,36 @@ const WebSocketManagerComponent: React.FC = () => {
       return;
     }
     
+    // Determine which token we're using
+    const tokenType = wsToken ? 'wsToken' : jwt ? 'jwt' : 'sessionToken';
+    console.log(`WebSocketManager: Authenticating using ${tokenType} with length ${authToken.length}`);
+    
+    // If token looks invalid, try to refresh it
+    if (authToken.length < 20) {
+      console.warn(`WebSocketManager: Token looks suspicious (length ${authToken.length}), may fail authentication`);
+    }
+    
     console.log("WebSocketManager: Authenticating via subscription to restricted topics");
     setConnectionState(ConnectionState.AUTHENTICATING);
     
     // The backend uses subscriptions with authToken to authenticate
     try {
-      // Subscribe to essential topics including some that require authentication
-      const subscriptionMessage: SubscriptionMessage = {
+      // Subscribe to system and market data first - these don't need auth
+      const publicSubscriptionMessage: SubscriptionMessage = {
         type: MessageType.SUBSCRIBE,
         topics: [
           TopicType.SYSTEM,
-          TopicType.MARKET_DATA,
+          TopicType.MARKET_DATA
+        ]
+      };
+      
+      wsRef.current.send(JSON.stringify(publicSubscriptionMessage));
+      console.log("WebSocketManager: Subscribed to public topics");
+      
+      // Now try to subscribe to restricted topics with auth token
+      const restrictedSubscriptionMessage: SubscriptionMessage = {
+        type: MessageType.SUBSCRIBE,
+        topics: [
           TopicType.PORTFOLIO, // Requires auth
           TopicType.USER,      // Requires auth
           TopicType.WALLET     // Requires auth
@@ -533,12 +581,13 @@ const WebSocketManagerComponent: React.FC = () => {
         authToken // Pass the auth token with the subscription
       };
       
-      wsRef.current.send(JSON.stringify(subscriptionMessage));
+      wsRef.current.send(JSON.stringify(restrictedSubscriptionMessage));
       
       dispatchWebSocketEvent('auth_attempt', {
         timestamp: new Date().toISOString(),
-        tokenType: wsToken ? 'wsToken' : jwt ? 'jwt' : 'sessionToken',
-        topics: subscriptionMessage.topics
+        tokenType,
+        tokenLength: authToken.length,
+        topics: restrictedSubscriptionMessage.topics
       });
     } catch (error) {
       console.error("WebSocketManager: Error sending authentication message:", error);
