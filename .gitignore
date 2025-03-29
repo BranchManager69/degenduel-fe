@@ -6,6 +6,7 @@ dist/
 dist-dev/
 coverage/
 build-metrics/
+storybook-static/
 
 branchbet/
 
