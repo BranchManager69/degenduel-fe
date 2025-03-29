@@ -1,148 +1,172 @@
 /**
- * Achievement WebSocket Hook - V69 Standardized Version
+ * Achievement WebSocket Hook - V69 Unified WebSocket Implementation
  * 
- * This hook connects to the notification WebSocket service and filters for
- * achievement-related events like unlocking achievements, user progress, and level ups.
- * Note: This actually connects to the notification endpoint as per v69 documentation
- * since achievements are delivered through the notification system.
+ * This hook connects to the unified WebSocket system for achievement-related events
+ * like unlocking achievements, user progress, and level ups.
+ * 
+ * Achievements are delivered through the notification topic in the unified system.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
-import useWebSocket from './useWebSocket';
+import { MessageType, TopicType } from './WebSocketManager';
+import { useUnifiedWebSocket } from './index';
+import { SOCKET_TYPES } from './types';
 
-interface AchievementMessage {
-  type: "achievement:unlock" | "user:progress" | "user:levelup";
-  data: any;
-}
+// Achievement-related message types
+type AchievementMessageType = 
+  | "achievement:unlock" 
+  | "user:progress" 
+  | "user:levelup";
 
 export function useAchievementWebSocket() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { updateUserProgress, addAchievement, addCelebration } = useStore();
 
-  // Connect to the WebSocket using the standardized hook
-  const { 
-    status, 
-    data, 
-    error,
-    send,
-    connect,
-    close
-  } = useWebSocket<AchievementMessage>({
-    endpoint: WEBSOCKET_ENDPOINT,
-    socketType: SOCKET_TYPES.NOTIFICATION,
-    requiresAuth: true, // Achievement notifications require authentication
-    heartbeatInterval: 30000
-  });
-
-  // When the connection status changes, log it
-  useEffect(() => {
-    dispatchWebSocketEvent('achievement_status', {
-      socketType: SOCKET_TYPES.NOTIFICATION,
-      status,
-      message: `Achievement WebSocket is ${status}`
-    });
-    
-    // Subscribe to achievement notifications when connected
-    if (status === 'online') {
-      subscribeToAchievements();
-    }
-  }, [status]);
-
-  // Subscribe to achievement notifications
-  const subscribeToAchievements = () => {
-    if (status !== 'online') {
-      console.warn('Cannot subscribe to achievements: WebSocket not connected');
-      return;
-    }
-    
-    send({
-      type: 'subscribe',
-      channels: ['achievements']
-    });
-    
-    dispatchWebSocketEvent('achievement_subscribe', {
-      socketType: SOCKET_TYPES.NOTIFICATION,
-      message: 'Subscribing to achievement notifications',
-      timestamp: new Date().toISOString()
-    });
-  };
-
-  // Process messages from the WebSocket
-  useEffect(() => {
-    if (!data) return;
-    
+  // Message handler for WebSocket messages
+  const handleMessage = useCallback((message: any) => {
     try {
-      // Process the message based on its type
-      switch (data.type) {
+      // Achievement messages come with specific types that we need to handle
+      const messageType = message.data?.type as AchievementMessageType;
+      
+      if (!messageType) return;
+      
+      console.log('[AchievementWebSocket] Received message:', messageType);
+      
+      switch (messageType) {
         case "achievement:unlock":
-          addAchievement(data.data);
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('achievement_unlock', {
-            socketType: SOCKET_TYPES.NOTIFICATION,
-            message: 'Achievement unlocked',
-            achievement: data.data?.name || 'unknown',
-            timestamp: new Date().toISOString()
-          });
+          const achievementData = message.data?.data;
+          if (achievementData) {
+            addAchievement(achievementData);
+            setLastUpdate(new Date());
+            
+            dispatchWebSocketEvent('achievement_unlock', {
+              socketType: SOCKET_TYPES.NOTIFICATION,
+              message: 'Achievement unlocked',
+              achievement: achievementData.name || 'unknown',
+              timestamp: new Date().toISOString()
+            });
+          }
           break;
           
         case "user:progress":
-          updateUserProgress(data.data);
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('user_progress', {
-            socketType: SOCKET_TYPES.NOTIFICATION,
-            message: 'User progress updated',
-            timestamp: new Date().toISOString()
-          });
+          const progressData = message.data?.data;
+          if (progressData) {
+            updateUserProgress(progressData);
+            setLastUpdate(new Date());
+            
+            dispatchWebSocketEvent('user_progress', {
+              socketType: SOCKET_TYPES.NOTIFICATION,
+              message: 'User progress updated',
+              timestamp: new Date().toISOString()
+            });
+          }
           break;
           
         case "user:levelup":
-          addCelebration({
-            type: "level_up",
-            data: data.data,
-            timestamp: new Date().toISOString(),
-          });
-          setLastUpdate(new Date());
-          
-          dispatchWebSocketEvent('user_levelup', {
-            socketType: SOCKET_TYPES.NOTIFICATION,
-            message: 'User leveled up',
-            level: data.data?.level || 'unknown',
-            timestamp: new Date().toISOString()
-          });
+          const levelUpData = message.data?.data;
+          if (levelUpData) {
+            addCelebration({
+              type: "level_up",
+              data: levelUpData,
+              timestamp: new Date().toISOString(),
+            });
+            setLastUpdate(new Date());
+            
+            dispatchWebSocketEvent('user_levelup', {
+              socketType: SOCKET_TYPES.NOTIFICATION,
+              message: 'User leveled up',
+              level: levelUpData.level || 'unknown',
+              timestamp: new Date().toISOString()
+            });
+          }
           break;
       }
+      
+      // Mark as not loading once we've processed any achievement message
+      if (isLoading) {
+        setIsLoading(false);
+      }
     } catch (err) {
-      console.error('Error processing achievement message:', err);
+      console.error('[AchievementWebSocket] Error processing message:', err);
       dispatchWebSocketEvent('error', {
         socketType: SOCKET_TYPES.NOTIFICATION,
         message: 'Error processing achievement data',
         error: err instanceof Error ? err.message : String(err)
       });
     }
-  }, [data, updateUserProgress, addAchievement, addCelebration]);
-  
-  // Handle errors
+  }, [addAchievement, updateUserProgress, addCelebration, isLoading, setIsLoading]);
+
+  // Connect to the unified WebSocket system
+  const ws = useUnifiedWebSocket(
+    'achievement-websocket',
+    [MessageType.DATA, MessageType.ERROR], // Message types to subscribe to
+    handleMessage,
+    [TopicType.SYSTEM, TopicType.USER] // Topics to subscribe to (achievements come through USER topic)
+  );
+
+  // Subscribe to the achievements data when the WebSocket is connected
   useEffect(() => {
-    if (error) {
-      console.error('Achievement WebSocket error:', error);
-      dispatchWebSocketEvent('error', {
+    if (ws.isConnected && isLoading) {
+      // Subscribe to the USER topic which includes achievements
+      ws.subscribe([TopicType.USER]);
+      
+      // Request achievement data specifically
+      ws.request(TopicType.USER, 'get_achievements');
+      
+      dispatchWebSocketEvent('achievement_subscribe', {
         socketType: SOCKET_TYPES.NOTIFICATION,
-        message: error.message,
-        error
+        message: 'Subscribing to achievement notifications via unified WebSocket',
+        timestamp: new Date().toISOString()
       });
+      
+      // Set a timeout to reset loading state if we don't get data
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('[AchievementWebSocket] Timed out waiting for data');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [error]);
-  
+  }, [ws.isConnected, isLoading, ws.subscribe, ws.request]);
+
+  // Helper method to refresh achievements
+  const refreshAchievements = useCallback(() => {
+    setIsLoading(true);
+    
+    if (ws.isConnected) {
+      // Request fresh achievement data
+      ws.request(TopicType.USER, 'get_achievements');
+      dispatchWebSocketEvent('achievement_refresh', {
+        socketType: SOCKET_TYPES.NOTIFICATION,
+        message: 'Refreshing achievement data',
+        timestamp: new Date().toISOString()
+      });
+      
+      // Set a timeout to reset loading state if we don't get a response
+      setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+        }
+      }, 10000);
+    } else {
+      console.warn('[AchievementWebSocket] Cannot refresh - WebSocket not connected');
+      setIsLoading(false);
+    }
+  }, [ws.isConnected, ws.request, isLoading]);
+
   return {
-    isConnected: status === 'online',
-    error: error ? error.message : null,
+    isConnected: ws.isConnected,
+    error: ws.error,
     lastUpdate,
-    connect,
-    close
+    isLoading,
+    refreshAchievements,
+    // For backward compatibility with components that use this hook
+    connect: () => ws.subscribe([TopicType.USER]),
+    close: () => ws.unsubscribe([TopicType.USER])
   };
 }

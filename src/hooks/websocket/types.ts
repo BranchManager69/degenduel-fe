@@ -24,11 +24,25 @@ export enum MessageType {
   SUBSCRIBE = 'SUBSCRIBE',
   UNSUBSCRIBE = 'UNSUBSCRIBE',
   REQUEST = 'REQUEST',
-  COMMAND = 'COMMAND'
+  COMMAND = 'COMMAND',
+  
+  // Special message types
+  LOGS = 'LOGS'  // Used by the logging system
 }
   
 // Standardized WebSocket connection status types
 export type WebSocketStatus = 'connecting' | 'online' | 'offline' | 'error' | 'reconnecting';
+
+// WebSocket connection states for the unified system
+export enum ConnectionState {
+  DISCONNECTED = 'disconnected',
+  CONNECTING = 'connecting',
+  CONNECTED = 'connected',
+  AUTHENTICATING = 'authenticating',
+  AUTHENTICATED = 'authenticated',
+  RECONNECTING = 'reconnecting',
+  ERROR = 'error'
+}
 
 // Base message interface for all WebSocket messages
 export interface WebSocketMessage {

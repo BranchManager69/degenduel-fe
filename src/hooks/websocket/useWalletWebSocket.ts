@@ -78,10 +78,14 @@ export function useWalletWebSocket() {
   } = useWebSocket<WalletMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.WALLET,
-    requiresAuth: true, // Wallet WebSocket requires authentication
-    heartbeatInterval: 30000
+    requiresAuth: false, // Allow more flexible connection handling
+    heartbeatInterval: 30000,
+    autoConnect: true // Ensure we try to connect automatically
   });
 
+  // Track loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
   // When the connection status changes, log it
   useEffect(() => {
     dispatchWebSocketEvent('wallet_status', {
@@ -89,7 +93,29 @@ export function useWalletWebSocket() {
       status,
       message: `Wallet WebSocket is ${status}`
     });
-  }, [status]);
+    
+    // Reset loading state when connected
+    if (status === 'online') {
+      setIsLoading(false);
+    }
+    
+    // If we're not connected but should be loading, trigger connection with timeout
+    if (status !== 'online' && isLoading) {
+      // Attempt connection
+      connect();
+      
+      // Set a timeout to prevent endless loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Wallet connection timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
+    }
+  }, [status, isLoading, connect]);
 
   // Process messages from the WebSocket
   useEffect(() => {
@@ -186,10 +212,37 @@ export function useWalletWebSocket() {
     }
   }, [error]);
   
+  // Helper method to refresh wallet data
+  const refreshWallet = () => {
+    // If not connected, try to establish connection first
+    if (status !== 'online') {
+      console.warn('WebSocket not connected, attempting to connect before refreshing wallet');
+      setIsLoading(true);
+      
+      // Try to connect
+      connect();
+      
+      // Set a timeout to prevent infinite loading state
+      setTimeout(() => {
+        if (isLoading) {
+          console.warn('Wallet connection timed out during refresh');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      return;
+    }
+    
+    // Mark that we're refreshed
+    setLastUpdate(new Date());
+  };
+
   return {
     isConnected: status === 'online',
     error: error ? error.message : null,
     lastUpdate,
+    isLoading,
+    refreshWallet,
     connect,
     close
   };

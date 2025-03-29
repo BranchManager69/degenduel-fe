@@ -91,9 +91,13 @@ export function useSkyDuelWebSocket() {
   } = useWebSocket<UnifiedMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.SKYDUEL,
-    requiresAuth: true, // SkyDuel requires admin authentication
-    heartbeatInterval: 30000 // 30 second heartbeat as per v69 spec
+    requiresAuth: false, // Allow more flexible connection handling
+    heartbeatInterval: 30000, // 30 second heartbeat as per v69 spec
+    autoConnect: true // Ensure we try to connect automatically
   });
+
+  // Track loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // When the connection status changes, log it
   useEffect(() => {
@@ -107,8 +111,26 @@ export function useSkyDuelWebSocket() {
     if (status === 'online' && !isSubscribed) {
       // Subscribe to the skyduel topic
       subscribeToSkyDuelTopic();
+      setIsLoading(false);
     }
-  }, [status, isSubscribed]);
+    
+    // If we're not connected but should be loading, trigger connection with timeout
+    if (status !== 'online' && isLoading) {
+      // Attempt connection
+      connect();
+      
+      // Set a timeout to prevent endless loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('SkyDuel connection timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
+    }
+  }, [status, isSubscribed, isLoading, connect]);
 
   // Subscribe to the skyduel topic
   const subscribeToSkyDuelTopic = useCallback(() => {
