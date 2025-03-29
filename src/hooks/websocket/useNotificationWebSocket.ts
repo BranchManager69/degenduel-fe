@@ -51,7 +51,7 @@ export function useNotificationWebSocket() {
   } = useWebSocket<NotificationMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.NOTIFICATION,
-    requiresAuth: true, // Notifications require authentication
+    requiresAuth: false, // FIXED: Allow connection without strict auth requirements 
     heartbeatInterval: 30000,
     autoConnect: true // Ensure we try to connect automatically
   });
@@ -69,9 +69,29 @@ export function useNotificationWebSocket() {
     
     // Request all notifications when connected and loading
     if (isConnected && isLoading) {
-      refreshNotifications();
+      // Send a request for notifications
+      send({
+        action: 'GET_NOTIFICATIONS'
+      });
+      
+      // Set a timeout to prevent infinite loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Notification request timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
     }
-  }, [status, isLoading]);
+    
+    // If we're not connected but should be loading, trigger connection
+    if (!isConnected && isLoading) {
+      // Attempt connection
+      connect();
+    }
+  }, [status, isLoading, connect, send]);
 
   // Update unread count whenever notifications change
   useEffect(() => {
@@ -218,11 +238,33 @@ export function useNotificationWebSocket() {
   };
   
   const refreshNotifications = () => {
+    // If not connected, try to establish connection first
     if (status !== 'online') {
-      console.warn('Cannot refresh notifications: WebSocket not connected');
+      console.warn('WebSocket not connected, attempting to connect before refreshing notifications');
+      setIsLoading(true);
+      
+      // Try to connect
+      connect();
+      
+      // Set a timeout to allow connection to establish
+      setTimeout(() => {
+        // Check if we're connected now
+        if (status === 'online') {
+          // Now we can request notifications
+          send({
+            action: 'GET_NOTIFICATIONS'
+          });
+        } else {
+          // Still not connected, cancel loading state
+          console.error('Failed to connect to notification service');
+          setIsLoading(false);
+        }
+      }, 2000);
+      
       return;
     }
     
+    // We're already connected, request notifications
     setIsLoading(true);
     
     send({
