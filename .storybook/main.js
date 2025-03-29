@@ -6,12 +6,12 @@ const config = {
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
   ],
-  framework: {
-    name: '@storybook/react-vite',
-    options: {},
-  },
+  framework: '@storybook/react-vite',
   docs: {
     autodocs: 'tag',
+  },
+  core: {
+    builder: '@storybook/builder-vite',
   },
 };
 export default config;
