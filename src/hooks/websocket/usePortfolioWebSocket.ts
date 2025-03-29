@@ -65,10 +65,14 @@ export function usePortfolioWebSocket() {
   } = useWebSocket<PortfolioMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.PORTFOLIO,
-    requiresAuth: true, // Portfolio updates require authentication
-    heartbeatInterval: 30000
+    requiresAuth: false, // Allow more flexible connection handling
+    heartbeatInterval: 30000,
+    autoConnect: true // Ensure we try to connect automatically
   });
 
+  // Track loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
   // When the connection status changes, log it
   useEffect(() => {
     dispatchWebSocketEvent('portfolio_status', {
@@ -76,7 +80,29 @@ export function usePortfolioWebSocket() {
       status,
       message: `Portfolio WebSocket is ${status}`
     });
-  }, [status]);
+    
+    // Reset loading state when connected
+    if (status === 'online') {
+      setIsLoading(false);
+    }
+    
+    // If we're not connected but should be loading, trigger connection with timeout
+    if (status !== 'online' && isLoading) {
+      // Attempt connection
+      connect();
+      
+      // Set a timeout to prevent endless loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Portfolio connection timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
+    }
+  }, [status, isLoading, connect]);
 
   // Process messages from the WebSocket
   useEffect(() => {
@@ -143,10 +169,37 @@ export function usePortfolioWebSocket() {
     }
   }, [error]);
   
+  // Helper method to refresh portfolio data
+  const refreshPortfolio = () => {
+    // If not connected, try to establish connection first
+    if (status !== 'online') {
+      console.warn('WebSocket not connected, attempting to connect before refreshing portfolio');
+      setIsLoading(true);
+      
+      // Try to connect
+      connect();
+      
+      // Set a timeout to prevent infinite loading state
+      setTimeout(() => {
+        if (isLoading) {
+          console.warn('Portfolio connection timed out during refresh');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      return;
+    }
+    
+    // Mark that we're refreshed
+    setLastUpdate(new Date());
+  };
+
   return {
     isConnected: status === 'online',
     error: error ? error.message : null,
     lastUpdate,
+    isLoading,
+    refreshPortfolio,
     connect,
     close
   };
