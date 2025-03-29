@@ -27,7 +27,9 @@
     "lint": "eslint --ext .js,.jsx,.ts,.tsx --config .eslintrc.json src",
     "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx --config .eslintrc.json src --fix",
     "lint:ai": "claude -p 'you are a linter. please look at the changes vs. main and report what changes you see. report the filename and line number on one line, and a description of the issue on the second line. do not return any other text.'",
-    "lint:ai:commit": "claude -p 'you are a linter. please look at the changes that are yet to be committed and report what changes you see. report the filename and line number on one line, and a description of the change on the second line. do not return any other text.'"
+    "lint:ai:commit": "claude -p 'you are a linter. please look at the changes that are yet to be committed and report what changes you see. report the filename and line number on one line, and a description of the change on the second line. do not return any other text.'",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@aptos-labs/wallet-adapter-react": "^3.7.9",
@@ -88,6 +90,14 @@
   "devDependencies": {
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",
+    "@storybook/addon-essentials": "^8.6.11",
+    "@storybook/addon-interactions": "^8.6.11",
+    "@storybook/addon-links": "^8.6.11",
+    "@storybook/blocks": "^8.6.11",
+    "@storybook/builder-vite": "^8.6.11",
+    "@storybook/cli": "^8.6.11",
+    "@storybook/react": "^8.6.11",
+    "@storybook/react-vite": "^8.6.11",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^14.6.1",
@@ -118,6 +128,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.33",
     "prettier": "^3.5.3",
+    "storybook": "^8.6.11",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.1",
     "three-stdlib": "^2.35.14",
