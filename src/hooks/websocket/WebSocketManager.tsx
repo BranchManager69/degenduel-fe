@@ -32,7 +32,10 @@ export enum MessageType {
   
   // Connection message types (internal)
   PING = 'PING',
-  PONG = 'PONG'
+  PONG = 'PONG',
+  
+  // Specialized message types
+  LOGS = 'LOGS' // Special type for client logs
 }
 
 // Topic types from backend specs
@@ -44,7 +47,8 @@ export enum TopicType {
   USER = 'user',
   ADMIN = 'admin',
   WALLET = 'wallet',
-  SKYDUEL = 'skyduel'
+  SKYDUEL = 'skyduel',
+  LOGS = 'logs'  // Added for client logging
 }
 
 // WebSocket connection states

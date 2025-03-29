@@ -91,6 +91,7 @@ import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
+import LogForwarderDebug from "./pages/admin/LogForwarderDebug";
 import { useStore } from "./store/useStore";
 import "./styles/color-schemes.css";
 
@@ -644,6 +645,16 @@ export const App: React.FC = () => {
                         <SuperAdminRoute>
                           <AmmSim />
                         </SuperAdminRoute>
+                      }
+                    />
+
+                    {/* Client Log Forwarder Debug */}
+                    <Route
+                      path="/admin/log-forwarder"
+                      element={
+                        <AdminRoute>
+                          <LogForwarderDebug />
+                        </AdminRoute>
                       }
                     />
 
