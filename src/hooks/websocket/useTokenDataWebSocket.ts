@@ -6,13 +6,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { TokenData as OriginalTokenData } from '../../hooks/useTokenDataWebSocket';
+import { TokenData } from '../../types';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
 import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
 import useWebSocket from './useWebSocket';
-
-// Keep the same interface for compatibility
-export interface TokenData extends OriginalTokenData {}
 
 // Default fallback tokens for when connection is unavailable
 const FALLBACK_TOKENS: TokenData[] = [

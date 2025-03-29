@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { TokenData } from "../../hooks/useTokenDataWebSocket";
+import { TokenData } from "../../types";
 import ThreeManager from "./ThreeManager";
 
 export class MarketVerseScene {

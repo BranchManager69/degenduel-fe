@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useMemo } from "react";
 
-// Import the standardized v69 WebSocket hook instead of the original
-import {
-  TokenData,
-  useTokenDataWebSocket,
-} from "../hooks/websocket/useTokenDataWebSocket";
+// Import types from types folder and hook from websocket folder 
+import { TokenData } from "../types";
+import { useTokenDataWebSocket } from "../hooks/websocket/useTokenDataWebSocket";
 
 interface TokenDataContextType {
   tokens: TokenData[];
