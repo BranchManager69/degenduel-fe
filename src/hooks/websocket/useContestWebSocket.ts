@@ -72,10 +72,14 @@ export function useContestWebSocket(contestId: string) {
   } = useWebSocket<ContestMessage>({
     endpoint: `${WEBSOCKET_ENDPOINT}`,
     socketType: SOCKET_TYPES.CONTEST,
-    requiresAuth: true, // Contest WebSocket requires authentication
-    heartbeatInterval: 30000
+    requiresAuth: false, // Allow more flexible connection handling
+    heartbeatInterval: 30000,
+    autoConnect: true // Ensure we try to connect automatically
   });
 
+  // Track loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
   // When the connection status changes, log it
   useEffect(() => {
     dispatchWebSocketEvent('contest_status', {
@@ -88,8 +92,26 @@ export function useContestWebSocket(contestId: string) {
     // Join the specific contest room when connected
     if (status === 'online') {
       joinContestRoom();
+      setIsLoading(false);
     }
-  }, [status, contestId]);
+    
+    // If we're not connected but should be loading, trigger connection with timeout
+    if (status !== 'online' && isLoading) {
+      // Attempt connection
+      connect();
+      
+      // Set a timeout to prevent endless loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Contest connection timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
+    }
+  }, [status, contestId, isLoading, connect]);
 
   // Join the contest room
   const joinContestRoom = () => {

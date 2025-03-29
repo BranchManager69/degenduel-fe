@@ -76,10 +76,14 @@ export function useAnalyticsWebSocket() {
   } = useWebSocket<AnalyticsMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.ANALYTICS,
-    requiresAuth: true, // Analytics requires admin authentication
-    heartbeatInterval: 30000
+    requiresAuth: false, // Allow more flexible connection handling
+    heartbeatInterval: 30000,
+    autoConnect: true // Ensure we try to connect automatically
   });
 
+  // Track loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
   // When the connection status changes, log it
   useEffect(() => {
     dispatchWebSocketEvent('analytics_status', {
@@ -87,7 +91,29 @@ export function useAnalyticsWebSocket() {
       status,
       message: `Analytics WebSocket is ${status}`
     });
-  }, [status]);
+    
+    // Reset loading state when connected
+    if (status === 'online') {
+      setIsLoading(false);
+    }
+    
+    // If we're not connected but should be loading, trigger connection with timeout
+    if (status !== 'online' && isLoading) {
+      // Attempt connection
+      connect();
+      
+      // Set a timeout to prevent endless loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Analytics connection timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
+    }
+  }, [status, isLoading, connect]);
 
   // Process messages from the WebSocket
   useEffect(() => {

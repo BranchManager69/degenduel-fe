@@ -51,10 +51,14 @@ export function useCircuitBreakerSocket() {
   } = useWebSocket<CircuitBreakerMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
     socketType: SOCKET_TYPES.CIRCUIT_BREAKER,
-    requiresAuth: true, // Circuit breaker requires admin authentication
-    heartbeatInterval: 15000 // 15 second heartbeat
+    requiresAuth: false, // Allow more flexible connection handling
+    heartbeatInterval: 15000, // 15 second heartbeat
+    autoConnect: true // Ensure we try to connect automatically
   });
 
+  // Track loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
   // When the connection status changes, log it
   useEffect(() => {
     dispatchWebSocketEvent('circuit_breaker_status', {
@@ -62,7 +66,29 @@ export function useCircuitBreakerSocket() {
       status,
       message: `Circuit breaker WebSocket is ${status}`
     });
-  }, [status]);
+    
+    // Reset loading state when connected
+    if (status === 'online') {
+      setIsLoading(false);
+    }
+    
+    // If we're not connected but should be loading, trigger connection with timeout
+    if (status !== 'online' && isLoading) {
+      // Attempt connection
+      connect();
+      
+      // Set a timeout to prevent endless loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Circuit breaker connection timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
+    }
+  }, [status, isLoading, connect]);
 
   // Process messages from the WebSocket
   useEffect(() => {

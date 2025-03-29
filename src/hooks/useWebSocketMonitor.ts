@@ -254,7 +254,7 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
       }
     };
 
-    // Try to connect if we're not in test mode
+    // Try to connect if we're not in tes t mode (NOTE: WTF? Such a mode doesn't even exist)
     if (process.env.NODE_ENV !== "test") {
       connect();
     }
@@ -298,7 +298,6 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
 export type {
   WebSocketMetrics,
   WebSocketPerformance,
-  WebSocketService,
-  WebSocketSystemHealth,
-  WebSocketState,
+  WebSocketService, WebSocketState, WebSocketSystemHealth
 };
+

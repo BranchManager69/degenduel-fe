@@ -1,14 +1,14 @@
 /**
- * Notification WebSocket Hook - V69 Standardized Version
+ * Notification WebSocket Hook - V69 Unified WebSocket Implementation
  * 
- * This hook connects to the notification WebSocket service and provides real-time
- * user notifications including achievements, system notifications, and alerts.
+ * This hook connects to the unified WebSocket system for real-time user notifications
+ * including general notifications, alerts, and system messages.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINT, MessageType } from './types';
-import useWebSocket from './useWebSocket';
+import { TopicType, useUnifiedWebSocket } from './index';
+import { MessageType, SOCKET_TYPES } from './types';
 
 export interface Notification {
   id: string;
@@ -24,13 +24,19 @@ export interface Notification {
   metadata?: Record<string, any>;
 }
 
-interface NotificationMessage {
-  type: string; // Using string since server may send application-specific types
+// Notification message types from the unified WebSocket
+type NotificationActionType = 
+  | "NOTIFICATIONS_LIST"
+  | "NEW_NOTIFICATION"
+  | "NOTIFICATION_READ" 
+  | "ALL_NOTIFICATIONS_READ";
+
+interface NotificationData {
+  type: NotificationActionType;
   notifications?: Notification[];
   notification?: Notification;
   notificationId?: string;
-  error?: string;
-  message?: string;
+  timestamp?: string;
 }
 
 export function useNotificationWebSocket() {
@@ -40,106 +46,52 @@ export function useNotificationWebSocket() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  // Connect to the WebSocket using the standardized hook
-  const { 
-    status, 
-    data, 
-    error,
-    send,
-    connect,
-    close
-  } = useWebSocket<NotificationMessage>({
-    endpoint: WEBSOCKET_ENDPOINT,
-    socketType: SOCKET_TYPES.NOTIFICATION,
-    requiresAuth: false, // FIXED: Allow connection without strict auth requirements 
-    heartbeatInterval: 30000,
-    autoConnect: true // Ensure we try to connect automatically
-  });
-
-  // When the connection status changes, log it
-  useEffect(() => {
-    dispatchWebSocketEvent('notification_status', {
-      socketType: SOCKET_TYPES.NOTIFICATION,
-      status,
-      message: `Notification WebSocket is ${status}`
-    });
-    
-    // Set isConnected based on status
-    const isConnected = status === 'online';
-    
-    // Request all notifications when connected and loading
-    if (isConnected && isLoading) {
-      // Send a request for notifications
-      send({
-        action: 'GET_NOTIFICATIONS'
-      });
-      
-      // Set a timeout to prevent infinite loading state
-      const timeoutId = setTimeout(() => {
-        if (isLoading) {
-          console.warn('Notification request timed out, resetting loading state');
-          setIsLoading(false);
-        }
-      }, 10000);
-      
-      // Clean up the timeout if component unmounts
-      return () => clearTimeout(timeoutId);
-    }
-    
-    // If we're not connected but should be loading, trigger connection
-    if (!isConnected && isLoading) {
-      // Attempt connection
-      connect();
-    }
-  }, [status, isLoading, connect, send]);
-
-  // Update unread count whenever notifications change
-  useEffect(() => {
-    const count = notifications.filter(notification => !notification.isRead).length;
-    setUnreadCount(count);
-  }, [notifications]);
-
-  // Process messages from the WebSocket
-  useEffect(() => {
-    if (!data) return;
-    
+  // Message handler for WebSocket messages
+  const handleMessage = useCallback((message: any) => {
     try {
-      // Process the message based on its type
-      switch (data.type) {
+      // Extract the notification-specific data from the message
+      if (!message.data) return;
+      
+      const notificationData = message.data as NotificationData;
+      const dataType = notificationData.type;
+      
+      console.log('[NotificationWebSocket] Received message:', dataType);
+      
+      switch (dataType) {
         case "NOTIFICATIONS_LIST":
-          if (data.notifications) {
-            setNotifications(data.notifications);
+          if (notificationData.notifications) {
+            setNotifications(notificationData.notifications);
             setIsLoading(false);
             setLastUpdate(new Date());
             
             dispatchWebSocketEvent('notifications_list', {
               socketType: SOCKET_TYPES.NOTIFICATION,
-              message: `Received ${data.notifications.length} notifications`,
-              count: data.notifications.length,
+              message: `Received ${notificationData.notifications.length} notifications`,
+              count: notificationData.notifications.length,
               timestamp: new Date().toISOString()
             });
           }
           break;
           
         case "NEW_NOTIFICATION":
-          if (data.notification) {
-            setNotifications(prev => [data.notification!, ...prev]);
+          if (notificationData.notification) {
+            setNotifications(prev => [notificationData.notification!, ...prev]);
             setLastUpdate(new Date());
             
             dispatchWebSocketEvent('new_notification', {
               socketType: SOCKET_TYPES.NOTIFICATION,
               message: 'New notification received',
-              notificationType: data.notification.type,
+              notificationType: notificationData.notification.type,
               timestamp: new Date().toISOString()
             });
           }
           break;
           
         case "NOTIFICATION_READ":
-          if (data.notificationId) {
+          if (notificationData.notificationId) {
             setNotifications(prev => 
               prev.map(notification => 
-                notification.id === data.notificationId 
+                notification.id === notificationData.notificationId 
                   ? { ...notification, isRead: true } 
                   : notification
               )
@@ -149,7 +101,7 @@ export function useNotificationWebSocket() {
             dispatchWebSocketEvent('notification_read', {
               socketType: SOCKET_TYPES.NOTIFICATION,
               message: 'Notification marked as read',
-              notificationId: data.notificationId,
+              notificationId: notificationData.notificationId,
               timestamp: new Date().toISOString()
             });
           }
@@ -167,49 +119,71 @@ export function useNotificationWebSocket() {
             timestamp: new Date().toISOString()
           });
           break;
-          
-        case MessageType.ERROR:
-          console.error('Notification error:', data.error || data.message);
-          dispatchWebSocketEvent('error', {
-            socketType: SOCKET_TYPES.NOTIFICATION,
-            message: data.error || data.message || 'Unknown notification error',
-            timestamp: new Date().toISOString()
-          });
-          break;
+      }
+      
+      // Mark as not loading once we've processed any notification message
+      if (isLoading) {
+        setIsLoading(false);
       }
     } catch (err) {
-      console.error('Error processing notification message:', err);
+      console.error('[NotificationWebSocket] Error processing message:', err);
       dispatchWebSocketEvent('error', {
         socketType: SOCKET_TYPES.NOTIFICATION,
         message: 'Error processing notification data',
         error: err instanceof Error ? err.message : String(err)
       });
     }
-  }, [data]);
-  
-  // Handle errors
+  }, [isLoading]);
+
+  // Connect to the unified WebSocket system
+  const ws = useUnifiedWebSocket(
+    'notification-websocket',
+    [MessageType.DATA, MessageType.ERROR], // Message types to subscribe to
+    handleMessage,
+    [TopicType.SYSTEM, TopicType.USER] // Topics to subscribe to (notifications are in USER topic)
+  );
+
+  // Update unread count whenever notifications change
   useEffect(() => {
-    if (error) {
-      console.error('Notification WebSocket error:', error);
-      dispatchWebSocketEvent('error', {
+    const count = notifications.filter(notification => !notification.isRead).length;
+    setUnreadCount(count);
+  }, [notifications]);
+
+  // Subscribe to notification data when the WebSocket is connected
+  useEffect(() => {
+    if (ws.isConnected && isLoading) {
+      // Subscribe to the USER topic which includes notifications
+      ws.subscribe([TopicType.USER]);
+      
+      // Request notifications specifically
+      ws.request(TopicType.USER, 'GET_NOTIFICATIONS');
+      
+      dispatchWebSocketEvent('notification_subscribe', {
         socketType: SOCKET_TYPES.NOTIFICATION,
-        message: error.message,
-        error
+        message: 'Subscribing to notifications via unified WebSocket',
+        timestamp: new Date().toISOString()
       });
+      
+      // Set a timeout to reset loading state if we don't get data
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('[NotificationWebSocket] Timed out waiting for data');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [error]);
-  
+  }, [ws.isConnected, isLoading, ws.subscribe, ws.request]);
+
   // Helper methods for managing notifications
-  const markAsRead = (notificationId: string) => {
-    if (status !== 'online') {
-      console.warn('Cannot mark notification as read: WebSocket not connected');
+  const markAsRead = useCallback((notificationId: string) => {
+    if (!ws.isConnected) {
+      console.warn('[NotificationWebSocket] Cannot mark notification as read: WebSocket not connected');
       return;
     }
     
-    send({
-      action: 'MARK_READ',
-      notificationId
-    });
+    ws.request(TopicType.USER, 'MARK_READ', { notificationId });
     
     // Optimistic update
     setNotifications(prev => 
@@ -219,77 +193,71 @@ export function useNotificationWebSocket() {
           : notification
       )
     );
-  };
+    
+    dispatchWebSocketEvent('notification_mark_read', {
+      socketType: SOCKET_TYPES.NOTIFICATION,
+      message: 'Marking notification as read',
+      notificationId,
+      timestamp: new Date().toISOString()
+    });
+  }, [ws.isConnected, ws.request]);
   
-  const markAllAsRead = () => {
-    if (status !== 'online') {
-      console.warn('Cannot mark all notifications as read: WebSocket not connected');
+  const markAllAsRead = useCallback(() => {
+    if (!ws.isConnected) {
+      console.warn('[NotificationWebSocket] Cannot mark all notifications as read: WebSocket not connected');
       return;
     }
     
-    send({
-      action: 'MARK_ALL_READ'
-    });
+    ws.request(TopicType.USER, 'MARK_ALL_READ');
     
     // Optimistic update
     setNotifications(prev => 
       prev.map(notification => ({ ...notification, isRead: true }))
     );
-  };
-  
-  const refreshNotifications = () => {
-    // If not connected, try to establish connection first
-    if (status !== 'online') {
-      console.warn('WebSocket not connected, attempting to connect before refreshing notifications');
-      setIsLoading(true);
-      
-      // Try to connect
-      connect();
-      
-      // Set a timeout to allow connection to establish
-      setTimeout(() => {
-        // Check if we're connected now
-        if (status === 'online') {
-          // Now we can request notifications
-          send({
-            action: 'GET_NOTIFICATIONS'
-          });
-        } else {
-          // Still not connected, cancel loading state
-          console.error('Failed to connect to notification service');
-          setIsLoading(false);
-        }
-      }, 2000);
-      
-      return;
-    }
     
-    // We're already connected, request notifications
+    dispatchWebSocketEvent('notification_mark_all_read', {
+      socketType: SOCKET_TYPES.NOTIFICATION,
+      message: 'Marking all notifications as read',
+      timestamp: new Date().toISOString()
+    });
+  }, [ws.isConnected, ws.request]);
+  
+  const refreshNotifications = useCallback(() => {
     setIsLoading(true);
     
-    send({
-      action: 'GET_NOTIFICATIONS'
-    });
-    
-    // Set a timeout to prevent infinite loading state
-    setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-      }
-    }, 10000);
-  };
+    if (ws.isConnected) {
+      // Request fresh notification data
+      ws.request(TopicType.USER, 'GET_NOTIFICATIONS');
+      dispatchWebSocketEvent('notification_refresh', {
+        socketType: SOCKET_TYPES.NOTIFICATION,
+        message: 'Refreshing notification data',
+        timestamp: new Date().toISOString()
+      });
+      
+      // Set a timeout to reset loading state if we don't get a response
+      setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+        }
+      }, 10000);
+    } else {
+      console.warn('[NotificationWebSocket] Cannot refresh - WebSocket not connected');
+      setIsLoading(false);
+    }
+  }, [ws.isConnected, ws.request, isLoading]);
   
   return {
     notifications,
     unreadCount,
-    isConnected: status === 'online',
+    isConnected: ws.isConnected,
     isLoading,
-    error: error ? error.message : null,
+    error: ws.error,
     lastUpdate,
     markAsRead,
     markAllAsRead,
     refreshNotifications,
-    connect,
-    close
+    // For backward compatibility with components that use this hook
+    connect: () => ws.subscribe([TopicType.USER]),
+    close: () => ws.unsubscribe([TopicType.USER])
   };
 }

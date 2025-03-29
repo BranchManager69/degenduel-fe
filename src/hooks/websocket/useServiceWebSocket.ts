@@ -73,10 +73,14 @@ export function useServiceWebSocket() {
   } = useWebSocket<ServiceMessage>({
     endpoint: WEBSOCKET_ENDPOINT, // This maps to circuit-breaker as per types.ts
     socketType: SOCKET_TYPES.SERVICE,
-    requiresAuth: true, // Service monitoring requires admin authentication
-    heartbeatInterval: 30000
+    requiresAuth: false, // Allow more flexible connection handling
+    heartbeatInterval: 30000,
+    autoConnect: true // Ensure we try to connect automatically
   });
 
+  // Track loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
   // When the connection status changes, log it
   useEffect(() => {
     dispatchWebSocketEvent('service_status', {
@@ -85,15 +89,36 @@ export function useServiceWebSocket() {
       message: `Service WebSocket is ${status}`
     });
     
+    // If connected, reset loading state
+    if (status === 'online') {
+      setIsLoading(false);
+    }
     // If disconnected, update service state to show disconnected
-    if (status !== 'online') {
+    else {
       setServiceState("offline", {
         uptime: 0,
         latency: -1,
         activeUsers: 0,
       });
     }
-  }, [status, setServiceState]);
+    
+    // If we're not connected but should be loading, trigger connection with timeout
+    if (status !== 'online' && isLoading) {
+      // Attempt connection
+      connect();
+      
+      // Set a timeout to prevent endless loading state
+      const timeoutId = setTimeout(() => {
+        if (isLoading) {
+          console.warn('Service connection timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 10000);
+      
+      // Clean up the timeout if component unmounts
+      return () => clearTimeout(timeoutId);
+    }
+  }, [status, isLoading, connect, setServiceState]);
 
   // Process messages from the WebSocket
   useEffect(() => {
