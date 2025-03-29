@@ -115,6 +115,25 @@ export interface Token {
   }>;
 }
 
+/**
+ * WebSocket-specific token data interface
+ * Used by the WebSocket token data system
+ */
+export interface TokenData {
+  symbol: string;
+  name: string;
+  price: string;
+  marketCap: string;
+  volume24h: string;
+  volume5m?: string;
+  change24h: string;
+  change5m?: string;
+  change1h?: string;
+  imageUrl?: string;
+  liquidity?: number;
+  status?: "active" | "inactive";
+}
+
 // Token response metadata
 export interface TokenResponseMetadata {
   timestamp: string;
