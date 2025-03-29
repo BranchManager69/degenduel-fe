@@ -1,4 +1,5 @@
 import React from 'react';
+import { Contest, TokenData } from '../src/types';
 
 // Mock TokenDataContext
 export const TokenDataContext = React.createContext({
@@ -27,14 +28,30 @@ export const TokenDataContext = React.createContext({
       volume24h: '5000000',
       change24h: '8.1',
     },
-  ],
+  ] as TokenData[],
   isConnected: true,
   error: null,
   _refresh: () => console.log('Mock TokenData refresh called')
 });
 
+// Props type for MockedUnifiedTicker
+interface MockedUnifiedTickerProps {
+  contests: Contest[];
+  loading: boolean;
+  isCompact?: boolean;
+  significantChangeThreshold?: number;
+  maxTokens?: number;
+}
+
 // Mock UnifiedTicker component wrapper
-export const MockedUnifiedTicker = ({ contests, loading, isCompact, significantChangeThreshold, maxTokens }) => {
+export const MockedUnifiedTicker: React.FC<MockedUnifiedTickerProps> = ({ 
+  contests, 
+  loading, 
+  // Commented out unused props to avoid TypeScript warnings
+  // isCompact, 
+  // significantChangeThreshold, 
+  // maxTokens 
+}) => {
   // Render the children with mocked context
   return (
     <div className="p-4 bg-gray-800">
@@ -88,7 +105,7 @@ export const mockedHooks = {
         volume24h: '5000000',
         change24h: '8.1',
       },
-    ],
+    ] as TokenData[],
     isConnected: true,
     error: null,
     _refresh: () => console.log('TokenData refresh called')

@@ -1,3 +1,17 @@
+import { TokenData } from '../../types';
+
+// Extend window interface if not already done in types/window.d.ts
+declare global {
+  interface Window {
+    useTokenDataMock?: () => {
+      tokens: TokenData[];
+      isConnected: boolean;
+      error: null | Error;
+      _refresh: () => void;
+    };
+  }
+}
+
 // Mock implementation for useTokenData
 export const useTokenData = () => {
   if (typeof window !== 'undefined' && window.useTokenDataMock) {
@@ -33,7 +47,7 @@ export const useTokenData = () => {
         change24h: '8.1',
         imageUrl: 'https://cryptologos.cc/logos/solana-sol-logo.png'
       }
-    ],
+    ] as TokenData[],
     isConnected: true,
     error: null,
     _refresh: () => console.log('TokenData refresh called')
