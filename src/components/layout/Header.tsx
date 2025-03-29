@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 
 import { ContestsDropdown } from "./ContestsDropdown";
-import { LivePriceTicker } from "./LivePriceTicker";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { RankingsDropdown } from "./RankingsDropdown";
 import { TokensDropdown } from "./TokensDropdown";
@@ -294,23 +293,6 @@ export const Header: React.FC = () => {
                   <UnifiedTicker
                     contests={activeContests}
                     loading={loading}
-                    isCompact={isCompact}
-                    significantChangeThreshold={3}
-                    maxTokens={8}
-                  />
-                </motion.div>
-              </AnimatePresence>
-              
-              {/* Token Price Ticker */}
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                  className="w-full mt-px" // Add slight margin to separate the tickers
-                >
-                  <LivePriceTicker 
                     isCompact={isCompact}
                     significantChangeThreshold={3}
                     maxTokens={15}
