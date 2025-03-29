@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { UnifiedTicker } from '../components/layout/UnifiedTicker';
 import { Contest } from '../types';
+import { MockedUnifiedTicker } from '../../.storybook/mockComponents';
 
 // Helper function to calculate current prize pool based on participants
 const calculateCurrentPrizePool = (
@@ -204,7 +205,7 @@ const mockContests: Contest[] = [
 // Define component metadata
 const meta = {
   title: 'Components/UnifiedTicker',
-  component: UnifiedTicker,
+  component: MockedUnifiedTicker,
   parameters: {
     layout: 'fullscreen',
     backgrounds: {
