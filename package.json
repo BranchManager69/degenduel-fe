@@ -25,7 +25,9 @@
     "type-check": "tsc --noEmit",
     "test": "jest --config jest.config.ts --verbose",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx --config .eslintrc.json src",
-    "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx --config .eslintrc.json src --fix"
+    "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx --config .eslintrc.json src --fix",
+    "lint:ai": "claude -p 'you are a linter. please look at the changes vs. main and report what changes you see. report the filename and line number on one line, and a description of the issue on the second line. do not return any other text.'",
+    "lint:ai:commit": "claude -p 'you are a linter. please look at the changes that are yet to be committed and report what changes you see. report the filename and line number on one line, and a description of the change on the second line. do not return any other text.'"
   },
   "dependencies": {
     "@aptos-labs/wallet-adapter-react": "^3.7.9",
