@@ -1,0 +1,19 @@
+<script>
+  // Define process.env for Storybook environment
+  window.process = window.process || {};
+  window.process.env = window.process.env || {};
+  
+  // Add any environment variables your components need
+  window.process.env.VITE_CONTRACT_ADDRESS_REAL = '0x1111111111111111111111111111111111111111';
+  window.process.env.VITE_CONTRACT_ADDRESS_FAKE = '0x42069';
+  window.process.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME = '2025-04-01T15:00:00-05:00';
+  window.process.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL = 'April 1, 2025';
+  window.process.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT = 'Apr 1, 2025';
+  window.process.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_TIME = '15:00:00';
+  window.process.env.VITE_RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_HOURS = '6';
+  window.process.env.VITE_RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES_HOURS = '1';
+  window.process.env.VITE_SUPERADMIN_SECRET = 'STORYBOOK_PLACEHOLDER';
+  window.process.env.VITE_TREASURY_WALLET = 'STORYBOOK_PLACEHOLDER';
+  window.process.env.VITE_VIRTUALS_GAME_SDK_API_KEY = 'STORYBOOK_PLACEHOLDER';
+  window.process.env.VITE_OPENAI_API_KEY = 'STORYBOOK_PLACEHOLDER';
+</script>
