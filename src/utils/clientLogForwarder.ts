@@ -47,10 +47,12 @@ let batchSendTimer: number | null = null;
 let isWebSocketConnected = false;
 let sessionId = '';
 
-// Initialize the session ID
+// Initialize the session ID with cryptographically secure random values
 const generateSessionId = (): string => {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
+  // Use Web Crypto API which is available in all modern browsers
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 };
 
 /**
