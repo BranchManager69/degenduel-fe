@@ -1,23 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTokenData } from '../../../hooks/useTokenData';
+import { useWebSocketMonitor } from '../../../hooks/useWebSocketMonitor';
 
 /**
  * Debug component for testing the TokenData WebSocket hook
- * This component allows testing the unified WebSocket token data functionality
+ * This component allows testing the unified WebSocket token data functionality with detailed connection state monitoring
  */
 const TokenDataDebug: React.FC = () => {
   const [filterSymbols, setFilterSymbols] = useState<string[]>([]);
   const [inputSymbol, setInputSymbol] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Get WebSocket monitor data for more detailed connection state info
+  const wsMonitor = useWebSocketMonitor();
   
   // Use the token data hook - will connect to unified WebSocket
   const { 
     tokens, 
     allTokens,
     isConnected, 
+    connectionState,
     error, 
     lastUpdate,
     _refresh
   } = useTokenData(filterSymbols.length > 0 ? filterSymbols : 'all');
+  
+  // Enhanced refresh function with visual feedback
+  const handleRefresh = useCallback(() => {
+    if (isConnected && _refresh) {
+      setIsRefreshing(true);
+      Promise.resolve(_refresh()).finally(() => {
+        setTimeout(() => setIsRefreshing(false), 500);
+      });
+    } else {
+      console.warn("Cannot refresh: WebSocket not connected");
+    }
+  }, [isConnected, _refresh]);
   
   // Handle adding a symbol to filter
   const handleAddSymbol = () => {
@@ -38,21 +56,93 @@ const TokenDataDebug: React.FC = () => {
     return date.toLocaleTimeString();
   };
   
+  // Get appropriate connection status display
+  const getConnectionStatus = () => {
+    if (!connectionState) return { color: 'gray', text: 'Unknown', icon: '?' };
+    
+    switch(connectionState) {
+      case 'connecting':
+        return { color: 'yellow', text: 'Connecting', icon: '⌛' };
+      case 'connected':
+        return { color: 'green', text: 'Connected', icon: '✓' };
+      case 'authenticated':
+        return { color: 'blue', text: 'Authenticated', icon: '🔒' };
+      case 'reconnecting':
+        return { color: 'orange', text: 'Reconnecting', icon: '🔄' };
+      case 'disconnected':
+        return { color: 'red', text: 'Disconnected', icon: '❌' };
+      case 'error':
+        return { color: 'red', text: 'Error', icon: '⚠️' };
+      default:
+        return { color: 'gray', text: connectionState || 'Unknown', icon: '?' };
+    }
+  };
+  
+  const connectionStatus = getConnectionStatus();
+  
   return (
     <div className="text-white">
-      {/* Connection Status */}
+      {/* Enhanced Connection Status Section */}
       <div className="mb-4 bg-black/30 backdrop-blur-sm p-3 rounded border border-gray-700">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center">
-            <div className={`w-3 h-3 rounded-full mr-2 ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
-              {isConnected ? 'Connected' : 'Disconnected'}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <div className={`w-3 h-3 rounded-full mr-2 ${
+                connectionState === 'connected' || connectionState === 'authenticated' 
+                  ? 'bg-green-500 animate-pulse' 
+                  : connectionState === 'connecting' || connectionState === 'reconnecting'
+                  ? 'bg-yellow-500 animate-pulse'
+                  : 'bg-red-500'
+              }`} />
+              <span className={`font-medium text-${connectionStatus.color}-400`}>
+                {connectionStatus.text}
+              </span>
+              {wsMonitor.isAuthError && (
+                <span className="ml-2 text-yellow-400 text-xs bg-yellow-900/50 px-1.5 py-0.5 rounded-sm">
+                  Auth Failed
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-gray-400">
+              Last update: <span className="text-cyan-400">{formatTimestamp(lastUpdate)}</span>
+            </div>
+          </div>
+          <button 
+            onClick={handleRefresh}
+            className="ml-4 bg-brand-500/20 hover:bg-brand-500/30 border border-brand-500/30 rounded-full w-7 h-7 flex items-center justify-center text-brand-300 transition-all duration-300 shadow-sm hover:shadow-brand-500/20"
+            disabled={!isConnected || isRefreshing}
+            title="Refresh data"
+          >
+            <span className={`text-base ${isRefreshing ? 'animate-spin' : ''}`}>⟳</span>
+          </button>
+        </div>
+        
+        {/* Authentication State Details */}
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs border-t border-gray-700 pt-2">
+          <div className="flex items-center space-x-1 text-gray-400">
+            <span>Socket:</span>
+            <span className={`font-mono ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+              {isConnected ? 'Ready' : 'Not Ready'}
             </span>
           </div>
-          <div className="text-sm text-gray-400">
-            Last update: <span className="text-cyan-400">{formatTimestamp(lastUpdate)}</span>
+          <div className="flex items-center space-x-1 text-gray-400">
+            <span>Auth:</span>
+            <span className={`font-mono ${wsMonitor.isAuthenticated ? 'text-green-400' : 'text-yellow-400'}`}>
+              {wsMonitor.isAuthenticated ? 'Success' : 'Public Only'}
+            </span>
+          </div>
+          <div className="flex items-center space-x-1 text-gray-400">
+            <span>Msgs:</span>
+            <span className="font-mono text-brand-300">{wsMonitor.messageCount || 0}</span>
+          </div>
+          <div className="flex items-center space-x-1 text-gray-400">
+            <span>Errors:</span>
+            <span className={`font-mono ${wsMonitor.errorCount > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+              {wsMonitor.errorCount || 0}
+            </span>
           </div>
         </div>
+        
         {error && (
           <div className="mt-2 p-2 bg-red-900/50 border border-red-700 rounded text-sm">
             Error: {error}
@@ -84,10 +174,11 @@ const TokenDataDebug: React.FC = () => {
             Clear
           </button>
           <button
-            onClick={() => _refresh()}
+            onClick={handleRefresh}
             className="px-3 py-1.5 bg-green-700 hover:bg-green-600 rounded transition-colors flex items-center"
+            disabled={!isConnected || isRefreshing}
           >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className={`w-4 h-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             Refresh
@@ -150,8 +241,18 @@ const TokenDataDebug: React.FC = () => {
                       <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>{isConnected ? 'No tokens available' : 'Connect to see token data'}</span>
-                      {isConnected && <span className="text-xs">Try refreshing or checking your filters</span>}
+                      <span>
+                        {connectionState === 'connecting' ? 'Connecting to server...' :
+                         connectionState === 'connected' && tokens.length === 0 ? 'Connected, requesting token data...' :
+                         isConnected && tokens.length === 0 ? 'No tokens available' : 
+                         'Waiting for connection...'}
+                      </span>
+                      {isConnected && tokens.length === 0 && (
+                        <span className="text-xs">
+                          Try refreshing or checking your filters
+                          {wsMonitor.isAuthError ? ' (Operating in public data mode)' : ''}
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -165,8 +266,17 @@ const TokenDataDebug: React.FC = () => {
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">Topic:</span>
             <span className="bg-green-900/60 border border-green-800 rounded-sm px-1.5 text-green-300 font-mono">market-data</span>
+            {wsMonitor.isAuthError ? (
+              <span className="ml-2 bg-yellow-900/60 border border-yellow-800 rounded-sm px-1.5 text-yellow-300 font-mono">public</span>
+            ) : (
+              <span className="ml-2 bg-indigo-900/60 border border-indigo-800 rounded-sm px-1.5 text-indigo-300 font-mono">authenticated</span>
+            )}
           </div>
-          <div className="text-gray-500">WebSocket message rate: <span className="text-green-400 font-mono">~2/sec</span></div>
+          <div className="text-gray-500">
+            <span>WebSocket messages: </span>
+            <span className="text-green-400 font-mono">{wsMonitor.messageCount} </span>
+            <span className="text-gray-500 ml-1">({wsMonitor.messageRatePerSecond}/sec)</span>
+          </div>
         </div>
       </div>
     </div>

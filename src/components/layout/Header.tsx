@@ -4,11 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 
 import { ContestsDropdown } from "./ContestsDropdown";
-import { LiveContestTicker } from "./LiveContestTicker";
-import { LivePriceTicker } from "./LivePriceTicker";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { RankingsDropdown } from "./RankingsDropdown";
 import { TokensDropdown } from "./TokensDropdown";
+import { UnifiedTicker } from "./UnifiedTicker";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotificationWebSocket } from "../../hooks/websocket/useNotificationWebSocket";
 import { useScrollHeader } from "../../hooks/useScrollHeader";
@@ -276,7 +275,7 @@ export const Header: React.FC = () => {
               </nav>
             </div>
 
-            {/* Center section: Live Contest Ticker */}
+            {/* Center section: Unified Ticker */}
             <div
               className={`flex-1 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
               ${
@@ -291,24 +290,9 @@ export const Header: React.FC = () => {
                   transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   className="w-full"
                 >
-                  <LiveContestTicker
+                  <UnifiedTicker
                     contests={activeContests}
                     loading={loading}
-                    isCompact={isCompact}
-                  />
-                </motion.div>
-              </AnimatePresence>
-              
-              {/* Token Price Ticker */}
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                  className="w-full mt-px" // Add slight margin to separate the tickers
-                >
-                  <LivePriceTicker 
                     isCompact={isCompact}
                     significantChangeThreshold={3}
                     maxTokens={15}
@@ -326,39 +310,48 @@ export const Header: React.FC = () => {
                   : "gap-2 sm:gap-3 md:gap-4"
               }`}
             >
-              <AnimatePresence mode="wait">
-                {user ? (
-                  <motion.div
-                    key="user-menu"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                  >
-                    <UserMenu
-                      user={user}
-                      onDisconnect={disconnectWallet}
-                      isCompact={isCompact}
-                      unreadNotifications={unreadCount}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="connect-button"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                  >
-                    {/* Use our centralized ConnectWalletButton component */}
-                    <div className="flex items-center">
-                      <ConnectWalletButton compact={isCompact} />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Desktop user menu or connect button */}
+              <div className="hidden md:block">
+                <AnimatePresence mode="wait">
+                  {user ? (
+                    <motion.div
+                      key="user-menu"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                      <UserMenu
+                        user={user}
+                        onDisconnect={disconnectWallet}
+                        isCompact={isCompact}
+                        unreadNotifications={unreadCount}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="connect-button"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                      {/* Desktop Connect Wallet Button */}
+                      <div className="flex items-center">
+                        <ConnectWalletButton compact={isCompact} />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              
+              {/* Mobile menu with auth integrated */}
               <div className="md:hidden">
-                <MobileMenuButton isCompact={isCompact} />
+                <MobileMenuButton 
+                  isCompact={isCompact} 
+                  onDisconnect={disconnectWallet}
+                  unreadNotifications={unreadCount}
+                />
               </div>
             </div>
           </div>

@@ -46,7 +46,7 @@ export function useWebSocketTopic<T = any>(
   
   // Subscribe to the topic when connected (if autoSubscribe is true)
   useEffect(() => {
-    if (ws.isConnected && options.autoSubscribe) {
+    if (ws.connectionState === 'connected' && options.autoSubscribe) {
       // Subscribe to the topic
       ws.subscribe([topicName]);
       
@@ -56,7 +56,7 @@ export function useWebSocketTopic<T = any>(
         ws.request(topicName, action, params);
       }
     }
-  }, [ws.isConnected, topicName, options.autoSubscribe]);
+  }, [ws.connectionState, topicName, options.autoSubscribe]);
   
   // Helper for making requests on this topic
   const request = useCallback((action: string, params: Record<string, any> = {}) => {
