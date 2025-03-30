@@ -105,6 +105,7 @@ The DegenDuel Unified WebSocket System provides a centralized WebSocket implemen
 | `admin` | Admin | Administrative functions | Yes (Admin role) |
 | `wallet` | Wallet | Wallet information and transactions | Yes |
 | `skyduel` | SkyDuel | SkyDuel game data | No (Public), Yes (User-specific) |
+| `logs` | Logs | Client logging facility | No |
 
 ### Message Types
 
