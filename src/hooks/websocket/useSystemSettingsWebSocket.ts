@@ -49,7 +49,7 @@ export function useSystemSettingsWebSocket() {
     close
   } = useWebSocket<SystemSettingsMessage>({
     endpoint: WEBSOCKET_ENDPOINT,
-    socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+    socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
     requiresAuth: false, // Changed to false to match status WebSocket and allow connection without auth
     heartbeatInterval: 30000
   });
@@ -57,7 +57,7 @@ export function useSystemSettingsWebSocket() {
   // When the connection status changes, log it
   useEffect(() => {
     dispatchWebSocketEvent('system_settings_status', {
-      socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+      socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
       status,
       message: `System settings WebSocket is ${status}`
     });
@@ -81,7 +81,7 @@ export function useSystemSettingsWebSocket() {
     });
     
     dispatchWebSocketEvent('system_settings_request', {
-      socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+      socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
       message: 'Requesting system settings',
       timestamp: new Date().toISOString()
     });
@@ -100,14 +100,14 @@ export function useSystemSettingsWebSocket() {
         setLastUpdated(new Date());
         
         dispatchWebSocketEvent('system_settings_update', {
-          socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+          socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
           message: 'System settings updated',
           hasBackgroundScene: !!data.data.background_scene,
           timestamp: new Date().toISOString()
         });
       } else if (data.type === "ERROR") {
         dispatchWebSocketEvent('error', {
-          socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+          socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
           message: data.error || data.message || 'Unknown system settings error',
           timestamp: new Date().toISOString()
         });
@@ -115,7 +115,7 @@ export function useSystemSettingsWebSocket() {
     } catch (err) {
       console.error('Error processing system settings message:', err);
       dispatchWebSocketEvent('error', {
-        socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+        socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
         message: 'Error processing system settings data',
         error: err instanceof Error ? err.message : String(err)
       });
@@ -127,7 +127,7 @@ export function useSystemSettingsWebSocket() {
     if (error) {
       console.error('System settings WebSocket error:', error);
       dispatchWebSocketEvent('error', {
-        socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+        socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
         message: error.message,
         error
       });
@@ -147,14 +147,14 @@ export function useSystemSettingsWebSocket() {
           setLastUpdated(new Date());
           
           dispatchWebSocketEvent('system_settings_fallback', {
-            socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+            socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Fetched system settings via fallback API',
             timestamp: new Date().toISOString()
           });
         } catch (err) {
           console.error("Fallback fetch error:", err);
           dispatchWebSocketEvent('error', {
-            socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+            socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Error fetching system settings via fallback API',
             error: err instanceof Error ? err.message : String(err)
           });
@@ -183,7 +183,7 @@ export function useSystemSettingsWebSocket() {
           setIsLoading(false);
           
           dispatchWebSocketEvent('system_settings_refresh_api', {
-            socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+            socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Refreshed system settings via API',
             timestamp: new Date().toISOString()
           });
@@ -191,7 +191,7 @@ export function useSystemSettingsWebSocket() {
         .catch((err) => {
           console.error("Error refreshing system settings:", err);
           dispatchWebSocketEvent('error', {
-            socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+            socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Error refreshing system settings via API',
             error: err instanceof Error ? err.message : String(err)
           });
@@ -216,7 +216,7 @@ export function useSystemSettingsWebSocket() {
       setIsLoading(false);
       
       dispatchWebSocketEvent('system_settings_update_background', {
-        socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+        socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
         message: 'Updated background scene via API',
         hasValue: !!value,
         timestamp: new Date().toISOString()
@@ -226,7 +226,7 @@ export function useSystemSettingsWebSocket() {
     } catch (err) {
       console.error("Error updating background scene:", err);
       dispatchWebSocketEvent('error', {
-        socketType: SOCKET_TYPES.SYSTEM_SETTINGS,
+        socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
         message: 'Error updating background scene',
         error: err instanceof Error ? err.message : String(err)
       });

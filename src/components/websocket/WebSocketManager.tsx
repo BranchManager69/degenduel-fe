@@ -12,6 +12,7 @@ import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent, initializeWebSocketTracking } from '../../utils/wsMonitor';
 import { setupWebSocketInstance } from '../../hooks/websocket/useUnifiedWebSocket';
 import { ConnectionState, MessageType, SOCKET_TYPES, WEBSOCKET_ENDPOINT, WebSocketMessage } from '../../hooks/websocket/types';
+import { toast } from '../toast/compat'; // Import the toast system directly
 
 // Type helpers for specific message formats
 type SubscriptionMessage = {
@@ -261,6 +262,43 @@ const WebSocketManagerComponent: React.FC = () => {
           missedHeartbeatsRef.current = 0;
         }
         
+        // NEW: Handle server shutdown notification
+        if (message.action === 'shutdown') {
+          console.log("WebSocketManager: Server shutdown notification received:", message);
+          
+          // Update server restart tracking
+          serverRestartRef.current.inProgress = true;
+          serverRestartRef.current.shutdownTime = Date.now();
+          
+          // Extract expected downtime if provided, otherwise use default
+          // For v69 spec, the message.data object contains the expectedDowntime 
+          const expectedDowntime = 
+            (message.data && typeof message.data === 'object' && 'expectedDowntime' in message.data)
+              ? (message.data as any).expectedDowntime 
+              : 30000; // Default to 30 seconds
+              
+          serverRestartRef.current.expectedDowntime = expectedDowntime;
+          
+          // Show a toast notification for users directly here where we have complete message context
+          // Use the toast system directly
+          toast.info(
+            message.message || `Server restarting, will be back in about ${Math.ceil(expectedDowntime/1000)} seconds.`, 
+            {
+              title: 'Server Maintenance',
+              // Custom options for duration and ID are supported through our compat layer
+              duration: Math.min(expectedDowntime + 5000, 30000), // Show until reconnect + buffer
+              id: 'server-restart-' + Date.now()
+            }
+          );
+          
+          // Schedule reconnection with optimal timing
+          scheduleServerRestartReconnect(expectedDowntime);
+          
+          // Optionally, we could filter out this specific message to prevent components
+          // from receiving it directly, but letting it through allows components to 
+          // implement their own shutdown handling if needed.
+        }
+        
         // Track all system messages for monitoring
         dispatchWebSocketEvent('system_message', {
           action: message.action || 'unknown',
@@ -309,6 +347,14 @@ const WebSocketManagerComponent: React.FC = () => {
     }
   };
   
+  // Server restart tracking
+  const serverRestartRef = useRef({
+    inProgress: false,
+    expectedDowntime: 30000, // Default: 30 seconds
+    shutdownTime: 0,
+    reconnectScheduled: false
+  });
+  
   // Handle WebSocket close event
   const handleClose = (event: CloseEvent) => {
     console.log(`WebSocketManager: Connection closed. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}`);
@@ -319,16 +365,68 @@ const WebSocketManagerComponent: React.FC = () => {
     // Update state
     setConnectionState(ConnectionState.DISCONNECTED);
     
-    // Schedule reconnect if not a normal closure
-    if (event.code !== 1000) {
+    // Check if this is a clean closure due to server restart
+    if (event.code === 1000 && event.reason && event.reason.includes('restart')) {
+      console.log(`WebSocketManager: Server restart detected via clean shutdown: ${event.reason}`);
+      
+      // Don't schedule normal reconnect, as we already have a smart reconnect from handleMessage
+      if (!serverRestartRef.current.reconnectScheduled) {
+        // If somehow we got the close event but missed the notification message,
+        // still schedule a smart reconnect
+        scheduleServerRestartReconnect(serverRestartRef.current.expectedDowntime);
+      }
+    } 
+    // For non-restart abnormal closures, use normal reconnection strategy
+    else if (event.code !== 1000) {
       scheduleReconnect();
     }
     
     dispatchWebSocketEvent('disconnected', {
       code: event.code,
       reason: event.reason,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      serverRestart: serverRestartRef.current.inProgress
     });
+  };
+  
+  // Schedule reconnection for server restart with optimized timing
+  const scheduleServerRestartReconnect = (expectedDowntime: number) => {
+    // Clear any existing timeout
+    if (reconnectTimeoutRef.current !== null) {
+      window.clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
+    // Mark that a server restart reconnect is scheduled
+    serverRestartRef.current.reconnectScheduled = true;
+    
+    // Calculate when to reconnect - 5 seconds before expected uptime
+    // with a minimum of 3 seconds wait and maximum of expected downtime
+    const reconnectDelay = Math.min(
+      Math.max(expectedDowntime - 5000, 3000),
+      expectedDowntime
+    );
+    
+    console.log(`WebSocketManager: Server restart reconnect scheduled in ${reconnectDelay}ms`);
+    setConnectionState(ConnectionState.RECONNECTING);
+    
+    // Show a toast notification for users using our toast system directly
+    toast.info(
+      `Server maintenance in progress. Connection will resume automatically in about ${Math.ceil(expectedDowntime/1000)} seconds.`,
+      {
+        title: 'Server Restarting',
+        duration: Math.min(expectedDowntime + 5000, 30000), // Show until reconnect + buffer
+        id: 'server-restart-' + Date.now()
+      }
+    );
+    
+    // Schedule reconnect
+    reconnectTimeoutRef.current = window.setTimeout(() => {
+      reconnectTimeoutRef.current = null;
+      serverRestartRef.current.inProgress = false;
+      serverRestartRef.current.reconnectScheduled = false;
+      connect();
+    }, reconnectDelay);
   };
   
   // Handle WebSocket error event
@@ -357,7 +455,7 @@ const WebSocketManagerComponent: React.FC = () => {
         try {
           wsRef.current.send(JSON.stringify({
             type: MessageType.REQUEST,
-            topic: SOCKET_TYPES.SYSTEM_SETTINGS,
+            topic: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             action: 'ping',
             requestId: crypto.randomUUID(),
             timestamp: new Date().toISOString()
@@ -500,7 +598,7 @@ const WebSocketManagerComponent: React.FC = () => {
       const publicSubscriptionMessage: SubscriptionMessage = {
         type: MessageType.SUBSCRIBE,
         topics: [
-          SOCKET_TYPES.SYSTEM_SETTINGS,
+          SOCKET_TYPES.SYSTEM, // Updated from SYSTEM_SETTINGS to SYSTEM per v69 API
           SOCKET_TYPES.MARKET_DATA
         ]
       };
