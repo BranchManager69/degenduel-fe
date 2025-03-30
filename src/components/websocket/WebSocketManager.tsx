@@ -317,6 +317,36 @@ const WebSocketManagerComponent: React.FC = () => {
           timestamp: new Date().toISOString()
         });
         
+        // Handle token expiration errors (code 4401 is special case for "token_expired")
+        if ((message as any).code === 4401 && (message as any).reason === 'token_expired') {
+          console.log("WebSocketManager: Token expired error detected, clearing authentication");
+          
+          // Get current user state
+          const user = useStore.getState().user;
+          
+          // Clear tokens but keep other user data
+          if (user) {
+            useStore.getState().setUser({
+              ...user,
+              jwt: undefined,
+              wsToken: undefined,
+              session_token: undefined
+            });
+          }
+          
+          // Show a toast notification
+          toast.warning("Your session has expired. Please log in again.", {
+            title: "Session Expired",
+            duration: 5000
+          });
+          
+          // Redirect to login page
+          window.location.href = '/login';
+          
+          // Filter out this error from listeners
+          return;
+        }
+        
         // Handle authentication errors (code 4011 is "Invalid authentication token")
         if ((message as any).code === 4011 || 
             (message.error && typeof message.error === 'string' && message.error.includes('auth')) || 
