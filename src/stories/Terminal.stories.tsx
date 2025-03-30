@@ -33,35 +33,15 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     config: defaultConfig,
-  },
+  }
 };
 
-// Story with countdown almost finished
-export const AlmostReleased: Story = {
-  args: {
-    config: {
-      ...defaultConfig,
-      RELEASE_DATE: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes from now
-      DISPLAY: {
-        ...defaultConfig.DISPLAY,
-        DATE_SHORT: new Date().toISOString().split('T')[0],
-        DATE_FULL: new Date().toDateString(),
-      }
-    },
-  },
-};
-
-// Story with released state
+// Released version
 export const Released: Story = {
   args: {
     config: {
       ...defaultConfig,
       RELEASE_DATE: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
-      DISPLAY: {
-        ...defaultConfig.DISPLAY,
-        DATE_SHORT: new Date().toISOString().split('T')[0],
-        DATE_FULL: new Date().toDateString(),
-      }
     },
-  },
+  }
 };

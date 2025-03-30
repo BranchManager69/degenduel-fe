@@ -45,6 +45,15 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   // Process tokens for significant price changes
   useEffect(() => {
+    // Add more debugging to diagnose connection issues
+    console.log(`UnifiedTicker DEBUG: 
+      - isConnected: ${isConnected}
+      - Connection state: ${error ? 'ERROR' : 'OK'}
+      - Error: ${error || 'None'}
+      - Tokens received: ${tokens ? tokens.length : 0}
+      - Connection attempts: ${connectionAttempts}
+    `);
+
     if (!tokens || tokens.length === 0) return;
 
     console.log(`UnifiedTicker: Processing ${tokens.length} tokens for significant changes`);
@@ -63,7 +72,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     
     // Take top N
     setSignificantChanges(sorted.slice(0, maxTokens));
-  }, [tokens, significantChangeThreshold, maxTokens]);
+  }, [tokens, significantChangeThreshold, maxTokens, isConnected, error, connectionAttempts]);
   
   // Manually trigger token data refresh when WebSocket is connected
   useEffect(() => {

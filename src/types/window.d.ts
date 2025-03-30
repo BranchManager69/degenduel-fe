@@ -12,4 +12,6 @@ interface Window {
     maintenanceMode: boolean;
     setMaintenanceMode: (mode: boolean) => void;
   };
+  // Terminal component properties
+  contractAddress?: string;
 }

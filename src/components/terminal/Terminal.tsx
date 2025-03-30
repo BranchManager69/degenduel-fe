@@ -1,9 +1,17 @@
 
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { aiService, AIMessage } from '../../services/ai';
+import { AIMessage, aiService } from '../../services/ai';
+import './Terminal.css';
 
-// We need to port the DecryptionTimer component as well
+// Extend Window interface to include contractAddress property
+declare global {
+  interface Window {
+    contractAddress?: string;
+  }
+}
+
+// Define the DecryptionTimer component with internal styling and logic
 export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:00') }: { targetDate?: Date }) => {
   const [timeRemaining, setTimeRemaining] = useState({
     days: 0,
@@ -11,6 +19,15 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
     minutes: 0,
     seconds: 0
   });
+  
+  // Use state for smooth release preference to avoid hydration mismatch
+  const [useSmoothRelease, setUseSmoothRelease] = useState(false);
+  
+  // Check localStorage for preference in useEffect (client-side only)
+  useEffect(() => {
+    const storedPreference = window.localStorage?.getItem('useTerminalSmoothRelease') === 'true';
+    setUseSmoothRelease(storedPreference);
+  }, []);
   
   useEffect(() => {
     const calculateTimeRemaining = () => {
@@ -44,37 +61,206 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
   return (
     <div className="font-orbitron">
       {isComplete ? (
-        <motion.div 
-          className="text-3xl sm:text-4xl text-green-400 font-bold py-4"
-          initial={{ scale: 1 }}
-          animate={{ 
-            scale: [1, 1.15, 1],
-            textShadow: [
-              '0 0 10px rgba(74, 222, 128, 0.5)',
-              '0 0 30px rgba(74, 222, 128, 0.9)',
-              '0 0 10px rgba(74, 222, 128, 0.5)'
-            ],
-            filter: [
-              'brightness(1)',
-              'brightness(1.3)',
-              'brightness(1)'
-            ]
-          }}
-          transition={{ 
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <span className="bg-gradient-to-r from-green-400 via-emerald-300 to-green-400 text-transparent bg-clip-text">
-            ACCESS GRANTED
-          </span>
-          <div className="mt-2 text-base text-green-300 font-normal">Protocol decryption successful</div>
-        </motion.div>
+        useSmoothRelease ? (
+          // SMOOTH RELEASE STATE - Typing animation instead of bouncing
+          <div className="py-4">
+            {/* Terminal-style typing effect for ACCESS GRANTED */}
+            <div className="text-3xl sm:text-4xl font-bold relative">
+              <div className="flex items-center">
+                <span className="text-green-400 inline-block mr-2 whitespace-nowrap">&gt;</span>
+                <div className="relative inline-flex">
+                  <div className="text-green-400 font-mono tracking-wider relative">
+                    {'ACCESS_GRANTED'.split('').map((char, index) => (
+                      <motion.span
+                        key={index}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{
+                          duration: 0.05,
+                          delay: 0.1 + index * 0.08, // Staggered delay
+                          ease: "easeIn"
+                        }}
+                      >
+                        {char}
+                      </motion.span>
+                    ))}
+                  </div>
+                  <motion.span
+                    className="absolute right-0 h-full w-1 bg-green-400/80"
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Protocol decryption message with console-style typing */}
+            <motion.div 
+              className="mt-2 text-base text-green-200 font-normal flex items-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.5, duration: 0.5 }}
+            >
+              <span className="text-green-500 mr-3">[+]</span>
+              <div className="inline-block whitespace-nowrap">
+                {'Protocol decryption successful'.split('').map((char, index) => (
+                  <motion.span
+                    key={index}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      duration: 0.03,
+                      delay: 1.7 + index * 0.05, // Staggered delay
+                      ease: "easeIn"
+                    }}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
+            
+            {/* ASCII art for contract header */}
+            <motion.div
+              className="mt-6 mb-2 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 3, duration: 0.5 }}
+            >
+              <pre className="text-green-400 text-xs leading-tight font-mono">
+{`  _____            _                  _      ______ _______ _______ ______ _____ _______ _______ ______ 
+ / ____|          | |                | |    |  ____|__   __|__   __|  ____/ ____|__   __|__   __|  ____|
+| |     ___  _ __ | |_ _ __ __ _  ___| |_   | |__     | |     | |  | |__ | |       | |     | |  | |__   
+| |    / _ \\| '_ \\| __| '__/ _\` |/ __| __|  |  __|    | |     | |  |  __|| |       | |     | |  |  __|  
+| |___| (_) | | | | |_| | | (_| | (__| |_   | |____   | |     | |  | |___| |____   | |     | |  | |____ 
+ \\_____\\___/|_| |_|\\__|_|  \\__,_|\\___|\\__|  |______|  |_|     |_|  |______\\_____|  |_|     |_|  |______|
+                                                                                                         `}
+              </pre>
+            </motion.div>
+            
+            {/* Prominent contract address highlight */}
+            <motion.div
+              className="mt-3 p-4 border-2 border-green-500/50 bg-black/60 rounded-md text-xl relative"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 3.5, duration: 0.7 }}
+              whileHover={{ 
+                scale: 1.03, 
+                boxShadow: "0 0 20px rgba(74, 222, 128, 0.5)",
+                borderColor: "rgba(74, 222, 128, 0.8)"
+              }}
+            >
+              {/* Terminal scan line */}
+              <motion.div 
+                className="absolute inset-0 h-1 bg-green-400/20 z-10 overflow-hidden"
+                animate={{ 
+                  top: ['-10%', '110%'],
+                }}
+                transition={{ 
+                  duration: 1.5, 
+                  ease: "linear", 
+                  repeat: Infinity,
+                  repeatType: "loop" 
+                }}
+              />
+              
+              {/* Corner markers for a tech feel */}
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-green-400"></div>
+              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-green-400"></div>
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-green-400"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-400"></div>
+              
+              <motion.div 
+                className="text-green-300 mb-2 text-sm font-mono uppercase tracking-wider flex items-center"
+                animate={{ color: ['rgba(74, 222, 128, 0.7)', 'rgba(74, 222, 128, 1)', 'rgba(74, 222, 128, 0.7)'] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                <motion.span 
+                  className="inline-block h-2 w-2 bg-green-400 mr-2 rounded-full"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                />
+                Contract Address Verified:
+              </motion.div>
+              
+              <motion.div
+                className="font-mono text-green-400 tracking-wide flex items-center bg-black/40 p-2 rounded"
+                animate={{ 
+                  textShadow: ['0 0 5px rgba(74, 222, 128, 0.3)', '0 0 15px rgba(74, 222, 128, 0.7)', '0 0 5px rgba(74, 222, 128, 0.3)'],
+                  backgroundColor: ['rgba(0, 0, 0, 0.4)', 'rgba(34, 197, 94, 0.05)', 'rgba(0, 0, 0, 0.4)']
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <motion.span 
+                  className="text-green-500 mr-2"
+                  animate={{ rotate: [0, 359] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                >
+                  ⟳
+                </motion.span>
+                {window.contractAddress || '0x1234...5678'}
+              </motion.div>
+              
+              {/* Animated progress bar */}
+              <motion.div 
+                className="mt-3 w-full bg-black/40 h-1 rounded-full overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 4, duration: 0.5 }}
+              >
+                <motion.div 
+                  className="h-full bg-green-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  transition={{ delay: 4.1, duration: 1.5 }}
+                />
+              </motion.div>
+              
+              <motion.div 
+                className="text-green-400/70 text-xs mt-1 text-right font-mono"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 5.6, duration: 0.5 }}
+              >
+                HASH VERIFIED • SIGNATURE VALID
+              </motion.div>
+            </motion.div>
+          </div>
+        ) : (
+          // ORIGINAL RELEASE STATE - Bouncy animation
+          <motion.div 
+            className="text-3xl sm:text-4xl text-green-400 font-bold py-4"
+            initial={{ scale: 1 }}
+            animate={{ 
+              scale: [1, 1.15, 1],
+              textShadow: [
+                '0 0 10px rgba(74, 222, 128, 0.5)',
+                '0 0 30px rgba(74, 222, 128, 0.9)',
+                '0 0 10px rgba(74, 222, 128, 0.5)'
+              ],
+              filter: [
+                'brightness(1)',
+                'brightness(1.3)',
+                'brightness(1)'
+              ]
+            }}
+            transition={{ 
+              duration: 2.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            <span className="bg-gradient-to-r from-green-400 via-emerald-300 to-green-400 text-transparent bg-clip-text">
+              ACCESS GRANTED
+            </span>
+            <div className="mt-2 text-base text-green-300 font-normal">Protocol decryption successful</div>
+          </motion.div>
+        )
       ) : (
         <div>
           <motion.div 
-            className="flex justify-center space-x-2 sm:space-x-4 px-3 py-5 bg-black/20 rounded-lg border border-mauve/30"
+            className="flex justify-center space-x-3 sm:space-x-6 md:space-x-8 lg:space-x-10 px-3 py-5 bg-black/20 rounded-lg border border-mauve/30 max-w-4xl mx-auto"
             animate={{
               boxShadow: [
                 '0 0 3px rgba(157, 78, 221, 0.2)',
@@ -86,19 +272,19 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
           >
             <TimeUnit value={timeRemaining.days} label="DAYS" />
             <motion.div
-              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center -mx-1 sm:mx-0 opacity-80 mt-3"
+              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center opacity-80 mt-3"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1, repeat: Infinity }}
             >:</motion.div>
             <TimeUnit value={timeRemaining.hours} label="HRS" />
             <motion.div
-              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center -mx-1 sm:mx-0 opacity-80 mt-3"
+              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center opacity-80 mt-3"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1, repeat: Infinity }}
             >:</motion.div>
             <TimeUnit value={timeRemaining.minutes} label="MIN" />
             <motion.div
-              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center -mx-1 sm:mx-0 opacity-80 mt-3"
+              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center opacity-80 mt-3"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1, repeat: Infinity }}
             >:</motion.div>
@@ -119,9 +305,9 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
 };
 
 const TimeUnit = ({ value, label }: { value: number, label: string }) => (
-  <div className="flex flex-col items-center mx-1 sm:mx-2">
+  <div className="flex flex-col items-center">
     <motion.div 
-      className="text-xl sm:text-2xl lg:text-3xl font-bold"
+      className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold"
       animate={{ 
         color: [
           'rgba(255, 255, 255, 0.9)',
@@ -147,7 +333,7 @@ const TimeUnit = ({ value, label }: { value: number, label: string }) => (
     >
       {value.toString().padStart(2, '0')}
     </motion.div>
-    <div className="text-sm font-bold text-mauve-light tracking-wider mt-1">{label}</div>
+    <div className="text-xs sm:text-sm md:text-base font-bold text-mauve-light tracking-wider mt-1">{label}</div>
   </div>
 );
 
@@ -168,6 +354,13 @@ interface TerminalProps {
 // OpenAI utilities are imported from '../../utils/openai'
 
 export function Terminal({ config, onCommandExecuted }: TerminalProps) {
+  // Set window.contractAddress safely in useEffect (client-side only)
+  useEffect(() => {
+    if (!window.contractAddress) {
+      window.contractAddress = config.CONTRACT_ADDRESS;
+    }
+  }, [config.CONTRACT_ADDRESS]);
+  
   const onTerminalExit = () => {
     // Check if parent component is App and notify it when contract should be revealed
     if (window && window.parent) {
@@ -179,7 +372,6 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
   // State
   const [userInput, setUserInput] = useState('');
   const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
-  const [contractAddress, setContractAddress] = useState('[     REDACTED     ]');
   const [showContractReveal, setShowContractReveal] = useState(false);
   const [revealStage, setRevealStage] = useState(0);
   const [terminalMinimized, setTerminalMinimized] = useState(false);
@@ -267,7 +459,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     return baseMessages;
   }, [now, config.DISPLAY.DATE_FULL, config.RELEASE_DATE]);
 
-  // Contract teaser displayed when not revealed
+  // Contract teaser is now an inline constant
   const contractTeaser = "[     REDACTED     ]";
 
   // Enhanced scrollbar auto-hide effect specifically for console output
@@ -381,7 +573,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     // When countdown reaches zero, reveal contract
     if (isReleaseTime && !showContractReveal) {
       setShowContractReveal(true);
-      setContractAddress(config.CONTRACT_ADDRESS);
+      // contractAddressDisplay is already set via the other useEffect
     }
     
     // Force window to top when component mounts
@@ -415,10 +607,8 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     }
   }, [terminalMinimized]);
 
-  // Default contract state from CONFIG
-  useEffect(() => {
-    setContractAddress(config.CONTRACT_ADDRESS);
-  }, [config.CONTRACT_ADDRESS]);
+  // We don't need this useEffect anymore since we're using contractAddressDisplay
+  // which is already initialized and updated in another useEffect
 
   // Random glitch effect for contract address
   useEffect(() => {
@@ -430,7 +620,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
   }, [glitchAmount]);
 
   return (
-    <div className="terminal-container max-w-lg w-full mx-auto">
+    <div className="terminal-container max-w-4xl w-full mx-auto">
       {!terminalMinimized && (
         <motion.div 
           ref={terminalRef}
@@ -687,28 +877,18 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
               }}
             >
               $ Contract address: <span className={showContractReveal ? "bg-green-500/30 px-1" : "bg-mauve/20 px-1"}>
-                {showContractReveal ? contractAddress : contractTeaser}
+                {showContractReveal ? window.contractAddress : contractTeaser}
               </span>
             </motion.div>
             
-            <motion.div 
-              className="mt-2 text-mauve/50 text-left"
-              animate={{
-                opacity: [0.4, 0.7, 0.4]
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              $ Access blocked until: {config.DISPLAY.DATE_SHORT} | {config.DISPLAY.TIME}
-            </motion.div>
-            
             {/* Prominent countdown timer */}
-            <div className="mt-6 mb-6">
+            <div className="mt-4 mb-6">
               <div className="text-center">
-                <div className="scale-110 transform mb-8">
+                <div className="transform mb-8 w-full max-w-3xl mx-auto">
                   <DecryptionTimer targetDate={config.RELEASE_DATE} />
                 </div>
                 <motion.div 
-                  className="uppercase tracking-[0.3em] text-lg sm:text-xl md:text-2xl text-white/90 font-orbitron mb-6 font-bold whitespace-nowrap overflow-hidden text-center"
+                  className="uppercase tracking-[0.3em] text-lg sm:text-xl md:text-2xl text-white/90 font-orbitron mb-4 font-bold whitespace-nowrap overflow-hidden text-center"
                   animate={{
                     opacity: [0.8, 1, 0.8],
                     scale: [1, 1.03, 1],
@@ -727,28 +907,9 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
               </div>
             </div>
             
-            {/* Console output display (merged with AI chat responses) - only this part should scroll */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                boxShadow: [
-                  'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 2px rgba(157, 78, 221, 0.3)',
-                  'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 8px rgba(157, 78, 221, 0.5)',
-                  'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 2px rgba(157, 78, 221, 0.3)'
-                ]
-              }}
-              transition={{ 
-                duration: 0.5, 
-                boxShadow: {
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }
-              }}
-              className="relative mt-3 rounded-md overflow-hidden"
-            >
+            {/* Combined console output + input field */}
+            <div className="flex flex-col space-y-0 rounded-md overflow-hidden relative border border-mauve/30">
+              
               {/* Animated grid overlay effect */}
               <div className="absolute inset-0 pointer-events-none z-0"
                 style={{
@@ -780,251 +941,414 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 />
               ))}
               
-              <div 
-                ref={consoleOutputRef} 
-                className="mt-0 text-green-400/80 overflow-y-auto overflow-x-hidden h-[180px] max-h-[25vh] py-2 text-left custom-scrollbar console-output relative z-10"
-                style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
-                  background: 'rgba(0, 0, 0, 0.6)',
-                  boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)',
-                  borderRadius: '4px',
-                  border: '1px solid rgba(157, 78, 221, 0.3)'
-                }}
-              >
-              {consoleOutput.map((output, i) => {
-                // Check the type of message to apply appropriate styling
-                const isUserInput = output.startsWith('> ');
-                const isError = output.startsWith('Error:');
-                const isAI = output.startsWith('[AI]');
-                
-                // Easter egg responses by category
-                const isAccessGranted = !isUserInput && !isError && !isAI && 
-                  (output.includes('ACCESS GRANTED') ||
-                   output.includes('EARLY ACCESS PROTOCOL ACTIVATED'));
-                
-                const isEmergencyOverride = !isUserInput && !isError && !isAI && !isAccessGranted &&
-                  (output.includes('EMERGENCY OVERRIDE INITIATED') ||
-                   output.includes('ADMINISTRATOR'));
-                   
-                const isWarning = !isUserInput && !isError && !isAI && !isEmergencyOverride && !isAccessGranted &&
-                  (output.includes('LEVEL: CRITICAL') ||
-                   output.includes('WARNING') ||
-                   output.includes('COMPROMISED'));
-                
-                const isPositive = !isUserInput && !isError && !isAI && !isEmergencyOverride && !isWarning &&
-                  (output.includes('SYSTEM SCAN INITIATED') || 
-                   output.includes('RUNNING FULL SYSTEM DIAGNOSTIC'));
-                
-                // Check for and activate special effects
-                if (isAccessGranted && !easterEggActive) {
-                  setEasterEggActive(true);
-                  // Auto-disable after some time
-                  setTimeout(() => setEasterEggActive(false), 8000);
-                }
-                
-                if ((isEmergencyOverride || isWarning) && !glitchActive) {
-                  setGlitchActive(true);
-                  // Auto-disable after some time
-                  setTimeout(() => setGlitchActive(false), 5000);
-                }
-                
-                return (
-                  <div 
-                    key={i} 
-                    className={`mb-1 break-words whitespace-pre-wrap ${isUserInput ? '' : isAI ? 'ml-2' : isError ? '' : 'ml-1'}`}
-                  >
-                    <span 
-                      className={
-                        isUserInput ? 'console-user-input console-prompt' : 
-                        isError ? 'console-error' : 
-                        isAI ? 'console-ai-response' : 
-                        isAccessGranted ? 'console-success font-bold' :
-                        isEmergencyOverride ? 'console-error font-bold' :
-                        isWarning ? 'console-warning' :
-                        isPositive ? 'console-success' :
-                        'text-teal-200/90'
-                      }
-                    >
-                      {isAI && output.startsWith('[AI] Processing...') ? (
-                        <span className="typing-animation">{output}</span>
-                      ) : (
-                        output
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-              </div>
-            </motion.div>
-            {consoleOutput.length === 0 && (
-                <div className="text-mauve-light/80 text-xs py-2 px-1">
-                  <div className="flex items-center mb-2">
-                    <span className="text-cyan-400 mr-2">▓▒░</span>
-                    <motion.span 
-                      className="text-cyan-400/90 font-mono font-bold tracking-wide bg-gradient-to-r from-cyan-400 via-white to-cyan-400 text-transparent bg-clip-text"
-                      animate={{
-                        backgroundPosition: ['0% center', '100% center']
-                      }}
-                      transition={{
-                        duration: 6,
-                        repeat: Infinity,
-                        repeatType: 'reverse'
-                      }}
-                    >
-                      DEGENDUEL TERMINAL v4.2.0
-                    </motion.span> 
-                    <span className="text-cyan-400 ml-2">░▒▓</span>
-                  </div>
-                  
-                  <motion.div 
-                    className="mb-1.5 border-l-2 border-mauve/30 pl-2"
-                    animate={{ 
-                      borderColor: ["rgba(157, 78, 221, 0.3)", "rgba(157, 78, 221, 0.6)", "rgba(157, 78, 221, 0.3)"] 
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <span className="text-yellow-400/90">SYS_INIT:</span> <span className="text-gray-400">Trenches Revival Protocol is loading...</span>
-                  </motion.div>
-                  
-                  <motion.div 
-                    className="mb-1.5 border-l-2 border-mauve/30 pl-2"
-                    animate={{ 
-                      borderColor: ["rgba(157, 78, 221, 0.3)", "rgba(157, 78, 221, 0.6)", "rgba(157, 78, 221, 0.3)"] 
-                    }}
-                    transition={{ duration: 2, delay: 0.3, repeat: Infinity }}
-                  >
-                    <span className="text-green-400/90">READY:</span> <span className="text-gray-400">Didi is ready to meet the Degens.</span>
-                  </motion.div>
-                  
-                  <div className="mb-1.5 border-l-2 border-red-400/30 pl-2">
-                    <span className="text-red-400/90">WARNING:</span> <span className="text-gray-400">Unauthorized access will be punished harshly by @BranchManager69</span>
-                  </div>
-                  
-                  <div className="mt-3 mb-2 text-gray-400/90 flex justify-between items-center">
-                    <span>Execute <span className="text-cyan-400">help</span> for command list</span>
-                  </div>
-                </div>
-              )}
-            
-            {/* Unified user input area - always visible at bottom */}
-            <div className="mt-4 relative">
-              <motion.div 
-                className="relative overflow-hidden"
-                initial={{ opacity: 0.8 }}
+              {/* CONSOLE OUTPUT AREA */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ 
-                  opacity: 1,
+                  opacity: 1, 
+                  y: 0,
                   boxShadow: [
-                    '0 0 2px rgba(157, 78, 221, 0.3)',
-                    '0 0 8px rgba(157, 78, 221, 0.5)',
-                    '0 0 2px rgba(157, 78, 221, 0.3)'
+                    'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 2px rgba(157, 78, 221, 0.3)',
+                    'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 8px rgba(157, 78, 221, 0.5)',
+                    'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 2px rgba(157, 78, 221, 0.3)'
                   ]
                 }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-              {/* Animated scan line effect */}
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-b from-transparent via-mauve/10 to-transparent z-10 pointer-events-none"
-                animate={{ 
-                  y: ['-100%', '200%'] 
-                }}
                 transition={{ 
-                  duration: 2, 
-                  ease: "linear", 
-                  repeat: Infinity,
-                  repeatType: "loop" 
+                  duration: 0.5, 
+                  boxShadow: {
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }
                 }}
-                style={{ height: '10px', opacity: 0.6 }}
-              />
+                className="relative rounded-t-md"
+              >
+                <div 
+                  ref={consoleOutputRef} 
+                  className="text-green-400/80 overflow-y-auto overflow-x-hidden h-[250px] max-h-[35vh] py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full"
+                  style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)',
+                  }}
+                >
+                {consoleOutput.length === 0 ? (
+                  // Initial State - System messages and ASCII art
+                  <div className="text-mauve-light/90 text-xs py-1">
+                    {/* ASCII art title with animated scan line */}
+                    <div className="relative font-mono text-[10px] sm:text-xs leading-tight mt-1 mb-4 text-center overflow-hidden">
+                      <pre className="text-mauve bg-black/30 py-2 px-1 rounded border border-mauve/20 inline-block mx-auto max-w-full overflow-x-auto">
+{`    ____  _________________ _   ____  __  ____________
+   / __ \\/ ____/ ____/ __ \\ | / / / / / / / / ____/ / /
+  / / / / __/ / / __/ / / / |/ / / / / / / / __/ / / 
+ / /_/ / /___/ /_/ / /_/ / /|  / /_/ / /_/ / /___/ /___
+/_____/_____/\\____/\\____/_/ |_/\\____/\\____/_____/_____/
+                                                   `}
+                      </pre>
+                      
+                      {/* Animated scan line */}
+                      <motion.div 
+                        className="absolute left-0 w-full h-[1px] bg-mauve/60"
+                        animate={{ top: ["0%", "100%"] }}
+                        transition={{ 
+                          duration: 2.5, 
+                          repeat: Infinity, 
+                          ease: "linear" 
+                        }}
+                      />
+                      
+                      {/* Version tag with animation */}
+                      <motion.div 
+                        className="absolute right-4 top-0 font-mono text-[8px] bg-mauve/20 px-1 rounded"
+                        animate={{ 
+                          color: ["rgba(157, 78, 221, 0.7)", "rgba(255, 255, 255, 0.9)", "rgba(157, 78, 221, 0.7)"] 
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        v4.2.0
+                      </motion.div>
+                    </div>
+                    
+                    {/* Enhanced terminal intro with tech styling */}
+                    <div className="mb-4 bg-black/20 border border-mauve/20 rounded-md p-2 relative">
+                      {/* Corner brackets for cyber aesthetic */}
+                      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-mauve opacity-70"></div>
+                      <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-mauve opacity-70"></div>
+                      <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-mauve opacity-70"></div>
+                      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-mauve opacity-70"></div>
+                      
+                      <div className="text-center mb-2 flex items-center justify-center">
+                        <div className="h-[1px] bg-gradient-to-r from-transparent via-mauve/30 to-transparent flex-grow mr-2"></div>
+                        <span className="text-white/80 font-bold text-[11px]">SYSTEM STATUS</span>
+                        <div className="h-[1px] bg-gradient-to-r from-transparent via-mauve/30 to-transparent flex-grow ml-2"></div>
+                      </div>
+                      
+                      {/* Animated typing for system messages */}
+                      <div className="space-y-1.5 w-full max-w-full">
+                        {/* Sequence 1 - SYS_INIT */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3, delay: 0.1 }}
+                          className="flex items-center"
+                        >
+                          <div className="w-[80px] sm:w-[90px] flex-shrink-0 text-yellow-400/90 font-mono font-bold mr-1">SYS_INIT:</div>
+                          <motion.div
+                            className="text-gray-300 overflow-hidden whitespace-nowrap flex-grow"
+                            initial={{ width: 0 }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 1, delay: 0.3 }}
+                          >
+                            Trenches Revival Protocol initialized
+                          </motion.div>
+                        </motion.div>
+                        
+                        {/* Sequence 2 - CHECKING */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3, delay: 1.2 }}
+                          className="flex items-center"
+                        >
+                          <div className="w-[80px] sm:w-[90px] flex-shrink-0 text-blue-400/90 font-mono font-bold mr-1">CHECKING:</div>
+                          <motion.div
+                            className="text-gray-300 overflow-hidden whitespace-nowrap flex-grow"
+                            initial={{ width: 0 }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 1, delay: 1.4 }}
+                          >
+                            Security protocols active [■■■■■■■■■■] 100%
+                          </motion.div>
+                        </motion.div>
+                        
+                        {/* Sequence 3 - READY */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3, delay: 2.4 }}
+                          className="flex items-center"
+                        >
+                          <div className="w-[80px] sm:w-[90px] flex-shrink-0 text-green-400/90 font-mono font-bold mr-1">READY:</div>
+                          <motion.div
+                            className="text-gray-300 overflow-hidden whitespace-nowrap flex-grow"
+                            initial={{ width: 0 }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 1, delay: 2.6 }}
+                          >
+                            Didi is ready to meet the Degens
+                          </motion.div>
+                        </motion.div>
+                        
+                        {/* Sequence 4 - WARNING */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3, delay: 3.6 }}
+                          className="flex items-center text-red-400/90"
+                        >
+                          <div className="w-[80px] sm:w-[90px] flex-shrink-0 font-mono font-bold mr-1">WARNING:</div>
+                          <motion.div
+                            className="overflow-hidden whitespace-nowrap flex-grow"
+                            initial={{ width: 0 }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 1.2, delay: 3.8 }}
+                          >
+                            Unauthorized access will be punished by @BranchManager69
+                          </motion.div>
+                        </motion.div>
+                      </div>
+                    </div>
+                    
+                    {/* Command hint with animated cursor */}
+                    <motion.div 
+                      className="flex items-center justify-between mt-3 bg-black/30 p-1.5 rounded border border-mauve/10"
+                      animate={{ borderColor: ['rgba(157, 78, 221, 0.1)', 'rgba(157, 78, 221, 0.3)', 'rgba(157, 78, 221, 0.1)'] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    >
+                      <div className="text-gray-400/90 flex items-center text-xs">
+                        <span className="text-mauve-light mr-1.5">Type</span>
+                        <motion.span 
+                          className="text-cyan-400 font-mono px-1 rounded border border-cyan-400/20 bg-cyan-400/5"
+                          whileHover={{ 
+                            backgroundColor: "rgba(34, 211, 238, 0.1)",
+                            scale: 1.05
+                          }}
+                        >
+                          help
+                        </motion.span>
+                        <span className="text-mauve-light ml-1.5">for command list</span>
+                      </div>
+                      <motion.div
+                        animate={{ opacity: [1, 0, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                        className="w-2 h-3 bg-mauve-light/70"
+                      />
+                    </motion.div>
+                  </div>
+                ) : (
+                  // Map console output when we have entries
+                  consoleOutput.map((output, i) => {
+                    // Check the type of message to apply appropriate styling
+                    const isUserInput = output.startsWith('> ');
+                    const isError = output.startsWith('Error:');
+                    const isAI = output.startsWith('[AI]');
+                    
+                    // Easter egg responses by category
+                    const isAccessGranted = !isUserInput && !isError && !isAI && 
+                      (output.includes('ACCESS GRANTED') ||
+                      output.includes('EARLY ACCESS PROTOCOL ACTIVATED'));
+                    
+                    const isEmergencyOverride = !isUserInput && !isError && !isAI && !isAccessGranted &&
+                      (output.includes('EMERGENCY OVERRIDE INITIATED') ||
+                      output.includes('ADMINISTRATOR'));
+                      
+                    const isWarning = !isUserInput && !isError && !isAI && !isEmergencyOverride && !isAccessGranted &&
+                      (output.includes('LEVEL: CRITICAL') ||
+                      output.includes('WARNING') ||
+                      output.includes('COMPROMISED'));
+                    
+                    const isPositive = !isUserInput && !isError && !isAI && !isEmergencyOverride && !isWarning &&
+                      (output.includes('SYSTEM SCAN INITIATED') || 
+                      output.includes('RUNNING FULL SYSTEM DIAGNOSTIC'));
+                    
+                    // Check for and activate special effects
+                    if (isAccessGranted && !easterEggActive) {
+                      setEasterEggActive(true);
+                      // Auto-disable after some time
+                      setTimeout(() => setEasterEggActive(false), 8000);
+                    }
+                    
+                    if ((isEmergencyOverride || isWarning) && !glitchActive) {
+                      setGlitchActive(true);
+                      // Auto-disable after some time
+                      setTimeout(() => setGlitchActive(false), 5000);
+                    }
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        className={`mb-1 break-words whitespace-pre-wrap ${isUserInput ? '' : isAI ? 'ml-2' : isError ? '' : 'ml-1'}`}
+                      >
+                        <span 
+                          className={
+                            isUserInput ? 'console-user-input console-prompt' : 
+                            isError ? 'console-error' : 
+                            isAI ? 'console-ai-response' : 
+                            isAccessGranted ? 'console-success font-bold' :
+                            isEmergencyOverride ? 'console-error font-bold' :
+                            isWarning ? 'console-warning' :
+                            isPositive ? 'console-success' :
+                            'text-teal-200/90'
+                          }
+                        >
+                          {isAI && output.startsWith('[AI] Processing...') ? (
+                            <span className="typing-animation">{output}</span>
+                          ) : (
+                            output
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+                </div>
+              </motion.div>
               
-              {/* Animated border glow effect */}
-              <motion.div 
-                className="absolute inset-0 rounded pointer-events-none"
-                animate={{ 
-                  boxShadow: [
-                    'inset 0 0 5px rgba(157, 78, 221, 0.3)',
-                    'inset 0 0 15px rgba(157, 78, 221, 0.7)',
-                    'inset 0 0 5px rgba(157, 78, 221, 0.3)'
-                  ] 
-                }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-              
-              <div className="flex items-center bg-gradient-to-r from-mauve/10 to-darkGrey-dark/50 rounded px-2 py-1.5 border border-mauve/30 focus-within:border-mauve/70 focus-within:shadow focus-within:shadow-mauve/40 transition-all duration-300 hover:border-mauve/50 relative z-20">
+              {/* Status indicator & input field - directly attached to console */}
+              <div className="relative border-t border-mauve/30 bg-black/40">
+                {/* Security status indicator */}
+                <div className="absolute top-0 right-0 transform -translate-y-full mr-2">
+                  <div 
+                    className="text-[9px] font-mono tracking-widest py-0.5 px-2 rounded-t-sm bg-mauve/10 text-mauve-light border border-mauve/30 border-b-0 inline-flex items-center"
+                  >
+                    <motion.span 
+                      className="inline-block h-1.5 w-1.5 bg-green-400 mr-1.5 rounded-full"
+                      animate={{ opacity: [0.7, 1, 0.7] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                    <span className="text-white/90">SECURE-CHANNEL-ACTIVE</span>
+                  </div>
+                </div>
+                
+                {/* Input field */}
                 <motion.div 
-                  className="flex items-center mr-2"
+                  className="relative overflow-hidden"
+                  initial={{ opacity: 0.8 }}
                   animate={{ 
-                    color: [
-                      'rgba(157, 78, 221, 0.7)',
-                      'rgba(157, 78, 221, 1)',
-                      'rgba(157, 78, 221, 0.7)'
+                    opacity: 1,
+                    boxShadow: [
+                      '0 0 2px rgba(157, 78, 221, 0.3)',
+                      '0 0 8px rgba(157, 78, 221, 0.5)',
+                      '0 0 2px rgba(157, 78, 221, 0.3)'
                     ]
                   }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  transition={{ duration: 3, repeat: Infinity }}
                 >
-                  <motion.span 
-                    className="text-mauve-light font-mono font-bold" 
+                  {/* Animated scan line effect */}
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-b from-transparent via-mauve/10 to-transparent z-10 pointer-events-none"
                     animate={{ 
-                      opacity: [1, 0.4, 1],
-                      textShadow: [
-                        '0 0 3px rgba(157, 78, 221, 0.3)',
-                        '0 0 8px rgba(157, 78, 221, 0.7)',
-                        '0 0 3px rgba(157, 78, 221, 0.3)'
-                      ]
+                      y: ['-100%', '200%'] 
                     }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    &gt;_
-                  </motion.span>
-                </motion.div>
-                
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={userInput}
-                  onChange={(e) => {
-                    setUserInput(e.target.value);
-                    // Add glitch effect when typing
-                    if (!glitchActive && Math.random() > 0.9) {
-                      setGlitchActive(true);
-                      setTimeout(() => setGlitchActive(false), 150);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                  if (e.key === 'Enter' && userInput.trim()) {
-                    // Process user command
-                    const command = userInput.trim();
-                    setUserInput('');
+                    transition={{ 
+                      duration: 2, 
+                      ease: "linear", 
+                      repeat: Infinity,
+                      repeatType: "loop" 
+                    }}
+                    style={{ height: '10px', opacity: 0.6 }}
+                  />
+                  
+                  {/* Animated border glow effect */}
+                  <motion.div 
+                    className="absolute inset-0 rounded pointer-events-none"
+                    animate={{ 
+                      boxShadow: [
+                        'inset 0 0 5px rgba(157, 78, 221, 0.3)',
+                        'inset 0 0 15px rgba(157, 78, 221, 0.7)',
+                        'inset 0 0 5px rgba(157, 78, 221, 0.3)'
+                      ] 
+                    }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  />
+                  
+                  <div className="flex items-center bg-gradient-to-r from-mauve/10 to-darkGrey-dark/50 px-2 py-1.5 border-0 focus-within:shadow focus-within:shadow-mauve/40 transition-all duration-300 relative z-20 w-full">
+                    <motion.div 
+                      className="flex items-center mr-2"
+                      animate={{ 
+                        color: [
+                          'rgba(157, 78, 221, 0.7)',
+                          'rgba(157, 78, 221, 1)',
+                          'rgba(157, 78, 221, 0.7)'
+                        ]
+                      }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      <motion.span 
+                        className="text-mauve-light font-mono font-bold" 
+                        animate={{ 
+                          opacity: [1, 0.4, 1],
+                          textShadow: [
+                            '0 0 3px rgba(157, 78, 221, 0.3)',
+                            '0 0 8px rgba(157, 78, 221, 0.7)',
+                            '0 0 3px rgba(157, 78, 221, 0.3)'
+                          ]
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        &gt;_
+                      </motion.span>
+                    </motion.div>
                     
-                    // Command responses
-                    const commandMap: Record<string, string> = {
-                      help: "Available commands: help, status, ping, decrypt, access, about, contract, clear\nAI: Type any question to speak with the AI assistant.",
-                      status: "System status: ENCRYPTED | Awaiting authorization.",
-                      ping: "Connection established. Signal strength: STRONG.",
-                      decrypt: "Decryption failed: Missing authentication key. Try again after launch.",
-                      "01-rh4-t5p": ">>> SYSTEM SCAN INITIATED <<<\n\n█████████████████████████████████ 100%\n\nSECURITY LEVEL: CRITICAL\nDIAGNOSTIC: Restricted memory sector breach detected\nTARGET: Sector 447\nRECOMMENDED ACTION: Execute sector-breach-447 protocol",
-                      diagnostics: ">>> RUNNING FULL SYSTEM DIAGNOSTIC <<<\n\n[Systems Check]:  ONLINE\n[Security]:       WARNING\n[Access Control]: COMPROMISED\n[Protocol]:       sector-breach activated\n\nANOMALY DETECTED: Unauthorized entry point at sector 447",
-                      "sector-breach-447": ">>> EMERGENCY OVERRIDE INITIATED <<<\n\nACCESS LEVEL: ADMINISTRATOR\nSTATUS: GRANTED\nCODE: DEGEN-PHOENIX-447\n\n>>> EARLY ACCESS PROTOCOL ACTIVATED <<<\nGenesis position confirmed. Store this access code securely.\n\nTHIS MESSAGE IS CLASSIFIED. TERMINAL ACCESS WILL BE WIPED.",
-                      access: "Access denied: Clearance level insufficient.",
-                      about: "DegenDuel: Next-generation competitive platform for crypto enthusiasts.",
-                      contract: "Contract access restricted until official launch date.",
-                      "scan-network": "Scanning network... Network status: 245 nodes active. All systems operational.",
-                      "check-wallet-balance": "Wallet balance check initiated. Current balance: 0.00 DEGEN tokens. Tokens will be available after launch.",
-                      "decrypt-partial --level=1": "Partial decryption successful (Level 1). Fragment recovered: 'Community allocation: 50%, Launch mechanism: Dutch auction'",
-                      "decrypt-partial --level=2": "Partial decryption successful (Level 2). Fragment recovered: 'Initial liquidity: 30% locked for 6 months. Anti-bot measures active.'",
-                      "decrypt-partial --level=3": "Partial decryption successful (Level 3). Fragment recovered: 'Token utility: Governance + Staking rewards. Buyback mechanism initialized.'",
-                      "view-roadmap": "DegenDuel Roadmap:\nPhase 1: Initial Launch\nPhase 2: Tournament system\nPhase 3: Partner integrations\nPhase 4: Mobile application\nPhase 5: Cross-chain expansion",
-                      "load-preview": "Loading preview... Preview access restricted. Join Discord for early preview eligibility.",
-                      "check-whitelist": "Whitelist status: Not found. Visit Discord for whitelist opportunities.",
-                      "prepare-launch-sequence": "Launch sequence preparation in progress. T-minus 15 minutes to protocol activation."
-                    };
+                    {/* Animated placeholder text, visible only when input is empty */}
+                    {userInput === '' && (
+                      <div className="absolute left-9 pointer-events-none text-mauve-light/70 font-mono text-sm">
+                        {/* Typing animation that only plays once */}
+                        <motion.div
+                          className="inline-block overflow-hidden whitespace-nowrap"
+                          initial={{ width: 0 }}
+                          animate={{ width: '100%' }}
+                          transition={{
+                            duration: 1.5,
+                            ease: "easeInOut",
+                            repeat: 1,
+                            repeatDelay: 15, // Long delay before repeating
+                            repeatType: "loop"
+                          }}
+                        >
+                          EXECUTE COMMAND::_
+                        </motion.div>
+                      </div>
+                    )}
                     
-                    // Add command to output
-                    let response: string;
-                    
-                    // For the sector-breach command, add ASCII art
-                    if (command.toLowerCase() === 'sector-breach-447') {
-                      const accessGrantedArt = `
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={userInput}
+                      onChange={(e) => {
+                        setUserInput(e.target.value);
+                        // Add glitch effect when typing
+                        if (!glitchActive && Math.random() > 0.9) {
+                          setGlitchActive(true);
+                          setTimeout(() => setGlitchActive(false), 150);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && userInput.trim()) {
+                          // Process user command
+                          const command = userInput.trim();
+                          setUserInput('');
+                          
+                          // Command responses
+                          const commandMap: Record<string, string> = {
+                            help: "Available commands: help, status, ping, decrypt, access, about, contract, clear\nAI: Type any question to speak with the AI assistant.",
+                            status: "System status: ENCRYPTED | Awaiting authorization.",
+                            ping: "Connection established. Signal strength: STRONG.",
+                            decrypt: "Decryption failed: Missing authentication key. Try again after launch.",
+                            "01-rh4-t5p": ">>> SYSTEM SCAN INITIATED <<<\n\n█████████████████████████████████ 100%\n\nSECURITY LEVEL: CRITICAL\nDIAGNOSTIC: Restricted memory sector breach detected\nTARGET: Sector 447\nRECOMMENDED ACTION: Execute sector-breach-447 protocol",
+                            diagnostics: ">>> RUNNING FULL SYSTEM DIAGNOSTIC <<<\n\n[Systems Check]:  ONLINE\n[Security]:       WARNING\n[Access Control]: COMPROMISED\n[Protocol]:       sector-breach activated\n\nANOMALY DETECTED: Unauthorized entry point at sector 447",
+                            "sector-breach-447": ">>> EMERGENCY OVERRIDE INITIATED <<<\n\nACCESS LEVEL: ADMINISTRATOR\nSTATUS: GRANTED\nCODE: DEGEN-PHOENIX-447\n\n>>> EARLY ACCESS PROTOCOL ACTIVATED <<<\nGenesis position confirmed. Store this access code securely.\n\nTHIS MESSAGE IS CLASSIFIED. TERMINAL ACCESS WILL BE WIPED.",
+                            access: "Access denied: Clearance level insufficient.",
+                            about: "DegenDuel: Next-generation competitive platform for crypto enthusiasts.",
+                            contract: "Contract access restricted until official launch date.",
+                            "scan-network": "Scanning network... Network status: 245 nodes active. All systems operational.",
+                            "check-wallet-balance": "Wallet balance check initiated. Current balance: 0.00 DEGEN tokens. Tokens will be available after launch.",
+                            "decrypt-partial --level=1": "Partial decryption successful (Level 1). Fragment recovered: 'Community allocation: 50%, Launch mechanism: Dutch auction'",
+                            "decrypt-partial --level=2": "Partial decryption successful (Level 2). Fragment recovered: 'Initial liquidity: 30% locked for 6 months. Anti-bot measures active.'",
+                            "decrypt-partial --level=3": "Partial decryption successful (Level 3). Fragment recovered: 'Token utility: Governance + Staking rewards. Buyback mechanism initialized.'",
+                            "view-roadmap": "DegenDuel Roadmap:\nPhase 1: Initial Launch\nPhase 2: Tournament system\nPhase 3: Partner integrations\nPhase 4: Mobile application\nPhase 5: Cross-chain expansion",
+                            "load-preview": "Loading preview... Preview access restricted. Join Discord for early preview eligibility.",
+                            "check-whitelist": "Whitelist status: Not found. Visit Discord for whitelist opportunities.",
+                            "prepare-launch-sequence": "Launch sequence preparation in progress. T-minus 15 minutes to protocol activation."
+                          };
+                          
+                          // Add command to output
+                          let response: string;
+                          
+                          // For the sector-breach command, add ASCII art
+                          if (command.toLowerCase() === 'sector-breach-447') {
+                            const accessGrantedArt = `
    _____                             _____                    _           _ 
   / ____|                           / ____|                  | |         | |
  | |     ___  _ __ ___  _ __  _   _| |  __ _ __ __ _ _ __ ___| |_ ___  __| |
@@ -1034,166 +1358,152 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                        | |     __/ |                                        
                        |_|    |___/                                         
 `;
-                      
-                      setConsoleOutput(prev => [
-                        ...prev, 
-                        `> ${command}`, 
-                        accessGrantedArt,
-                        commandMap[command.toLowerCase()]
-                      ]);
-                    } else if (command.toLowerCase() === 'clear') {
-                      setConsoleOutput([]);
-                      return;
-                    } else if (command.toLowerCase() in commandMap) {
-                      response = commandMap[command.toLowerCase()];
-                      setConsoleOutput(prev => [...prev, `> ${command}`, response]);
-                    } else {
-                      // Check if it's one of the partial decrypt or other special commands
-                      const baseCommand = command.toLowerCase().split(' ')[0];
-                      if (baseCommand in commandMap || 
-                        ['decrypt-partial', 'scan-network', 'check-wallet-balance', 'view-roadmap',
-                         'load-preview', 'check-whitelist', 'prepare-launch-sequence'].includes(baseCommand)) {
-                        // It's a recognized command
-                        response = `Error: Command '${command}' not recognized. Type 'help' for available commands.`;
-                        setConsoleOutput(prev => [...prev, `> ${command}`, response]);
-                      } else {
-                        // Not a recognized command - pass to AI handler
-                        setConsoleOutput(prev => [...prev, `> ${command}`]);
-                        setConsoleOutput(prev => [...prev, `[AI] Processing...`]);
-                        
-                        // Get AI response
-                        const processingMessage = `[AI] Processing...`;
-                        
-                        // Clear duplicate processing message
-                        setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
-                        
-                        // Reference to detect user scroll
-                        let userHasScrolled = false;
-                        const detectUserScroll = () => {
-                          if (consoleOutputRef.current) {
-                            userHasScrolled = true;
-                            // Remove the scroll listener after detecting user interaction
-                            consoleOutputRef.current.removeEventListener('wheel', detectUserScroll);
-                            consoleOutputRef.current.removeEventListener('touchmove', detectUserScroll);
-                          }
-                        };
-                        
-                        // Add scroll detection
-                        if (consoleOutputRef.current) {
-                          consoleOutputRef.current.addEventListener('wheel', detectUserScroll);
-                          consoleOutputRef.current.addEventListener('touchmove', detectUserScroll);
-                        }
-                        
-                        setTimeout(async () => {
-                          try {
-                            // Remove event listeners
-                            if (consoleOutputRef.current) {
-                              consoleOutputRef.current.removeEventListener('wheel', detectUserScroll);
-                              consoleOutputRef.current.removeEventListener('touchmove', detectUserScroll);
-                            }
                             
-                            // Remove the "Processing..." message
-                            setConsoleOutput(prev => prev.filter(msg => msg !== processingMessage));
-                            
-                            const messages: AIMessage[] = [
-                              {
-                                role: 'user',
-                                content: command
+                            setConsoleOutput(prev => [
+                              ...prev, 
+                              `> ${command}`, 
+                              accessGrantedArt,
+                              commandMap[command.toLowerCase()]
+                            ]);
+                          } else if (command.toLowerCase() === 'clear') {
+                            setConsoleOutput([]);
+                            return;
+                          } else if (command.toLowerCase() in commandMap) {
+                            response = commandMap[command.toLowerCase()];
+                            setConsoleOutput(prev => [...prev, `> ${command}`, response]);
+                          } else {
+                            // Check if it's one of the partial decrypt or other special commands
+                            const baseCommand = command.toLowerCase().split(' ')[0];
+                            if (baseCommand in commandMap || 
+                              ['decrypt-partial', 'scan-network', 'check-wallet-balance', 'view-roadmap',
+                               'load-preview', 'check-whitelist', 'prepare-launch-sequence'].includes(baseCommand)) {
+                              // It's a recognized command
+                              response = `Error: Command '${command}' not recognized. Type 'help' for available commands.`;
+                              setConsoleOutput(prev => [...prev, `> ${command}`, response]);
+                            } else {
+                              // Not a recognized command - pass to AI handler
+                              setConsoleOutput(prev => [...prev, `> ${command}`]);
+                              setConsoleOutput(prev => [...prev, `[AI] Processing...`]);
+                              
+                              // Get AI response
+                              const processingMessage = `[AI] Processing...`;
+                              
+                              // Clear duplicate processing message
+                              setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
+                              
+                              // Reference to detect user scroll
+                              let userHasScrolled = false;
+                              const detectUserScroll = () => {
+                                if (consoleOutputRef.current) {
+                                  userHasScrolled = true;
+                                  // Remove the scroll listener after detecting user interaction
+                                  consoleOutputRef.current.removeEventListener('wheel', detectUserScroll);
+                                  consoleOutputRef.current.removeEventListener('touchmove', detectUserScroll);
+                                }
+                              };
+                              
+                              // Add scroll detection
+                              if (consoleOutputRef.current) {
+                                consoleOutputRef.current.addEventListener('wheel', detectUserScroll);
+                                consoleOutputRef.current.addEventListener('touchmove', detectUserScroll);
                               }
-                            ];
-                            
-                            const aiResponse = await aiService.chat(messages, {
-                              context: 'trading' // Use trading context for terminal interface
-                            });
-                            
-                            // Add AI response to console without force scrolling if user has scrolled
-                            setConsoleOutput(prev => [...prev, `[AI] ${aiResponse.content}`]);
-                            
-                            // Only auto-scroll if user hasn't manually scrolled
-                            if (!userHasScrolled) {
-                              setTimeout(scrollConsoleToBottom, 10);
-                            }
-                          } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
-                            console.error('Error getting AI response:', error);
-                            setConsoleOutput(prev => prev.filter(msg => msg !== processingMessage));
-                            setConsoleOutput(prev => [...prev, `[AI] Sorry, I'm degenning right now. Check with me again later.`]);
-                            
-                            // Only auto-scroll if user hasn't manually scrolled
-                            if (!userHasScrolled) {
-                              setTimeout(scrollConsoleToBottom, 10);
+                              
+                              setTimeout(async () => {
+                                try {
+                                  // Remove event listeners
+                                  if (consoleOutputRef.current) {
+                                    consoleOutputRef.current.removeEventListener('wheel', detectUserScroll);
+                                    consoleOutputRef.current.removeEventListener('touchmove', detectUserScroll);
+                                  }
+                                  
+                                  // Remove the "Processing..." message
+                                  setConsoleOutput(prev => prev.filter(msg => msg !== processingMessage));
+                                  
+                                  const messages: AIMessage[] = [
+                                    {
+                                      role: 'user',
+                                      content: command
+                                    }
+                                  ];
+                                  
+                                  const aiResponse = await aiService.chat(messages, {
+                                    context: 'trading' // Use trading context for terminal interface
+                                  });
+                                  
+                                  // Add AI response to console without force scrolling if user has scrolled
+                                  setConsoleOutput(prev => [...prev, `[AI] ${aiResponse.content}`]);
+                                  
+                                  // Only auto-scroll if user hasn't manually scrolled
+                                  if (!userHasScrolled) {
+                                    setTimeout(scrollConsoleToBottom, 10);
+                                  }
+                                } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
+                                  console.error('Error getting AI response:', error);
+                                  setConsoleOutput(prev => prev.filter(msg => msg !== processingMessage));
+                                  setConsoleOutput(prev => [...prev, `[AI] Sorry, I'm degenning right now. Check with me again later.`]);
+                                  
+                                  // Only auto-scroll if user hasn't manually scrolled
+                                  if (!userHasScrolled) {
+                                    setTimeout(scrollConsoleToBottom, 10);
+                                  }
+                                }
+                              }, 500);
                             }
                           }
-                        }, 500);
-                      }
-                    }
-                    
-                    // Notify parent component if callback provided
-                    if (onCommandExecuted && command.toLowerCase() in commandMap) {
-                      onCommandExecuted(command, commandMap[command.toLowerCase()]);
-                    }
-                    
-                    // Scroll only the console output element, not the window
-                    const scrollConsoleToBottom = () => {
-                      if (consoleOutputRef.current) {
-                        // Save current scroll position
-                        const currentScrollTop = consoleOutputRef.current.scrollTop;
-                        const currentScrollHeight = consoleOutputRef.current.scrollHeight;
-                        const currentClientHeight = consoleOutputRef.current.clientHeight;
-                        
-                        // Only auto-scroll if user was already at bottom (or close to it)
-                        // This prevents fighting against user's manual scrolling
-                        const isNearBottom = currentScrollTop + currentClientHeight >= currentScrollHeight - 50;
-                        
-                        if (isNearBottom) {
-                          consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+                          
+                          // Notify parent component if callback provided
+                          if (onCommandExecuted && command.toLowerCase() in commandMap) {
+                            onCommandExecuted(command, commandMap[command.toLowerCase()]);
+                          }
+                          
+                          // Scroll only the console output element, not the window
+                          const scrollConsoleToBottom = () => {
+                            if (consoleOutputRef.current) {
+                              // Save current scroll position
+                              const currentScrollTop = consoleOutputRef.current.scrollTop;
+                              const currentScrollHeight = consoleOutputRef.current.scrollHeight;
+                              const currentClientHeight = consoleOutputRef.current.clientHeight;
+                              
+                              // Only auto-scroll if user was already at bottom (or close to it)
+                              // This prevents fighting against user's manual scrolling
+                              const isNearBottom = currentScrollTop + currentClientHeight >= currentScrollHeight - 50;
+                              
+                              if (isNearBottom) {
+                                consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+                              }
+                            }
+                          };
+                          
+                          // Immediate scroll attempt
+                          scrollConsoleToBottom();
+                          
+                          // One delayed attempt is enough
+                          setTimeout(scrollConsoleToBottom, 50);
                         }
-                      }
-                    };
-                    
-                    // Immediate scroll attempt
-                    scrollConsoleToBottom();
-                    
-                    // One delayed attempt is enough
-                    setTimeout(scrollConsoleToBottom, 50);
-                  }
-                }}
-                className="bg-transparent border-none outline-none text-white/95 w-full font-mono text-sm terminal-input placeholder-mauve-light/70"
-                placeholder="EXECUTE COMMAND::_"
-                style={{ 
-                  color: 'rgba(255, 255, 255, 0.95)', 
-                  caretColor: 'rgb(157, 78, 221)',
-                  textShadow: glitchActive ? '0 0 8px rgba(255, 50, 50, 0.8)' : '0 0 5px rgba(157, 78, 221, 0.6)',
-                  backgroundColor: 'rgba(20, 20, 30, 0.3)',
-                  transition: 'all 0.3s ease'
-                }}
-                autoComplete="off"
-                spellCheck="false"
-                autoFocus
-              />
+                      }}
+                      className="bg-transparent border-none outline-none text-white/95 w-full font-mono text-sm terminal-input"
+                      placeholder=""
+                      style={{ 
+                        color: 'rgba(255, 255, 255, 0.95)', 
+                        caretColor: 'rgb(157, 78, 221)',
+                        textShadow: glitchActive ? '0 0 8px rgba(255, 50, 50, 0.8)' : '0 0 5px rgba(157, 78, 221, 0.6)',
+                        backgroundColor: 'rgba(20, 20, 30, 0.3)',
+                        transition: 'all 0.3s ease'
+                      }}
+                      autoComplete="off"
+                      spellCheck="false"
+                      autoFocus
+                    />
+                  </div>
+                  
+                  {/* Terminal indicator moved above the input as a separate element */}
+                </motion.div>
               </div>
-              
-              {/* Terminal indicator below the input */}
-              <motion.div 
-                className="absolute bottom-[-12px] left-1/2 transform -translate-x-1/2 text-[9px] font-mono tracking-widest py-0.5 px-2 rounded-sm bg-black/70 text-mauve/60 border border-mauve/10 z-30"
-                animate={{
-                  opacity: [0.4, 0.8, 0.4],
-                  textShadow: [
-                    '0 0 0px rgba(157, 78, 221, 0)',
-                    '0 0 5px rgba(157, 78, 221, 0.5)',
-                    '0 0 0px rgba(157, 78, 221, 0)'
-                  ],
-                  scale: [1, 1.03, 1]
-                }}
-                transition={{ duration: 1.8, repeat: Infinity }}
-              >
-                [SECURE-CHANNEL-ACTIVE]
-              </motion.div>
-              </motion.div>
             </div>
             
-            {/* Time-gated commands */}
+            {/* Commands are now shown at the bottom of the terminal */}
             <motion.div 
-              className="mt-3 pt-2 text-left relative"
+              className="mt-5 pt-2 text-left relative"
               initial={{ opacity: 0, y: 10 }}
               animate={{ 
                 opacity: 1, 
@@ -1226,37 +1536,47 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 }}
                 style={{ height: '5px', opacity: 0.4 }}
               />
-            
-              <motion.div
-                className="text-mauve-light/70 text-xs uppercase tracking-wider mb-3 text-left"
-                animate={{
-                  textShadow: [
-                    '0 0 0px rgba(157, 78, 221, 0)',
-                    '0 0 5px rgba(157, 78, 221, 0.7)',
-                    '0 0 0px rgba(157, 78, 221, 0)'
-                  ]
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <motion.span 
-                  className="bg-mauve/20 px-2 py-1 rounded-sm border border-mauve/30"
-                  whileHover={{
-                    backgroundColor: 'rgba(157, 78, 221, 0.3)',
-                    boxShadow: '0 0 8px rgba(157, 78, 221, 0.5)'
-                  }}
+              
+              {/* Enhanced header for Available Commands with tech styling */}
+              <div className="flex items-center justify-between mb-3 bg-black/40 rounded border border-mauve/20 p-1.5 relative overflow-hidden">
+                {/* Add corner brackets for tech look */}
+                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-mauve"></div>
+                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-mauve"></div>
+                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-mauve"></div>
+                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-mauve"></div>
+                
+                <motion.div
+                  className="text-mauve-light/90 text-xs uppercase tracking-wider text-left font-bold flex items-center"
                   animate={{
-                    borderColor: [
-                      'rgba(157, 78, 221, 0.2)',
-                      'rgba(157, 78, 221, 0.4)',
-                      'rgba(157, 78, 221, 0.2)'
+                    textShadow: [
+                      '0 0 0px rgba(157, 78, 221, 0)',
+                      '0 0 5px rgba(157, 78, 221, 0.7)',
+                      '0 0 0px rgba(157, 78, 221, 0)'
                     ]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <motion.span 
+                    className="inline-block h-2 w-2 bg-mauve/50 mr-2 rounded-full"
+                    animate={{ opacity: [0.5, 0.9, 0.5] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                  />
+                  <span>Available Commands</span>
+                </motion.div>
+                
+                {/* Add command counter */}
+                <motion.div 
+                  className="text-[10px] text-mauve-light/60 bg-black/50 px-1.5 py-0.5 rounded font-mono"
+                  animate={{
+                    opacity: [0.6, 1, 0.6],
+                    backgroundColor: ['rgba(0, 0, 0, 0.5)', 'rgba(157, 78, 221, 0.1)', 'rgba(0, 0, 0, 0.5)']
                   }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
-                  Available Commands
-                </motion.span>
-              </motion.div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm relative z-10">
+                  SYSTEM.CMDS[6]
+                </motion.div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1 text-sm relative z-10">
                 {/* Show all commands up to current reveal stage */}
                 {timeGatedCommands.slice(0, revealStage + 1).flat().map((cmd, index) => (
                   <motion.div 
@@ -1305,77 +1625,14 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                       // Extract just the command part (remove the $ prefix)
                       const command = cmd.trim().replace(/^\$\s*/, '');
                       
-                      // Process command directly without requiring input field interaction
-                      // Same code as in the input handler but executed directly
-                      setUserInput(''); // Clear input field
+                      // Simply set the user input instead of executing directly
+                      // Let the user press Enter to execute
+                      setUserInput(command);
                       
-                      let response: string;
-                      
-                      // Command responses - same as defined in the input handler
-                      const commandResponses: Record<string, string> = {
-                        help: "Available commands: help, status, ping, decrypt, access, about, contract, clear\nAI: Type any question to speak with the AI assistant.",
-                        status: "System status: ENCRYPTED | Awaiting authorization.",
-                        ping: "Connection established. Signal strength: STRONG.",
-                        decrypt: "Decryption failed: Missing authentication key. Try again after launch.",
-                        "01-rh4-t5p": ">>> SYSTEM SCAN INITIATED <<<\n\n█████████████████████████████████ 100%\n\nSECURITY LEVEL: CRITICAL\nDIAGNOSTIC: Restricted memory sector breach detected\nTARGET: Sector 447\nRECOMMENDED ACTION: Execute sector-breach-447 protocol",
-                        diagnostics: ">>> RUNNING FULL SYSTEM DIAGNOSTIC <<<\n\n[Systems Check]:  ONLINE\n[Security]:       WARNING\n[Access Control]: COMPROMISED\n[Protocol]:       sector-breach activated\n\nANOMALY DETECTED: Unauthorized entry point at sector 447",
-                        "sector-breach-447": ">>> EMERGENCY OVERRIDE INITIATED <<<\n\nACCESS LEVEL: ADMINISTRATOR\nSTATUS: GRANTED\nCODE: DEGEN-PHOENIX-447\n\n>>> EARLY ACCESS PROTOCOL ACTIVATED <<<\nGenesis position confirmed. Store this access code securely.\n\nTHIS MESSAGE IS CLASSIFIED. TERMINAL ACCESS WILL BE WIPED.",
-                        access: "Access denied: Clearance level insufficient.",
-                        about: "DegenDuel: Next-generation competitive platform for crypto enthusiasts.",
-                        contract: "Contract access restricted until official launch date.",
-                        "scan-network": "Scanning network... Network status: 245 nodes active. All systems operational.",
-                        "check-wallet-balance": "Wallet balance check initiated. Current balance: 0.00 DEGEN tokens. Tokens will be available after launch.",
-                        "decrypt-partial --level=1": "Partial decryption successful (Level 1). Fragment recovered: 'Community allocation: 50%, Launch mechanism: Dutch auction'",
-                        "decrypt-partial --level=2": "Partial decryption successful (Level 2). Fragment recovered: 'Initial liquidity: 30% locked for 6 months. Anti-bot measures active.'",
-                        "decrypt-partial --level=3": "Partial decryption successful (Level 3). Fragment recovered: 'Token utility: Governance + Staking rewards. Buyback mechanism initialized.'",
-                        "view-roadmap": "DegenDuel Roadmap:\nPhase 1: Initial Launch\nPhase 2: Tournament system\nPhase 3: Partner integrations\nPhase 4: Mobile application\nPhase 5: Cross-chain expansion",
-                        "load-preview": "Loading preview... Preview access restricted. Join Discord for early preview eligibility.",
-                        "check-whitelist": "Whitelist status: Not found. Visit Discord for whitelist opportunities.",
-                        "prepare-launch-sequence": "Launch sequence preparation in progress. T-minus 15 minutes to protocol activation."
-                      };
-                      
-                      // For the sector-breach command, add ASCII art
-                      if (command.toLowerCase() === 'sector-breach-447') {
-                        const accessGrantedArt = `
-   _____                             _____                    _           _ 
-  / ____|                           / ____|                  | |         | |
- | |     ___  _ __ ___  _ __  _   _| |  __ _ __ __ _ _ __ ___| |_ ___  __| |
- | |    / _ \\| '_ \` _ \\| '_ \\| | | | | |_ | '__/ _\` | '__/ _ \\ __/ _ \\/ _\` |
- | |___| (_) | | | | | | |_) | |_| | |__| | | | (_| | | |  __/ ||  __/ (_| |
-  \\_____\\___/|_| |_| |_| .__/ \\__, |\\_____|_|  \\__,_|_|  \\___|\\__\\___|\\__,_|
-                       | |     __/ |                                        
-                       |_|    |___/                                         
-`;
-                        
-                        setConsoleOutput(prev => [
-                          ...prev, 
-                          `> ${command}`, 
-                          accessGrantedArt,
-                          commandResponses[command.toLowerCase()]
-                        ]);
-                      } else if (command.toLowerCase() === 'clear') {
-                        setConsoleOutput([]);
-                        return;
-                      } else if (command.toLowerCase() in commandResponses) {
-                        response = commandResponses[command.toLowerCase()];
-                        setConsoleOutput(prev => [...prev, `> ${command}`, response]);
-                      } else {
-                        // For unrecognized commands, display error
-                        response = `Error: Command '${command}' not recognized. Type 'help' for available commands.`;
-                        setConsoleOutput(prev => [...prev, `> ${command}`, response]);
+                      // Focus the input field
+                      if (inputRef.current) {
+                        inputRef.current.focus();
                       }
-                      
-                      // Notify parent component if callback provided
-                      if (onCommandExecuted && command.toLowerCase() in commandResponses) {
-                        onCommandExecuted(command, commandResponses[command.toLowerCase()]);
-                      }
-                      
-                      // Scroll console to bottom
-                      setTimeout(() => {
-                        if (consoleOutputRef.current) {
-                          consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
-                        }
-                      }, 50);
                     }}
                   >
                     <span className="text-cyan-400 mr-1 text-[10px]">⬢</span> 
@@ -1398,8 +1655,11 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 ))}
               </div>
             </motion.div>
+
           </div>
+
         </motion.div>
+      
       )}
       
       
@@ -1483,12 +1743,12 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 transition={{ duration: 2, repeat: Infinity }}
                 onClick={() => {
                   // Copy to clipboard
-                  navigator.clipboard.writeText(contractAddress);
+                  navigator.clipboard.writeText(window.contractAddress || '');
                   alert("Contract address copied to clipboard!");
                 }}
                 style={{ cursor: "copy" }}
               >
-                {contractAddress}
+                {window.contractAddress || config.CONTRACT_ADDRESS}
               </motion.div>
             </div>
             
