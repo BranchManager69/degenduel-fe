@@ -104,6 +104,41 @@
 
 /* ---------------------- NEW ---------------------- */
 
+/* Logo flash animation for homepage interaction */
+@keyframes logo-flash {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.5) drop-shadow(0 0 10px rgba(153, 51, 255, 0.8)); }
+  100% { filter: brightness(1); }
+}
+
+.logo-flashing {
+  animation: logo-flash 0.5s ease-in-out;
+}
+
+/* Navigation dropdown animations */
+@keyframes dropdown-shine {
+  0% { background-position-x: -100%; }
+  50% { background-position-x: 100%; }
+  100% { background-position-x: -100%; }
+}
+
+.nav-dropdown-item-shine {
+  background-image: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: dropdown-shine 3s ease-in-out infinite;
+}
+
+/* Add hover animations for dropdowns */
+.nav-dropdown-item:hover {
+  transform: translateY(-1px);
+  transition: all 0.3s ease;
+}
+
+/* Add transitions for the items */
+.nav-dropdown-item {
+  transition: all 0.2s ease;
+}
+
 /* Global scrollbar styling */
 :root {
   --scrollbar-track: rgba(13, 13, 13, 0.95);

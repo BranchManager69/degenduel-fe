@@ -45,32 +45,73 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
     <div className="font-orbitron">
       {isComplete ? (
         <motion.div 
-          className="text-2xl text-green-400 font-bold"
+          className="text-3xl sm:text-4xl text-green-400 font-bold py-4"
           initial={{ scale: 1 }}
           animate={{ 
-            scale: [1, 1.1, 1],
+            scale: [1, 1.15, 1],
             textShadow: [
-              '0 0 5px rgba(74, 222, 128, 0.5)',
-              '0 0 20px rgba(74, 222, 128, 0.8)',
-              '0 0 5px rgba(74, 222, 128, 0.5)'
+              '0 0 10px rgba(74, 222, 128, 0.5)',
+              '0 0 30px rgba(74, 222, 128, 0.9)',
+              '0 0 10px rgba(74, 222, 128, 0.5)'
+            ],
+            filter: [
+              'brightness(1)',
+              'brightness(1.3)',
+              'brightness(1)'
             ]
           }}
           transition={{ 
-            duration: 2,
+            duration: 2.5,
             repeat: Infinity,
             ease: "easeInOut"
           }}
         >
-          ACCESS GRANTED
+          <span className="bg-gradient-to-r from-green-400 via-emerald-300 to-green-400 text-transparent bg-clip-text">
+            ACCESS GRANTED
+          </span>
+          <div className="mt-2 text-base text-green-300 font-normal">Protocol decryption successful</div>
         </motion.div>
       ) : (
         <div>
-          <div className="flex justify-center space-x-4">
+          <motion.div 
+            className="flex justify-center space-x-2 sm:space-x-4 px-3 py-5 bg-black/20 rounded-lg border border-mauve/30"
+            animate={{
+              boxShadow: [
+                '0 0 3px rgba(157, 78, 221, 0.2)',
+                '0 0 12px rgba(157, 78, 221, 0.4)',
+                '0 0 3px rgba(157, 78, 221, 0.2)'
+              ]
+            }}
+            transition={{ duration: 3, repeat: Infinity }}
+          >
             <TimeUnit value={timeRemaining.days} label="DAYS" />
+            <motion.div
+              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center -mx-1 sm:mx-0 opacity-80 mt-3"
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >:</motion.div>
             <TimeUnit value={timeRemaining.hours} label="HRS" />
+            <motion.div
+              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center -mx-1 sm:mx-0 opacity-80 mt-3"
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >:</motion.div>
             <TimeUnit value={timeRemaining.minutes} label="MIN" />
+            <motion.div
+              className="text-xl sm:text-2xl lg:text-3xl font-bold self-center -mx-1 sm:mx-0 opacity-80 mt-3"
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >:</motion.div>
             <TimeUnit value={timeRemaining.seconds} label="SEC" />
-          </div>
+          </motion.div>
+          
+          <motion.div 
+            className="mt-3 text-sm text-mauve/70 font-mono"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          >
+            Awaiting countdown completion...
+          </motion.div>
         </div>
       )}
     </div>
@@ -78,25 +119,35 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
 };
 
 const TimeUnit = ({ value, label }: { value: number, label: string }) => (
-  <div className="flex flex-col items-center">
+  <div className="flex flex-col items-center mx-1 sm:mx-2">
     <motion.div 
-      className="text-lg sm:text-xl lg:text-2xl font-bold text-white"
+      className="text-xl sm:text-2xl lg:text-3xl font-bold"
       animate={{ 
+        color: [
+          'rgba(255, 255, 255, 0.9)',
+          'rgba(214, 188, 250, 1)',
+          'rgba(255, 255, 255, 0.9)'
+        ],
         textShadow: [
-          '0 0 2px rgba(157, 78, 221, 0.3)',
-          '0 0 8px rgba(157, 78, 221, 0.5)',
-          '0 0 2px rgba(157, 78, 221, 0.3)'
-        ]
+          '0 0 5px rgba(157, 78, 221, 0.4)',
+          '0 0 15px rgba(157, 78, 221, 0.7)',
+          '0 0 5px rgba(157, 78, 221, 0.4)'
+        ],
+        scale: [1, 1.05, 1]
       }}
       transition={{
-        duration: 2,
+        duration: 3,
         repeat: Infinity,
         ease: "easeInOut"
+      }}
+      whileHover={{
+        scale: 1.1,
+        textShadow: '0 0 20px rgba(157, 78, 221, 0.8)'
       }}
     >
       {value.toString().padStart(2, '0')}
     </motion.div>
-    <div className="text-xs text-mauve-light opacity-80">{label}</div>
+    <div className="text-sm font-bold text-mauve-light tracking-wider mt-1">{label}</div>
   </div>
 );
 
@@ -521,14 +572,23 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
               <span className="whitespace-nowrap">root@degenduel:~$ ./decrypt.sh</span>
             </div>
             <motion.div
-              className="text-white/40 text-xs font-mono uppercase tracking-wider cursor-help relative group whitespace-nowrap"
+              className="text-white/40 text-xs font-mono tracking-wide cursor-help relative group"
               whileHover={{ 
                 color: "rgba(157, 78, 221, 0.9)",
                 textShadow: "0 0 5px rgba(157, 78, 221, 0.5)"
               }}
+              animate={{
+                textShadow: [
+                  '0 0 0px rgba(157, 78, 221, 0)',
+                  '0 0 5px rgba(157, 78, 221, 0.5)',
+                  '0 0 0px rgba(157, 78, 221, 0)'
+                ],
+                opacity: [0.7, 1, 0.7]
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
             >
-              CLASSIFIED
-              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/80 text-white p-2 rounded text-xs -bottom-16 right-0 w-48 pointer-events-none">
+              <span className="bg-black/50 px-2 py-1 rounded-sm border border-mauve/20">DD-69</span>
+              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/95 text-white p-2 rounded text-xs -bottom-16 right-0 w-48 pointer-events-none border border-mauve/40">
                 DegenDuel Protocol v1.0.2
                 <br />Code: ALPHA-7721-ZETA
                 <br />Access level: RESTRICTED
@@ -644,36 +704,94 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
             {/* Prominent countdown timer */}
             <div className="mt-6 mb-6">
               <div className="text-center">
+                <div className="scale-110 transform mb-8">
+                  <DecryptionTimer targetDate={config.RELEASE_DATE} />
+                </div>
                 <motion.div 
-                  className="uppercase tracking-[0.3em] text-sm text-white/60 font-orbitron mb-3"
+                  className="uppercase tracking-[0.3em] text-lg sm:text-xl md:text-2xl text-white/90 font-orbitron mb-6 font-bold whitespace-nowrap overflow-hidden text-center"
                   animate={{
-                    opacity: [0.6, 0.8, 0.6],
+                    opacity: [0.8, 1, 0.8],
+                    scale: [1, 1.03, 1],
                     textShadow: [
-                      '0 0 0px rgba(157, 78, 221, 0)',
-                      '0 0 5px rgba(157, 78, 221, 0.5)',
-                      '0 0 0px rgba(157, 78, 221, 0)',
+                      '0 0 5px rgba(157, 78, 221, 0.3)',
+                      '0 0 15px rgba(157, 78, 221, 0.7)',
+                      '0 0 5px rgba(157, 78, 221, 0.3)',
                     ]
                   }}
-                  transition={{ duration: 4, repeat: Infinity }}
+                  transition={{ duration: 3, repeat: Infinity }}
                 >
-                  DegenDuel Decryption Protocol
+                  <span className="bg-gradient-to-r from-purple-400 via-white to-purple-400 text-transparent bg-clip-text inline-block">
+                    DegenDuel Launch
+                  </span>
                 </motion.div>
-                <DecryptionTimer targetDate={config.RELEASE_DATE} />
               </div>
             </div>
             
             {/* Console output display (merged with AI chat responses) - only this part should scroll */}
-            <div 
-              ref={consoleOutputRef} 
-              className="mt-3 text-green-400/80 overflow-y-auto overflow-x-hidden h-[180px] max-h-[25vh] py-2 text-left custom-scrollbar console-output"
-              style={{
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
-                background: 'rgba(0, 0, 0, 0.2)',
-                boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                borderRadius: '4px'
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                boxShadow: [
+                  'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 2px rgba(157, 78, 221, 0.3)',
+                  'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 8px rgba(157, 78, 221, 0.5)',
+                  'inset 0 0 10px rgba(0, 0, 0, 0.3), 0 0 2px rgba(157, 78, 221, 0.3)'
+                ]
               }}
+              transition={{ 
+                duration: 0.5, 
+                boxShadow: {
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+              className="relative mt-3 rounded-md overflow-hidden"
             >
+              {/* Animated grid overlay effect */}
+              <div className="absolute inset-0 pointer-events-none z-0"
+                style={{
+                  backgroundImage: 'radial-gradient(rgba(157, 78, 221, 0.15) 1px, transparent 1px)',
+                  backgroundSize: '15px 15px',
+                  backgroundPosition: '-7px -7px'
+                }}
+              />
+              
+              {/* Random flickering dots effect */}
+              {Array.from({ length: 15 }).map((_, i) => (
+                <motion.div 
+                  key={`dot-${i}`}
+                  className="absolute w-1 h-1 rounded-full bg-mauve/50 pointer-events-none z-20"
+                  style={{ 
+                    left: `${Math.random() * 100}%`, 
+                    top: `${Math.random() * 100}%`
+                  }}
+                  animate={{ 
+                    opacity: [0, 0.8, 0],
+                    scale: [0, 1, 0]
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    delay: Math.random() * 5,
+                    repeat: Infinity,
+                    repeatDelay: Math.random() * 10
+                  }}
+                />
+              ))}
+              
+              <div 
+                ref={consoleOutputRef} 
+                className="mt-0 text-green-400/80 overflow-y-auto overflow-x-hidden h-[180px] max-h-[25vh] py-2 text-left custom-scrollbar console-output relative z-10"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
+                  background: 'rgba(0, 0, 0, 0.6)',
+                  boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)',
+                  borderRadius: '4px',
+                  border: '1px solid rgba(157, 78, 221, 0.3)'
+                }}
+              >
               {consoleOutput.map((output, i) => {
                 // Check the type of message to apply appropriate styling
                 const isUserInput = output.startsWith('> ');
@@ -737,11 +855,25 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                   </div>
                 );
               })}
-              {consoleOutput.length === 0 && (
+              </div>
+            </motion.div>
+            {consoleOutput.length === 0 && (
                 <div className="text-mauve-light/80 text-xs py-2 px-1">
                   <div className="flex items-center mb-2">
                     <span className="text-cyan-400 mr-2">▓▒░</span>
-                    <span className="text-cyan-400/90 font-mono font-bold tracking-wide">DEGENDUEL TERMINAL v3.7.25</span> 
+                    <motion.span 
+                      className="text-cyan-400/90 font-mono font-bold tracking-wide bg-gradient-to-r from-cyan-400 via-white to-cyan-400 text-transparent bg-clip-text"
+                      animate={{
+                        backgroundPosition: ['0% center', '100% center']
+                      }}
+                      transition={{
+                        duration: 6,
+                        repeat: Infinity,
+                        repeatType: 'reverse'
+                      }}
+                    >
+                      DEGENDUEL TERMINAL v4.2.0
+                    </motion.span> 
                     <span className="text-cyan-400 ml-2">░▒▓</span>
                   </div>
                   
@@ -752,7 +884,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <span className="text-yellow-400/90">SYS_INIT:</span> <span className="text-gray-400">Quantum crypto protocols loaded...</span>
+                    <span className="text-yellow-400/90">SYS_INIT:</span> <span className="text-gray-400">Trenches Revival Protocol is loading...</span>
                   </motion.div>
                   
                   <motion.div 
@@ -762,36 +894,103 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                     }}
                     transition={{ duration: 2, delay: 0.3, repeat: Infinity }}
                   >
-                    <span className="text-green-400/90">READY:</span> <span className="text-gray-400">Terminal awaiting command sequence...</span>
+                    <span className="text-green-400/90">READY:</span> <span className="text-gray-400">Didi is ready to meet the Degens.</span>
                   </motion.div>
                   
                   <div className="mb-1.5 border-l-2 border-red-400/30 pl-2">
-                    <span className="text-red-400/90">WARNING:</span> <span className="text-gray-400">Unauthorized access will be traced & logged</span>
+                    <span className="text-red-400/90">WARNING:</span> <span className="text-gray-400">Unauthorized access will be punished harshly by @BranchManager69</span>
                   </div>
                   
                   <div className="mt-3 mb-2 text-gray-400/90 flex justify-between items-center">
                     <span>Execute <span className="text-cyan-400">help</span> for command list</span>
-                    <span className="text-cyan-400/50 text-[10px]">[SECURE-CHANNEL-ACTIVE]</span>
                   </div>
                 </div>
               )}
-            </div>
             
             {/* Unified user input area - always visible at bottom */}
-            <div className="mt-4 flex items-center bg-gradient-to-r from-mauve/10 to-darkGrey-dark/50 rounded px-2 py-1.5 border border-mauve/30 focus-within:border-mauve/70 focus-within:shadow focus-within:shadow-mauve/40 transition-all duration-300 hover:border-mauve/50">
-              <motion.span 
-                className="text-mauve-light font-mono font-bold mr-2" 
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+            <div className="mt-4 relative">
+              <motion.div 
+                className="relative overflow-hidden"
+                initial={{ opacity: 0.8 }}
+                animate={{ 
+                  opacity: 1,
+                  boxShadow: [
+                    '0 0 2px rgba(157, 78, 221, 0.3)',
+                    '0 0 8px rgba(157, 78, 221, 0.5)',
+                    '0 0 2px rgba(157, 78, 221, 0.3)'
+                  ]
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
               >
-                &gt;_
-              </motion.span>
-              <input
-                ref={inputRef}
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => {
+              {/* Animated scan line effect */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-b from-transparent via-mauve/10 to-transparent z-10 pointer-events-none"
+                animate={{ 
+                  y: ['-100%', '200%'] 
+                }}
+                transition={{ 
+                  duration: 2, 
+                  ease: "linear", 
+                  repeat: Infinity,
+                  repeatType: "loop" 
+                }}
+                style={{ height: '10px', opacity: 0.6 }}
+              />
+              
+              {/* Animated border glow effect */}
+              <motion.div 
+                className="absolute inset-0 rounded pointer-events-none"
+                animate={{ 
+                  boxShadow: [
+                    'inset 0 0 5px rgba(157, 78, 221, 0.3)',
+                    'inset 0 0 15px rgba(157, 78, 221, 0.7)',
+                    'inset 0 0 5px rgba(157, 78, 221, 0.3)'
+                  ] 
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              
+              <div className="flex items-center bg-gradient-to-r from-mauve/10 to-darkGrey-dark/50 rounded px-2 py-1.5 border border-mauve/30 focus-within:border-mauve/70 focus-within:shadow focus-within:shadow-mauve/40 transition-all duration-300 hover:border-mauve/50 relative z-20">
+                <motion.div 
+                  className="flex items-center mr-2"
+                  animate={{ 
+                    color: [
+                      'rgba(157, 78, 221, 0.7)',
+                      'rgba(157, 78, 221, 1)',
+                      'rgba(157, 78, 221, 0.7)'
+                    ]
+                  }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <motion.span 
+                    className="text-mauve-light font-mono font-bold" 
+                    animate={{ 
+                      opacity: [1, 0.4, 1],
+                      textShadow: [
+                        '0 0 3px rgba(157, 78, 221, 0.3)',
+                        '0 0 8px rgba(157, 78, 221, 0.7)',
+                        '0 0 3px rgba(157, 78, 221, 0.3)'
+                      ]
+                    }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    &gt;_
+                  </motion.span>
+                </motion.div>
+                
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userInput}
+                  onChange={(e) => {
+                    setUserInput(e.target.value);
+                    // Add glitch effect when typing
+                    if (!glitchActive && Math.random() > 0.9) {
+                      setGlitchActive(true);
+                      setTimeout(() => setGlitchActive(false), 150);
+                    }
+                  }}
+                  onKeyDown={(e) => {
                   if (e.key === 'Enter' && userInput.trim()) {
                     // Process user command
                     const command = userInput.trim();
@@ -963,41 +1162,144 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 style={{ 
                   color: 'rgba(255, 255, 255, 0.95)', 
                   caretColor: 'rgb(157, 78, 221)',
-                  textShadow: '0 0 4px rgba(157, 78, 221, 0.4)',
-                  backgroundColor: 'rgba(20, 20, 30, 0.3)'
+                  textShadow: glitchActive ? '0 0 8px rgba(255, 50, 50, 0.8)' : '0 0 5px rgba(157, 78, 221, 0.6)',
+                  backgroundColor: 'rgba(20, 20, 30, 0.3)',
+                  transition: 'all 0.3s ease'
                 }}
                 autoComplete="off"
                 spellCheck="false"
                 autoFocus
               />
+              </div>
+              
+              {/* Terminal indicator below the input */}
+              <motion.div 
+                className="absolute bottom-[-12px] left-1/2 transform -translate-x-1/2 text-[9px] font-mono tracking-widest py-0.5 px-2 rounded-sm bg-black/70 text-mauve/60 border border-mauve/10 z-30"
+                animate={{
+                  opacity: [0.4, 0.8, 0.4],
+                  textShadow: [
+                    '0 0 0px rgba(157, 78, 221, 0)',
+                    '0 0 5px rgba(157, 78, 221, 0.5)',
+                    '0 0 0px rgba(157, 78, 221, 0)'
+                  ],
+                  scale: [1, 1.03, 1]
+                }}
+                transition={{ duration: 1.8, repeat: Infinity }}
+              >
+                [SECURE-CHANNEL-ACTIVE]
+              </motion.div>
+              </motion.div>
             </div>
             
             {/* Time-gated commands */}
             <motion.div 
-              className="mt-3 pt-2 text-left"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5, duration: 1 }}
+              className="mt-3 pt-2 text-left relative"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                boxShadow: [
+                  '0 0 0px rgba(157, 78, 221, 0)',
+                  '0 0 10px rgba(157, 78, 221, 0.3)',
+                  '0 0 0px rgba(157, 78, 221, 0)'
+                ]
+              }}
+              transition={{ 
+                delay: 1.2, 
+                duration: 0.8,
+                boxShadow: {
+                  duration: 3,
+                  repeat: Infinity
+                }
+              }}
             >
-              <div className="text-mauve-light/70 text-xs uppercase tracking-wider mb-2 text-left">
-                <span className="bg-mauve/20 px-2 py-0.5 rounded-sm">Commands</span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-sm">
+              {/* Scanline effect for commands section */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-b from-transparent via-mauve/10 to-transparent z-0 pointer-events-none"
+                animate={{ 
+                  y: ['-200%', '500%'] 
+                }}
+                transition={{ 
+                  duration: 8, 
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+                style={{ height: '5px', opacity: 0.4 }}
+              />
+            
+              <motion.div
+                className="text-mauve-light/70 text-xs uppercase tracking-wider mb-3 text-left"
+                animate={{
+                  textShadow: [
+                    '0 0 0px rgba(157, 78, 221, 0)',
+                    '0 0 5px rgba(157, 78, 221, 0.7)',
+                    '0 0 0px rgba(157, 78, 221, 0)'
+                  ]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <motion.span 
+                  className="bg-mauve/20 px-2 py-1 rounded-sm border border-mauve/30"
+                  whileHover={{
+                    backgroundColor: 'rgba(157, 78, 221, 0.3)',
+                    boxShadow: '0 0 8px rgba(157, 78, 221, 0.5)'
+                  }}
+                  animate={{
+                    borderColor: [
+                      'rgba(157, 78, 221, 0.2)',
+                      'rgba(157, 78, 221, 0.4)',
+                      'rgba(157, 78, 221, 0.2)'
+                    ]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  Available Commands
+                </motion.span>
+              </motion.div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm relative z-10">
                 {/* Show all commands up to current reveal stage */}
                 {timeGatedCommands.slice(0, revealStage + 1).flat().map((cmd, index) => (
                   <motion.div 
                     key={index}
-                    className="text-mauve-light/60 hover:text-mauve-light cursor-pointer text-xs flex items-center"
+                    className="text-mauve-light/60 hover:text-mauve-light cursor-pointer text-xs flex items-center bg-black/30 px-2 py-1 rounded-sm border border-mauve/10"
                     initial={{ opacity: 0, x: -5 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    animate={{ 
+                      opacity: 1, 
+                      x: 0,
+                      boxShadow: Math.random() > 0.7 ? [
+                        '0 0 0px rgba(157, 78, 221, 0)',
+                        '0 0 5px rgba(157, 78, 221, 0.4)',
+                        '0 0 0px rgba(157, 78, 221, 0)'
+                      ] : 'none',
+                      borderColor: Math.random() > 0.7 ? [
+                        'rgba(157, 78, 221, 0.1)',
+                        'rgba(157, 78, 221, 0.3)',
+                        'rgba(157, 78, 221, 0.1)'
+                      ] : 'rgba(157, 78, 221, 0.1)'
+                    }}
                     transition={{ 
                       delay: 0.05 * index,
-                      duration: 0.2
+                      duration: 0.2,
+                      boxShadow: {
+                        duration: 1.5 + Math.random() * 2,
+                        repeat: Infinity,
+                        repeatType: "reverse"
+                      },
+                      borderColor: {
+                        duration: 1.5 + Math.random() * 2,
+                        repeat: Infinity,
+                        repeatType: "reverse"
+                      }
                     }}
                     whileHover={{
                       x: 3,
                       scale: 1.05,
+                      backgroundColor: 'rgba(157, 78, 221, 0.2)',
                       textShadow: "0 0 8px rgba(157, 78, 221, 0.8)"
+                    }}
+                    whileTap={{
+                      scale: 0.95,
+                      backgroundColor: 'rgba(157, 78, 221, 0.3)'
                     }}
                     onClick={() => {
                       // Extract just the command part (remove the $ prefix)
@@ -1076,7 +1378,22 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                       }, 50);
                     }}
                   >
-                    <span className="text-cyan-400/30 mr-1">❯</span> {cmd}
+                    <span className="text-cyan-400 mr-1 text-[10px]">⬢</span> 
+                    <motion.span
+                      animate={{ 
+                        color: Math.random() > 0.8 ? [
+                          'rgba(214, 188, 250, 0.7)',
+                          'rgba(255, 255, 255, 0.9)',
+                          'rgba(214, 188, 250, 0.7)'
+                        ] : 'rgba(214, 188, 250, 0.7)'
+                      }}
+                      transition={{ 
+                        duration: 2 + Math.random() * 3,
+                        repeat: Infinity
+                      }}
+                    >
+                      {cmd}
+                    </motion.span>
                   </motion.div>
                 ))}
               </div>
@@ -1084,6 +1401,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
           </div>
         </motion.div>
       )}
+      
       
       {/* Minimized terminal state */}
       {terminalMinimized && (

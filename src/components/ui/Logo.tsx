@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 // Logo sizes for different viewports with proper aspect ratio
@@ -67,13 +67,17 @@ const Logo: React.FC<LogoProps> = ({
       style={containerStyle}
       {...pulseAnimation}
     >
-      <div className="flex items-center justify-center h-full w-full">
-        {/* Image logo */}
+      <div className="flex items-center justify-center h-full w-full overflow-hidden">
+        {/* Image logo with explicit dimensions */}
         <motion.img
           src="/assets/media/logos/transparent_WHITE.png"
           alt="DegenDuel Logo"
-          className="w-full h-full object-contain"
+          className="object-contain"
           style={{
+            width: `${width}px`,
+            height: `${height}px`,
+            maxWidth: "100%",
+            maxHeight: "100%",
             filter: animated 
               ? "drop-shadow(0 0 3px rgba(255, 255, 255, 0.5))" 
               : "none",
@@ -98,15 +102,28 @@ const Logo: React.FC<LogoProps> = ({
     </motion.div>
   );
 
+  // State for animation flash effect
+  const [isFlashing, setIsFlashing] = useState(false);
+  
   // Conditionally wrap in Link if needed
   if (asLink) {
     return (
       <Link
         to="/"
-        className="flex items-center transition-transform duration-200 hover:scale-[1.03]"
+        className="flex items-center transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
         aria-label="DegenDuel - Go to Home Page"
+        onClick={(e) => {
+          // Check if we're already on the home page
+          if (window.location.pathname === '/') {
+            e.preventDefault();
+            setIsFlashing(true);
+            setTimeout(() => setIsFlashing(false), 500);
+          }
+        }}
       >
-        {logoElement}
+        {React.cloneElement(logoElement, { 
+          className: isFlashing ? 'logo-flashing' : '',
+        })}
       </Link>
     );
   }
