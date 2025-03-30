@@ -455,7 +455,7 @@ const WebSocketManagerComponent: React.FC = () => {
         try {
           wsRef.current.send(JSON.stringify({
             type: MessageType.REQUEST,
-            topic: SOCKET_TYPES.SYSTEM_SETTINGS,
+            topic: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             action: 'ping',
             requestId: crypto.randomUUID(),
             timestamp: new Date().toISOString()
@@ -598,7 +598,7 @@ const WebSocketManagerComponent: React.FC = () => {
       const publicSubscriptionMessage: SubscriptionMessage = {
         type: MessageType.SUBSCRIBE,
         topics: [
-          SOCKET_TYPES.SYSTEM_SETTINGS,
+          SOCKET_TYPES.SYSTEM, // Updated from SYSTEM_SETTINGS to SYSTEM per v69 API
           SOCKET_TYPES.MARKET_DATA
         ]
       };

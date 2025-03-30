@@ -23,7 +23,7 @@ import { SOCKET_TYPES } from './types'; // (clunky)
 // This allows TopicType to be used both as a value (TopicType.SYSTEM) and as a type (param: TopicType)
 export const TopicType = {
   // Core system topics
-  SYSTEM: SOCKET_TYPES.SYSTEM_SETTINGS,
+  SYSTEM: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
   MONITOR: SOCKET_TYPES.MONITOR,
   SERVER_STATUS: SOCKET_TYPES.SERVER_STATUS,
   

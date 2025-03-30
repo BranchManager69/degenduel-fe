@@ -90,7 +90,8 @@ export const SOCKET_TYPES = {
   // Core system sockets
   MONITOR: 'monitor',
   SERVER_STATUS: 'server-status',
-  SYSTEM_SETTINGS: 'system-settings',
+  SYSTEM_SETTINGS: 'system', // Updated to use 'system' instead of 'system-settings' per v69 API changes
+  SYSTEM: 'system', // Add new proper name, but keep SYSTEM_SETTINGS for backward compatibility
   
   // Market data sockets
   TOKEN_DATA: 'token-data',
