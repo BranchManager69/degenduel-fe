@@ -165,13 +165,13 @@ export const Header: React.FC = () => {
     }
   }, [error, clearError]);
 
-  // Header
+  // Header - Fixed sticky positioning by removing wrapper div
   return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <header
-        className={`bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-          ${isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16"}`}
-      >
+    <header
+      className={`bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+        ${isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16"}`}
+      onClick={(e) => e.stopPropagation()}
+    >
         {/* Banned User Banner */}
         {user?.is_banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
@@ -267,10 +267,35 @@ export const Header: React.FC = () => {
 
               {/* Main Navigation - new streamlined version */}
               <nav className="hidden md:flex items-center ml-6">
-                <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20">
+                <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20 overflow-hidden shadow-md nav-dropdown-container">
+                  
+                  {/* Import directly with existing components for now */}
                   <ContestsDropdown isCompact={isCompact} />
                   <TokensDropdown isCompact={isCompact} />
                   <RankingsDropdown isCompact={isCompact} />
+                  
+                  {/* 
+                    Enhanced dropdowns can be implemented after testing:
+                    <EnhancedDropdown 
+                      label="Contests" 
+                      items={contestItems} 
+                      isCompact={isCompact} 
+                      isAuthenticated={!!user} 
+                      colorScheme="brand" 
+                    />
+                    <EnhancedDropdown 
+                      label="Tokens" 
+                      items={tokenItems} 
+                      isCompact={isCompact} 
+                      colorScheme="cyber" 
+                    />
+                    <EnhancedDropdown 
+                      label="Rankings" 
+                      items={rankingItems} 
+                      isCompact={isCompact} 
+                      colorScheme="success" 
+                    /> 
+                  */}
                 </div>
               </nav>
             </div>
@@ -373,6 +398,5 @@ export const Header: React.FC = () => {
           )}
         </AnimatePresence>
       </header>
-    </div>
   );
 };
