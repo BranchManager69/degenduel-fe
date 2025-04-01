@@ -17,3 +17,65 @@
   window.process.env.VITE_VIRTUALS_GAME_SDK_API_KEY = 'STORYBOOK_PLACEHOLDER';
   window.process.env.VITE_OPENAI_API_KEY = 'STORYBOOK_PLACEHOLDER';
 </script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;500;600;700;800;900&family=Russo+One&family=Source+Code+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Include CSS variables for font-family and colors -->
+<style>
+  :root {
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-heading: 'Clash Display', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-numbers: 'DM Mono', monospace;
+    --font-accent: 'Plus Jakarta Sans', sans-serif;
+    
+    --color-brand-50: #f3e6ff;
+    --color-brand-100: #e5ccff;
+    --color-brand-200: #cc99ff;
+    --color-brand-300: #b266ff;
+    --color-brand-400: #9933ff;
+    --color-brand-500: #7f00ff;
+    --color-brand-600: #6600cc;
+    --color-brand-700: #4c0099;
+    --color-brand-800: #330066;
+    --color-brand-900: #190033;
+    --brand-rgb: 127, 0, 255;
+    
+    --color-cyber-500: #00e1ff;
+    --cyber-rgb: 0, 225, 255;
+    
+    --color-blue-500: #3b82f6;
+    --blue-rgb: 59, 130, 246;
+  }
+  
+  /* Additional styling for Storybook */
+  body {
+    background-color: #0f0a1f;
+    color: #ffffff;
+  }
+  
+  /* Ensure proper text wrapping in Storybook */
+  .text-sm {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    hyphens: auto !important;
+  }
+  
+  /* Define additional CSS classes for Storybook */
+  .clip-edges {
+    clip-path: polygon(
+      0 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      0 calc(100% - 4px),
+      0 4px
+    );
+  }
+</style>
