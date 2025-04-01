@@ -42,6 +42,7 @@ import { MovingBackground } from "./components/ui/MovingBackground";
 import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PrivyAuthProvider } from "./contexts/PrivyAuthContext";
+import { TwitterAuthProvider } from "./contexts/TwitterAuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* WebSocket */
 // Import WebSocketManager from the unified WebSocket system
@@ -199,8 +200,10 @@ export const App: React.FC = () => {
         <PrivyAuthProvider>
           {/* Auth Provider */}
           <AuthProvider>
-          {/* Referral Provider */}
-          <ReferralProvider>
+            {/* Twitter Auth Provider */}
+            <TwitterAuthProvider>
+              {/* Referral Provider */}
+              <ReferralProvider>
             {/* Token Data Provider */}
             <TokenDataProvider>
                 {/* Toast Provider */}
@@ -749,6 +752,7 @@ export const App: React.FC = () => {
             </ToastProvider>
           </TokenDataProvider>
         </ReferralProvider>
+            </TwitterAuthProvider>
       </AuthProvider>
     </PrivyAuthProvider>
     </PrivyProvider>

@@ -4,6 +4,23 @@ import { TokensPage } from '../pages/public/tokens/TokensPage';
 import { withRouter } from 'storybook-addon-react-router-v6';
 import * as React from 'react';
 
+// Import type declarations to help TypeScript recognize window properties
+import '../types/window.d.ts';
+
+// Ensure TypeScript recognizes window.useStore
+declare global {
+  interface Window {
+    useStore: () => {
+      user: any | null;
+      setUser: (user: any) => void;
+      isWalletConnected: boolean;
+      walletAddress: string | undefined;
+      maintenanceMode: boolean;
+      [key: string]: any; // Allow other props
+    };
+  }
+}
+
 // Create mock tokens for the API response
 const createMockTokensResponse = () => {
   const baseTokens = [
@@ -106,14 +123,21 @@ const MockContext: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const originalFetch = window.fetch;
     const originalUseStore = window.useStore;
     
-    // Set up mocks
-    window.fetch = () => Promise.resolve({
-      json: () => Promise.resolve(mockTokensResponse),
-      ok: true,
-    });
+    // Set up mocks with proper Response type
+    window.fetch = () => Promise.resolve(new Response(
+      JSON.stringify(mockTokensResponse),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    ));
     
     window.useStore = () => ({
       user: { is_admin: true },
+      setUser: () => {},
+      isWalletConnected: false,
+      walletAddress: undefined,
+      maintenanceMode: false
     });
     
     // Clean up when unmounting

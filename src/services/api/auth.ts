@@ -2,16 +2,12 @@
 
 /**
  * This file contains the API endpoints for the authentication service.
- * It is used to get the current session data, verify a wallet signature, and verify a Privy auth token.
+ * It is used to get the current session data, verify wallet and Privy auth tokens.
  */
 
 import axios from "axios";
-
 import { API_URL, DDAPI_DEBUG_MODE } from "../../config/config";
 import { useStore } from "../../store/useStore";
-
-// Note: The PRIVY_CLIENT_KEY is used server-side for token verification
-// We don't use it directly in the frontend, but we document it here for reference
 
 /**
  * Gets the current session data, including user information if authenticated
@@ -367,3 +363,85 @@ export const linkPrivyAccount = async (token: string, userId: string) => {
     throw new Error(errorMessage);
   }
 };
+
+/**
+ * Initiates Twitter authentication flow
+ * @returns The URL to redirect to for Twitter auth
+ */
+export const getTwitterAuthUrl = async (): Promise<string> => {
+  try {
+    const response = await axios.get(`${API_URL}/auth/twitter/auth-url`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Debug": "true",
+        Origin: window.location.origin,
+      },
+      withCredentials: true,
+    });
+    
+    return response.data.url || "/api/auth/twitter/login";
+  } catch (error: any) {
+    console.error("[Twitter Auth] Failed to get auth URL:", error);
+    // Return default URL as fallback
+    return "/api/auth/twitter/login";
+  }
+};
+
+/**
+ * Links a Twitter account to existing authenticated user
+ * @returns Success status and message
+ */
+export const linkTwitterAccount = async (): Promise<{success: boolean, message: string}> => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/twitter/link`, {}, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Debug": "true",
+        Origin: window.location.origin,
+      },
+      withCredentials: true,
+    });
+    
+    return {
+      success: true,
+      message: response.data.message || "Twitter account linked successfully"
+    };
+  } catch (error: any) {
+    const errorMessage = 
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to link Twitter account";
+      
+    console.error("[Auth] Failed to link Twitter account:", errorMessage);
+    
+    return {
+      success: false,
+      message: errorMessage
+    };
+  }
+};
+
+/**
+ * Checks if a Twitter account is linked to the current user
+ * @returns Status of Twitter linking
+ */
+export const checkTwitterLinkStatus = async (): Promise<{
+  linked: boolean, 
+  username?: string
+}> => {
+  try {
+    const status = await getAuthStatus();
+    
+    return {
+      linked: !!status.methods?.twitter?.linked,
+      username: status.methods?.twitter?.details?.username
+    };
+  } catch (error) {
+    console.error("[Auth] Failed to check Twitter link status:", error);
+    return { linked: false };
+  }
+};
+
+// All exports are handled as named exports above, no need for an export statement here

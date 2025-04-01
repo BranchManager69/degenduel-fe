@@ -1,6 +1,8 @@
-// Export the Terminal component and helpers
-export { Terminal } from './Terminal';
-export { DecryptionTimer } from './Terminal';
+// Import the Terminal component first
+import { Terminal, DecryptionTimer } from './Terminal';
+
+// Then export
+export { Terminal, DecryptionTimer };
 
 // Define Config interface
 export interface Config {
@@ -45,4 +47,4 @@ export function createConfig(overrides: Partial<Config> = {}): Config {
 }
 
 // Also export Terminal as default
-export { Terminal as default } from './Terminal';
+export default Terminal;
