@@ -10,8 +10,183 @@ import {
   IpBanUpdateParams,
   PlatformStats,
 } from "../../types/index";
+import {
+  ClientError,
+  ClientErrorFilters,
+  ClientErrorListResponse,
+  ClientErrorStats,
+} from "../../types/clientErrors";
+
+// Art style interface for contest image generation
+interface ArtStyle {
+  id: string;
+  description: string;
+}
 
 export const admin = {
+  // Client Error Management
+  clientErrors: {
+    // List client errors with filtering
+    list: async (filters: ClientErrorFilters = {}): Promise<ClientErrorListResponse> => {
+      try {
+        const api = createApiClient();
+        const queryParams = new URLSearchParams();
+        
+        // Add all parameters to query string
+        if (filters.page) queryParams.append("page", filters.page.toString());
+        if (filters.limit) queryParams.append("limit", filters.limit.toString());
+        if (filters.sort) queryParams.append("sort", filters.sort);
+        if (filters.order) queryParams.append("order", filters.order);
+        if (filters.status && filters.status !== 'all') queryParams.append("status", filters.status);
+        if (filters.critical !== undefined) queryParams.append("critical", filters.critical.toString());
+        if (filters.search) queryParams.append("search", filters.search);
+        
+        const url = `/admin/client-errors${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+        const response = await api.fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch client errors: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to list client errors:", error);
+        throw error;
+      }
+    },
+    
+    // Get error statistics
+    getStats: async (): Promise<ClientErrorStats> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/client-errors/stats");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch error statistics: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get error statistics:", error);
+        throw error;
+      }
+    },
+    
+    // Get details for a specific error
+    get: async (id: number): Promise<ClientError> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/client-errors/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch error details: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to get error details for ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Mark an error as resolved
+    resolve: async (id: number): Promise<{success: boolean}> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/client-errors/${id}/resolve`, {
+          method: "POST"
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to resolve error: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to resolve error with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Mark error as critical or non-critical
+    setCritical: async (id: number, isCritical: boolean): Promise<{success: boolean}> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/client-errors/${id}/critical`, {
+          method: "POST",
+          body: JSON.stringify({ critical: isCritical })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update critical status: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to update critical status for error ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Batch resolve multiple errors
+    batchResolve: async (ids: number[]): Promise<{success: boolean, resolved_count: number}> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/client-errors/batch/resolve", {
+          method: "POST",
+          body: JSON.stringify({ ids })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to resolve errors in batch: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to batch resolve errors:", error);
+        throw error;
+      }
+    },
+  },
+  // Contest Image Management
+  contestImages: {
+    // Regenerate contest image
+    regenerate: async (contestId: number, artStyle?: string): Promise<{success: boolean, data: {contest_id: number, image_url: string}}> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/contest-management/regenerate-image/${contestId}`, {
+          method: "POST",
+          body: JSON.stringify({ artStyle }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to regenerate contest image: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to regenerate image for contest ID ${contestId}:`, error);
+        throw error;
+      }
+    },
+
+    // Get available art styles
+    getArtStyles: async (): Promise<{styles: ArtStyle[]}> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-management/art-styles");
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch art styles: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to fetch art styles:", error);
+        throw error;
+      }
+    },
+  },
   getSystemSettings: async (): Promise<any> => {
     try {
       const api = createApiClient();

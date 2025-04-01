@@ -1,9 +1,11 @@
 // src/pages/public/tokens/TokensPage.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
+import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailModal";
 import { TokensGrid } from "../../../components/tokens-list/TokensGrid";
 import { TokensHeader } from "../../../components/tokens-list/TokensHeader";
 import { Button } from "../../../components/ui/Button";
@@ -28,7 +30,32 @@ export const TokensPage: React.FC = () => {
   >("header");
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
+  const [selectedTokenSymbol, setSelectedTokenSymbol] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const user = useStore((state) => state.user);
+  const location = useLocation();
+  
+  // Find the selected token based on symbol
+  const selectedToken = useMemo(() => {
+    if (!selectedTokenSymbol) return null;
+    return tokens.find(
+      token => token.symbol.toLowerCase() === selectedTokenSymbol.toLowerCase()
+    ) || null;
+  }, [tokens, selectedTokenSymbol]);
+  
+  // Parse URL parameters for token selection
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tokenSymbol = params.get('symbol');
+    if (tokenSymbol) {
+      console.log(`Token selected from URL: ${tokenSymbol}`);
+      setSelectedTokenSymbol(tokenSymbol);
+      // If we have a token symbol, set the search query to make it easy to find
+      setSearchQuery(tokenSymbol);
+      // If a token is selected via URL, open the modal
+      setIsDetailModalOpen(true);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const checkMaintenanceAndFetchTokens = async () => {
@@ -125,6 +152,15 @@ export const TokensPage: React.FC = () => {
 
     return () => clearInterval(refreshInterval);
   }, [metadata._stale]); // Add dependency on stale status
+
+  // Close the detail modal and reset URL
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    // Remove the symbol from the URL without page reload
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('symbol');
+    window.history.pushState({}, '', newUrl);
+  };
 
   const filteredAndSortedTokens = tokens
     .filter(
@@ -333,11 +369,21 @@ export const TokensPage: React.FC = () => {
             </div>
           </div>
 
-          <TokensGrid tokens={filteredAndSortedTokens} />
+          <TokensGrid 
+            tokens={filteredAndSortedTokens} 
+            selectedTokenSymbol={selectedTokenSymbol}
+          />
 
+          {/* Modals */}
           <AddTokenModal
             isOpen={isAddTokenModalOpen}
             onClose={() => setIsAddTokenModalOpen(false)}
+          />
+          
+          <TokenDetailModal
+            isOpen={isDetailModalOpen && !!selectedToken}
+            onClose={handleCloseDetailModal}
+            token={selectedToken}
           />
         </div>
       </div>

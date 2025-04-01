@@ -5,6 +5,12 @@ import { FaTwitter } from "react-icons/fa";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { Button } from "../ui/Button";
 
+interface TwitterLoginButtonProps {
+  linkMode?: boolean;
+  className?: string;
+  onClick?: () => void;
+}
+
 /**
  * Twitter Login Button Component
  *
@@ -15,13 +21,21 @@ import { Button } from "../ui/Button";
  * @param {Object} props - Component props
  * @param {boolean} props.linkMode - True if button is used to link account, false for login
  * @param {string} props.className - Additional CSS classes
+ * @param {Function} props.onClick - Optional callback when button is clicked
  */
-const TwitterLoginButton = ({ linkMode = false, className = "" }) => {
+const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({ 
+  linkMode = false, 
+  className = "",
+  onClick
+}) => {
   const { user } = useAuthContext();
 
   // Only show Twitter login option if user has previously linked a Twitter account
   // (when not in link mode)
   const handleTwitterAuth = () => {
+    // Call the onClick callback if provided
+    if (onClick) onClick();
+    
     // Redirect to the Twitter OAuth endpoint
     window.location.href = "/api/auth/twitter/login";
   };

@@ -250,8 +250,15 @@ export const ContestLobby: React.FC = () => {
                     </span>
                   )}
 
-                  {/* Contest Difficulty */}
-                  <ContestDifficulty difficulty={contest.difficulty} />
+                  {/* Prize Distribution */}
+                  {realContest && (
+                    <ContestDifficulty 
+                      prize_pool={realContest.prize_pool}
+                      participant_count={realContest.participant_count}
+                      max_participants={realContest.max_participants}
+                      isCancelled={realContest.status === "cancelled"}
+                    />
+                  )}
                   <span className="text-gray-400 group-hover:text-brand-400 transition-colors">
                     {/* Prize Pool */}
                     Prize Pool:{" "}

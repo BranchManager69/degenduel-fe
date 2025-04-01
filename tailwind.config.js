@@ -370,6 +370,7 @@ export default {
           "slideInLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "slide-in-right":
           "slideInRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "slow-shine": "shine 6s linear infinite",
         "spin-fast": "spin-fast 1.5s cubic-bezier(0.23, 1, 0.32, 1) forwards",
         "logo-shine": "logo-shine 2s ease-in-out infinite",
         "logo-slam-left":

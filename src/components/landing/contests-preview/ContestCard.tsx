@@ -35,7 +35,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   participantCount,
   maxParticipants,
   status,
-  difficulty,
+  // Difficulty no longer used
   contestCode,
   isParticipating,
 }) => {
@@ -292,9 +292,14 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               </div>
             </div>
 
-            {/* Difficulty indicator */}
+            {/* Prize distribution indicator */}
             <div className="mt-2">
-              <ContestDifficulty difficulty={difficulty} />
+              <ContestDifficulty 
+                prize_pool={prizePool.toString()} 
+                participant_count={participantCount} 
+                max_participants={maxParticipants}
+                isCancelled={status === "cancelled"} 
+              />
             </div>
 
             {/* Enhanced ContestButton */}

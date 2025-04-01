@@ -63,6 +63,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
 // Custom hook to use the auth context
 export const useAuthContext = () => {
+  // For Storybook support, use a mock if defined on window
+  if (typeof window !== 'undefined' && (window as any).useAuthContext) {
+    return (window as any).useAuthContext();
+  }
+  
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuthContext must be used within an AuthProvider");

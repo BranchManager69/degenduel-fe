@@ -12,7 +12,6 @@ interface Props {
   contests: Contest[];
   loading: boolean;
   isCompact?: boolean;
-  significantChangeThreshold?: number;
   maxTokens?: number;
 }
 
@@ -20,7 +19,6 @@ export const UnifiedTicker: React.FC<Props> = ({
   contests,
   loading,
   isCompact = false,
-  significantChangeThreshold = 3,
   maxTokens = 8,
 }) => {
   const { maintenanceMode } = useStore();
@@ -43,36 +41,52 @@ export const UnifiedTicker: React.FC<Props> = ({
     return statusOrder[a.status] - statusOrder[b.status];
   });
 
-  // Process tokens for significant price changes
+  // Process tokens without filtering for changes - show all tokens
   useEffect(() => {
     // Add more debugging to diagnose connection issues
     console.log(`UnifiedTicker DEBUG: 
       - isConnected: ${isConnected}
       - Connection state: ${error ? 'ERROR' : 'OK'}
-      - Error: ${error || 'None'}
+      - Error: ${error || 'None'} 
       - Tokens received: ${tokens ? tokens.length : 0}
       - Connection attempts: ${connectionAttempts}
     `);
 
     if (!tokens || tokens.length === 0) return;
 
-    console.log(`UnifiedTicker: Processing ${tokens.length} tokens for significant changes`);
-
-    // Filter for tokens with significant price changes
-    const filtered = tokens.filter(token => 
-      Math.abs(parseFloat(token.change24h)) >= significantChangeThreshold
+    console.log(`UnifiedTicker: Processing ${tokens.length} tokens`);
+    
+    // Sort by absolute change percentage (highest first) but don't filter
+    // This ensures we always show tokens regardless of change percentage
+    const sorted = [...tokens].sort((a, b) => 
+      Math.abs(parseFloat(b.change24h || '0')) - Math.abs(parseFloat(a.change24h || '0'))
     );
     
-    console.log(`UnifiedTicker: Found ${filtered.length} tokens with significant changes`);
+    // Take top N tokens based on maxTokens parameter
+    const tokensToShow = sorted.slice(0, maxTokens);
+    console.log(`UnifiedTicker: Showing ${tokensToShow.length} tokens`);
     
-    // Sort by absolute change percentage (highest first)
-    const sorted = [...filtered].sort((a, b) => 
-      Math.abs(parseFloat(b.change24h)) - Math.abs(parseFloat(a.change24h))
-    );
+    // Force update the ticker data
+    setSignificantChanges(tokensToShow);
     
-    // Take top N
-    setSignificantChanges(sorted.slice(0, maxTokens));
-  }, [tokens, significantChangeThreshold, maxTokens, isConnected, error, connectionAttempts]);
+    // Force animation reset when token data changes
+    if (containerRef.current && !isMobileView) {
+      // Brief reset of animation to ensure it restarts properly
+      const currentAnimation = containerRef.current.style.animation;
+      containerRef.current.style.animation = 'none';
+      
+      // Force reflow
+      void containerRef.current.offsetWidth;
+      
+      // Restore animation
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.style.animation = currentAnimation || getAnimationSpeed();
+        }
+      }, 50);
+    }
+    
+  }, [tokens, maxTokens, isConnected, error, connectionAttempts]);
   
   // Manually trigger token data refresh when WebSocket is connected
   useEffect(() => {
@@ -120,6 +134,39 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   // Decide whether to use scroll or animation based on container width
   const isMobileView = containerWidth < 640;
+  
+  // Debug helper to track content width changes
+  useEffect(() => {
+    if (contentRef.current) {
+      const contentWidth = contentRef.current.offsetWidth;
+      console.log(`UnifiedTicker: Content width is ${contentWidth}px (Container width: ${containerWidth}px)`);
+      
+      // If content is narrower than container, we need different animation strategy
+      const needsSpecialAnimation = contentWidth > 0 && contentWidth < containerWidth * 0.9;
+      
+      if (needsSpecialAnimation && containerRef.current && !isMobileView) {
+        console.log("UnifiedTicker: Content is narrower than container - needs special animation");
+        
+        // Add multiple clones to fill the space
+        if (contentRef.current && containerRef.current) {
+          // Remove existing clones first
+          const existingClones = containerRef.current.querySelectorAll(".clone");
+          existingClones.forEach(clone => clone.remove());
+          
+          // Calculate how many clones we need (at least 4 to ensure continuous flow)
+          const clonesNeeded = Math.max(4, Math.ceil((containerWidth * 2) / contentWidth));
+          console.log(`UnifiedTicker: Creating ${clonesNeeded} clones to fill space`);
+          
+          // Create multiple clones
+          for (let i = 0; i < clonesNeeded; i++) {
+            const clone = contentRef.current.cloneNode(true) as HTMLDivElement;
+            clone.classList.add("clone");
+            containerRef.current.appendChild(clone);
+          }
+        }
+      }
+    }
+  }, [containerWidth, sortedContests, significantChanges, activeTab]);
   
   // Handle manual refresh for both contest and token data
   const handleManualRefresh = () => {
@@ -180,9 +227,17 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   // Setup scrolling vs. animation based on screen size
   useEffect(() => {
-    if (!containerRef.current || !contentRef.current) return;
+    console.log("UnifiedTicker: Setting up animation mode based on screen size");
+    
+    // Exit early if refs aren't ready
+    if (!containerRef.current || !contentRef.current) {
+      console.log("UnifiedTicker: Refs not ready yet");
+      return;
+    }
 
     if (isMobileView) {
+      console.log("UnifiedTicker: Setting up MOBILE scrolling mode");
+      
       // For mobile: Use horizontal scroll
       // Remove any existing clones and animation
       const existingClones = containerRef.current.querySelectorAll(".clone");
@@ -199,6 +254,8 @@ export const UnifiedTicker: React.FC<Props> = ({
         (child as HTMLElement).classList.add('snap-start');
       });
     } else {
+      console.log("UnifiedTicker: Setting up DESKTOP animation mode");
+      
       // For desktop: Use animation
       // Remove scroll properties
       containerRef.current.className = containerRef.current.className
@@ -218,11 +275,28 @@ export const UnifiedTicker: React.FC<Props> = ({
       const existingClones = containerRef.current.querySelectorAll(".clone");
       existingClones.forEach((clone) => clone.remove());
 
-      // Clone items to create seamless loop
+      // Clone items to create seamless loop only if we have content
       const content = contentRef.current;
-      const clone = content.cloneNode(true) as HTMLDivElement;
-      clone.classList.add("clone"); // Add class to identify clones
-      containerRef.current.appendChild(clone);
+      
+      // Log content dimensions before cloning
+      console.log(`UnifiedTicker: Content dimensions before cloning - Width: ${content.offsetWidth}px, Children: ${content.children.length}`);
+      
+      // Only clone if we have visible content
+      if (content.offsetWidth > 0 && content.children.length > 0) {
+        const clone = content.cloneNode(true) as HTMLDivElement;
+        clone.classList.add("clone"); // Add class to identify clones
+        containerRef.current.appendChild(clone);
+        console.log("UnifiedTicker: Content cloned successfully");
+      } else {
+        console.log("UnifiedTicker: Content not ready for cloning yet (zero width or no children)");
+      }
+      
+      // Ensure animation is properly set
+      const currentAnimation = containerRef.current.style.animation;
+      if (!currentAnimation || currentAnimation === 'none') {
+        containerRef.current.style.animation = getAnimationSpeed();
+        console.log(`UnifiedTicker: Animation set to ${getAnimationSpeed()}`);
+      }
     }
 
     return () => {
@@ -234,17 +308,25 @@ export const UnifiedTicker: React.FC<Props> = ({
     };
   }, [sortedContests, significantChanges, maintenanceMode, activeTab, isMobileView]);
 
-  // Make the ticker run faster or slower based on active tab
+  // Make the ticker run faster or slower based on active tab and content amount
   const getAnimationSpeed = () => {
     if (isMobileView) return 'none'; // No animation on mobile
     
+    // Determine animation speed based on content length
+    const totalItemCount = 
+      (activeTab === "contests" ? 0 : significantChanges.length) +
+      (activeTab === "tokens" ? 0 : sortedContests.length);
+    
+    // Adjust speed based on total items to ensure smooth scrolling
+    const baseSpeed = Math.max(15, Math.min(40, totalItemCount * 2));
+    
     switch (activeTab) {
       case "contests":
-        return "ticker 20s linear infinite"; // For fewer items
+        return `ticker ${Math.max(15, Math.min(25, sortedContests.length * 2))}s linear infinite`; 
       case "tokens":
-        return "ticker 15s linear infinite"; // For more items
+        return `ticker ${Math.max(12, Math.min(20, significantChanges.length * 1.5))}s linear infinite`;
       default:
-        return "ticker 30s linear infinite"; // Combined view needs slower speed
+        return `ticker ${baseSpeed}s linear infinite`;
     }
   };
 
@@ -652,6 +734,9 @@ export const UnifiedTicker: React.FC<Props> = ({
               animation: getAnimationSpeed(),
               animationPlayState: isPaused ? "paused" : "running",
               scrollBehavior: "smooth",
+              position: "relative", // Ensure positioned context for proper animation
+              overflow: isMobileView ? "auto" : "hidden", // Important for animation containment
+              willChange: "transform", // Performance optimization
             }}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => {
@@ -668,7 +753,7 @@ export const UnifiedTicker: React.FC<Props> = ({
             {/* Content Container */}
             <div
               ref={contentRef}
-              className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 transition-all duration-200 ease-out
+              className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 transition-all duration-200 ease-out min-w-max
                 ${isCompact ? "text-xs" : "text-sm"}`}
             >
               {/* Show content based on active tab */}
@@ -927,26 +1012,56 @@ export const UnifiedTicker: React.FC<Props> = ({
           height: 0px !important;
         }
         .ticker-animation {
-          display: flex;
-          white-space: nowrap;
-          overflow: hidden;
+          display: flex !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          width: 100% !important;
         }
-        @keyframes ticker {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
+        /* Shadow effects */
         .shadow-brand {
           box-shadow: 0 0 5px rgba(153, 51, 255, 0.3);
         }
         .shadow-cyber {
           box-shadow: 0 0 5px rgba(0, 225, 255, 0.3);
         }
+        
+        /* Animation debugging */
+        .ticker-debug {
+          position: relative;
+        }
+        .ticker-debug:after {
+          content: "Animation Debug";
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: black;
+          color: lime;
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          z-index: 1000;
+        }
+        /* Additional animations */
+        @keyframes gradientX {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradientX {
+          animation: gradientX 2s ease infinite;
+          background-size: 200% auto;
+        }
         `
       }} />
+      
+      {/* Debug information to help understand what's wrong */}
+      <div className="debug-info hidden absolute bottom-full left-0 mb-1 p-2 bg-dark-800 text-xs text-white z-50 opacity-80 rounded">
+        <div>Size: {containerWidth}px (Mobile: {isMobileView ? 'Yes' : 'No'})</div>
+        <div>Contests: {sortedContests.length}, Tokens: {significantChanges.length}</div>
+        <div>WebSocket: {isConnected ? 'Connected' : 'Disconnected'}</div>
+        <div>Animation: {getAnimationSpeed()}</div>
+      </div>
     </div>
   );
 };

@@ -35,7 +35,7 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
   participantCount,
   maxParticipants,
   status,
-  difficulty,
+  // Difficulty no longer used,
   contestCode,
   isParticipating,
   index,
@@ -339,7 +339,12 @@ export const ContestCard: React.FC<ContestCardProps & { index: number }> = ({
 
               {/* Bottom badges */}
               <div className="mt-4 flex justify-between items-center">
-                <ContestDifficulty difficulty={difficulty} />
+                <ContestDifficulty 
+                  prize_pool={currentPrizePool.toString()}
+                  participant_count={participantCount}
+                  max_participants={maxParticipants}
+                  isCancelled={status === "cancelled"}
+                />
                 <p className="text-[10px] font-cyber text-gray-500 tracking-wider">
                   {contestCode}
                 </p>

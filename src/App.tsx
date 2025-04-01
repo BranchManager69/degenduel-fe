@@ -27,6 +27,7 @@ import { ContestChatManager } from "./components/contest-chat/ContestChatManager
 import { GameDebugPanel } from "./components/debug/game/GameDebugPanel";
 import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
 import { UiDebugPanel } from "./components/debug/ui/UiDebugPanel";
+import { EdgeToEdgeTicker } from "./components/layout/EdgeToEdgeTicker";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { ServerDownBanner } from "./components/layout/ServerDownBanner";
@@ -38,20 +39,24 @@ import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
 import { MovingBackground } from "./components/ui/MovingBackground";
 /* Contexts */
+import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
 import { AuthProvider } from "./contexts/AuthContext";
+import { PrivyAuthProvider } from "./contexts/PrivyAuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 /* WebSocket */
 // Import WebSocketManager from the unified WebSocket system
 import { WebSocketManager } from './hooks/websocket';
 /* Hooks */
 import { useAuth } from "./hooks/useAuth";
-import { useScrollbarVisibility } from "./hooks/useScrollbarVisibility";
 import { ReferralProvider } from "./hooks/useReferral";
+import { useScrollbarVisibility } from "./hooks/useScrollbarVisibility";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AiTesting } from "./pages/admin/AiTesting";
 import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
 import IpBanManagementPage from "./pages/admin/ip-ban/IpBanManagementPage";
+import LogForwarderDebug from "./pages/admin/LogForwarderDebug";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
+import ClientErrorsPage from "./pages/admin/ClientErrorsPage";
 import { SystemReports } from "./pages/admin/SystemReports";
 import WebSocketHub from "./pages/admin/WebSocketHub";
 import MyContestsPage from "./pages/authenticated/MyContestsPage";
@@ -91,7 +96,6 @@ import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
 import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
-import LogForwarderDebug from "./pages/admin/LogForwarderDebug";
 import { useStore } from "./store/useStore";
 import "./styles/color-schemes.css";
 
@@ -170,16 +174,37 @@ export const App: React.FC = () => {
     };
   }, [checkAuth, user]);
 
+  // Privy configuration
+  const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
+  const privyConfig: PrivyClientConfig = {
+    loginMethods: [
+      'email',
+      'wallet',
+      'google',
+      'twitter',
+      'sms',
+      'passkey',
+    ],
+    appearance: {
+      theme: 'dark',
+      accentColor: '#5865F2',
+    },
+  };      
+
   return (
     <Router>
-      {/* Auth Provider */}
-      <AuthProvider>
-        {/* Referral Provider */}
-        <ReferralProvider>
-          {/* Token Data Provider */}
-          <TokenDataProvider>
-              {/* Toast Provider */}
-              <ToastProvider>
+      {/* Privy SDK Provider */}
+      <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
+        {/* Our Privy Auth Provider that integrates with our backend */}
+        <PrivyAuthProvider>
+          {/* Auth Provider */}
+          <AuthProvider>
+          {/* Referral Provider */}
+          <ReferralProvider>
+            {/* Token Data Provider */}
+            <TokenDataProvider>
+                {/* Toast Provider */}
+                <ToastProvider>
               {/* Main container */}
               <div className="min-h-screen flex flex-col">
                 {/* Unified WebSocketManager - centralized WebSocket connection */}
@@ -198,6 +223,9 @@ export const App: React.FC = () => {
 
                 {/* Header */}
                 <Header />
+
+                {/* Edge-to-Edge Ticker - Full width between header and content */}
+                <EdgeToEdgeTicker />
 
                 {/* Server Down Banner */}
                 <ServerDownBanner />
@@ -438,6 +466,16 @@ export const App: React.FC = () => {
                         </AdminRoute>
                       }
                     />
+                    
+                    {/* Client Error Management */}
+                    <Route
+                      path="/admin/client-errors"
+                      element={
+                        <AdminRoute>
+                          <ClientErrorsPage />
+                        </AdminRoute>
+                      }
+                    />
 
                     {/* Admin Dashboard */}
                     <Route
@@ -500,6 +538,16 @@ export const App: React.FC = () => {
                       element={
                         <AdminRoute>
                           <IpBanManagementPage />
+                        </AdminRoute>
+                      }
+                    />
+
+                    {/* Contest Image Generator */}
+                    <Route
+                      path="/admin/contest-management/regenerate-image/:contestId"
+                      element={
+                        <AdminRoute>
+                          <div>Contest Image Generator Page</div>
                         </AdminRoute>
                       }
                     />
@@ -702,6 +750,8 @@ export const App: React.FC = () => {
           </TokenDataProvider>
         </ReferralProvider>
       </AuthProvider>
+    </PrivyAuthProvider>
+    </PrivyProvider>
     </Router>
   );
 };

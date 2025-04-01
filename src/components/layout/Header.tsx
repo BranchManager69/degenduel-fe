@@ -7,15 +7,12 @@ import { ContestsDropdown } from "./ContestsDropdown";
 import { MobileMenuButton } from "./MobileMenuButton";
 import { RankingsDropdown } from "./RankingsDropdown";
 import { TokensDropdown } from "./TokensDropdown";
-import { UnifiedTicker } from "./UnifiedTicker";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotificationWebSocket } from "../../hooks/websocket/useNotificationWebSocket";
 import { useScrollHeader } from "../../hooks/useScrollHeader";
-import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
-import type { Contest } from "../../types/index";
-import { ConnectWalletButton } from "../auth/ConnectWalletButton";
+import LoginOptionsButton from "../auth/LoginOptionsButton";
 import Logo from "../ui/Logo";
 import { UserMenu } from "./user-menu/UserMenu";
 
@@ -31,51 +28,11 @@ export const Header: React.FC = () => {
   } = useStore();
   const { isAdmin } = useAuth();
   const { unreadCount } = useNotificationWebSocket();
-  const [activeContests, setActiveContests] = useState<Contest[]>([]);
-  const [loading, setLoading] = useState(true);
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
   const [isTransitioningToMaintenance, setIsTransitioningToMaintenance] =
     useState(false);
 
-  // Fetch contests
-  useEffect(() => {
-    const fetchContests = async () => {
-      try {
-        // Don't fetch if we're in maintenance mode
-        if (maintenanceMode) {
-          setActiveContests([]);
-          setLoading(false);
-          return;
-        }
-
-        const response = await ddApi.contests.getAll();
-        const contests = Array.isArray(response) ? response : [];
-
-        // TEMPORARY FIX: Including ALL contests regardless of status
-        // We're temporarily disabling all filtering because:
-        // 1. The contest evaluation service is not currently functional
-        // 2. This ensures the LiveContestTicker displays content for all contest states
-        // 3. The LiveContestTicker component already has formatting for all four status types
-        //    (active, pending, completed, and cancelled)
-        // 4. This is an easy temporary solution until the evaluation service is fixed
-        //setActiveContests(contests || []);
-
-        // NEVERMIND! C.E.S. should be back up and running now:
-        setActiveContests(contests.filter(isContestLive) || []);
-      } catch (err: any) {
-        if (err?.status === 503 || err?.message?.includes("503")) {
-          handleMaintenanceTransition();
-        } else {
-          console.error("Failed to load contests:", err);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchContests();
-    const interval = setInterval(fetchContests, 60000);
-    return () => clearInterval(interval);
-  }, [maintenanceMode]);
+  // No longer fetching contests here - EdgeToEdgeTicker now handles this
 
   // Handle maintenance transitions
   const handleMaintenanceTransition = () => {
@@ -104,19 +61,17 @@ export const Header: React.FC = () => {
         setLastMaintenanceCheck(now);
 
         if (isInMaintenance !== maintenanceMode) {
-          // If transitioning out of maintenance mode, try to fetch contests first
+          // If transitioning out of maintenance mode
           if (!isInMaintenance && maintenanceMode) {
             try {
-              const response = await ddApi.contests.getAll();
-              const contests = Array.isArray(response) ? response : [];
-              setActiveContests(contests.filter(isContestLive) || []);
+              // No longer need to fetch contests here - EdgeToEdgeTicker will handle that
               useStore.setState({ maintenanceMode: false }); // Use store setState directly
             } catch (err) {
               console.error(
-                "Failed to fetch contests during maintenance exit:",
+                "Failed during maintenance exit:",
                 err,
               );
-              // Don't update maintenance mode if we can't fetch contests
+              // Don't update maintenance mode if there was an error
               return;
             }
           } else {
@@ -300,31 +255,8 @@ export const Header: React.FC = () => {
               </nav>
             </div>
 
-            {/* Center section: Unified Ticker */}
-            <div
-              className={`flex-1 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-              ${
-                isCompact ? "mx-2 sm:mx-3 md:mx-4" : "mx-3 sm:mx-4 md:mx-8"
-              } min-w-0`}
-            >
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                  className="w-full"
-                >
-                  <UnifiedTicker
-                    contests={activeContests}
-                    loading={loading}
-                    isCompact={isCompact}
-                    significantChangeThreshold={3}
-                    maxTokens={15}
-                  />
-                </motion.div>
-              </AnimatePresence>
-            </div>
+            {/* Center section - empty now that ticker is moved to its own component */}
+            <div className="flex-1"></div>
 
             {/* Right section: Auth and Mobile Menu */}
             <div
@@ -361,9 +293,9 @@ export const Header: React.FC = () => {
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                     >
-                      {/* Desktop Connect Wallet Button */}
+                      {/* Desktop Login Options Button */}
                       <div className="flex items-center">
-                        <ConnectWalletButton compact={isCompact} />
+                        <LoginOptionsButton compact={isCompact} />
                       </div>
                     </motion.div>
                   )}
