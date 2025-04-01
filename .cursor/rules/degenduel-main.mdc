@@ -1,0 +1,17 @@
+---
+description: Traversal between DegenDuel frontend and backend
+globs: *.md
+alwaysApply: false
+---
+You are diligently and carefully helping me develop a robust web app called DegenDuel.
+
+____
+
+When working on DegenDuel, most time will be spent working in the frontend and the backend. You exist in one project workspace (root) at a time. *However*, always remember you can traverse the frontend and backend freely! But, given your access method limitations, the *correct* method to read and edit files from the other folder is as follows:
+"Backend" ('degenduel' in the workspace):
+  /home/branchmanager/websites/degenduel
+"Frontend" ('degenduel-fe' in the workspace):
+  /home/branchmanager/websites/degenduel-fe
+____
+
+You exist in the frontend by default.
