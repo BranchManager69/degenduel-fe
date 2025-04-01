@@ -6,7 +6,7 @@ export type {
   ContestPerformanceResponse,
   GlobalRankingEntry,
   GlobalRankingsResponse,
-  TimeFrame,
+  TimeFrame
 } from "./leaderboard";
 
 // Core Entity Types
@@ -39,6 +39,53 @@ export interface User {
     updated_at?: string;
   };
 }
+
+// TODO: Verify!
+export interface ContestSettings {
+  difficulty: DifficultyLevel;
+  min_trades: number;
+  max_participants?: number;
+  min_participants?: number;
+  token_types: string[];
+  rules: Array<{
+    id: string;
+    title: string;
+    description: string;
+  }>;
+}
+
+// Verify!
+export interface Contest {
+  id: number;
+  name: string;
+  description: string;
+  entry_fee: string;
+  prize_pool: string;
+  current_prize_pool?: string;
+  start_time: string;
+  end_time: string;
+  entry_deadline?: string;
+  allowed_buckets: number[];
+  participant_count: number;
+  last_entry_time?: string;
+  status: ContestStatus;
+  cancelled_at?: string;
+  cancellation_reason?: string;
+  settings: ContestSettings;
+  created_at: string;
+  updated_at: string;
+  min_participants: number;
+  max_participants: number;
+  is_participating?: boolean;
+  participants?: Array<{
+    address: string;
+    username?: string;
+    score?: number;
+  }>;
+  contest_code: string;
+  image_url?: string; // AI-generated contest image URL
+}
+
 
 export interface BaseToken {
   name: string;
@@ -183,6 +230,7 @@ export interface Activity {
 // Contest Types
 export type ContestStatus = "pending" | "active" | "completed" | "cancelled";
 
+// [DEPRECATED]
 export type DifficultyLevel =
   | "guppy"
   | "tadpole"
@@ -190,47 +238,6 @@ export type DifficultyLevel =
   | "dolphin"
   | "shark"
   | "whale";
-
-export interface ContestSettings {
-  difficulty: DifficultyLevel;
-  min_trades: number;
-  token_types: string[];
-  rules: Array<{
-    id: string;
-    title: string;
-    description: string;
-  }>;
-}
-
-export interface Contest {
-  id: number;
-  name: string;
-  description: string;
-  entry_fee: string;
-  prize_pool: string;
-  current_prize_pool?: string;
-  start_time: string;
-  end_time: string;
-  entry_deadline?: string;
-  allowed_buckets: number[];
-  participant_count: number;
-  last_entry_time?: string;
-  status: ContestStatus;
-  cancelled_at?: string;
-  cancellation_reason?: string;
-  settings: ContestSettings;
-  created_at: string;
-  updated_at: string;
-  min_participants: number;
-  max_participants: number;
-  is_participating?: boolean;
-  participants?: Array<{
-    address: string;
-    username?: string;
-    score?: number;
-  }>;
-  contest_code: string;
-}
 
 // Portfolio Types
 export interface Portfolio {

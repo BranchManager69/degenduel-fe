@@ -3,15 +3,15 @@ import { z } from "zod";
 import type { ContestSettings, ContestStatus } from "../types/index";
 
 // Use the existing ContestStatus type
-const contestStatusSchema = z.enum([
+const contestStatusSchema: z.ZodType<ContestStatus> = z.enum([
   "pending",
   "active",
   "completed",
   "cancelled",
-]) satisfies z.ZodType<ContestStatus>;
+]);
 
 // Use the existing ContestSettings type
-const contestSettingsSchema = z.object({
+const contestSettingsSchema: z.ZodType<ContestSettings> = z.object({
   difficulty: z.enum([
     "guppy",
     "tadpole",
@@ -31,7 +31,7 @@ const contestSettingsSchema = z.object({
       description: z.string(),
     }),
   ),
-}) satisfies z.ZodType<ContestSettings>;
+});
 
 // Schema for form validation
 export const contestFormSchema = z.object({

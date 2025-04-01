@@ -50,7 +50,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
       start_time: contest?.start_time,
       end_time: contest?.end_time,
       entry_deadline: getNextHourDateTime(),
-      allowed_buckets: [1, 2, 3, 4, 5],
+      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
       participant_count: contest?.participant_count || 0,
       status: contest?.status,
       settings: {
