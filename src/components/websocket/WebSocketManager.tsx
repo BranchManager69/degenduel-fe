@@ -783,7 +783,12 @@ const WebSocketManagerComponent: React.FC = () => {
   return null;
 };
 
+// Define props interface
+interface WebSocketManagerProps {
+  onStateChange?: (state: ConnectionState, error: string | null) => void;
+}
+
 // Use React.memo to prevent unnecessary re-renders
-export const WebSocketManager = React.memo(WebSocketManagerComponent, () => true);
+export const WebSocketManager = React.memo(WebSocketManagerComponent as React.FC<WebSocketManagerProps>, () => true);
 
 export default WebSocketManager;
