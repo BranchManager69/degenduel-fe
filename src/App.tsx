@@ -44,9 +44,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { PrivyAuthProvider } from "./contexts/PrivyAuthContext";
 import { TwitterAuthProvider } from "./contexts/TwitterAuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
-/* WebSocket */
-// Import WebSocketManager from the unified WebSocket system
-import { WebSocketManager } from './hooks/websocket';
+import { WebSocketProvider } from "./contexts/WebSocketContext";
 /* Hooks */
 import { useAuth } from "./hooks/useAuth";
 import { ReferralProvider } from "./hooks/useReferral";
@@ -204,17 +202,16 @@ export const App: React.FC = () => {
             <TwitterAuthProvider>
               {/* Referral Provider */}
               <ReferralProvider>
-            {/* Token Data Provider */}
-            <TokenDataProvider>
-                {/* Toast Provider */}
-                <ToastProvider>
-              {/* Main container */}
-              <div className="min-h-screen flex flex-col">
-                {/* Unified WebSocketManager - centralized WebSocket connection */}
-                <WebSocketManager />
-                
-                {/* Toast event listener for global toast notifications */}
-                <ToastListener />
+                {/* WebSocket Provider - centralized WebSocket connection */}
+                <WebSocketProvider>
+                  {/* Token Data Provider - uses the WebSocketProvider */}
+                  <TokenDataProvider>
+                    {/* Toast Provider */}
+                    <ToastProvider>
+                      {/* Main container */}
+                      <div className="min-h-screen flex flex-col">
+                        {/* Toast event listener for global toast notifications */}
+                        <ToastListener />
 
                 {/* Debug Panels (superadmin only) */}
                 {user?.is_superadmin && <UiDebugPanel />}
@@ -749,13 +746,14 @@ export const App: React.FC = () => {
                 {/* Toast Container */}
                 <ToastContainer />
               </div>
-            </ToastProvider>
-          </TokenDataProvider>
-        </ReferralProvider>
+                    </ToastProvider>
+                  </TokenDataProvider>
+                </WebSocketProvider>
+              </ReferralProvider>
             </TwitterAuthProvider>
-      </AuthProvider>
-    </PrivyAuthProvider>
-    </PrivyProvider>
+          </AuthProvider>
+        </PrivyAuthProvider>
+      </PrivyProvider>
     </Router>
   );
 };
