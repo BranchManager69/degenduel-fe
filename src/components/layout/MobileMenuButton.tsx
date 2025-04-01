@@ -1,11 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { FaBell, FaTrophy, FaUser, FaUserFriends, FaTwitter } from "react-icons/fa";
+import { FaBell, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
 
 import { useStore } from "../../store/useStore";
 import { useAuth } from "../../hooks/useAuth";
 import { ConnectWalletButton } from "../auth/ConnectWalletButton";
+import TwitterLoginButton from "../auth/TwitterLoginButton";
+import PrivyLoginButton from "../auth/PrivyLoginButton";
 
 interface MobileMenuButtonProps {
   className?: string;
@@ -238,26 +240,31 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     {/* Login section */}
                     <div className="px-4 py-3 bg-dark-300/40 border-b border-brand-500/20">
                       <div className="flex flex-col gap-2">
-                        <button
+                        {/* Wallet Login */}
+                        <ConnectWalletButton 
+                          className="w-full justify-center"
                           onClick={() => setIsOpen(false)}
-                          className="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white py-2 px-4 rounded-md font-medium text-sm transition-all duration-300 flex items-center justify-center"
-                        >
-                          <ConnectWalletButton 
-                            compact={true} 
-                            className="py-0 px-0 bg-transparent border-none shadow-none hover:bg-transparent" 
-                          />
-                        </button>
+                        />
                         
-                        <button
-                          onClick={() => {
-                            window.location.href = "/login?auth=twitter";
-                            setIsOpen(false);
-                          }}
-                          className="w-full bg-[#1DA1F2] hover:bg-[#1a94df] text-white py-2 px-4 rounded-md font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2"
+                        {/* Twitter Login */}
+                        <TwitterLoginButton 
+                          className="w-full justify-center"
+                          onClick={() => setIsOpen(false)}
+                        />
+                        
+                        {/* Privy Login */}
+                        <PrivyLoginButton 
+                          className="w-full justify-center"
+                          onClick={() => setIsOpen(false)}
+                        />
+                        
+                        <Link
+                          to="/login"
+                          className="w-full text-xs text-center text-gray-400 hover:text-white py-1 transition-colors"
+                          onClick={() => setIsOpen(false)}
                         >
-                          <FaTwitter className="w-4 h-4" />
-                          Login with Twitter
-                        </button>
+                          View all login options
+                        </Link>
                       </div>
                     </div>
                     

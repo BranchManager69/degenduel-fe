@@ -17,6 +17,26 @@ export const NODE_ENV = isDev ? "development" : "production";
 
 /* Debug Mode */
 export const DDAPI_DEBUG_MODE = isDev ? "true" : "false";
+export const AUTH_DEBUG_MODE = isDev ? "true" : "false";
+
+// Helper function for auth debugging
+export const authDebug = (context: string, message: string, data?: any) => {
+  if (AUTH_DEBUG_MODE === "true") {
+    const timestamp = new Date().toISOString().slice(11, 23); // HH:MM:SS.sss
+    if (data) {
+      console.log(`%c[AuthDebug:${context}] %c${timestamp} %c${message}`, 
+        'color: #00a8e8; font-weight: bold', 
+        'color: #888', 
+        'color: #fff', 
+        data);
+    } else {
+      console.log(`%c[AuthDebug:${context}] %c${timestamp} %c${message}`, 
+        'color: #00a8e8; font-weight: bold', 
+        'color: #888', 
+        'color: #fff');
+    }
+  }
+};
 
 /* Server */
 export const PORT_CONFIG = isDev

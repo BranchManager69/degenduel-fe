@@ -1,6 +1,7 @@
 import React from "react";
 
-import { ContestCard } from "./ContestCard";
+// Import the ContestCard from the contest-browser directory to use the unified card
+import { ContestCard } from "../../contest-browser/ContestCard";
 import type { Contest } from "../../../types/index";
 
 interface ContestSectionProps {
@@ -174,21 +175,7 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
                 className="relative"
                 style={{ zIndex: contests.length - index }}
               >
-                <ContestCard
-                  id={String(contest.id)}
-                  name={contest.name}
-                  description={contest.description}
-                  entryFee={Number(contest.entry_fee)}
-                  prizePool={Number(contest.prize_pool)}
-                  startTime={contest.start_time}
-                  endTime={contest.end_time}
-                  participantCount={contest.participant_count}
-                  maxParticipants={contest.max_participants}
-                  status={contest.status}
-                  difficulty={contest.settings.difficulty}
-                  contestCode={contest.contest_code}
-                  isParticipating={contest.is_participating ?? false}
-                />
+                <ContestCard contest={contest} />
               </div>
             </div>
           ))}

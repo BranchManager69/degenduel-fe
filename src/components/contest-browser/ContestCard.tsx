@@ -1,11 +1,12 @@
-import React from "react";
-import { FaCheckCircle } from "react-icons/fa";
+import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 
 import { formatCurrency } from "../../lib/utils";
 import { Contest, ContestStatus } from "../../types/index";
 import { ContestButton } from "../landing/contests-preview/ContestButton";
 import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { CountdownTimer } from "../ui/CountdownTimer";
+import { LoadingSpinner } from "../common/LoadingSpinner";
 
 interface ContestCardProps {
   contest: Contest;
@@ -16,6 +17,17 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   contest,
   onClick,
 }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [imageBlurhash, setImageBlurhash] = useState(false);
+  
+  // Mouse position tracking for parallax effect
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  
+  // Ref to the card element for tracking relative mouse position
+  const cardRef = useRef<HTMLDivElement>(null);
+
   // Calculate actual status based on timestamps
   const now = new Date();
   const startTime = new Date(contest.start_time);
@@ -35,57 +47,147 @@ export const ContestCard: React.FC<ContestCardProps> = ({
     }
   }
 
-  const getStatusColor = () => {
-    switch (displayStatus) {
-      case "active":
-        return "bg-green-500/10 text-green-400 border-green-500/20";
-      case "pending":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      case "completed":
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-      case "cancelled":
-        return "bg-red-500/10 text-red-400 border-red-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-    }
+  // Set up image animation - now handled directly in the parallax effect
+  useEffect(() => {
+    // No longer need to set animateImage since we use the parallax effect
+  }, [imageLoaded]);
+  
+  // Mouse move handler for parallax effect
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    // Get card dimensions and position
+    const rect = cardRef.current.getBoundingClientRect();
+    
+    // Calculate mouse position relative to card center (values from -0.5 to 0.5)
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    
+    // Update mouse position state
+    setMousePosition({ x, y });
   };
-
-  const getStatusText = () => {
-    switch (displayStatus) {
-      case "active":
-        return "Live";
-      case "pending":
-        return "Upcoming";
-      case "completed":
-        return "Ended";
-      case "cancelled":
-        return "Cancelled";
-      default:
-        return displayStatus;
-    }
+  
+  // Mouse enter/leave handlers
+  const handleMouseEnter = () => setIsHovering(true);
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    // Reset to center position when not hovering
+    setMousePosition({ x: 0, y: 0 });
   };
 
   return (
     <div
+      ref={cardRef}
       onClick={onClick}
-      className="group relative bg-dark-200/80 backdrop-blur-sm border border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 rounded-lg overflow-hidden"
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="group relative bg-dark-200/80 backdrop-blur-sm border border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 rounded-lg overflow-hidden w-full max-w-full"
     >
+      {/* Contest Image with Parallax Effect */}
+      {contest.image_url && (
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Initial loading state - show spinner */}
+          {!imageLoaded && !imageError && !imageBlurhash && (
+            <div className="absolute inset-0 flex items-center justify-center bg-dark-300/50 z-10">
+              <LoadingSpinner size="lg" />
+            </div>
+          )}
+          
+          {/* Progressive loading effect - low quality image placeholder */}
+          {!imageLoaded && !imageError && (
+            <motion.div
+              initial={{ opacity: 0, filter: "blur(20px)" }}
+              animate={{ opacity: 0.15, filter: "blur(10px)" }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 bg-gradient-to-br from-dark-300 to-dark-400"
+              onAnimationComplete={() => setImageBlurhash(true)}
+            />
+          )}
+          
+          {/* Actual image with parallax effect */}
+          {!imageError && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={imageLoaded ? { opacity: 0.15 } : { opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute inset-0"
+              style={{ 
+                // Subtle 3D rotation based on mouse position
+                perspective: "1000px",
+                perspectiveOrigin: "center"
+              }}
+            >
+              <motion.div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  // Subtle transform based on mouse position for parallax effect
+                  transform: isHovering ? 
+                    `scale(1.1) translateX(${mousePosition.x * 10}px) translateY(${mousePosition.y * 10}px)` : 
+                    "scale(1.05)",
+                  transition: "transform 0.3s ease-out"
+                }}
+              >
+                <motion.img
+                  src={contest.image_url}
+                  alt={contest.name}
+                  onLoad={() => {
+                    // Small delay for smoother transition from placeholder
+                    setTimeout(() => setImageLoaded(true), 100);
+                  }}
+                  onError={() => {
+                    console.error(`Failed to load image: ${contest.image_url}`);
+                    setImageError(true);
+                  }}
+                  initial={{ scale: 1.2, filter: "blur(8px)" }}
+                  animate={{ filter: "blur(0px)" }}
+                  transition={{ filter: { duration: 1.2 } }}
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+              
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-200 via-dark-200/95 to-transparent" />
+            </motion.div>
+          )}
+        </div>
+      )}
+      
+      {/* Fallback background for cards without images */}
+      {!contest.image_url && (
+        <div className="absolute inset-0 bg-gradient-to-br from-dark-300/50 to-dark-400/50" />
+      )}
+
       {/* Animated gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-white/0 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
 
       {/* Glow effect */}
       <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-      {/* Enhanced Header with Banner Style */}
-      <div className="relative p-6 space-y-4">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1.5 flex-1 min-w-0">
-            <h3 className="text-2xl font-bold text-gray-100 truncate pr-2 group-hover:text-brand-300 transition-colors hover:text-brand-400 cursor-pointer">
+      {/* Enhanced Header with Banner Style - Mobile Responsive */}
+      <div className="relative p-4 sm:p-6 space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+          <div className="space-y-1.5 flex-1 min-w-0 mb-2 sm:mb-0">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-100 truncate pr-2 group-hover:text-brand-300 transition-colors hover:text-brand-400 cursor-pointer">
               {contest.name}
             </h3>
             <p className="text-sm font-medium text-brand-300">
               {hasEnded ? (
                 "Contest Ended"
+              ) : displayStatus === "cancelled" ? (
+                <span className="line-through text-gray-500 italic">
+                  {hasStarted ? "Ends in " : "Starts in "}
+                  <CountdownTimer
+                    targetDate={
+                      hasStarted ? contest.end_time : contest.start_time
+                    }
+                    onComplete={() => {
+                      console.log("Timer completed");
+                    }}
+                    showSeconds={true}
+                  />
+                </span>
               ) : (
                 <>
                   {hasStarted ? "Ends in " : "Starts in "}
@@ -103,60 +205,223 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             </p>
           </div>
 
-          {/* Badge Stack - Properly Spaced */}
-          <div className="flex flex-col items-end gap-2">
-            {/* Status Badge - Hidden when active as we'll use the corner effect */}
-            {displayStatus !== "active" && (
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor()}`}
-              >
-                {getStatusText()}
-              </span>
-            )}
+          {/* No separate badge needed - now integrated into button */}
 
-            {/* Entered Badge */}
-            {contest.is_participating && (
-              <div className="flex items-center gap-1 bg-brand-500/20 text-brand-400 px-2 py-1 rounded-full border border-brand-400/20">
-                <FaCheckCircle className="w-3 h-3" />
-                <span className="text-xs font-medium">Entered</span>
+          {/* Enhanced Status Indicators - Styled like ContestButton */}
+          <div className="absolute top-2 right-2 z-20">
+            {/* Live Indicator with glow effect */}
+            {displayStatus === "active" && (
+              <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-green-500/30 group">
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-brand-500/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Animated border glow */}
+                <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-green-500/30 via-brand-500/30 to-green-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Badge content */}
+                <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
+                    <span className="relative rounded-full w-2 h-2 bg-green-400"></span>
+                  </span>
+                  <span className="text-xs font-bold text-green-400 uppercase tracking-wide font-cyber">LIVE</span>
+                </div>
               </div>
             )}
+            
+            {/* Upcoming Indicator with glow effect */}
+            {displayStatus === "pending" && (
+              <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-blue-500/30 group">
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-brand-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Animated border glow */}
+                <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-blue-500/30 via-brand-500/30 to-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Badge content */}
+                <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
+                  <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs font-bold text-blue-400 uppercase tracking-wide font-cyber">SOON</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Completed Indicator with glow effect */}
+            {displayStatus === "completed" && (
+              <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-gray-500/30 group">
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-500/20 via-brand-500/20 to-gray-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Animated border glow */}
+                <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-gray-500/30 via-brand-500/30 to-gray-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Badge content */}
+                <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
+                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wide font-cyber">ENDED</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Removed Cancelled Indicator from top corner since we now have the stamp */}
           </div>
+        </div>
 
-          {/* Live Corner Effect */}
-          {displayStatus === "active" && (
-            <div className="absolute top-0 right-0 overflow-hidden">
-              <div className="w-24 h-24 flex items-center justify-center rotate-45 translate-x-[40px] translate-y-[-40px] bg-gradient-to-br from-green-500/80 to-green-600/80 shadow-[0_0_20px_rgba(34,197,94,0.4)] animate-pulse">
-                <p className="text-white font-bold text-xs rotate-[-45deg] translate-y-[40px] translate-x-[-25px]">
-                  LIVE
-                </p>
-              </div>
+        {/* Contest Description - aligned to top - Mobile Responsive */}
+        <div className="relative py-2 flex flex-col justify-start h-[48px] sm:h-[60px]">
+          {displayStatus === "cancelled" && contest.cancellation_reason ? (
+            <div className="relative h-full w-full overflow-hidden">
+              {/* More compact cancellation stamp */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 flex items-center justify-center z-10"
+                whileHover={{ scale: 1.02 }}
+              >
+                {/* Subtle shadow glow effect */}
+                <motion.div
+                  className="absolute inset-0 flex items-center justify-center"
+                  animate={{ 
+                    boxShadow: ["0 0 15px 0px rgba(185, 28, 28, 0)", "0 0 20px 2px rgba(185, 28, 28, 0.15)", "0 0 15px 0px rgba(185, 28, 28, 0)"] 
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+                >
+                  <div className="w-[90%] h-[80%] rounded-lg" />
+                </motion.div>
+                
+                {/* Main cancellation stamp - more compact */}
+                <motion.div 
+                  className="relative bg-red-900/30 border-2 border-red-500/40 rounded py-1 px-3 backdrop-blur-sm shadow-lg max-w-[95%]"
+                  whileHover={{ y: -1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  {/* Inner highlight */}
+                  <div className="absolute inset-0 overflow-hidden rounded">
+                    <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-red-400/40 to-transparent transform translate-y-[1px]"></div>
+                  </div>
+                  
+                  {/* Radial background effect */}
+                  <div className="absolute inset-0 bg-gradient-radial from-red-800/10 to-red-900/40 rounded"></div>
+                  
+                  {/* Stamp-like content with clear reason label */}
+                  <div className="flex flex-col items-center gap-0.5 relative z-10">
+                    <div className="flex items-center gap-1.5">
+                      <motion.svg 
+                        className="w-3 h-3 text-red-400" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                        animate={{ scale: [1, 1.15, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatType: "loop" }}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </motion.svg>
+                      <span className="text-xs font-bold text-red-400 uppercase">Contest Cancelled</span>
+                    </div>
+                    <motion.div 
+                      className="text-xs text-red-300 italic"
+                      initial={{ opacity: 0.8 }}
+                      animate={{ opacity: [0.8, 1, 0.8] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                    >
+                      <span className="font-semibold mr-1 uppercase">REASON:</span>
+                      {contest.cancellation_reason.charAt(0).toUpperCase() + 
+                       contest.cancellation_reason.slice(1).toLowerCase()}
+                    </motion.div>
+                  </div>
+                  
+                  {/* Animated pulsing border effect */}
+                  <motion.div 
+                    className="absolute inset-0 rounded border-2 border-red-500/0"
+                    animate={{ borderColor: ["rgba(239, 68, 68, 0)", "rgba(239, 68, 68, 0.3)", "rgba(239, 68, 68, 0)"] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  
+                  {/* Animated shine effect */}
+                  <motion.div 
+                    className="absolute inset-0 overflow-hidden rounded"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <motion.div 
+                      className="w-[20%] h-full bg-gradient-to-r from-transparent via-red-200/10 to-transparent"
+                      animate={{ x: ["30%", "150%"] }}
+                      transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3 }}
+                    />
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+              
+              {/* Original description more visible behind */}
+              <p
+                className="text-xs sm:text-sm text-gray-500/40 line-clamp-2 sm:line-clamp-3"
+                title={contest.description}
+              >
+                {contest.description || "No description available"}
+              </p>
             </div>
+          ) : (
+            <p
+              className="text-xs sm:text-sm text-gray-400 line-clamp-2 sm:line-clamp-3"
+              title={contest.description}
+            >
+              {contest.description || "No description available"}
+            </p>
           )}
         </div>
 
-        {/* Contest Description - aligned to top */}
-        <div className="relative py-2 flex flex-col justify-start h-[48px]">
-          <p
-            className="text-sm text-gray-400 line-clamp-2"
-            title={contest.description}
-          >
-            {contest.description || "No description available"}
-          </p>
-        </div>
-
-        {/* Entry Fee and Prize Pool side by side with enhanced styling */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <span className="text-sm text-gray-400">Entry Fee</span>
-            <div className="text-2xl font-bold text-gray-200 group-hover:text-brand-300 transition-colors">
-              {formatCurrency(Number(contest.entry_fee))}
+        {/* Entry Fee and Prize Pool side by side with completely synchronized styling */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+          {/* Entry Fee Section */}
+          <div className="flex flex-col h-full">
+            <span className="text-sm text-gray-400 mb-1">Entry Fee</span>
+            <div className="relative rounded-md bg-dark-300/20 h-[40px] flex items-center px-3">
+              {displayStatus === "cancelled" ? (
+                <div className="text-2xl font-bold text-gray-500">
+                  {formatCurrency(Number(contest.entry_fee))}
+                </div>
+              ) : (
+                <div
+                  className="text-2xl font-bold"
+                  style={{
+                    background: "linear-gradient(90deg, #9f9f9f, #ffffff, #d4d4d4)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    color: "transparent"
+                  }}
+                >
+                  {formatCurrency(Number(contest.entry_fee))}
+                </div>
+              )}
             </div>
           </div>
-          <div className="space-y-1">
-            <span className="text-sm text-gray-400">Prize Pool</span>
-            <div className="text-2xl font-bold bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 text-transparent bg-clip-text group-hover:animate-gradient-x">
-              {formatCurrency(Number(contest.prize_pool))}
+          
+          {/* Prize Pool Section */}
+          <div className="flex flex-col h-full">
+            <span className="text-sm text-gray-400 mb-1">Prize Pool</span>
+            <div className="relative rounded-md bg-dark-300/20 h-[40px] flex items-center px-3">
+              {displayStatus === "cancelled" ? (
+                <div className="text-2xl font-bold text-gray-500">
+                  {formatCurrency(Number(contest.prize_pool))}
+                </div>
+              ) : (
+                <div
+                  className="text-2xl font-bold"
+                  style={{
+                    background: "linear-gradient(90deg, #9933ff, #ffca0a, #6600cc)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    color: "transparent"
+                  }}
+                >
+                  {formatCurrency(Number(contest.prize_pool))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -165,13 +430,17 @@ export const ContestCard: React.FC<ContestCardProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-400">Players</span>
-            <span className="text-sm font-medium text-gray-300">
+            <span className={`text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-300"}`}>
               {contest.participant_count}/{contest.max_participants}
             </span>
           </div>
           <div className="relative h-2 bg-dark-300 rounded-full overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-300 ease-out"
+              className={`absolute inset-0 rounded-full transition-all duration-300 ease-out ${
+                displayStatus === "cancelled" 
+                  ? "bg-gray-500/50" 
+                  : "bg-gradient-to-r from-brand-400 to-brand-600"
+              }`}
               style={{
                 width: `${
                   (Number(contest.participant_count) /
@@ -180,15 +449,23 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 }%`,
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              {displayStatus !== "cancelled" && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              )}
             </div>
           </div>
         </div>
 
-        {/* Use ContestButton component */}
+        {/* Use ContestButton component with participation status */}
         <ContestButton
           id={Number(contest.id)}
-          type={displayStatus === "active" ? "live" : "upcoming"}
+          type={
+            displayStatus === "active" ? "live" :
+            displayStatus === "pending" ? "upcoming" :
+            displayStatus === "completed" ? "completed" :
+            "cancelled"
+          }
+          isParticipating={contest.is_participating}
         />
 
         {/* Reference code in bottom right corner */}
@@ -196,9 +473,14 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           <p className="text-[10px] text-gray-500">{contest.contest_code}</p>
         </div>
 
-        {/* Difficulty now as an expandable drawer at bottom */}
+        {/* Prize distribution as an expandable drawer at bottom
+            Note: ContestDifficulty is misnamed - it actually displays prize distribution.
+            This component shows the 69/20/11 split for prizes. See GitHub issue for renaming task. */}
         <ContestDifficulty
-          difficulty={contest.settings?.difficulty || "unknown"}
+          prize_pool={contest.prize_pool}
+          participant_count={contest.participant_count}
+          max_participants={contest.max_participants}
+          isCancelled={displayStatus === "cancelled"}
         />
       </div>
     </div>

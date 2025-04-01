@@ -162,10 +162,13 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
 
         {/* Contest Details */}
         <div className="flex flex-col md:flex-row items-end gap-4">
-          {/* Contest Style Badge ("difficulty") */}
+          {/* Prize Distribution Badge */}
           <div className="flex-shrink-0">
             <ContestDifficulty
-              difficulty={contest.settings.difficulty || "guppy"}
+              prize_pool={contest.prize_pool}
+              participant_count={contest.participant_count}
+              max_participants={contest.max_participants}
+              isCancelled={contest.status === "cancelled"}
             />
           </div>
 

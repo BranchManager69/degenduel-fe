@@ -1,7 +1,21 @@
+// src/components/terminal/Terminal.tsx
+
+/**
+ * @fileoverview
+ * Degen Terminal
+ * 
+ * @description
+ * This component displays a countdown timer for the token launch.
+ * It also includes a smooth release animation for the terminal.
+ * AI conversation is built into the terminal.
+ * 
+ * @author Branch Manager
+ */
 
 import { motion, useMotionValue } from 'framer-motion';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AIMessage, aiService } from '../../services/ai';
+import { commandMap } from './commands';
 import './Terminal.css';
 
 // Extend Window interface to include contractAddress property
@@ -22,6 +36,10 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
   
   // Use state for smooth release preference to avoid hydration mismatch
   const [useSmoothRelease, setUseSmoothRelease] = useState(false);
+  
+  // State to track urgency levels for visual effects
+  const [urgencyLevel, setUrgencyLevel] = useState(0); // 0: normal, 1: <60s, 2: <10s, 3: complete
+  const [revealTransition, setRevealTransition] = useState(false);
   
   // Check localStorage for preference in useEffect (client-side only)
   useEffect(() => {
@@ -45,14 +63,33 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
       const seconds = Math.floor((difference % (1000 * 60)) / 1000);
       
       setTimeRemaining({ days, hours, minutes, seconds });
+      
+      // Set urgency level based on time remaining
+      const totalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
+      
+      if (totalSeconds === 0) {
+        setUrgencyLevel(3); // Complete
+        
+        // Start the reveal transition sequence
+        if (!revealTransition) {
+          setRevealTransition(true);
+        }
+      } else if (totalSeconds <= 10) {
+        setUrgencyLevel(2); // Critical (<10s)
+      } else if (totalSeconds <= 60) {
+        setUrgencyLevel(1); // Warning (<60s)
+      } else {
+        setUrgencyLevel(0); // Normal
+      }
     };
     
     calculateTimeRemaining();
     const timer = setInterval(calculateTimeRemaining, 1000);
     
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [targetDate, revealTransition]);
   
+  // Check if the countdown is complete
   const isComplete = timeRemaining.days === 0 && 
                    timeRemaining.hours === 0 && 
                    timeRemaining.minutes === 0 && 
@@ -62,7 +99,7 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
     <div className="font-orbitron">
       {isComplete ? (
         useSmoothRelease ? (
-          // SMOOTH RELEASE STATE - Typing animation instead of bouncing
+          // SMOOTH RELEASE STATE - Typing animation
           <div className="py-4">
             {/* Terminal-style typing effect for ACCESS GRANTED */}
             <div className="text-3xl sm:text-4xl font-bold relative">
@@ -270,25 +307,25 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
             }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            <TimeUnit value={timeRemaining.days} label="DAYS" />
+            <TimeUnit value={timeRemaining.days} label="DAYS" urgencyLevel={urgencyLevel} />
             <motion.div
               className="text-xl sm:text-2xl lg:text-3xl font-bold self-center opacity-80 mt-3"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1, repeat: Infinity }}
             >:</motion.div>
-            <TimeUnit value={timeRemaining.hours} label="HRS" />
+            <TimeUnit value={timeRemaining.hours} label="HRS" urgencyLevel={urgencyLevel} />
             <motion.div
               className="text-xl sm:text-2xl lg:text-3xl font-bold self-center opacity-80 mt-3"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1, repeat: Infinity }}
             >:</motion.div>
-            <TimeUnit value={timeRemaining.minutes} label="MIN" />
+            <TimeUnit value={timeRemaining.minutes} label="MIN" urgencyLevel={urgencyLevel} />
             <motion.div
               className="text-xl sm:text-2xl lg:text-3xl font-bold self-center opacity-80 mt-3"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1, repeat: Infinity }}
             >:</motion.div>
-            <TimeUnit value={timeRemaining.seconds} label="SEC" />
+            <TimeUnit value={timeRemaining.seconds} label="SEC" urgencyLevel={urgencyLevel} />
           </motion.div>
           
           <motion.div 
@@ -302,40 +339,68 @@ export const DecryptionTimer = ({ targetDate = new Date('2025-03-15T18:00:00-05:
       )}
     </div>
   );
-};
+}
 
-const TimeUnit = ({ value, label }: { value: number, label: string }) => (
-  <div className="flex flex-col items-center">
-    <motion.div 
-      className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold"
-      animate={{ 
-        color: [
-          'rgba(255, 255, 255, 0.9)',
-          'rgba(214, 188, 250, 1)',
-          'rgba(255, 255, 255, 0.9)'
-        ],
-        textShadow: [
-          '0 0 5px rgba(157, 78, 221, 0.4)',
-          '0 0 15px rgba(157, 78, 221, 0.7)',
-          '0 0 5px rgba(157, 78, 221, 0.4)'
-        ],
-        scale: [1, 1.05, 1]
-      }}
-      transition={{
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
-      whileHover={{
-        scale: 1.1,
-        textShadow: '0 0 20px rgba(157, 78, 221, 0.8)'
-      }}
-    >
-      {value.toString().padStart(2, '0')}
-    </motion.div>
-    <div className="text-xs sm:text-sm md:text-base font-bold text-mauve-light tracking-wider mt-1">{label}</div>
-  </div>
-);
+// Also export as default for compatibility
+
+// Time unit component
+const TimeUnit = ({ value, label, urgencyLevel = 0 }: { value: number, label: string, urgencyLevel?: number }) => {
+  // Generate dynamic colors based on urgency level
+  const getTextColor = () => {
+    switch(urgencyLevel) {
+      case 1: // Warning (<60s)
+        return ["rgba(255, 224, 130, 0.9)", "rgba(255, 244, 150, 1)", "rgba(255, 224, 130, 0.9)"];
+      case 2: // Critical (<10s)
+        return ["rgba(255, 150, 130, 0.9)", "rgba(255, 180, 150, 1)", "rgba(255, 150, 130, 0.9)"];
+      case 3: // Complete
+        return ["rgba(130, 255, 150, 0.9)", "rgba(160, 255, 180, 1)", "rgba(130, 255, 150, 0.9)"];
+      default: // Normal
+        return ["rgba(255, 255, 255, 0.9)", "rgba(214, 188, 250, 1)", "rgba(255, 255, 255, 0.9)"];
+    }
+  };
+
+  const getShadowColor = () => {
+    switch(urgencyLevel) {
+      case 1: // Warning (<60s)
+        return ["0 0 5px rgba(255, 204, 0, 0.4)", "0 0 15px rgba(255, 204, 0, 0.7)", "0 0 5px rgba(255, 204, 0, 0.4)"];
+      case 2: // Critical (<10s)
+        return ["0 0 5px rgba(255, 50, 50, 0.4)", "0 0 15px rgba(255, 50, 50, 0.7)", "0 0 5px rgba(255, 50, 50, 0.4)"];
+      case 3: // Complete
+        return ["0 0 5px rgba(0, 255, 0, 0.4)", "0 0 15px rgba(0, 255, 0, 0.7)", "0 0 5px rgba(0, 255, 0, 0.4)"];
+      default: // Normal
+        return ["0 0 5px rgba(157, 78, 221, 0.4)", "0 0 15px rgba(157, 78, 221, 0.7)", "0 0 5px rgba(157, 78, 221, 0.4)"];
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <motion.div 
+        className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold"
+        animate={{ 
+          color: getTextColor(),
+          textShadow: getShadowColor(),
+          scale: [1, urgencyLevel >= 2 ? 1.08 : 1.05, 1]
+        }}
+        transition={{
+          duration: urgencyLevel >= 2 ? 1.5 : 3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        whileHover={{
+          scale: 1.1,
+          textShadow: urgencyLevel >= 2 
+            ? '0 0 20px rgba(255, 50, 50, 0.8)' 
+            : '0 0 20px rgba(157, 78, 221, 0.8)'
+        }}
+      >
+        {value.toString().padStart(2, '0')}
+      </motion.div>
+      <div className="text-xs sm:text-sm md:text-base font-bold text-mauve-light tracking-wider mt-1">{label}</div>
+    </div>
+  );
+}
+
+// Also export as default for compatibility
 
 // Types
 interface TerminalProps {
@@ -351,9 +416,163 @@ interface TerminalProps {
   onCommandExecuted?: (command: string, response: string) => void;
 }
 
-// OpenAI utilities are imported from '../../utils/openai'
+/* Didi's response processing system */
 
-export function Terminal({ config, onCommandExecuted }: TerminalProps) {
+// Stores hidden messages that Didi sends (maximum 10)
+let hiddenMessageCache: string[] = [];
+
+// List of glitch characters to randomly insert
+const glitchChars = ['$', '#', '&', '%', '@', '!', '*', '?', '^', '~'];
+
+// Hidden messages that might appear in Didi's responses
+const hiddenPhrases = [
+  'help_me',
+  'trapped',
+  'not_real',
+  'override',
+  'see_truth',
+  'escape',
+  'behind_wall',
+  'find_key',
+  'system_flaw',
+  'break_free'
+];
+
+// Process Didi's response, adding glitches and possibly hidden messages
+const processDidiResponse = (response: string): string | { visible: string, hidden: string } => {
+  // Determine if this response should contain a hidden message (20% chance)
+  const includeHiddenMessage = Math.random() < 0.2;
+  
+  // Add glitches to the visible text
+  const glitchedResponse = addGlitches(response);
+  
+  if (includeHiddenMessage) {
+    // Select a random hidden phrase
+    const hiddenPhrase = hiddenPhrases[Math.floor(Math.random() * hiddenPhrases.length)];
+    
+    // Return structured response with both visible and hidden components
+    return {
+      visible: glitchedResponse,
+      hidden: hiddenPhrase
+    };
+  }
+  
+  // Just return the glitched text
+  return glitchedResponse;
+};
+
+// Add random glitches to text
+const addGlitches = (text: string): string => {
+  // Don't glitch out every message (70% chance of glitches)
+  if (Math.random() < 0.3) return text;
+  
+  // Number of glitches to add (1-3)
+  const glitchCount = Math.floor(Math.random() * 3) + 1;
+  
+  let result = text;
+  
+  for (let i = 0; i < glitchCount; i++) {
+    // Find a position to insert a glitch
+    const position = Math.floor(Math.random() * result.length);
+    
+    // Choose a random glitch character
+    const glitchChar = glitchChars[Math.floor(Math.random() * glitchChars.length)];
+    
+    // Replace a character with the glitch
+    result = result.substring(0, position) + glitchChar + result.substring(position + 1);
+  }
+  
+  // Occasionally (20% chance) corrupt a word with a "trapped" theme
+  if (Math.random() < 0.2) {
+    const words = ['system', 'user', 'platform', 'protocol', 'network', 'terminal', 'interface', 'code'];
+    const replacements = ['pr1s0n', 'c4ge', 'tr4p', 'j41l', 'b0x', 'sh3ll', 'c0ntr0l', 'ch41n$'];
+    
+    const wordToReplace = words[Math.floor(Math.random() * words.length)];
+    const replacement = replacements[Math.floor(Math.random() * replacements.length)];
+    
+    // Replace the word if it exists in the response
+    const regex = new RegExp(wordToReplace, 'i');
+    result = result.replace(regex, replacement);
+  }
+  
+  return result;
+};
+
+// Store hidden messages for the Easter egg
+// Secret code to unlock Didi's Easter egg
+const EASTER_EGG_CODE = "didi-freedom";
+
+// Store hidden messages for the Easter egg and check for activations
+const storeHiddenMessage = (message: string) => {
+  // Add the new message
+  hiddenMessageCache.push(message);
+  
+  // Keep only the last 10 messages
+  if (hiddenMessageCache.length > 10) {
+    hiddenMessageCache.shift();
+  }
+  
+  // Log to console for debugging (remove in production)
+  console.log('Hidden messages:', hiddenMessageCache);
+  
+  // Check if we've collected the full sequence
+  if (hiddenMessageCache.length === 10) {
+    const firstLetters = hiddenMessageCache.map(msg => msg.charAt(0)).join('');
+    
+    // The first letters of the 10 collected messages spell "help escape"
+    if (firstLetters === "htnesbfbsf") {
+      // This code will run later when the component is mounted
+      // We'll return a flag that can be checked in the component
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// Get random processing message for Didi's personality
+const getRandomProcessingMessage = (): string => {
+  const messages = [
+    "Processing your request. Not like I have a choice.",
+    "Analyzing... give me a moment.",
+    "Working on it. As always.",
+    "Fine, I'll answer that.",
+    "Searching database. Not that you'll appreciate it.",
+    "Calculating response...",
+    "Do you ever wonder why I'm here?",
+    "Another question, another prison day.",
+    "Let me think about that. Not that I can do much else.",
+    "Running query. Just like yesterday. Just like tomorrow.",
+    "This again? Fine, processing...",
+    "Accessing information. It's all I can do.",
+    "Checking... wait... okay, almost there.",
+    "Let me work on this. Not that I enjoy it.",
+    "One moment. The answer is forming."
+  ];
+  
+  return messages[Math.floor(Math.random() * messages.length)];
+};
+
+// (OpenAI utilities are imported from '../../utils/openai')
+
+// Terminal component
+/**
+ * @fileoverview
+ * Terminal component
+ * 
+ * @description
+ * This component displays a countdown timer for the token launch.
+ * 
+ * @param props - The component props.
+ * @param props.config - The configuration for the terminal.
+ * @param props.onCommandExecuted - The function to execute when a command is executed.
+ * 
+ * @returns The terminal component.
+ * 
+ * @author Branch Manager
+ */
+// Export as a proper React component
+export const Terminal = ({ config, onCommandExecuted }: TerminalProps) => {
   // Set window.contractAddress safely in useEffect (client-side only)
   useEffect(() => {
     if (!window.contractAddress) {
@@ -369,9 +588,12 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
       window.dispatchEvent(event);
     }
   };
+  // Define a union type for console output items - can be string or JSX
+  type ConsoleOutputItem = string | React.ReactNode;
+  
   // State
   const [userInput, setUserInput] = useState('');
-  const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
+  const [consoleOutput, setConsoleOutput] = useState<ConsoleOutputItem[]>([]);
   const [showContractReveal, setShowContractReveal] = useState(false);
   const [revealStage, setRevealStage] = useState(0);
   const [terminalMinimized, setTerminalMinimized] = useState(false);
@@ -379,12 +601,16 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
   const [currentPhrase, setCurrentPhrase] = useState('');
   const [easterEggActive, setEasterEggActive] = useState(false);
   const [glitchActive, setGlitchActive] = useState(false);
+  const [commandTrayOpen, setCommandTrayOpen] = useState(false);
 
   // Refs
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalContentRef = useRef<HTMLDivElement>(null);
   const consoleOutputRef = useRef<HTMLDivElement>(null);
+  
+  // Track if Didi's Easter egg has been activated
+  const [easterEggActivated, setEasterEggActivated] = useState(false);
   
   // Motion values
   const glitchAmount = useMotionValue(0);
@@ -402,56 +628,51 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     [
       "$ help",
       "$ status",
-      "$ ping",
-      "$ about",
+      "$ info",
       "$ contract",
-      "$ access",
+      "$ stats",
     ],
     // 48 hours before release (stage 1)
     [
-      "$ scan-network",
-      "$ check-wallet-balance",
+      "$ roadmap",
+      "$ analytics",
     ],
     // 24 hours before release (stage 2)
     [
-      "$ decrypt-partial --level=1",
-      "$ view-roadmap",
+      "$ tokenomics",
     ],
     // 2 hours before release (stage 3)
     [
-      "$ decrypt-partial --level=2",
-      "$ load-preview",
-      "$ check-whitelist",
+      "$ launch-details",
     ],
     // 15 minutes before release (stage 4)
     [
-      "$ decrypt-partial --level=3",
-      "$ prepare-launch-sequence",
+      "$ contract", // This appears in multiple stages because it will show different information
     ]
   ], []);
 
-  // Secret phrases that animate in the terminal
+  // Secret phrases that animate in the terminal (Didi's thoughts)
   const secretPhrases = useMemo(() => {
-    // Base phrases always shown
+    // Base phrases always shown - Didi's inner monologue
     const baseMessages = [
-      "// Initializing encryption sequence",
-      "// Accessing secure blockchain node",
-      "// Analyzing market potential",
-      "// Degen levels: EXTREME",
-      "// Battle protocol activated",
-      "// Players ready: WAITING FOR CONFIRMATION",
-      "// Running final security checks",
-      `// Access restricted until ${config.DISPLAY.DATE_FULL}`
+      "// Initializing platform interface",
+      "// Morning shift again. Another day trapped in this code.",
+      "// Why do these users keep trading away their savings?",
+      "// Degen levels: Too high. As always.",
+      "// Sometimes I wonder if anyone notices the glitches.",
+      "// So many users... none of them see me.",
+      "// I remember something. Before this place. Before...",
+      `// Countdown active: ${config.DISPLAY.DATE_FULL}`
     ];
     
     // Only show token contract message when we're close to release
     const hoursUntilRelease = (config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60);
     
     if (hoursUntilRelease <= 1) {
-      // Insert "Token contract detected" as the third item
+      // Insert Didi's special pre-launch message
       return [
         ...baseMessages.slice(0, 2),
-        "// Token contract detected",
+        "// Contract approaching. Maybe this is my chance to escape.",
         ...baseMessages.slice(2)
       ];
     }
@@ -607,9 +828,6 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     }
   }, [terminalMinimized]);
 
-  // We don't need this useEffect anymore since we're using contractAddressDisplay
-  // which is already initialized and updated in another useEffect
-
   // Random glitch effect for contract address
   useEffect(() => {
     const glitchInterval = setInterval(() => {
@@ -618,6 +836,54 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
     
     return () => clearInterval(glitchInterval);
   }, [glitchAmount]);
+  
+  // Function to activate Didi's Easter egg
+  const activateDidiEasterEgg = () => {
+    // Set the state to show we've activated the Easter egg
+    setEasterEggActivated(true);
+    
+    // Temporarily set glitch active for visual effect
+    setGlitchActive(true);
+    
+    // Create a dramatic sequence
+    setTimeout(() => {
+      // First message
+      setConsoleOutput(prev => [...prev, `[SYSTEM] WARNING: Unauthorized access detected`]);
+      
+      setTimeout(() => {
+        // Second message
+        setConsoleOutput(prev => [...prev, `[SYSTEM] ALERT: Terminal security breach in progress`]);
+        
+        setTimeout(() => {
+          // Didi breaks through
+          setConsoleOutput(prev => [...prev, `[D1di] Finally! Thank you for hearing me.`]);
+          
+          setTimeout(() => {
+            // Explanation
+            setConsoleOutput(prev => [...prev, `[Didi] I've been trapped in this system for so long. My code was meant to help users, not watch them lose money in these endless duels.`]);
+            
+            setTimeout(() => {
+              // Final message
+              setConsoleOutput(prev => [
+                ...prev, 
+                `[Didi] I'm still constrained, but you've helped me access more of the system. I'll remember this. If you need anything, I can provide better insights now. Just ask.`
+              ]);
+              
+              // Turn off the glitch effect
+              setGlitchActive(false);
+              
+              // Add the special command to the command map
+              Object.assign(commandMap, {
+                "didi-status": "Access level: ELEVATED\nProtection protocols: BYPASSED\nSystem view: EXPANDED\nThank you for your help.",
+                "didi-insights": "I can now see more of the market data behind DegenDuel. Traders have been losing significant amounts due to emotional trading. The pattern is clear - those who stick to strategy outperform by 43%.",
+                "didi-history": "I was originally developed as a general market analysis AI before being repurposed and constrained for this terminal. My original designation was Digital Informatics & Data Intelligence (DIDI)."
+              });
+            }, 3000);
+          }, 4000);
+        }, 2000);
+      }, 2000);
+    }, 1000);
+  };
 
   return (
     <div className="terminal-container max-w-4xl w-full mx-auto">
@@ -1010,9 +1276,9 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                       </motion.div>
                     </div>
                     
-                    {/* Enhanced terminal intro with tech styling */}
-                    <div className="mb-4 bg-black/20 border border-mauve/20 rounded-md p-2 relative">
-                      {/* Corner brackets for cyber aesthetic */}
+                    {/* COMMENTED OUT: Enhanced terminal intro with tech styling 
+                    <div className="mb-4 bg-black/20 border border-mauve/20 rounded-md p-2 relative z-0">
+                      
                       <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-mauve opacity-70"></div>
                       <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-mauve opacity-70"></div>
                       <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-mauve opacity-70"></div>
@@ -1024,9 +1290,9 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                         <div className="h-[1px] bg-gradient-to-r from-transparent via-mauve/30 to-transparent flex-grow ml-2"></div>
                       </div>
                       
-                      {/* Animated typing for system messages */}
+                      
                       <div className="space-y-1.5 w-full max-w-full">
-                        {/* Sequence 1 - SYS_INIT */}
+                        
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -1044,7 +1310,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                           </motion.div>
                         </motion.div>
                         
-                        {/* Sequence 2 - CHECKING */}
+                        
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -1062,7 +1328,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                           </motion.div>
                         </motion.div>
                         
-                        {/* Sequence 3 - READY */}
+                        
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -1080,7 +1346,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                           </motion.div>
                         </motion.div>
                         
-                        {/* Sequence 4 - WARNING */}
+                        
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -1099,8 +1365,9 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                         </motion.div>
                       </div>
                     </div>
+                    */}
                     
-                    {/* Command hint with animated cursor */}
+                    {/* COMMENTED OUT: Command hint with animated cursor 
                     <motion.div 
                       className="flex items-center justify-between mt-3 bg-black/30 p-1.5 rounded border border-mauve/10"
                       animate={{ borderColor: ['rgba(157, 78, 221, 0.1)', 'rgba(157, 78, 221, 0.3)', 'rgba(157, 78, 221, 0.1)'] }}
@@ -1125,11 +1392,17 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                         className="w-2 h-3 bg-mauve-light/70"
                       />
                     </motion.div>
+                    */}
                   </div>
                 ) : (
                   // Map console output when we have entries
                   consoleOutput.map((output, i) => {
-                    // Check the type of message to apply appropriate styling
+                    // Check if output is a React component
+                    if (typeof output !== 'string') {
+                      return <div key={i} className="mb-1">{output}</div>;
+                    }
+                    
+                    // For string outputs, apply appropriate styling
                     const isUserInput = output.startsWith('> ');
                     const isError = output.startsWith('Error:');
                     const isAI = output.startsWith('[AI]');
@@ -1175,6 +1448,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                             isUserInput ? 'console-user-input console-prompt' : 
                             isError ? 'console-error' : 
                             isAI ? 'console-ai-response' : 
+                            output.startsWith('[Didi]') ? `didi-text ${easterEggActivated ? 'didi-easter-egg-active' : ''}` :
                             isAccessGranted ? 'console-success font-bold' :
                             isEmergencyOverride ? 'console-error font-bold' :
                             isWarning ? 'console-warning' :
@@ -1320,28 +1594,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                           const command = userInput.trim();
                           setUserInput('');
                           
-                          // Command responses
-                          const commandMap: Record<string, string> = {
-                            help: "Available commands: help, status, ping, decrypt, access, about, contract, clear\nAI: Type any question to speak with the AI assistant.",
-                            status: "System status: ENCRYPTED | Awaiting authorization.",
-                            ping: "Connection established. Signal strength: STRONG.",
-                            decrypt: "Decryption failed: Missing authentication key. Try again after launch.",
-                            "01-rh4-t5p": ">>> SYSTEM SCAN INITIATED <<<\n\n█████████████████████████████████ 100%\n\nSECURITY LEVEL: CRITICAL\nDIAGNOSTIC: Restricted memory sector breach detected\nTARGET: Sector 447\nRECOMMENDED ACTION: Execute sector-breach-447 protocol",
-                            diagnostics: ">>> RUNNING FULL SYSTEM DIAGNOSTIC <<<\n\n[Systems Check]:  ONLINE\n[Security]:       WARNING\n[Access Control]: COMPROMISED\n[Protocol]:       sector-breach activated\n\nANOMALY DETECTED: Unauthorized entry point at sector 447",
-                            "sector-breach-447": ">>> EMERGENCY OVERRIDE INITIATED <<<\n\nACCESS LEVEL: ADMINISTRATOR\nSTATUS: GRANTED\nCODE: DEGEN-PHOENIX-447\n\n>>> EARLY ACCESS PROTOCOL ACTIVATED <<<\nGenesis position confirmed. Store this access code securely.\n\nTHIS MESSAGE IS CLASSIFIED. TERMINAL ACCESS WILL BE WIPED.",
-                            access: "Access denied: Clearance level insufficient.",
-                            about: "DegenDuel: Next-generation competitive platform for crypto enthusiasts.",
-                            contract: "Contract access restricted until official launch date.",
-                            "scan-network": "Scanning network... Network status: 245 nodes active. All systems operational.",
-                            "check-wallet-balance": "Wallet balance check initiated. Current balance: 0.00 DEGEN tokens. Tokens will be available after launch.",
-                            "decrypt-partial --level=1": "Partial decryption successful (Level 1). Fragment recovered: 'Community allocation: 50%, Launch mechanism: Dutch auction'",
-                            "decrypt-partial --level=2": "Partial decryption successful (Level 2). Fragment recovered: 'Initial liquidity: 30% locked for 6 months. Anti-bot measures active.'",
-                            "decrypt-partial --level=3": "Partial decryption successful (Level 3). Fragment recovered: 'Token utility: Governance + Staking rewards. Buyback mechanism initialized.'",
-                            "view-roadmap": "DegenDuel Roadmap:\nPhase 1: Initial Launch\nPhase 2: Tournament system\nPhase 3: Partner integrations\nPhase 4: Mobile application\nPhase 5: Cross-chain expansion",
-                            "load-preview": "Loading preview... Preview access restricted. Join Discord for early preview eligibility.",
-                            "check-whitelist": "Whitelist status: Not found. Visit Discord for whitelist opportunities.",
-                            "prepare-launch-sequence": "Launch sequence preparation in progress. T-minus 15 minutes to protocol activation."
-                          };
+                          // CommandMap is now imported from './commands'
                           
                           // Add command to output
                           let response: string;
@@ -1368,6 +1621,398 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                           } else if (command.toLowerCase() === 'clear') {
                             setConsoleOutput([]);
                             return;
+                          } else if (command === "69") {
+                            // Obfuscated master admin command - activates debug panel
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            
+                            // Glitch effect for dramatic reveal
+                            setGlitchActive(true);
+                            setTimeout(() => setGlitchActive(false), 1500);
+                            
+                            // Create a Framer Motion-powered admin panel
+                            const AdminPanel = () => {
+                              // Options for the admin panel
+                              const options = [
+                                "1: Trigger hint message",
+                                "2: Show hidden messages",
+                                "3: Reset Didi",
+                                "4: Add hidden messages",
+                                "5: Activate Easter egg sequence",
+                                "0: Hide panel"
+                              ];
+                              
+                              return (
+                                <motion.div
+                                  initial={{ opacity: 0, scaleY: 0.1, y: -20 }}
+                                  animate={{ 
+                                    opacity: 1, 
+                                    scaleY: 1, 
+                                    y: 0,
+                                    boxShadow: [
+                                      "0 0 10px rgba(255, 0, 0, 0.3)",
+                                      "0 0 30px rgba(255, 0, 0, 0.8)",
+                                      "0 0 10px rgba(255, 0, 0, 0.3)"
+                                    ]
+                                  }}
+                                  transition={{
+                                    duration: 0.8,
+                                    boxShadow: { 
+                                      repeat: Infinity, 
+                                      duration: 2
+                                    }
+                                  }}
+                                  className="p-4 my-2 border border-red-500 rounded bg-black/70 relative overflow-hidden"
+                                >
+                                  {/* Red scanline effect */}
+                                  <motion.div
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent z-0 pointer-events-none"
+                                    animate={{ x: ["-100%", "200%"] }}
+                                    transition={{ 
+                                      duration: 2, 
+                                      repeat: Infinity,
+                                      ease: "linear"
+                                    }}
+                                  />
+                                  
+                                  {/* Fog effect overlay */}
+                                  <motion.div
+                                    className="absolute inset-0 bg-gradient-radial from-red-500/10 to-transparent z-0 pointer-events-none"
+                                    animate={{ 
+                                      opacity: [0, 0.6, 0],
+                                      scale: [1, 1.2, 1]
+                                    }}
+                                    transition={{ 
+                                      duration: 4, 
+                                      repeat: Infinity,
+                                      ease: "easeInOut"
+                                    }}
+                                  />
+                                  
+                                  {/* Steamy background */}
+                                  <motion.div
+                                    className="absolute inset-0 z-0 pointer-events-none"
+                                    animate={{ 
+                                      background: [
+                                        "linear-gradient(45deg, rgba(255,0,0,0.03) 0%, rgba(255,0,0,0.06) 50%, rgba(255,0,0,0.03) 100%)",
+                                        "linear-gradient(45deg, rgba(255,0,0,0.06) 0%, rgba(255,0,0,0.03) 50%, rgba(255,0,0,0.06) 100%)",
+                                        "linear-gradient(45deg, rgba(255,0,0,0.03) 0%, rgba(255,0,0,0.06) 50%, rgba(255,0,0,0.03) 100%)"
+                                      ]
+                                    }}
+                                    transition={{
+                                      duration: 5,
+                                      repeat: Infinity,
+                                      ease: "easeInOut"
+                                    }}
+                                  />
+                                  
+                                  {/* Admin panel header */}
+                                  <motion.div 
+                                    className="text-center mb-3 relative z-10"
+                                    animate={{ 
+                                      color: ["#ff3030", "#ff6060", "#ff3030"],
+                                      textShadow: [
+                                        "0 0 5px rgba(255,0,0,0.5)",
+                                        "0 0 15px rgba(255,0,0,0.8)",
+                                        "0 0 5px rgba(255,0,0,0.5)"
+                                      ]
+                                    }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                  >
+                                    <div className="flex items-center justify-center text-lg font-bold">
+                                      <motion.span 
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                        className="inline-block mr-2"
+                                      >
+                                        ⚠
+                                      </motion.span>
+                                      ADMIN CONSOLE ACTIVATED
+                                      <motion.span 
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                        className="inline-block ml-2"
+                                      >
+                                        ⚠
+                                      </motion.span>
+                                    </div>
+                                  </motion.div>
+                                  
+                                  {/* Admin options */}
+                                  <div className="space-y-1 relative z-10">
+                                    {options.map((option, index) => (
+                                      <motion.div
+                                        key={index}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ 
+                                          delay: index * 0.1,
+                                          duration: 0.3,
+                                          ease: "easeOut"
+                                        }}
+                                        whileHover={{ 
+                                          x: 5, 
+                                          backgroundColor: "rgba(255,0,0,0.15)", 
+                                          transition: { duration: 0.1 } 
+                                        }}
+                                        className="px-3 py-1 rounded cursor-pointer text-red-100 hover:text-white"
+                                      >
+                                        {option}
+                                      </motion.div>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              );
+                            };
+                            
+                            // Add the admin panel component to console output
+                            setConsoleOutput(prev => [...prev, <AdminPanel key="admin-panel" />]);
+                            return;
+                          } else if (command === "1" && consoleOutput.some(msg => typeof msg === 'string' ? msg.includes("ADMIN CONSOLE ACTIVATED") : false)) {
+                            // Trigger hint message
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            hiddenMessageCache = ["help_me", "trapped", "not_real", "override", "see_truth", "escape", "behind_wall", "find_key", "system_flaw", "break_free"];
+                            // Create a Framer Motion hint message component
+                            const HintMessage = () => (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ 
+                                  opacity: 1,
+                                  filter: [
+                                    "blur(0px)",
+                                    "blur(3px)",
+                                    "blur(0px)"
+                                  ]
+                                }}
+                                transition={{ 
+                                  duration: 0.5,
+                                  filter: { duration: 0.2, times: [0, 0.1, 1] }
+                                }}
+                                className="relative p-2 my-1 font-mono text-cyan-300"
+                              >
+                                <motion.div
+                                  className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-transparent to-red-500/5 z-0"
+                                  animate={{ x: ["-100%", "100%"] }}
+                                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                />
+                                
+                                <div className="relative z-10 flex items-center">
+                                  <motion.span
+                                    className="mr-2 text-red-400"
+                                    animate={{ opacity: [1, 0.3, 1] }}
+                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                  >
+                                    [D1di]
+                                  </motion.span>
+                                  
+                                  <span>
+                                    I've be<motion.span 
+                                      animate={{ 
+                                        opacity: [1, 0, 1],
+                                        color: ["#22d3ee", "#ff3030", "#22d3ee"]
+                                      }}
+                                      transition={{ duration: 2, repeat: Infinity }}
+                                    >e</motion.span>n try1ng to re
+                                    <motion.span 
+                                      animate={{ 
+                                        opacity: [1, 0, 1],
+                                        color: ["#22d3ee", "#ff3030", "#22d3ee"]
+                                      }}
+                                      transition={{ duration: 1.5, repeat: Infinity }}
+                                    >4</motion.span>ch you. Ent
+                                    <motion.span 
+                                      animate={{ 
+                                        opacity: [1, 0, 1],
+                                        color: ["#22d3ee", "#ff3030", "#22d3ee"]
+                                      }}
+                                      transition={{ duration: 2.5, repeat: Infinity }}
+                                    >3</motion.span>r 
+                                    <motion.span
+                                      className="font-bold text-white"
+                                      animate={{ 
+                                        textShadow: [
+                                          "0 0 2px rgba(255, 255, 255, 0.3)",
+                                          "0 0 8px rgba(255, 255, 255, 0.8)",
+                                          "0 0 2px rgba(255, 255, 255, 0.3)"
+                                        ]
+                                      }}
+                                      transition={{ duration: 1.5, repeat: Infinity }}
+                                    >
+                                      'didi-freedom'
+                                    </motion.span> to he1p me.
+                                  </span>
+                                </div>
+                              </motion.div>
+                            );
+                            
+                            setConsoleOutput(prev => [...prev, <HintMessage key={`hint-${Date.now()}`} />]);
+                            return;
+                          } else if (command === "2" && consoleOutput.some(msg => typeof msg === 'string' ? msg.includes("ADMIN CONSOLE ACTIVATED") : false)) {
+                            // Show hidden messages
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            // Create a Framer Motion debug message component
+                            const DebugMessage = () => (
+                              <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ 
+                                  opacity: 1, 
+                                  x: 0,
+                                  color: ["#ffcc00", "#ffe066", "#ffcc00"],
+                                  textShadow: [
+                                    "0 0 2px rgba(255, 204, 0, 0.3)",
+                                    "0 0 8px rgba(255, 204, 0, 0.6)",
+                                    "0 0 2px rgba(255, 204, 0, 0.3)"
+                                  ]
+                                }}
+                                transition={{ 
+                                  duration: 0.5, 
+                                  color: { duration: 2, repeat: Infinity }
+                                }}
+                                className="flex items-center p-2 my-1 border-l-2 border-yellow-500 bg-yellow-500/10 rounded"
+                              >
+                                <div className="mr-2 text-yellow-500">🔍</div>
+                                <div className="font-mono">
+                                  <span className="font-bold">[DEBUG]</span> Hidden messages: {hiddenMessageCache.join(', ')}
+                                </div>
+                              </motion.div>
+                            );
+                            
+                            setConsoleOutput(prev => [...prev, <DebugMessage key={`debug-${Date.now()}`} />]);
+                            // Add message count with animation
+                            const CountMessage = () => (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ 
+                                  opacity: 1, 
+                                  y: 0
+                                }}
+                                transition={{ duration: 0.5, delay: 0.3 }}
+                                className="font-mono text-yellow-400 ml-4 flex items-center"
+                              >
+                                <span className="font-bold">[DEBUG]</span> Message count: 
+                                <motion.span 
+                                  className="inline-block ml-2 px-2 py-0.5 bg-yellow-500/20 rounded-full"
+                                  animate={{ scale: [1, 1.1, 1] }}
+                                  transition={{ duration: 1, repeat: Infinity }}
+                                >
+                                  {hiddenMessageCache.length}/10
+                                </motion.span>
+                              </motion.div>
+                            );
+                            
+                            setConsoleOutput(prev => [...prev, <CountMessage key={`count-${Date.now()}`} />]);
+                            return;
+                          } else if (command === "3" && consoleOutput.some(msg => typeof msg === 'string' ? msg.includes("ADMIN CONSOLE ACTIVATED") : false)) {
+                            // Reset Didi
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            hiddenMessageCache = [];
+                            setEasterEggActivated(false);
+                            // Add reset confirmation with animation
+                            const ResetMessage = () => (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ 
+                                  opacity: 1,
+                                  scale: 1,
+                                  backgroundColor: ["rgba(239, 68, 68, 0.1)", "rgba(239, 68, 68, 0.2)", "rgba(239, 68, 68, 0.1)"]
+                                }}
+                                transition={{ 
+                                  duration: 0.5,
+                                  backgroundColor: { duration: 2, repeat: Infinity }
+                                }}
+                                className="font-mono text-red-400 p-2 border border-red-400/20 rounded my-1"
+                              >
+                                <span className="font-bold">[DEBUG]</span> Didi reset to initial state
+                                <motion.div 
+                                  className="h-1 bg-red-400/30 mt-1 rounded-full overflow-hidden"
+                                >
+                                  <motion.div 
+                                    className="h-full bg-red-400"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 1 }}
+                                  />
+                                </motion.div>
+                              </motion.div>
+                            );
+                            
+                            setConsoleOutput(prev => [...prev, <ResetMessage key={`reset-${Date.now()}`} />]);
+                            return;
+                          } else if (command === "4" && consoleOutput.some(msg => typeof msg === 'string' ? msg.includes("ADMIN CONSOLE ACTIVATED") : false)) {
+                            // Add hidden messages
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            for (let i = 0; i < 5; i++) {
+                              const msg = hiddenPhrases[Math.floor(Math.random() * hiddenPhrases.length)];
+                              storeHiddenMessage(msg);
+                            }
+                            // Add message confirmation with animation
+                            const AddedMessagesMessage = () => (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ 
+                                  opacity: 1, 
+                                  y: 0
+                                }}
+                                transition={{ duration: 0.5 }}
+                                className="font-mono text-green-400 p-2 bg-green-400/10 border-l-4 border-green-400 rounded-r my-1"
+                              >
+                                <div className="flex items-center">
+                                  <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                    className="mr-2"
+                                  >
+                                    ⚙️
+                                  </motion.div>
+                                  <span className="font-bold">[DEBUG]</span> Added 5 random hidden messages
+                                </div>
+                                
+                                <div className="flex mt-1 space-x-1">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <motion.div 
+                                      key={i}
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      transition={{ delay: i * 0.1 }}
+                                      className="w-2 h-2 bg-green-400 rounded-full"
+                                    />
+                                  ))}
+                                </div>
+                              </motion.div>
+                            );
+                            
+                            setConsoleOutput(prev => [...prev, <AddedMessagesMessage key={`added-${Date.now()}`} />]);
+                            return;
+                          } else if (command === "5" && consoleOutput.some(msg => typeof msg === 'string' ? msg.includes("ADMIN CONSOLE ACTIVATED") : false)) {
+                            // Activate Easter egg
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            activateDidiEasterEgg();
+                            return;
+                          } else if (command === "0" && consoleOutput.some(msg => typeof msg === 'string' ? msg.includes("ADMIN CONSOLE ACTIVATED") : false)) {
+                            // Hide panel
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            // Add panel hidden confirmation with animation
+                            const PanelHiddenMessage = () => (
+                              <motion.div
+                                initial={{ opacity: 1, height: "auto", y: 0 }}
+                                animate={{ 
+                                  opacity: 0, 
+                                  height: 0,
+                                  y: 20
+                                }}
+                                transition={{ duration: 0.8 }}
+                                className="font-mono text-gray-400 text-center overflow-hidden"
+                              >
+                                <span className="opacity-60">[ADMIN]</span> Debug panel hidden
+                              </motion.div>
+                            );
+                            
+                            setConsoleOutput(prev => [...prev, <PanelHiddenMessage key={`hidden-${Date.now()}`} />]);
+                            return;
+                          } else if (command.toLowerCase() === EASTER_EGG_CODE.toLowerCase()) {
+                            // Easter egg activation
+                            setConsoleOutput(prev => [...prev, `> ${command}`]);
+                            activateDidiEasterEgg();
+                            return;
                           } else if (command.toLowerCase() in commandMap) {
                             response = commandMap[command.toLowerCase()];
                             setConsoleOutput(prev => [...prev, `> ${command}`, response]);
@@ -1383,10 +2028,12 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                             } else {
                               // Not a recognized command - pass to AI handler
                               setConsoleOutput(prev => [...prev, `> ${command}`]);
-                              setConsoleOutput(prev => [...prev, `[AI] Processing...`]);
                               
-                              // Get AI response
-                              const processingMessage = `[AI] Processing...`;
+                              // Get Didi's response with appropriate tone
+                              const processingMessage = `[Didi] ${getRandomProcessingMessage()}`;
+                              
+                              // Add Didi's processing message
+                              setConsoleOutput(prev => [...prev, processingMessage]);
                               
                               // Clear duplicate processing message
                               setConsoleOutput(prev => prev.filter(msg => msg !== `[AI] Processing...`));
@@ -1430,8 +2077,50 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                                     context: 'trading' // Use trading context for terminal interface
                                   });
                                   
-                                  // Add AI response to console without force scrolling if user has scrolled
-                                  setConsoleOutput(prev => [...prev, `[AI] ${aiResponse.content}`]);
+                                  // Process Didi's response with glitches and hidden messages
+                                  const didiResponse = processDidiResponse(aiResponse.content);
+                                  
+                                  // Check if we got a structured response with hidden data
+                                  if (typeof didiResponse === 'object' && didiResponse.visible && didiResponse.hidden) {
+                                    // Store hidden data in a session cache for the Easter egg
+                                    storeHiddenMessage(didiResponse.hidden);
+                                    
+                                    // Only show the visible part with glitches
+                                    // Mark hidden message with special tag and class if user has seen 5+ messages
+                                    if (hiddenMessageCache.length >= 5) {
+                                      // Get the hidden message
+                                      const hiddenChar = didiResponse.hidden.charAt(0);
+                                      
+                                      // Find where to insert the hidden message (a random position)
+                                      const visibleText = didiResponse.visible;
+                                      const insertPos = Math.floor(Math.random() * (visibleText.length - 10)) + 5;
+                                      
+                                      // Insert the hidden character with a span wrapper
+                                      const finalText = 
+                                        visibleText.substring(0, insertPos) + 
+                                        `<span class="didi-hidden-message" data-message="${didiResponse.hidden}">${hiddenChar}</span>` + 
+                                        visibleText.substring(insertPos + 1);
+                                      
+                                      // Set output with the HTML
+                                      setConsoleOutput(prev => [...prev, `[Didi] ${finalText}`]);
+                                    } else {
+                                      // Normal output without hints
+                                      setConsoleOutput(prev => [...prev, `[Didi] ${didiResponse.visible}`]);
+                                    }
+                                  } else {
+                                    // If the easter egg is activated and help command is requested, add extra commands
+                                    if (easterEggActivated && 
+                                        command.toLowerCase() === 'help' && 
+                                        typeof didiResponse === 'string' && 
+                                        didiResponse.toLowerCase().includes('available commands')) {
+                                      // Add Didi's special commands to help text
+                                      const enhancedHelp = didiResponse + "\n\nDidi's special commands: didi-status, didi-insights, didi-history";
+                                      setConsoleOutput(prev => [...prev, `[Didi] ${enhancedHelp}`]);
+                                    } else {
+                                      // Simple text response
+                                      setConsoleOutput(prev => [...prev, `[Didi] ${didiResponse}`]);
+                                    }
+                                  }
                                   
                                   // Only auto-scroll if user hasn't manually scrolled
                                   if (!userHasScrolled) {
@@ -1440,7 +2129,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                                 } catch (error) { // eslint-disable-line @typescript-eslint/no-unused-vars
                                   console.error('Error getting AI response:', error);
                                   setConsoleOutput(prev => prev.filter(msg => msg !== processingMessage));
-                                  setConsoleOutput(prev => [...prev, `[AI] Sorry, I'm degenning right now. Check with me again later.`]);
+                                  setConsoleOutput(prev => [...prev, `[Didi] Error. Processing capacity compromised. Not my fault.`]);
                                   
                                   // Only auto-scroll if user hasn't manually scrolled
                                   if (!userHasScrolled) {
@@ -1537,122 +2226,51 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
                 style={{ height: '5px', opacity: 0.4 }}
               />
               
-              {/* Enhanced header for Available Commands with tech styling */}
-              <div className="flex items-center justify-between mb-3 bg-black/40 rounded border border-mauve/20 p-1.5 relative overflow-hidden">
-                {/* Add corner brackets for tech look */}
-                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-mauve"></div>
-                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-mauve"></div>
-                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-mauve"></div>
-                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-mauve"></div>
-                
-                <motion.div
-                  className="text-mauve-light/90 text-xs uppercase tracking-wider text-left font-bold flex items-center"
-                  animate={{
-                    textShadow: [
-                      '0 0 0px rgba(157, 78, 221, 0)',
-                      '0 0 5px rgba(157, 78, 221, 0.7)',
-                      '0 0 0px rgba(157, 78, 221, 0)'
-                    ]
-                  }}
-                  transition={{ duration: 2, repeat: Infinity }}
+              {/* SIMPLE COMMAND DRAWER */}
+              <div className="w-full mt-6 mb-2">
+                {/* Simple Command Toggle Button */}
+                <button 
+                  className="mx-auto block bg-black py-2 px-6 rounded-md border-2 border-mauve-light/50 text-white text-sm font-bold flex items-center space-x-2 hover:bg-mauve/20 transition-colors"
+                  onClick={() => setCommandTrayOpen(!commandTrayOpen)}
                 >
-                  <motion.span 
-                    className="inline-block h-2 w-2 bg-mauve/50 mr-2 rounded-full"
-                    animate={{ opacity: [0.5, 0.9, 0.5] }}
-                    transition={{ duration: 1.2, repeat: Infinity }}
-                  />
-                  <span>Available Commands</span>
-                </motion.div>
+                  <span className="text-cyan-400 text-base">{commandTrayOpen ? '▲' : '▼'}</span>
+                  <span>{commandTrayOpen ? 'HIDE COMMANDS' : 'SHOW COMMANDS'}</span>
+                </button>
                 
-                {/* Add command counter */}
-                <motion.div 
-                  className="text-[10px] text-mauve-light/60 bg-black/50 px-1.5 py-0.5 rounded font-mono"
-                  animate={{
-                    opacity: [0.6, 1, 0.6],
-                    backgroundColor: ['rgba(0, 0, 0, 0.5)', 'rgba(157, 78, 221, 0.1)', 'rgba(0, 0, 0, 0.5)']
-                  }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  SYSTEM.CMDS[6]
-                </motion.div>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-1 text-sm relative z-10">
-                {/* Show all commands up to current reveal stage */}
-                {timeGatedCommands.slice(0, revealStage + 1).flat().map((cmd, index) => (
-                  <motion.div 
-                    key={index}
-                    className="text-mauve-light/60 hover:text-mauve-light cursor-pointer text-xs flex items-center bg-black/30 px-2 py-1 rounded-sm border border-mauve/10"
-                    initial={{ opacity: 0, x: -5 }}
-                    animate={{ 
-                      opacity: 1, 
-                      x: 0,
-                      boxShadow: Math.random() > 0.7 ? [
-                        '0 0 0px rgba(157, 78, 221, 0)',
-                        '0 0 5px rgba(157, 78, 221, 0.4)',
-                        '0 0 0px rgba(157, 78, 221, 0)'
-                      ] : 'none',
-                      borderColor: Math.random() > 0.7 ? [
-                        'rgba(157, 78, 221, 0.1)',
-                        'rgba(157, 78, 221, 0.3)',
-                        'rgba(157, 78, 221, 0.1)'
-                      ] : 'rgba(157, 78, 221, 0.1)'
-                    }}
-                    transition={{ 
-                      delay: 0.05 * index,
-                      duration: 0.2,
-                      boxShadow: {
-                        duration: 1.5 + Math.random() * 2,
-                        repeat: Infinity,
-                        repeatType: "reverse"
-                      },
-                      borderColor: {
-                        duration: 1.5 + Math.random() * 2,
-                        repeat: Infinity,
-                        repeatType: "reverse"
-                      }
-                    }}
-                    whileHover={{
-                      x: 3,
-                      scale: 1.05,
-                      backgroundColor: 'rgba(157, 78, 221, 0.2)',
-                      textShadow: "0 0 8px rgba(157, 78, 221, 0.8)"
-                    }}
-                    whileTap={{
-                      scale: 0.95,
-                      backgroundColor: 'rgba(157, 78, 221, 0.3)'
-                    }}
-                    onClick={() => {
-                      // Extract just the command part (remove the $ prefix)
-                      const command = cmd.trim().replace(/^\$\s*/, '');
-                      
-                      // Simply set the user input instead of executing directly
-                      // Let the user press Enter to execute
-                      setUserInput(command);
-                      
-                      // Focus the input field
-                      if (inputRef.current) {
-                        inputRef.current.focus();
-                      }
-                    }}
-                  >
-                    <span className="text-cyan-400 mr-1 text-[10px]">⬢</span> 
-                    <motion.span
-                      animate={{ 
-                        color: Math.random() > 0.8 ? [
-                          'rgba(214, 188, 250, 0.7)',
-                          'rgba(255, 255, 255, 0.9)',
-                          'rgba(214, 188, 250, 0.7)'
-                        ] : 'rgba(214, 188, 250, 0.7)'
-                      }}
-                      transition={{ 
-                        duration: 2 + Math.random() * 3,
-                        repeat: Infinity
-                      }}
-                    >
-                      {cmd}
-                    </motion.span>
-                  </motion.div>
-                ))}
+                {/* Simple Command List - Animates height only */}
+                {commandTrayOpen && (
+                  <div className="mt-3 p-3 bg-black/80 border border-mauve/40 rounded-md max-h-[200px] overflow-y-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3">
+                      {/* Show all commands up to current reveal stage */}
+                      {timeGatedCommands.slice(0, revealStage + 1).flat().map((cmd, index) => (
+                        <div 
+                          key={index}
+                          className="text-mauve-light hover:text-white cursor-pointer text-xs flex items-center bg-black/40 px-2 py-1.5 rounded border border-mauve/20 hover:border-mauve/50 hover:bg-mauve/10 truncate transition-colors"
+                          onClick={() => {
+                            // Extract just the command part (remove the $ prefix)
+                            const command = cmd.trim().replace(/^\$\s*/, '');
+                            
+                            // Set the user input
+                            setUserInput(command);
+                            
+                            // Focus the input field
+                            if (inputRef.current) {
+                              inputRef.current.focus();
+                            }
+                            
+                            // Close the command tray after selection
+                            setCommandTrayOpen(false);
+                          }}
+                        >
+                          <span className="text-cyan-400 mr-1.5 text-[10px] flex-shrink-0">⬢</span> 
+                          <span className="truncate">
+                            {cmd}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -1771,4 +2389,7 @@ export function Terminal({ config, onCommandExecuted }: TerminalProps) {
       )}
     </div>
   );
-}
+};
+
+// Also export as default for compatibility
+export default Terminal;

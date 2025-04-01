@@ -126,7 +126,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             "Democrats are strictly forbidden from playing DegenDuel at all times.",
         },
       ],
-    } satisfies ContestSettings,
+    } as ContestSettings,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -41,7 +41,10 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                       {contest.name}
                     </div>
                     <ContestDifficulty
-                      difficulty={contest.settings?.difficulty || "guppy"}
+                      prize_pool={contest.prize_pool}
+                      participant_count={contest.participant_count}
+                      max_participants={contest.max_participants}
+                      isCancelled={contest.status === "cancelled"}
                     />
                   </div>
                   <div className="text-sm text-gray-400 mt-1">
@@ -66,6 +69,35 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
                   >
                     Delete
                   </Button>
+                  {contest.image_url ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => 
+                        window.open(
+                          `/admin/contest-management/regenerate-image/${contest.id}`,
+                          "_blank"
+                        )
+                      }
+                      className="text-purple-400 border-purple-400 hover:bg-purple-400/10"
+                    >
+                      Regenerate Image
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => 
+                        window.open(
+                          `/admin/contest-management/regenerate-image/${contest.id}`,
+                          "_blank"
+                        )
+                      }
+                      className="text-green-400 border-green-400 hover:bg-green-400/10"
+                    >
+                      Generate Image
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">

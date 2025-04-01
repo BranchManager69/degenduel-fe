@@ -146,6 +146,59 @@
   --scrollbar-thumb-hover: rgba(157, 78, 221, 1);
 }
 
+/* Ticker animation keyframes */
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Ticker scanning effects */
+@keyframes scan-fast {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Cyber scanning effect animation */
+@keyframes cyber-scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  50% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+/* Data stream animation for items */
+@keyframes data-stream {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Shine effect for progress bars */
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Apply to entire site with auto-hide behavior */
 @media (min-width: 640px) {
   /* Only apply autohide on non-mobile devices */

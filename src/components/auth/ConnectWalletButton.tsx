@@ -6,6 +6,7 @@ import { Button } from "../ui/Button";
 interface ConnectWalletButtonProps {
   className?: string;
   compact?: boolean;
+  onClick?: () => void;
 }
 
 /**
@@ -18,6 +19,7 @@ interface ConnectWalletButtonProps {
 export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   className = "",
   compact = false,
+  onClick,
 }) => {
   const { connectWallet, disconnectWallet, isConnecting, user } = useStore();
 
@@ -25,7 +27,10 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   if (user?.wallet_address) {
     return (
       <Button
-        onClick={disconnectWallet}
+        onClick={() => {
+          disconnectWallet();
+          if (onClick) onClick();
+        }}
         variant="outline"
         className={`flex items-center justify-center ${className}`}
       >
@@ -40,7 +45,10 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   // Not connected - show connect button with gradient styling
   return (
     <Button
-      onClick={connectWallet}
+      onClick={() => {
+        connectWallet();
+        if (onClick) onClick();
+      }}
       disabled={isConnecting}
       className={`bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 
         text-white font-cyber transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]

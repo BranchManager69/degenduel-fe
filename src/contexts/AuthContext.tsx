@@ -10,10 +10,24 @@ export interface AuthContextType {
   loading: boolean;
   error: Error | null;
 
+  // Unified auth state
+  isAuthenticated: () => boolean;
+  activeAuthMethod: string | null;
+  authMethods: Record<string, any>;
+
   // Wallet connection state
   isWalletConnected: boolean;
   walletAddress: string | undefined;
   isConnecting: boolean;
+  
+  // Auth method checks
+  isWalletAuth: () => boolean;
+  isPrivyAuth: () => boolean;
+  isTwitterAuth: () => boolean;
+  
+  // Auth method linking
+  isPrivyLinked: () => boolean;
+  isTwitterLinked: () => boolean;
 
   // Auth methods
   connectWallet: () => void;
@@ -63,6 +77,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
 // Custom hook to use the auth context
 export const useAuthContext = () => {
+  // For Storybook support, use a mock if defined on window
+  if (typeof window !== 'undefined' && (window as any).useAuthContext) {
+    return (window as any).useAuthContext();
+  }
+  
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuthContext must be used within an AuthProvider");

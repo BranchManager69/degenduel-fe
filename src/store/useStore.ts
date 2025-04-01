@@ -1,11 +1,17 @@
 // src/store/useStore.ts
 
+/**
+ * This file contains the store for the application.
+ * It is used to manage the state of the application.
+ * It is also used to manage the state of the websocket.
+ */
+
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
-import { ServiceConnection, ServiceNode } from "../hooks/websocket/useSkyDuelWebSocket";
 import { WebSocketState } from "../hooks/useWebSocketMonitor";
+import { ServiceConnection, ServiceNode } from "../hooks/websocket/useSkyDuelWebSocket";
 import { Contest, Token, User, WalletError } from "../types/index";
 
 interface WebSocketAlert {
