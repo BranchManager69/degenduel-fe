@@ -10,10 +10,24 @@ export interface AuthContextType {
   loading: boolean;
   error: Error | null;
 
+  // Unified auth state
+  isAuthenticated: () => boolean;
+  activeAuthMethod: string | null;
+  authMethods: Record<string, any>;
+
   // Wallet connection state
   isWalletConnected: boolean;
   walletAddress: string | undefined;
   isConnecting: boolean;
+  
+  // Auth method checks
+  isWalletAuth: () => boolean;
+  isPrivyAuth: () => boolean;
+  isTwitterAuth: () => boolean;
+  
+  // Auth method linking
+  isPrivyLinked: () => boolean;
+  isTwitterLinked: () => boolean;
 
   // Auth methods
   connectWallet: () => void;

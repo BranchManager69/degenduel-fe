@@ -3,7 +3,9 @@ import { toast } from "react-hot-toast";
 import { FaTwitter } from "react-icons/fa";
 
 import { useAuthContext } from "../../contexts/AuthContext";
+import { useTwitterAuth } from "../../contexts/TwitterAuthContext";
 import { Button } from "../ui/Button";
+import { authDebug } from "../../config/config";
 
 interface TwitterLoginButtonProps {
   linkMode?: boolean;
@@ -29,42 +31,84 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
   onClick
 }) => {
   const { user } = useAuthContext();
+  const { 
+    login, 
+    linkAccount, 
+    isTwitterLinked, 
+    isLoading 
+  } = useTwitterAuth();
+  
+  const [isLinking, setIsLinking] = React.useState(false);
 
-  // Only show Twitter login option if user has previously linked a Twitter account
-  // (when not in link mode)
-  const handleTwitterAuth = () => {
-    // Call the onClick callback if provided
+  // Handle Twitter auth based on mode
+  const handleTwitterAuth = async () => {
+    authDebug('TwitterBtn', 'Twitter button clicked', { linkMode, hasUser: !!user });
+    
+    // Call the external onClick handler if provided
     if (onClick) onClick();
     
-    // Redirect to the Twitter OAuth endpoint
-    window.location.href = "/api/auth/twitter/login";
+    if (linkMode && user) {
+      // Link existing account
+      authDebug('TwitterBtn', 'Starting account linking flow', { userId: user.id });
+      setIsLinking(true);
+      try {
+        const success = await linkAccount();
+        if (success) {
+          authDebug('TwitterBtn', 'Twitter account linked successfully');
+          toast.success("Twitter account linked successfully");
+        } else {
+          authDebug('TwitterBtn', 'Failed to link Twitter account');
+          toast.error("Failed to link Twitter account");
+        }
+      } catch (error) {
+        authDebug('TwitterBtn', 'Error linking Twitter account', { error });
+        toast.error("An error occurred while linking your Twitter account");
+        console.error("[Twitter] Link error:", error);
+      } finally {
+        setIsLinking(false);
+      }
+    } else {
+      // Normal login flow
+      authDebug('TwitterBtn', 'Starting Twitter login flow');
+      login();
+    }
   };
 
   // If in link mode, we need to be logged in
   if (linkMode && !user) {
     return null;
   }
+  
+  // If in link mode and Twitter is already linked, don't show the button
+  if (linkMode && isTwitterLinked) {
+    return null;
+  }
 
-  // If not in link mode and user not logged in, check URL for Twitter pending state
+  // Check URL parameters for Twitter auth status
   React.useEffect(() => {
-    if (!linkMode && !user) {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get("twitter") === "pending") {
-        toast.error("Please connect your wallet to complete Twitter linking");
-      }
+    // This is also handled by the TwitterAuthContext, but we show toasts here
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    authDebug('TwitterBtn', 'Checking URL parameters in button component', { 
+      params: Object.fromEntries(urlParams.entries()),
+      linkMode,
+      hasUser: !!user
+    });
+    
+    if (!linkMode && !user && urlParams.get("twitter") === "pending") {
+      authDebug('TwitterBtn', 'Found twitter=pending parameter, showing toast');
+      toast.error("Please connect your wallet to complete Twitter linking");
     }
-
-    // Check for twitter_linked success parameter
-    if (user) {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get("twitter_linked") === "true") {
-        toast.success("Twitter account linked successfully!");
-
-        // Remove the query parameter to prevent showing the toast on refresh
-        const url = new URL(window.location.href);
-        url.searchParams.delete("twitter_linked");
-        window.history.replaceState({}, "", url);
-      }
+    
+    if (urlParams.get("twitter_linked") === "true") {
+      authDebug('TwitterBtn', 'Found twitter_linked=true parameter, showing success toast');
+      toast.success("Twitter account linked successfully!");
+      
+      // Remove the query parameter to prevent showing toast on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete("twitter_linked");
+      window.history.replaceState({}, "", url);
+      authDebug('TwitterBtn', 'Removed twitter_linked parameter from URL');
     }
   }, [user, linkMode]);
 
@@ -74,8 +118,13 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       variant={linkMode ? "outline" : "secondary"}
       className={`flex items-center justify-center gap-2 ${className}`}
       aria-label={linkMode ? "Link Twitter Account" : "Login with Twitter"}
+      disabled={isLoading || isLinking}
     >
-      <FaTwitter className="text-[#1DA1F2]" />
+      {isLoading || isLinking ? (
+        <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
+      ) : (
+        <FaTwitter className="text-[#1DA1F2]" />
+      )}
       {linkMode ? "Link Twitter Account" : "Login with Twitter"}
     </Button>
   );

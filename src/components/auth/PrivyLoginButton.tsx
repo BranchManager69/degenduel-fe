@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '../ui/Button';
 import { usePrivyAuth } from '../../contexts/PrivyAuthContext';
 import { useStore } from '../../store/useStore';
+import { authDebug } from '../../config/config';
 
 interface PrivyLoginButtonProps {
   className?: string;
@@ -23,21 +24,33 @@ const PrivyLoginButton: React.FC<PrivyLoginButtonProps> = ({
   const [isLinking, setIsLinking] = React.useState(false);
 
   const handleLogin = async () => {
+    authDebug('PrivyBtn', 'Privy button clicked', { 
+      hasUser: !!user, 
+      isPrivyLinked, 
+      isAuthenticated 
+    });
+    
     // If user is logged in with wallet but Privy isn't linked, attempt to link
     if (user && !isPrivyLinked && !isAuthenticated) {
+      authDebug('PrivyBtn', 'Starting account linking flow', { hasUser: !!user });
       setIsLinking(true);
       try {
-        await linkPrivyToWallet();
+        const result = await linkPrivyToWallet();
+        authDebug('PrivyBtn', 'Privy account linking completed', { success: result });
+        
         // Call the external onClick handler if provided
         if (onClick) onClick();
       } catch (error) {
+        authDebug('PrivyBtn', 'Error linking Privy account', { error });
         console.error('Error linking Privy account:', error);
       } finally {
         setIsLinking(false);
       }
     } else {
       // Standard login flow
+      authDebug('PrivyBtn', 'Starting standard Privy login flow');
       login();
+      
       // Call the external onClick handler if provided
       if (onClick) onClick();
     }

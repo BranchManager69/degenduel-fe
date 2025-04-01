@@ -19,17 +19,40 @@ interface PrivyAuthContextType {
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 const mockAuthContext: AuthContextType = {
+  // User state
   user: null,
   loading: false,
   error: null,
+  
+  // Unified auth state
+  isAuthenticated: () => false,
+  activeAuthMethod: null,
+  authMethods: {},
+  
+  // Wallet connection state
   isWalletConnected: false,
   walletAddress: undefined,
   isConnecting: false,
+  
+  // Auth method checks
+  isWalletAuth: () => false,
+  isPrivyAuth: () => false,
+  isTwitterAuth: () => false,
+  
+  // Auth method linking
+  isPrivyLinked: () => false,
+  isTwitterLinked: () => false,
+  
+  // Auth methods
   connectWallet: () => console.log('connectWallet called'),
   disconnectWallet: () => console.log('disconnectWallet called'),
+  
+  // Role checks
   isSuperAdmin: () => false,
   isAdmin: () => false,
   isFullyConnected: () => false,
+  
+  // Auth utilities
   checkAuth: () => console.log('checkAuth called'),
   getAccessToken: async () => null
 };
@@ -55,6 +78,26 @@ const PrivyAuthContext = React.createContext<PrivyAuthContextType>({
   checkAuthStatus: async () => {}
 });
 
+// Define TwitterAuthContextType
+interface TwitterAuthContextType {
+  isTwitterLinked: boolean;
+  isLoading: boolean;
+  twitterUsername: string | null;
+  login: () => void;
+  linkAccount: () => Promise<boolean>;
+  checkStatus: () => Promise<void>;
+}
+
+// Mock TwitterAuthContext
+const TwitterAuthContext = React.createContext<TwitterAuthContextType>({
+  isTwitterLinked: false,
+  isLoading: false,
+  twitterUsername: null,
+  login: () => {},
+  linkAccount: async () => false,
+  checkStatus: async () => {}
+});
+
 export const MockPrivyAuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <PrivyAuthContext.Provider 
@@ -75,6 +118,26 @@ export const MockPrivyAuthProvider = ({ children }: { children: ReactNode }) => 
     >
       {children}
     </PrivyAuthContext.Provider>
+  );
+};
+
+export const MockTwitterAuthProvider = ({ children }: { children: ReactNode }) => {
+  return (
+    <TwitterAuthContext.Provider 
+      value={{
+        isTwitterLinked: false,
+        isLoading: false,
+        twitterUsername: null,
+        login: () => console.log('Twitter login called'),
+        linkAccount: async () => {
+          console.log('Twitter linkAccount called');
+          return true;
+        },
+        checkStatus: async () => console.log('Twitter checkStatus called')
+      }}
+    >
+      {children}
+    </TwitterAuthContext.Provider>
   );
 };
 
@@ -117,13 +180,28 @@ export const AllProviders = ({ children }: { children: ReactNode }) => {
         },
         checkAuthStatus: async () => console.log('checkAuthStatus called')
       });
+      
+      // Mock twitter auth
+      (window as any).useTwitterAuth = () => ({
+        isTwitterLinked: false,
+        isLoading: false,
+        twitterUsername: null,
+        login: () => console.log('Twitter login called'),
+        linkAccount: async () => {
+          console.log('Twitter linkAccount called');
+          return true;
+        },
+        checkStatus: async () => console.log('Twitter checkStatus called')
+      });
     }
   }, []);
 
   return (
     <MockAuthProvider>
       <MockPrivyAuthProvider>
-        {children}
+        <MockTwitterAuthProvider>
+          {children}
+        </MockTwitterAuthProvider>
       </MockPrivyAuthProvider>
     </MockAuthProvider>
   );

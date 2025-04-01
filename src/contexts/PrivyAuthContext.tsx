@@ -8,6 +8,7 @@
 import { usePrivy } from '@privy-io/react-auth';
 import React, { createContext, ReactNode, useContext, useEffect } from 'react';
 import { verifyPrivyToken, linkPrivyAccount, getAuthStatus } from '../services/api/auth';
+import { authDebug } from '../config/config';
 
 // Note: Actual Privy configuration will be set in the App.tsx 
 // using the PrivyProvider component from @privy-io/react-auth
@@ -53,18 +54,40 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [authUser, setAuthUser] = React.useState<any>(null);
   const [isPrivyLinked, setIsPrivyLinked] = React.useState<boolean>(false);
 
+  // Add debugging object to window for inspection in console
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugPrivyAuth = () => ({
+        ready,
+        authenticated,
+        hasPrivyUser: !!privyUser,
+        privyUserId: privyUser?.id,
+        hasAuthUser: !!authUser,
+        isPrivyLinked,
+      });
+    }
+    authDebug('PrivyAuth', 'Debug object attached to window.debugPrivyAuth()');
+  }, [ready, authenticated, privyUser, authUser, isPrivyLinked]);
+
   // Sync with backend when Privy auth state changes
   useEffect(() => {
     const syncWithBackend = async () => {
       // Only proceed if Privy is authenticated and ready
-      if (!ready || !authenticated || !privyUser) return;
+      if (!ready || !authenticated || !privyUser) {
+        authDebug('PrivyAuth', 'Skipping backend sync - not ready or authenticated', { 
+          ready, authenticated, hasPrivyUser: !!privyUser 
+        });
+        return;
+      }
       
+      authDebug('PrivyAuth', 'Syncing Privy session with backend');
       try {
         // Get the access token
         const token = await getAccessToken();
         const userId = privyUser.id;
         
         if (!token || !userId) {
+          authDebug('PrivyAuth', 'No access token or user ID available');
           console.error('[Privy] No access token or user ID available');
           return;
         }
@@ -76,6 +99,10 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
           device_type: 'browser'
         };
         
+        authDebug('PrivyAuth', 'Verifying Privy token with backend', { 
+          userId, deviceInfo: { ...deviceInfo, device_id: deviceInfo.device_id ? '[REDACTED]' : undefined } 
+        });
+        
         // Verify the token with our backend
         const authResult = await verifyPrivyToken(token, userId, deviceInfo);
         
@@ -85,10 +112,16 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
         // Store device ID if returned
         if (authResult.device?.device_id) {
           localStorage.setItem('dd_device_id', authResult.device.device_id);
+          authDebug('PrivyAuth', 'Stored device ID from auth result');
         }
         
+        authDebug('PrivyAuth', 'Session verification successful', {
+          userId: authResult.user?.id,
+          username: authResult.user?.username
+        });
         console.log('[Privy] Session verification successful');
       } catch (error) {
+        authDebug('PrivyAuth', 'Session verification failed', { error });
         console.error('[Privy] Session verification failed:', error);
         // If verification fails, log out
         privyLogout();
@@ -101,17 +134,24 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   
   // Check comprehensive auth status including Privy link status
   const checkAuthStatus = async (): Promise<void> => {
+    authDebug('PrivyAuth', 'Checking auth status');
     try {
       const status = await getAuthStatus();
       
       // Update Privy linked status
       setIsPrivyLinked(!!status.methods?.privy?.linked);
       
+      authDebug('PrivyAuth', 'Auth status updated', {
+        authenticated: status.authenticated,
+        privyLinked: status.methods?.privy?.linked || false,
+        methods: status.methods
+      });
       console.log('[Privy] Auth status checked', {
         authenticated: status.authenticated,
         privyLinked: status.methods?.privy?.linked || false
       });
     } catch (error) {
+      authDebug('PrivyAuth', 'Failed to check auth status', { error });
       console.error('[Privy] Failed to check auth status:', error);
     }
   };
@@ -119,38 +159,51 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   // Call check auth status on mount
   useEffect(() => {
     if (ready) {
+      authDebug('PrivyAuth', 'Privy SDK ready, checking auth status');
       checkAuthStatus();
+    } else {
+      authDebug('PrivyAuth', 'Waiting for Privy SDK to be ready');
     }
   }, [ready]);
   
   // Link Privy to existing wallet
   const linkPrivyToWallet = async (): Promise<boolean> => {
     if (!authenticated || !privyUser) {
+      authDebug('PrivyAuth', 'Cannot link - user not authenticated with Privy');
       console.error('[Privy] Cannot link - user not authenticated with Privy');
       return false;
     }
+    
+    authDebug('PrivyAuth', 'Linking Privy account to wallet', { 
+      authenticated, privyUserId: privyUser.id 
+    });
     
     try {
       const token = await getAccessToken();
       const userId = privyUser.id;
       
       if (!token || !userId) {
+        authDebug('PrivyAuth', 'No access token or user ID available for linking');
         console.error('[Privy] No access token or user ID available for linking');
         return false;
       }
       
       // Call link endpoint
+      authDebug('PrivyAuth', 'Calling link endpoint');
       const result = await linkPrivyAccount(token, userId);
       
       if (result.success) {
+        authDebug('PrivyAuth', 'Privy account linked successfully', { result });
         setIsPrivyLinked(true);
         // Refresh auth status to get updated info
         await checkAuthStatus();
         return true;
       }
       
+      authDebug('PrivyAuth', 'Privy account linking failed', { result });
       return false;
     } catch (error) {
+      authDebug('PrivyAuth', 'Error linking Privy account', { error });
       console.error('[Privy] Failed to link account:', error);
       return false;
     }
@@ -158,10 +211,21 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   // Get the auth token function
   const getAuthToken = async (): Promise<string | null> => {
-    if (!authenticated) return null;
+    if (!authenticated) {
+      authDebug('PrivyAuth', 'Cannot get auth token - not authenticated');
+      return null;
+    }
+    
+    authDebug('PrivyAuth', 'Getting Privy auth token');
     try {
-      return await getAccessToken();
+      const token = await getAccessToken();
+      authDebug('PrivyAuth', 'Retrieved auth token successfully', { 
+        hasToken: !!token, 
+        tokenLength: token ? token.length : 0 
+      });
+      return token;
     } catch (error) {
+      authDebug('PrivyAuth', 'Failed to get auth token', { error });
       console.error('[Privy] Failed to get auth token:', error);
       return null;
     }
