@@ -44,6 +44,12 @@ NEVER REWRITE THE WEBSOCKET SYSTEM FROM SCRATCH. Always work incrementally with 
 - Example: `npm run build:prod &`
 - Example: `pm2 start app.js &`
 
+### SSH Tunnels
+- `ddsuper-on` - Start SSH tunnel to strong server (port 8002→8000)
+- `ddsuper-off` - Stop the SSH tunnel
+- `ddsuper-status` - Check if tunnel is running and test health endpoint
+- The tunnel is accessible via https://degen.tf/ with proper SSL
+
 ### Process Management
 - `pm2 start <app> &` - Start process in background
 - `pm2 list` - List all running processes
