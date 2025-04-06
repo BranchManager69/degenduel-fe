@@ -3,16 +3,19 @@
 /**
  * This context is used to manage the Twitter authentication state.
  * It handles Twitter login, account linking, and status checking.
+ * 
+ * @author @BranchManager69
+\ * @last-modified 2025-04-02
  */
 
 import React, { createContext, ReactNode, useContext, useEffect } from 'react';
+import { authDebug } from '../config/config';
 import {
+  checkTwitterLinkStatus,
   getTwitterAuthUrl,
-  linkTwitterAccount,
-  checkTwitterLinkStatus
+  linkTwitterAccount
 } from '../services/api/auth';
 import { useAuthContext } from './AuthContext';
-import { authDebug } from '../config/config';
 
 // Create context types
 interface TwitterAuthContextType {
@@ -34,7 +37,13 @@ const TwitterAuthContext = createContext<TwitterAuthContextType>({
   checkStatus: async () => {},
 });
 
-// Provider component
+// TwitterAuthProvider component
+/**
+ * TwitterAuthProvider component
+ * 
+ * @param {React.ReactNode} children - The children of the TwitterAuthProvider
+ * @returns {React.ReactNode} - The TwitterAuthProvider component
+ */
 export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuthContext();
   
@@ -69,6 +78,9 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, [user]);
 
   // Function to initiate Twitter login
+  /**
+   * Function to initiate Twitter login
+   */
   const login = async () => {
     authDebug('TwitterAuth', 'Initiating Twitter login');
     try {
@@ -84,6 +96,11 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   // Function to link Twitter account to existing user
+  /**
+   * Function to link Twitter account to existing user
+   * 
+   * @returns {Promise<boolean>} - Whether the account was linked successfully
+   */
   const linkAccount = async (): Promise<boolean> => {
     if (!user) {
       authDebug('TwitterAuth', 'Cannot link - user not authenticated');
@@ -115,6 +132,11 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   // Function to check Twitter link status
+  /**
+   * Function to check Twitter link status
+   * 
+   * @returns {Promise<void>} - The status of the Twitter link
+   */
   const checkStatus = async (): Promise<void> => {
     authDebug('TwitterAuth', 'Checking Twitter link status');
     try {
@@ -137,6 +159,9 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
 
   // Check for URL parameters on component mount
+  /**
+   * Check for URL parameters on component mount
+   */
   useEffect(() => {
     // Check for twitter_linked success parameter
     const urlParams = new URLSearchParams(window.location.search);
@@ -149,9 +174,21 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       authDebug('TwitterAuth', 'Found twitter_linked=true parameter, checking status');
       checkStatus();
       
+      // Preserve any stored navigation path when cleaning up parameters
+      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
+      
       // Remove the query parameter to prevent checking again on refresh
       const url = new URL(window.location.href);
       url.searchParams.delete("twitter_linked");
+      
+      // Preserve redirect path in URL state for the router if available
+      if (storedRedirectPath) {
+        authDebug('TwitterAuth', 'Preserving redirect path during parameter cleanup', {
+          redirectPath: storedRedirectPath
+        });
+        // Path is already stored in localStorage and will be used by LoginPage
+      }
+      
       window.history.replaceState({}, "", url);
       authDebug('TwitterAuth', 'Removed twitter_linked parameter from URL');
     }
@@ -163,6 +200,10 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   }, []);
 
+  // Provide the context value
+  /**
+   * Provide the context value
+   */
   const value = {
     isTwitterLinked,
     isLoading,
@@ -180,6 +221,11 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
 };
 
 // Custom hook to use the Twitter auth context
+/**
+ * Custom hook to use the Twitter auth context
+ * 
+ * @returns {TwitterAuthContextType} - The Twitter auth context
+ */
 export const useTwitterAuth = () => {
   const context = useContext(TwitterAuthContext);
   if (context === undefined) {

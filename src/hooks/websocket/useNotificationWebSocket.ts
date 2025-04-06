@@ -1,8 +1,8 @@
 /**
- * Notification WebSocket Hook - V69 Unified WebSocket Implementation
  * 
- * This hook connects to the unified WebSocket system for real-time user notifications
- * including general notifications, alerts, and system messages.
+ * DEPRECATED 2025-04-02
+ * USE UNIFIED WEBSOCKET INSTEAD
+ * 
  */
 
 import { useCallback, useEffect, useState } from 'react';

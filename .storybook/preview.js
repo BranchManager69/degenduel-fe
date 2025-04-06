@@ -128,6 +128,27 @@ const withMockedHooks = (Story) => {
     checkAuthStatus: async () => {}
   });
 
+  // Mock Solana wallet for Blinks stories
+  window.solana = {
+    isConnected: false,
+    publicKey: null,
+    connect: async function() {
+      console.log('Mock Solana wallet connect called');
+      this.isConnected = true;
+      this.publicKey = { toString: () => '5Zzguz4NsSRNYJBpPpxNQy8kJrt1JDKEzw' };
+      return { publicKey: this.publicKey };
+    },
+    disconnect: async function() {
+      console.log('Mock Solana wallet disconnect called');
+      this.isConnected = false;
+      this.publicKey = null;
+    },
+    signAndSendTransaction: async function(transaction) {
+      console.log('Mock Solana signAndSendTransaction:', transaction);
+      return { signature: 'mock_signature_' + Math.random().toString(36).substring(2, 10) };
+    }
+  };
+
   // Add global styles for animations needed by components
   return (
     <>
@@ -249,6 +270,23 @@ const withMockedHooks = (Story) => {
 
 // Initial setup of global mocks (ensures they're available during Story initialization)
 if (typeof window !== 'undefined') {
+  // Set up base path handling for Storybook when served from a subpath
+  window.STORYBOOK_ENV = true;
+  
+  // Support for Storybook being served from a subpath
+  if (window.location.pathname.includes('/live/')) {
+    window.STORYBOOK_BASE_PATH = '/live/';
+    
+    // If fetch is used in components, we need to fix the URL
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options) {
+      if (typeof url === 'string' && url.startsWith('/') && !url.startsWith('/live/')) {
+        return originalFetch('/live' + url, options);
+      }
+      return originalFetch(url, options);
+    };
+  }
+  
   // Auth context mock
   window.useAuthContext = () => ({
     user: null,

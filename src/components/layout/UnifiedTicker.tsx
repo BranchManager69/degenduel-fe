@@ -135,7 +135,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   // Decide whether to use scroll or animation based on container width
   const isMobileView = containerWidth < 640;
   
-  // Debug helper to track content width changes
+  // Debug helper to track content width changes and ensure continuous animation
   useEffect(() => {
     if (contentRef.current) {
       const contentWidth = contentRef.current.offsetWidth;
@@ -166,7 +166,65 @@ export const UnifiedTicker: React.FC<Props> = ({
         }
       }
     }
-  }, [containerWidth, sortedContests, significantChanges, activeTab]);
+    
+    // Set up animation monitoring to ensure continuous movement
+    if (containerRef.current && !isMobileView) {
+      // Animation monitoring - restart animation if it stops
+      let animationObserver: number;
+      let lastPosition = -1;
+      let stuckCounter = 0;
+      
+      const checkAnimationProgress = () => {
+        if (containerRef.current && !isPaused) {
+          // Get computed transform to check if animation is actually moving
+          const style = window.getComputedStyle(containerRef.current);
+          const transform = style.getPropertyValue('transform');
+          const matrix = new DOMMatrix(transform);
+          const currentX = matrix.m41; // The X translation component
+          
+          // Check if position has changed
+          if (lastPosition === currentX) {
+            stuckCounter++;
+            console.log(`UnifiedTicker: Animation may be stuck (${stuckCounter})`);
+            
+            // If position hasn't changed for several checks, restart the animation
+            if (stuckCounter > 3) {
+              console.log("UnifiedTicker: Restarting stuck animation");
+              
+              // Briefly remove animation
+              const currentAnimation = containerRef.current.style.animation;
+              containerRef.current.style.animation = 'none';
+              
+              // Force reflow
+              void containerRef.current.offsetWidth;
+              
+              // Restore animation
+              setTimeout(() => {
+                if (containerRef.current) {
+                  containerRef.current.style.animation = currentAnimation || getAnimationSpeed();
+                  console.log("UnifiedTicker: Animation restarted");
+                }
+              }, 50);
+              
+              stuckCounter = 0;
+            }
+          } else {
+            // Position has changed, reset stuck counter
+            stuckCounter = 0;
+          }
+          
+          lastPosition = currentX;
+        }
+      };
+      
+      // Check every second if animation is still moving
+      animationObserver = window.setInterval(checkAnimationProgress, 1000);
+      
+      return () => {
+        clearInterval(animationObserver);
+      };
+    }
+  }, [containerWidth, sortedContests, significantChanges, activeTab, isPaused]);
   
   // Handle manual refresh for both contest and token data
   const handleManualRefresh = () => {
@@ -283,9 +341,21 @@ export const UnifiedTicker: React.FC<Props> = ({
       
       // Only clone if we have visible content
       if (content.offsetWidth > 0 && content.children.length > 0) {
-        const clone = content.cloneNode(true) as HTMLDivElement;
-        clone.classList.add("clone"); // Add class to identify clones
-        containerRef.current.appendChild(clone);
+        // Create multiple clones to ensure continuous animation
+        const contentWidth = content.offsetWidth;
+        const containerWidth = containerRef.current.offsetWidth;
+        
+        // We need at least 2x the container width for seamless animation
+        const clonesNeeded = Math.max(2, Math.ceil((containerWidth * 2) / contentWidth));
+        
+        console.log(`UnifiedTicker: Creating ${clonesNeeded} clones to ensure smooth animation`);
+        
+        for (let i = 0; i < clonesNeeded; i++) {
+          const clone = content.cloneNode(true) as HTMLDivElement;
+          clone.classList.add("clone"); // Add class to identify clones
+          containerRef.current.appendChild(clone);
+        }
+        
         console.log("UnifiedTicker: Content cloned successfully");
       } else {
         console.log("UnifiedTicker: Content not ready for cloning yet (zero width or no children)");
@@ -312,22 +382,42 @@ export const UnifiedTicker: React.FC<Props> = ({
   const getAnimationSpeed = () => {
     if (isMobileView) return 'none'; // No animation on mobile
     
-    // Determine animation speed based on content length
-    const totalItemCount = 
-      (activeTab === "contests" ? 0 : significantChanges.length) +
-      (activeTab === "tokens" ? 0 : sortedContests.length);
+    // Get a reference to the content and container for width calculations
+    const content = contentRef.current;
+    const container = containerRef.current;
     
-    // Adjust speed based on total items to ensure smooth scrolling
-    const baseSpeed = Math.max(15, Math.min(40, totalItemCount * 2));
-    
-    switch (activeTab) {
-      case "contests":
-        return `ticker ${Math.max(15, Math.min(25, sortedContests.length * 2))}s linear infinite`; 
-      case "tokens":
-        return `ticker ${Math.max(12, Math.min(20, significantChanges.length * 1.5))}s linear infinite`;
-      default:
-        return `ticker ${baseSpeed}s linear infinite`;
+    if (!content || !container) {
+      // Default fallback animation if refs aren't available
+      return 'ticker 30s linear infinite';
     }
+    
+    // Calculate the optimal animation duration based on content width
+    const contentWidth = content.offsetWidth;
+    
+    // Pixels per second - adjust this value to change the base speed
+    // Lower = faster, Higher = slower
+    const pixelsPerSecond = 80; 
+    
+    // Calculate how long it should take to scroll the content (in seconds)
+    // We use the full content width as the distance to travel
+    let duration = contentWidth / pixelsPerSecond;
+    
+    // Ensure the duration is reasonable (not too fast or too slow)
+    duration = Math.max(15, Math.min(60, duration));
+    
+    // Determine if we have enough content based on active tab
+    if (activeTab === "contests" && sortedContests.length < 3) {
+      // Slow down for very few items
+      duration = 40;
+    } else if (activeTab === "tokens" && significantChanges.length < 3) {
+      // Slow down for very few items
+      duration = 40;
+    }
+    
+    console.log(`UnifiedTicker: Animation duration set to ${duration}s (Content width: ${contentWidth}px)`);
+    
+    // Return the animation with the calculated duration
+    return `ticker ${duration}s linear infinite`;
   };
 
   // Glow effect for tab buttons
@@ -444,29 +534,36 @@ export const UnifiedTicker: React.FC<Props> = ({
                       <span className="animate-ping inline-block h-2 w-2 rounded-full bg-red-500 opacity-75 mr-2"></span>
                       CONNECTION ERROR
                     </span>
-                    <span className="text-red-300">WebSocket connection issue detected</span>
                     <button 
                       onClick={handleManualRefresh}
-                      className="ml-4 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-full w-7 h-7 flex items-center justify-center text-red-300 transition-all duration-300 shadow-sm hover:shadow-red-500/20"
+                      className="ml-4 bg-gradient-to-br from-red-500/30 to-red-600/40 hover:from-red-500/40 hover:to-red-600/50 
+                        border border-red-500/40 rounded-md px-3 py-1 flex items-center justify-center text-white 
+                        transition-all duration-300 shadow-md hover:shadow-red-500/30"
                       title="Retry connection"
                     >
-                      <span className={`text-base ${isRefreshing ? 'animate-spin' : ''}`}>⟳</span>
+                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-1.5'}`}>↻</span>
+                      <span className={`${isRefreshing ? 'inline-block mr-1.5 animate-spin' : 'hidden'}`}>◌</span>
+                      Reconnect
                     </button>
                   </>
                 ) : (
                   <>
                     <span className="font-mono text-amber-500">
                       <span className="animate-ping inline-block h-2 w-2 rounded-full bg-amber-500 opacity-75 mr-2"></span>
-                      CONNECTING{connectionAttempts > 0 ? ` (ATTEMPT ${connectionAttempts + 1})` : '...'}
+                      CONNECTING
+                      {connectionAttempts > 0 ? ` (${connectionAttempts + 1})` : ''}
                     </span>
-                    <span className="text-gray-400">Please wait while we establish connection</span>
                     <button 
                       onClick={handleManualRefresh}
-                      className="ml-4 bg-brand-500/20 hover:bg-brand-500/30 border border-brand-500/30 rounded-full w-7 h-7 flex items-center justify-center text-brand-300 transition-all duration-300 shadow-sm hover:shadow-brand-500/20"
+                      className="ml-4 bg-gradient-to-br from-brand-500/30 to-brand-600/40 hover:from-brand-500/40 hover:to-brand-600/50 
+                        border border-brand-500/40 rounded-md px-3 py-1 flex items-center justify-center text-white 
+                        transition-all duration-300 shadow-md hover:shadow-brand-500/30"
                       disabled={isRefreshing}
                       title="Refresh data"
                     >
-                      <span className={`text-base ${isRefreshing ? 'animate-spin' : ''}`}>⟳</span>
+                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-1.5'}`}>↻</span>
+                      <span className={`${isRefreshing ? 'inline-block mr-1.5 animate-spin' : 'hidden'}`}>◌</span>
+                      Refresh
                     </button>
                   </>
                 )}
@@ -486,15 +583,19 @@ export const UnifiedTicker: React.FC<Props> = ({
               <div className="flex items-center space-x-4 text-sm">
                 <span className="font-mono text-blue-400">
                   <span className="animate-pulse inline-block h-2 w-2 rounded-full bg-blue-500 opacity-75 mr-2"></span>
-                  WAITING FOR DATA
+                  LOADING DATA
                 </span>
                 <button 
                   onClick={handleManualRefresh}
-                  className="ml-4 bg-brand-500/20 hover:bg-brand-500/30 border border-brand-500/30 rounded-full w-7 h-7 flex items-center justify-center text-brand-300 transition-all duration-300 shadow-sm hover:shadow-brand-500/20"
+                  className="ml-4 bg-gradient-to-br from-blue-500/30 to-blue-600/40 hover:from-blue-500/40 hover:to-blue-600/50 
+                    border border-blue-500/40 rounded-md px-3 py-1 flex items-center justify-center text-white 
+                    transition-all duration-300 shadow-md hover:shadow-blue-500/30"
                   disabled={isRefreshing}
                   title="Refresh data"
                 >
-                  <span className={`text-base ${isRefreshing ? 'animate-spin' : ''}`}>⟳</span>
+                  <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-1.5'}`}>↻</span>
+                  <span className={`${isRefreshing ? 'inline-block mr-1.5 animate-spin' : 'hidden'}`}>◌</span>
+                  Refresh
                 </button>
               </div>
             </div>
@@ -523,11 +624,15 @@ export const UnifiedTicker: React.FC<Props> = ({
               <span className="text-gray-400">Check back soon for updates</span>
               <button 
                 onClick={handleManualRefresh}
-                className="ml-4 bg-brand-500/20 hover:bg-brand-500/30 border border-brand-500/30 rounded-full w-7 h-7 flex items-center justify-center text-brand-300 transition-all duration-300 shadow-sm hover:shadow-brand-500/20"
+                className="ml-4 bg-gradient-to-br from-purple-500/30 to-purple-600/40 hover:from-purple-500/40 hover:to-purple-600/50 
+                  border border-purple-500/40 rounded-md px-3 py-1 flex items-center justify-center text-white 
+                  transition-all duration-300 shadow-md hover:shadow-purple-500/30"
                 disabled={isRefreshing}
                 title="Refresh data"
               >
-                <span className={`text-base ${isRefreshing ? 'animate-spin' : ''}`}>⟳</span>
+                <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-1.5'}`}>↻</span>
+                <span className={`${isRefreshing ? 'inline-block mr-1.5 animate-spin' : 'hidden'}`}>◌</span>
+                Refresh
               </button>
             </div>
           </div>
@@ -1016,6 +1121,7 @@ export const UnifiedTicker: React.FC<Props> = ({
           white-space: nowrap !important;
           overflow: hidden !important;
           width: 100% !important;
+          will-change: transform !important;
         }
         /* Shadow effects */
         .shadow-brand {
@@ -1051,6 +1157,12 @@ export const UnifiedTicker: React.FC<Props> = ({
         .animate-gradientX {
           animation: gradientX 2s ease infinite;
           background-size: 200% auto;
+        }
+        
+        /* Explicit ticker animation */
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
         `
       }} />

@@ -284,7 +284,32 @@ export const mockedHooks = {
   useStore: () => ({
     maintenanceMode: false,
     setMaintenanceMode: () => {}
-  })
+  }),
+  // Mock implementation of useUnifiedWebSocket for the Footer component
+  useUnifiedWebSocket: (id: string, types: string[] = [], callback: Function, topics?: string[]) => {
+    return {
+      sendMessage: (message: any) => {
+        console.log('Mock sendMessage:', message);
+        return true;
+      },
+      isConnected: true,
+      isAuthenticated: true,
+      connectionState: 'AUTHENTICATED',
+      error: null,
+      subscribe: (topics: string[]) => {
+        console.log('Mock subscribe to topics:', topics);
+        return true;
+      },
+      unsubscribe: (topics: string[]) => {
+        console.log('Mock unsubscribe from topics:', topics);
+        return true;
+      },
+      request: (topic: string, action: string, params: any = {}) => {
+        console.log('Mock request:', { topic, action, params });
+        return true;
+      }
+    };
+  }
 };
 
 // Mock AuthContext provider for Storybook

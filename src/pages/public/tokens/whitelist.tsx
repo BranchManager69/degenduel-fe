@@ -18,24 +18,7 @@ import {
   TREASURY_WALLET,
 } from "../../../config/config";
 import { useStore } from "../../../store/useStore";
-// Provide types for window.solana
-declare global {
-  interface Window {
-    solana?: {
-      isPhantom?: boolean;
-      connect: () => Promise<{ publicKey: { toString: () => string } }>;
-      signMessage: (
-        message: Uint8Array,
-        encoding: string,
-      ) => Promise<{ signature: Uint8Array }>;
-      signTransaction: (transaction: Transaction) => Promise<Transaction>;
-      signAndSendTransaction: (options: {
-        transaction: Transaction;
-      }) => Promise<{ signature: string }>;
-      publicKey?: { toString: () => string };
-    };
-  }
-}
+// Types for window.solana are defined in /src/types/window.d.ts
 
 // Development mode has a lower submission cost
 const BASE_SUBMISSION_COST =

@@ -151,12 +151,12 @@ export const admin = {
   // Contest Image Management
   contestImages: {
     // Regenerate contest image
-    regenerate: async (contestId: number, artStyle?: string): Promise<{success: boolean, data: {contest_id: number, image_url: string}}> => {
+    regenerate: async (contestId: number, artStyle?: string, customPrompt?: string): Promise<{success: boolean, data: {contest_id: number, image_url: string}}> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/contest-management/regenerate-image/${contestId}`, {
           method: "POST",
-          body: JSON.stringify({ artStyle }),
+          body: JSON.stringify({ artStyle, customPrompt }),
         });
 
         if (!response.ok) {

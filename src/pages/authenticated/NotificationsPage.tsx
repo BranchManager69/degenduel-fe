@@ -1,3 +1,12 @@
+// src/pages/authenticated/NotificationsPage.tsx
+
+/**
+ * This page is under construction.
+ * 
+ * @author @BranchManager69
+ * @since 2025-04-02
+ */
+
 import { format } from "date-fns";
 import React, { useCallback } from "react";
 import {
@@ -8,10 +17,11 @@ import {
   FaRegBell,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
-
 import { Button } from "../../components/ui/Button";
-import { useNotificationWebSocket } from "../../hooks/websocket/useNotificationWebSocket";
+// V69 Standardized Hook for Notifications
+import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 
+// Notifications Page
 const NotificationsPage: React.FC = () => {
   const {
     notifications,
@@ -22,8 +32,9 @@ const NotificationsPage: React.FC = () => {
     markAllAsRead,
     refreshNotifications,
     isConnected,
-  } = useNotificationWebSocket();
+  } = useNotifications();
 
+  // Get notification priority color
   const getPriorityColor = useCallback((priority: string) => {
     switch (priority) {
       case "urgent":
@@ -37,6 +48,7 @@ const NotificationsPage: React.FC = () => {
     }
   }, []);
 
+  // Get notification priority icon
   const getPriorityIcon = useCallback((priority: string) => {
     switch (priority) {
       case "urgent":
@@ -50,6 +62,7 @@ const NotificationsPage: React.FC = () => {
     }
   }, []);
 
+  // Handle mark notification as read
   const handleMarkAsRead = useCallback(
     (id: string) => {
       markAsRead(id);
@@ -57,9 +70,12 @@ const NotificationsPage: React.FC = () => {
     [markAsRead],
   );
 
+  // Render the Notifications Page
   return (
     <div className="container mx-auto p-4 sm:p-6 max-w-5xl">
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-brand-500/20 pb-4 mb-6">
+        {/* Title */}
         <div className="flex items-center gap-2">
           <FaBell className="text-brand-400 text-xl" />
           <h1 className="text-2xl font-bold text-white">Notifications</h1>
@@ -72,7 +88,10 @@ const NotificationsPage: React.FC = () => {
             <div className="w-4 h-4 border-2 border-brand-500/70 border-t-transparent rounded-full animate-spin ml-2"></div>
           )}
         </div>
+        
+        {/* Actions */}
         <div className="flex gap-2">
+          {/* Refresh notifications button */}
           <Button
             onClick={refreshNotifications}
             variant="outline"
@@ -80,6 +99,7 @@ const NotificationsPage: React.FC = () => {
             disabled={isLoading}
             className="relative overflow-hidden"
           >
+            {/* Loading indicator */}
             {isLoading ? (
               <span className="flex items-center">
                 <span className="animate-pulse">Loading...</span>
@@ -148,6 +168,7 @@ const NotificationsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Loading Indicator */}
       {isLoading && notifications.length === 0 && (
         <div className="flex flex-col justify-center items-center h-40 space-y-4">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-brand-500"></div>
@@ -155,6 +176,7 @@ const NotificationsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Error Indicator */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
@@ -179,6 +201,7 @@ const NotificationsPage: React.FC = () => {
         </div>
       )}
 
+      {/* No notifications indicator */}
       {!isLoading && !error && notifications.length === 0 && (
         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
           <FaRegBell className="text-5xl mb-4 opacity-30" />
@@ -238,6 +261,7 @@ const NotificationsPage: React.FC = () => {
                   {notification.content}
                 </p>
 
+                {/* Notification details */}
                 <div className="mt-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
@@ -251,6 +275,7 @@ const NotificationsPage: React.FC = () => {
                     </span>
                   </div>
 
+                  {/* Link to notification */}
                   <div className="flex items-center gap-2">
                     {notification.link && (
                       <Link
@@ -261,6 +286,7 @@ const NotificationsPage: React.FC = () => {
                           handleMarkAsRead(notification.id)
                         }
                       >
+                        {/* Link icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-3 w-3"
@@ -291,6 +317,7 @@ const NotificationsPage: React.FC = () => {
                         className="flex items-center gap-1 text-gray-400 hover:text-brand-300 text-sm transition-all duration-200 rounded-full px-2 py-1 hover:bg-brand-500/10"
                         aria-label="Mark as read"
                       >
+                        {/* Mark as read icon */}
                         <FaCheckCircle className="text-xs" />
                         <span className="transition-opacity duration-200">
                           Mark read

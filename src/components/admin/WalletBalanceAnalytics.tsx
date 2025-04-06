@@ -112,7 +112,14 @@ export const WalletBalanceAnalytics: React.FC = () => {
         throw new Error(`Failed to fetch wallet balances: ${response.status}`);
       }
       
-      const data: WalletBalancesResponse = await response.json();
+      const responseData = await response.json();
+      
+      // Type check for response format
+      if (!responseData || typeof responseData !== 'object' || !('success' in responseData)) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      const data = responseData as WalletBalancesResponse;
       
       if (!data.success) {
         throw new Error(data.error || 'Failed to load wallet balances');

@@ -14,6 +14,20 @@ const config = {
   core: {
     builder: '@storybook/builder-vite',
   },
+  // This enables Storybook to work from a subpath
+  staticDirs: [{ from: '../public', to: '/' }],
+  managerHead: (head) => `
+    ${head}
+    <script>
+      // Check if we're in a subpath environment
+      if (window.location.pathname.includes('/live/')) {
+        // Add base tag to handle subpath correctly
+        const base = document.createElement('base');
+        base.href = '/live/';
+        document.head.appendChild(base);
+      }
+    </script>
+  `,
   viteFinal: async (config) => {
     // Add any custom Vite configuration here
     config.define = {
@@ -33,6 +47,31 @@ const config = {
         VITE_OPENAI_API_KEY: JSON.stringify('STORYBOOK_PLACEHOLDER'),
       }
     };
+    
+    // Server configuration - allow design.degenduel.me
+    config.server = {
+      ...config.server,
+      host: '0.0.0.0',
+      cors: true,
+      hmr: false,
+      // Allow requests from design.degenduel.me domain
+      fs: {
+        strict: true,
+        allow: [process.cwd()]
+      }
+    };
+    
+    // Handle subpath in production environment
+    if (process.env.NODE_ENV === 'production') {
+      // Set the base and public paths for production deployment behind a /live/ subpath
+      config.base = '/live/';
+      config.build = {
+        ...config.build,
+        assetsDir: '',
+        outDir: 'storybook-static'
+      };
+    }
+    
     return config;
   },
 };

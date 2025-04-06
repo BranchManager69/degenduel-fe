@@ -1,3 +1,14 @@
+// src/hooks/useReferral.ts
+
+/**
+ * This hook is used to handle referral code tracking and analytics.
+ * 
+ * It is COMPLETELY FUCKED!!!!!!!!!!!!!
+ * 
+ * # TODO:  WHOLE THING NEEDS TO BE REWRITTEN!!!!!!!!!
+ * 
+ */
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";

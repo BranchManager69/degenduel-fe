@@ -334,11 +334,14 @@ export default {
         blob: "blob 15s infinite cubic-bezier(0.4, 0.0, 0.2, 1)",
         "blob-spin": "blob-spin 15s infinite linear",
         pulse: "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "gradient-pulse": "gradient-pulse 3s ease-in-out infinite",
         "gradient-x": "gradient-x 15s ease infinite",
         "gradient-y": "gradient-y 15s ease infinite",
         "gradient-xy": "gradient-xy 15s ease infinite",
         "caution-flow-left": "caution-flow-left 20s linear infinite",
         "caution-flow-right": "caution-flow-right 25s linear infinite",
+        "caution-tape-scroll": "caution-tape-scroll 40s linear infinite",
+        "caution-tape-scroll-reverse": "caution-tape-scroll-reverse 40s linear infinite",
         "shine-slow": "shine-slow 3s ease-in-out infinite",
         "shine-websocket": "shine 3s linear infinite",
         "cyber-pulse": "cyber-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
@@ -423,12 +426,24 @@ export default {
         "cybergrid-float": "cybergrid-float 6s ease-in-out infinite",
         "cybergrid-glow": "cybergrid-glow 2s ease-in-out infinite",
         "cybergrid-pulse-slow": "cybergrid-pulse-slow 4s ease-in-out infinite",
+        "pulse-brief": "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1)",
+        "reveal-content": "fadeIn 0.8s ease-out forwards",
 
       },
       keyframes: {
         shine: {
           "0%": { "background-position": "300% center" },
           "100%": { "background-position": "0% center" },
+        },
+        "gradient-pulse": {
+          "0%, 100%": { 
+            opacity: "0.8",
+            filter: "brightness(1)"
+          },
+          "50%": { 
+            opacity: "1",
+            filter: "brightness(1.2)"
+          }
         },
         scroll: {
           "0%": { transform: "translateX(0)" },
@@ -504,6 +519,14 @@ export default {
         "caution-flow-right": {
           "0%": { "background-position": "200% 0%" },
           "100%": { "background-position": "0% 0%" },
+        },
+        "caution-tape-scroll": {
+          "0%": { "transform": "translateX(0)" },
+          "100%": { "transform": "translateX(-50%)" } /* Move by half width for seamless loop */
+        },
+        "caution-tape-scroll-reverse": {
+          "0%": { "transform": "translateX(-50%)" },
+          "100%": { "transform": "translateX(0)" } /* Opposite direction */
         },
         "shine-slow": {
           "0%": { transform: "translateX(-100%)" },

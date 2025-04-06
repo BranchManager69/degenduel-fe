@@ -51,7 +51,7 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = ({
     return () => clearInterval(interval);
   }, []);
   return (
-    <div className="sticky top-14 sm:top-16 z-40 w-full overflow-hidden">
+    <div className="sticky top-[var(--header-height)] z-40 w-full overflow-hidden transition-[top] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]">
       {/* Dark base layer with slightly increased opacity for better readability */}
       <div className="absolute inset-0 bg-dark-200/70 backdrop-blur-sm" />
 

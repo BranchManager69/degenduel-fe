@@ -1,10 +1,36 @@
-// Import the Terminal component first
-import { Terminal, DecryptionTimer } from './Terminal';
+/**
+ * Terminal Component Exports
+ * 
+ * @fileoverview
+ * This file exports all terminal-related components
+ * 
+ * @description
+ * The terminal components are organized into modular components
+ * for better maintainability and reusability.
+ * 
+ * @author Branch Manager
+ */
 
-// Then export
-export { Terminal, DecryptionTimer };
+// Main Terminal component
+export { Terminal } from './Terminal';
+export type { TerminalProps, TerminalSize } from './types';
 
-// Define Config interface
+// Timer components
+export { DecryptionTimer } from './components/DecryptionTimer';
+export { TimeUnit } from './components/TimeUnit';
+
+// Console components
+export { TerminalConsole } from './components/TerminalConsole';
+export { TerminalInput } from './components/TerminalInput';
+export { CommandTray } from './components/CommandTray';
+
+// Helper components
+export { ContractDisplay } from './components/ContractDisplay';
+
+// Commands
+export { commandMap } from './commands';
+
+// Configuration
 export interface Config {
   RELEASE_DATE: Date;
   CONTRACT_ADDRESS: string;
@@ -45,6 +71,9 @@ export function createConfig(overrides: Partial<Config> = {}): Config {
     }
   };
 }
+
+// Types
+export * from './types';
 
 // Also export Terminal as default
 export default Terminal;

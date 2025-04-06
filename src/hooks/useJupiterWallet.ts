@@ -1,0 +1,102 @@
+/**
+ * Jupiter Wallet Hook
+ * This hook provides a wrapper around Jupiter's wallet adapter, making it compatible
+ * with the existing wallet interface used in the application.
+ */
+import { useWallet as useJupiterWalletAdapter } from '@jup-ag/wallet-adapter';
+import { useCallback } from 'react';
+
+// Define the SignMessageOutput type based on actual return value
+export type SignMessageOutput = Uint8Array;
+
+export interface UseJupiterWalletReturn {
+  // Connection State
+  isConnected: boolean;
+  isConnecting: boolean;
+  walletAddress: string | null;
+  
+  // Action methods
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  signMessage: (message: Uint8Array) => Promise<SignMessageOutput>;
+  
+  // Wallet metadata
+  walletName: string | null;
+  availableWallets: any[];
+}
+
+/**
+ * Hook for interacting with Jupiter's wallet adapter
+ * This provides a compatibility layer over Jupiter's wallet adapter
+ * to make it work with our existing application.
+ */
+export function useJupiterWallet(): UseJupiterWalletReturn {
+  const {
+    connecting,
+    connected,
+    publicKey,
+    disconnect: jupiterDisconnect,
+    select,
+    connect: jupiterConnect,
+    wallet,
+    wallets,
+    signMessage: jupiterSignMessage
+  } = useJupiterWalletAdapter();
+
+  // Convert publicKey to string format expected by our app
+  const walletAddress = publicKey?.toString() || null;
+  
+  // Wrap the connect method to handle our app-specific flow
+  const connect = useCallback(async () => {
+    if (!wallet && wallets.length > 0) {
+      // If no wallet is selected, select the first one
+      select(wallets[0].adapter.name);
+    }
+    
+    try {
+      await jupiterConnect();
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+      throw error;
+    }
+  }, [wallet, wallets, select, jupiterConnect]);
+  
+  // Wrap the disconnect method
+  const disconnect = useCallback(async () => {
+    try {
+      await jupiterDisconnect();
+    } catch (error) {
+      console.error("Failed to disconnect wallet:", error);
+      throw error;
+    }
+  }, [jupiterDisconnect]);
+  
+  // Wrap the signMessage method
+  const signMessage = useCallback(async (message: Uint8Array): Promise<SignMessageOutput> => {
+    if (!connected || !publicKey) {
+      throw new Error("Wallet not connected");
+    }
+    
+    if (!jupiterSignMessage) {
+      throw new Error("Wallet does not support message signing");
+    }
+    
+    try {
+      return await jupiterSignMessage(message);
+    } catch (error) {
+      console.error("Failed to sign message:", error);
+      throw error;
+    }
+  }, [connected, publicKey, jupiterSignMessage]);
+  
+  return {
+    isConnected: connected,
+    isConnecting: connecting,
+    walletAddress,
+    connect,
+    disconnect,
+    signMessage,
+    walletName: wallet?.adapter.name || null,
+    availableWallets: wallets,
+  };
+}

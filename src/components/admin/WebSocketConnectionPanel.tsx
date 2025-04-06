@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 
 interface WebSocketConnection {
   id: number;
@@ -123,19 +123,19 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
     }
   };
 
-  // Function to get connection status class
-  const getStatusClass = (connection: WebSocketConnection) => {
+  // Helper function for determining connection state
+  const getConnectionState = (connection: WebSocketConnection) => {
     if (!connection.disconnected_at) {
-      return 'bg-green-500/20 text-green-300 border-green-500/30';
+      return 'active';
     } 
     
     // If connection was closed with an error code
     if (connection.close_code && (connection.close_code !== 1000 && connection.close_code !== 1001)) {
-      return 'bg-red-500/20 text-red-300 border-red-500/30';
+      return 'error';
     }
     
     // Normal closure
-    return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+    return 'closed';
   };
 
   // Get relative time for better readability
@@ -148,36 +148,58 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
   };
 
   return (
-    <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg">
-      {/* Header with expand/collapse control */}
+    <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg overflow-hidden shadow-md">
+      {/* Edge-to-edge header with elegant styling */}
       <div 
-        className="p-4 cursor-pointer flex items-center justify-between"
+        className="cursor-pointer bg-gradient-to-r from-dark-800/90 via-dark-700/80 to-dark-800/90 relative"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center gap-2">
-          <div className="text-xl text-brand-400">🔌</div>
-          <h2 className="text-lg font-bold text-white">WebSocket Connections</h2>
-          {!isExpanded && connections.length > 0 && (
-            <div className="text-xs bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded-full border border-brand-500/30">
-              {connections.filter(c => !c.disconnected_at).length} active
+        {/* Subtle top glow effect */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
+        
+        <div className="p-3 flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-2">
+            <div className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1.5 
+              ${connections.some(c => getConnectionState(c) === 'active')
+                ? 'bg-green-500/20 text-green-300' 
+                : 'bg-yellow-500/20 text-yellow-300'}`}
+              style={{
+                boxShadow: connections.some(c => getConnectionState(c) === 'active')
+                  ? '0 0 4px rgba(16,185,129,0.2), inset 0 0 2px rgba(16,185,129,0.1)' 
+                  : '0 0 4px rgba(234,179,8,0.2), inset 0 0 2px rgba(234,179,8,0.1)'
+              }}
+            >
+              <div className={`w-2 h-2 rounded-full ${connections.some(c => getConnectionState(c) === 'active') ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`}></div>
+              <span>{connections.some(c => getConnectionState(c) === 'active') ? 'ONLINE' : 'STANDBY'}</span>
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              fetchConnections();
-            }} 
-            className="text-xs text-cyber-400 hover:text-cyber-300 flex items-center"
-            disabled={loading}
-          >
-            <span className="mr-1">↻</span> Refresh
-          </button>
-          <div className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-            <span className="text-gray-400">⌄</span>
+            <h2 className="text-lg font-bold text-white ml-2">WebSocket Connections</h2>
+            {!isExpanded && connections.length > 0 && (
+              <div className="text-xs bg-brand-500/10 text-brand-300 px-2 py-0.5 rounded-full ml-2 flex items-center"
+                style={{ boxShadow: '0 0 4px rgba(56,189,248,0.2), inset 0 0 2px rgba(56,189,248,0.1)' }}>
+                {connections.filter(c => getConnectionState(c) === 'active').length} active
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                fetchConnections();
+              }} 
+              className="text-xs bg-gradient-to-br from-dark-600/90 to-dark-700/90 hover:from-dark-500/90 hover:to-dark-600/90 px-2 py-1 rounded text-cyan-400 hover:text-cyan-300 transition-all flex items-center gap-1"
+              style={{ boxShadow: "0 0 3px rgba(8,145,178,0.2), inset 0 0 2px rgba(8,145,178,0.1)" }}
+              disabled={loading}
+            >
+              <span className="mr-1">↻</span> Refresh
+            </button>
+            <div className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+              <span className="text-gray-400">⌄</span>
+            </div>
           </div>
         </div>
+        
+        {/* Subtle bottom line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
       </div>
 
       {/* Expandable content */}
@@ -231,14 +253,39 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
                     {connections.map(connection => (
                       <div 
                         key={connection.id}
-                        className="bg-dark-300/50 border border-dark-400 rounded-md hover:bg-dark-300/70 transition-colors cursor-pointer"
+                        className="bg-gradient-to-br from-dark-300/50 to-dark-200/50 rounded-md hover:from-dark-300/70 hover:to-dark-200/70 transition-all cursor-pointer shadow-sm transform hover:scale-[1.01] hover:shadow-md"
+                        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)" }}
                         onClick={() => setViewingConnection(connection)}
                       >
-                        <div className="p-3">
+                        <div className="p-3 relative overflow-hidden">
+                          {/* Subtle decoration glow in top-right corner */}
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-dark-100/5 to-transparent rounded-bl-full"></div>
+                          
                           <div className="flex justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className={`px-2 py-0.5 text-xs rounded-md border ${getStatusClass(connection)}`}>
-                                {connection.disconnected_at ? 'Disconnected' : 'Active'}
+                              <div className={`px-2 py-0.5 text-xs rounded-md flex items-center gap-1.5 ${
+                                getConnectionState(connection) === 'active'
+                                  ? 'bg-green-500/10 text-green-300' 
+                                  : getConnectionState(connection) === 'error'
+                                    ? 'bg-red-500/10 text-red-300'
+                                    : 'bg-gray-500/10 text-gray-300'
+                              }`}
+                              style={{
+                                boxShadow: getConnectionState(connection) === 'active'
+                                  ? '0 0 4px rgba(16,185,129,0.15), inset 0 0 2px rgba(16,185,129,0.1)' 
+                                  : getConnectionState(connection) === 'error'
+                                    ? '0 0 4px rgba(239,68,68,0.15), inset 0 0 2px rgba(239,68,68,0.1)'
+                                    : '0 0 4px rgba(156,163,175,0.15), inset 0 0 2px rgba(156,163,175,0.1)'
+                              }}
+                              >
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                  getConnectionState(connection) === 'active'
+                                    ? 'bg-green-400 animate-pulse' 
+                                    : getConnectionState(connection) === 'error'
+                                      ? 'bg-red-400'
+                                      : 'bg-gray-400'
+                                }`}></div>
+                                {getConnectionState(connection) === 'active' ? 'Active' : 'Disconnected'}
                               </div>
                               <span className="text-gray-300 text-xs font-mono">{connection.connection_id}</span>
                             </div>
@@ -284,8 +331,12 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
                           
                           {/* If connection had an error, show it */}
                           {connection.connection_error && (
-                            <div className="mt-2 text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
-                              {connection.connection_error}
+                            <div className="mt-2 text-xs text-red-400 bg-gradient-to-r from-red-900/20 to-red-800/10 px-2 py-1 rounded relative overflow-hidden"
+                              style={{ boxShadow: "inset 0 0 1px rgba(239,68,68,0.3)" }}
+                            >
+                              {/* Subtle left border effect */}
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500/20 via-red-400/20 to-red-500/20"></div>
+                              <div className="pl-1.5">{connection.connection_error}</div>
                             </div>
                           )}
                           
@@ -293,7 +344,10 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
                           {connection.subscribed_topics && connection.subscribed_topics.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1">
                               {connection.subscribed_topics.map(topic => (
-                                <span key={topic} className="text-xs bg-dark-400/50 text-gray-300 px-1.5 py-0.5 rounded">
+                                <span key={topic} 
+                                  className="text-xs bg-gradient-to-r from-dark-400/50 to-dark-500/50 text-cyan-200 px-2 py-0.5 rounded"
+                                  style={{ boxShadow: "inset 0 0 1px rgba(56,189,248,0.2)" }}
+                                >
                                   {topic}
                                 </span>
                               ))}
@@ -314,22 +368,30 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
                         <button
                           onClick={handlePrevPage}
                           disabled={!pagination.hasPrevPage}
-                          className={`px-3 py-1 text-xs rounded border ${
+                          className={`px-3 py-1 text-xs rounded transition-all transform hover:scale-105 active:scale-95 ${
                             pagination.hasPrevPage
-                              ? 'border-cyber-500 bg-cyber-900/20 text-cyber-400 hover:bg-cyber-900/40'
-                              : 'border-gray-700 bg-gray-900/20 text-gray-600 cursor-not-allowed'
+                              ? 'bg-gradient-to-br from-cyan-600/30 to-cyan-700/40 text-cyan-300 hover:from-cyan-600/40 hover:to-cyan-700/50'
+                              : 'bg-gradient-to-br from-gray-700/20 to-gray-800/30 text-gray-600 cursor-not-allowed'
                           }`}
+                          style={pagination.hasPrevPage 
+                            ? { boxShadow: "0 0 4px rgba(8,145,178,0.2), inset 0 0 2px rgba(8,145,178,0.1)" }
+                            : { boxShadow: "inset 0 0 1px rgba(156,163,175,0.2)" }
+                          }
                         >
                           ← Previous
                         </button>
                         <button
                           onClick={handleNextPage}
                           disabled={!pagination.hasNextPage}
-                          className={`px-3 py-1 text-xs rounded border ${
+                          className={`px-3 py-1 text-xs rounded transition-all transform hover:scale-105 active:scale-95 ${
                             pagination.hasNextPage
-                              ? 'border-cyber-500 bg-cyber-900/20 text-cyber-400 hover:bg-cyber-900/40'
-                              : 'border-gray-700 bg-gray-900/20 text-gray-600 cursor-not-allowed'
+                              ? 'bg-gradient-to-br from-cyan-600/30 to-cyan-700/40 text-cyan-300 hover:from-cyan-600/40 hover:to-cyan-700/50'
+                              : 'bg-gradient-to-br from-gray-700/20 to-gray-800/30 text-gray-600 cursor-not-allowed'
                           }`}
+                          style={pagination.hasNextPage 
+                            ? { boxShadow: "0 0 4px rgba(8,145,178,0.2), inset 0 0 2px rgba(8,145,178,0.1)" }
+                            : { boxShadow: "inset 0 0 1px rgba(156,163,175,0.2)" }
+                          }
                         >
                           Next →
                         </button>
@@ -345,37 +407,74 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
 
       {/* Connection Details Modal */}
       {viewingConnection && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-dark-200/90 border border-brand-500/20 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-dark-300/95 to-dark-200/95 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-xl"
+             style={{ boxShadow: "0 0 25px rgba(0,0,0,0.5), 0 0 10px rgba(56,189,248,0.2), inset 0 0 1px rgba(56,189,248,0.1)" }}
+          >
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-dark-800/90 via-dark-700/80 to-dark-800/90 p-4 relative">
+              {/* Top glow line */}
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
+              
+              <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-xl font-bold text-white">Connection Details</h3>
-                  <div className="text-sm text-gray-400 font-mono mt-1">{viewingConnection.connection_id}</div>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <span className="text-brand-400 text-2xl">⚡</span>
+                    Connection Details
+                  </h3>
+                  <div className="text-sm text-cyan-400 font-mono mt-1">{viewingConnection.connection_id}</div>
                 </div>
                 <button 
                   onClick={() => setViewingConnection(null)}
-                  className="text-gray-400 hover:text-white text-2xl"
+                  className="text-gray-400 hover:text-white text-2xl hover:bg-dark-600/50 h-8 w-8 flex items-center justify-center rounded transition-all"
                 >
                   ×
                 </button>
               </div>
-
+              
+              {/* Bottom line */}
+              <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(90vh - 80px)" }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Connection Status */}
                 <div className="col-span-full">
-                  <div className={`px-3 py-1.5 text-sm inline-flex items-center gap-2 rounded-md border ${getStatusClass(viewingConnection)}`}>
-                    <span className={`h-2 w-2 rounded-full ${viewingConnection.disconnected_at ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`}></span>
-                    <span>{viewingConnection.disconnected_at ? 'Disconnected' : 'Active'}</span>
+                  <div className={`px-3 py-1.5 text-sm inline-flex items-center gap-2 rounded-md ${
+                    getConnectionState(viewingConnection) === 'active'
+                      ? 'bg-green-500/10 text-green-300'
+                      : getConnectionState(viewingConnection) === 'error'
+                        ? 'bg-red-500/10 text-red-300'
+                        : 'bg-gray-500/10 text-gray-300'
+                  }`}
+                  style={{
+                    boxShadow: getConnectionState(viewingConnection) === 'active'
+                      ? '0 0 6px rgba(16,185,129,0.2), inset 0 0 2px rgba(16,185,129,0.1)'
+                      : getConnectionState(viewingConnection) === 'error'
+                        ? '0 0 6px rgba(239,68,68,0.2), inset 0 0 2px rgba(239,68,68,0.1)'
+                        : '0 0 6px rgba(156,163,175,0.2), inset 0 0 2px rgba(156,163,175,0.1)'
+                  }}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${
+                      getConnectionState(viewingConnection) === 'active'
+                      ? 'bg-green-500 animate-pulse'
+                      : getConnectionState(viewingConnection) === 'error'
+                        ? 'bg-red-500'
+                        : 'bg-gray-500'
+                    }`}></span>
+                    <span>{getConnectionState(viewingConnection) === 'active' ? 'Active' : 'Disconnected'}</span>
                     {viewingConnection.disconnected_at && viewingConnection.close_code && (
-                      <span className="text-xs font-mono">Code: {viewingConnection.close_code}</span>
+                      <span className="text-xs font-mono ml-1 px-1.5 py-0.5 bg-dark-600/70 rounded-sm">Code: {viewingConnection.close_code}</span>
                     )}
                   </div>
                 </div>
 
                 {/* User Information */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-gray-300 border-b border-dark-300 pb-1">User Information</h4>
+                  <h4 className="text-sm font-semibold text-cyan-300 pb-1 relative">
+                    User Information
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
+                  </h4>
                   
                   <div>
                     <div className="text-xs text-gray-400">Wallet Address</div>
@@ -401,7 +500,10 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
 
                 {/* Connection Information */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-gray-300 border-b border-dark-300 pb-1">Connection Information</h4>
+                  <h4 className="text-sm font-semibold text-cyan-300 pb-1 relative">
+                    Connection Information
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
+                  </h4>
                   
                   <div>
                     <div className="text-xs text-gray-400">IP Address</div>
@@ -436,7 +538,10 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
 
                 {/* Timing Information */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-gray-300 border-b border-dark-300 pb-1">Timing Information</h4>
+                  <h4 className="text-sm font-semibold text-cyan-300 pb-1 relative">
+                    Timing Information
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
+                  </h4>
                   
                   <div>
                     <div className="text-xs text-gray-400">Connected At</div>
@@ -466,7 +571,10 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
 
                 {/* Message Information */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-gray-300 border-b border-dark-300 pb-1">Message Information</h4>
+                  <h4 className="text-sm font-semibold text-cyan-300 pb-1 relative">
+                    Message Information
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
+                  </h4>
                   
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -502,7 +610,10 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
                 {/* Disconnect Information (if applicable) */}
                 {viewingConnection.disconnected_at && (
                   <div className="col-span-full space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-300 border-b border-dark-300 pb-1">Disconnect Information</h4>
+                    <h4 className="text-sm font-semibold text-cyan-300 pb-1 relative">
+                      Disconnect Information
+                      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
+                    </h4>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -533,9 +644,18 @@ export const WebSocketConnectionPanel: React.FC<WebSocketConnectionPanelProps> =
                 
                 {/* User Agent Information */}
                 <div className="col-span-full">
-                  <h4 className="text-sm font-semibold text-gray-300 border-b border-dark-300 pb-1">User Agent</h4>
-                  <div className="mt-2 p-2 bg-dark-300/50 text-xs text-gray-300 font-mono rounded break-all whitespace-pre-wrap">
-                    {viewingConnection.user_agent}
+                  <h4 className="text-sm font-semibold text-cyan-300 pb-1 relative">
+                    User Agent
+                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-dark-300/70 to-transparent"></div>
+                  </h4>
+                  <div className="mt-2 p-3 bg-gradient-to-br from-dark-400/40 to-dark-300/30 text-xs text-gray-300 font-mono rounded break-all whitespace-pre-wrap relative overflow-hidden"
+                      style={{ boxShadow: "inset 0 0 2px rgba(0,0,0,0.3), 0 0 1px rgba(255,255,255,0.05)" }}
+                  >
+                    {/* Subtle decoration */}
+                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-gray-700/20 to-transparent"></div>
+                    <div className="relative z-10">
+                      {viewingConnection.user_agent}
+                    </div>
                   </div>
                 </div>
               </div>

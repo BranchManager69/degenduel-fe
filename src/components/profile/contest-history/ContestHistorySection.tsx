@@ -34,14 +34,18 @@ export const ContestHistorySection: React.FC = () => {
         // Handle the new response structure
         if (response.success) {
           // Map the API response data to match the ContestHistoryEntry type
-          const mappedHistory = response.data.map((entry: any) => ({
-            contest_id: entry.contest_id.toString(),
-            contest_name: entry.contest_name,
-            start_time: entry.start_time,
-            end_time: entry.end_time,
-            portfolio_return: Number(entry.portfolio_return),
-            rank: Number(entry.rank),
-          }));
+          // Filter out cancelled contests
+          const mappedHistory = response.data
+            .filter((entry: any) => entry.status !== "cancelled")
+            .map((entry: any) => ({
+              contest_id: entry.contest_id.toString(),
+              contest_name: entry.contest_name,
+              start_time: entry.start_time,
+              end_time: entry.end_time,
+              portfolio_return: Number(entry.portfolio_return),
+              rank: Number(entry.rank),
+              status: entry.status || "completed", // Default to completed if no status
+            }));
           setContestHistory(mappedHistory);
         } else {
           setError(response.message || "Failed to load contest history");

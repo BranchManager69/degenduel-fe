@@ -1,7 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { clientLogger, LogLevel, sendLogsNow } from '../../utils/clientLogForwarder';
-import { useUnifiedWebSocket, MessageType, TopicType } from '../../hooks/websocket/WebSocketManager';
+// src/pages/admin/LogForwarderDebug.tsx
 
+/**
+ * This is used to debug the log forwarder.
+ * @author @BranchManager69
+ * @since 2025-04-02
+ */
+
+import React, { useEffect, useRef, useState } from 'react';
+import { MessageType, TopicType, useUnifiedWebSocket } from '../../hooks/websocket/WebSocketManager';
+import { clientLogger, LogLevel, sendLogsNow } from '../../utils/clientLogForwarder';
+
+// LogForwarderDebug component
 const LogForwarderDebug: React.FC = () => {
   const [message, setMessage] = useState('');
   const [logLevel, setLogLevel] = useState<LogLevel>(LogLevel.INFO);
@@ -43,6 +52,7 @@ const LogForwarderDebug: React.FC = () => {
     }
   }, [receivedLogs]);
 
+  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -79,6 +89,7 @@ const LogForwarderDebug: React.FC = () => {
     }
   };
 
+  // Trigger an error
   const triggerError = () => {
     try {
       // Intentionally cause an error
@@ -89,6 +100,7 @@ const LogForwarderDebug: React.FC = () => {
     }
   };
 
+  // Trigger an unhandled error
   const triggerUnhandledError = () => {
     // This will cause an unhandled error
     setTimeout(() => {
@@ -98,12 +110,14 @@ const LogForwarderDebug: React.FC = () => {
     setStatus('Unhandled error triggered. Check console and server logs.');
   };
 
+  // Trigger a promise rejection
   const triggerPromiseRejection = () => {
     // This will cause an unhandled promise rejection
     Promise.reject(new Error('Test unhandled promise rejection'));
     setStatus('Promise rejection triggered. Check console and server logs.');
   };
 
+  // Render the component
   return (
     <div className="p-4 md:p-8">
       <h1 className="text-2xl font-bold mb-6">Client Log Forwarder Debug</h1>

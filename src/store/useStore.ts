@@ -4,11 +4,16 @@
  * This file contains the store for the application.
  * It is used to manage the state of the application.
  * It is also used to manage the state of the websocket.
+ * 
+ * There are no guarantees that anything in here is the way it's supposed to be;
+ *  things are a little messy right now.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
  */
 
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
-
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { WebSocketState } from "../hooks/useWebSocketMonitor";
 import { ServiceConnection, ServiceNode } from "../hooks/websocket/useSkyDuelWebSocket";
@@ -618,6 +623,7 @@ const isMobileDevice = () => {
   );
 };
 
+// DOESNT SEEM TO WORK!
 // Add utility function for Phantom deep linking
 const getPhantomDeepLink = () => {
   const url = window.location.href;
@@ -723,6 +729,7 @@ const initialState: StateData = {
   webSocketAlerts: [],
 };
 
+// Create the store
 export const useStore = create<State>()(
   persist(
     (set, get) => ({

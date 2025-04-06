@@ -1,8 +1,19 @@
+// src/components/auth/PrivyLoginButton.tsx
+
+/**
+ * PrivyLoginButton.tsx
+ * 
+ * This file contains the PrivyLoginButton component, which is used to display the Privy login button.
+ *   
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
+ */
+
 import React from 'react';
-import { Button } from '../ui/Button';
+import { authDebug } from '../../config/config';
 import { usePrivyAuth } from '../../contexts/PrivyAuthContext';
 import { useStore } from '../../store/useStore';
-import { authDebug } from '../../config/config';
+import { Button } from '../ui/Button';
 
 interface PrivyLoginButtonProps {
   className?: string;

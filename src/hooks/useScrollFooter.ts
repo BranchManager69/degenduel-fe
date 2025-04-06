@@ -7,6 +7,17 @@ interface ScrollFooterState {
 }
 
 export const useScrollFooter = (threshold: number = 50) => {
+  // Check for Storybook environment mock
+  if (typeof window !== 'undefined' && 'useScrollFooterMock' in window && typeof (window as any).useScrollFooterMock === 'function') {
+    const mockState = (window as any).useScrollFooterMock();
+    return {
+      isCompact: mockState.isCompact,
+      scrollDirection: mockState.scrollDirection,
+      scrolledDistance: 0
+    };
+  }
+  
+  // Normal implementation for actual app
   const [state, setState] = useState<ScrollFooterState>({
     isCompact: true, // Start compact by default
     scrollDirection: null,

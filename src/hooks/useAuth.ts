@@ -5,13 +5,15 @@
  * It is used in the App component to initialize the auth state and get the access token for WebSocket authentication.
  */
 
-import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
 import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
 
 import { useDebounce } from "./useDebounce";
 import { useStore } from "../store/useStore";
 import { NODE_ENV, authDebug } from "../config/config";
+import { env } from "../config/env";
+import { useJupiterWallet } from "./useJupiterWallet";
 
 interface AuthState {
   user: any | null; // Using any temporarily since we're getting user from store
@@ -33,7 +35,20 @@ interface AuthState {
 // Auth hook
 export function useAuth() {
   const store = useStore();
-  const { account, connected } = useWallet();
+  
+  // Choose between Jupiter wallet and Aptos wallet based on feature flag
+  const { account, connected } = useAptosWallet();
+  const jupiterWallet = useJupiterWallet();
+  
+  // Use Jupiter wallet when feature flag is enabled
+  const walletConnected = env.USE_JUPITER_WALLET 
+    ? jupiterWallet.isConnected 
+    : connected;
+  
+  const walletAddress = env.USE_JUPITER_WALLET
+    ? jupiterWallet.walletAddress
+    : account?.address;
+    
   const [shouldCheck, setShouldCheck] = useState<boolean>(true);
   const [authState, setAuthState] = useState<AuthState>({
     user: store.user,
@@ -198,10 +213,19 @@ export function useAuth() {
       });
       setShouldCheck(true);
       
+      // Preserve any stored navigation path before cleanup
+      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
+      authDebug('useAuth', 'Checking for stored redirect path during Twitter auth', {
+        hasStoredPath: !!storedRedirectPath,
+        path: storedRedirectPath || 'none'
+      });
+      
       // Clean up URL parameters
       const url = new URL(window.location.href);
       if (searchParams.has('twitter_login')) url.searchParams.delete('twitter_login');
       if (searchParams.has('twitter_linked')) url.searchParams.delete('twitter_linked');
+      
+      // We don't delete the stored path - it will be used by LoginPage
       window.history.replaceState({}, '', url);
     }
     
@@ -213,10 +237,19 @@ export function useAuth() {
       });
       setShouldCheck(true);
       
+      // Preserve any stored navigation path before cleanup
+      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
+      authDebug('useAuth', 'Checking for stored redirect path during Privy auth', {
+        hasStoredPath: !!storedRedirectPath,
+        path: storedRedirectPath || 'none'
+      });
+      
       // Clean up URL parameters
       const url = new URL(window.location.href);
       if (searchParams.has('privy_login')) url.searchParams.delete('privy_login');
       if (searchParams.has('privy_linked')) url.searchParams.delete('privy_linked');
+      
+      // We don't delete the stored path - it will be used by LoginPage
       window.history.replaceState({}, '', url);
     }
     
@@ -245,14 +278,15 @@ export function useAuth() {
   // Update auth state when store user or wallet state changes
   // This effect now only updates local state without triggering auth checks
   useEffect(() => {
-    const isWalletConnected = connected && !!account?.address;
+    const isWalletConnected = walletConnected && !!walletAddress;
     
     // If wallet connection status changes, trigger a full auth check
     if (isWalletConnected !== authState.isWalletConnected) {
       if (isWalletConnected) {
         authDebug('useAuth', 'Wallet connection detected, checking auth status', {
-          address: account?.address,
-          connected: connected
+          address: walletAddress,
+          connected: walletConnected,
+          adapter: env.USE_JUPITER_WALLET ? 'jupiter' : 'aptos'
         });
         // Wait a short time for wallet connection to complete
         setTimeout(() => setShouldCheck(true), 500);
@@ -267,20 +301,21 @@ export function useAuth() {
     const newState = {
       user: store.user || authState.user, // Only update user from store if it exists
       isWalletConnected,
-      walletAddress: account?.address,
+      walletAddress: walletAddress || undefined, // Convert null to undefined to satisfy type
     };
     
-    setAuthState((prev) => ({
+    setAuthState(prev => ({
       ...prev,
       ...newState,
     }));
     
     authDebug('useAuth', 'Updated wallet connection state', {
       isWalletConnected,
-      walletAddress: account?.address,
-      storeUser: !!store.user
+      walletAddress,
+      storeUser: !!store.user,
+      adapter: env.USE_JUPITER_WALLET ? 'jupiter' : 'aptos'
     });
-  }, [store.user, connected, account?.address, authState.isWalletConnected, authState.user, authState.walletAddress]);
+  }, [store.user, walletConnected, walletAddress, authState.isWalletConnected, authState.user, authState.walletAddress]);
 
   // Memoize role check functions
   const isSuperAdmin = useCallback((): boolean => {

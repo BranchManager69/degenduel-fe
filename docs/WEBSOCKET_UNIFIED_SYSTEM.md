@@ -4,10 +4,63 @@
 
 The DegenDuel Unified WebSocket System provides a centralized WebSocket implementation that replaces multiple separate WebSocket servers. It uses a topic-based subscription model allowing clients to subscribe to specific data channels through a single connection.
 
-- **Implementation**: `/websocket/v69/unified-ws.js`
 - **Connection Path**: `/api/v69/ws`
-- **Initializer**: `/websocket/v69/websocket-initializer.js`
+- **Protocol**: wss:// (Secure WebSocket)
 - **Max Payload Size**: 50KB
+
+## Frontend Implementation (2025-04-02 Update)
+
+The frontend now uses a standardized pattern for integrating with the v69 WebSocket system:
+
+1. **Core Implementation**: `src/hooks/websocket/useUnifiedWebSocket.ts`
+2. **Topic-Based Hooks**: Located in `src/hooks/websocket/topic-hooks/`
+3. **Context Provider**: `src/contexts/WebSocketContext.tsx`
+
+### Recommended Usage Pattern
+
+Create specialized hooks that use the unified WebSocket system:
+
+```typescript
+// src/hooks/websocket/topic-hooks/useNotifications.ts
+import { useCallback, useState } from 'react';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
+import { MessageType } from '../types';
+import { TopicType } from '../index';
+
+export function useNotifications() {
+  const [notifications, setNotifications] = useState([]);
+  
+  // Connect to the unified WebSocket with specific topics
+  const ws = useUnifiedWebSocket(
+    'notifications-hook',
+    [MessageType.DATA],
+    (message) => {
+      // Process notification messages
+      if (message.data?.type === "NOTIFICATIONS_LIST") {
+        setNotifications(message.data.notifications);
+      }
+    },
+    [TopicType.USER]
+  );
+  
+  // Helper methods
+  const markAsRead = useCallback((id) => {
+    ws.request(TopicType.USER, 'MARK_READ', { notificationId: id });
+  }, [ws]);
+  
+  return {
+    notifications,
+    markAsRead,
+    isConnected: ws.isConnected
+  };
+}
+```
+
+This pattern:
+- Creates a clean, reusable interface
+- Hides WebSocket complexities from components
+- Ensures consistent subscription management
+- Provides type safety and IDE completion
 
 ## Key Features
 

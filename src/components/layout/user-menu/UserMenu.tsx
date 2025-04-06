@@ -1,9 +1,10 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
-import { FaBell, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
+import { FaBell, FaFingerprint, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../hooks/useAuth";
+import useBiometricAuth from "../../../hooks/useBiometricAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
 import { AdminControls } from "./UserMenuAdminControls";
@@ -23,6 +24,60 @@ interface UserMenuProps {
   isCompact?: boolean;
   unreadNotifications?: number;
 }
+
+// Biometric Auth Menu Option Component
+const BiometricAuthMenuOption: React.FC<{ userId: string }> = ({ userId }) => {
+  const { isAvailable, isRegistered, registerCredential, authenticate } = useBiometricAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const user = useStore(state => state.user);
+  
+  // Don't show if biometric auth is not available
+  if (!isAvailable) return null;
+  
+  const handleBiometricAction = async () => {
+    setIsLoading(true);
+    
+    try {
+      if (isRegistered) {
+        // Authenticate with biometrics
+        await authenticate(userId);
+      } else {
+        // Register biometric credential
+        await registerCredential(userId, user?.nickname || userId);
+      }
+    } catch (err) {
+      console.error('Biometric auth error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <Menu.Item>
+      {({ active }) => (
+        <button
+          onClick={handleBiometricAction}
+          disabled={isLoading}
+          className={`
+            w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
+            ${active ? "bg-blue-500/20 text-blue-200" : "text-blue-300 hover:text-blue-200"}
+            ${isLoading ? "opacity-70 cursor-not-allowed" : ""}
+          `}
+        >
+          <FaFingerprint 
+            className={`
+              w-4 h-4 transition-colors duration-300
+              ${active ? "text-blue-200" : "text-blue-300"}
+            `} 
+          />
+          <span className="flex-1">
+            {isLoading ? "Processing..." : (isRegistered ? "Use Biometrics" : "Setup Biometrics")}
+          </span>
+        </button>
+      )}
+    </Menu.Item>
+  );
+};
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   user,
@@ -232,7 +287,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       badge: unreadNotifications > 0 ? unreadNotifications : undefined,
     },
     {
-      label: "Referrals",
+      label: "Invite & Earn",
       icon: FaUserFriends,
       to: "/referrals",
     },
@@ -381,6 +436,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                       )}
                     </Menu.Item>
                   ))}
+
+                  <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
+                  
+                  {/* Biometric Authentication Option */}
+                  <BiometricAuthMenuOption userId={user.wallet_address} />
 
                   <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
 

@@ -21,9 +21,15 @@ export enum MessageType {
   
   // Data messages
   DATA = 'DATA',
+
+  // Subscription messages
   SUBSCRIBE = 'SUBSCRIBE',
   UNSUBSCRIBE = 'UNSUBSCRIBE',
+
+  // Request messages
   REQUEST = 'REQUEST',
+
+  // Command messages
   COMMAND = 'COMMAND',
   
   // Special message types
