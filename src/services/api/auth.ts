@@ -469,13 +469,27 @@ export const checkTwitterLinkStatus = async (): Promise<{
 /**
  * Gets options for registering a new biometric credential
  * @param {string} userId User ID to associate with the credential
+ * @param {object} options Optional parameters for registration
  * @returns {Promise<any>} - Registration options from the server
  */
-export const getBiometricRegistrationOptions = async (userId: string): Promise<any> => {
+export const getBiometricRegistrationOptions = async (
+  userId: string,
+  options?: {
+    nickname?: string;
+    authenticatorType?: 'platform' | 'cross-platform';
+  }
+): Promise<any> => {
   try {
+    // Prepare request data
+    const requestData = {
+      userId,
+      nickname: options?.nickname,
+      authenticatorType: options?.authenticatorType || 'platform'
+    };
+    
     const response = await axios.post(
       `${API_URL}/auth/biometric/register-options`, 
-      { userId },
+      requestData,
       {
         headers: {
           'Content-Type': 'application/json',

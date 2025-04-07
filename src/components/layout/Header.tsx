@@ -26,7 +26,16 @@ export const Header: React.FC = () => {
     maintenanceMode,
     setMaintenanceMode,
   } = useStore();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAuthenticated } = useAuth();
+  
+  // For debugging - check if we have a mismatch between store user and auth state
+  useEffect(() => {
+    if (user && !isAuthenticated()) {
+      console.warn('[Header] User exists in store but isAuthenticated() is false');
+    } else if (!user && isAuthenticated()) {
+      console.warn('[Header] isAuthenticated() is true but no user in store');
+    }
+  }, [user, isAuthenticated]);
   const { unreadCount } = useNotificationWebSocket();
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
   const [isTransitioningToMaintenance, setIsTransitioningToMaintenance] =

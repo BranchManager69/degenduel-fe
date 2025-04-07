@@ -9,6 +9,14 @@ import {
   IpBanParams,
   IpBanUpdateParams,
   PlatformStats,
+  VanityWallet,
+  VanityWalletBatchCreateParams,
+  VanityWalletBatchCreateResponse,
+  VanityWalletCancelResponse,
+  VanityWalletCreateParams,
+  VanityWalletCreateResponse,
+  VanityWalletListParams,
+  VanityWalletListResponse,
 } from "../../types/index";
 import {
   ClientError,
@@ -24,6 +32,112 @@ interface ArtStyle {
 }
 
 export const admin = {
+  // Vanity Wallet Management
+  vanityWallets: {
+    // List all vanity wallets with filters
+    list: async (params: VanityWalletListParams = {}): Promise<VanityWalletListResponse> => {
+      try {
+        const api = createApiClient();
+        const queryParams = new URLSearchParams();
+        
+        // Add filter parameters to query string
+        if (params.status) queryParams.append("status", params.status);
+        if (params.isUsed !== undefined) queryParams.append("isUsed", params.isUsed.toString());
+        if (params.pattern) queryParams.append("pattern", params.pattern);
+        if (params.limit) queryParams.append("limit", params.limit.toString());
+        if (params.offset) queryParams.append("offset", params.offset.toString());
+        
+        const url = `/admin/vanity-wallets${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+        const response = await api.fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch vanity wallets: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to list vanity wallets:", error);
+        throw error;
+      }
+    },
+    
+    // Get a specific vanity wallet by ID
+    get: async (id: number): Promise<VanityWallet> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/vanity-wallets/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch vanity wallet: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to get vanity wallet details for ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Create a new vanity wallet request
+    create: async (data: VanityWalletCreateParams): Promise<VanityWalletCreateResponse> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/vanity-wallets", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create vanity wallet: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to create vanity wallet:", error);
+        throw error;
+      }
+    },
+    
+    // Cancel a vanity wallet job
+    cancel: async (id: number): Promise<VanityWalletCancelResponse> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/vanity-wallets/${id}/cancel`, {
+          method: "POST",
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to cancel vanity wallet job: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to cancel vanity wallet job with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Create multiple vanity wallet requests (batch)
+    batchCreate: async (data: VanityWalletBatchCreateParams): Promise<VanityWalletBatchCreateResponse> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/vanity-wallets/batch", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create batch of vanity wallets: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to create batch of vanity wallets:", error);
+        throw error;
+      }
+    },
+  },
+  
   // Client Error Management
   clientErrors: {
     // List client errors with filtering
@@ -48,7 +162,17 @@ export const admin = {
           throw new Error(`Failed to fetch client errors: ${response.status} ${response.statusText}`);
         }
         
-        return await response.json();
+        const result = await response.json();
+        
+        // Handle both API response formats
+        return {
+          errors: result.errors || [],
+          total: result.count || result.total || 0,
+          count: result.count || result.total || 0,
+          page: result.page || filters.page || 1,
+          limit: result.limit || filters.limit || 50,
+          filters: result.filters || filters
+        };
       } catch (error) {
         console.error("Failed to list client errors:", error);
         throw error;
@@ -90,11 +214,12 @@ export const admin = {
     },
     
     // Mark an error as resolved
-    resolve: async (id: number): Promise<{success: boolean}> => {
+    resolve: async (id: number, note?: string): Promise<{success: boolean}> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/client-errors/${id}/resolve`, {
-          method: "POST"
+          method: "POST",
+          body: note ? JSON.stringify({ note }) : undefined
         });
         
         if (!response.ok) {
@@ -129,12 +254,12 @@ export const admin = {
     },
     
     // Batch resolve multiple errors
-    batchResolve: async (ids: number[]): Promise<{success: boolean, resolved_count: number}> => {
+    batchResolve: async (ids: number[], note?: string): Promise<{success: boolean, resolved_count: number}> => {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/client-errors/batch/resolve", {
           method: "POST",
-          body: JSON.stringify({ ids })
+          body: JSON.stringify({ ids, note })
         });
         
         if (!response.ok) {

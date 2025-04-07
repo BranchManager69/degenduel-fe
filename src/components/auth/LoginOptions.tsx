@@ -148,7 +148,10 @@ const LoginOptions = () => {
                       <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
                       <BiometricAuthButton 
                         mode="authenticate"
+                        buttonStyle="default"
                         className="w-full h-12 bg-transparent hover:bg-transparent"
+                        showAvailabilityIndicator={true}
+                        onError={(error) => console.error("Biometric auth error:", error)}
                       />
                     </div>
                   )}

@@ -42,8 +42,15 @@ const BiometricAuthMenuOption: React.FC<{ userId: string }> = ({ userId }) => {
         // Authenticate with biometrics
         await authenticate(userId);
       } else {
-        // Register biometric credential
-        await registerCredential(userId, user?.nickname || userId);
+        // Register biometric credential with platform authenticator (Face ID, Touch ID, etc.)
+        await registerCredential(
+          userId, 
+          user?.nickname || userId,
+          { 
+            authenticatorType: 'platform',
+            nickname: user?.nickname || undefined
+          }
+        );
       }
     } catch (err) {
       console.error('Biometric auth error:', err);

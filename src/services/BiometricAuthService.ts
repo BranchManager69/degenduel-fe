@@ -69,17 +69,37 @@ export class BiometricAuthService {
    * 
    * @param userId User ID to associate with the credential
    * @param username User's display name
+   * @param options Additional options for registration
    * @returns Promise resolving to the credential ID if successful
    */
-  public async registerCredential(userId: string, username: string): Promise<string> {
+  public async registerCredential(
+    userId: string, 
+    username: string, 
+    options?: {
+      nickname?: string;
+      authenticatorType?: 'platform' | 'cross-platform';
+    }
+  ): Promise<string> {
     if (!this.isAvailable) {
       throw new Error('WebAuthn is not available in this browser');
     }
 
     try {
       // Step 1: Get challenge from server
-      const challengeResponse = await this.getRegistrationChallenge(userId);
-      const publicKeyOptions = this.prepareRegistrationOptions(challengeResponse, username);
+      const nickname = options?.nickname || username;
+      const authenticatorType = options?.authenticatorType || 'platform';
+      
+      // Get registration options from server
+      const challengeResponse = await this.getRegistrationChallenge(userId, {
+        nickname,
+        authenticatorType
+      });
+      
+      const publicKeyOptions = this.prepareRegistrationOptions(
+        challengeResponse, 
+        username, 
+        authenticatorType
+      );
       
       // Step 2: Create credential
       authDebug('BiometricAuth', 'Creating credential with options:', publicKeyOptions);
@@ -99,6 +119,18 @@ export class BiometricAuthService {
       return verificationResponse.credentialId;
     } catch (error) {
       authDebug('BiometricAuth', 'Error registering credential', error);
+      
+      // Handle specific WebAuthn errors for better user experience
+      if (error instanceof Error) {
+        if (error.name === 'NotSupportedError') {
+          throw new Error('Your device does not support the requested authentication method');
+        } else if (error.name === 'NotAllowedError') {
+          throw new Error('Authentication was cancelled or timed out');
+        } else if (error.name === 'SecurityError') {
+          throw new Error('The operation is insecure (the hostname might not be valid)');
+        }
+      }
+      
       throw error;
     }
   }
@@ -159,40 +191,68 @@ export class BiometricAuthService {
   /**
    * Get registration challenge from server
    */
-  private async getRegistrationChallenge(userId: string): Promise<any> {
-    return await getBiometricRegistrationOptions(userId);
+  private async getRegistrationChallenge(
+    userId: string, 
+    options?: {
+      nickname?: string;
+      authenticatorType?: 'platform' | 'cross-platform';
+    }
+  ): Promise<any> {
+    const nickname = options?.nickname;
+    const authenticatorType = options?.authenticatorType || 'platform';
+    
+    return await getBiometricRegistrationOptions(userId, { 
+      nickname, 
+      authenticatorType 
+    });
   }
 
   /**
    * Prepare registration options for WebAuthn
    */
-  private prepareRegistrationOptions(challengeResponse: any, username: string): PublicKeyCredentialCreationOptions {
+  private prepareRegistrationOptions(
+    challengeResponse: any, 
+    username: string, 
+    authenticatorType: 'platform' | 'cross-platform' = 'platform'
+  ): PublicKeyCredentialCreationOptions {
     // Convert base64 challenge to ArrayBuffer
     const challenge = this.base64UrlToArrayBuffer(challengeResponse.challenge);
     
-    return {
+    // Base options
+    const options: PublicKeyCredentialCreationOptions = {
       challenge,
-      rp: {
+      rp: challengeResponse.rp || {
         name: 'DegenDuel',
         id: window.location.hostname
       },
       user: {
-        id: this.base64UrlToArrayBuffer(challengeResponse.userId),
+        id: this.base64UrlToArrayBuffer(challengeResponse.userId || challengeResponse.user?.id),
         name: username,
-        displayName: username
+        displayName: challengeResponse.user?.displayName || username
       },
-      pubKeyCredParams: [
+      pubKeyCredParams: challengeResponse.pubKeyCredParams || [
         { type: 'public-key', alg: -7 }, // ES256
         { type: 'public-key', alg: -257 } // RS256
       ],
-      timeout: 60000,
+      timeout: challengeResponse.timeout || 60000,
       attestation: 'direct',
       authenticatorSelection: {
-        authenticatorAttachment: 'platform',
+        authenticatorAttachment: authenticatorType,
         userVerification: 'preferred',
         requireResidentKey: false
       }
     };
+    
+    // Include excludeCredentials if provided by server
+    if (challengeResponse.excludeCredentials && Array.isArray(challengeResponse.excludeCredentials)) {
+      options.excludeCredentials = challengeResponse.excludeCredentials.map((cred: any) => ({
+        id: this.base64UrlToArrayBuffer(cred.id),
+        type: 'public-key',
+        transports: cred.transports || ['internal']
+      }));
+    }
+    
+    return options;
   }
 
   /**

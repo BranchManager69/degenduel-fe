@@ -40,7 +40,14 @@ export const useBiometricAuth = () => {
   }, []);
   
   // Register a new credential
-  const registerCredential = useCallback(async (userId: string, username: string): Promise<boolean> => {
+  const registerCredential = useCallback(async (
+    userId: string, 
+    username: string,
+    options?: { 
+      nickname?: string;
+      authenticatorType?: 'platform' | 'cross-platform';
+    }
+  ): Promise<boolean> => {
     if (!isAvailable) {
       setError('Biometric authentication is not available in this browser');
       return false;
@@ -50,7 +57,16 @@ export const useBiometricAuth = () => {
     setError(null);
     
     try {
-      await BiometricAuthService.registerCredential(userId, username);
+      // Pass optional parameters to the service
+      const nickname = options?.nickname || username;
+      const authenticatorType = options?.authenticatorType || 'platform';
+      
+      await BiometricAuthService.registerCredential(
+        userId, 
+        nickname,
+        { authenticatorType }
+      );
+      
       setIsRegistered(true);
       authDebug('BiometricAuth', 'Credential registered successfully');
       return true;

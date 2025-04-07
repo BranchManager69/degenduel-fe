@@ -36,7 +36,6 @@ export function useJupiterWallet(): UseJupiterWalletReturn {
     connected,
     publicKey,
     disconnect: jupiterDisconnect,
-    select,
     connect: jupiterConnect,
     wallet,
     wallets,
@@ -48,18 +47,22 @@ export function useJupiterWallet(): UseJupiterWalletReturn {
   
   // Wrap the connect method to handle our app-specific flow
   const connect = useCallback(async () => {
-    if (!wallet && wallets.length > 0) {
-      // If no wallet is selected, select the first one
-      select(wallets[0].adapter.name);
-    }
-    
     try {
+      // We'll let the UnifiedWalletButton handle wallet selection
+      // This method should now only be called after a wallet is selected
+      
+      if (!wallet) {
+        console.log("No wallet selected, connection should be initiated via UnifiedWalletButton");
+        throw new Error("No wallet selected");
+      }
+      
       await jupiterConnect();
+      console.log("Jupiter wallet connected successfully");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
       throw error;
     }
-  }, [wallet, wallets, select, jupiterConnect]);
+  }, [wallet, jupiterConnect]);
   
   // Wrap the disconnect method
   const disconnect = useCallback(async () => {

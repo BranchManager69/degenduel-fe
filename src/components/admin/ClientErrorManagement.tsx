@@ -160,7 +160,8 @@ export const ClientErrorManagement: React.FC<ClientErrorManagementProps> = ({ li
   };
 
   // Format date for display
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', { 
       year: 'numeric', 
@@ -170,6 +171,14 @@ export const ClientErrorManagement: React.FC<ClientErrorManagementProps> = ({ li
       minute: '2-digit',
       second: '2-digit'
     }).format(date);
+  };
+  
+  // Helper to get the field value regardless of API field name differences
+  const getField = <T extends unknown>(obj: any, fields: string[], defaultValue: T): T => {
+    for (const field of fields) {
+      if (obj[field] !== undefined) return obj[field] as T;
+    }
+    return defaultValue;
   };
 
   return (
@@ -228,8 +237,12 @@ export const ClientErrorManagement: React.FC<ClientErrorManagementProps> = ({ li
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-300">{error.occurrence_count}</td>
-                        <td className="px-4 py-3 text-gray-400 text-sm">{formatDate(error.last_occurrence)}</td>
+                        <td className="px-4 py-3 text-gray-300">
+                          {getField(error, ['occurrence_count', 'occurrences'], 0)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">
+                          {formatDate(getField(error, ['last_occurrence', 'last_occurred_at'], ''))}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -379,11 +392,15 @@ export const ClientErrorManagement: React.FC<ClientErrorManagementProps> = ({ li
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-sm text-gray-400 truncate max-w-xs">
-                        {error.source || '—'}
+                        {getField(error, ['source', 'source_url'], '—')}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-300">{error.occurrence_count}</td>
-                    <td className="px-4 py-3 text-gray-400 text-sm">{formatDate(error.last_occurrence)}</td>
+                    <td className="px-4 py-3 text-gray-300">
+                      {getField(error, ['occurrence_count', 'occurrences'], 0)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-sm">
+                      {formatDate(getField(error, ['last_occurrence', 'last_occurred_at'], ''))}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         error.status === 'open' ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'
@@ -538,16 +555,34 @@ export const ClientErrorManagement: React.FC<ClientErrorManagementProps> = ({ li
                   <div className="bg-dark-400/30 rounded-lg p-4 space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-400">First Occurrence:</span>
-                      <span className="text-gray-300">{formatDate(selectedError.first_occurrence)}</span>
+                      <span className="text-gray-300">
+                        {formatDate(getField(selectedError, ['first_occurrence', 'created_at'], ''))}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Last Occurrence:</span>
-                      <span className="text-gray-300">{formatDate(selectedError.last_occurrence)}</span>
+                      <span className="text-gray-300">
+                        {formatDate(getField(selectedError, ['last_occurrence', 'last_occurred_at'], ''))}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Total Occurrences:</span>
-                      <span className="text-gray-300">{selectedError.occurrence_count}</span>
+                      <span className="text-gray-300">
+                        {getField(selectedError, ['occurrence_count', 'occurrences'], 0)}
+                      </span>
                     </div>
+                    {selectedError.resolved_at && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Resolved At:</span>
+                        <span className="text-gray-300">{formatDate(selectedError.resolved_at)}</span>
+                      </div>
+                    )}
+                    {selectedError.resolved_by && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Resolved By:</span>
+                        <span className="text-gray-300">{selectedError.resolved_by}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-gray-400">Error ID:</span>
                       <span className="text-gray-300 font-mono text-xs">{selectedError.error_id}</span>
@@ -560,24 +595,33 @@ export const ClientErrorManagement: React.FC<ClientErrorManagementProps> = ({ li
                   <div className="bg-dark-400/30 rounded-lg p-4 space-y-3">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Source:</span>
-                      <span className="text-gray-300">{selectedError.source || '—'}</span>
+                      <span className="text-gray-300">{getField(selectedError, ['source', 'source_url'], '—')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Line:</span>
-                      <span className="text-gray-300">{selectedError.lineno || '—'}</span>
+                      <span className="text-gray-300">{getField(selectedError, ['lineno', 'line_number'], '—')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Column:</span>
-                      <span className="text-gray-300">{selectedError.colno || '—'}</span>
+                      <span className="text-gray-300">{getField(selectedError, ['colno', 'column_number'], '—')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Browser:</span>
-                      <span className="text-gray-300">{selectedError.browser || '—'}</span>
+                      <span className="text-gray-300">
+                        {selectedError.browser_version 
+                          ? `${selectedError.browser} ${selectedError.browser_version}` 
+                          : selectedError.browser || '—'}
+                      </span>
                     </div>
-                    {selectedError.os && (
+                    {(selectedError.os || selectedError.environment) && (
                       <div className="flex justify-between">
-                        <span className="text-gray-400">OS:</span>
-                        <span className="text-gray-300">{selectedError.os}</span>
+                        <span className="text-gray-400">OS / Environment:</span>
+                        <span className="text-gray-300">
+                          {[
+                            selectedError.os,
+                            selectedError.environment ? `(${selectedError.environment})` : null
+                          ].filter(Boolean).join(' ')}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -585,30 +629,49 @@ export const ClientErrorManagement: React.FC<ClientErrorManagementProps> = ({ li
               </div>
               
               {/* Stack Trace */}
-              {selectedError.stack && (
+              {(selectedError.stack || selectedError.stack_trace) && (
                 <div>
                   <h5 className="text-sm font-medium text-gray-400 mb-2">Stack Trace</h5>
                   <pre className="bg-dark-400/30 rounded-lg p-4 overflow-x-auto text-xs text-gray-300 font-mono">
-                    {selectedError.stack}
+                    {selectedError.stack || selectedError.stack_trace}
                   </pre>
                 </div>
               )}
               
               {/* User Information */}
-              {(selectedError.user_id || selectedError.user_wallet) && (
+              {(selectedError.user_id || selectedError.user_wallet || selectedError.userWallet || 
+                (selectedError.user && selectedError.user.wallet_address)) && (
                 <div>
                   <h5 className="text-sm font-medium text-gray-400 mb-2">User Information</h5>
                   <div className="bg-dark-400/30 rounded-lg p-4 space-y-3">
-                    {selectedError.user_id && (
+                    {(selectedError.user_id || (selectedError.user && selectedError.user.id)) && (
                       <div className="flex justify-between">
                         <span className="text-gray-400">User ID:</span>
-                        <span className="text-gray-300">{selectedError.user_id}</span>
+                        <span className="text-gray-300">
+                          {selectedError.user_id || (selectedError.user && selectedError.user.id)}
+                        </span>
                       </div>
                     )}
-                    {selectedError.user_wallet && (
+                    {(selectedError.user && selectedError.user.username) && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Username:</span>
+                        <span className="text-gray-300">{selectedError.user.username}</span>
+                      </div>
+                    )}
+                    {(selectedError.user_wallet || selectedError.userWallet || 
+                      (selectedError.user && selectedError.user.wallet_address)) && (
                       <div className="flex justify-between">
                         <span className="text-gray-400">Wallet:</span>
-                        <span className="text-gray-300 font-mono text-xs">{selectedError.user_wallet}</span>
+                        <span className="text-gray-300 font-mono text-xs">
+                          {selectedError.user_wallet || selectedError.userWallet || 
+                            (selectedError.user && selectedError.user.wallet_address)}
+                        </span>
+                      </div>
+                    )}
+                    {(selectedError.ip_address) && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">IP Address:</span>
+                        <span className="text-gray-300 font-mono text-xs">{selectedError.ip_address}</span>
                       </div>
                     )}
                   </div>

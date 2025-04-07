@@ -47,7 +47,13 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           
           // Update the store with user data
           if (authResult.user) {
+            console.log("[Jupiter Wallet] Authentication successful, updating user:", authResult.user);
             useStore.getState().setUser(authResult.user);
+            
+            // Force a re-check of the auth state
+            setTimeout(() => {
+              useAuth().checkAuth();
+            }, 300);
           }
         }
       } else {
@@ -71,11 +77,32 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     if (onClick) onClick();
   }, [jupiterWallet, disconnectWallet, onClick]);
 
-  // If Jupiter wallet UI is enabled AND we're not in a mobile menu context, use their button component
-  // Note: className containing "w-full justify-center" is a signal we're in the mobile menu
-  const isMobileMenu = className.includes("w-full justify-center");
-  if (env.USE_JUPITER_WALLET && !compact && !isMobileMenu) {
-    return <UnifiedWalletButton />;
+  // When Jupiter wallet is enabled, always use their UnifiedWalletButton component
+  // with styling to match our design system
+  if (env.USE_JUPITER_WALLET) {
+    // For dropdown menus, apply custom styling to match our design
+    const isMobileMenu = className?.includes("w-full justify-center");
+    
+    if (isMobileMenu) {
+      return (
+        <div 
+          className={`relative cursor-pointer rounded-lg overflow-hidden ${className}`}
+          onClick={onClick}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 transition-colors duration-300"></div>
+          <div className="relative flex items-center justify-center py-2 px-4 font-cyber text-white">
+            Connect Wallet
+          </div>
+        </div>
+      );
+    }
+    
+    // Default case - use UnifiedWalletButton with minimal styling
+    return (
+      <div className={className}>
+        <UnifiedWalletButton />
+      </div>
+    );
   }
 
   // If connected, show the "Connected" button with truncated address

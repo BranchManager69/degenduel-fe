@@ -20,9 +20,9 @@ export { DecryptionTimer } from './components/DecryptionTimer';
 export { TimeUnit } from './components/TimeUnit';
 
 // Console components
+export { CommandTray } from './components/CommandTray';
 export { TerminalConsole } from './components/TerminalConsole';
 export { TerminalInput } from './components/TerminalInput';
-export { CommandTray } from './components/CommandTray';
 
 // Helper components
 export { ContractDisplay } from './components/ContractDisplay';
@@ -76,4 +76,4 @@ export function createConfig(overrides: Partial<Config> = {}): Config {
 export * from './types';
 
 // Also export Terminal as default
-export default Terminal;
+//export default Terminal; // (now done at the top)

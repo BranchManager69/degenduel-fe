@@ -9,6 +9,19 @@ export type {
   TimeFrame
 } from "./leaderboard";
 
+// Re-export admin types
+export type {
+  VanityWallet,
+  VanityWalletStatus,
+  VanityWalletListParams,
+  VanityWalletCreateParams,
+  VanityWalletBatchCreateParams,
+  VanityWalletListResponse,
+  VanityWalletCreateResponse,
+  VanityWalletBatchCreateResponse,
+  VanityWalletCancelResponse
+} from "./admin";
+
 // Core Entity Types
 export interface User {
   wallet_address: string;

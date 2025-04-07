@@ -152,8 +152,11 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
                   <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                   <BiometricAuthButton 
                     mode="authenticate"
+                    buttonStyle="minimal"
+                    authenticatorType="platform"
                     className="w-full h-12 z-10 relative bg-transparent hover:bg-transparent"
                     onSuccess={handleLoginClick}
+                    onError={(error) => console.error("Biometric auth error:", error)}
                   />
                 </div>
               )}
