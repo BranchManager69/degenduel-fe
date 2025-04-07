@@ -4,20 +4,23 @@
  * This context provides a centralized WebSocket connection management system.
  * It replaces the component-based WebSocketManager with a proper React Context
  * that manages WebSocket connections at the application level.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
  */
 
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { useStore } from '../store/useStore';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { authDebug } from '../config/config';
-import { 
-  ConnectionState, 
-  MessageType, 
-  SOCKET_TYPES, 
+import { useAuth } from '../hooks/useAuth';
+import {
+  ConnectionState,
+  MessageType,
+  SOCKET_TYPES,
   WEBSOCKET_ENDPOINT,
   WebSocketMessage
 } from '../hooks/websocket/types';
+import { useStore } from '../store/useStore';
 import { dispatchWebSocketEvent, initializeWebSocketTracking } from '../utils/wsMonitor';
-import { useAuth } from '../hooks/useAuth';
 
 // Interface for message listeners
 interface MessageListener {
@@ -64,6 +67,11 @@ const WebSocketContext = createContext<WebSocketContextType>({
 });
 
 // Export the WebSocket provider component
+/**
+ * 
+ * @param {React.ReactNode} children - The children of the WebSocket provider
+ * @returns {React.ReactNode} - The WebSocket provider component
+ */
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Get auth state from store and context
   const user = useStore(state => state.user);
@@ -128,6 +136,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Connect to the WebSocket
+  /**
+   * Connects to the WebSocket
+   */
   const connect = useCallback(() => {
     // Don't connect if already connected or connecting
     if (wsRef.current && (
@@ -210,6 +221,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Handle WebSocket open event
+  /**
+   * Handles the WebSocket open event
+   */
   const handleOpen = useCallback(() => {
     authDebug('WebSocketContext', 'Connection established');
     setConnectionState(ConnectionState.CONNECTED);
@@ -230,6 +244,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [authState.isLoggedIn]);
   
   // Handle WebSocket messages
+  /**
+   * Handles the WebSocket messages
+   */
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data) as WebSocketMessage;
@@ -296,6 +313,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Handle WebSocket close event
+  /**
+   * Handles the WebSocket close event
+   */
   const handleClose = useCallback((event: CloseEvent) => {
     authDebug('WebSocketContext', 'Connection closed', { 
       code: event.code, 
@@ -330,6 +350,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Handle WebSocket error event
+  /**
+   * Handles the WebSocket error event
+   */
   const handleError = useCallback((event: Event) => {
     authDebug('WebSocketContext', 'WebSocket error', { event });
     setConnectionState(ConnectionState.ERROR);
@@ -341,6 +364,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Schedule reconnection for server restart with optimized timing
+  /**
+   * Schedules a reconnection for server restart with optimized timing
+   */
   const scheduleServerRestartReconnect = useCallback((expectedDowntime: number) => {
     // Clear any existing timeout
     if (reconnectTimeoutRef.current !== null) {
@@ -374,6 +400,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [connect]);
   
   // Schedule normal reconnection with exponential backoff
+  /**
+   * Schedules a normal reconnection with exponential backoff
+   */
   const scheduleReconnect = useCallback(() => {
     // Clear any existing timeout
     if (reconnectTimeoutRef.current !== null) {
@@ -415,6 +444,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [connect]);
   
   // Start heartbeat interval
+  /**
+   * Starts the heartbeat interval
+   */
   const startHeartbeat = useCallback(() => {
     // Clear any existing interval
     stopHeartbeat();
@@ -455,6 +487,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [scheduleReconnect]);
   
   // Stop heartbeat interval
+  /**
+   * Stops the heartbeat interval
+   */
   const stopHeartbeat = useCallback(() => {
     if (heartbeatIntervalRef.current !== null) {
       window.clearInterval(heartbeatIntervalRef.current);
@@ -463,6 +498,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Clean up WebSocket connection
+  /**
+   * Cleans up the WebSocket connection
+   */
   const cleanupConnection = useCallback(() => {
     // Stop heartbeat
     stopHeartbeat();
@@ -487,6 +525,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [stopHeartbeat]);
   
   // Send authentication message
+  /**
+   * Sends an authentication message to the WebSocket
+   */
   const authenticate = useCallback(() => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       authDebug('WebSocketContext', 'Cannot authenticate - WebSocket not open');
@@ -563,6 +604,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [authState.isLoggedIn]);
   
   // Register a message listener
+  /**
+   * Registers a message listener
+   */
   const registerListener = useCallback((
     id: string, 
     types: string[], 
@@ -594,6 +638,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Distribute message to listeners
+  /**
+   * Distributes a message to listeners
+   */
   const distributeMessage = useCallback((message: WebSocketMessage) => {
     const { type, topic } = message;
     
@@ -638,6 +685,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Send a message through the WebSocket
+  /**
+   * Sends a message through the WebSocket
+   */
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       authDebug('WebSocketContext', 'Cannot send message - WebSocket not open');
@@ -654,6 +704,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
   
   // Helper for subscribing to topics
+  /**
+   * Subscribes to topics
+   */
   const subscribe = useCallback((topics: string[]) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || topics.length === 0) {
       return false;
@@ -674,6 +727,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [sendMessage]);
   
   // Helper for unsubscribing from topics
+  /**
+   * Unsubscribes from topics
+   */
   const unsubscribe = useCallback((topics: string[]) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || topics.length === 0) {
       return false;
@@ -686,6 +742,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [sendMessage]);
   
   // Helper for making requests
+  /**
+   * Makes a request to the WebSocket
+   */
   const request = useCallback((topic: string, action: string, params: any = {}) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       return false;
@@ -702,6 +761,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [sendMessage]);
   
   // Handle authentication changes
+  /**
+   * Handles authentication changes
+   */
   useEffect(() => {
     if (connectionState === ConnectionState.CONNECTED && authState.isLoggedIn) {
       authenticate();
@@ -709,6 +771,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [connectionState, authState.isLoggedIn, authenticate]);
   
   // Add automatic token retrieval mechanism
+  /**
+   * Adds an automatic token retrieval mechanism
+   */
   useEffect(() => {
     // When user is logged in but doesn't have a WebSocket token, fetch one
     const fetchTokenIfNeeded = async () => {
@@ -737,11 +802,17 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [authState.isLoggedIn, authState.hasWsToken, authContext, user]);
   
   // Derive isConnected and isAuthenticated from connectionState
+  /**
+   * Derives isConnected and isAuthenticated from connectionState
+   */
   const isConnected = connectionState === ConnectionState.CONNECTED || 
                       connectionState === ConnectionState.AUTHENTICATED;
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
   
   // Context value
+  /**
+   * The context value
+   */
   const value = {
     isConnected,
     isAuthenticated,
@@ -762,6 +833,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 };
 
 // Export the hook to use the WebSocket context
+/**
+ * Exports the hook to use the WebSocket context
+ */
 export const useWebSocketContext = () => {
   const context = useContext(WebSocketContext);
   if (context === undefined) {
@@ -771,6 +845,9 @@ export const useWebSocketContext = () => {
 };
 
 // Create a new version of useUnifiedWebSocket that uses the WebSocketContext
+/**
+ * Creates a new version of useUnifiedWebSocket that uses the WebSocketContext
+ */
 export function useUnifiedWebSocket<T = any>(
   id: string,
   types: string[] = [MessageType.DATA],

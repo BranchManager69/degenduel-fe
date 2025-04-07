@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DegenDuel AI GPU Analysis</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.1.0/github-markdown.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #121212;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .file-list {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .file-list a {
+            display: block;
+            padding: 10px 15px;
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            transition: background-color 0.2s;
+        }
+        .file-list a:hover {
+            background-color: #f0f4f8;
+            text-decoration: none;
+        }
+        .file-list a.active {
+            background-color: #e4f0fe;
+            color: #0366d6;
+            font-weight: 600;
+        }
+        .markdown-body {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: #24292e;
+            font-size: 16px;
+        }
+        .markdown-body p, .markdown-body li {
+            color: #24292e;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .markdown-body h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .markdown-body h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #1a1a1a;
+            font-size: 2.2em;
+        }
+        .header-links {
+            display: flex;
+            gap: 10px;
+        }
+        .header a {
+            padding: 8px 16px;
+            background-color: #0366d6;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .header a:hover {
+            background-color: #0354ad;
+        }
+        .header a.calculator-link {
+            background-color: #28a745;
+        }
+        .header a.calculator-link:hover {
+            background-color: #218838;
+        }
+        pre {
+            background-color: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        code {
+            font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+            font-size: 85%;
+        }
+        .ascii-chart {
+            white-space: pre;
+            font-family: monospace;
+            line-height: 1.2;
+            background-color: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #24292e;
+            overflow-x: auto;
+            max-width: 100%;
+            display: block;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #dfe2e5;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DegenDuel AI GPU Analysis</h1>
+        <div class="header-links">
+            <a href="/" id="home-link">Home</a>
+            <a href="/gpu-calculator.html" class="calculator-link">Interactive Calculator</a>
+        </div>
+    </div>
+    
+    <div class="file-list" id="file-list">
+        <h2>Documents</h2>
+        <div id="files">
+            <a href="#" class="active" id="comparison-link" onclick="loadMarkdown('AI_GPU_COMPARISON.md'); updateActiveLink(this); return false;">GPU Model Comparison</a>
+            <a href="#" id="cost-link" onclick="loadMarkdown('AI_GPU_COST_ANALYSIS.md'); updateActiveLink(this); return false;">Cost Analysis</a>
+        </div>
+    </div>
+    
+    <div class="markdown-body" id="markdown-content">
+        <p>Loading content...</p>
+    </div>
+
+    <script>
+        // Function to mark active link
+        function updateActiveLink(clickedLink) {
+            // Remove active class from all links
+            document.querySelectorAll('#files a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to clicked link
+            clickedLink.classList.add('active');
+        }
+        
+        // Function to load and display markdown content
+        async function loadMarkdown(filename) {
+            try {
+                document.getElementById('markdown-content').innerHTML = '<p>Loading content...</p>';
+                
+                // Sanitize the filename parameter to prevent XSS attacks
+                const sanitizedFilename = DOMPurify.sanitize(filename);
+                
+                const response = await fetch(sanitizedFilename);
+                const text = await response.text();
+                
+                // Process the markdown to enhance ASCII charts
+                let processedText = text;
+                
+                // Wrap ASCII charts in div with class for styling
+                if (sanitizedFilename === 'AI_GPU_COMPARISON.md') {
+                    processedText = text.replace(/```\n(Performance Chart[\s\S]*?)```/g, 
+                        '<div class="ascii-chart">$1</div>');
+                    processedText = processedText.replace(/```\n(Cost Efficiency[\s\S]*?)```/g, 
+                        '<div class="ascii-chart">$1</div>');
+                }
+                
+                // Safely parse markdown and sanitize the resulting HTML
+                const parsedContent = marked.parse(processedText);
+                const sanitizedContent = DOMPurify.sanitize(parsedContent);
+                
+                document.getElementById('markdown-content').innerHTML = sanitizedContent;
+                
+                // Update URL without reloading the page
+                const url = new URL(window.location);
+                url.searchParams.set('file', sanitizedFilename);
+                window.history.pushState({}, '', url);
+            } catch (error) {
+                console.error('Error loading markdown file:', error);
+                document.getElementById('markdown-content').innerHTML = '<p>Error loading file: ' + DOMPurify.sanitize(filename) + '</p>';
+            }
+        }
+
+        // Initialize - load first document by default
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load file from URL parameter if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileParam = urlParams.get('file');
+            
+            // Only allow specific files to be loaded for security
+            const allowedFiles = ['AI_GPU_COMPARISON.md', 'AI_GPU_COST_ANALYSIS.md'];
+            
+            if (fileParam && allowedFiles.includes(fileParam)) {
+                loadMarkdown(fileParam);
+                // Update active link
+                if (fileParam === 'AI_GPU_COST_ANALYSIS.md') {
+                    document.getElementById('comparison-link').classList.remove('active');
+                    document.getElementById('cost-link').classList.add('active');
+                }
+            } else {
+                // Load the first file by default
+                loadMarkdown('AI_GPU_COMPARISON.md');
+            }
+        });
+    </script>
+</body>
+</html>

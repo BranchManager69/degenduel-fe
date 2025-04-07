@@ -104,7 +104,15 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       authDebug('TwitterBtn', 'Found twitter_linked=true parameter, showing success toast');
       toast.success("Twitter account linked successfully!");
       
+      // Check for stored redirect path - don't remove it, just check
+      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
+      authDebug('TwitterBtn', 'Checking for stored redirect path', { 
+        hasStoredPath: !!storedRedirectPath,
+        path: storedRedirectPath || 'none'
+      });
+      
       // Remove the query parameter to prevent showing toast on refresh
+      // But don't remove the stored path - it will be used by LoginPage
       const url = new URL(window.location.href);
       url.searchParams.delete("twitter_linked");
       window.history.replaceState({}, "", url);

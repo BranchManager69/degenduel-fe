@@ -1,10 +1,18 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+
+/**
+ * We should probably remake this from scratch.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
+ */
+
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 // Import types from types folder and hooks from websocket folder 
-import { TokenData } from "../types";
-import { useUnifiedWebSocket } from "../hooks/websocket/useUnifiedWebSocket";
-import { MessageType } from "../hooks/websocket/types";
 import { authDebug } from "../config/config";
+import { MessageType } from "../hooks/websocket/types";
+import { useUnifiedWebSocket } from "../hooks/websocket/useUnifiedWebSocket";
+import { TokenData } from "../types";
 
 interface TokenDataContextType {
   tokens: TokenData[];

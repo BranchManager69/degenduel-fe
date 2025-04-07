@@ -5,21 +5,32 @@ import { Link } from "react-router-dom";
 
 import { useScrollFooter } from "../../hooks/useScrollFooter";
 import { MessageType, TopicType, useUnifiedWebSocket } from "../../hooks/websocket";
+import { useAuth } from "../../hooks/useAuth";
+import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
+  // Get user authentication status to check if user is admin
+  const { isAdmin } = useAuth();
   // Use unified WebSocket for server status and system settings
-  const [serverStatus, setServerStatus] = useState({
-    status: 'online' as 'online' | 'maintenance' | 'offline' | 'error',
-    message: 'Server is operating normally',
-    timestamp: new Date().toISOString(),
-    lastChecked: new Date().toISOString(),
-    loading: false
-  });
+  // Check for storybook mock status
+  const initialStatus = typeof window !== 'undefined' && (window as any).serverStatusState
+    ? (window as any).serverStatusState
+    : {
+        status: 'online' as 'online' | 'maintenance' | 'offline' | 'error',
+        message: 'Server is operating normally',
+        timestamp: new Date().toISOString(),
+        lastChecked: new Date().toISOString(),
+        loading: false
+      };
+  
+  const [serverStatus, setServerStatus] = useState(initialStatus);
   
   const [systemSettings, setSystemSettings] = useState({
     loading: false,
     error: null as string | null,
     lastUpdated: null as Date | null,
+    showDiagnostics: false,
+    diagOptions: [] as string[],
   });
   
   // Subscribe to unified WebSocket messages with the new format
@@ -44,7 +55,9 @@ export const Footer: React.FC = () => {
         setSystemSettings({
           loading: false,
           error: null,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
+          showDiagnostics: message.data?.showDiagnostics || false,
+          diagOptions: message.data?.diagOptions || []
         });
       }
     },
@@ -171,16 +184,104 @@ export const Footer: React.FC = () => {
 
   return (
     <footer
-      className={`backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-        ${isCompact ? "py-1.5" : "py-3"}`}
+      className="backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden relative"
     >
-      <div className="max-w-7xl mx-auto px-4">
+      {/* Full footer-width status background */}
+      {serverStatus.status === 'maintenance' && (
+        <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+          {/* Dark overlay for contrast */}
+          <div className="absolute inset-0 bg-gray-900/20" />
+          
+          {/* Top caution tape - full width with no left/right boundaries */}
+          <div className="absolute top-0 w-screen left-1/2 -translate-x-1/2 h-[8px] overflow-visible">
+            <div 
+              className="absolute top-0 left-[-100%] right-[-100%] h-full animate-caution-tape-scroll"
+              style={{
+                background: `repeating-linear-gradient(
+                  45deg,
+                  #000000,
+                  #000000 8px,
+                  #ffc107 8px,
+                  #ffc107 16px
+                )`
+              }}
+            />
+          </div>
+          
+          {/* Bottom caution tape - full width with no left/right boundaries */}
+          <div className="absolute bottom-0 w-screen left-1/2 -translate-x-1/2 h-[8px] overflow-visible">
+            <div 
+              className="absolute bottom-0 left-[-100%] right-[-100%] h-full animate-caution-tape-scroll-reverse"
+              style={{
+                background: `repeating-linear-gradient(
+                  -45deg,
+                  #000000,
+                  #000000 8px,
+                  #ffc107 8px,
+                  #ffc107 16px
+                )`
+              }}
+            />
+          </div>
+          
+          {/* Subtle yellow glow in the middle */}
+          <div className="absolute inset-0 bg-yellow-500/10" />
+        </div>
+      )}
+      
+      {serverStatus.status === 'error' && (
+        <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+          {/* Soft orange gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-l from-orange-500/15 via-orange-500/5 to-transparent" />
+          
+          {/* Subtle glow on the right side */}
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-32 animate-pulse"
+            style={{
+              background: 'radial-gradient(circle at right, rgba(249,115,22,0.2) 0%, transparent 70%)'
+            }}
+          />
+        </div>
+      )}
+      
+      {serverStatus.status === 'offline' && (
+        <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+          {/* Soft red gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-l from-red-500/15 via-red-500/5 to-transparent" />
+          
+          {/* Subtle blinking effect for offline state */}
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-32 animate-pulse"
+            style={{
+              background: 'radial-gradient(circle at right, rgba(239,68,68,0.2) 0%, transparent 70%)',
+              animationDuration: '2s'
+            }}
+          />
+        </div>
+      )}
+      
+      {serverStatus.status === 'online' && (
+        <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+          {/* Soft green gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-l from-green-500/15 via-green-500/5 to-transparent" />
+          
+          {/* Subtle glow on the right side */}
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-32 animate-gradient-pulse"
+            style={{
+              background: 'radial-gradient(circle at right, rgba(34,197,94,0.2) 0%, transparent 70%)'
+            }}
+          />
+        </div>
+      )}
+      
+      <div className="max-w-7xl mx-auto px-0 relative z-10">
         <div
-          className={`flex items-center justify-between min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-            ${isCompact ? "h-10" : "h-12"}`}
+          className={`flex items-center min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+            ${isCompact ? "h-[40px]" : "h-[56px]"}`}
         >
           {/* Left side - Links with horizontal scroll if needed */}
-          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0">
+          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0 pl-4">
             <div className="flex items-center space-x-4 shrink-0">
               <a
                 href="https://status.degenduel.me/"
@@ -200,7 +301,7 @@ export const Footer: React.FC = () => {
                 to="/referrals"
                 className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
               >
-                Refer
+                Invite & Earn
               </Link>
               <Link
                 to="/support"
@@ -208,6 +309,13 @@ export const Footer: React.FC = () => {
               >
                 Support
               </Link>
+              
+              {/* RPC Benchmark Dashboard - Only visible to admin users */}
+              {isAdmin() && systemSettings.showDiagnostics && systemSettings.diagOptions.includes('rpc_benchmarks') && (
+                <div className="ml-2 pl-2 border-l border-gray-700">
+                  <RPCBenchmarkFooter compactMode={isCompact} />
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-4 shrink-0">
               <a
@@ -244,14 +352,13 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Right side - Enhanced Status Indicator */}
-          <div className="flex items-center gap-2 pl-4 shrink-0 group">
+          <div className="flex items-stretch h-full shrink-0 group ml-auto pr-0">
             <div
               id="status-indicator"
               className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-full border-2
-                transition-all duration-300 ${styles.bgColor} ${styles.wsBorder}
-                ${styles.wsEffect} relative overflow-hidden cursor-pointer
-                hover:shadow-lg hover:scale-105 active:scale-95
+                flex items-center gap-2 h-full px-4
+                transition-all duration-300 relative cursor-pointer
+                hover:brightness-110 active:brightness-90
               `}
               onClick={() => {
                 // Toggle status dropdown visibility when clicked
@@ -274,49 +381,69 @@ export const Footer: React.FC = () => {
                   }
                 }
               }}
-              title="Click to view WebSocket details and test connection" // More descriptive tooltip
+              title="Click to view WebSocket details and test connection"
             >
+              {/* Status indicator glow effect */}
+              <div 
+                className={`absolute right-0 top-0 bottom-0 w-1 h-full z-0 ${
+                  serverStatus.status === 'online' ? 'bg-green-500/60' :
+                  serverStatus.status === 'maintenance' ? 'bg-yellow-500/60' :
+                  serverStatus.status === 'error' ? 'bg-orange-500/60' :
+                  'bg-red-500/60'
+                }`}
+              />
+              
               {/* WebSocket-specific shine effect */}
               {styles.wsIndicator && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent animate-shine" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-shine z-0" />
               )}
 
-              <div
-                className={`w-3 h-3 rounded-full transition-all duration-300 z-10
-                  ${styles.dotColor} ${styles.shadow} ${styles.animate}
+              <div className="flex items-center justify-center gap-2 relative z-10 h-full">
+                <div
+                  className={`w-3 h-3 rounded-full transition-all duration-300
+                    ${styles.dotColor} ${styles.shadow} ${styles.animate}
+                  `}
+                />
+                <span
+                  className={`
+                  text-xs font-cyber tracking-wide ${styles.textColor}
+                  ${styles.wsIndicator ? "text-shadow-sm font-semibold" : ""}
+                  cursor-pointer
                 `}
-              />
-              <span
-                className={`
-                text-xs font-cyber tracking-wide ${styles.textColor} z-10
-                ${styles.wsIndicator ? "text-shadow-sm font-semibold" : ""}
-                cursor-pointer
-              `}
-              >
-                {serverStatus.status.toUpperCase()}
-                {styles.wsIndicator && (
-                  <span className="ml-1 text-cyan-400 text-opacity-90 text-[10px] align-middle font-bold">
-                    ⚡{styles.connectedSockets > 1 ? styles.connectedSockets : ''}
+                >
+                  {serverStatus.status.toUpperCase()}
+                  {styles.wsIndicator && (
+                    <span className="ml-1 text-cyan-400 text-opacity-90 text-[10px] align-middle font-bold">
+                      ⚡{styles.connectedSockets > 1 ? styles.connectedSockets : ''}
+                    </span>
+                  )}
+                  
+                  {/* Small dropdown indicator */}
+                  <span className="ml-1 inline-block group-hover:translate-y-0.5 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline-block opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </span>
-                )}
-                
-                {/* Small dropdown indicator */}
-                <span className="ml-1 inline-block group-hover:translate-y-0.5 transition-transform">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline-block opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
                 </span>
-              </span>
+              </div>
             </div>
 
             {/* Enhanced WebSocket diagnostic popup with prominent testing controls */}
             <div 
               id="status-dropdown"
-              className="absolute bottom-full right-0 mb-2 hidden z-50 cursor-auto"
+              className="absolute bottom-full right-4 mb-2 hidden z-50 cursor-auto"
               onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
             >
               <div
-                className={`${styles.bgColor} p-4 rounded-lg shadow-xl text-xs ${styles.textColor} ${styles.wsBorder} max-w-[350px] min-w-[300px] border-2`}
+                className={`bg-gray-900 p-4 rounded-lg shadow-xl text-xs ${styles.textColor} border border-gray-700 max-w-[400px] min-w-[350px]`}
+                style={{
+                  boxShadow: `0 10px 25px -5px ${
+                    serverStatus.status === 'online' ? 'rgba(34,197,94,0.2)' :
+                    serverStatus.status === 'maintenance' ? 'rgba(234,179,8,0.2)' :
+                    serverStatus.status === 'error' ? 'rgba(249,115,22,0.2)' :
+                    'rgba(239,68,68,0.2)'
+                  }, 0 8px 10px -6px rgba(0,0,0,0.3)`
+                }}
               >
                 {/* Header with status and copy button */}
                 <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">

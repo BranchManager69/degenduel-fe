@@ -450,6 +450,25 @@ export const AdminDashboard: React.FC = () => {
                 →
               </div>
             </Link>
+            <Link
+              to="/admin/vanity-wallets"
+              className="flex items-center gap-2 bg-indigo-500/30 px-4 py-2.5 rounded-xl hover:bg-indigo-500/40 transition-all border-2 border-indigo-500/40 shadow-lg hover:shadow-indigo-500/20 group relative"
+            >
+              <div className="absolute -top-2 -left-2">
+                <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-500/30 text-indigo-100 font-mono">
+                  NEW
+                </div>
+              </div>
+              <div className="text-indigo-300 text-xl group-hover:scale-110 transition-transform">
+                ✨
+              </div>
+              <span className="text-indigo-100 font-semibold group-hover:text-white transition-colors">
+                Vanity Wallet Management
+              </span>
+              <div className="ml-2 text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
           </div>
         </div>
 

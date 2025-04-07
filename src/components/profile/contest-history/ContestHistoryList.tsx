@@ -9,6 +9,7 @@ interface ContestHistoryEntry {
   end_time: string;
   portfolio_return: number;
   rank: number;
+  status?: string; // Added status field
 }
 
 interface ContestHistoryListProps {
@@ -40,12 +41,27 @@ export const ContestHistoryList: React.FC<ContestHistoryListProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative flex items-center justify-between">
             <div>
-              <h3 className="text-gray-200 font-medium group-hover:text-brand-400 transition-colors">
-                {entry.contest_name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-gray-200 font-medium group-hover:text-brand-400 transition-colors">
+                  {entry.contest_name}
+                </h3>
+                {entry.status && entry.status !== "completed" && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
+                    entry.status === "active" 
+                      ? "bg-green-500/20 text-green-400 border-green-500/30" 
+                      : entry.status === "pending"
+                        ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                        : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                  }`}>
+                    {entry.status === "active" ? "Live" : 
+                     entry.status === "pending" ? "Upcoming" : 
+                     entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-400">
-                Ended{" "}
-                {formatDistanceToNow(new Date(entry.end_time), {
+                {entry.status === "pending" ? "Starts" : "Ended"}{" "}
+                {formatDistanceToNow(new Date(entry.status === "pending" ? entry.start_time : entry.end_time), {
                   addSuffix: true,
                 })}
               </p>

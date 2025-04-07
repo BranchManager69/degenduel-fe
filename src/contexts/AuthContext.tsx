@@ -1,5 +1,13 @@
-import React, { createContext, useContext, ReactNode } from "react";
+/**
+ * AuthContext.tsx
+ * 
+ * This file contains the AuthContext component, which is used to manage the authentication state of the application.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
+ */
 
+import React, { createContext, ReactNode, useContext } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useStore } from "../store/useStore";
 
@@ -47,6 +55,12 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // AuthProvider component
+/**
+ * AuthProvider component
+ * 
+ * @param {React.ReactNode} children - The children of the AuthProvider
+ * @returns {React.ReactNode} - The AuthProvider component
+ */
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -76,6 +90,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 };
 
 // Custom hook to use the auth context
+/**
+ * Custom hook to use the auth context
+ * 
+ * @returns {AuthContextType} - The auth context
+ */
 export const useAuthContext = () => {
   // For Storybook support, use a mock if defined on window
   if (typeof window !== 'undefined' && (window as any).useAuthContext) {

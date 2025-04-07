@@ -25,7 +25,14 @@ export function AuthenticatedRoute({ children }: AuthenticatedRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    // Store the path they were trying to access in localStorage
+    // This makes it available even after social auth redirects
+    if (location.pathname && location.pathname !== '/') {
+      localStorage.setItem("auth_redirect_path", location.pathname);
+    }
+    
+    // Navigate to login page with state
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

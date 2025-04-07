@@ -1,11 +1,22 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/components/auth/LoginOptionsButton.tsx
+
+/**
+ * LoginOptionsButton.tsx
+ * 
+ * This file contains the LoginOptionsButton component, which is used to display the login options button.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
+ */
+
 import { AnimatePresence, motion } from 'framer-motion';
+import React, { useState } from 'react';
 import { FaWallet } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { ConnectWalletButton } from './ConnectWalletButton';
-import TwitterLoginButton from './TwitterLoginButton';
 import PrivyLoginButton from './PrivyLoginButton';
+import TwitterLoginButton from './TwitterLoginButton';
 
 interface LoginOptionsButtonProps {
   compact?: boolean;

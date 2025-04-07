@@ -26,7 +26,16 @@ export const Header: React.FC = () => {
     maintenanceMode,
     setMaintenanceMode,
   } = useStore();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAuthenticated } = useAuth();
+  
+  // For debugging - check if we have a mismatch between store user and auth state
+  useEffect(() => {
+    if (user && !isAuthenticated()) {
+      console.warn('[Header] User exists in store but isAuthenticated() is false');
+    } else if (!user && isAuthenticated()) {
+      console.warn('[Header] isAuthenticated() is true but no user in store');
+    }
+  }, [user, isAuthenticated]);
   const { unreadCount } = useNotificationWebSocket();
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
   const [isTransitioningToMaintenance, setIsTransitioningToMaintenance] =
@@ -120,6 +129,44 @@ export const Header: React.FC = () => {
     }
   }, [error, clearError]);
 
+  // Set the CSS variable for the header height that will be used by the ticker
+  useEffect(() => {
+    // Function to update the header height CSS variable
+    const updateHeaderHeight = () => {
+      // Base header height
+      let baseHeight = isCompact 
+        ? (window.innerWidth >= 640 ? 3.5 : 3) // sm:h-14 (3.5rem) or h-12 (3rem)
+        : (window.innerWidth >= 640 ? 4 : 3.5); // sm:h-16 (4rem) or h-14 (3.5rem)
+      
+      // Additional height for banners
+      let additionalHeight = 0;
+      
+      // Add banned user banner height if present
+      if (user?.is_banned) {
+        additionalHeight += 2.5; // ~40px (py-2 + text + border)
+      }
+      
+      // Add maintenance mode banner height if present
+      if (maintenanceMode) {
+        additionalHeight += 2; // ~32px (py-1.5 + text)
+      }
+      
+      // Set the CSS variable with the total height
+      document.documentElement.style.setProperty('--header-height', `${baseHeight + additionalHeight}rem`);
+    };
+    
+    // Set initial value
+    updateHeaderHeight();
+    
+    // Add resize listener to update when screen size changes
+    window.addEventListener('resize', updateHeaderHeight);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+    };
+  }, [isCompact, user?.is_banned, maintenanceMode]);
+
   // Header - Fixed sticky positioning by removing wrapper div
   return (
     <header
@@ -175,15 +222,15 @@ export const Header: React.FC = () => {
               <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Desktop message */}
                 <p className="hidden sm:flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">
-                  <span className="animate-pulse">⚠</span>
-                  <span>⚙️ DegenDuel maintenance in progress ⚙️</span>
-                  <span className="animate-pulse">⚠</span>
+                  <span className="animate-pulse font-bold">&lt;!</span>
+                  <span>DEGENDUEL MAINTENANCE IN PROGRESS</span>
+                  <span className="animate-pulse font-bold">!&gt;</span>
                 </p>
                 {/* Mobile message */}
                 <p className="sm:hidden flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">
-                  <span className="animate-pulse">⚠</span>
-                  <span>⚙️ Maintenance in progress ⚙️</span>
-                  <span className="animate-pulse">⚠</span>
+                  <span className="animate-pulse font-bold">&lt;!</span>
+                  <span>MAINTENANCE</span>
+                  <span className="animate-pulse font-bold">!&gt;</span>
                 </p>
               </div>
             </div>
@@ -222,7 +269,7 @@ export const Header: React.FC = () => {
 
               {/* Main Navigation - new streamlined version */}
               <nav className="hidden md:flex items-center ml-6">
-                <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20 overflow-hidden shadow-md nav-dropdown-container">
+                <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20 overflow-visible shadow-md nav-dropdown-container">
                   
                   {/* Import directly with existing components for now */}
                   <ContestsDropdown isCompact={isCompact} />

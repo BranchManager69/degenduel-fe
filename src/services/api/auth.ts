@@ -3,6 +3,9 @@
 /**
  * This file contains the API endpoints for the authentication service.
  * It is used to get the current session data, verify wallet and Privy auth tokens.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
  */
 
 import axios from "axios";
@@ -12,6 +15,11 @@ import { useStore } from "../../store/useStore";
 /**
  * Gets the current session data, including user information if authenticated
  * @returns Object containing user data or error information
+ * 
+ * @param {string} API_URL - The URL of the API
+ * @param {string} DDAPI_DEBUG_MODE - Whether to enable debug mode
+ * @param {useStore} useStore - The store to update with the user data
+ * @returns {Promise<{user: User | null, session: Session | null}>} - The user data and session data
  */
 export const getSessionData = async () => {
   try {
@@ -59,6 +67,11 @@ export const getSessionData = async () => {
 /**
  * Gets comprehensive authentication status including all methods and Privy link status
  * @returns Comprehensive auth status object
+ * 
+ * @param {string} API_URL - The URL of the API
+ * @param {string} DDAPI_DEBUG_MODE - Whether to enable debug mode
+ * @param {useStore} useStore - The store to update with the user data
+ * @returns {Promise<{user: User | null, session: Session | null}>} - The user data and session data
  */
 export const getAuthStatus = async () => {
   try {
@@ -97,6 +110,11 @@ export const getAuthStatus = async () => {
 /**
  * Gets a WebSocket authentication token
  * @returns The WebSocket token or null if error
+ * 
+ * @param {string} API_URL - The URL of the API
+ * @param {string} DDAPI_DEBUG_MODE - Whether to enable debug mode
+ * @param {useStore} useStore - The store to update with the user data
+ * @returns {Promise<string | null>} - The WebSocket token or null if error
  */
 export const getWebSocketToken = async (): Promise<string | null> => {
   try {
@@ -146,10 +164,10 @@ export const getWebSocketToken = async (): Promise<string | null> => {
 
 /**
  * Verifies a wallet signature with the server
- * @param wallet The wallet address
- * @param signature The signature as Uint8Array
- * @param message The original message that was signed
- * @returns The user data and authentication result
+ * @param {string} wallet The wallet address
+ * @param {Uint8Array} signature The signature as Uint8Array
+ * @param {string} message The original message that was signed
+ * @returns {Promise<{user: User | null, session: Session | null}>} - The user data and authentication result
  */
 export const verifyWalletSignature = async (
   wallet: string,
@@ -224,10 +242,10 @@ export const verifyWalletSignature = async (
 
 /**
  * Verifies a Privy auth token with the server
- * @param token The Privy auth token
- * @param userId The Privy user ID (optional)
- * @param deviceInfo Optional device information for authorization
- * @returns The user data and authentication result
+ * @param {string} token The Privy auth token
+ * @param {string} userId The Privy user ID (optional)
+ * @param {object} deviceInfo Optional device information for authorization
+ * @returns {Promise<{user: User | null, session: Session | null}>} - The user data and authentication result
  */
 export const verifyPrivyToken = async (
   token: string,
@@ -310,9 +328,9 @@ export const verifyPrivyToken = async (
 
 /**
  * Links a Privy account to an existing authenticated wallet
- * @param token The Privy auth token
- * @param userId The Privy user ID
- * @returns The linking result
+ * @param {string} token The Privy auth token
+ * @param {string} userId The Privy user ID
+ * @returns {Promise<any>} - The linking result
  */
 export const linkPrivyAccount = async (token: string, userId: string) => {
   try {
@@ -366,7 +384,7 @@ export const linkPrivyAccount = async (token: string, userId: string) => {
 
 /**
  * Initiates Twitter authentication flow
- * @returns The URL to redirect to for Twitter auth
+ * @returns {Promise<string>} - The URL to redirect to for Twitter auth
  */
 export const getTwitterAuthUrl = async (): Promise<string> => {
   try {
@@ -390,7 +408,7 @@ export const getTwitterAuthUrl = async (): Promise<string> => {
 
 /**
  * Links a Twitter account to existing authenticated user
- * @returns Success status and message
+ * @returns {Promise<{success: boolean, message: string}>} - Success status and message
  */
 export const linkTwitterAccount = async (): Promise<{success: boolean, message: string}> => {
   try {
@@ -425,7 +443,7 @@ export const linkTwitterAccount = async (): Promise<{success: boolean, message: 
 
 /**
  * Checks if a Twitter account is linked to the current user
- * @returns Status of Twitter linking
+ * @returns {Promise<{linked: boolean, username?: string}>} - Status of Twitter linking
  */
 export const checkTwitterLinkStatus = async (): Promise<{
   linked: boolean, 
@@ -444,4 +462,217 @@ export const checkTwitterLinkStatus = async (): Promise<{
   }
 };
 
-// All exports are handled as named exports above, no need for an export statement here
+/**
+ * Biometric Authentication API Endpoints
+ */
+
+/**
+ * Gets options for registering a new biometric credential
+ * @param {string} userId User ID to associate with the credential
+ * @param {object} options Optional parameters for registration
+ * @returns {Promise<any>} - Registration options from the server
+ */
+export const getBiometricRegistrationOptions = async (
+  userId: string,
+  options?: {
+    nickname?: string;
+    authenticatorType?: 'platform' | 'cross-platform';
+  }
+): Promise<any> => {
+  try {
+    // Prepare request data
+    const requestData = {
+      userId,
+      nickname: options?.nickname,
+      authenticatorType: options?.authenticatorType || 'platform'
+    };
+    
+    const response = await axios.post(
+      `${API_URL}/auth/biometric/register-options`, 
+      requestData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        withCredentials: true,
+      }
+    );
+    
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log("[Auth] Biometric registration options:", response.data);
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to get biometric registration options:", {
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    
+    throw new Error(
+      error?.response?.data?.message || 
+      error?.message || 
+      "Failed to get biometric registration options"
+    );
+  }
+};
+
+/**
+ * Verifies a biometric credential registration
+ * @param {any} attestation The attestation response from the WebAuthn API
+ * @returns {Promise<any>} - Verification result from the server
+ */
+export const verifyBiometricRegistration = async (attestation: any): Promise<any> => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/biometric/register-verify`,
+      attestation,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        withCredentials: true,
+      }
+    );
+    
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log("[Auth] Biometric registration verification:", response.data);
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to verify biometric registration:", {
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    
+    throw new Error(
+      error?.response?.data?.message || 
+      error?.message || 
+      "Failed to verify biometric registration"
+    );
+  }
+};
+
+/**
+ * Gets options for authenticating with a biometric credential
+ * @param {string} userId User ID associated with the credential
+ * @returns {Promise<any>} - Authentication options from the server
+ */
+export const getBiometricAuthenticationOptions = async (userId: string): Promise<any> => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/biometric/login-options`,
+      { userId },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        withCredentials: true,
+      }
+    );
+    
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log("[Auth] Biometric authentication options:", response.data);
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to get biometric authentication options:", {
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    
+    throw new Error(
+      error?.response?.data?.message || 
+      error?.message || 
+      "Failed to get biometric authentication options"
+    );
+  }
+};
+
+/**
+ * Verifies a biometric authentication assertion
+ * @param {any} assertion The assertion response from the WebAuthn API
+ * @returns {Promise<any>} - Authentication result from the server
+ */
+export const verifyBiometricAuthentication = async (assertion: any): Promise<any> => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/biometric/login-verify`,
+      assertion,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        withCredentials: true,
+      }
+    );
+    
+    if (DDAPI_DEBUG_MODE === "true") {
+      console.log("[Auth] Biometric authentication verification:", response.data);
+    }
+    
+    // Update the user in the store
+    const store = useStore.getState();
+    if (response.data?.user) {
+      store.setUser({
+        ...response.data.user,
+        jwt: response.data.token,
+      });
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to verify biometric authentication:", {
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    
+    throw new Error(
+      error?.response?.data?.message || 
+      error?.message || 
+      "Failed to verify biometric authentication"
+    );
+  }
+};
+
+/**
+ * Checks if a user has registered biometric credentials
+ * @param {string} userId User ID to check
+ * @returns {Promise<boolean>} - Whether the user has registered credentials
+ */
+export const checkBiometricCredentialStatus = async (userId: string): Promise<boolean> => {
+  try {
+    const response = await axios.get(
+      `${API_URL}/auth/biometric/has-credential?userId=${encodeURIComponent(userId)}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        withCredentials: true,
+      }
+    );
+    
+    return !!response.data?.hasCredential;
+  } catch (error: any) {
+    console.error("[Auth] Failed to check biometric credential status:", {
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+    
+    return false;
+  }
+};
+
+// All exports are handled as named exports above.

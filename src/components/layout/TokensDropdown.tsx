@@ -1,6 +1,6 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment } from "react";
-import { FaCoins, FaStar } from "react-icons/fa";
+import { FaCoins } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 interface TokensDropdownProps {
@@ -11,17 +11,14 @@ export const TokensDropdown: React.FC<TokensDropdownProps> = ({
   isCompact = false,
 }) => {
 
+  // Removed Whitelist item - 2025-04-05
   const menuItems = [
     {
       label: "Browse Tokens",
       icon: FaCoins,
       to: "/tokens",
     },
-    {
-      label: "Whitelist",
-      icon: FaStar,
-      to: "/tokens/whitelist",
-    },
+    // Whitelist entry removed
   ];
 
   return (
@@ -74,7 +71,7 @@ export const TokensDropdown: React.FC<TokensDropdownProps> = ({
             leaveFrom="transform opacity-100 scale-100"
             leaveTo="transform opacity-0 scale-95"
           >
-            <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left bg-dark-200/95 backdrop-blur-xl border border-brand-500/30 rounded-md shadow-lg overflow-hidden z-50">
+            <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left bg-dark-200/95 backdrop-blur-xl border border-brand-500/30 rounded-md shadow-lg overflow-hidden z-[100]">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5" />
 
               <div className="relative p-1">

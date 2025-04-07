@@ -1,26 +1,66 @@
+// src/pages/public/general/LoginPage.tsx
+
+/**
+ * LoginPage.tsx
+ * 
+ * This file contains the LoginPage component, which is used to display the login page.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
+ */
+
 import { motion } from "framer-motion";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // @ts-ignore - JSX component without TypeScript definitions
 import LoginOptions from "../../../components/auth/LoginOptions";
 import Logo from "../../../components/ui/Logo";
+import { authDebug } from "../../../config/config";
 import { useAuthContext } from "../../../contexts/AuthContext";
 
 /**
  * Dedicated login page for DegenDuel
  * Displays all available login options and serves as a fallback route
+ * Preserves original navigation target for post-authentication redirection
  */
 const LoginPage: React.FC = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the path to redirect to after login (default to home)
+  const from = location.state?.from?.pathname || "/";
+  
+  // Store intended destination in localStorage for social auth redirects
+  React.useEffect(() => {
+    if (from && from !== "/") {
+      localStorage.setItem("auth_redirect_path", from);
+      authDebug('LoginPage', 'Stored auth redirect path', { from });
+    }
+  }, [from]);
 
-  // If already logged in, redirect to home
+  // If already logged in, redirect to original destination
   React.useEffect(() => {
     if (user) {
-      navigate("/");
+      // Check localStorage first (for social auth redirects that lose React state)
+      const storedPath = localStorage.getItem("auth_redirect_path");
+      const redirectTo = storedPath || from;
+      
+      authDebug('LoginPage', 'User authenticated, redirecting', { 
+        redirectTo,
+        fromState: from,
+        fromStorage: storedPath,
+        user: user.nickname || user.wallet_address
+      });
+      
+      // Clear stored path
+      localStorage.removeItem("auth_redirect_path");
+      
+      // Redirect to original destination or home
+      navigate(redirectTo, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   return (
     <div className="min-h-[calc(100vh-12rem)] flex flex-col items-center justify-center p-4 relative overflow-hidden">

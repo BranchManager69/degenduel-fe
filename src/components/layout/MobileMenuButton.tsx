@@ -5,9 +5,7 @@ import { FaBell, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
 
 import { useStore } from "../../store/useStore";
 import { useAuth } from "../../hooks/useAuth";
-import { ConnectWalletButton } from "../auth/ConnectWalletButton";
-import TwitterLoginButton from "../auth/TwitterLoginButton";
-import PrivyLoginButton from "../auth/PrivyLoginButton";
+import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton";
 
 interface MobileMenuButtonProps {
   className?: string;
@@ -103,13 +101,13 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop - positioned to start below the header */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40"
+              className="fixed inset-0 top-16 bg-black/60 backdrop-blur-[2px] z-40"
               onClick={() => setIsOpen(false)}
             />
 
@@ -120,11 +118,11 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               className={`absolute right-0 mt-2 w-56 bg-dark-200/95 border border-brand-500/30 
-                rounded-md shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-xl`}
+                rounded-b-md rounded-tl-md rounded-tr-[24px] shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-xl`}
             >
               {/* Enhanced gradient overlays */}
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-transparent to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute inset-0 rounded-lg bg-[radial-gradient(circle_at_50%_0%,rgba(127,0,255,0.15),transparent_70%)]" />
+              <div className="absolute inset-0 rounded-b-md rounded-tl-md rounded-tr-[24px] bg-[radial-gradient(circle_at_50%_0%,rgba(127,0,255,0.15),transparent_70%)]" />
 
               <motion.div
                 className="py-1 relative"
@@ -204,7 +202,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       icon={FaUserFriends} 
                       onClick={() => setIsOpen(false)}
                     >
-                      Referrals
+                      Invite & Earn
                     </ProfileMenuItem>
                     
                     {/* Admin controls section if applicable */}
@@ -212,24 +210,49 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       <>
                         <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
                         <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          Admin
+                          Admin Access
                         </div>
-                        {isAdmin() && (
-                          <ProfileMenuItem 
-                            to="/admin" 
-                            onClick={() => setIsOpen(false)}
-                          >
-                            Admin Dashboard
-                          </ProfileMenuItem>
-                        )}
-                        {isSuperAdmin() && (
-                          <ProfileMenuItem 
-                            to="/superadmin" 
-                            onClick={() => setIsOpen(false)}
-                          >
-                            Super Admin Dashboard
-                          </ProfileMenuItem>
-                        )}
+                        
+                        {/* Side-by-side Admin and Super Admin buttons */}
+                        <div className="grid grid-cols-2 gap-2 px-4 py-2">
+                          {isAdmin() && (
+                            <Link
+                              to="/admin"
+                              className="flex items-center justify-center px-4 py-2.5 rounded-md transition-all duration-300
+                                bg-gradient-to-br from-red-600/90 to-red-800/90 border border-red-500/50 
+                                text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-red-500/90 hover:to-red-700/90
+                                focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-dark-200"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <span className="flex items-center">
+                                <svg className="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                                  <path d="M19 10H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"></path>
+                                  <path d="M12 13v5"></path>
+                                </svg>
+                                ADMIN
+                              </span>
+                            </Link>
+                          )}
+                          
+                          {isSuperAdmin() && (
+                            <Link
+                              to="/superadmin"
+                              className="flex items-center justify-center px-4 py-2.5 rounded-md transition-all duration-300
+                                bg-gradient-to-br from-amber-500/90 to-amber-700/90 border border-amber-400/50
+                                text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-amber-400/90 hover:to-amber-600/90
+                                focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 focus:ring-offset-dark-200"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <span className="flex items-center">
+                                <svg className="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                                SUPER
+                              </span>
+                            </Link>
+                          )}
+                        </div>
                       </>
                     )}
                     
@@ -237,26 +260,11 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   </>
                 ) : (
                   <>
-                    {/* Login section */}
+                    {/* Consolidated Login section */}
                     <div className="px-4 py-3 bg-dark-300/40 border-b border-brand-500/20">
                       <div className="flex flex-col gap-2">
-                        {/* Wallet Login */}
-                        <ConnectWalletButton 
-                          className="w-full justify-center"
-                          onClick={() => setIsOpen(false)}
-                        />
-                        
-                        {/* Twitter Login */}
-                        <TwitterLoginButton 
-                          className="w-full justify-center"
-                          onClick={() => setIsOpen(false)}
-                        />
-                        
-                        {/* Privy Login */}
-                        <PrivyLoginButton 
-                          className="w-full justify-center"
-                          onClick={() => setIsOpen(false)}
-                        />
+                        {/* Login Options Section */}
+                        <ConsolidatedLoginButton onLoginComplete={() => setIsOpen(false)} />
                         
                         <Link
                           to="/login"
@@ -303,12 +311,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                 <MenuItem to="/tokens" onClick={() => setIsOpen(false)}>
                   Browse Tokens
                 </MenuItem>
-                <MenuItem
-                  to="/tokens/whitelist"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Whitelist
-                </MenuItem>
+                {/* Whitelist link removed 2025-04-05 */}
 
                 {/* Rankings Section */}
                 <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">

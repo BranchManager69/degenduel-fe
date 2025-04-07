@@ -1,5 +1,14 @@
 // src/pages/authenticated/Profile.tsx
 
+/**
+ * This page is used to display a private profile.
+ * 
+ * It looks great! Just a few minor touch-ups needed.
+ * 
+ * @author @BranchManager69
+ * @since 2025-04-02
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
 
@@ -8,13 +17,12 @@ import { UserProgress } from "../../components/achievements/UserProgress";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestHistorySection } from "../../components/profile/contest-history/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/profile-header/ProfileHeaderSection";
-// @ts-ignore - JSX component without TypeScript definitions
 import SocialAccountsPanel from "../../components/profile/SocialAccountsPanel";
 import { UserStatsSection } from "../../components/profile/user-stats/UserStatsSection";
 import { useStore } from "../../store/useStore";
 
-// Profile Page
-export const Profile: React.FC = () => {
+// Private Profile Page
+export const PrivateProfilePage: React.FC = () => {
   const { user } = useStore();
 
   if (!user) {
@@ -41,8 +49,10 @@ export const Profile: React.FC = () => {
     );
   }
 
+  // Profile Page
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Background Effects */}
       <BackgroundEffects />
 
       {/* Content Section */}
@@ -52,8 +62,10 @@ export const Profile: React.FC = () => {
         exit={{ opacity: 0 }}
         className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
       >
+        {/* Profile Page */}
         <div className="relative space-y-8">
           <AnimatePresence mode="wait">
+
             {/* User Data Section */}
             <motion.div
               key="user-data"
@@ -61,10 +73,11 @@ export const Profile: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
+              {/* Profile Header Section */}
               <ProfileHeaderSection />
             </motion.div>
 
-            {/* User Leveling Progress Section */}
+            {/* Degen Level Progress */}
             <motion.div
               key="user-progress"
               initial={{ opacity: 0, y: 20 }}
@@ -74,7 +87,7 @@ export const Profile: React.FC = () => {
               <UserProgress />
             </motion.div>
 
-            {/* Lifetime User Stats Section */}
+            {/* Lifetime User Stats */}
             <motion.div
               key="user-stats"
               initial={{ opacity: 0, y: 20 }}
@@ -84,7 +97,7 @@ export const Profile: React.FC = () => {
               <UserStatsSection />
             </motion.div>
 
-            {/* Social Accounts Panel */}
+            {/* Social Accounts */}
             <motion.div
               key="social-accounts"
               initial={{ opacity: 0, y: 20 }}
@@ -92,14 +105,19 @@ export const Profile: React.FC = () => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-4"
             >
+
+              {/* Social Accounts */}
               <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
                 Social Accounts
                 <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
               </h2>
+
+              {/* Social Accounts Panel */}
               <SocialAccountsPanel />
+
             </motion.div>
 
-            {/* Two Column Layout for Achievements and History */}
+            {/* Achievements & Contest History (2 columns) */}
             <motion.div
               key="columns"
               initial={{ opacity: 0, y: 20 }}
@@ -124,10 +142,13 @@ export const Profile: React.FC = () => {
                 </h2>
                 <ContestHistorySection />
               </div>
+              
             </motion.div>
           </AnimatePresence>
         </div>
+
       </motion.div>
     </div>
+
   );
 };

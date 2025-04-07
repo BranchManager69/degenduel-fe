@@ -1,4 +1,4 @@
-// src/components/auth/ReferralCodeInput.tsx
+// src/components/auth/InviteCodeInput.tsx
 
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -6,12 +6,12 @@ import { useLocation } from "react-router-dom";
 
 import { ddApi } from "../../services/dd-api";
 
-interface ReferralCodeInputProps {
+interface InviteCodeInputProps {
   walletAddress: string;
   onSuccess?: () => void;
 }
 
-export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
+export const ReferralCodeInput: React.FC<InviteCodeInputProps> = ({
   walletAddress,
   onSuccess,
 }) => {
@@ -66,14 +66,14 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
     <div className="space-y-4">
       <div className="flex flex-col space-y-2">
         <label className="text-sm text-gray-400">
-          Referral Code (optional)
+          Invite Code (optional)
         </label>
         <div className="flex gap-2">
           <input
             type="text"
             value={referralCode}
             onChange={(e) => setReferralCode(e.target.value)}
-            placeholder="Enter referral code"
+            placeholder="Enter invite code"
             className="flex-1 px-3 py-2 bg-dark-400/30 border border-dark-400 rounded-lg text-gray-100 placeholder-gray-500"
           />
           <button
@@ -90,8 +90,7 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
         </div>
       </div>
       <p className="text-sm text-gray-400">
-        Have a referral code? Who knows; you might someday be glad you were
-        referred by and/or referred another Degen.
+        Have an invite code? Enter it here to receive special rewards and support the person who invited you.
       </p>
     </div>
   );

@@ -74,7 +74,7 @@ export const RankingsDropdown: React.FC<RankingsDropdownProps> = ({
             leaveFrom="transform opacity-100 scale-100"
             leaveTo="transform opacity-0 scale-95"
           >
-            <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left bg-dark-200/95 backdrop-blur-xl border border-brand-500/30 rounded-md shadow-lg overflow-hidden z-50">
+            <Menu.Items className="absolute left-0 mt-2 w-56 origin-top-left bg-dark-200/95 backdrop-blur-xl border border-brand-500/30 rounded-md shadow-lg overflow-hidden z-[100]">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5" />
 
               <div className="relative p-1">

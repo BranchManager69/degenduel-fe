@@ -1,5 +1,12 @@
 // src/pages/public/general/PublicProfile.tsx
 
+/**
+ * This page is used to display a public profile.
+ * 
+ * @author @BranchManager69
+ * @since 2025-04-02
+ */
+
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -9,26 +16,49 @@ import { BanOnSightButton } from "../../../components/admin/BanOnSightButton";
 import { CopyToClipboard } from "../../../components/common/CopyToClipboard";
 import { ErrorMessage } from "../../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
-import {
-  ContestEntry,
-  ContestHistory,
-} from "../../../components/profile/contest-history/ContestHistory";
+import { ContestHistory } from "../../../components/profile/contest-history/ContestHistory";
 import SocialAccountsPanel from "../../../components/profile/SocialAccountsPanel";
+
+// Import and extend the ContestEntry type from ContestHistory
+import { ContestEntry as BaseContestEntry } from "../../../components/profile/contest-history/ContestHistory";
+
+// Extend ContestEntry with a status field
+interface EnhancedContestEntry extends Omit<BaseContestEntry, 'contest_id' | 'portfolio_return' | 'rank'> {
+  contest_id: number;
+  portfolio_return: string;
+  rank: string;
+  status?: string;
+}
+
+// Use the existing type name for compatibility
+type ContestEntry = EnhancedContestEntry;
+
 import { useAuth } from "../../../hooks/useAuth";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { UserData, UserStats as UserStatsType } from "../../../types/profile";
 
-// Map History Response
-const mapHistoryResponse = (entry: any) => ({
-  contest_id: entry.contest_id,
-  contest_name: entry.contest_name,
-  start_time: entry.start_time,
-  end_time: entry.end_time,
-  portfolio_return: entry.portfolio_return,
-  rank: entry.rank,
-});
+// Map History Response - Filter out cancelled contests
+const mapHistoryResponse = (entry: any): ContestEntry | null => {
+  // Skip cancelled contests
+  if (entry.status === "cancelled") return null;
+  
+  return {
+    contest_id: Number(entry.contest_id),
+    contest_name: entry.contest_name,
+    start_time: entry.start_time,
+    end_time: entry.end_time,
+    portfolio_return: typeof entry.portfolio_return === 'number' 
+      ? entry.portfolio_return.toString() + '%'
+      : entry.portfolio_return,
+    rank: typeof entry.rank === 'number'
+      ? entry.rank.toString()
+      : entry.rank,
+    status: entry.status || "completed", // Default to completed if no status
+  };
+};
 
+// Loading State
 interface LoadingState {
   user: boolean;
   stats: boolean;
@@ -36,6 +66,7 @@ interface LoadingState {
   history: boolean;
 }
 
+// Error State
 interface ErrorState {
   user: string | null;
   stats: string | null;
@@ -43,6 +74,7 @@ interface ErrorState {
   history: string | null;
 }
 
+// Public Profile
 export const PublicProfile: React.FC = () => {
   const { identifier } = useParams();
   const { maintenanceMode } = useStore();
@@ -66,11 +98,11 @@ export const PublicProfile: React.FC = () => {
   const { isAdmin } = useAuth();
 
   // Helper to determine if a string is likely a Solana wallet address
-  // TODO: FIX THIS BULLSHIT! IT NEEDS TO USE A REAL CHAIN CHECK SOMEHOW!
+  // Simple length-based heuristic - Solana addresses are much longer than usernames
   const isWalletAddress = (str: string) => {
-    // Base58 check (Solana addresses are base58 encoded)
-    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-    return base58Regex.test(str);
+    if (!str) return false;
+    // If it's 21+ characters, treat it as a wallet address attempt
+    return str.length >= 21;
   };
 
   useEffect(() => {
@@ -92,24 +124,36 @@ export const PublicProfile: React.FC = () => {
       setError((prev) => ({ ...prev, user: null }));
 
       try {
-        // Try to get user data based on the identifier type
+        // Determine if we're looking up by wallet address or username
         const isWallet = isWalletAddress(identifier);
         let userResponse;
 
         try {
+          // Use the same endpoint for both - the backend should handle both types
           userResponse = await ddApi.users.getOne(identifier);
+
+          // If we got here, the lookup succeeded
+          console.log("[PublicProfile] User data fetched successfully");
         } catch (err) {
-          // If the first attempt fails and it's not a wallet address,
-          // we might need to try a different API endpoint or handle the error
-          // TODO: IS THIS THE SOURCE OF THE PUBLIC PROFILE NOT LOADING CORRECTLY ERROR?
-          if (!isWallet) {
-            setError((prev) => ({
-              ...prev,
-              user: "User not found",
-            }));
-            return;
-          }
-          throw err;
+          console.error("[PublicProfile] Error fetching user data:", err);
+          
+          // Set a specific error message based on identifier type
+          setError((prev) => ({
+            ...prev,
+            user: isWallet 
+              ? "Wallet address not found" 
+              : "Username not found"
+          }));
+          
+          // Stop further processing
+          setLoading((prev) => ({
+            ...prev,
+            user: false,
+            stats: false,
+            achievements: false,
+            history: false,
+          }));
+          return;
         }
 
         const balanceResponse = await ddApi.balance.get(
@@ -142,7 +186,11 @@ export const PublicProfile: React.FC = () => {
           10,
           0,
         );
-        setContestHistory(historyResponse.map(mapHistoryResponse));
+        // Filter out cancelled contests and nulls
+        const mappedHistory = historyResponse
+          .map((entry: any) => mapHistoryResponse(entry))
+          .filter((entry: ContestEntry | null): entry is ContestEntry => entry !== null);
+        setContestHistory(mappedHistory);
       } catch (err: any) {
         setError((prev) => ({
           ...prev,

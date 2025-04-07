@@ -3,16 +3,18 @@
 /**
  * This context is used to manage the Privy authentication state.
  * It is intended to be used to verify the Privy token with our backend and set the authenticated user.
-*/
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
+ */
 
 import { usePrivy } from '@privy-io/react-auth';
 import React, { createContext, ReactNode, useContext, useEffect } from 'react';
-import { verifyPrivyToken, linkPrivyAccount, getAuthStatus } from '../services/api/auth';
 import { authDebug } from '../config/config';
+import { getAuthStatus, linkPrivyAccount, verifyPrivyToken } from '../services/api/auth';
 
 // Note: Actual Privy configuration will be set in the App.tsx 
 // using the PrivyProvider component from @privy-io/react-auth
-// The client key is used server-side for token verification
 
 // Create context types
 interface PrivyAuthContextType {
@@ -70,6 +72,9 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [ready, authenticated, privyUser, authUser, isPrivyLinked]);
 
   // Sync with backend when Privy auth state changes
+  /**
+   * Sync with backend when Privy auth state changes
+   */
   useEffect(() => {
     const syncWithBackend = async () => {
       // Only proceed if Privy is authenticated and ready
@@ -133,6 +138,9 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [ready, authenticated, privyUser, getAccessToken]);
   
   // Check comprehensive auth status including Privy link status
+  /**
+   * Check comprehensive auth status including Privy link status
+   */
   const checkAuthStatus = async (): Promise<void> => {
     authDebug('PrivyAuth', 'Checking auth status');
     try {
@@ -157,6 +165,9 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
   
   // Call check auth status on mount
+  /**
+   * Call check auth status on mount
+   */
   useEffect(() => {
     if (ready) {
       authDebug('PrivyAuth', 'Privy SDK ready, checking auth status');
@@ -167,6 +178,11 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [ready]);
   
   // Link Privy to existing wallet
+  /**
+   * Link Privy to existing wallet
+   * 
+   * @returns {Promise<boolean>} - Whether the account was linked successfully
+   */
   const linkPrivyToWallet = async (): Promise<boolean> => {
     if (!authenticated || !privyUser) {
       authDebug('PrivyAuth', 'Cannot link - user not authenticated with Privy');
@@ -210,6 +226,11 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   // Get the auth token function
+  /**
+   * Get the auth token function
+   * 
+   * @returns {Promise<string | null>} - The auth token
+   */
   const getAuthToken = async (): Promise<string | null> => {
     if (!authenticated) {
       authDebug('PrivyAuth', 'Cannot get auth token - not authenticated');
@@ -231,6 +252,10 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  // Provide the context value
+  /**
+   * Provide the context value
+   */
   const value = {
     isAuthenticated: authenticated && !!authUser,
     isLoading: !ready,
@@ -251,6 +276,11 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
 };
 
 // Custom hook to use the privy auth context
+/**
+ * Custom hook to use the privy auth context
+ * 
+ * @returns {PrivyAuthContextType} - The privy auth context
+ */
 export const usePrivyAuth = () => {
   // For Storybook support, use a mock if defined on window
   if (typeof window !== 'undefined' && (window as any).usePrivyAuth) {

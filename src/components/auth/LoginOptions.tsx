@@ -1,7 +1,18 @@
-import React from 'react';
-import { ConnectWalletButton } from "./ConnectWalletButton";
-import TwitterLoginButton from "./TwitterLoginButton";
-import PrivyLoginButton from "./PrivyLoginButton";
+// src/components/auth/LoginOptions.tsx
+
+/**
+ * LoginOptions.tsx
+ * 
+ * This file contains the LoginOptions component, which is used to display the login options for the user.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-04-02
+ */
+
+import { useEffect, useState } from 'react';
+import { usePrivyAuth } from "../../contexts/PrivyAuthContext";
+import useBiometricAuth from "../../hooks/useBiometricAuth";
+import { useStore } from "../../store/useStore";
 import {
   Card,
   CardContent,
@@ -11,8 +22,11 @@ import {
   CardTitle,
 } from "../ui/Card";
 import { Divider } from "../ui/Divider";
-import { usePrivyAuth } from "../../contexts/PrivyAuthContext";
-import { useStore } from "../../store/useStore";
+import BiometricAuthButton from "./BiometricAuthButton";
+import { ConnectWalletButton } from "./ConnectWalletButton";
+import PrivyLoginButton from "./PrivyLoginButton";
+import TwitterLoginButton from "./TwitterLoginButton";
+import ConsolidatedLoginButton from "./ConsolidatedLoginButton";
 
 /**
  * Login Options Component
@@ -24,7 +38,16 @@ import { useStore } from "../../store/useStore";
 const LoginOptions = () => {
   const { isPrivyLinked, linkPrivyToWallet, isLoading: privyLoading } = usePrivyAuth();
   const { user } = useStore();
-  const [isLinking, setIsLinking] = React.useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+  const { isAvailable, isRegistered } = useBiometricAuth();
+  const [showBiometricOption, setShowBiometricOption] = useState(false);
+  
+  // Check if biometric auth is available and the user has a registered credential
+  useEffect(() => {
+    if (isAvailable && isRegistered) {
+      setShowBiometricOption(true);
+    }
+  }, [isAvailable, isRegistered]);
   
   // Function to handle linking Privy to wallet
   const handleLinkPrivy = async () => {
@@ -98,36 +121,56 @@ const LoginOptions = () => {
           </div>
         ) : (
           <>
-            {/* Primary Login Method */}
+            {/* Consolidated Login Options */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-gray-500">Connect Wallet</h3>
-              <div className="relative group overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-transparent to-brand-600/20 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <ConnectWalletButton className="w-full py-4" />
-              </div>
-            </div>
-
-            {/* Alternative Login Methods */}
-            <div className="space-y-4">
-              <div className="relative">
-                <Divider>
-                  <span className="px-3 text-xs font-semibold text-gray-400 bg-dark-200 rounded-full">
-                    or continue with
-                  </span>
-                </Divider>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3">
-                <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
-                  <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
-                  <TwitterLoginButton className="w-full h-12" />
+              <h3 className="text-sm font-medium text-gray-500">Sign In Options</h3>
+              
+              {/* Desktop view: Traditional multi-button display (hidden on mobile) */}
+              <div className="hidden md:block space-y-4">
+                {/* Wallet login */}
+                <div className="relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-transparent to-brand-600/20 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <ConnectWalletButton className="w-full py-4" compact={true} />
                 </div>
                 
-                <div className="relative p-0.5 bg-gradient-to-r from-purple-500/40 to-brand-500/80 rounded-md group overflow-hidden shadow-md">
-                  <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-colors duration-300"></div>
-                  <PrivyLoginButton className="w-full h-12" />
+                <div className="relative">
+                  <Divider>
+                    <span className="px-3 text-xs font-semibold text-gray-400 bg-dark-200 rounded-full">
+                      or continue with
+                    </span>
+                  </Divider>
                 </div>
-                {/* Additional social login options can be added here */}
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Biometric Auth option - only shown if registered and available */}
+                  {showBiometricOption && (
+                    <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md">
+                      <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
+                      <BiometricAuthButton 
+                        mode="authenticate"
+                        buttonStyle="default"
+                        className="w-full h-12 bg-transparent hover:bg-transparent"
+                        showAvailabilityIndicator={true}
+                        onError={(error) => console.error("Biometric auth error:", error)}
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
+                    <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
+                    <TwitterLoginButton className="w-full h-12" />
+                  </div>
+                  
+                  <div className="relative p-0.5 bg-gradient-to-r from-purple-500/40 to-brand-500/80 rounded-md group overflow-hidden shadow-md">
+                    <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-colors duration-300"></div>
+                    <PrivyLoginButton className="w-full h-12" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mobile view: Consolidated button display (hidden on desktop) */}
+              <div className="md:hidden">
+                <ConsolidatedLoginButton />
               </div>
             </div>
           </>

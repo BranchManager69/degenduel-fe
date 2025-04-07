@@ -10,7 +10,6 @@ import { useStore } from '../../store/useStore';
 import { ConnectionState, MessageType } from './types';
 
 // Interface for the WebSocket instance that the hook can access
-// This matches what the WebSocketManager sets up
 interface WebSocketInstance {
   registerListener: (id: string, types: string[], callback: (message: any) => void) => () => void;
   sendMessage: (message: any) => boolean;
@@ -18,10 +17,16 @@ interface WebSocketInstance {
   connectionError: string | null;
 }
 
-// Singleton instance that gets set by the WebSocketManager component
+// Singleton instance set by the WebSocketManager [OUTDATED?] component
 let instance: WebSocketInstance | null = null;
 
-// Function to set up the singleton instance (called by WebSocketManager)
+// Function to set up the singleton instance
+/**
+ * @param registerFn - Function to register a listener
+ * @param sendFn - Function to send a message
+ * @param state - Connection state
+ * @param error - Connection error
+ */
 export const setupWebSocketInstance = (
   registerFn: (id: string, types: string[], callback: (message: any) => void) => () => void,
   sendFn: (message: any) => boolean,
@@ -37,6 +42,11 @@ export const setupWebSocketInstance = (
 };
 
 // Helper interface for subscription messages
+/**
+ * @param type - Message type
+ * @param topics - Topics to subscribe to
+ * @param authToken - Authentication token
+ */
 interface SubscriptionMessage {
   type: MessageType.SUBSCRIBE | MessageType.UNSUBSCRIBE;
   topics: string[];

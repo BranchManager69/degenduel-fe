@@ -1,0 +1,261 @@
+# Comprehensive Plan to Migrate to Jupiter's Wallet Adapter
+
+This document tracks the progress of migrating from the current wallet implementation to Jupiter's wallet adapter, using a side-by-side approach.
+
+## Implementation Strategy: Side-by-Side Migration
+
+We've created a parallel implementation that allows both wallet systems to coexist, making it easy to switch between them and roll back if needed.
+
+## Progress Log
+
+### 1. Dependency Management - [COMPLETED]
+
+```bash
+# Installed Jupiter wallet adapter with legacy peer deps to avoid conflicts
+npm install @jup-ag/wallet-adapter --legacy-peer-deps
+
+# IMPORTANT: Keep @solana/wallet-adapter-react until the migration is complete and tested
+```
+
+NOTES:
+- The @jup-ag/wallet-adapter is 94KB (~20KB gzipped) vs @solana/wallet-adapter-react at 572KB
+- We'll maintain both dependencies during the transition
+- Installation successful with --legacy-peer-deps flag to avoid React version conflicts
+
+### 2. Environment Setup - [COMPLETED]
+
+We've added the feature flag to all environment files to allow toggling between wallet implementations.
+
+```typescript
+// src/config/env.ts (updated)
+declare global {
+  interface ImportMetaEnv {
+    // ... existing declarations
+    readonly VITE_USE_JUPITER_WALLET?: string;
+  }
+}
+
+export const env = {
+  // ... existing env variables
+  USE_JUPITER_WALLET: import.meta.env.VITE_USE_JUPITER_WALLET === 'true',
+};
+```
+
+Environment files updated with feature flag:
+- .env (production): `VITE_USE_JUPITER_WALLET=false`
+- .env.development: `VITE_USE_JUPITER_WALLET=true`
+- .env.local: `VITE_USE_JUPITER_WALLET=true`
+
+### 3. Provider Setup in App.tsx - [COMPLETED]
+
+We've updated App.tsx to conditionally render the Jupiter wallet provider based on the feature flag.
+
+```typescript
+// App.tsx (updated)
+import { UnifiedWalletProvider } from '@jup-ag/wallet-adapter';
+import { env } from './config/env';
+
+function App() {
+  // Jupiter wallet provider config
+  const jupiterWalletConfig = {
+    autoConnect: false,
+    env: 'mainnet-beta',
+    metadata: {
+      name: 'DegenDuel',
+      description: 'DegenDuel Platform',
+      url: 'https://degenduel.me',
+      iconUrls: ['https://degenduel.me/favicon.ico'],
+    }
+  };
+
+  return (
+    <Router>
+      {/* Conditional Jupiter Wallet Provider */}
+      {env.USE_JUPITER_WALLET ? (
+        <UnifiedWalletProvider wallets={[]} config={jupiterWalletConfig}>
+          {/* Rest of providers with Jupiter wallet */}
+          <PrivyProvider>...</PrivyProvider>
+        </UnifiedWalletProvider>
+      ) : (
+        /* Original provider structure without Jupiter */
+        <PrivyProvider>...</PrivyProvider>
+      )}
+    </Router>
+  );
+}
+```
+
+### 4. Jupiter Wallet Hook - [COMPLETED]
+
+We've created a compatible hook that wraps the Jupiter wallet adapter and provides the same interface as our existing wallet hooks. This allows components to use the Jupiter wallet without modifying their code.
+
+```typescript
+// src/hooks/useJupiterWallet.ts
+import { useWallet as useJupiterWalletAdapter, type SignMessageOutput } from '@jup-ag/wallet-adapter';
+
+export function useJupiterWallet() {
+  const {
+    connecting,
+    connected,
+    publicKey,
+    disconnect: jupiterDisconnect,
+    select,
+    connect: jupiterConnect,
+    wallet,
+    wallets,
+    signMessage: jupiterSignMessage
+  } = useJupiterWalletAdapter();
+
+  // Convert publicKey to string format expected by our app
+  const walletAddress = publicKey?.toString() || null;
+  
+  // Wrap methods to match our app's existing interface
+  
+  return {
+    isConnected: connected,
+    isConnecting: connecting,
+    walletAddress,
+    connect,
+    disconnect,
+    signMessage,
+    walletName: wallet?.adapter.name || null,
+    availableWallets: wallets,
+  };
+}
+```
+
+### 5. Update useAuth Hook - [COMPLETED]
+
+We've modified the useAuth hook to use either the Jupiter wallet adapter or the Aptos wallet adapter based on the feature flag.
+
+Key changes:
+- Import both the Aptos wallet adapter and our Jupiter wallet hook
+- Use conditional logic to select the right wallet based on the feature flag
+- Abstract connection status and wallet address for components that use this hook
+
+```typescript
+// src/hooks/useAuth.ts (updated)
+import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
+import { useJupiterWallet } from "./useJupiterWallet";
+import { env } from "../config/env";
+
+export function useAuth() {
+  // Choose between Jupiter wallet and Aptos wallet based on feature flag
+  const { account, connected } = useAptosWallet();
+  const jupiterWallet = useJupiterWallet();
+  
+  // Use Jupiter wallet when feature flag is enabled
+  const walletConnected = env.USE_JUPITER_WALLET 
+    ? jupiterWallet.isConnected 
+    : connected;
+  
+  const walletAddress = env.USE_JUPITER_WALLET
+    ? jupiterWallet.walletAddress
+    : account?.address;
+    
+  // Rest of the hook implementation...
+}
+```
+
+### 6. Update ConnectWalletButton Component - [COMPLETED]
+
+We've updated the ConnectWalletButton component to use both wallet adapters based on the feature flag.
+
+Key changes:
+1. Uses the authenticateWithWallet function from our shared authentication service
+2. Conditionally uses either Jupiter wallet or the existing connectWallet flow
+3. Updates user state in the store after successful authentication
+4. Proper error handling for connection failures
+
+```typescript
+// components/auth/ConnectWalletButton.tsx
+const handleConnect = useCallback(async () => {
+  try {
+    if (env.USE_JUPITER_WALLET) {
+      // First connect the Jupiter wallet
+      await jupiterWallet.connect();
+      
+      // Authenticate with backend
+      if (jupiterWallet.walletAddress) {
+        const authResult = await authenticateWithWallet(
+          jupiterWallet.walletAddress,
+          jupiterWallet.signMessage
+        );
+        
+        // Update user state
+        if (authResult.user) {
+          useStore.getState().setUser(authResult.user);
+        }
+      }
+    } else {
+      // Use existing Phantom wallet flow
+      connectWallet();
+    }
+  } catch (error) {
+    console.error('Wallet connection failed:', error);
+  }
+}, [jupiterWallet, connectWallet]);
+```
+
+### 7. Central Authentication Service - [COMPLETED]
+
+We've created a unified authentication service that works with both Jupiter wallet and the original Phantom wallet implementation. This service:
+
+1. Accepts a wallet address and signMessage function
+2. Retrieves a nonce from the backend
+3. Signs the message with the provided signing function
+4. Handles different signature formats (Jupiter vs Phantom)
+5. Verifies the signature with the backend
+6. Integrates with the TokenManager for token storage
+
+```typescript
+// src/services/authenticationService.ts
+export async function authenticateWithWallet(
+  walletAddress: string, 
+  signMessage: (message: Uint8Array) => Promise<SignMessageOutput | any>
+) {
+  // Get nonce from backend
+  const { nonce } = await axios.get('/api/auth/nonce', {...});
+  
+  // Sign message
+  const message = `DegenDuel Authentication\nWallet: ${walletAddress}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`;
+  const signatureResult = await signMessage(new TextEncoder().encode(message));
+  
+  // Handle different signature formats
+  let signature = extractSignature(signatureResult);
+  
+  // Verify with backend
+  const authResponse = await axios.post('/api/auth/verify-wallet', {...});
+  
+  // Store tokens using TokenManager
+  if (authResponse.data.token) {
+    TokenManager.setToken(...);
+  }
+  
+  return authResponse.data;
+}
+```
+
+## Testing Plan
+
+1. Test with Feature Flag Disabled
+   - Verify that the original wallet flow works as expected
+   - Ensure no Jupiter wallet-related code is executed
+
+2. Test with Feature Flag Enabled
+   - Verify that the Jupiter wallet adapter is loaded
+   - Test wallet connection flow
+   - Verify authentication with backend
+   - Test token management
+
+3. Test Mobile Experience
+   - Verify wallet connection on mobile devices
+   - Test deep linking behavior
+
+## Next Steps
+
+1. End-to-end testing of the implementation
+2. Performance comparison between the two wallet adapters
+3. Gradual rollout to production by setting the feature flag
+4. Monitoring for any issues after deployment
+5. Once stable, remove the old wallet implementation and clean up the code

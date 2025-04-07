@@ -27,19 +27,6 @@ import { Contest, Token, TokensResponse } from "../../types/index";
 declare global {
   interface Window {
     Buffer: typeof Buffer;
-    solana?: {
-      isPhantom?: boolean;
-      connect: () => Promise<{ publicKey: { toString: () => string } }>;
-      signMessage: (
-        message: Uint8Array,
-        encoding: string,
-      ) => Promise<{ signature: Uint8Array }>;
-      signTransaction: (transaction: Transaction) => Promise<Transaction>;
-      signAndSendTransaction: (options: {
-        transaction: Transaction;
-      }) => Promise<{ signature: string }>;
-      publicKey?: { toString: () => string };
-    };
   }
 }
 

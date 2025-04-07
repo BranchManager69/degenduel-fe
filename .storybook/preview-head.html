@@ -16,6 +16,20 @@
   window.process.env.VITE_TREASURY_WALLET = 'STORYBOOK_PLACEHOLDER';
   window.process.env.VITE_VIRTUALS_GAME_SDK_API_KEY = 'STORYBOOK_PLACEHOLDER';
   window.process.env.VITE_OPENAI_API_KEY = 'STORYBOOK_PLACEHOLDER';
+  
+  // Handle subpath for nested routes in the iframe
+  (function() {
+    // Check if we're in a subpath environment
+    if (window.location.pathname.includes('/live/')) {
+      // Add base tag for proper asset loading
+      const baseElement = document.createElement('base');
+      baseElement.href = '/live/';
+      document.head.prepend(baseElement);
+      
+      // Fix paths in Storybook iframe
+      window.STORYBOOK_BASE_URL = '/live/';
+    }
+  })();
 </script>
 
 <!-- Google Fonts -->

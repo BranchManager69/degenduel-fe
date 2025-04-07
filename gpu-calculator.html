@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DegenDuel AI GPU Cost Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #24292e;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #1a1a1a;
+        }
+        h1 {
+            font-size: 2.2em;
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+        h2 {
+            font-size: 1.5em;
+            margin-top: 0;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #eaecef;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .value-display {
+            font-weight: 500;
+            color: #0366d6;
+        }
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        .cost-summary {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .summary-item {
+            background: #f6f8fa;
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+        }
+        .summary-item .value {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 5px;
+            color: #0366d6;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header a {
+            padding: 8px 16px;
+            background-color: #0366d6;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .header a:hover {
+            background-color: #0354ad;
+        }
+        .controls-section, .results-section {
+            margin-bottom: 30px;
+        }
+        .gpu-selection {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .gpu-option {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .gpu-option:hover {
+            border-color: #0366d6;
+            background-color: #f0f7ff;
+        }
+        .gpu-option.selected {
+            border-color: #0366d6;
+            background-color: #e4f0fe;
+            font-weight: 500;
+        }
+        .gpu-option .price {
+            font-size: 14px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .gpu-option .vram {
+            font-size: 14px;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .comparative-value {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI GPU Cost Calculator</h1>
+        <a href="/md-viewer.html">Back to Docs</a>
+    </div>
+    
+    <div class="card controls-section">
+        <h2>GPU Selection & Usage Settings</h2>
+        
+        <div class="gpu-selection">
+            <div class="gpu-option" data-gpu="a10" data-price="0.75" data-performance="1.2" data-vram="24">
+                <div>A10</div>
+                <div class="vram">24GB VRAM</div>
+                <div class="price">$0.75/hour</div>
+            </div>
+            <div class="gpu-option" data-gpu="a6000" data-price="0.80" data-performance="2.4" data-vram="48">
+                <div>A6000</div>
+                <div class="vram">48GB VRAM</div>
+                <div class="price">$0.80/hour</div>
+            </div>
+            <div class="gpu-option selected" data-gpu="a100-40" data-price="1.29" data-performance="4.0" data-vram="40">
+                <div>A100 (40GB)</div>
+                <div class="vram">40GB VRAM</div>
+                <div class="price">$1.29/hour</div>
+            </div>
+            <div class="gpu-option" data-gpu="a100-80" data-price="1.79" data-performance="5.0" data-vram="80">
+                <div>A100 (80GB)</div>
+                <div class="vram">80GB VRAM</div>
+                <div class="price">$1.79/hour</div>
+            </div>
+            <div class="gpu-option" data-gpu="h100" data-price="2.49" data-performance="8.0" data-vram="80">
+                <div>H100</div>
+                <div class="vram">80GB VRAM</div>
+                <div class="price">$2.49/hour</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="daily-usage">Daily Active Hours</label>
+                <input type="range" id="daily-usage" min="1" max="24" value="12" step="1">
+                <div class="value-display"><span id="daily-usage-value">12</span> hours/day</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="usage-days">Usage Days per Month</label>
+                <input type="range" id="usage-days" min="1" max="30" value="30" step="1">
+                <div class="value-display"><span id="usage-days-value">30</span> days/month</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="auto-shutdown">Auto-Shutdown Savings</label>
+                <input type="range" id="auto-shutdown" min="0" max="40" value="20" step="5">
+                <div class="value-display"><span id="auto-shutdown-value">20</span>% reduction</div>
+                <div style="font-size: 13px; color: #666;">Estimated savings from auto-shutdown during idle times</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card results-section">
+        <h2>Cost Analysis</h2>
+        
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div>Hourly Cost</div>
+                <div class="value" id="hourly-cost">$1.29</div>
+            </div>
+            <div class="summary-item">
+                <div>Daily Cost</div>
+                <div class="value" id="daily-cost">$15.48</div>
+                <div class="comparative-value" id="daily-hours-display">Based on 12 active hours/day</div>
+            </div>
+            <div class="summary-item">
+                <div>Monthly Cost</div>
+                <div class="value" id="monthly-cost">$464.40</div>
+                <div class="comparative-value" id="monthly-days-display">Based on 30 days/month</div>
+            </div>
+            <div class="summary-item">
+                <div>With Auto-Shutdown</div>
+                <div class="value" id="optimized-cost">$371.52</div>
+                <div class="comparative-value" id="shutdown-percent-display">20% estimated savings</div>
+            </div>
+        </div>
+        
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <canvas id="daily-cost-chart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="monthly-cost-chart"></canvas>
+            </div>
+        </div>
+        
+        <h3>Performance Comparison</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Image Generation Speed</td>
+                    <td><span id="generation-capacity">~5,000-7,000</span> images/hour</td>
+                </tr>
+                <tr>
+                    <td>Relative Performance</td>
+                    <td><span id="relative-performance">4.0×</span> (compared to RTX 6000 baseline)</td>
+                </tr>
+                <tr>
+                    <td>Cost Efficiency</td>
+                    <td><span id="cost-efficiency">3.10</span> performance/$ (higher is better)</td>
+                </tr>
+                <tr>
+                    <td>VRAM Capacity</td>
+                    <td><span id="vram-capacity">40GB</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        // GPU data
+        const gpuData = {
+            'a10': {
+                name: 'A10',
+                price: 0.75,
+                performance: 1.2,
+                vram: '24GB',
+                imagePerHour: '1,000-1,500',
+                costEfficiency: 1.6
+            },
+            'a6000': {
+                name: 'A6000',
+                price: 0.80,
+                performance: 2.4,
+                vram: '48GB',
+                imagePerHour: '2,400-3,600',
+                costEfficiency: 3.0
+            },
+            'a100-40': {
+                name: 'A100 (40GB)',
+                price: 1.29,
+                performance: 4.0,
+                vram: '40GB',
+                imagePerHour: '5,000-7,000',
+                costEfficiency: 3.1
+            },
+            'a100-80': {
+                name: 'A100 (80GB)',
+                price: 1.79,
+                performance: 5.0,
+                vram: '80GB',
+                imagePerHour: '6,000-8,000',
+                costEfficiency: 2.8
+            },
+            'h100': {
+                name: 'H100',
+                price: 2.49,
+                performance: 8.0,
+                vram: '80GB',
+                imagePerHour: '10,000-12,000',
+                costEfficiency: 3.2
+            }
+        };
+        
+        // Default selected GPU
+        let selectedGpu = 'a100-40';
+        let dailyUsage = 12;
+        let usageDays = 30;
+        let autoShutdown = 20;
+        
+        // Charts
+        let dailyCostChart, monthlyCostChart;
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGpuSelection();
+            initializeSliders();
+            initializeCharts();
+            updateCalculations();
+        });
+        
+        function initializeGpuSelection() {
+            const gpuOptions = document.querySelectorAll('.gpu-option');
+            
+            gpuOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    gpuOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    selectedGpu = this.dataset.gpu;
+                    updateCalculations();
+                });
+            });
+        }
+        
+        function initializeSliders() {
+            const dailyUsageSlider = document.getElementById('daily-usage');
+            const dailyUsageValue = document.getElementById('daily-usage-value');
+            
+            dailyUsageSlider.addEventListener('input', function() {
+                dailyUsage = parseInt(this.value);
+                dailyUsageValue.textContent = dailyUsage;
+                updateCalculations();
+            });
+            
+            const usageDaysSlider = document.getElementById('usage-days');
+            const usageDaysValue = document.getElementById('usage-days-value');
+            
+            usageDaysSlider.addEventListener('input', function() {
+                usageDays = parseInt(this.value);
+                usageDaysValue.textContent = usageDays;
+                updateCalculations();
+            });
+            
+            const autoShutdownSlider = document.getElementById('auto-shutdown');
+            const autoShutdownValue = document.getElementById('auto-shutdown-value');
+            
+            autoShutdownSlider.addEventListener('input', function() {
+                autoShutdown = parseInt(this.value);
+                autoShutdownValue.textContent = autoShutdown;
+                updateCalculations();
+            });
+        }
+        
+        function initializeCharts() {
+            // Daily Cost Chart
+            const dailyCtx = document.getElementById('daily-cost-chart').getContext('2d');
+            dailyCostChart = new Chart(dailyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['A10', 'A6000', 'A100 (40GB)', 'A100 (80GB)', 'H100'],
+                    datasets: [{
+                        label: 'Daily Cost ($)',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(153, 102, 255, 0.5)',
+                            'rgba(255, 159, 64, 0.5)',
+                            'rgba(255, 99, 132, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Daily Cost by GPU Type'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: function(value) {
+                                return '$' + value.toFixed(2);
+                            },
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Daily Cost ($)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Monthly Cost Chart
+            const monthlyCtx = document.getElementById('monthly-cost-chart').getContext('2d');
+            monthlyCostChart = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['A10', 'A6000', 'A100 (40GB)', 'A100 (80GB)', 'H100'],
+                    datasets: [{
+                        label: 'Monthly Cost ($)',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(153, 102, 255, 0.5)',
+                            'rgba(255, 159, 64, 0.5)',
+                            'rgba(255, 99, 132, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Monthly Cost by GPU Type'
+                        },
+                        legend: {
+                            display: false
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: function(value) {
+                                return '$' + value.toFixed(0);
+                            },
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Monthly Cost ($)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateCalculations() {
+            const gpu = gpuData[selectedGpu];
+            
+            // Calculate costs
+            const hourlyCost = gpu.price;
+            const dailyCost = hourlyCost * dailyUsage;
+            const monthlyCost = dailyCost * usageDays;
+            const optimizedCost = monthlyCost * (1 - (autoShutdown / 100));
+            
+            // Update display
+            document.getElementById('hourly-cost').textContent = '$' + hourlyCost.toFixed(2);
+            document.getElementById('daily-cost').textContent = '$' + dailyCost.toFixed(2);
+            document.getElementById('monthly-cost').textContent = '$' + monthlyCost.toFixed(2);
+            document.getElementById('optimized-cost').textContent = '$' + optimizedCost.toFixed(2);
+            
+            document.getElementById('daily-hours-display').textContent = `Based on ${dailyUsage} active hours/day`;
+            document.getElementById('monthly-days-display').textContent = `Based on ${usageDays} days/month`;
+            document.getElementById('shutdown-percent-display').textContent = `${autoShutdown}% estimated savings`;
+            
+            document.getElementById('generation-capacity').textContent = `~${gpu.imagePerHour}`;
+            document.getElementById('relative-performance').textContent = `${gpu.performance.toFixed(1)}×`;
+            document.getElementById('cost-efficiency').textContent = gpu.costEfficiency.toFixed(2);
+            document.getElementById('vram-capacity').textContent = gpu.vram;
+            
+            // Update charts
+            updateCharts();
+        }
+        
+        function updateCharts() {
+            // Calculate daily costs for all GPUs
+            const dailyCosts = Object.values(gpuData).map(gpu => gpu.price * dailyUsage);
+            dailyCostChart.data.datasets[0].data = dailyCosts;
+            
+            // Calculate monthly costs for all GPUs
+            const monthlyCosts = Object.values(gpuData).map(gpu => gpu.price * dailyUsage * usageDays);
+            monthlyCostChart.data.datasets[0].data = monthlyCosts;
+            
+            // Highlight selected GPU
+            const gpuIndex = Object.keys(gpuData).indexOf(selectedGpu);
+            
+            dailyCostChart.data.datasets[0].backgroundColor = Array(5).fill('rgba(54, 162, 235, 0.5)');
+            dailyCostChart.data.datasets[0].backgroundColor[gpuIndex] = 'rgba(75, 192, 192, 0.8)';
+            
+            monthlyCostChart.data.datasets[0].backgroundColor = Array(5).fill('rgba(54, 162, 235, 0.5)');
+            monthlyCostChart.data.datasets[0].backgroundColor[gpuIndex] = 'rgba(75, 192, 192, 0.8)';
+            
+            // Update charts
+            dailyCostChart.update();
+            monthlyCostChart.update();
+        }
+    </script>
+</body>
+</html>
