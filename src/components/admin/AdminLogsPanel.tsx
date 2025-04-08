@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Types for admin logs
 interface AdminLog {
@@ -79,8 +80,6 @@ export const AdminLogsPanel: React.FC = () => {
     }
   };
 
-  // We no longer need this function as we've refactored the details display
-
   // Format admin address for display (truncate if needed)
   const formatShortAddress = (address: string) => {
     if (address === 'SYSTEM' || address === 'pm2') return address;
@@ -95,9 +94,45 @@ export const AdminLogsPanel: React.FC = () => {
     return address !== 'SYSTEM' && address !== 'pm2' && address.length >= 32;
   };
 
+  // Get color theme based on action type
+  const getActionTheme = (action: string) => {
+    if (action.includes('DELETE') || action.includes('REMOVE') || action.includes('BAN')) {
+      return {
+        bgClass: 'bg-red-900/50',
+        textClass: 'text-red-200',
+        borderClass: 'border-red-500/70',
+        hoverClass: 'group-hover:bg-red-500/15'
+      };
+    } else if (action.includes('ADD') || action.includes('CREATE') || action.includes('INSERT')) {
+      return {
+        bgClass: 'bg-green-900/50',
+        textClass: 'text-green-200',
+        borderClass: 'border-green-500/70',
+        hoverClass: 'group-hover:bg-green-500/15'
+      };
+    } else if (action.includes('UPDATE') || action.includes('EDIT') || action.includes('MODIFY')) {
+      return {
+        bgClass: 'bg-yellow-900/50',
+        textClass: 'text-yellow-200',
+        borderClass: 'border-yellow-500/70',
+        hoverClass: 'group-hover:bg-yellow-500/15'
+      };
+    } else {
+      return {
+        bgClass: 'bg-blue-900/50',
+        textClass: 'text-blue-200',
+        borderClass: 'border-blue-500/70',
+        hoverClass: 'group-hover:bg-blue-500/15'
+      };
+    }
+  };
+
   return (
-    <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-4 h-full">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-dark-200/60 backdrop-blur-sm border border-dark-300 rounded-lg p-4 shadow-lg relative h-full">
+      {/* Horizontal scan line animation */}
+      <div className="absolute inset-0 h-px w-full bg-cyber-500/30 animate-scan-fast"></div>
+      
+      <div className="flex items-center justify-between mb-4 relative">
         <h2 className="text-lg font-bold text-white">Recent Admin Actions</h2>
         <button 
           onClick={fetchLogs} 
@@ -108,120 +143,138 @@ export const AdminLogsPanel: React.FC = () => {
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-red-300 text-sm">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-4"
+          >
+            <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-red-300 text-sm">
+              {error}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="w-8 h-8 border-4 border-cyber-600 border-t-cyber-300 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-cyber-600 border-t-cyber-300 rounded-full animate-spin shadow-lg shadow-cyber-500/20"></div>
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
+        <div className="text-center py-8 text-gray-400 font-mono">
           No admin logs found
         </div>
       ) : (
         <>
           <div className="space-y-2 mb-4">
-            {logs.map(log => (
-              <div 
-                key={log.id} 
-                className="bg-dark-300/50 border border-dark-400 rounded overflow-hidden hover:bg-dark-300/70 transition-colors"
-              >
-                {/* Edge-to-edge colored header with action and time */}
-                <div className={`flex items-center justify-between px-3 py-2 ${
-                  log.action.includes('DELETE') || log.action.includes('REMOVE') || log.action.includes('BAN')
-                    ? 'bg-red-900/40 text-red-200'
-                    : log.action.includes('ADD') || log.action.includes('CREATE') || log.action.includes('INSERT')
-                    ? 'bg-green-900/40 text-green-200'
-                    : log.action.includes('UPDATE') || log.action.includes('EDIT') || log.action.includes('MODIFY')
-                    ? 'bg-yellow-900/40 text-yellow-200'
-                    : 'bg-blue-900/40 text-blue-200'
-                }`}>
-                  <span className="text-xs font-medium whitespace-nowrap">
-                    {log.action}
-                  </span>
-                  <span className="text-xs opacity-80 whitespace-nowrap">
-                    {format(new Date(log.created_at), 'MMM d, HH:mm')}
-                  </span>
-                </div>
+            <AnimatePresence>
+              {logs.map((log, index) => {
+                const theme = getActionTheme(log.action);
                 
-                {/* Content area with padding */}
-                <div className="p-3">
-                  {/* Details as a grid */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {Object.entries(log.details)
-                      .filter(([key]) => key !== '__v' && key !== '_id')
-                      .slice(0, 6) // Show up to 6 details
-                      .map(([key, value]) => (
-                        <div key={key} className="flex flex-col">
-                          <span className="text-gray-400 text-xs">{key.replace(/_/g, ' ')}</span>
-                          <span className="text-gray-300 text-sm truncate">
-                            {typeof value === 'object' 
-                              ? JSON.stringify(value).substring(0, 30) + (JSON.stringify(value).length > 30 ? '...' : '')
-                              : String(value).substring(0, 30) + (String(value).length > 30 ? '...' : '')}
-                          </span>
-                        </div>
-                      ))
-                    }
-                  </div>
-                  
-                  {/* Footer with admin address and IP */}
-                  <div className="mt-3 pt-2 border-t border-dark-400 flex items-center justify-between text-xs">
-                    <div className="font-mono">
-                      {isWalletAddress(log.admin_address) ? (
-                        <a 
-                          href={`https://solscan.io/account/${log.admin_address}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-cyber-400 hover:text-cyber-300"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {formatShortAddress(log.admin_address)}
-                        </a>
-                      ) : (
-                        <span className="text-gray-500">{formatShortAddress(log.admin_address)}</span>
-                      )}
+                return (
+                  <motion.div 
+                    key={log.id}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-dark-300/60 border-2 border-dark-400 overflow-hidden hover:bg-dark-300/80 transition-colors rounded group"
+                  >
+                    {/* Edge-to-edge colored header with action and time */}
+                    <div className={`flex items-center justify-between px-3 py-2 ${theme.bgClass} ${theme.textClass}`}>
+                      <span className="text-xs font-medium whitespace-nowrap">
+                        {log.action}
+                      </span>
+                      <span className="text-xs opacity-80 whitespace-nowrap">
+                        {format(new Date(log.created_at), 'MMM d, HH:mm')}
+                      </span>
                     </div>
-                    {log.ip_address && (
-                      <div className="text-gray-500 truncate max-w-[50%]">
-                        {log.ip_address}
+                    
+                    {/* Content area with padding */}
+                    <div className="p-3 relative overflow-hidden">
+                      {/* Scanner effect */}
+                      <div className={`absolute inset-0 w-full h-16 bg-gradient-to-r from-transparent via-${theme.textClass.split('-')[1]}-500/5 to-transparent -translate-x-full group-hover:translate-x-full duration-1500 ease-in-out transition-transform`}></div>
+                    
+                      {/* Corner markers for cyberpunk feel */}
+                      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-brand-500/30"></div>
+                      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-brand-500/30"></div>
+                      
+                      {/* Details as a grid */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        {Object.entries(log.details)
+                          .filter(([key]) => key !== '__v' && key !== '_id')
+                          .slice(0, 6) // Show up to 6 details
+                          .map(([key, value]) => (
+                            <div key={key} className="flex flex-col">
+                              <span className="text-gray-400 text-xs">{key.replace(/_/g, ' ')}</span>
+                              <span className="text-gray-300 text-sm truncate">
+                                {typeof value === 'object' 
+                                  ? JSON.stringify(value).substring(0, 30) + (JSON.stringify(value).length > 30 ? '...' : '')
+                                  : String(value).substring(0, 30) + (String(value).length > 30 ? '...' : '')}
+                              </span>
+                            </div>
+                          ))
+                        }
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+                      
+                      {/* Footer with admin address and IP */}
+                      <div className="mt-3 pt-2 border-t border-dark-400 flex items-center justify-between text-xs">
+                        <div className="font-mono">
+                          {isWalletAddress(log.admin_address) ? (
+                            <a 
+                              href={`https://solscan.io/account/${log.admin_address}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-cyber-400 hover:text-cyber-300"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {formatShortAddress(log.admin_address)}
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">{formatShortAddress(log.admin_address)}</span>
+                          )}
+                        </div>
+                        {log.ip_address && (
+                          <div className="text-gray-500 truncate max-w-[50%]">
+                            {log.ip_address}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
 
           {/* Pagination */}
           {pagination && (
             <div className="flex items-center justify-between mt-4">
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-gray-400 whitespace-nowrap">
                 Showing {pagination.page} of {pagination.totalPages} pages
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={handlePrevPage}
                   disabled={!pagination.hasPrevPage}
-                  className={`px-3 py-1 text-xs rounded border ${
+                  className={`px-3 py-1 text-xs border-2 ${
                     pagination.hasPrevPage
-                      ? 'border-cyber-500 bg-cyber-900/20 text-cyber-400 hover:bg-cyber-900/40'
-                      : 'border-gray-700 bg-gray-900/20 text-gray-600 cursor-not-allowed'
-                  }`}
+                      ? 'border-cyber-500/60 bg-cyber-900/25 text-cyber-400 hover:bg-cyber-900/40'
+                      : 'border-gray-700 bg-gray-900/40 text-gray-600 cursor-not-allowed'
+                  } whitespace-nowrap`}
                 >
                   ← Prev
                 </button>
                 <button
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  className={`px-3 py-1 text-xs rounded border ${
+                  className={`px-3 py-1 text-xs border-2 ${
                     pagination.hasNextPage
-                      ? 'border-cyber-500 bg-cyber-900/20 text-cyber-400 hover:bg-cyber-900/40'
-                      : 'border-gray-700 bg-gray-900/20 text-gray-600 cursor-not-allowed'
-                  }`}
+                      ? 'border-cyber-500/60 bg-cyber-900/25 text-cyber-400 hover:bg-cyber-900/40'
+                      : 'border-gray-700 bg-gray-900/40 text-gray-600 cursor-not-allowed'
+                  } whitespace-nowrap`}
                 >
                   Next →
                 </button>

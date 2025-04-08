@@ -10,11 +10,11 @@
 import React, { lazy, Suspense, useEffect } from "react";
 /* Router */
 import {
-  Navigate,
-  Route,
-  BrowserRouter as Router,
-  Routes,
-  useLocation,
+    Navigate,
+    Route,
+    BrowserRouter as Router,
+    Routes,
+    useLocation,
 } from "react-router-dom";
 
 // Helper component to redirect while preserving query parameters
@@ -113,6 +113,7 @@ import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@sol
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { env } from "./config/env";
+import WebSocketAPIPage from "./pages/public/WebSocketAPIPage";
 
 // Lazy AdminChatDashboard
 const AdminChatDashboard = lazy(
@@ -237,8 +238,8 @@ export const App: React.FC = () => {
     <Router>
       <ConnectionProvider endpoint={solanaEndpoint}>
         <SolanaWalletProvider {...walletConfigSolana}>
-          {env.USE_JUPITER_WALLET ? (
-            // With Jupiter WalletProvider
+          {env.USE_JUPITER_WALLET && typeof window !== 'undefined' && window.hasOwnProperty('solana') ? (
+            // With Jupiter WalletProvider - only if env flag is true AND window.solana exists
             <WalletProvider 
               wallets={walletAdapters}
               autoConnect={false}
@@ -632,6 +633,7 @@ export const App: React.FC = () => {
                                     }
                                   />
                                   <Route path="/blinks/*" element={<></>} />
+                                  <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
                                   <Route path="*" element={<NotFound />} />
                                   <Route path="/banned" element={<BannedUser />} />
                                   <Route path="/banned-ip" element={<BannedIP />} />
@@ -1051,6 +1053,7 @@ export const App: React.FC = () => {
                                   }
                                 />
                                 <Route path="/blinks/*" element={<></>} />
+                                <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
                                 <Route path="*" element={<NotFound />} />
                                 <Route path="/banned" element={<BannedUser />} />
                                 <Route path="/banned-ip" element={<BannedIP />} />

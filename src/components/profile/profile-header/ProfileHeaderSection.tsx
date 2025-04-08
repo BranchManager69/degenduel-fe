@@ -6,6 +6,7 @@ import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
+import { getAuthStatus } from "../../../services/api/auth";
 
 interface UserData {
   wallet_address: string;
@@ -15,6 +16,11 @@ interface UserData {
   bonusBalance: string;
   is_banned: boolean;
   ban_reason: string | null;
+  profile_image?: {
+    url: string;
+    thumbnail_url?: string;
+    updated_at?: string;
+  };
 }
 
 export const ProfileHeaderSection: React.FC = () => {
@@ -23,6 +29,8 @@ export const ProfileHeaderSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [twitterProfileImage, setTwitterProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -33,11 +41,24 @@ export const ProfileHeaderSection: React.FC = () => {
 
       try {
         setError(null);
-        // Load user data and balance in parallel
-        const [userResponse, balanceResponse] = await Promise.all([
+        
+        // Load user data, auth status (for Twitter profile image), and balance in parallel
+        const [userResponse, authStatusResponse, balanceResponse] = await Promise.all([
           ddApi.users.getOne(user.wallet_address),
+          getAuthStatus(),
           ddApi.balance.get(user.wallet_address),
         ]);
+
+        // Get Twitter profile image if available
+        if (authStatusResponse?.twitterStatus?.active && 
+            authStatusResponse?.twitterStatus?.details?.profile_image) {
+          setTwitterProfileImage(authStatusResponse.twitterStatus.details.profile_image);
+        }
+
+        // Set user's uploaded profile image if available
+        if (userResponse.profile_image?.url) {
+          setProfileImageUrl(userResponse.profile_image.url);
+        }
 
         setUserData({
           wallet_address: userResponse.wallet_address,
@@ -47,6 +68,7 @@ export const ProfileHeaderSection: React.FC = () => {
           bonusBalance: formatBonusPoints(balanceResponse.balance),
           is_banned: userResponse.is_banned ?? false,
           ban_reason: userResponse.ban_reason ?? null,
+          profile_image: userResponse.profile_image,
         });
       } catch (err) {
         if (err instanceof Response && err.status === 503) {
@@ -82,6 +104,34 @@ export const ProfileHeaderSection: React.FC = () => {
     } finally {
       setIsUpdatingNickname(false);
     }
+  };
+  
+  // Handler for updating profile image
+  const handleUpdateProfileImage = (newImageUrl: string) => {
+    if (!user?.wallet_address) return;
+    
+    // Update local state
+    setProfileImageUrl(newImageUrl || null);
+    
+    // Update user data
+    setUserData((prev) => 
+      prev ? { 
+        ...prev, 
+        profile_image: {
+          ...(prev.profile_image || {}),
+          url: newImageUrl
+        }
+      } : null
+    );
+    
+    // Update global user state
+    setUser({
+      ...user,
+      profile_image: {
+        ...(user.profile_image || {}),
+        url: newImageUrl
+      }
+    });
   };
 
   if (loading) {
@@ -138,6 +188,8 @@ export const ProfileHeaderSection: React.FC = () => {
           joinDate={new Date(userData.created_at).toLocaleDateString()}
           bonusBalance={userData.bonusBalance}
           onUpdateNickname={handleUpdateNickname}
+          onUpdateProfileImage={handleUpdateProfileImage}
+          profileImageUrl={profileImageUrl || userData.profile_image?.url || twitterProfileImage || undefined}
           isUpdating={isUpdatingNickname}
           isBanned={userData.is_banned}
           banReason={userData.ban_reason}

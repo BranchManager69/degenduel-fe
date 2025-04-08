@@ -5,7 +5,16 @@ import { AnimatePresence, motion, useAnimation } from "framer-motion";
 import { KernelSize } from "postprocessing";
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { FaPowerOff } from "react-icons/fa";
-import * as THREE from "three";
+// Import THREE from the same package that @react-three/fiber uses internally
+// This ensures we use the same instance
+import {
+    AdditiveBlending,
+    Color,
+    DoubleSide,
+    Group,
+    Points,
+    ShaderMaterial
+} from "three";
 
 import { User } from "../../types";
 
@@ -369,7 +378,7 @@ const EnergyWave: React.FC<{
 const HologramShader = {
   uniforms: {
     time: { value: 0 },
-    color: { value: new THREE.Color() },
+    color: { value: new Color() },
     scanLineWidth: { value: 0.5 },
     scanLineSpeed: { value: 1.0 },
     noiseIntensity: { value: 0.25 },
@@ -424,7 +433,7 @@ const HologramShader = {
 };
 
 // Register the custom shader
-extend({ HologramMaterial: THREE.ShaderMaterial.bind(null, HologramShader) });
+extend({ HologramMaterial: ShaderMaterial.bind(null, HologramShader) });
 
 // Optimized particle system for orbiting elements
 const OrbitingParticles: React.FC<{ color: string; count: number }> = ({
@@ -440,7 +449,7 @@ const OrbitingParticles: React.FC<{ color: string; count: number }> = ({
     return new Float32Array(temp);
   }, [count]);
 
-  const particleRef = useRef<THREE.Points>(null);
+  const particleRef = useRef<Points>(null);
 
   useFrame(({ clock }) => {
     if (particleRef.current) {
@@ -463,7 +472,7 @@ const OrbitingParticles: React.FC<{ color: string; count: number }> = ({
         color={color}
         transparent
         opacity={0.6}
-        blending={THREE.AdditiveBlending}
+        blending={AdditiveBlending}
       />
     </points>
   );
@@ -525,7 +534,7 @@ const SuperAdminHologramShader = {
 
 // Register the enhanced shader
 extend({
-  SuperAdminHologramMaterial: THREE.ShaderMaterial.bind(
+  SuperAdminHologramMaterial: ShaderMaterial.bind(
     null,
     SuperAdminHologramShader,
   ),
@@ -539,8 +548,8 @@ const HologramScene: React.FC<{
   config: TierConfig;
 }> = ({ label, value, color, config }) => {
   const {} = useThree();
-  const hologramRef = useRef<THREE.Group>(null);
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
+  const hologramRef = useRef<Group>(null);
+  const materialRef = useRef<ShaderMaterial>(null);
 
   useFrame(({ clock }) => {
     if (materialRef.current) {
@@ -585,8 +594,8 @@ const HologramScene: React.FC<{
               <superAdminHologramMaterial
                 ref={materialRef}
                 transparent
-                side={THREE.DoubleSide}
-                uniforms-color-value={new THREE.Color(color)}
+                side={DoubleSide}
+                uniforms-color-value={new Color(color)}
                 uniforms-scanLineWidth-value={0.5}
                 uniforms-scanLineSpeed-value={2.0}
                 uniforms-noiseIntensity-value={config.shader.noiseIntensity}
@@ -596,8 +605,8 @@ const HologramScene: React.FC<{
               <hologramMaterial
                 ref={materialRef}
                 transparent
-                side={THREE.DoubleSide}
-                uniforms-color-value={new THREE.Color(color)}
+                side={DoubleSide}
+                uniforms-color-value={new Color(color)}
                 uniforms-scanLineWidth-value={0.5}
                 uniforms-scanLineSpeed-value={2.0}
                 uniforms-noiseIntensity-value={config.shader.noiseIntensity}
