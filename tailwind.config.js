@@ -353,9 +353,11 @@ export default {
         "cyber-scan": "cyber-scan 4s ease-in-out infinite",
         "scan-line": "scan-line 8s linear infinite",
         "scan-vertical": "scan-vertical 12s linear infinite",
+        "scan-fast": "scan-line 3s linear infinite",
         scanlines: "scanlines 1s linear infinite",
         "cyber-float": "float 6s ease-in-out infinite",
         "terminal-scan": "terminal-scan 3s ease-out infinite",
+        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "value-flicker": "value-flicker 0.3s ease-in-out infinite",
         "glitch-text-r":
           "glitch-text 0.9s cubic-bezier(.25, .46, .45, .94) infinite",

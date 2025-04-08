@@ -5,7 +5,6 @@ import ReactCrop, { Crop, PixelCrop } from "react-image-crop";
 
 import "react-image-crop/dist/ReactCrop.css";
 import { ddApi } from "../../../services/dd-api";
-import { Button } from "../../ui/Button";
 
 interface ProfileImageManagerProps {
   userAddress: string;
@@ -126,7 +125,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       formData.append("image", blob, `${userAddress}_${Date.now()}.webp`);
 
       const uploadResponse = await ddApi.fetch(
-        `/dd-serv/users/${userAddress}/profile-image`,
+        `/api/users/${userAddress}/profile-image`,
         {
           method: "POST",
           body: formData,
@@ -181,7 +180,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
     try {
       setIsUploading(true);
       const response = await ddApi.fetch(
-        `/dd-serv/users/${userAddress}/profile-image`,
+        `/api/users/${userAddress}/profile-image`,
         {
           method: "DELETE",
           headers: {
@@ -224,17 +223,22 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       {currentImageUrl && !previewImage && (
         <div className="relative group">
           <img
-            src={currentImageUrl}
+            src={`${currentImageUrl}?t=${Date.now()}`}
             alt="Current profile"
-            className="w-32 h-32 rounded-full object-cover mx-auto"
+            className="w-32 h-32 rounded-full object-cover mx-auto border-2 border-brand-400/30"
             crossOrigin="anonymous"
           />
           <button
             onClick={handleRemove}
             disabled={isUploading}
-            className="absolute inset-0 flex items-center justify-center bg-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"
+            aria-label="Remove profile image"
           >
-            <span className="text-red-300">Remove Image</span>
+            <div className="h-10 w-10 bg-red-500/60 backdrop-blur-sm rounded-full flex items-center justify-center border border-red-400/50 hover:bg-red-500/80 transition-all duration-200 hover:scale-110">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </div>
           </button>
         </div>
       )}
@@ -243,24 +247,21 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       {!previewImage && (
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-full aspect-square w-32 h-32 mx-auto flex items-center justify-center transition-all duration-300 ${
             isDragActive
-              ? "border-brand-400 bg-brand-400/10"
-              : "border-dark-400 hover:border-brand-400/50"
+              ? "border-brand-400 bg-brand-400/10 scale-105"
+              : "border-dark-400/50 hover:border-brand-400/50 hover:bg-brand-400/5"
           }`}
+          aria-label="Upload profile image"
         >
           <input {...getInputProps()} />
-          <div className="space-y-2">
-            <div className="text-gray-400">
-              {isDragActive ? (
-                <p>Drop the image here ...</p>
-              ) : (
-                <p>Drag & drop an image here, or click to select</p>
-              )}
+          <div className="flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 ${isDragActive ? 'text-brand-400' : 'text-gray-500'} transition-colors`} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+            </svg>
+            <div className="text-xs mt-2 text-gray-500 max-w-[100px] text-center opacity-60">
+              {isDragActive ? "" : "PNG, JPG, GIF, WebP"}
             </div>
-            <p className="text-xs text-gray-500">
-              Supports: PNG, JPG, GIF, WebP (max 10MB)
-            </p>
           </div>
         </div>
       )}
@@ -278,34 +279,45 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
             <img src={previewImage} alt="Preview" crossOrigin="anonymous" />
           </ReactCrop>
 
-          <div className="flex justify-end gap-2">
-            <Button
+          <div className="flex justify-center gap-6 pt-4">
+            <button
               onClick={() => {
                 setPreviewImage(null);
                 setCroppedImageUrl(null);
                 setUploadProgress(0);
               }}
-              variant="outline"
               disabled={isUploading}
+              className="flex flex-col items-center justify-center opacity-80 hover:opacity-100 transition-opacity disabled:opacity-30"
+              aria-label="Cancel"
             >
-              Cancel
-            </Button>
-            <Button
+              <div className="w-12 h-12 rounded-full bg-dark-300 flex items-center justify-center hover:bg-dark-400 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </button>
+            
+            <button
               onClick={handleUpload}
               disabled={!croppedImageUrl || isUploading}
-              className="relative min-w-[100px]"
+              className="flex flex-col items-center justify-center opacity-80 hover:opacity-100 transition-opacity disabled:opacity-30"
+              aria-label="Upload image"
             >
-              {isUploading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>
-                    {uploadProgress > 0 ? `${uploadProgress}%` : "Uploading..."}
-                  </span>
-                </div>
-              ) : (
-                "Upload"
-              )}
-            </Button>
+              <div className="w-12 h-12 rounded-full bg-brand-500 flex items-center justify-center hover:bg-brand-600 transition-colors relative">
+                {isUploading ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                    {uploadProgress > 0 && (
+                      <div className="absolute text-xs font-bold text-white">{uploadProgress}%</div>
+                    )}
+                  </div>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+            </button>
           </div>
         </div>
       )}

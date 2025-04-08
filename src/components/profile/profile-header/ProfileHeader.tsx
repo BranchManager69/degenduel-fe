@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 
 import { useStore } from "../../../store/useStore";
 import { CopyToClipboard } from "../../common/CopyToClipboard";
+import { ProfileImageManager } from "./ProfileImageManager";
 
 const MAX_NICKNAME_LENGTH = 15;
 const MIN_NICKNAME_LENGTH = 4;
@@ -21,6 +22,8 @@ interface ProfileHeaderProps {
   joinDate: string;
   bonusBalance: string;
   onUpdateNickname?: (newNickname: string) => Promise<void>;
+  onUpdateProfileImage?: (newUrl: string) => void;
+  profileImageUrl?: string;
   isUpdating?: boolean;
   isBanned: boolean;
   banReason: string | null;
@@ -85,6 +88,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   joinDate,
   bonusBalance,
   onUpdateNickname,
+  onUpdateProfileImage,
+  profileImageUrl,
   isUpdating,
   isBanned,
   banReason,
@@ -92,6 +97,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const { user } = useStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false);
   const [newNickname, setNewNickname] = useState(username);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -190,6 +196,39 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   return (
     <>
+      {/* Profile Image Manager Modal */}
+      {isEditingImage && !isPublicView && onUpdateProfileImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-900/90 backdrop-blur-xl p-4">
+          <div className="bg-dark-800/70 border border-brand-500/10 rounded-2xl p-6 max-w-md w-full relative overflow-hidden">
+            {/* Background glow effects */}
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-brand-600/5 pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <button
+              onClick={() => setIsEditingImage(false)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-dark-700/50 text-gray-400 hover:text-white hover:bg-dark-600/50 transition-all z-10"
+              aria-label="Close"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            <div className="relative z-10">
+              <ProfileImageManager
+                userAddress={address}
+                currentImageUrl={profileImageUrl}
+                onImageUpdate={(newUrl) => {
+                  onUpdateProfileImage(newUrl);
+                  setIsEditingImage(false);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
       {isBanned && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -248,7 +287,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               >
                 <img
                   src={
-                    user?.profile_image?.url ||
+                    (profileImageUrl ? `${profileImageUrl}?t=${Date.now()}` : null) || 
+                    (user?.profile_image?.url ? `${user.profile_image.url}?t=${Date.now()}` : null) ||
                     "/assets/media/default/profile_pic.png"
                   }
                   alt={displayName}
@@ -261,6 +301,21 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {/* Overlay Effects */}
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-brand-600/10 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(127,0,255,0.1),transparent)] opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300" />
+                
+                {/* Edit Profile Image Button (only for non-public view) */}
+                {!isPublicView && onUpdateProfileImage && (
+                  <button
+                    onClick={() => setIsEditingImage(true)}
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300"
+                    aria-label="Edit profile image"
+                  >
+                    <div className="relative w-10 h-10 rounded-full flex items-center justify-center bg-dark-600/50 border border-brand-400/50 backdrop-blur-sm hover:bg-dark-500/70 transition-all duration-200 hover:scale-110">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </button>
+                )}
               </motion.div>
 
               {/* Rank Badge */}

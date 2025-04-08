@@ -15,6 +15,7 @@ import React from "react";
 import { AchievementsSection } from "../../components/achievements/AchievementsSection";
 import { UserProgress } from "../../components/achievements/UserProgress";
 import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
+import SimpleAvatar from "../../components/character-avatars";
 import { ContestHistorySection } from "../../components/profile/contest-history/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/profile-header/ProfileHeaderSection";
 import SocialAccountsPanel from "../../components/profile/SocialAccountsPanel";
@@ -141,6 +142,125 @@ export const PrivateProfilePage: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
                 </h2>
                 <ContestHistorySection />
+              </div>
+              
+              {/* Character Avatars Section */}
+              <div className="mt-8 space-y-4">
+                <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
+                  Character Avatars
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
+                </h2>
+                
+                <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg overflow-hidden border border-brand-500/20">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Your Personas</h3>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 mb-8">
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          type="degen"
+                          name="degen"
+                          size={80}
+                          animate={true}
+                        />
+                        <span className="mt-2 text-center text-sm font-semibold">Degen</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          type="trader"
+                          name="trader"
+                          size={80}
+                          animate={true}
+                          colorScheme="blue"
+                        />
+                        <span className="mt-2 text-center text-sm font-semibold">Trader</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          type="winner"
+                          name="winner"
+                          size={80}
+                          animate={true}
+                          colorScheme="green"
+                        />
+                        <span className="mt-2 text-center text-sm font-semibold">Winner</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          type="loser"
+                          name="loser"
+                          size={80}
+                          animate={true}
+                          colorScheme="red"
+                        />
+                        <span className="mt-2 text-center text-sm font-semibold">Loser</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          type="admin"
+                          name="admin"
+                          size={80}
+                          animate={true}
+                          colorScheme="orange"
+                        />
+                        <span className="mt-2 text-center text-sm font-semibold">Admin</span>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-semibold mt-8 mb-4">Degen Companions</h3>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          name="cryptoking"
+                          size={64}
+                          animate={true}
+                        />
+                        <span className="mt-2 text-center text-xs">cryptoking</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          name="hodlqueen"
+                          size={64}
+                          animate={true}
+                        />
+                        <span className="mt-2 text-center text-xs">hodlqueen</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          name="moonboy"
+                          size={64}
+                          animate={true}
+                        />
+                        <span className="mt-2 text-center text-xs">moonboy</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          name="diamondhands"
+                          size={64}
+                          animate={true}
+                        />
+                        <span className="mt-2 text-center text-xs">diamondhands</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <SimpleAvatar 
+                          name="laserbull" 
+                          size={64}
+                          animate={true}
+                        />
+                        <span className="mt-2 text-center text-xs">laserbull</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               
             </motion.div>
