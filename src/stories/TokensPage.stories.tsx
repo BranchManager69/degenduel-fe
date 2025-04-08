@@ -1,11 +1,13 @@
-// TokensPage stories
+// Enhanced TokensPage stories - Using Storybook-first approach
 import { Meta, StoryObj } from '@storybook/react';
-import { TokensPage } from '../pages/public/tokens/TokensPage';
 import { withRouter } from 'storybook-addon-react-router-v6';
 import * as React from 'react';
 
 // Import type declarations to help TypeScript recognize window properties
 import '../types/window.d.ts';
+import { TokensPage as OriginalTokensPage } from '../pages/public/tokens/TokensPage';
+import { OptimizedTokensPage } from '../pages/public/tokens/OptimizedTokensPage';
+import { StoryTokensPage } from '../pages/public/tokens/StoryTokensPage';
 
 // Ensure TypeScript recognizes window.useStore
 declare global {
@@ -21,8 +23,8 @@ declare global {
   }
 }
 
-// Create mock tokens for the API response
-const createMockTokensResponse = () => {
+// Create mock tokens for the API response - enhanced with more tokens for better testing
+export const createMockTokensResponse = () => {
   const baseTokens = [
     {
       contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
@@ -100,6 +102,58 @@ const createMockTokensResponse = () => {
         discord: { url: 'https://discord.com/invite/ethereum', count: null },
       },
       websites: [{ url: 'https://ethereum.org', label: 'Website' }],
+    },
+    // Dogecoin
+    {
+      contractAddress: '0x4567890123abcdef4567890123abcdef45678901',
+      name: 'Dogecoin',
+      symbol: 'DOGE',
+      price: 0.157,
+      marketCap: 22000000000,
+      volume24h: 1850000000,
+      change24h: 8.75,
+      liquidity: {
+        usd: 95000000,
+        base: 5000000,
+        quote: 7000000,
+      },
+      images: {
+        imageUrl: 'https://cryptologos.cc/logos/dogecoin-doge-logo.png',
+        headerImage: 'https://dogecoin.com/assets/img/dogecoin-300.png',
+        openGraphImage: '',
+      },
+      socials: {
+        twitter: { url: 'https://twitter.com/dogecoin', count: null },
+        telegram: { url: 'https://t.me/dogecoindiamond', count: null },
+        discord: { url: 'https://discord.com/invite/dogecoin', count: null },
+      },
+      websites: [{ url: 'https://dogecoin.com', label: 'Website' }],
+    },
+    // Cardano
+    {
+      contractAddress: '0x5678901234abcdef5678901234abcdef56789012',
+      name: 'Cardano',
+      symbol: 'ADA',
+      price: 0.457,
+      marketCap: 16100000000,
+      volume24h: 587000000,
+      change24h: -1.89,
+      liquidity: {
+        usd: 78000000,
+        base: 4200000,
+        quote: 6500000,
+      },
+      images: {
+        imageUrl: 'https://cryptologos.cc/logos/cardano-ada-logo.png',
+        headerImage: 'https://cardano.org/static/ada-1b939746c1e7b3848e5d22393f698336.png',
+        openGraphImage: '',
+      },
+      socials: {
+        twitter: { url: 'https://twitter.com/cardano', count: null },
+        telegram: { url: 'https://t.me/Cardano', count: null },
+        discord: { url: 'https://discord.com/invite/cardano', count: null },
+      },
+      websites: [{ url: 'https://cardano.org', label: 'Website' }],
     }
   ];
 
@@ -150,9 +204,10 @@ const MockContext: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-const meta: Meta<typeof TokensPage> = {
-  title: 'Pages/Tokens/TokensPage',
-  component: TokensPage,
+// Meta for original TokensPage
+const metaOriginal: Meta<typeof OriginalTokensPage> = {
+  title: 'Pages/Tokens/OriginalTokensPage',
+  component: OriginalTokensPage,
   parameters: {
     layout: 'fullscreen',
   },
@@ -168,10 +223,10 @@ const meta: Meta<typeof TokensPage> = {
   ],
 };
 
-export default meta;
-type Story = StoryObj<typeof TokensPage>;
+export default metaOriginal;
+type StoryOriginal = StoryObj<typeof OriginalTokensPage>;
 
-export const Default: Story = {
+export const OriginalDefault: StoryOriginal = {
   parameters: {
     reactRouter: {
       routePath: '/tokens',
@@ -180,7 +235,7 @@ export const Default: Story = {
   },
 };
 
-export const WithSelectedToken: Story = {
+export const OriginalWithSelectedToken: StoryOriginal = {
   parameters: {
     reactRouter: {
       routePath: '/tokens',
@@ -190,12 +245,83 @@ export const WithSelectedToken: Story = {
   },
 };
 
-export const WithNonExistentToken: Story = {
+// Create a separate export for OptimizedTokensPage
+export const optimizedMeta: Meta<typeof OptimizedTokensPage> = {
+  title: 'Pages/Tokens/OptimizedTokensPage',
+  component: OptimizedTokensPage,
+  parameters: {
+    layout: 'fullscreen',
+  },
+  decorators: [
+    withRouter,
+    (Story) => (
+      <MockContext>
+        <div className="bg-dark-100 min-h-screen">
+          <Story />
+        </div>
+      </MockContext>
+    ),
+  ],
+};
+
+type StoryOptimized = StoryObj<typeof OptimizedTokensPage>;
+
+export const OptimizedDefault: StoryOptimized = {
   parameters: {
     reactRouter: {
       routePath: '/tokens',
-      browserPath: '/tokens?symbol=NOTFOUND',
-      searchParams: { symbol: 'NOTFOUND' },
+      browserPath: '/tokens',
+    },
+  },
+};
+
+export const OptimizedWithSelectedToken: StoryOptimized = {
+  parameters: {
+    reactRouter: {
+      routePath: '/tokens',
+      browserPath: '/tokens?symbol=BTC',
+      searchParams: { symbol: 'BTC' },
+    },
+  },
+};
+
+// Create a separate meta for StoryTokensPage - our new cyberpunk design
+export const creativeTokensMeta: Meta<typeof StoryTokensPage> = {
+  title: 'Pages/Tokens/CreativeTokensPage',
+  component: StoryTokensPage,
+  parameters: {
+    layout: 'fullscreen',
+  },
+  decorators: [
+    withRouter,
+    (Story) => (
+      <div className="bg-dark-100 min-h-screen">
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+type StoryCreative = StoryObj<typeof StoryTokensPage>;
+
+export const CreativeTokensPageDefault: StoryCreative = {
+  parameters: {
+    reactRouter: {
+      routePath: '/tokens',
+      browserPath: '/tokens',
+    },
+  },
+};
+
+export const CreativeTokensPageWithSelectedToken: StoryCreative = {
+  args: {
+    // No args needed since we're setting this via route
+  },
+  parameters: {
+    reactRouter: {
+      routePath: '/tokens',
+      browserPath: '/tokens?symbol=BTC',
+      searchParams: { symbol: 'BTC' },
     },
   },
 };

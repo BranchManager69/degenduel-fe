@@ -25,9 +25,9 @@ const defaultConfig = createConfig({
   RELEASE_DATE: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
   CONTRACT_ADDRESS: '0x1111111111111111111111111111111111111111', // Default from config
   DISPLAY: {
-    DATE_SHORT: 'Apr 1, 2025',
-    DATE_FULL: 'April 1, 2025',
-    TIME: '15:00:00',
+    DATE_SHORT: import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT || 'Dec 31, 2025',
+    DATE_FULL: import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL || 'December 31, 2025',
+    TIME: import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_TIME || '23:59:59',
   }
 });
 

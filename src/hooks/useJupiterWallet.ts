@@ -31,16 +31,18 @@ export interface UseJupiterWalletReturn {
  * to make it work with our existing application.
  */
 export function useJupiterWallet(): UseJupiterWalletReturn {
-  const {
-    connecting,
-    connected,
-    publicKey,
-    disconnect: jupiterDisconnect,
-    connect: jupiterConnect,
-    wallet,
-    wallets,
-    signMessage: jupiterSignMessage
-  } = useJupiterWalletAdapter();
+  // Create a try/catch block to handle errors in the hook itself
+  try {
+    const {
+      connecting,
+      connected,
+      publicKey,
+      disconnect: jupiterDisconnect,
+      connect: jupiterConnect,
+      wallet,
+      wallets,
+      signMessage: jupiterSignMessage
+    } = useJupiterWalletAdapter();
 
   // Convert publicKey to string format expected by our app
   const walletAddress = publicKey?.toString() || null;
@@ -100,6 +102,37 @@ export function useJupiterWallet(): UseJupiterWalletReturn {
     disconnect,
     signMessage,
     walletName: wallet?.adapter.name || null,
-    availableWallets: wallets,
+    availableWallets: wallets || [],
   };
+  } catch (error) {
+    // Fallback values when the wallet adapter is not available/properly initialized
+    console.warn("Jupiter wallet adapter not available, using fallback values", error);
+    
+    // Define no-op functions
+    const noOpConnect = async () => {
+      console.warn("Wallet adapter not available");
+      throw new Error("Wallet adapter not available");
+    };
+    
+    const noOpDisconnect = async () => {
+      console.warn("Wallet adapter not available");
+    };
+    
+    const noOpSignMessage = async () => {
+      console.warn("Wallet adapter not available");
+      throw new Error("Wallet adapter not available");
+    };
+    
+    // Return fallback values
+    return {
+      isConnected: false,
+      isConnecting: false,
+      walletAddress: null,
+      connect: noOpConnect,
+      disconnect: noOpDisconnect,
+      signMessage: noOpSignMessage,
+      walletName: null,
+      availableWallets: [],
+    };
+  }
 }

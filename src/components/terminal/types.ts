@@ -70,5 +70,6 @@ export interface CommandTrayProps {
   setCommandTrayOpen: (open: boolean) => void;
   commands: string[];
   setUserInput: (input: string) => void;
+  onExecuteCommand?: (command: string) => void; // Added prop for direct command execution
   easterEggActivated?: boolean;
 }

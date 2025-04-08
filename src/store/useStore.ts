@@ -938,16 +938,29 @@ export const useStore = create<State>()(
             }
           }
 
-          // 2. Disconnect Phantom wallet
-          console.log("[Wallet Debug] Disconnecting Phantom wallet");
+          // 2. Disconnect wallet adapters
+          console.log("[Wallet Debug] Disconnecting wallet adapters");
+          
+          // Disconnect Phantom wallet
           const { solana } = window as any;
           if (solana?.isPhantom) {
             await solana.disconnect();
           }
+          
+          // 3. Clear all authentication tokens
+          console.log("[Wallet Debug] Clearing tokens from TokenManager");
+          // Import dynamically to avoid circular dependencies
+          const { TokenManager } = await import('../services/TokenManager');
+          if (TokenManager && typeof TokenManager.clearAllTokens === 'function') {
+            TokenManager.clearAllTokens();
+          }
 
-          // 3. Clear local storage and cookies
+          // 4. Clear local storage and cookies
           console.log("[Wallet Debug] Clearing storage and cookies");
           localStorage.removeItem("degenduel-storage"); // Use the same key as defined in persistConfig
+          
+          // Also clear any biometric auth data
+          localStorage.removeItem("dd_webauthn_credentials");
 
           // Clear cookies for all possible domains/paths
           const domains = [
@@ -969,9 +982,13 @@ export const useStore = create<State>()(
             });
           });
 
-          // 4. Reset store state
+          // 5. Reset store state
           console.log("[Wallet Debug] Resetting store state");
-          set({ user: null, isConnecting: false });
+          set({ 
+            user: null, 
+            isConnecting: false,
+            achievements: undefined  // Clear achievements as they're tied to the user
+          });
 
           console.log("[Wallet Debug] Disconnect complete", {
             remainingCookies: document.cookie,
@@ -980,7 +997,8 @@ export const useStore = create<State>()(
           console.error("[Wallet Debug] Disconnect failed:", error);
           // Still clear local state even if something fails
           localStorage.removeItem("degenduel-storage");
-          set({ user: null, isConnecting: false });
+          localStorage.removeItem("dd_webauthn_credentials");
+          set({ user: null, isConnecting: false, achievements: undefined });
         }
       },
       setMaintenanceMode: async (enabled: boolean) => {

@@ -136,6 +136,60 @@ export const admin = {
         throw error;
       }
     },
+    
+    // Get pool statistics
+    pool: {
+      // Get overall pool statistics
+      getStats: async (): Promise<any> => {
+        try {
+          const api = createApiClient();
+          const response = await api.fetch("/admin/vanity-wallets/pool/stats");
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch pool stats: ${response.status} ${response.statusText}`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error("Failed to get vanity wallet pool stats:", error);
+          throw error;
+        }
+      },
+      
+      // Get pool alerts (low stock, etc.)
+      getAlerts: async (): Promise<any> => {
+        try {
+          const api = createApiClient();
+          const response = await api.fetch("/admin/vanity-wallets/pool/alerts");
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch pool alerts: ${response.status} ${response.statusText}`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error("Failed to get vanity wallet pool alerts:", error);
+          throw error;
+        }
+      },
+      
+      // Get pool patterns distribution
+      getPatterns: async (): Promise<any> => {
+        try {
+          const api = createApiClient();
+          const response = await api.fetch("/admin/vanity-wallets/pool/patterns");
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch pool patterns: ${response.status} ${response.statusText}`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          console.error("Failed to get vanity wallet pool patterns:", error);
+          throw error;
+        }
+      }
+    }
   },
   
   // Client Error Management
