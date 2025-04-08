@@ -6,8 +6,8 @@ import { useLocation } from "react-router-dom";
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailModal";
-import { TokensGrid } from "../../../components/tokens-list/TokensGrid";
-import { TokensHeader } from "../../../components/tokens-list/TokensHeader";
+import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
+import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { ddApi } from "../../../services/dd-api";
@@ -240,7 +240,7 @@ export const TokensPage: React.FC = () => {
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
           <div className="flex justify-between items-start mb-4 sm:mb-8">
-            <TokensHeader metadata={metadata} />
+            <OptimizedTokensHeader metadata={metadata} />
             {user?.is_admin && (
               <Button
                 onClick={() => setIsAddTokenModalOpen(true)}
@@ -256,15 +256,39 @@ export const TokensPage: React.FC = () => {
           </div>
 
           {/* Enhanced Controls Section */}
-          <div className="mb-6 bg-dark-200/50 backdrop-blur-sm rounded-lg border border-dark-300 hover:border-brand-400/20 transition-all duration-300 relative group overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
-
-            <div className="p-4 relative">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Enhanced Search Bar */}
-                <div className="flex-1 relative group/search">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within/search:text-brand-400 transition-colors">
+          <div className="mb-8 relative">
+            {/* Background decorative elements */}
+            <div className="absolute -z-10 inset-0 rounded-xl overflow-hidden">
+              <div className="absolute inset-0 bg-dark-200/40 backdrop-blur-sm"></div>
+              <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent"></div>
+              <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+              <div className="absolute right-1/4 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-brand-500/20 to-transparent"></div>
+              <div className="absolute left-1/4 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent"></div>
+              
+              {/* Enhanced cyberpunk corner cuts */}
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-brand-500/40 rounded-tl"></div>
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-cyan-500/40 rounded-tr"></div>
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-brand-500/40 rounded-bl"></div>
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-cyan-500/40 rounded-br"></div>
+              
+              {/* Digital code segments */}
+              <div className="absolute top-2 left-10 flex space-x-1">
+                <div className="w-1 h-1 bg-brand-500/60"></div>
+                <div className="w-3 h-1 bg-brand-500/40"></div>
+                <div className="w-2 h-1 bg-brand-500/60"></div>
+              </div>
+              <div className="absolute bottom-2 right-10 flex space-x-1">
+                <div className="w-2 h-1 bg-cyan-500/60"></div>
+                <div className="w-3 h-1 bg-cyan-500/40"></div>
+                <div className="w-1 h-1 bg-cyan-500/60"></div>
+              </div>
+            </div>
+            
+            <div className="p-5">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                {/* Search Bar - Spans 3 columns */}
+                <div className="md:col-span-3 relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 group-focus-within:text-brand-400 transition-colors duration-300">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -279,99 +303,130 @@ export const TokensPage: React.FC = () => {
                       />
                     </svg>
                   </div>
+                  
                   <input
                     type="text"
-                    placeholder="Search tokens..."
+                    placeholder="Search by name or symbol..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-dark-300/50 border border-dark-400 focus:border-brand-400/50 rounded-lg pl-10 pr-4 py-2 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
+                    className="w-full bg-dark-300/50 border-2 border-dark-400 focus:border-brand-400 rounded-lg pl-12 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
                   />
-                  <div className="absolute inset-0 border border-brand-400/0 group-focus-within/search:border-brand-400/20 rounded-lg pointer-events-none transition-all duration-300" />
-                </div>
-
-                {/* Enhanced Control Buttons */}
-                <div className="flex gap-2">
-                  <div className="relative group/sort">
-                    <select
-                      value={sortField}
-                      onChange={(e) =>
-                        setSortField(e.target.value as keyof Token)
-                      }
-                      className="appearance-none bg-dark-300/50 border border-dark-400 hover:border-brand-400/50 rounded-lg px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300 pr-10"
-                    >
-                      <option value="marketCap">Market Cap</option>
-                      <option value="volume24h">Volume</option>
-                      <option value="change24h">24h Change</option>
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover/sort:text-brand-400 transition-colors">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </div>
+                  
+                  {/* Animated border glow on focus */}
+                  <div className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 pointer-events-none transition-opacity duration-300">
+                    <div className="absolute inset-0 rounded-lg border-2 border-brand-400/0 group-focus-within:border-brand-400/20"></div>
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-400/50 to-transparent transform -translate-y-1 group-focus-within:translate-y-0 opacity-0 group-focus-within:opacity-100 transition-all duration-500"></div>
                   </div>
-
-                  <button
-                    onClick={() =>
-                      setSortDirection((prev) =>
-                        prev === "asc" ? "desc" : "asc",
-                      )
-                    }
-                    className="bg-dark-300/50 border border-dark-400 hover:border-brand-400/50 rounded-lg px-4 py-2 text-gray-100 transition-all duration-300 relative group/direction"
+                  
+                  {/* "Clear" button appears when there's text */}
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Sort field dropdown - Spans 2 columns */}
+                <div className="md:col-span-2 relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-brand-400">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  
+                  <select
+                    value={sortField}
+                    onChange={(e) => setSortField(e.target.value as keyof Token)}
+                    className="w-full appearance-none bg-dark-300/50 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg pl-12 pr-10 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/10 to-transparent opacity-0 group-hover/direction:opacity-100 transition-opacity duration-300 rounded-lg" />
-                    <span className="relative">
-                      {sortDirection === "asc" ? "↑" : "↓"}
-                    </span>
+                    <option value="marketCap">Market Cap</option>
+                    <option value="volume24h">24h Volume</option>
+                    <option value="change24h">Price Change</option>
+                    <option value="price">Current Price</option>
+                  </select>
+                  
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-cyan-400">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Sort direction button with animation */}
+                <div className="md:col-span-1">
+                  <button
+                    onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
+                    className="w-full h-full flex items-center justify-center bg-dark-300/70 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg px-4 py-3 text-white transition-all duration-300 relative overflow-hidden group"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 to-cyan-500/0 group-hover:from-brand-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100">
+                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-400/40 to-transparent"></div>
+                      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"></div>
+                    </div>
+                    
+                    <div className="transition-transform duration-300 transform">
+                      {sortDirection === "asc" ? (
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                          <path d="M17 8l-5-5-5 5M17 16l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                          <path d="M17 16l-5-5-5 5M17 8l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </div>
                   </button>
-
-                  <div className="relative group/image">
+                </div>
+                
+                {/* Image source selection */}
+                <div className="md:col-span-1 flex md:justify-end">
+                  <div className="relative group/image w-full md:w-auto">
                     <select
                       value={imageSource}
-                      onChange={(e) =>
-                        setImageSource(
-                          e.target.value as "default" | "header" | "openGraph",
-                        )
-                      }
-                      className="appearance-none bg-dark-300/50 border border-dark-400 hover:border-brand-400/50 rounded-lg px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300 pr-10"
+                      onChange={(e) => setImageSource(e.target.value as "default" | "header" | "openGraph")}
+                      className="w-full appearance-none bg-dark-300/50 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300 pr-10"
                     >
                       <option value="default">Default</option>
                       <option value="header">Header</option>
                       <option value="openGraph">OpenGraph</option>
                     </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover/image:text-brand-400 transition-colors">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-cyan-400">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
                   </div>
                 </div>
               </div>
+              
+              {/* Search result stats */}
+              {searchQuery && (
+                <div className="mt-4 text-sm text-gray-400 flex items-center">
+                  <span>Found {filteredAndSortedTokens.length} tokens matching "{searchQuery}"</span>
+                  {filteredAndSortedTokens.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 text-xs">
+                      {sortField === "marketCap" ? "By Market Cap" : 
+                       sortField === "volume24h" ? "By Volume" : 
+                       sortField === "change24h" ? "By Change" : "By Price"}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          <TokensGrid 
+          <CreativeTokensGrid 
             tokens={filteredAndSortedTokens} 
             selectedTokenSymbol={selectedTokenSymbol}
+            onTokenClick={(token) => {
+              setSelectedTokenSymbol(token.symbol);
+              setIsDetailModalOpen(true);
+            }}
           />
 
           {/* Modals */}
