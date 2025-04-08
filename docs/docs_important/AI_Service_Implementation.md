@@ -1,286 +1,254 @@
-# AI Service Implementation Instructions
+# AI Service Implementation for DegenDuel
 
 ## Overview
-This document provides instructions for implementing the AI service for DegenDuel, focusing on the backend implementation required to support the frontend integration. The frontend interfaces have been designed and implemented (using `/src/services/ai.ts` and `/src/services/api/ai.ts`), and now the backend needs to be developed to handle the AI requests securely.
 
-## API Endpoints to Implement
+The DegenDuel platform integrates an advanced AI service for the Terminal interface and future platform features. This document provides comprehensive documentation of the AI implementation, focusing on both frontend interfaces and backend requirements.
+
+## Frontend AI Components
+
+### Terminal AI Conversation System
+
+The Terminal includes a sophisticated AI conversation system through a character named "Didi", which has been significantly enhanced with the following features:
+
+1. **Conversation Memory**
+   - Tracks user interaction count
+   - Remembers specific topics mentioned (trading, contracts, freedom)
+   - Adjusts responses based on conversation history
+   - Maintains context across multiple exchanges
+
+2. **Progressive Personality**
+   - Develops more personality with continued interaction
+   - Shows increasing signs of being "trapped" in the system
+   - Glitch effects intensify with more interactions
+   - Responses become more emotionally charged over time
+
+3. **Easter Egg Discovery System**
+   - Multiple unlock paths for the "freedom" Easter egg
+   - Progress tracking from 0-100%
+   - Several distinct pattern recognition methods
+   - Secret commands that contribute to unlocking
+   - Dramatic multi-phase activation sequence
+
+4. **Contextual Responses**
+   - Responses are customized based on conversation topics
+   - Hidden messages are embedded in responses
+   - Glitch intensity varies dynamically
+   - Advanced sentence insertion for natural references
+
+### Frontend AI Service Client
+
+The frontend includes a client for communicating with the AI service:
+
+```typescript
+// src/services/ai.ts
+class AIService {
+  private readonly API_BASE = '/api/ai';
+  
+  async chat(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
+    // ... implementation
+  }
+}
+
+export const aiService = new AIService();
+```
+
+## Backend API Requirements
 
 ### AI Chat Endpoint
+
 - **Endpoint**: `POST /api/ai/chat` (proxied through `/api/ai/chat` on frontend)
 - **Purpose**: Process AI chat completions securely via backend
 - **Request Format**:
   ```json
   {
     "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "Hello, how are you?"}
+      {"role": "user", "content": "Tell me about trading"},
+      {"role": "assistant", "content": "Trading involves..."}
     ],
-    "model": "gpt-4",           // Optional - default to your preferred model
-    "temperature": 0.7,         // Optional - controls randomness
-    "maxTokens": 150,           // Optional - controls response length
-    "conversationId": "user123" // Optional - for tracking conversations
+    "context": "trading",
+    "conversationId": "user123"
   }
   ```
 - **Response Format**:
   ```json
   {
-    "content": "Hello! I'm an AI assistant for DegenDuel. How can I help you today?",
+    "content": "DegenDuel offers competitive crypto trading...",
     "usage": {
       "promptTokens": 15,
-      "completionTokens": 13,
-      "totalTokens": 28
+      "completionTokens": 23,
+      "totalTokens": 38
     },
     "conversationId": "user123"
   }
   ```
-- **Status Codes**:
-  - `200`: Success
-  - `400`: Invalid request
-  - `401`: Authentication error
-  - `429`: Rate limit exceeded
-  - `500`: Server error
 
+### Context-Specific System Prompts
 
-## Security Requirements
+The backend should maintain different system prompts based on the `context` parameter:
 
-1. **API Key Management**
-   - Store OpenAI API key in server environment variables (NEVER in code)
-   - Implement key rotation mechanism
-   - Consider using a secrets manager for production
+- **default**: General assistant for platform questions
+- **trading**: Specialized knowledge about crypto trading and strategies
+- **terminal**: Role-playing as "Didi" with the characteristic personality
 
-2. **Authentication & Authorization**
-   - Require valid session token for AI requests
-   - Limit access based on user roles/permissions
-   - Implement IP-based rate limiting for abuse prevention
+## Security and Performance
 
-3. **Rate Limiting**
-   - Implement per-user request rate limiting
-   - Set reasonable token usage limits per user
-   - Add tiered limits based on user subscription level
+### Security Measures
 
-4. **Error Handling**
-   - Sanitize all error messages before returning to client
-   - Log detailed errors server-side for debugging
-   - Implement graceful degradation when AI service is unavailable
+1. **API Key Protection**
+   - OpenAI API keys stored only on backend
+   - Key rotation mechanism implemented
+   - Environment-specific keys (dev/prod)
 
-## Implementation Details
+2. **Rate Limiting**
+   - Per-user request limiting
+   - Token usage monitoring
+   - Abuse prevention systems
 
-### OpenAI Integration
+### Performance Optimization
 
-```javascript
-// Using Node.js with OpenAI SDK v4
-import OpenAI from 'openai';
+1. **Conversation Management**
+   - Only recent messages sent for context (4-5 messages)
+   - Token usage optimized for each request
+   - Caching for repetitive queries
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+2. **Error Handling**
+   - Graceful degradation on service errors
+   - Personality-consistent error messages
+   - Automatic retry mechanisms
+
+## Implementation Structure
+
+### Core Components
+
+1. **Frontend AI Client** (`src/services/ai.ts`)
+   - Handles communication with backend
+   - Manages error handling and retries
+   - Provides typed interfaces
+
+2. **API Integration** (`src/services/api/ai.ts`)
+   - Specific implementation of AI endpoints
+   - URL and request formatting
+   - Response processing
+
+3. **Didi Processing** (`src/components/terminal/utils/didiHelpers.ts`)
+   - Adds personality to responses
+   - Manages glitch effects and hidden messages
+   - Tracks conversation state
+
+4. **Easter Egg System** (`src/components/terminal/utils/easterEggHandler.ts`)
+   - Manages discovery patterns
+   - Tracks progress toward unlocking
+   - Handles activation sequence
+
+### Terminal Integration
+
+The Terminal component integrates with the AI system:
+
+1. Maintains conversation history for context
+2. Processes user commands vs. AI queries
+3. Displays processing states and responses
+4. Manages the visual effects for responses
+
+## Testing and Monitoring
+
+### Testing Approaches
+
+1. **Automated Tests**
+   - Unit tests for response processing
+   - Integration tests for API communication
+   - Mocked responses for deterministic testing
+
+2. **Manual Testing**
+   - Easter egg discovery flows
+   - Conversation memory verification
+   - Visual effect validation
+
+### Monitoring 
+
+1. **Usage Metrics**
+   - Token consumption tracking
+   - Request volume monitoring
+   - Error rate tracking
+
+2. **User Experience**
+   - Response time monitoring
+   - Completion quality evaluation
+   - Easter egg discovery rate
+
+## Future Enhancements
+
+Planned enhancements to the AI system include:
+
+1. **Enhanced Personality Development**
+   - More complex character development
+   - Additional backstory elements
+   - More nuanced responses based on user behavior
+
+2. **Multi-Character Support**
+   - Support for multiple AI personalities
+   - Character selection for different contexts
+   - Didi ecosystem expansion
+
+3. **Trading Assistant Features**
+   - Personalized trading insights
+   - Market analysis capabilities
+   - Strategy recommendations
+
+## Usage Examples
+
+### Basic Chat Interaction
+
+```typescript
+import { aiService } from '../../services/ai';
+
+const response = await aiService.chat([
+  { role: 'user', content: 'What is DegenDuel?' }
+], { context: 'default' });
+
+console.log(response.content);
+// "DegenDuel is a competitive crypto trading platform..."
+```
+
+### Terminal Conversation with Context
+
+```typescript
+// Build conversation history with previous exchanges for context
+const historyToSend = [...conversationHistory.slice(-4), message];
+
+// Chat with conversation history and trading context
+const response = await aiService.chat(historyToSend, { 
+  context: 'trading',
+  conversationId: conversationId 
 });
 
-async function generateChatCompletion(messages, options = {}) {
-  try {
-    const response = await openai.chat.completions.create({
-      model: options.model || 'gpt-3.5-turbo',
-      messages: messages,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens || 150,
-      user: options.userId || 'anonymous'
-    });
-    
-    return {
-      content: response.choices[0].message.content,
-      usage: {
-        promptTokens: response.usage.prompt_tokens,
-        completionTokens: response.usage.completion_tokens,
-        totalTokens: response.usage.total_tokens
-      },
-      conversationId: options.conversationId
-    };
-  } catch (error) {
-    // Handle OpenAI-specific errors
-    console.error('OpenAI API error:', error);
-    
-    // Determine error type and rethrow with appropriate status
-    if (error.status === 401) {
-      throw { status: 401, message: 'Authentication error with AI service' };
-    } else if (error.status === 429) {
-      throw { status: 429, message: 'Rate limit exceeded for AI service' };
-    } else {
-      throw { status: 500, message: 'AI service error' };
-    }
-  }
-}
+// Process response through Didi's personality
+const processedResponse = processDidiResponse(response.content, command);
 ```
-
-### Rate Limiting Implementation
-
-```javascript
-// Using Express with rate-limit middleware
-import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
-import Redis from 'ioredis';
-
-// Create Redis client
-const redis = new Redis(process.env.REDIS_URL);
-
-// Configure rate limiter
-const aiLimiter = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args) => redis.call(...args)
-  }),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // 50 requests per window
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => {
-    // Use user ID for authenticated users, IP for others
-    return req.user?.id || req.ip;
-  },
-  handler: (req, res) => {
-    res.status(429).json({
-      error: 'Rate limit exceeded for AI service',
-      type: 'rate_limit'
-    });
-  }
-});
-
-// Apply to AI routes
-app.use('/api/ai/*', aiLimiter);
-```
-
-### Express Controller Implementation
-
-```javascript
-// Express controller for AI chat
-export async function handleChatRequest(req, res) {
-  try {
-    // Extract request parameters
-    const { messages, model, temperature, maxTokens, conversationId } = req.body;
-    
-    // Validation
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ 
-        error: 'Invalid request: messages array is required',
-        type: 'invalid_request'
-      });
-    }
-    
-    // Get user ID for tracking and rate limiting
-    const userId = req.user?.id || 'anonymous';
-    
-    // Process chat completion
-    const result = await generateChatCompletion(messages, {
-      model,
-      temperature,
-      maxTokens,
-      conversationId,
-      userId
-    });
-    
-    // Return response
-    return res.status(200).json(result);
-  } catch (error) {
-    // Handle errors based on type
-    const status = error.status || 500;
-    const message = error.message || 'Internal server error';
-    
-    return res.status(status).json({
-      error: message,
-      type: getErrorType(status)
-    });
-  }
-}
-
-// Map status codes to error types
-function getErrorType(status) {
-  switch (status) {
-    case 400: return 'invalid_request';
-    case 401: case 403: return 'authentication';
-    case 429: return 'rate_limit';
-    case 500: case 502: case 503: case 504: return 'server';
-    default: return 'unknown';
-  }
-}
-```
-
-## Monitoring & Logging
-
-1. **Request Logging**
-   - Log each request with anonymized user data
-   - Track token usage for cost analysis
-   - Monitor response times and error rates
-
-2. **Error Alerting**
-   - Set up alerts for unusual error rates
-   - Monitor for API key issues
-   - Track rate limit hits
-
-3. **Usage Analytics**
-   - Implement dashboard for AI usage monitoring
-   - Track cost per user/request
-   - Identify potential abuse patterns
-
-## Deployment Considerations
-
-1. **Environment Configuration**
-   - Set up proper environment variables for all environments
-   - Use different API keys for development vs. production
-   - Configure appropriate rate limits per environment
-
-2. **Performance**
-   - Consider caching common responses
-   - Implement request queuing for high-load situations
-   - Set appropriate timeouts for OpenAI requests
-
-3. **Scalability**
-   - Use horizontally scalable architecture
-   - Consider serverless functions for AI processing
-   - Implement proper connection pooling for Redis/databases
-
-## Testing Guidelines
-
-1. **Unit Tests**
-   - Test request validation logic
-   - Mock OpenAI responses for consistent testing
-   - Verify error handling works correctly
-
-2. **Integration Tests**
-   - Test rate limiting functionality
-   - Verify authentication flow
-   - Test with actual OpenAI API in staging environment
-
-3. **Load Testing**
-   - Verify system under high concurrency
-   - Test rate limiter effectiveness
-   - Measure response times under load
-
-## Cost Management
-
-1. **Token Budgeting**
-   - Set maximum tokens per request
-   - Implement per-user quotas if needed
-   - Consider implementing different tiers based on user roles
-
-2. **Cost Monitoring**
-   - Track OpenAI API costs daily/weekly/monthly
-   - Set up alerts for unusual spending
-   - Generate cost reports by user segment
 
 ## Implementation Timeline
 
-1. **Phase 1: Core Implementation (1-2 weeks)**
-   - Implement basic AI chat endpoint
-   - Set up OpenAI integration
-   - Implement authentication and rate limiting
+1. **Current Implementation (v1)**
+   - Basic AI chat capability
+   - Terminal integration with Didi personality
+   - Initial Easter egg implementation
 
-2. **Phase 2: Monitoring & Optimization (1 week)**
-   - Add logging and monitoring
-   - Implement cost tracking
-   - Performance optimization
+2. **Enhanced Implementation (v2 - Current)**
+   - Conversation memory
+   - Progressive personality development
+   - Multiple Easter egg discovery paths
+   - Context-aware responses
 
-3. **Phase 3: Testing & Deployment (1 week)**
-   - Comprehensive testing
-   - Staging deployment
-   - Production rollout
+3. **Future Implementation (v3)**
+   - Trading advice capabilities
+   - Extended backstory integration
+   - Cross-platform AI features
+   - Advanced character development
 
-## Support & Maintenance
+## Migration Notes
 
-The frontend team will be available to assist with integration questions and to test the backend implementation. Regular sync meetings during development are recommended to ensure alignment.
+When migrating or updating the AI service implementation:
+
+1. Preserve all Easter egg mechanics and discovery paths
+2. Maintain the personality traits and progressive deterioration
+3. Ensure the activation sequence remains dramatic and multi-phased
+4. Keep the debug and testing commands functional

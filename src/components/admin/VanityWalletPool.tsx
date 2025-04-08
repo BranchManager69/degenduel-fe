@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
-import { ddApi } from "../../services/dd-api";
+import { admin } from "../../services/api/admin";
 
 interface PoolStats {
   total_wallets: number;
@@ -41,17 +41,10 @@ export const VanityWalletPool: React.FC<VanityWalletPoolProps> = ({
       setError(null);
       setIsRefreshing(true);
 
-      const [statsResponse, alertsResponse, patternsResponse] =
-        await Promise.all([
-          ddApi.fetch("/admin/vanity-wallets/pool/stats"),
-          ddApi.fetch("/admin/vanity-wallets/pool/alerts"),
-          ddApi.fetch("/admin/vanity-wallets/pool/patterns"),
-        ]);
-
       const [statsData, alertsData, patternsData] = await Promise.all([
-        statsResponse.json(),
-        alertsResponse.json(),
-        patternsResponse.json(),
+        admin.vanityWallets.pool.getStats(),
+        admin.vanityWallets.pool.getAlerts(),
+        admin.vanityWallets.pool.getPatterns(),
       ]);
 
       if (statsData.success && statsData.stats) {

@@ -9,8 +9,127 @@
  */
 
 import { motion } from 'framer-motion';
-import React, { useEffect, useRef } from 'react';
-import { TerminalConsoleProps } from '../types';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import { TerminalConsoleProps, ConsoleOutputItem } from '../types';
+
+/**
+ * TypeWriter - Creates a typewriter effect for text
+ */
+interface TypeWriterProps {
+  text: string;
+  speed?: number;
+  className?: string;
+  onComplete?: () => void;
+}
+
+const TypeWriter: React.FC<TypeWriterProps> = ({ 
+  text, 
+  speed = 35, // Characters per second (average typing speed)
+  className = "",
+  onComplete
+}) => {
+  // Reference to track timeouts for cleanup
+  const timeoutsRef = useRef<number[]>([]);
+  // Ref to track if component is mounted
+  const isMountedRef = useRef(true);
+  
+  // Use state for actual display text
+  const [displayText, setDisplayText] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+  // Use ref for storing the pre-computed final text to avoid calculation on each render
+  const finalTextRef = useRef({ prefix: "", content: "" });
+  
+  // Clear all timeouts on unmount or text change
+  const clearAllTimeouts = () => {
+    timeoutsRef.current.forEach(id => window.clearTimeout(id));
+    timeoutsRef.current = [];
+  };
+
+  useEffect(() => {
+    // Reset component mount state
+    isMountedRef.current = true;
+    
+    // Reset state when text changes
+    setIsComplete(false);
+    
+    // Clean up previous animation
+    clearAllTimeouts();
+    
+    // Parse the text structure only once and store in ref
+    const hasDidiPrefix = text.startsWith('[Didi] ');
+    finalTextRef.current = {
+      prefix: hasDidiPrefix ? '[Didi] ' : '',
+      content: hasDidiPrefix ? text.substring(7) : text
+    };
+    
+    // Immediately set the prefix without animation
+    setDisplayText(finalTextRef.current.prefix);
+    
+    // Setup typing sequence with proper closure variables
+    let index = 0;
+    const contentToType = finalTextRef.current.content;
+    
+    // Calculate a varying delay: slow down for punctuation, speed up for common letters
+    const getTypeDelay = (char: string) => {
+      if ('.!?'.includes(char)) return speed * 5; // Pause longer at sentence endings
+      if (',;:'.includes(char)) return speed * 3; // Pause at commas and semicolons
+      if (' '.includes(char)) return speed * 0.8; // Slightly faster for spaces
+      return speed; // Normal speed for regular characters
+    };
+    
+    // Type text gradually with stable timeouts
+    const typeNextChar = () => {
+      if (!isMountedRef.current) return;
+      
+      if (index < contentToType.length) {
+        // Set the text directly without using unused variables
+        setDisplayText(finalTextRef.current.prefix + contentToType.substring(0, index + 1));
+        index++;
+        
+        // Get next character's typing delay
+        const nextChar = contentToType[index] || '';
+        const delay = getTypeDelay(nextChar);
+        
+        // Track timeout ID for cleanup
+        const timeoutId = window.setTimeout(typeNextChar, delay);
+        timeoutsRef.current.push(timeoutId);
+      } else {
+        // Typing complete - ensure we have the complete text displayed
+        setDisplayText(finalTextRef.current.prefix + contentToType);
+        setIsComplete(true);
+        if (onComplete && isMountedRef.current) onComplete();
+      }
+    };
+    
+    // Start typing with initial delay
+    const initialTimeoutId = window.setTimeout(() => {
+      if (isMountedRef.current) {
+        typeNextChar();
+      }
+    }, 150);
+    
+    timeoutsRef.current.push(initialTimeoutId);
+    
+    // Clean up timeouts when component unmounts or text changes
+    return () => {
+      isMountedRef.current = false;
+      clearAllTimeouts();
+    };
+  }, [text, speed, onComplete]);
+  
+  return (
+    <span className={className}>
+      {displayText}
+      {!isComplete && (
+        <motion.span
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ duration: 0.8, repeat: Infinity }}
+          className="inline-block h-4 w-2 ml-0.5 bg-cyan-300"
+        />
+      )}
+    </span>
+  );
+};
 
 /**
  * TerminalConsole - Displays terminal output and handles scrolling behavior
@@ -20,6 +139,29 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
   size
 }) => {
   const consoleOutputRef = useRef<HTMLDivElement>(null);
+  
+  // Track if we're currently typing out an AI message
+  const [isTyping, setIsTyping] = useState(false);
+  
+  // Track typing completion for auto-scrolling
+  const handleTypingComplete = () => {
+    setIsTyping(false);
+    
+    // Scroll to bottom when typing completes
+    if (consoleOutputRef.current) {
+      consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+    }
+  };
+  
+  // When a new AI message appears, set typing status
+  useEffect(() => {
+    if (consoleOutput.length > 0) {
+      const lastMsg = consoleOutput[consoleOutput.length - 1];
+      if (typeof lastMsg === 'string' && lastMsg.startsWith('[Didi]')) {
+        setIsTyping(true);
+      }
+    }
+  }, [consoleOutput.length]);
 
   // Enhanced scrollbar auto-hide effect specifically for console output
   const scrollbarAutoHide = (element: HTMLElement | null, timeout = 2000) => {
@@ -78,8 +220,9 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
   }, []);
 
   // Auto-scroll to the bottom when console output changes
+  // Only do this when we're not in the middle of typing
   useEffect(() => {
-    if (consoleOutputRef.current) {
+    if (consoleOutputRef.current && !isTyping) {
       const scrollTo = () => {
         const element = consoleOutputRef.current;
         if (element) {
@@ -96,7 +239,34 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
       setTimeout(scrollTo, 50);
       setTimeout(scrollTo, 100);
     }
+  }, [consoleOutput, isTyping]);
+
+  // Calculate the number of lines to display
+  // Limit to a max of 10 lines for a clean, manageable chat
+  const displayedOutput = useMemo(() => {
+    if (consoleOutput.length <= 10) return consoleOutput;
+    return consoleOutput.slice(consoleOutput.length - 10);
   }, [consoleOutput]);
+
+  // Calculate dynamic height based on content
+  // This helps create a smoother animation effect
+  useEffect(() => {
+    if (consoleOutputRef.current) {
+      // Set a minimum height to prevent jarring resizes
+      const baseHeight = size === 'contracted' ? 160 : size === 'middle' ? 240 : 320;
+      const lineHeight = 24; // Approximate height of each text line
+      const itemCount = Math.min(displayedOutput.length, 10);
+      
+      // Calculate appropriate height - with a min/max range
+      const calculatedHeight = Math.max(
+        baseHeight,
+        Math.min(itemCount * lineHeight, size === 'contracted' ? 240 : size === 'middle' ? 320 : 400)
+      );
+      
+      // Set the height with a smooth transition
+      consoleOutputRef.current.style.height = `${calculatedHeight}px`;
+    }
+  }, [displayedOutput.length, size]);
 
   return (
     <motion.div
@@ -122,13 +292,13 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
     >
       <div 
         ref={consoleOutputRef} 
-        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full
-          ${size === 'contracted' ? 'max-h-40' : size === 'middle' ? 'max-h-60' : 'max-h-96'}`}
+        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full`}
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
           background: 'rgba(0, 0, 0, 0.6)',
           boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)',
+          transition: 'height 0.3s ease-in-out', // Smooth height transition
         }}
       >
         {consoleOutput.length === 0 ? (
@@ -166,33 +336,50 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
             </div>
           </div>
         ) : (
-          // Map console output when we have entries
-          consoleOutput.map((output, i) => {
+          // Map console output when we have entries - only show last 10 lines max
+          displayedOutput.map((output: ConsoleOutputItem, i: number) => {
             // Check the type of message to apply appropriate styling
             const isUserInput = typeof output === 'string' && output.startsWith('$');
             const isError = typeof output === 'string' && output.startsWith('Error:');
             const isAI = typeof output === 'string' && output.startsWith('[Didi]');
             
+            // Use framer-motion for smooth entry of new lines
             return (
-              <div 
-                key={i} 
+              <motion.div 
+                key={`${i}-${typeof output === 'string' ? output.substr(0, 10) : 'node'}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.3,
+                  ease: "easeOut" 
+                }}
                 className="pl-1 mb-1 whitespace-pre-wrap"
               >
                 {typeof output === 'string' ? (
-                  <span 
-                    className={
-                      isUserInput ? 'text-mauve' : 
-                      isError ? 'text-red-400' : 
-                      isAI ? 'text-cyan-300' : 
-                      'text-green-300'
-                    }
-                  >
-                    {output}
-                  </span>
+                  isAI ? (
+                    // TypeWriter effect for AI messages
+                    <TypeWriter 
+                      text={output}
+                      speed={25} // Adjust speed as needed
+                      className="text-cyan-300"
+                      onComplete={handleTypingComplete}
+                    />
+                  ) : (
+                    // Instant display for other text
+                    <span 
+                      className={
+                        isUserInput ? 'text-mauve' : 
+                        isError ? 'text-red-400' : 
+                        'text-green-300'
+                      }
+                    >
+                      {output}
+                    </span>
+                  )
                 ) : (
                   output
                 )}
-              </div>
+              </motion.div>
             );
           })
         )}

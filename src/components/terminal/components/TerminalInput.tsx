@@ -33,7 +33,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
             animate={{ opacity: [0.7, 1, 0.7] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
-          <span className="text-white/90">SECURE-CHANNEL-ACTIVE</span>
+          <span className="text-white/90">SOLANA-CONNECTION-ACTIVE</span>
         </div>
       </div>
       
@@ -144,15 +144,18 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               }
             }}
             className="w-full bg-transparent outline-none border-none text-white placeholder-mauve-dark/50 focus:ring-0"
-            placeholder="Enter command or ask a question..."
+            placeholder="__________"
             autoComplete="off"
             spellCheck="false"
+            // The key properties to prevent iOS zoom: font-size at least 16px and user-scalable=no
             style={{ 
               color: 'rgba(255, 255, 255, 0.95)', 
               caretColor: 'rgb(157, 78, 221)',
               textShadow: glitchActive ? '0 0 8px rgba(255, 50, 50, 0.8)' : '0 0 5px rgba(157, 78, 221, 0.6)',
               backgroundColor: 'rgba(20, 20, 30, 0.3)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              fontSize: '16px', // Critical for preventing iOS zoom
+              touchAction: 'manipulation' // Helps with touch handling
             }}
           />
         </div>

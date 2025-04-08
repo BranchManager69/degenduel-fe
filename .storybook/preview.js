@@ -129,25 +129,32 @@ const withMockedHooks = (Story) => {
   });
 
   // Mock Solana wallet for Blinks stories
-  window.solana = {
-    isConnected: false,
-    publicKey: null,
-    connect: async function() {
-      console.log('Mock Solana wallet connect called');
-      this.isConnected = true;
-      this.publicKey = { toString: () => '5Zzguz4NsSRNYJBpPpxNQy8kJrt1JDKEzw' };
-      return { publicKey: this.publicKey };
-    },
-    disconnect: async function() {
-      console.log('Mock Solana wallet disconnect called');
-      this.isConnected = false;
-      this.publicKey = null;
-    },
-    signAndSendTransaction: async function(transaction) {
-      console.log('Mock Solana signAndSendTransaction:', transaction);
-      return { signature: 'mock_signature_' + Math.random().toString(36).substring(2, 10) };
-    }
-  };
+  // Using Object.defineProperty instead of direct assignment to avoid read-only errors
+  if (!window.solana) {
+    Object.defineProperty(window, 'solana', {
+      value: {
+        isConnected: false,
+        publicKey: null,
+        connect: async function() {
+          console.log('Mock Solana wallet connect called');
+          this.isConnected = true;
+          this.publicKey = { toString: () => '5Zzguz4NsSRNYJBpPpxNQy8kJrt1JDKEzw' };
+          return { publicKey: this.publicKey };
+        },
+        disconnect: async function() {
+          console.log('Mock Solana wallet disconnect called');
+          this.isConnected = false;
+          this.publicKey = null;
+        },
+        signAndSendTransaction: async function(transaction) {
+          console.log('Mock Solana signAndSendTransaction:', transaction);
+          return { signature: 'mock_signature_' + Math.random().toString(36).substring(2, 10) };
+        }
+      },
+      writable: true,
+      configurable: true
+    });
+  }
 
   // Add global styles for animations needed by components
   return (
@@ -319,6 +326,33 @@ if (typeof window !== 'undefined') {
     },
     checkAuthStatus: async () => {}
   });
+  
+  // Mock Solana wallet for Blinks stories
+  if (!window.solana) {
+    Object.defineProperty(window, 'solana', {
+      value: {
+        isConnected: false,
+        publicKey: null,
+        connect: async function() {
+          console.log('Mock Solana wallet connect called');
+          this.isConnected = true;
+          this.publicKey = { toString: () => '5Zzguz4NsSRNYJBpPpxNQy8kJrt1JDKEzw' };
+          return { publicKey: this.publicKey };
+        },
+        disconnect: async function() {
+          console.log('Mock Solana wallet disconnect called');
+          this.isConnected = false;
+          this.publicKey = null;
+        },
+        signAndSendTransaction: async function(transaction) {
+          console.log('Mock Solana signAndSendTransaction:', transaction);
+          return { signature: 'mock_signature_' + Math.random().toString(36).substring(2, 10) };
+        }
+      },
+      writable: true,
+      configurable: true
+    });
+  }
 }
 
 const preview = {

@@ -8,9 +8,9 @@
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'https://degenduel.me';
 
-// Fallback release date from environment variables or default to March 15th, 6:00 PM Eastern
+// Fallback release date from environment variables or default to December 31st, 11:59 PM Eastern
 export const FALLBACK_RELEASE_DATE = new Date(
-  import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-03-15T22:00:00Z'
+  import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00'
 );
 
 // Cache for the fetched release date

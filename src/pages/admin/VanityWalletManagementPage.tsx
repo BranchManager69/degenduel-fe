@@ -3,6 +3,7 @@ import { VanityWalletList } from "../../components/admin/VanityWalletManagement"
 import { VanityWalletCreate } from "../../components/admin/VanityWalletCreate";
 import { VanityWalletBatchCreate } from "../../components/admin/VanityWalletBatchCreate";
 import { VanityWalletSummary } from "../../components/admin/VanityWalletSummary";
+import { VanityWalletPool } from "../../components/admin/VanityWalletPool";
 
 enum CreateMode {
   SINGLE = "single",
@@ -24,8 +25,14 @@ const VanityWalletManagementPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-100 mb-4 md:mb-0">Vanity Wallet Management</h1>
       </div>
       
-      {/* Summary Panel */}
-      <VanityWalletSummary key={`summary-${refreshTrigger}`} />
+      {/* Summary and Pool Statistics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Summary Panel */}
+        <VanityWalletSummary key={`summary-${refreshTrigger}`} />
+        
+        {/* Pool Panel */}
+        <VanityWalletPool key={`pool-${refreshTrigger}`} autoRefresh={false} />
+      </div>
       
       {/* Creation Controls */}
       <div className="space-y-4">

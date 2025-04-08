@@ -3,15 +3,16 @@
 /**
  * BiometricAuthButton.tsx
  * 
- * This file contains the BiometricAuthButton component, which is used to display the biometric authentication button.
+ * Enhanced biometric authentication button using the SimpleWebAuthn library
+ * which provides a simplified API for working with WebAuthn.
  * 
  * @author @BranchManager69
- * @last-modified 2025-04-02
+ * @last-modified 2025-04-07
  */
 
 import React, { useState, useEffect } from 'react';
+import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { authDebug } from '../../config/config';
-import useBiometricAuth from '../../hooks/useBiometricAuth';
 import { useStore } from '../../store/useStore';
 
 /**
@@ -36,7 +37,8 @@ interface BiometricAuthButtonProps {
  * BiometricAuthButton - A component for biometric authentication
  * 
  * This component provides a button for registering biometric credentials
- * or authenticating with existing credentials.
+ * or authenticating with existing credentials using the WebAuthn API
+ * through the SimpleWebAuthn library.
  */
 const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
   mode = 'authenticate',
@@ -50,24 +52,35 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
   onError,
   onAvailabilityChange
 }) => {
-  const { 
-    isAvailable,
-    isRegistered,
-    isRegistering,
-    isAuthenticating,
-    error,
-    registerCredential,
-    authenticate,
-    checkRegistrationStatus
-  } = useBiometricAuth();
-  
   const user = useStore(state => state.user);
-  const [showError, setShowError] = useState<string | null>(null);
+  const [isAvailable, setIsAvailable] = useState<boolean>(false);
+  const [isRegistered, setIsRegistered] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPlatformAuthenticatorAvailable, setIsPlatformAuthenticatorAvailable] = useState<boolean | null>(null);
   
   // Get wallet address from props or user object
   const effectiveWalletAddress = walletAddress || user?.wallet_address;
   const effectiveNickname = nickname || user?.nickname || effectiveWalletAddress;
+  
+  // Check if WebAuthn is available in this browser
+  useEffect(() => {
+    const checkWebAuthnAvailability = () => {
+      const available = typeof window !== 'undefined' && 
+                       !!window.PublicKeyCredential && 
+                       !!navigator.credentials;
+      
+      setIsAvailable(available);
+      
+      if (onAvailabilityChange) {
+        onAvailabilityChange(available);
+      }
+      
+      return available;
+    };
+    
+    checkWebAuthnAvailability();
+  }, [onAvailabilityChange]);
   
   // Check if platform authenticator is available (Face ID, Touch ID, Windows Hello)
   useEffect(() => {
@@ -77,119 +90,278 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
         try {
           const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
           setIsPlatformAuthenticatorAvailable(available);
-          if (onAvailabilityChange) {
-            onAvailabilityChange(available);
-          }
         } catch (err) {
           console.error("Error checking platform authenticator:", err);
           setIsPlatformAuthenticatorAvailable(false);
-          if (onAvailabilityChange) {
-            onAvailabilityChange(false);
-          }
         }
       } else {
         setIsPlatformAuthenticatorAvailable(false);
-        if (onAvailabilityChange) {
-          onAvailabilityChange(false);
-        }
       }
     }
     
     checkPlatformAuthenticator();
-  }, [onAvailabilityChange]);
+  }, []);
   
-  // Check if user has registered credentials when wallet address changes
+  // Check if user has registered credentials
   useEffect(() => {
-    if (effectiveWalletAddress && isAvailable) {
-      checkRegistrationStatus(effectiveWalletAddress);
+    async function checkHasCredentials() {
+      if (!effectiveWalletAddress || !isAvailable) return;
+      
+      try {
+        const response = await fetch(`/api/auth/biometric/has-credential?userId=${encodeURIComponent(effectiveWalletAddress)}`, {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setIsRegistered(!!data.hasCredential);
+        }
+      } catch (error) {
+        console.error("Error checking for biometric credentials:", error);
+        setIsRegistered(false);
+      }
     }
-  }, [effectiveWalletAddress, isAvailable, checkRegistrationStatus]);
+    
+    if (effectiveWalletAddress && isAvailable) {
+      checkHasCredentials();
+    }
+  }, [effectiveWalletAddress, isAvailable]);
   
   // Determine if button should be enabled
-  const isEnabled = isAvailable && !isRegistering && !isAuthenticating && (
+  const isEnabled = isAvailable && !isLoading && (
     mode === 'register' ? 
       (!isRegistered && (authenticatorType !== 'platform' || isPlatformAuthenticatorAvailable)) : 
       isRegistered
   );
   
-  // Handle button click
-  const handleClick = async () => {
-    if (!isEnabled || !effectiveWalletAddress) {
-      // Show appropriate error message
-      const errorMsg = !effectiveWalletAddress ? 
-        'Please enter a wallet address' : 
-        'Biometric authentication is not available';
-      setShowError(errorMsg);
-      onError?.(errorMsg);
+  // Handle biometric registration
+  const handleRegistration = async () => {
+    if (!effectiveWalletAddress) {
+      const error = 'Please enter a wallet address';
+      setErrorMessage(error);
+      onError?.(error);
       return;
     }
     
-    setShowError(null);
+    setIsLoading(true);
+    setErrorMessage(null);
     
     try {
-      if (mode === 'register') {
-        // Register new credential with optional authenticator type
-        const registrationOptions = {
-          authenticatorType,
-          nickname: effectiveNickname
-        };
-        
-        authDebug('BiometricAuth', 'Registering with options:', registrationOptions);
-        
-        // Make sure wallet address is defined
-        if (!effectiveWalletAddress) {
-          throw new Error('Wallet address is required for registration');
-        }
-        
-        const success = await registerCredential(
-          effectiveWalletAddress, 
-          effectiveNickname || effectiveWalletAddress
-        );
-        
-        if (success) {
-          authDebug('BiometricAuth', 'Successfully registered biometric credential');
-          onSuccess?.();
-        } else if (error) {
-          setShowError(error);
-          onError?.(error);
-        }
-      } else {
-        // Authenticate with existing credential
-        if (!effectiveWalletAddress) {
-          throw new Error('Wallet address is required for authentication');
-        }
-        
-        const success = await authenticate(effectiveWalletAddress);
-        
-        if (success) {
-          authDebug('BiometricAuth', 'Successfully authenticated with biometrics');
-          onSuccess?.();
-        } else if (error) {
-          setShowError(error);
-          onError?.(error);
-        }
-      }
-    } catch (err) {
-      // Handle specific WebAuthn errors
-      let errorMessage = '';
+      // 1. Get options from server
+      const optionsResponse = await fetch('/api/auth/biometric/register-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: effectiveWalletAddress,
+          nickname: effectiveNickname,
+          authenticatorType
+        }),
+        credentials: 'include'
+      });
       
-      if (err instanceof Error) {
-        if (err.name === 'NotSupportedError') {
-          errorMessage = 'Your device does not support biometric authentication';
-        } else if (err.name === 'NotAllowedError') {
-          errorMessage = 'Authentication was cancelled';
-        } else if (err.message.includes('timeout')) {
-          errorMessage = 'Authentication timed out. Please try again.';
+      if (!optionsResponse.ok) {
+        const errorData = await optionsResponse.json();
+        throw new Error(errorData.message || 'Failed to get registration options');
+      }
+      
+      const options = await optionsResponse.json();
+      
+      authDebug('BiometricAuth', 'Registration options:', options);
+      
+      // 2. Start the WebAuthn registration process
+      // This will trigger the Face ID/Touch ID prompt
+      const attestation = await startRegistration(options);
+      
+      // Get device information
+      const deviceInfo = getDeviceInfo();
+      
+      // 3. Send the result back to your server for verification
+      const verifyResponse = await fetch('/api/auth/biometric/register-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...attestation,
+          deviceName: deviceInfo.name,
+          deviceType: deviceInfo.type
+        }),
+        credentials: 'include'
+      });
+      
+      if (!verifyResponse.ok) {
+        const errorData = await verifyResponse.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+      
+      const verifyResult = await verifyResponse.json();
+      
+      if (verifyResult.success) {
+        authDebug('BiometricAuth', 'Registration successful:', verifyResult);
+        setIsRegistered(true);
+        onSuccess?.();
+      } else {
+        throw new Error(verifyResult.error || 'Registration failed');
+      }
+    } catch (error) {
+      authDebug('BiometricAuth', 'Registration error:', error);
+      
+      let errorMsg = '';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMsg = 'You canceled the biometric registration';
+        } else if (error.name === 'NotSupportedError') {
+          errorMsg = 'Your device doesn\'t support biometric authentication';
         } else {
-          errorMessage = err.message;
+          errorMsg = error.message;
         }
       } else {
-        errorMessage = String(err);
+        errorMsg = String(error);
       }
       
-      setShowError(errorMessage);
-      onError?.(errorMessage);
+      setErrorMessage(errorMsg);
+      onError?.(errorMsg);
+    } finally {
+      setIsLoading(false);
     }
+  };
+  
+  // Handle biometric authentication
+  const handleAuthentication = async () => {
+    if (!effectiveWalletAddress) {
+      const error = 'Please enter a wallet address';
+      setErrorMessage(error);
+      onError?.(error);
+      return;
+    }
+    
+    setIsLoading(true);
+    setErrorMessage(null);
+    
+    try {
+      // 1. Get options from server
+      const optionsResponse = await fetch('/api/auth/biometric/auth-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: effectiveWalletAddress })
+      });
+      
+      if (!optionsResponse.ok) {
+        const errorData = await optionsResponse.json();
+        
+        if (errorData.error === 'no_credentials') {
+          throw new Error('No biometric credentials found. Please register first.');
+        }
+        
+        throw new Error(errorData.message || 'Failed to get authentication options');
+      }
+      
+      const options = await optionsResponse.json();
+      
+      authDebug('BiometricAuth', 'Authentication options:', options);
+      
+      // 2. Start the WebAuthn authentication process
+      // This will trigger the Face ID/Touch ID prompt
+      const assertion = await startAuthentication(options);
+      
+      // 3. Send the result back to your server for verification
+      const verifyResponse = await fetch('/api/auth/biometric/auth-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...assertion,
+          userId: effectiveWalletAddress
+        })
+      });
+      
+      if (!verifyResponse.ok) {
+        const errorData = await verifyResponse.json();
+        throw new Error(errorData.message || 'Authentication failed');
+      }
+      
+      const authResult = await verifyResponse.json();
+      
+      if (authResult.verified) {
+        // User authenticated successfully
+        authDebug('BiometricAuth', 'Authentication successful:', authResult);
+        
+        // Update the user in the store if needed
+        if (authResult.user) {
+          useStore.getState().setUser(authResult.user);
+        }
+        
+        onSuccess?.();
+      } else {
+        throw new Error(authResult.error || 'Authentication failed');
+      }
+    } catch (error) {
+      authDebug('BiometricAuth', 'Authentication error:', error);
+      
+      let errorMsg = '';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMsg = 'You canceled the biometric authentication';
+        } else if (error.name === 'InvalidStateError') {
+          errorMsg = 'No registered credential found. Try another device or method.';
+        } else {
+          errorMsg = error.message;
+        }
+      } else {
+        errorMsg = String(error);
+      }
+      
+      setErrorMessage(errorMsg);
+      onError?.(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle button click depending on mode
+  const handleClick = async () => {
+    if (!isEnabled) return;
+    
+    if (mode === 'register') {
+      await handleRegistration();
+    } else {
+      await handleAuthentication();
+    }
+  };
+  
+  // Helper functions for device information
+  const getDeviceInfo = () => {
+    const userAgent = navigator.userAgent;
+    let deviceName = 'Unknown Device';
+    let deviceType = 'desktop';
+    
+    if (/iPhone/.test(userAgent)) {
+      deviceName = 'iPhone';
+      deviceType = 'mobile';
+    } else if (/iPad/.test(userAgent)) {
+      deviceName = 'iPad';
+      deviceType = 'tablet';
+    } else if (/Mac/.test(userAgent)) {
+      deviceName = 'Mac';
+      deviceType = 'desktop';
+    } else if (/Windows/.test(userAgent)) {
+      deviceName = 'Windows PC';
+      deviceType = 'desktop';
+    } else if (/Android.*Mobile/.test(userAgent)) {
+      deviceName = 'Android Phone';
+      deviceType = 'mobile';
+    } else if (/Android/.test(userAgent)) {
+      deviceName = 'Android Tablet';
+      deviceType = 'tablet';
+    } else if (/Linux/.test(userAgent)) {
+      deviceName = 'Linux Device';
+      deviceType = 'desktop';
+    }
+    
+    return { name: deviceName, type: deviceType };
   };
   
   // If showAvailabilityIndicator is false and biometric auth is not available, don't render anything
@@ -223,11 +395,8 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
    * Get button text based on mode and state
    */
   const getButtonText = () => {
-    if (isRegistering) {
-      return "Registering...";
-    }
-    if (isAuthenticating) {
-      return "Authenticating...";
+    if (isLoading) {
+      return mode === 'register' ? "Registering..." : "Authenticating...";
     }
     
     if (mode === 'register') {
@@ -304,7 +473,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
         title={buttonStyle === 'icon-only' ? getButtonText() : undefined}
       >
         {/* Icon */}
-        {isRegistering || isAuthenticating ? <LoadingSpinner /> : <BiometricIcon />}
+        {isLoading ? <LoadingSpinner /> : <BiometricIcon />}
         
         {/* Text (hidden for icon-only style) */}
         {buttonStyle !== 'icon-only' && (
@@ -313,9 +482,9 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       </button>
       
       {/* If there is an error, show an error message */}
-      {showError && (
+      {errorMessage && (
         <div className="mt-2 text-sm text-red-600">
-          {showError}
+          {errorMessage}
         </div>
       )}
     </div>

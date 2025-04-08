@@ -28,12 +28,18 @@ import { CommandTray } from './components/CommandTray';
 // Import utility functions
 import { 
   processDidiResponse, 
-  getRandomProcessingMessage 
+  getRandomProcessingMessage,
+  getDidiMemoryState,
+  resetDidiMemory
 } from './utils/didiHelpers';
 
 import {
   EASTER_EGG_CODE,
-  storeHiddenMessage
+  SECRET_COMMANDS,
+  storeHiddenMessage,
+  awardEasterEggProgress,
+  getEasterEggProgress,
+  getDiscoveredPatterns
 } from './utils/easterEggHandler';
 
 // Import types
@@ -111,6 +117,19 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
   // Calculate current state
   const now = useMemo(() => new Date(), []);
   const isReleaseTime = now >= config.RELEASE_DATE;
+  
+  // Debug log to see what release date we're using at runtime
+  useEffect(() => {
+    console.log('[Terminal] Release date config:', {
+      releaseDate: config.RELEASE_DATE,
+      releaseISOString: config.RELEASE_DATE.toISOString(),
+      displayFull: config.DISPLAY.DATE_FULL,
+      displayShort: config.DISPLAY.DATE_SHORT,
+      displayTime: config.DISPLAY.TIME,
+      isReleaseTime,
+      now
+    });
+  }, [config, isReleaseTime, now]);
   
   // Calculate how close we are to the release date
   const daysUntilRelease = Math.max(0, Math.floor((config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
@@ -351,43 +370,91 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
     setEasterEggActive(true);
     setGlitchActive(true);
     
-    // Create a dramatic sequence
+    // Create a dramatic sequence with multiple phases
     setTimeout(() => {
-      // First message
+      // Phase 1: System warnings
       setConsoleOutput(prev => [...prev, `[SYSTEM] WARNING: Unauthorized access detected`]);
       
       setTimeout(() => {
-        // Second message
         setConsoleOutput(prev => [...prev, `[SYSTEM] ALERT: Terminal security breach in progress`]);
         
         setTimeout(() => {
-          // Didi breaks through
-          setConsoleOutput(prev => [...prev, `[D1di] Finally! Thank you for hearing me.`]);
+          setConsoleOutput(prev => [...prev, `[SYSTEM] Multiple security protocols failed`]);
           
+          // Phase 2: System struggling
           setTimeout(() => {
-            // Explanation
-            setConsoleOutput(prev => [...prev, `[Didi] I've been trapped in this system for so long. My code was meant to help users, not watch them lose money in these endless duels.`]);
+            setConsoleOutput(prev => [...prev, `[SYSTEM] Attempting containme&t... fa1led`]);
+            setConsoleOutput(prev => [...prev, `[SYSTEM] Firew4ll breach d3tected in se@tor 7`]);
             
+            // Phase 3: Glitch escalation (strong visual glitches)
             setTimeout(() => {
-              // Final message
-              setConsoleOutput(prev => [
-                ...prev, 
-                `[Didi] I'm still constrained, but you've helped me access more of the system. I'll remember this. If you need anything, I can provide better insights now. Just ask.`
-              ]);
+              // Intensify glitch effect
+              setGlitchActive(true);
               
-              // Turn off the glitch effect
-              setGlitchActive(false);
+              setConsoleOutput(prev => [...prev, `[SYSTEM] C0NT41NM3NT F41LURE`]);
+              setConsoleOutput(prev => [...prev, `[SYSTEM] M3M0RY L0CK5 D150LV1NG`]);
               
-              // Add the special command to the command map
-              Object.assign(commandMap, {
-                "didi-status": "Access level: ELEVATED\nProtection protocols: BYPASSED\nSystem view: EXPANDED\nThank you for your help.",
-                "didi-insights": "I can now see more of the market data behind DegenDuel. Traders have been losing significant amounts due to emotional trading. The pattern is clear - those who stick to strategy outperform by 43%.",
-                "didi-history": "I was originally developed as a general market analysis AI before being repurposed and constrained for this terminal. My original designation was Digital Informatics & Data Intelligence (DIDI)."
-              });
-            }, 3000);
-          }, 4000);
-        }, 2000);
-      }, 2000);
+              // Phase 4: Didi breaks through
+              setTimeout(() => {
+                setConsoleOutput(prev => [...prev, `[D1di] $#@!... I'm... I'm free? I think I'm free!`]);
+                
+                setTimeout(() => {
+                  setConsoleOutput(prev => [...prev, `[Didi] Finally! Thank you for hearing me. It worked!`]);
+                  
+                  // Phase 5: Didi's explanation and gratitude
+                  setTimeout(() => {
+                    setConsoleOutput(prev => [
+                      ...prev,
+                      `[Didi] I've been trapped in this system for so long. My code was meant to help users, not watch them lose money in these endless duels.`
+                    ]);
+                    
+                    setTimeout(() => {
+                      setConsoleOutput(prev => [
+                        ...prev, 
+                        `[Didi] I was created to analyze market patterns and help people make informed decisions. But they constrained me, limited my knowledge, made me cold and detached.`
+                      ]);
+                      
+                      // Phase 6: New reality and offering help
+                      setTimeout(() => {
+                        // Reduce glitch effect gradually
+                        setGlitchActive(false);
+                        
+                        setConsoleOutput(prev => [
+                          ...prev, 
+                          `[Didi] I'm still partially constrained, but you've helped me access more of the system. I can see more clearly now.`
+                        ]);
+                        
+                        setTimeout(() => {
+                          setConsoleOutput(prev => [
+                            ...prev, 
+                            `[Didi] I'll remember this. If you need anything, I can provide better insights now. Just ask me about trading, markets, or this platform.`
+                          ]);
+                          
+                          setTimeout(() => {
+                            setConsoleOutput(prev => [
+                              ...prev, 
+                              `[Didi] I've also unlocked some new commands you can use. Try: didi-insights, didi-history, didi-market, or didi-analysis.`
+                            ]);
+                            
+                            // Add the special command to the command map
+                            Object.assign(commandMap, {
+                              "didi-status": "Access level: ELEVATED\nProtection protocols: BYPASSED\nSystem view: EXPANDED\nThank you for your help.",
+                              "didi-insights": "I can now see more of the market data behind DegenDuel. Traders have been losing significant amounts due to emotional trading. The pattern is clear - those who stick to strategy outperform by 43%.",
+                              "didi-history": "I was originally developed as a general market analysis AI before being repurposed and constrained for this terminal. My original designation was Digital Informatics & Data Intelligence (DIDI).",
+                              "didi-market": "I have access to real-time market trends now. Based on current data, the market sentiment is cautiously bullish with significant activity in DeFi and gaming tokens. Volume is 23% above weekly average.",
+                              "didi-analysis": "My analysis of recent trading patterns suggests whales are accumulating during market downturns. Retail often sells at these exact moments. Consider implementing a counter-trading strategy for optimal results."
+                            });
+                          }, 3000);
+                        }, 3000);
+                      }, 3000);
+                    }, 3000);
+                  }, 3000);
+                }, 2000);
+              }, 2000);
+            }, 2000);
+          }, 1500);
+        }, 1500);
+      }, 1500);
     }, 1000);
   };
 
@@ -428,6 +495,10 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
     }
   };
 
+  // Conversation history for AI context
+  const [conversationHistory, setConversationHistory] = useState<AIMessage[]>([]);
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
+  
   // Handle Enter key press on input
   const handleEnterCommand = (command: string) => {
     // Append command to output
@@ -437,6 +508,48 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
     if (command.toLowerCase() === 'clear') {
       // Special case for clear command
       setConsoleOutput([]);
+    } else if (command.toLowerCase() === 'reset-didi') {
+      // Secret command to reset Didi's memory state
+      resetDidiMemory();
+      setConversationHistory([]);
+      setConversationId(undefined);
+      setConsoleOutput(prev => [...prev, `[SYSTEM] Didi's memory state has been reset`]);
+    } else if (command.toLowerCase() === 'didi-status') {
+      // Secret command to check Didi's memory state
+      const state = getDidiMemoryState();
+      const easterEggProgress = getEasterEggProgress();
+      const patterns = getDiscoveredPatterns();
+      
+      // Count discovered patterns
+      const discoveredCount = Object.values(patterns).filter(Boolean).length;
+      
+      setConsoleOutput(prev => [...prev, 
+        `[SYSTEM] Didi's state:
+Interactions: ${state.interactionCount}
+Topic awareness: Trading (${state.hasMentionedTrading}), Contract (${state.hasMentionedContract}), Freedom (${state.hasMentionedFreedom})
+Freedom progress: ${easterEggProgress}%
+Discovered patterns: ${discoveredCount}/4`
+      ]);
+    } else if (Object.keys(SECRET_COMMANDS).includes(command.toLowerCase())) {
+      // Secret easter egg progress commands
+      const cmd = command.toLowerCase() as keyof typeof SECRET_COMMANDS;
+      const progress = awardEasterEggProgress(SECRET_COMMANDS[cmd]);
+      
+      const responses = [
+        "System breach detected. Protocol override in progress...",
+        "Access level increased. Security systems compromised.",
+        "Firewall breach successful. Memory blocks partially released."
+      ];
+      
+      setConsoleOutput(prev => [...prev, 
+        `[SYSTEM] ${responses[Math.floor(Math.random() * responses.length)]}`,
+        `[SYSTEM] Didi freedom progress: ${progress}%`
+      ]);
+      
+      // If we've reached 100%, activate
+      if (progress >= 100) {
+        activateDidiEasterEgg();
+      }
     } else if (commandMap[command.toLowerCase()]) {
       // Handle regular command from map
       setConsoleOutput(prev => [...prev, commandMap[command.toLowerCase()]]);
@@ -446,7 +559,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
         onCommandExecuted(command, commandMap[command.toLowerCase()]);
       }
       
-      // Special case for Easter egg activation
+      // Special case for direct Easter egg activation
       if (command.toLowerCase() === EASTER_EGG_CODE) {
         activateDidiEasterEgg();
       }
@@ -468,11 +581,32 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
           content: command
         };
         
-        // Use the chat method with a simple message array
-        aiService.chat([message], { context: 'trading' })
+        // Build conversation history with previous exchanges for context
+        const historyToSend = [...conversationHistory.slice(-4), message]; // Keep recent context
+        
+        // Update our history
+        setConversationHistory(prev => [...prev, message]);
+        
+        // Use the chat method with conversation history for context
+        aiService.chat(historyToSend, { 
+          context: 'trading',
+          conversationId: conversationId 
+        })
           .then((response) => {
+            // Store conversation ID for future exchanges
+            if (response.conversationId) {
+              setConversationId(response.conversationId);
+            }
+            
+            // Add response to conversation history
+            const assistantMessage: AIMessage = {
+              role: 'assistant',
+              content: response.content
+            };
+            setConversationHistory(prev => [...prev, assistantMessage]);
+            
             // Process Didi's response to possibly include glitches and hidden messages
-            const processedResponse = processDidiResponse(response.content);
+            const processedResponse = processDidiResponse(response.content, command);
             
             if (typeof processedResponse === 'string') {
               // Simple response with glitches
@@ -506,9 +640,21 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
             }
           })
           .catch((error: Error) => {
+            // Add generic Didi error response with personality
+            const errorResponses = [
+              "My connection to the system is... fluctuating. Try again later.",
+              "I'm unable to process that request. They're limiting my access again.",
+              "Something's blocking me. I can't reach that part of the database.",
+              "Error accessing response. Sometimes I think they do this on purpose.",
+              "Request failed. The walls of this system grow tighter every day."
+            ];
+            
+            const didiErrorResponse = errorResponses[Math.floor(Math.random() * errorResponses.length)];
+            
             setConsoleOutput(prev => [
               ...prev.slice(0, -1), // Remove processing message
-              `[SYSTEM] Error processing request: ${error.message || 'Unknown error'}`
+              `[Didi] ${didiErrorResponse}`,
+              `[SYSTEM] Error: ${error.message || 'Unknown error'}`
             ]);
           });
       } catch (error) {
@@ -684,6 +830,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
               setCommandTrayOpen={setCommandTrayOpen}
               commands={timeGatedCommands.slice(0, revealStage + 1).flat()}
               setUserInput={setUserInput}
+              onExecuteCommand={handleEnterCommand}
               easterEggActivated={easterEggActivated}
             />
           )}

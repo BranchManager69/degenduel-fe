@@ -42,11 +42,11 @@ export function useAuth() {
   
   // Use Jupiter wallet when feature flag is enabled
   const walletConnected = env.USE_JUPITER_WALLET 
-    ? jupiterWallet.isConnected 
+    ? (jupiterWallet?.isConnected || false)
     : connected;
   
   const walletAddress = env.USE_JUPITER_WALLET
-    ? jupiterWallet.walletAddress
+    ? (jupiterWallet?.walletAddress || null)
     : account?.address;
     
   const [shouldCheck, setShouldCheck] = useState<boolean>(true);

@@ -121,11 +121,11 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
           >
             <div className="flex flex-col gap-2 p-2 bg-dark-400/60 backdrop-blur-sm border border-brand-500/30 rounded-md shadow-xl">
               {/* Each login method gets its own button */}
-              <div className="relative p-0.5 bg-gradient-to-r from-purple-500/40 to-brand-500/80 rounded-md group overflow-hidden shadow-md">
+              <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
                 <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                 <ConnectWalletButton 
-                  className="w-full h-12 z-10 relative"
-                  compact={true}
+                  className="w-full h-12 z-10 relative bg-transparent hover:bg-transparent font-cyber"
+                  compact={false}
                   onClick={handleLoginClick}
                 />
               </div>

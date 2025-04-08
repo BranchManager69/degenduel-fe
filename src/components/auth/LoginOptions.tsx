@@ -128,9 +128,9 @@ const LoginOptions = () => {
               {/* Desktop view: Traditional multi-button display (hidden on mobile) */}
               <div className="hidden md:block space-y-4">
                 {/* Wallet login */}
-                <div className="relative group overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-transparent to-brand-600/20 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <ConnectWalletButton className="w-full py-4" compact={true} />
+                <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
+                  <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-colors duration-300"></div>
+                  <ConnectWalletButton className="w-full h-12 bg-transparent hover:bg-transparent font-cyber" compact={false} />
                 </div>
                 
                 <div className="relative">

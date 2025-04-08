@@ -4,7 +4,7 @@ import { AuthContextType } from '../contexts/AuthContext';
 // Extend Window interface
 interface Window {
   // Flag for Storybook environment
-  STORYBOOK_ENV: boolean;
+  STORYBOOK_ENV?: boolean;
   STORYBOOK_BASE_PATH?: string;
   STORYBOOK_BASE_URL?: string;
   

@@ -1,7 +1,7 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
 import { FaBell, FaFingerprint, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../../hooks/useAuth";
 import useBiometricAuth from "../../../hooks/useBiometricAuth";
@@ -27,31 +27,33 @@ interface UserMenuProps {
 
 // Biometric Auth Menu Option Component
 const BiometricAuthMenuOption: React.FC<{ userId: string }> = ({ userId }) => {
-  const { isAvailable, isRegistered, registerCredential, authenticate } = useBiometricAuth();
+  const { isAvailable, isRegistered, registerCredential } = useBiometricAuth();
   const [isLoading, setIsLoading] = useState(false);
   const user = useStore(state => state.user);
+  const navigate = useNavigate();
   
   // Don't show if biometric auth is not available
   if (!isAvailable) return null;
   
   const handleBiometricAction = async () => {
+    if (isRegistered) {
+      // Navigate to biometric management page
+      navigate('/biometric-auth-demo');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      if (isRegistered) {
-        // Authenticate with biometrics
-        await authenticate(userId);
-      } else {
-        // Register biometric credential with platform authenticator (Face ID, Touch ID, etc.)
-        await registerCredential(
-          userId, 
-          user?.nickname || userId,
-          { 
-            authenticatorType: 'platform',
-            nickname: user?.nickname || undefined
-          }
-        );
-      }
+      // Register biometric credential with platform authenticator (Face ID, Touch ID, etc.)
+      await registerCredential(
+        userId, 
+        user?.nickname || userId,
+        { 
+          authenticatorType: 'platform',
+          nickname: user?.nickname || undefined
+        }
+      );
     } catch (err) {
       console.error('Biometric auth error:', err);
     } finally {
@@ -78,7 +80,7 @@ const BiometricAuthMenuOption: React.FC<{ userId: string }> = ({ userId }) => {
             `} 
           />
           <span className="flex-1">
-            {isLoading ? "Processing..." : (isRegistered ? "Use Biometrics" : "Setup Biometrics")}
+            {isLoading ? "Processing..." : (isRegistered ? "Manage Biometrics" : "Setup Biometrics")}
           </span>
         </button>
       )}

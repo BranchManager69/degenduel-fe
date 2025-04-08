@@ -113,14 +113,24 @@ const LoginPage: React.FC = () => {
         </motion.div>
 
         {/* Note below login panel */}
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7, duration: 0.7 }}
-          className="text-center text-sm text-gray-400 mt-4"
+          className="space-y-2"
         >
-          New to DegenDuel? Simply connect your wallet to create an account!
-        </motion.p>
+          <p className="text-center text-sm text-gray-400">
+            New to DegenDuel? Simply connect your wallet to create an account!
+          </p>
+          <p className="text-center text-xs text-gray-500">
+            <a 
+              href="/biometric-auth-demo" 
+              className="text-brand-400 hover:text-brand-300 transition-colors"
+            >
+              Try our biometric authentication demo →
+            </a>
+          </p>
+        </motion.div>
       </motion.div>
     </div>
   );

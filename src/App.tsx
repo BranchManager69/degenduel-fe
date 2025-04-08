@@ -111,6 +111,7 @@ import "./styles/color-schemes.css";
 import { WalletProvider } from "@jup-ag/wallet-adapter";
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { clusterApiUrl } from "@solana/web3.js";
 import { env } from "./config/env";
 
 // Lazy AdminChatDashboard
@@ -125,11 +126,17 @@ export const App: React.FC = () => {
   // Get the user from the store
   const { user } = useStore();
   
-  // Create wallet adapters for Jupiter wallet
+  // Create wallet adapters for both Jupiter wallet and Solana wallet adapter
   const walletAdapters = [
     new PhantomWalletAdapter(),
     new SolflareWalletAdapter()
   ];
+  
+  // Complete configuration for Solana wallet adapter
+  const walletConfigSolana = {
+    wallets: walletAdapters,
+    autoConnect: false
+  };
   
   // Initialize scrollbar visibility
   useScrollbarVisibility();
@@ -222,18 +229,19 @@ export const App: React.FC = () => {
     },
   };      
 
-  // Create a connection to use with Solana wallet adapter
-  const solanaEndpoint = "https://solana-mainnet.rpc.extrnode.com";
+  // Create a connection to use with Solana wallet adapter - using official Solana cluster API
+  const solanaEndpoint = clusterApiUrl('mainnet-beta');
   
   // DegenDuel entry
   return (
     <Router>
       <ConnectionProvider endpoint={solanaEndpoint}>
-        <SolanaWalletProvider wallets={walletAdapters} autoConnect={false}>
+        <SolanaWalletProvider {...walletConfigSolana}>
           {env.USE_JUPITER_WALLET ? (
             // With Jupiter WalletProvider
             <WalletProvider 
               wallets={walletAdapters}
+              autoConnect={false}
             >
               <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
             <PrivyAuthProvider>

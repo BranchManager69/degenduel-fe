@@ -165,6 +165,25 @@ export const LandingPage: React.FC = () => {
     }
   };
   
+  // Debug log for release date sources
+  useEffect(() => {
+    console.log('[LandingPage] Release date sources:', {
+      releaseDate,
+      releaseDateToISOString: releaseDate.toISOString(),
+      globalConfigDate: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
+      globalConfigDateToISOString: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME.toISOString(),
+      fallbackDate: FALLBACK_RELEASE_DATE,
+      fallbackDateToISOString: FALLBACK_RELEASE_DATE.toISOString(),
+      configReleaseDate: terminalConfig.RELEASE_DATE,
+      configReleaseDateToISOString: terminalConfig.RELEASE_DATE.toISOString(),
+      envVars: {
+        DATE_SHORT: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
+        DATE_FULL: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,
+        TIME: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_TIME,
+      }
+    });
+  }, [releaseDate, terminalConfig]);
+  
   // Use auth hook for proper admin status checks
   const { user, isAdmin } = useAuth();
   

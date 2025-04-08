@@ -60,6 +60,7 @@
     "@react-three/drei": "^9.121.4",
     "@react-three/fiber": "^8.17.14",
     "@react-three/postprocessing": "^3.0.4",
+    "@simplewebauthn/browser": "^13.1.0",
     "@solana/spl-token": "^0.4.12",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-wallets": "^0.19.33",

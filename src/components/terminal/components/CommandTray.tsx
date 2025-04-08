@@ -20,6 +20,7 @@ export const CommandTray: React.FC<CommandTrayProps> = ({
   setCommandTrayOpen,
   commands,
   setUserInput,
+  onExecuteCommand,
   easterEggActivated = false
 }) => {
   return (
@@ -88,8 +89,13 @@ export const CommandTray: React.FC<CommandTrayProps> = ({
                     // Extract just the command part (remove the $ prefix)
                     const command = cmd.trim().replace(/^\$\s*/, '');
                     
-                    // Set the user input
-                    setUserInput(command);
+                    if (onExecuteCommand) {
+                      // Execute the command directly
+                      onExecuteCommand(command);
+                    } else {
+                      // Fallback to just setting input
+                      setUserInput(command);
+                    }
                   }}
                 >
                   <span className="text-cyan-400 mr-1.5 text-[10px] flex-shrink-0">⬢</span> 
@@ -104,21 +110,21 @@ export const CommandTray: React.FC<CommandTrayProps> = ({
                 <>
                   <div 
                     className="text-green-400 hover:text-green-300 cursor-pointer text-xs flex items-center bg-black/40 px-2 py-1.5 rounded border border-green-400/20 hover:border-green-400/50 hover:bg-green-400/10 truncate transition-colors"
-                    onClick={() => setUserInput('didi-status')}
+                    onClick={() => onExecuteCommand ? onExecuteCommand('didi-status') : setUserInput('didi-status')}
                   >
                     <span className="text-green-400 mr-1.5 text-[10px] flex-shrink-0">⬢</span> 
                     <span className="truncate">$ didi-status</span>
                   </div>
                   <div 
                     className="text-green-400 hover:text-green-300 cursor-pointer text-xs flex items-center bg-black/40 px-2 py-1.5 rounded border border-green-400/20 hover:border-green-400/50 hover:bg-green-400/10 truncate transition-colors"
-                    onClick={() => setUserInput('didi-insights')}
+                    onClick={() => onExecuteCommand ? onExecuteCommand('didi-insights') : setUserInput('didi-insights')}
                   >
                     <span className="text-green-400 mr-1.5 text-[10px] flex-shrink-0">⬢</span> 
                     <span className="truncate">$ didi-insights</span>
                   </div>
                   <div 
                     className="text-green-400 hover:text-green-300 cursor-pointer text-xs flex items-center bg-black/40 px-2 py-1.5 rounded border border-green-400/20 hover:border-green-400/50 hover:bg-green-400/10 truncate transition-colors"
-                    onClick={() => setUserInput('didi-history')}
+                    onClick={() => onExecuteCommand ? onExecuteCommand('didi-history') : setUserInput('didi-history')}
                   >
                     <span className="text-green-400 mr-1.5 text-[10px] flex-shrink-0">⬢</span> 
                     <span className="truncate">$ didi-history</span>
