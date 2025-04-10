@@ -632,7 +632,7 @@ export const App: React.FC = () => {
                                       </SuperAdminRoute>
                                     }
                                   />
-                                  <Route path="/blinks/*" element={<></>} />
+                                  <Route path="/blinks/*" element={<BlinkResolver />} />
                                   <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
                                   <Route path="*" element={<NotFound />} />
                                   <Route path="/banned" element={<BannedUser />} />

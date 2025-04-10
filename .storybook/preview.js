@@ -1,8 +1,28 @@
 /** @type { import('@storybook/react').Preview } */
 import React from 'react';
 import '../src/index.css';
-import { withTokenDataMock, withStoreMock } from './decorators';
-import { withAuthMock, MockAuthProvider } from './mockComponents.tsx';
+import { MockAuthProvider, mockedHooks, withAuthMock } from './mockComponents.tsx';
+
+// Force React into development mode if it isn't already
+if (process.env.NODE_ENV !== 'development') {
+  console.warn('⚠️ React may be running in production mode. Setting NODE_ENV to development.');
+  process.env.NODE_ENV = 'development';
+}
+
+// Check if React is in production mode and warn
+const checkReactMode = () => {
+  setTimeout(() => {
+    // Use setTimeout to run this after the app has started
+    const reactDevModeCheck = typeof React !== 'undefined' && React.version;
+    if (reactDevModeCheck) {
+      console.log('✅ React version:', React.version);
+      console.log('✅ React environment:', process.env.NODE_ENV);
+    } else {
+      console.warn('⚠️ Could not determine React version or mode');
+    }
+  }, 1000);
+};
+checkReactMode();
 
 // No TypeScript declarations in JS files
 
@@ -275,8 +295,240 @@ const withMockedHooks = (Story) => {
   );
 };
 
+// Enhanced WebSocket mock for Storybook that provides more intelligence
+const setupWebSocketMock = () => {
+  if (typeof window !== 'undefined') {
+    // Store the original WebSocket constructor
+    const originalWebSocket = window.WebSocket;
+    
+    // Create a more intelligent mock WebSocket constructor
+    function MockWebSocket(url) {
+      console.log(`[Storybook] WebSocket connection to ${url} mocked`);
+      
+      // Track the URL to determine which socket this is
+      const isSystemSocket = url.includes('/system') || url.includes('/v69');
+      const mockSocketType = isSystemSocket ? 'system' : 'unknown';
+      
+      // These properties are on WebSocket instances
+      this.url = url;
+      this.readyState = 0; // CONNECTING 
+      this.protocol = '';
+      this.extensions = '';
+      this.binaryType = 'blob';
+      this.bufferedAmount = 0;
+      
+      // Track callbacks for later reference
+      if (!window.__webSocketCallbacks) {
+        window.__webSocketCallbacks = [];
+      }
+      
+      // Event handlers
+      this.onopen = null;
+      this.onclose = null;
+      this.onerror = null;
+      this.onmessage = null;
+      
+      // Simulate open after a brief delay, like a fast network connection
+      setTimeout(() => {
+        if (this.onopen) {
+          this.readyState = 1; // OPEN
+          const openEvent = new Event('open');
+          this.onopen(openEvent);
+          
+          // If this is a system socket, send mock data after connection
+          if (isSystemSocket) {
+            setTimeout(() => {
+              if (this.onmessage) {
+                const mockData = {
+                  type: "SYSTEM_SETTINGS_UPDATE",
+                  data: {
+                    background_scene: {
+                      enabled: true,
+                      scenes: [
+                        { name: 'CyberGrid', enabled: true, zIndex: 0, blendMode: 'normal' },
+                        { name: 'MarketBrain', enabled: true, zIndex: 1, blendMode: 'screen' }
+                      ]
+                    },
+                    maintenance_mode: false,
+                    feature_flags: {
+                      enable_animations: true,
+                      enable_achievements: true
+                    }
+                  }
+                };
+                
+                const messageEvent = new MessageEvent('message', {
+                  data: JSON.stringify(mockData)
+                });
+                this.onmessage(messageEvent);
+              }
+            }, 100);
+          }
+        }
+      }, 50);
+      
+      // Methods
+      this.close = () => {
+        if (this.readyState === 1 && this.onclose) {
+          this.readyState = 3; // CLOSED
+          const closeEvent = new CloseEvent('close', { 
+            wasClean: true,
+            code: 1000,
+            reason: 'Storybook mock closed'
+          });
+          this.onclose(closeEvent);
+        }
+      };
+      
+      this.send = (data) => {
+        console.log(`[Storybook] Mock WebSocket send:`, { url, data });
+        
+        // If this is a subscription or settings request, send a mock acknowledgment
+        if (data && typeof data === 'string') {
+          try {
+            const message = JSON.parse(data);
+            
+            if ((message.type === 'SUBSCRIBE' || message.type === 'GET_SYSTEM_SETTINGS') && this.onmessage) {
+              setTimeout(() => {
+                // Send acknowledgment
+                const ackMessageEvent = new MessageEvent('message', {
+                  data: JSON.stringify({
+                    type: 'ACKNOWLEDGMENT',
+                    message: 'Subscription successful',
+                    topics: message.topics || ['system']
+                  })
+                });
+                
+                if (this.onmessage) this.onmessage(ackMessageEvent);
+                
+                // If this is a system request, also send settings data
+                if (isSystemSocket || (message.topics && message.topics.includes('system'))) {
+                  setTimeout(() => {
+                    const dataMessageEvent = new MessageEvent('message', {
+                      data: JSON.stringify({
+                        type: "SYSTEM_SETTINGS_UPDATE",
+                        data: {
+                          background_scene: {
+                            enabled: true,
+                            scenes: [
+                              { name: 'CyberGrid', enabled: true, zIndex: 0, blendMode: 'normal' },
+                              { name: 'MarketBrain', enabled: true, zIndex: 1, blendMode: 'screen' }
+                            ]
+                          },
+                          maintenance_mode: false,
+                          feature_flags: {
+                            enable_animations: true,
+                            enable_achievements: true
+                          }
+                        }
+                      })
+                    });
+                    
+                    if (this.onmessage) this.onmessage(dataMessageEvent);
+                  }, 100);
+                }
+              }, 50);
+            }
+          } catch (e) {
+            console.warn('[Storybook] Error parsing WebSocket message:', e);
+          }
+        }
+      };
+      
+      // Static properties from the WebSocket class
+      Object.defineProperties(this.constructor, {
+        CONNECTING: { value: 0 },
+        OPEN: { value: 1 },
+        CLOSING: { value: 2 },
+        CLOSED: { value: 3 }
+      });
+      
+      // Store a reference to the onmessage handler for direct calls
+      if (this.onmessage) {
+        window.__webSocketCallbacks.push(this.onmessage);
+      }
+    }
+    
+    // Replace the WebSocket constructor
+    window.WebSocket = MockWebSocket;
+    
+    // Store reference to restore on cleanup
+    window._originalWebSocket = originalWebSocket;
+    
+    // Create a mock WebSocketContext
+    window.useWebSocketContext = () => ({
+      isConnected: true,
+      isAuthenticated: true,
+      connectionState: 'AUTHENTICATED',
+      connectionError: null,
+      sendMessage: (message) => {
+        console.log('[Storybook] WebSocketContext sendMessage:', message);
+        return true;
+      },
+      subscribe: (topics) => {
+        console.log('[Storybook] WebSocketContext subscribe:', topics);
+        return true;
+      },
+      unsubscribe: (topics) => {
+        console.log('[Storybook] WebSocketContext unsubscribe:', topics);
+        return true;
+      },
+      request: (topic, action, params) => {
+        console.log('[Storybook] WebSocketContext request:', { topic, action, params });
+        return true;
+      },
+      registerListener: (id, types, callback, topics) => {
+        console.log('[Storybook] WebSocketContext registerListener:', { id, types, topics });
+        
+        // Store callback for direct calls
+        if (!window.__webSocketCallbacks) {
+          window.__webSocketCallbacks = [];
+        }
+        window.__webSocketCallbacks.push(callback);
+        
+        // If this is a system listener, send mock data after a short delay
+        if (id.includes('system') || (topics && topics.includes('system'))) {
+          setTimeout(() => {
+            callback({
+              type: "SYSTEM_SETTINGS_UPDATE",
+              data: {
+                background_scene: {
+                  enabled: true,
+                  scenes: [
+                    { name: 'CyberGrid', enabled: true, zIndex: 0, blendMode: 'normal' },
+                    { name: 'MarketBrain', enabled: true, zIndex: 1, blendMode: 'screen' }
+                  ]
+                },
+                maintenance_mode: false,
+                feature_flags: {
+                  enable_animations: true,
+                  enable_achievements: true
+                }
+              }
+            });
+          }, 100);
+        }
+        
+        // Return unregister function
+        return () => {
+          console.log('[Storybook] WebSocketContext unregisterListener:', id);
+          if (window.__webSocketCallbacks) {
+            window.__webSocketCallbacks = window.__webSocketCallbacks.filter(cb => cb !== callback);
+          }
+        };
+      }
+    });
+    
+    // Log that we've mocked WebSockets
+    console.log('[Storybook] WebSocket connections mocked globally');
+  }
+};
+
 // Initial setup of global mocks (ensures they're available during Story initialization)
 if (typeof window !== 'undefined') {
+  // Set up enhanced WebSocket mocks for Storybook
+  setupWebSocketMock();
+  
   // Set up base path handling for Storybook when served from a subpath
   window.STORYBOOK_ENV = true;
   
@@ -293,6 +545,78 @@ if (typeof window !== 'undefined') {
       return originalFetch(url, options);
     };
   }
+  
+  // Mock all API calls to prevent network requests
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    console.log(`[Storybook] Intercepted fetch to: ${url}`);
+    
+    // Mock system status API
+    if (url.includes('/api/admin/system-status') || url.includes('/api/v69/system-status')) {
+      console.log('[Storybook] Mocking system status response');
+      return Promise.resolve(new Response(
+        JSON.stringify({
+          status: 'operational',
+          maintenance: false,
+          services: {
+            websocket: 'operational',
+            database: 'operational',
+            auth: 'operational',
+            api: 'operational'
+          },
+          last_updated: new Date().toISOString()
+        }),
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      ));
+    }
+    
+    // Mock system settings API (for the admin.getSystemSettings() fallback)
+    if (url.includes('/admin/system-settings')) {
+      console.log('[Storybook] Mocking system settings response');
+      return Promise.resolve(new Response(
+        JSON.stringify({
+          background_scene: {
+            enabled: true,
+            scenes: [
+              {
+                name: 'CyberGrid',
+                enabled: true,
+                zIndex: 0,
+                blendMode: 'normal'
+              },
+              {
+                name: 'MarketBrain',
+                enabled: true,
+                zIndex: 1,
+                blendMode: 'screen'
+              }
+            ]
+          },
+          maintenance_mode: false,
+          feature_flags: {
+            enable_animations: true,
+            enable_achievements: true
+          }
+        }),
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      ));
+    }
+    
+    // Default mock response for unknown endpoints
+    return Promise.resolve(new Response(
+      JSON.stringify({ mock: true, message: 'Storybook mock response' }),
+      { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    ));
+  };
   
   // Auth context mock
   window.useAuthContext = () => ({
@@ -326,6 +650,67 @@ if (typeof window !== 'undefined') {
     },
     checkAuthStatus: async () => {}
   });
+  
+  // Import mock hooks and assign them to window for global access
+  window.useSystemSettingsWebSocket = mockedHooks.useSystemSettingsWebSocket;
+  
+  // Mock the WebSocket interface properly with auto-response for system settings
+  window.useWebSocket = (config) => {
+    console.log(`[Storybook] Mock WebSocket created for ${config.socketType}`);
+    
+    // Prevent excessive WebSocket reconnection attempts
+    const connectionAttemptKey = `ws_last_attempt_${config.socketType}`;
+    const now = Date.now();
+    const lastAttempt = parseInt(sessionStorage.getItem(connectionAttemptKey) || '0');
+    const THROTTLE_MS = 5000; // 5 seconds between connection attempts
+    
+    if (now - lastAttempt < THROTTLE_MS) {
+      console.log(`[Storybook] Throttling WebSocket connection for ${config.socketType}`);
+      // Return a stable mock without triggering additional connections
+      return {
+        status: 'throttled',
+        data: null,
+        error: null,
+        send: (message) => console.log(`[Storybook] Mock WebSocket send (throttled): ${JSON.stringify(message)}`),
+        connect: () => console.log(`[Storybook] Mock WebSocket connect (throttled)`),
+        close: () => console.log(`[Storybook] Mock WebSocket close (throttled)`)
+      };
+    }
+    
+    // Update last attempt timestamp
+    sessionStorage.setItem(connectionAttemptKey, now.toString());
+    
+    // Special handling for system settings socket
+    if (config.socketType === 'system') {
+      setTimeout(() => {
+        if (typeof window.__webSocketCallbacks !== 'undefined') {
+          // Find any system socket callbacks and send mock data
+          window.__webSocketCallbacks.forEach(cb => cb({
+            type: "SYSTEM_SETTINGS_UPDATE",
+            data: {
+              background_scene: {
+                enabled: true,
+                scenes: [
+                  { name: 'CyberGrid', enabled: true, zIndex: 0, blendMode: 'normal' },
+                  { name: 'MarketBrain', enabled: true, zIndex: 1, blendMode: 'screen' }
+                ]
+              },
+              maintenance_mode: false
+            }
+          }));
+        }
+      }, 100);
+    }
+    
+    return {
+      status: 'online',
+      data: null,
+      error: null,
+      send: (message) => console.log(`[Storybook] Mock WebSocket send: ${JSON.stringify(message)}`),
+      connect: () => console.log(`[Storybook] Mock WebSocket connect`),
+      close: () => console.log(`[Storybook] Mock WebSocket close`)
+    };
+  };
   
   // Mock Solana wallet for Blinks stories
   if (!window.solana) {

@@ -7,6 +7,7 @@ import { ContestButton } from "../landing/contests-preview/ContestButton";
 import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { CountdownTimer } from "../ui/CountdownTimer";
 import { LoadingSpinner } from "../common/LoadingSpinner";
+import { ShareContestButton } from "./ShareContestButton";
 
 interface ContestCardProps {
   contest: Contest;
@@ -375,55 +376,71 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           )}
         </div>
 
-        {/* Entry Fee and Prize Pool side by side with completely synchronized styling */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-          {/* Entry Fee Section */}
-          <div className="flex flex-col h-full">
-            <span className="text-sm text-gray-400 mb-1">Entry Fee</span>
-            <div className="relative rounded-md bg-dark-300/20 h-[40px] flex items-center px-3">
-              {displayStatus === "cancelled" ? (
-                <div className="text-2xl font-bold text-gray-500">
-                  {formatCurrency(Number(contest.entry_fee))}
+        {/* Entry Fee and Prize Pool with modern, visually connected design */}
+        <div className="relative mt-2 mb-3">
+          {/* Visual comparison container */}
+          <div className="flex flex-col space-y-4">
+            {/* Entry Fee Section - More understated */}
+            <div className="flex items-center">
+              <div className="w-24 flex-shrink-0">
+                <span className="text-xs uppercase tracking-wider text-gray-400 font-medium">Entry Fee</span>
+              </div>
+              <div className="flex-1 ml-3">
+                <div className="relative h-11 rounded-md overflow-hidden bg-dark-300/40 backdrop-blur-sm flex items-center">
+                  {/* Inner content */}
+                  <div className="absolute inset-y-0 left-0 bg-blue-500/10" 
+                       style={{ 
+                         width: `${Math.min(100, (Number(contest.entry_fee) / Number(contest.prize_pool)) * 100)}%` 
+                       }}>
+                    {/* Subtle pulse animation */}
+                    <div className="absolute inset-0 bg-blue-400/5 animate-pulse-slow"></div>
+                  </div>
+                  
+                  {/* The value */}
+                  <div className="relative z-10 px-3 py-2 flex items-center">
+                    <span className={`text-xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-blue-300"}`}>
+                      {formatCurrency(Number(contest.entry_fee))}
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div
-                  className="text-2xl font-bold"
-                  style={{
-                    background: "linear-gradient(90deg, #9f9f9f, #ffffff, #d4d4d4)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent"
-                  }}
-                >
-                  {formatCurrency(Number(contest.entry_fee))}
+              </div>
+            </div>
+            
+            {/* Prize Pool Section - More prominent */}
+            <div className="flex items-center">
+              <div className="w-24 flex-shrink-0">
+                <span className="text-xs uppercase tracking-wider text-gray-400 font-medium">Prize Pool</span>
+              </div>
+              <div className="flex-1 ml-3">
+                <div className="relative h-14 rounded-md overflow-hidden bg-dark-300/40 backdrop-blur-sm flex items-center">
+                  {/* Background fill - always full width */}
+                  <div className="absolute inset-y-0 left-0 right-0 bg-brand-600/20">
+                    {/* Subtle shine animation */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-brand-400/40 to-transparent -translate-x-full animate-shine-slow"></div>
+                    </div>
+                  </div>
+                  
+                  {/* The value */}
+                  <div className="relative z-10 px-3 py-2 flex items-center justify-between w-full">
+                    <span className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-brand-300"}`}>
+                      {formatCurrency(Number(contest.prize_pool))}
+                    </span>
+                    
+                    {/* Visual multiplier */}
+                    {displayStatus !== "cancelled" && Number(contest.entry_fee) > 0 && (
+                      <span className="text-sm font-mono text-gray-400 mr-3">
+                        {(Number(contest.prize_pool) / Number(contest.entry_fee)).toFixed(1)}x
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
-          
-          {/* Prize Pool Section */}
-          <div className="flex flex-col h-full">
-            <span className="text-sm text-gray-400 mb-1">Prize Pool</span>
-            <div className="relative rounded-md bg-dark-300/20 h-[40px] flex items-center px-3">
-              {displayStatus === "cancelled" ? (
-                <div className="text-2xl font-bold text-gray-500">
-                  {formatCurrency(Number(contest.prize_pool))}
-                </div>
-              ) : (
-                <div
-                  className="text-2xl font-bold"
-                  style={{
-                    background: "linear-gradient(90deg, #9933ff, #ffca0a, #6600cc)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent"
-                  }}
-                >
-                  {formatCurrency(Number(contest.prize_pool))}
-                </div>
-              )}
-            </div>
-          </div>
+
+          {/* Connecting line element */}
+          <div className="absolute left-24 top-[2.75rem] bottom-[2.75rem] w-px bg-gradient-to-b from-blue-500/30 via-brand-500/30 to-brand-500/30"></div>
         </div>
 
         {/* Players Progress with enhanced styling */}
@@ -456,17 +473,29 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           </div>
         </div>
 
-        {/* Use ContestButton component with participation status */}
-        <ContestButton
-          id={Number(contest.id)}
-          type={
-            displayStatus === "active" ? "live" :
-            displayStatus === "pending" ? "upcoming" :
-            displayStatus === "completed" ? "completed" :
-            "cancelled"
-          }
-          isParticipating={contest.is_participating}
-        />
+        {/* Action buttons row */}
+        <div className="flex gap-2">
+          {/* Main action button */}
+          <div className="flex-1">
+            <ContestButton
+              id={Number(contest.id)}
+              type={
+                displayStatus === "active" ? "live" :
+                displayStatus === "pending" ? "upcoming" :
+                displayStatus === "completed" ? "completed" :
+                "cancelled"
+              }
+              isParticipating={contest.is_participating}
+            />
+          </div>
+          
+          {/* Share button - available for all contest statuses */}
+          <ShareContestButton 
+            contestId={contest.id.toString()} 
+            contestName={contest.name}
+            status={displayStatus}
+          />
+        </div>
 
         {/* Reference code in bottom right corner */}
         <div className="absolute bottom-1.5 right-2">

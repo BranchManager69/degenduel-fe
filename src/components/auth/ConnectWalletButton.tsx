@@ -33,72 +33,89 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   // Handle connect action
   const handleConnect = useCallback(async () => {
     try {
-      if (env.USE_JUPITER_WALLET) {
-        // First connect the wallet
-        console.log("[WALLET DEBUG] Attempting to connect to Jupiter wallet...");
+      // Use environment flag to choose which wallet to connect
+      const useJupiterWallet = env.USE_JUPITER_WALLET;
+      console.log("[WALLET DEBUG] Using wallet implementation:", useJupiterWallet ? "Jupiter" : "Phantom");
+      
+      if (useJupiterWallet) {
+        // Jupiter wallet flow
+        console.log("[WALLET DEBUG] Connecting to Jupiter wallet...");
         await jupiterWallet.connect();
         
-        // After connected, get the wallet address
-        console.log("[WALLET DEBUG] Jupiter wallet connected, wallet address:", jupiterWallet.walletAddress);
-        console.log("[WALLET DEBUG] Wallet name:", jupiterWallet.walletName);
-        console.log("[WALLET DEBUG] isConnected:", jupiterWallet.isConnected);
+        if (!jupiterWallet.walletAddress) {
+          throw new Error("No wallet address obtained from Jupiter wallet");
+        }
         
-        if (jupiterWallet.walletAddress) {
-          // Authenticate with the backend using the Jupiter wallet
-          console.log("[WALLET DEBUG] Authenticating with backend using wallet address:", jupiterWallet.walletAddress);
-          try {
-            const authResult = await authenticateWithWallet(
-              jupiterWallet.walletAddress,
-              jupiterWallet.signMessage
-            );
-            
-            console.log("[WALLET DEBUG] Authentication result:", authResult);
-            
-            // Update the store with user data
-            if (authResult.user) {
-              console.log("[Jupiter Wallet] Authentication successful, updating user:", authResult.user);
-              useStore.getState().setUser(authResult.user);
-              
-              // Force a re-check of the auth state
-              setTimeout(() => {
-                useAuth().checkAuth();
-              }, 300);
-            }
-          } catch (error: any) {
-            console.error('[WALLET DEBUG] Authentication with backend failed:', error);
-            console.log('[WALLET DEBUG] Error details:', {
-              message: error.message || 'Unknown error',
-              status: error.response?.status,
-              statusText: error.response?.statusText,
-              data: error.response?.data,
-              url: error.config?.url
-            });
-          }
-        } else {
-          console.error('[WALLET DEBUG] No wallet address available after connecting');
+        console.log("[WALLET DEBUG] Jupiter wallet connected:", {
+          address: jupiterWallet.walletAddress,
+          name: jupiterWallet.walletName
+        });
+        
+        // Authenticate with backend
+        console.log("[WALLET DEBUG] Authenticating with backend using Jupiter wallet");
+        const authResult = await authenticateWithWallet(
+          jupiterWallet.walletAddress,
+          jupiterWallet.signMessage
+        );
+        
+        if (authResult.user) {
+          console.log("[WALLET DEBUG] Authentication successful");
+          useStore.getState().setUser(authResult.user);
+          
+          // Force a re-check of the auth state
+          setTimeout(() => {
+            useAuth().checkAuth();
+          }, 300);
         }
       } else {
-        // Use the existing connectWallet flow for Phantom wallet
-        console.log("[WALLET DEBUG] Using Phantom wallet connection flow");
-        connectWallet();
+        // Phantom wallet flow
+        console.log("[WALLET DEBUG] Connecting to Phantom wallet...");
+        await connectWallet();
+        console.log("[WALLET DEBUG] Phantom wallet connection succeeded");
       }
       
       if (onClick) onClick();
     } catch (error: any) {
       console.error('[WALLET DEBUG] Wallet connection failed:', error);
-      console.log('[WALLET DEBUG] Error stack:', error.stack || 'No stack trace available');
-      console.log('[WALLET DEBUG] Error message:', error.message || 'Unknown error');
+      console.log('[WALLET DEBUG] Error details:', {
+        message: error.message || 'Unknown error',
+        type: env.USE_JUPITER_WALLET ? 'Jupiter' : 'Phantom',
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      throw error; // Re-throw to show error to user
     }
   }, [jupiterWallet, connectWallet, onClick]);
 
   // Handle disconnect action
   const handleDisconnect = useCallback(() => {
-    if (env.USE_JUPITER_WALLET) {
-      jupiterWallet.disconnect();
-    } else {
+    try {
+      // Disconnect from all possible wallet providers to avoid any confusion
+      console.log("[WALLET DEBUG] Disconnecting from all wallet providers");
+      
+      // Disconnect Jupiter if available
+      if (jupiterWallet?.disconnect) {
+        console.log("[WALLET DEBUG] Disconnecting Jupiter wallet");
+        jupiterWallet.disconnect().catch(err => 
+          console.warn("[WALLET DEBUG] Error disconnecting Jupiter wallet:", err)
+        );
+      }
+      
+      // Always run the main disconnect wallet function which handles storage cleanup
+      console.log("[WALLET DEBUG] Running global disconnectWallet function");
       disconnectWallet();
+      
+      // Notify WebSocket system of disconnection via custom event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('wallet-disconnected', {
+          detail: { timestamp: new Date().toISOString() }
+        }));
+      }
+      
+      if (onClick) onClick();
+    } catch (error) {
+      console.error("[WALLET DEBUG] Error during wallet disconnection:", error);
     }
-    if (onClick) onClick();
   }, [jupiterWallet, disconnectWallet, onClick]);
 
   // When Jupiter wallet is enabled, always use their UnifiedWalletButton component

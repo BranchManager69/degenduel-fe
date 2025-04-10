@@ -1,3 +1,26 @@
+<!-- This file is injected into the head of the Storybook iframe before any other scripts -->
+<script>
+  // Ensure NODE_ENV is set to development
+  window.process = window.process || {};
+  window.process.env = window.process.env || {};
+  window.process.env.NODE_ENV = 'development';
+  
+  // Immediately disable any Vite reconnection attempts
+  window.__vite_poll_timeout = null;
+  window.__vite_ws_reconnect = function() {
+    console.log('[Storybook] Prevented Vite reconnection attempt');
+    return false;
+  };
+</script>
+
+<!-- Include our script to prevent Vite refreshing -->
+<script src="prevent-vite-refresh.js"></script>
+
+<!-- Debugging info -->
+<script>
+  console.log('[Storybook] Preview head loaded, Vite HMR disabled');
+</script>
+
 <script>
   // Define process.env for Storybook environment
   window.process = window.process || {};

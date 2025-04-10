@@ -387,23 +387,8 @@ export const linkPrivyAccount = async (token: string, userId: string) => {
  * @returns {Promise<string>} - The URL to redirect to for Twitter auth
  */
 export const getTwitterAuthUrl = async (): Promise<string> => {
-  try {
-    const response = await axios.get(`${API_URL}/auth/twitter/auth-url`, {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Debug": "true",
-        Origin: window.location.origin,
-      },
-      withCredentials: true,
-    });
-    
-    return response.data.url || "/api/auth/twitter/login";
-  } catch (error: any) {
-    console.error("[Twitter Auth] Failed to get auth URL:", error);
-    // Return default URL as fallback
-    return "/api/auth/twitter/login";
-  }
+  // Return directly to the Twitter login endpoint as confirmed by backend
+  return `${API_URL}/auth/twitter/login`;
 };
 
 /**
@@ -653,7 +638,7 @@ export const verifyBiometricAuthentication = async (assertion: any): Promise<any
 export const checkBiometricCredentialStatus = async (userId: string): Promise<boolean> => {
   try {
     const response = await axios.get(
-      `${API_URL}/auth/biometric/has-credential?userId=${encodeURIComponent(userId)}`,
+      `${API_URL}/auth/biometric/credentials?userId=${encodeURIComponent(userId)}`,
       {
         headers: {
           'Content-Type': 'application/json',

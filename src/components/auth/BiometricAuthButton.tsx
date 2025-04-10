@@ -108,7 +108,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       if (!effectiveWalletAddress || !isAvailable) return;
       
       try {
-        const response = await fetch(`/api/auth/biometric/has-credential?userId=${encodeURIComponent(effectiveWalletAddress)}`, {
+        const response = await fetch(`/api/auth/biometric/credentials?userId=${encodeURIComponent(effectiveWalletAddress)}`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
@@ -243,7 +243,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
     
     try {
       // 1. Get options from server
-      const optionsResponse = await fetch('/api/auth/biometric/auth-options', {
+      const optionsResponse = await fetch('/api/auth/biometric/login-options', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: effectiveWalletAddress })
@@ -268,7 +268,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       const assertion = await startAuthentication(options);
       
       // 3. Send the result back to your server for verification
-      const verifyResponse = await fetch('/api/auth/biometric/auth-verify', {
+      const verifyResponse = await fetch('/api/auth/biometric/login-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

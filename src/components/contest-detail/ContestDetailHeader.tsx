@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Contest } from "../../types";
 import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { CountdownTimer } from "../ui/CountdownTimer";
+import { ShareContestButton } from "./ShareContestButton";
 
 interface ContestDetailHeaderProps {
   contest: Contest;
@@ -117,6 +118,36 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
     // Default - not participating but can join
     return `${baseStyle} bg-brand-500/20 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300 transform hover:translate-x-1`;
   };
+  
+  // Mobile-specific button styling (just the color part, not dimensions)
+  const getMobileButtonColorStyle = () => {
+    // Not connected - prominent connect style
+    if (!isWalletConnected) {
+      return `bg-gradient-to-r from-brand-500 to-brand-600 border-brand-400/50 hover:border-brand-400 text-white shadow-sm shadow-brand-500/30`;
+    }
+
+    // Disabled state
+    if (
+      isButtonDisabled() &&
+      (contestStatus === "ended" || contestStatus === "live")
+    ) {
+      return `bg-dark-300/50 border-gray-500/30 text-gray-400 cursor-not-allowed`;
+    }
+
+    // Participating - already in the contest
+    if (isParticipating) {
+      if (contestStatus === "ended") {
+        return `bg-gray-500/20 border-gray-500/30 text-gray-300 hover:text-white hover:bg-gray-500/30`;
+      } else if (contestStatus === "live") {
+        return `bg-green-500/20 border-green-500/30 text-green-400 hover:text-green-300 hover:bg-green-500/30`;
+      } else {
+        return `bg-dark-300/80 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300`;
+      }
+    }
+
+    // Default - not participating but can join
+    return `bg-brand-500/20 border-brand-400/50 hover:border-brand-400 text-brand-400 hover:text-brand-300`;
+  };
 
   return (
     <div className="relative mb-8">
@@ -227,6 +258,13 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
                 </svg>
               </span>
             </button>
+            
+            {/* Desktop Share Button */}
+            <ShareContestButton 
+              contest={contest}
+              contestStatus={contestStatus}
+              className="mt-2"
+            />
           </div>
 
           {/* Mobile Action Button with Timer */}
@@ -263,9 +301,7 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
             <button
               onClick={onJoinContest}
               disabled={isButtonDisabled()}
-              className={getButtonStyle()
-                .replace("px-8", "px-6")
-                .replace("text-lg", "text-base")}
+              className={`relative group w-full px-4 py-2 border-l-2 font-medium text-sm overflow-hidden transition-all duration-300 ${getMobileButtonColorStyle()}`}
             >
               {/* Button Hover Effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
@@ -286,6 +322,13 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
                 </svg>
               </span>
             </button>
+            
+            {/* Mobile Share Button */}
+            <ShareContestButton 
+              contest={contest}
+              contestStatus={contestStatus}
+              className="mt-2 w-full text-xs py-1.5"
+            />
           </div>
         </div>
       </div>

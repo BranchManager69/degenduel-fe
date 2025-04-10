@@ -512,7 +512,9 @@ export const UnifiedTicker: React.FC<Props> = ({
   if (sortedContests.length === 0 && significantChanges.length === 0) {
     console.log(`UnifiedTicker: No content available. Contests: ${contests.length}, Tokens loaded: ${tokens.length}, WebSocket connected: ${isConnected}`);
     
-    // For error or connection states, show appropriate message
+    // No need for authentication check since we're showing connection status
+    
+    // Show connection diagnostics first - preserve error visibility for debugging
     if (error || (tokens.length === 0 && !isConnected)) {
       return (
         <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
@@ -536,9 +538,73 @@ export const UnifiedTicker: React.FC<Props> = ({
                     </span>
                     <button 
                       onClick={handleManualRefresh}
-                      className="ml-4 bg-gradient-to-br from-red-500/30 to-red-600/40 hover:from-red-500/40 hover:to-red-600/50 
-                        border border-red-500/40 rounded-md px-3 py-1 flex items-center justify-center text-white 
-                        transition-all duration-300 shadow-md hover:shadow-red-500/30"
+                      className="ml-4 bg-gradient-to-br from-red-500/30 to-red-600/30 hover:from-red-500/40 hover:to-red-600/40 
+                        border border-red-500/30 rounded text-xs px-2 py-0.5 flex items-center justify-center text-white 
+                        transition-all duration-300"
+                      title="Retry connection"
+                    >
+                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-1.5'}`}>↻</span>
+                      <span className={`${isRefreshing ? 'inline-block mr-1.5 animate-spin' : 'hidden'}`}>◌</span>
+                      Reconnect
+                    </button>
+                    
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono text-amber-500">
+                      <span className="animate-ping inline-block h-2 w-2 rounded-full bg-amber-500 opacity-75 mr-2"></span>
+                      CONNECTING
+                      {connectionAttempts > 0 ? ` (${connectionAttempts + 1})` : ''}
+                    </span>
+                    <button 
+                      onClick={handleManualRefresh}
+                      className="ml-4 bg-gradient-to-br from-brand-500/30 to-brand-600/30 hover:from-brand-500/40 hover:to-brand-600/40 
+                        border border-brand-500/30 rounded text-xs px-2 py-0.5 flex items-center justify-center text-white 
+                        transition-all duration-300"
+                      disabled={isRefreshing}
+                      title="Refresh data"
+                    >
+                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-1.5'}`}>↻</span>
+                      <span className={`${isRefreshing ? 'inline-block mr-1.5 animate-spin' : 'hidden'}`}>◌</span>
+                      Refresh
+                    </button>
+                    
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // This should never be reached now, but keep it for safety
+    if (false) {
+      return (
+        <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
+          <div
+            ref={containerRef}
+            className={`flex items-center justify-center w-full overflow-hidden`}
+            style={{
+              maxHeight: isCompact ? "1.5rem" : "2rem",
+            }}
+          >
+            <div
+              ref={contentRef}
+              className={`flex items-center justify-center px-4 flex-shrink-0 ${isCompact ? 'h-6' : 'h-8'} w-full`}
+            >
+              <div className="flex items-center space-x-4 text-sm">
+                {error ? (
+                  <>
+                    <span className="font-mono text-red-400">
+                      <span className="animate-ping inline-block h-2 w-2 rounded-full bg-red-500 opacity-75 mr-2"></span>
+                      CONNECTION ERROR
+                    </span>
+                    <button 
+                      onClick={handleManualRefresh}
+                      className="ml-4 bg-gradient-to-br from-red-500/30 to-red-600/30 hover:from-red-500/40 hover:to-red-600/40 
+                        border border-red-500/30 rounded text-xs px-2 py-0.5 flex items-center justify-center text-white 
+                        transition-all duration-300"
                       title="Retry connection"
                     >
                       <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-1.5'}`}>↻</span>
@@ -555,9 +621,9 @@ export const UnifiedTicker: React.FC<Props> = ({
                     </span>
                     <button 
                       onClick={handleManualRefresh}
-                      className="ml-4 bg-gradient-to-br from-brand-500/30 to-brand-600/40 hover:from-brand-500/40 hover:to-brand-600/50 
-                        border border-brand-500/40 rounded-md px-3 py-1 flex items-center justify-center text-white 
-                        transition-all duration-300 shadow-md hover:shadow-brand-500/30"
+                      className="ml-4 bg-gradient-to-br from-brand-500/30 to-brand-600/30 hover:from-brand-500/40 hover:to-brand-600/40 
+                        border border-brand-500/30 rounded text-xs px-2 py-0.5 flex items-center justify-center text-white 
+                        transition-all duration-300"
                       disabled={isRefreshing}
                       title="Refresh data"
                     >

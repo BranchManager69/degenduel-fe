@@ -1,23 +1,81 @@
 // src/pages/public/tokens/StoryTokensPage.tsx
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
 import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
 import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailModal";
 import { Token, TokenResponseMetadata } from "../../../types";
+
+// Define a flag to check if we're running in Storybook
+const isStorybook = () => {
+  return typeof window !== 'undefined' && (window.location.href.includes('localhost:6006') || 
+    window.location.href.includes('storybook-static') || 
+    window.location.search.includes('viewMode=story'));
+};
 
 /**
  * StoryTokensPage - A simplified version specifically for Storybook
  * with hardcoded mock data and no API dependencies
  */
 export const StoryTokensPage: React.FC = () => {
-  // Hardcoded mock data for Storybook
-  const mockMetadata: TokenResponseMetadata = {
-    timestamp: new Date().toISOString(),
+  // Disable websocket connections in Storybook to prevent constant reconnection attempts
+  useEffect(() => {
+    if (isStorybook()) {
+      // Define a mock WebSocket class that does nothing
+      const originalWebSocket = window.WebSocket;
+      
+      // Use a simpler approach by disabling the WebSocket prototype methods
+      const MockWebSocket = function(this: any) {
+        console.log('[Storybook] WebSocket connection disabled');
+        
+        // Initialize with basic WebSocket properties
+        this.readyState = 3; // CLOSED
+        this.onclose = null;
+        this.onopen = null;
+        this.onerror = null;
+        this.onmessage = null;
+        this.url = "";
+        this.protocol = "";
+        this.extensions = "";
+        this.binaryType = "blob";
+        this.bufferedAmount = 0;
+        
+        // Call onclose if it's set later
+        setTimeout(() => {
+          if (this.onclose) {
+            try {
+              this.onclose(new CloseEvent('close'));
+            } catch (e) {
+              console.error('[Storybook] Mock WebSocket error:', e);
+            }
+          }
+        }, 0);
+        
+        // Define methods
+        this.send = function() {};
+        this.close = function() {};
+        
+        return this;
+      } as unknown as typeof WebSocket;
+      
+      // Replace the WebSocket constructor
+      // @ts-ignore - Intentionally override for Storybook
+      window.WebSocket = MockWebSocket;
+      
+      // Restore on cleanup
+      return () => {
+        window.WebSocket = originalWebSocket;
+      };
+    }
+  }, []);
+  
+  // Hardcoded mock data for Storybook with stable timestamps to prevent re-renders
+  const mockMetadata: TokenResponseMetadata = React.useMemo(() => ({
+    timestamp: "2025-04-08T10:00:00.000Z", // Static timestamp to prevent unnecessary re-renders
     _cached: false,
     _stale: false,
-    _cachedAt: new Date().toISOString()
-  };
+    _cachedAt: "2025-04-08T10:00:00.000Z" // Static timestamp
+  }), []);
   
   // No longer needed as we're using the shared getTokenColor function in OptimizedTokenCard
   // const getColorForToken = (symbol: string) => {
@@ -295,32 +353,46 @@ export const StoryTokensPage: React.FC = () => {
           }}
         />
         
-        {/* Floating particles */}
+        {/* Floating particles - Memoized to prevent re-renders */}
         <div className="absolute inset-0 pointer-events-none">
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-brand-500 rounded-full opacity-30 animate-float"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDuration: `${Math.random() * 5 + 5}s`,
-                animationDelay: `${Math.random() * 2}s`
-              }}
-            />
-          ))}
+          {React.useMemo(() => 
+            Array.from({ length: 30 }).map((_, i) => {
+              // Pre-calculate random values to prevent re-renders
+              const left = `${Math.random() * 100}%`;
+              const top = `${Math.random() * 100}%`;
+              const duration = `${Math.random() * 5 + 5}s`;
+              const delay = `${Math.random() * 2}s`;
+              
+              return (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-brand-500 rounded-full opacity-30 animate-float"
+                  style={{
+                    left,
+                    top,
+                    animationDuration: duration,
+                    animationDelay: delay
+                  }}
+                />
+              );
+            }), 
+          [])}
         </div>
         
-        {/* Scanning lines */}
+        {/* Scanning lines - Static to prevent reflows */}
         <div className="absolute inset-0 overflow-hidden" style={{ opacity: 0.3 }}>
-          <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
-            style={{ left: "20%", animationDuration: "8s" }}
-          />
-          <div
-            className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
-            style={{ left: "80%", animationDuration: "8s", animationDelay: "2s" }}
-          />
+          {React.useMemo(() => (
+            <>
+              <div
+                className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
+                style={{ left: "20%", animationDuration: "8s" }}
+              />
+              <div
+                className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
+                style={{ left: "80%", animationDuration: "8s", animationDelay: "2s" }}
+              />
+            </>
+          ), [])}
         </div>
       </div>
 

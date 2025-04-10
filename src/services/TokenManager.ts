@@ -279,6 +279,20 @@ class TokenManagerService {
             authDebug('TokenManager', 'WebSocket token refreshed successfully');
           } else {
             authDebug('TokenManager', 'Failed to refresh WebSocket token');
+            
+            // If WebSocket token refresh fails, check if there's an available JWT token
+            // This is particularly important for Twitter auth where JWT might be available
+            const jwt = this.getToken(TokenType.JWT);
+            if (jwt) {
+              authDebug('TokenManager', 'Using JWT as fallback after WebSocket token refresh failure');
+              // If JWT is available, we still want the system to know we have an authentication token
+              // This uses an event to notify the system that a fallback token is available
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('token-refresh-fallback', {
+                  detail: { type: 'JWT', source: 'TokenManager' }
+                }));
+              }
+            }
           }
           break;
           
@@ -290,7 +304,11 @@ class TokenManagerService {
             // This would typically call an API endpoint
             authDebug('TokenManager', 'JWT refresh not yet implemented');
           } else {
-            authDebug('TokenManager', 'No refresh token available for JWT refresh');
+            // Special case for Twitter auth: Try getting a WebSocket token as an alternative
+            // when JWT refresh fails - this helps maintain authentication when Twitter JWT
+            // can't be refreshed directly
+            authDebug('TokenManager', 'No refresh token available for JWT refresh, trying WebSocket token');
+            this.refreshToken(TokenType.WS_TOKEN);
           }
           break;
           

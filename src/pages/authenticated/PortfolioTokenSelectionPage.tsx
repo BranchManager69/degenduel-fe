@@ -65,6 +65,7 @@ export const TokenSelection: React.FC = () => {
     new Map(),
   );
   const [marketCapFilter, setMarketCapFilter] = useState("");
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [contest, setContest] = useState<Contest | null>(null);
   const user = useStore((state) => state.user);
   const [tokenListLoading, setTokenListLoading] = useState(true);
@@ -587,6 +588,8 @@ export const TokenSelection: React.FC = () => {
                       <TokenFilters
                         marketCapFilter={marketCapFilter}
                         onMarketCapFilterChange={setMarketCapFilter}
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
                       />
                     </div>
 
@@ -608,6 +611,7 @@ export const TokenSelection: React.FC = () => {
                           selectedTokens={selectedTokens}
                           onTokenSelect={handleTokenSelect}
                           marketCapFilter={marketCapFilter}
+                          viewMode={viewMode}
                         />
                       )}
                     </div>

@@ -35,7 +35,9 @@ interface LevelUpData {
 
 export const AchievementNotification: React.FC = () => {
   const { achievements, clearCelebration } = useStore();
-  const { pendingCelebrations } = achievements;
+  
+  // Add null check to avoid destructuring undefined
+  const pendingCelebrations = achievements?.pendingCelebrations || [];
 
   useEffect(() => {
     if (pendingCelebrations.length > 0) {

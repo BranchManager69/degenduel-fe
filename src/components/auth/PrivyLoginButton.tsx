@@ -33,6 +33,27 @@ const PrivyLoginButton: React.FC<PrivyLoginButtonProps> = ({
   const { login, isLoading, isAuthenticated, isPrivyLinked, linkPrivyToWallet } = usePrivyAuth();
   const { user } = useStore();
   const [isLinking, setIsLinking] = React.useState(false);
+  
+  // Listen for Privy auth errors to show toast notifications
+  React.useEffect(() => {
+    const handlePrivyAuthError = (event: CustomEvent) => {
+      if (event.detail?.message) {
+        // Import and use toast directly to avoid circular dependency
+        const { toast } = require('react-hot-toast');
+        toast.error(event.detail.message);
+        
+        authDebug('PrivyBtn', 'Showing error toast', { message: event.detail.message });
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('privy-auth-error', handlePrivyAuthError as EventListener);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('privy-auth-error', handlePrivyAuthError as EventListener);
+    };
+  }, []);
 
   const handleLogin = async () => {
     authDebug('PrivyBtn', 'Privy button clicked', { 

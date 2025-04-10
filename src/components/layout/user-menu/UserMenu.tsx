@@ -1,7 +1,7 @@
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
-import { FaBell, FaFingerprint, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom";
+import { FaBell, FaFingerprint, FaTrophy, FaUserFriends } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../hooks/useAuth";
 import useBiometricAuth from "../../../hooks/useBiometricAuth";
@@ -30,18 +30,12 @@ const BiometricAuthMenuOption: React.FC<{ userId: string }> = ({ userId }) => {
   const { isAvailable, isRegistered, registerCredential } = useBiometricAuth();
   const [isLoading, setIsLoading] = useState(false);
   const user = useStore(state => state.user);
-  const navigate = useNavigate();
   
   // Don't show if biometric auth is not available
   if (!isAvailable) return null;
   
-  const handleBiometricAction = async () => {
-    if (isRegistered) {
-      // Navigate to biometric management page
-      navigate('/biometric-auth-demo');
-      return;
-    }
-    
+  // Handle registration for users who aren't registered yet
+  const handleRegister = async () => {
     setIsLoading(true);
     
     try {
@@ -64,25 +58,45 @@ const BiometricAuthMenuOption: React.FC<{ userId: string }> = ({ userId }) => {
   return (
     <Menu.Item>
       {({ active }) => (
-        <button
-          onClick={handleBiometricAction}
-          disabled={isLoading}
-          className={`
-            w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
-            ${active ? "bg-blue-500/20 text-blue-200" : "text-blue-300 hover:text-blue-200"}
-            ${isLoading ? "opacity-70 cursor-not-allowed" : ""}
-          `}
-        >
-          <FaFingerprint 
+        isRegistered ? (
+          // For registered users - use a simple Link component
+          <Link
+            to="/biometric-auth-demo"
             className={`
-              w-4 h-4 transition-colors duration-300
-              ${active ? "text-blue-200" : "text-blue-300"}
-            `} 
-          />
-          <span className="flex-1">
-            {isLoading ? "Processing..." : (isRegistered ? "Manage Biometrics" : "Setup Biometrics")}
-          </span>
-        </button>
+              w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
+              ${active ? "bg-blue-500/20 text-blue-200" : "text-blue-300 hover:text-blue-200"}
+            `}
+          >
+            <FaFingerprint 
+              className={`
+                w-4 h-4 transition-colors duration-300
+                ${active ? "text-blue-200" : "text-blue-300"}
+              `} 
+            />
+            <span className="flex-1">Manage Biometrics</span>
+          </Link>
+        ) : (
+          // For unregistered users - use a button with registration handler
+          <button
+            onClick={handleRegister}
+            disabled={isLoading}
+            className={`
+              w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
+              ${active ? "bg-blue-500/20 text-blue-200" : "text-blue-300 hover:text-blue-200"}
+              ${isLoading ? "opacity-70 cursor-not-allowed" : ""}
+            `}
+          >
+            <FaFingerprint 
+              className={`
+                w-4 h-4 transition-colors duration-300
+                ${active ? "text-blue-200" : "text-blue-300"}
+              `} 
+            />
+            <span className="flex-1">
+              {isLoading ? "Processing..." : "Setup Biometrics"}
+            </span>
+          </button>
+        )
       )}
     </Menu.Item>
   );
@@ -276,12 +290,28 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   };
 
   const menuItems: MenuItemType[] = [
+    // Add Profile entry back to the menu
     {
       label: "Profile",
-      icon: FaUser,
-      to: "/me",
+      icon: ({ className }) => (
+        <svg 
+          className={className}
+          xmlns="http://www.w3.org/2000/svg" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+          />
+        </svg>
+      ),
+      to: "/me"
     },
-    // Add Degen Level item that links to leaderboard
+    // Degen Level item that links to leaderboard
     {
       label: "Degen Level",
       icon: FaTrophy,
@@ -302,90 +332,96 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     },
   ];
 
+  // No navigation function needed now that we're using Link components
+
   return (
     <Menu as="div" className="relative">
       {({ open }) => (
         <>
-          <Menu.Button
-            className={`
-              relative group overflow-hidden transition-all duration-300 ease-out
-              ${isCompact ? "h-7" : "h-8"} flex items-center
-              rounded-full border ${buttonStyles.border} ${
-                buttonStyles.hover.border
-              }
-              ${buttonStyles.hover.glow} transition-shadow duration-500
-            `}
-          >
-            {/* Background gradient */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
-            />
-
-            {/* Shine effect */}
-            <div className="absolute inset-0">
+          <div className="relative">
+            
+            <Menu.Button
+              className={`
+                relative group overflow-hidden transition-all duration-300 ease-out
+                ${isCompact ? "h-7" : "h-8"} flex items-center
+                rounded-full border ${buttonStyles.border} ${
+                  buttonStyles.hover.border
+                }
+                ${buttonStyles.hover.glow} transition-shadow duration-500
+              `}
+            >
+              {/* Background gradient */}
               <div
-                className={`absolute inset-0 bg-gradient-to-r from-transparent ${buttonStyles.shine} to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000`}
+                className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
               />
-            </div>
 
-            {/* Content */}
-            <div className="relative flex items-center justify-between w-full px-3">
-              <div className="flex items-center gap-2">
-                {/* Level Badge - Only show if level > 0 */}
-                {userLevel > 0 && (
-                  <div
+              {/* Shine effect */}
+              <div className="absolute inset-0">
+                <div
+                  className={`absolute inset-0 bg-gradient-to-r from-transparent ${buttonStyles.shine} to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000`}
+                />
+              </div>
+
+              {/* Content */}
+              <div className="relative flex items-center justify-between w-full px-3">
+                <div className="flex items-center gap-2">
+                  {/* Level Badge - Only show if level > 0 */}
+                  {userLevel > 0 && (
+                    <div
+                      className={`
+                        flex items-center justify-center 
+                        ${isCompact ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"} 
+                        px-1 font-bold rounded-full 
+                        ${getLevelColorScheme.badge}
+                        border ${getLevelColorScheme.badgeBorder}
+                        shadow-inner transition-all duration-300
+                      `}
+                    >
+                      <span className="mx-0.5">{userLevel}</span>
+                    </div>
+                  )}
+
+                  {/* Username with profile link indicator */}
+                  <span
                     className={`
-                      flex items-center justify-center 
-                      ${isCompact ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"} 
-                      px-1 font-bold rounded-full 
-                      ${getLevelColorScheme.badge}
-                      border ${getLevelColorScheme.badgeBorder}
-                      shadow-inner transition-all duration-300
+                      ${buttonStyles.text} ${buttonStyles.hover.text}
+                      font-medium tracking-wide transition-all duration-300
+                      ${isCompact ? "text-sm" : "text-base"} group-hover:underline
                     `}
                   >
-                    <span className="mx-0.5">{userLevel}</span>
-                  </div>
-                )}
+                    {displayName}
+                  </span>
+                </div>
 
-                {/* Username */}
-                <span
-                  className={`
-                    ${buttonStyles.text} ${buttonStyles.hover.text}
-                    font-medium tracking-wide transition-all duration-300
-                    ${isCompact ? "text-sm" : "text-base"}
-                  `}
-                >
-                  {displayName}
-                </span>
-              </div>
-
-              {/* Avatar */}
-              <div className="relative">
-                {unreadNotifications > 0 && (
-                  <div className="absolute -top-1 -right-1.5 z-10 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-red-500 text-white border border-dark-200 shadow-lg animate-pulse">
-                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                {/* Avatar */}
+                <div className="relative">
+                  {unreadNotifications > 0 && (
+                    <div className="absolute -top-1 -right-1.5 z-10 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-red-500 text-white border border-dark-200 shadow-lg animate-pulse">
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </div>
+                  )}
+                  <div
+                    className={`
+                      ml-2 rounded-full overflow-hidden ring-2 ${buttonStyles.ring}
+                      transition-all duration-300 shadow-lg
+                      ${isCompact ? "w-5 h-5" : "w-6 h-6"}
+                      bg-dark-300 group-hover:ring-opacity-80 
+                      group-hover:scale-105 group-hover:ring-white/30
+                    `}
+                  >
+                    <img
+                      src={profileImageUrl}
+                      alt={displayName}
+                      onError={handleImageError}
+                      className="w-full h-full object-cover group-hover:brightness-110"
+                      loading="eager"
+                      crossOrigin="anonymous"
+                    />
                   </div>
-                )}
-                <div
-                  className={`
-                    ml-2 rounded-full overflow-hidden ring-2 ${buttonStyles.ring}
-                    transition-all duration-300 shadow-lg
-                    ${isCompact ? "w-5 h-5" : "w-6 h-6"}
-                    bg-dark-300
-                  `}
-                >
-                  <img
-                    src={profileImageUrl}
-                    alt={displayName}
-                    onError={handleImageError}
-                    className="w-full h-full object-cover"
-                    loading="eager"
-                    crossOrigin="anonymous"
-                  />
                 </div>
               </div>
-            </div>
-          </Menu.Button>
+            </Menu.Button>
+          </div>
 
           <Transition
             show={open}

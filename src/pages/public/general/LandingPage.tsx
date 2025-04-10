@@ -33,7 +33,8 @@ import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 // Features import removed and controlled by feature flag
 import { FEATURE_FLAGS } from "../../../config/config";
 import { useAuth } from "../../../hooks/useAuth";
-import { formatCurrency, isContestLive } from "../../../lib/utils";
+import { isContestLive } from "../../../lib/utils";
+import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
 
@@ -528,6 +529,112 @@ export const LandingPage: React.FC = () => {
                     </RouterLink>
                   </motion.div>
                   
+                  {/* Market Overview Panel */}
+                  <motion.div
+                    className="w-full mt-8 mb-4"
+                    initial={{ opacity: 0 }}
+                    animate={{
+                      opacity: animationPhase > 1 ? 1 : 0,
+                      transition: {
+                        delay: 0.7,
+                        duration: 0.8,
+                      },
+                    }}
+                  >
+                    {(() => {
+                      // Lazy-load the MarketStatsPanel component
+                      const MarketStatsPanel = React.lazy(() => 
+                        import("../../../components/landing/market-stats").then(module => ({ 
+                          default: module.MarketStatsPanel 
+                        }))
+                      );
+                      
+                      return (
+                        <React.Suspense 
+                          fallback={
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                              <div className="h-32 bg-dark-300/20 rounded-xl animate-pulse"></div>
+                            </div>
+                          }
+                        >
+                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <MarketStatsPanel />
+                          </div>
+                        </React.Suspense>
+                      );
+                    })()}
+                  </motion.div>
+                  
+                  {/* Elite Hot Tokens List */}
+                  <motion.div
+                    className="w-full mt-8 mb-6"
+                    initial={{ opacity: 0 }}
+                    animate={{
+                      opacity: animationPhase > 1 ? 1 : 0,
+                      transition: {
+                        delay: 0.7,
+                        duration: 0.8,
+                      },
+                    }}
+                  >
+                    {(() => {
+                      // Lazy-load the HotTokensList component
+                      const HotTokensList = React.lazy(() => 
+                        import("../../../components/landing/hot-tokens").then(module => ({ 
+                          default: module.HotTokensList 
+                        }))
+                      );
+                      
+                      return (
+                        <React.Suspense 
+                          fallback={
+                            <div className="py-10 flex justify-center">
+                              <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            </div>
+                          }
+                        >
+                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <HotTokensList maxTokens={5} />
+                          </div>
+                        </React.Suspense>
+                      );
+                    })()}
+                  </motion.div>
+                  
+                  {/* Top Tokens Display */}
+                  <motion.div
+                    className="w-full mt-8"
+                    initial={{ opacity: 0 }}
+                    animate={{
+                      opacity: animationPhase > 1 ? 1 : 0,
+                      transition: {
+                        delay: 0.9,
+                        duration: 0.8,
+                      },
+                    }}
+                  >
+                    {(() => {
+                      // Lazy-load the TokensPreviewSection component
+                      const TokensPreviewSection = React.lazy(() => 
+                        import("../../../components/landing/tokens-preview").then(module => ({ 
+                          default: module.TokensPreviewSection 
+                        }))
+                      );
+                      
+                      return (
+                        <React.Suspense 
+                          fallback={
+                            <div className="py-10 flex justify-center">
+                              <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            </div>
+                          }
+                        >
+                          <TokensPreviewSection maxTokens={6} />
+                        </React.Suspense>
+                      );
+                    })()}
+                  </motion.div>
+                  
                   {/* Enhanced Features section - conditionally rendered based on feature flag */}
                   {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
                     <motion.div
@@ -606,368 +713,23 @@ export const LandingPage: React.FC = () => {
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                           {/* Add significant bottom margin to prevent footer overlap */}
                           <div className="mb-32">
+                            {/* Use the shared ContestSection component for active contests */}
                             {activeContests.length > 0 && (
-                              <section className="relative py-12">
-                                <h2 className="text-2xl font-bold mb-8 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
-                                  Live Duels
-                                </h2>
-                                {loading ? (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {[1, 2, 3].map((i) => (
-                                      <div
-                                        key={i}
-                                        className="h-48 rounded animate-pulse bg-dark-300/20"
-                                      />
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {activeContests.map((contest) => (
-                                      <div key={contest.id} className="relative">
-                                        <Link
-                                          to={`/contests/${contest.id}`}
-                                          className="block"
-                                        >
-                                          <motion.div 
-                                            className="clip-edges relative bg-gradient-to-r p-[1px] from-brand-400/40 via-brand-600/40 to-brand-400/40 rounded-lg overflow-hidden"
-                                            whileHover={{
-                                              boxShadow: [
-                                                "0 0 0 rgba(157, 78, 221, 0.4)",
-                                                "0 0 20px rgba(157, 78, 221, 0.6)",
-                                                "0 0 25px rgba(157, 78, 221, 0.7)"
-                                              ],
-                                              transition: {
-                                                duration: 0.8,
-                                                repeat: Infinity,
-                                                repeatType: "reverse"
-                                              }
-                                            }}
-                                          >
-                                            {/* Animated glow border */}
-                                            <motion.div 
-                                              className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/90 to-brand-400/0"
-                                              animate={{
-                                                x: ["-200%", "200%"],
-                                              }}
-                                              transition={{
-                                                duration: 3,
-                                                ease: "easeInOut",
-                                                repeat: Infinity,
-                                                repeatDelay: 1
-                                              }}
-                                            />
-                                            
-                                            {/* Card content with backdrop */}
-                                            <div className="relative bg-dark-200/90 backdrop-blur-md p-6 rounded-[calc(0.5rem-1px)] h-full">
-                                              {/* Top section with maximized title display and overlapping badge */}
-                                              <div className="relative mb-6">
-                                                {/* Status badge positioned top right, overlapping */}
-                                                <motion.span 
-                                                  className="clip-edges absolute -top-2 -right-2 z-20 px-3 py-1 text-xs font-medium border border-green-500/30 bg-green-500/20 text-green-400"
-                                                  animate={{
-                                                    boxShadow: [
-                                                      "0 0 4px rgba(74, 222, 128, 0.3)",
-                                                      "0 0 8px rgba(74, 222, 128, 0.6)",
-                                                      "0 0 4px rgba(74, 222, 128, 0.3)"
-                                                    ],
-                                                  }}
-                                                  transition={{
-                                                    duration: 2,
-                                                    repeat: Infinity,
-                                                  }}
-                                                >
-                                                  LIVE
-                                                </motion.span>
-                                                
-                                                {/* Title with full width and strictly one line */}
-                                                <h3 className="text-xl font-russo text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-brand-300 truncate mt-3 pr-2 w-full">
-                                                  {contest.name}
-                                                </h3>
-                                              </div>
-                                              
-                                              {/* Participants gauge - new addition */}
-                                              <div className="flex flex-col space-y-1">
-                                                <div className="flex justify-between items-center text-xs">
-                                                  <span className="text-brand-300 font-mono-terminal">PARTICIPANTS</span>
-                                                  <span className="text-white font-mono-terminal">
-                                                    {0}/{10}
-                                                  </span>
-                                                </div>
-                                                <div className="h-1.5 w-full bg-dark-300 rounded-sm overflow-hidden relative">
-                                                  <motion.div 
-                                                    className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-brand-400 to-brand-600"
-                                                    style={{ 
-                                                      width: '35%',
-                                                      minWidth: '5%' 
-                                                    }}
-                                                    animate={{
-                                                      boxShadow: [
-                                                        "0 0 5px rgba(157, 78, 221, 0.5)",
-                                                        "0 0 10px rgba(157, 78, 221, 0.8)",
-                                                        "0 0 5px rgba(157, 78, 221, 0.5)"
-                                                      ]
-                                                    }}
-                                                    transition={{ duration: 2, repeat: Infinity }}
-                                                  />
-                                                </div>
-                                              </div>
-                                              
-                                              {/* Divider with glow */}
-                                              <div className="h-px w-full bg-gradient-to-r from-transparent via-brand-400/30 to-transparent my-4"></div>
-                                              
-                                              {/* Stats grid with enhanced styling */}
-                                              <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1 bg-dark-300/40 rounded-lg p-3">
-                                                  <span className="text-xs text-brand-300 uppercase tracking-wider font-mono-terminal">
-                                                    Prize Pool
-                                                  </span>
-                                                  <motion.div 
-                                                    className="text-2xl font-russo text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-white to-brand-300"
-                                                    initial={{ backgroundPosition: "0% center" }}
-                                                    animate={{ backgroundPosition: ["0% center", "100% center"] }}
-                                                    transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
-                                                  >
-                                                    {formatCurrency(contest.prize_pool)}
-                                                  </motion.div>
-                                                </div>
-                                                <div className="space-y-1 bg-dark-300/40 rounded-lg p-3">
-                                                  <span className="text-xs text-brand-300 uppercase tracking-wider font-mono-terminal">
-                                                    Entry Fee
-                                                  </span>
-                                                  <div className="text-2xl font-russo text-gray-200">
-                                                    {formatCurrency(contest.entry_fee)}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              
-                                              {/* Enhanced Terminal-like CTA button */}
-                                              <button className="w-full mt-6 clip-edges relative overflow-hidden group">
-                                                <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-brand-500 p-[1px]">
-                                                  {/* Shine effect overlay */}
-                                                  <motion.div 
-                                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100"
-                                                    animate={{
-                                                      x: ["-200%", "200%"],
-                                                    }}
-                                                    transition={{
-                                                      duration: 1.5,
-                                                      ease: "easeInOut",
-                                                      repeat: Infinity,
-                                                      repeatDelay: 0.5
-                                                    }}
-                                                  />
-                                                </div>
-                                                <div className="relative clip-edges bg-black/40 backdrop-blur-sm px-4 py-3 border border-brand-500/20">
-                                                  <div className="flex items-center justify-center font-mono">
-                                                    <motion.span
-                                                      className="font-mono-terminal font-bold text-white mr-2 tracking-wider"
-                                                      animate={{
-                                                        textShadow: [
-                                                          "0 0 4px rgba(157, 78, 221, 0.3)",
-                                                          "0 0 8px rgba(157, 78, 221, 0.6)",
-                                                          "0 0 4px rgba(157, 78, 221, 0.3)"
-                                                        ],
-                                                      }}
-                                                      transition={{ duration: 2, repeat: Infinity }}
-                                                    >
-                                                      SPECTATE DUEL
-                                                    </motion.span>
-                                                    <svg className="w-5 h-5 text-white transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                                    </svg>
-                                                  </div>
-                                                </div>
-                                              </button>
-                                            </div>
-                                          </motion.div>
-                                        </Link>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </section>
+                              <ContestSection
+                                title="Live Duels"
+                                type="active"
+                                contests={activeContests}
+                                loading={loading}
+                              />
                             )}
 
-                            {openContests.length > 0 && (
-                              <section className="relative py-12">
-                                <h2 className="text-2xl font-bold mb-8 font-cyber tracking-wide bg-gradient-to-r from-green-400 to-brand-500 text-transparent bg-clip-text">
-                                  Starting Soon
-                                </h2>
-                                {loading ? (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {[1, 2, 3].map((i) => (
-                                      <div
-                                        key={i}
-                                        className="h-48 rounded animate-pulse bg-dark-300/20"
-                                      />
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {openContests.map((contest) => (
-                                      <div key={contest.id} className="relative">
-                                        <Link
-                                          to={`/contests/${contest.id}`}
-                                          className="block"
-                                        >
-                                          <motion.div 
-                                            className="clip-edges relative bg-gradient-to-r p-[1px] from-blue-400/40 via-brand-400/40 to-blue-400/40 rounded-lg overflow-hidden"
-                                            whileHover={{
-                                              boxShadow: [
-                                                "0 0 0 rgba(96, 165, 250, 0.4)",
-                                                "0 0 20px rgba(96, 165, 250, 0.6)",
-                                                "0 0 25px rgba(96, 165, 250, 0.7)"
-                                              ],
-                                              transition: {
-                                                duration: 0.8,
-                                                repeat: Infinity,
-                                                repeatType: "reverse"
-                                              }
-                                            }}
-                                          >
-                                            {/* Animated glow border */}
-                                            <motion.div 
-                                              className="absolute inset-0 bg-gradient-to-r from-blue-400/0 via-blue-400/70 to-blue-400/0"
-                                              animate={{
-                                                x: ["-200%", "200%"],
-                                              }}
-                                              transition={{
-                                                duration: 3,
-                                                ease: "easeInOut",
-                                                repeat: Infinity,
-                                                repeatDelay: 1
-                                              }}
-                                            />
-                                            
-                                            {/* Card content with backdrop */}
-                                            <div className="relative bg-dark-200/90 backdrop-blur-md p-6 rounded-[calc(0.5rem-1px)] h-full">
-                                              {/* Top section with maximized title display and overlapping badge */}
-                                              <div className="relative mb-6">
-                                                {/* Status badge positioned top right, overlapping */}
-                                                <motion.span 
-                                                  className="clip-edges absolute -top-2 -right-2 z-20 px-3 py-1 text-xs font-medium border border-blue-500/30 bg-blue-500/20 text-blue-400"
-                                                  animate={{
-                                                    boxShadow: [
-                                                      "0 0 4px rgba(59, 130, 246, 0.3)",
-                                                      "0 0 8px rgba(59, 130, 246, 0.6)",
-                                                      "0 0 4px rgba(59, 130, 246, 0.3)"
-                                                    ],
-                                                  }}
-                                                  transition={{
-                                                    duration: 2,
-                                                    repeat: Infinity,
-                                                  }}
-                                                >
-                                                  UPCOMING
-                                                </motion.span>
-                                                
-                                                {/* Title with full width and strictly one line */}
-                                                <h3 className="text-xl font-russo text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-blue-300 truncate mt-3 pr-2 w-full">
-                                                  {contest.name}
-                                                </h3>
-                                              </div>
-                                              
-                                              {/* Time until start - new addition */}
-                                              <div className="flex flex-col space-y-1">
-                                                <div className="flex justify-between items-center text-xs">
-                                                  <span className="text-blue-300 font-mono-terminal">STARTING IN</span>
-                                                  <span className="text-white font-mono-terminal">
-                                                    {contest.start_time ? '4h 23m' : 'Soon'}
-                                                  </span>
-                                                </div>
-                                                <div className="h-1.5 w-full bg-dark-300 rounded-sm overflow-hidden relative">
-                                                  <motion.div 
-                                                    className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-blue-400 to-blue-600"
-                                                    style={{ 
-                                                      width: '65%'
-                                                    }}
-                                                    animate={{
-                                                      boxShadow: [
-                                                        "0 0 5px rgba(59, 130, 246, 0.5)",
-                                                        "0 0 10px rgba(59, 130, 246, 0.8)",
-                                                        "0 0 5px rgba(59, 130, 246, 0.5)"
-                                                      ]
-                                                    }}
-                                                    transition={{ duration: 2, repeat: Infinity }}
-                                                  />
-                                                </div>
-                                              </div>
-                                              
-                                              {/* Divider with glow */}
-                                              <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-400/30 to-transparent my-4"></div>
-                                              
-                                              {/* Stats grid with enhanced styling */}
-                                              <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1 bg-dark-300/40 rounded-lg p-3">
-                                                  <span className="text-xs text-blue-300 uppercase tracking-wider font-mono-terminal">
-                                                    Prize Pool
-                                                  </span>
-                                                  <motion.div 
-                                                    className="text-2xl font-russo text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-blue-300"
-                                                    initial={{ backgroundPosition: "0% center" }}
-                                                    animate={{ backgroundPosition: ["0% center", "100% center"] }}
-                                                    transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
-                                                  >
-                                                    {formatCurrency(contest.prize_pool)}
-                                                  </motion.div>
-                                                </div>
-                                                <div className="space-y-1 bg-dark-300/40 rounded-lg p-3">
-                                                  <span className="text-xs text-blue-300 uppercase tracking-wider font-mono-terminal">
-                                                    Entry Fee
-                                                  </span>
-                                                  <div className="text-2xl font-russo text-gray-200">
-                                                    {formatCurrency(contest.entry_fee)}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              
-                                              {/* Enhanced Terminal-like CTA button */}
-                                              <button className="w-full mt-6 clip-edges relative overflow-hidden group">
-                                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-brand-500 p-[1px]">
-                                                  {/* Shine effect overlay */}
-                                                  <motion.div 
-                                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100"
-                                                    animate={{
-                                                      x: ["-200%", "200%"],
-                                                    }}
-                                                    transition={{
-                                                      duration: 1.5,
-                                                      ease: "easeInOut",
-                                                      repeat: Infinity,
-                                                      repeatDelay: 0.5
-                                                    }}
-                                                  />
-                                                </div>
-                                                <div className="relative clip-edges bg-black/40 backdrop-blur-sm px-4 py-3 border border-blue-500/20">
-                                                  <div className="flex items-center justify-center font-mono">
-                                                    <motion.span
-                                                      className="font-mono-terminal font-bold text-white mr-2 tracking-wider"
-                                                      animate={{
-                                                        textShadow: [
-                                                          "0 0 4px rgba(59, 130, 246, 0.3)",
-                                                          "0 0 8px rgba(59, 130, 246, 0.6)",
-                                                          "0 0 4px rgba(59, 130, 246, 0.3)"
-                                                        ],
-                                                      }}
-                                                      transition={{ duration: 2, repeat: Infinity }}
-                                                    >
-                                                      ENTER DUEL
-                                                    </motion.span>
-                                                    <svg className="w-5 h-5 text-white transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                                    </svg>
-                                                  </div>
-                                                </div>
-                                              </button>
-                                            </div>
-                                          </motion.div>
-                                        </Link>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </section>
-                            )}
+                            {/* Use the shared ContestSection component for upcoming contests */}
+                            <ContestSection
+                              title="Starting Soon"
+                              type="pending"
+                              contests={openContests}
+                              loading={loading}
+                            />
 
                             {activeContests.length === 0 &&
                               openContests.length === 0 &&
@@ -1031,6 +793,112 @@ export const LandingPage: React.FC = () => {
                         </div>
                       </button>
                     </RouterLink>
+                  </motion.div>
+                  
+                  {/* Market Overview Panel for non-logged in users */}
+                  <motion.div
+                    className="w-full mt-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ 
+                      opacity: 1,
+                      transition: {
+                        delay: 0.6,
+                        duration: 0.8,
+                      },
+                    }}
+                  >
+                    {(() => {
+                      // Lazy-load the MarketStatsPanel component
+                      const MarketStatsPanel = React.lazy(() => 
+                        import("../../../components/landing/market-stats").then(module => ({ 
+                          default: module.MarketStatsPanel 
+                        }))
+                      );
+                      
+                      return (
+                        <React.Suspense 
+                          fallback={
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                              <div className="h-32 bg-dark-300/20 rounded-xl animate-pulse"></div>
+                            </div>
+                          }
+                        >
+                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <MarketStatsPanel />
+                          </div>
+                        </React.Suspense>
+                      );
+                    })()}
+                  </motion.div>
+                  
+                  {/* Elite Hot Tokens List for non-logged in users */}
+                  <motion.div
+                    className="w-full mt-8 mb-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ 
+                      opacity: 1,
+                      transition: {
+                        delay: 0.7,
+                        duration: 0.8,
+                      },
+                    }}
+                  >
+                    {(() => {
+                      // Lazy-load the HotTokensList component
+                      const HotTokensList = React.lazy(() => 
+                        import("../../../components/landing/hot-tokens").then(module => ({ 
+                          default: module.HotTokensList 
+                        }))
+                      );
+                      
+                      return (
+                        <React.Suspense 
+                          fallback={
+                            <div className="py-10 flex justify-center">
+                              <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            </div>
+                          }
+                        >
+                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <HotTokensList maxTokens={3} />
+                          </div>
+                        </React.Suspense>
+                      );
+                    })()}
+                  </motion.div>
+                  
+                  {/* Top Tokens Display for non-logged in users */}
+                  <motion.div
+                    className="w-full mt-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ 
+                      opacity: 1,
+                      transition: {
+                        delay: 0.9,
+                        duration: 0.8,
+                      },
+                    }}
+                  >
+                    {(() => {
+                      // Lazy-load the TokensPreviewSection component
+                      const TokensPreviewSection = React.lazy(() => 
+                        import("../../../components/landing/tokens-preview").then(module => ({ 
+                          default: module.TokensPreviewSection 
+                        }))
+                      );
+                      
+                      return (
+                        <React.Suspense 
+                          fallback={
+                            <div className="py-10 flex justify-center">
+                              <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            </div>
+                          }
+                        >
+                          <TokensPreviewSection maxTokens={3} />
+                        </React.Suspense>
+                      );
+                    })()}
                   </motion.div>
                 </div>
               )}

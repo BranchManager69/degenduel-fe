@@ -227,6 +227,19 @@ export function useAuth() {
       
       // We don't delete the stored path - it will be used by LoginPage
       window.history.replaceState({}, '', url);
+      
+      // Proactively request WebSocket token after Twitter auth
+      // This ensures we have a valid WebSocket token before WebSocket connection attempts
+      setTimeout(() => {
+        authDebug('useAuth', 'Proactively requesting WebSocket token after Twitter auth');
+        getAccessToken().then(token => {
+          if (token) {
+            authDebug('useAuth', 'Successfully obtained WebSocket token after Twitter auth');
+          }
+        }).catch(error => {
+          authDebug('useAuth', 'Error getting WebSocket token after Twitter auth', { error });
+        });
+      }, 1000); // Small delay to ensure auth check completes first
     }
     
     // Check for Privy auth redirect parameters
@@ -345,37 +358,73 @@ export function useAuth() {
           "[Auth] Requesting access token for WebSocket authentication",
         );
       }
+      
+      // Check if we already have a valid token to avoid unnecessary API calls
+      if (authState.user?.wsToken) {
+        if (NODE_ENV === "development") {
+          console.log("[Auth] Using existing WebSocket token from state");
+        }
+        return authState.user.wsToken;
+      }
 
       // Append timestamp to prevent caching
       const timestamp = new Date().getTime();
-      const url = `/api/auth/token?_t=${timestamp}`; // TODO: This previously led to 404. Has it been fixed?
+      const url = `/api/auth/token?_t=${timestamp}`;
 
-      // Try to get the token from the session with detailed logging
+      // Get fresh token from the server
       const response = await axios.get(url, {
         headers: {
-          // Ensure credentials are sent
           "Content-Type": "application/json",
           "X-Requested-With": "XMLHttpRequest",
         },
         withCredentials: true,
         timeout: 5000, // 5 second timeout
       });
+      
       if (NODE_ENV === "development") {
-        const stringifiedWSTokenResponse = JSON.stringify(response.data);
         console.log(
-          `[AUTHDEBUG] \n[useAuth] [getAccessToken] \n[${url}] \n[${stringifiedWSTokenResponse}]`,
+          `[Auth] Token response received from ${url}`,
+          {
+            hasToken: !!response.data?.token,
+            expiresIn: response.data?.expiresIn || 'not specified',
+            tokenLength: response.data?.token?.length || 0
+          }
         );
-        console.log(`
-          [WS TOKEN  ] ${response.data?.token}
-          [WS EXPIRES] ${response.data?.expiresIn}
-          `);
+      }
+
+      // If we have a token, store it in the user object
+      const token = response.data?.token;
+      if (token && authState.user) {
+        const user = store.user;
+        if (user) {
+          // Update the token in the store
+          store.setUser({
+            ...user,
+            wsToken: token
+          } as any);
+          
+          // Also update our local state
+          setAuthState(prev => ({
+            ...prev,
+            user: prev.user ? {
+              ...prev.user,
+              wsToken: token
+            } : null
+          }));
+        }
       }
 
       // Return the token or null if no token is available
-      return response.data?.token || null;
+      return token || null;
     } catch (error: any) {
+      // Check if we have a JWT to work with - this is expected by the WebSocket system
+      if (authState.user?.jwt) {
+        console.log("[Auth] WebSocket token request failed, but we have JWT for authentication");
+        return authState.user.jwt;
+      }
+      
       // Log the error
-      console.error("[Auth] Failed to get WSS access token:", {
+      console.error("[Auth] Failed to get WebSocket access token:", {
         message: error?.message,
         status: error?.response?.status,
         data: error?.response?.data,
@@ -384,7 +433,7 @@ export function useAuth() {
 
       return null;
     }
-  }, []);
+  }, [authState.user, store]);
 
   // Helper function to check for a specific auth method
   const isAuthMethodActive = useCallback((method: string): boolean => {

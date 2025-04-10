@@ -56,6 +56,27 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
   }, [blinkUrl, params]);
 
   const handleClick = async () => {
+    // Check if this is a view-only action (for active or completed contests)
+    const isViewOnlyAction = blinkUrl.includes('/view-contest') || blinkUrl.includes('/view-results');
+    
+    if (isViewOnlyAction) {
+      // For view-only actions, we don't need a transaction
+      setIsLoading(true);
+      
+      try {
+        // Just call onSuccess with empty signature for navigation
+        onSuccess?.('view-only');
+      } catch (err) {
+        console.error('Error executing view action:', err);
+        setError((err as Error).message || 'Failed to execute action');
+        onError?.(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+    
+    // For transaction-based actions (like joining a contest)
     if (!connected) {
       try {
         setIsLoading(true);

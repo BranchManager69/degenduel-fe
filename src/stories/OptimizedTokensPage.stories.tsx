@@ -15,6 +15,45 @@ const MockContext: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Store originals
     const originalFetch = window.fetch;
     const originalUseStore = window.useStore;
+    const originalWebSocket = window.WebSocket;
+    
+    // Define a mock WebSocket class that does nothing
+    const MockWebSocket = function(this: any) {
+      console.log('[Storybook] WebSocket connection disabled');
+      
+      // Initialize with basic WebSocket properties
+      this.readyState = 3; // CLOSED
+      this.onclose = null;
+      this.onopen = null;
+      this.onerror = null;
+      this.onmessage = null;
+      this.url = "";
+      this.protocol = "";
+      this.extensions = "";
+      this.binaryType = "blob";
+      this.bufferedAmount = 0;
+      
+      // Call onclose if it's set later
+      setTimeout(() => {
+        if (this.onclose) {
+          try {
+            this.onclose(new CloseEvent('close'));
+          } catch (e) {
+            console.error('[Storybook] Mock WebSocket error:', e);
+          }
+        }
+      }, 0);
+      
+      // Define methods
+      this.send = function() {};
+      this.close = function() {};
+      
+      return this;
+    } as unknown as typeof WebSocket;
+    
+    // Replace the WebSocket constructor to prevent network requests
+    // @ts-ignore - Intentional override for Storybook
+    window.WebSocket = MockWebSocket;
     
     // Set up mocks with proper Response type
     window.fetch = () => Promise.resolve(new Response(
@@ -37,6 +76,7 @@ const MockContext: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return () => {
       window.fetch = originalFetch;
       window.useStore = originalUseStore;
+      window.WebSocket = originalWebSocket;
     };
   }, []);
   

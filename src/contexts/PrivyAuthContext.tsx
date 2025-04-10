@@ -108,8 +108,16 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
           userId, deviceInfo: { ...deviceInfo, device_id: deviceInfo.device_id ? '[REDACTED]' : undefined } 
         });
         
-        // Verify the token with our backend
-        const authResult = await verifyPrivyToken(token, userId, deviceInfo);
+        // Add error handling with timeout (increased to 30 seconds per backend recommendation)
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Privy verification timed out after 30 seconds")), 30000)
+        );
+        
+        // Race between the actual request and the timeout
+        const authResult = await Promise.race([
+          verifyPrivyToken(token, userId, deviceInfo),
+          timeoutPromise
+        ]) as any;
         
         // Set the authenticated user
         setAuthUser(authResult.user);
@@ -125,8 +133,27 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
           username: authResult.user?.username
         });
         console.log('[Privy] Session verification successful');
-      } catch (error) {
-        authDebug('PrivyAuth', 'Session verification failed', { error });
+      } catch (error: any) {
+        // Provide more user-friendly error message
+        const errorMessage = error.message || 'Unknown error';
+        const isTimeout = errorMessage.includes('timed out');
+        const friendlyMessage = isTimeout 
+          ? 'Privy server is not responding. Please try again later.'
+          : 'Failed to verify Privy login. Please try a different login method.';
+          
+        authDebug('PrivyAuth', 'Session verification failed', { 
+          error, 
+          isTimeout, 
+          friendlyMessage 
+        });
+        
+        // Show error to user
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('privy-auth-error', { 
+            detail: { message: friendlyMessage }
+          }));
+        }
+        
         console.error('[Privy] Session verification failed:', error);
         // If verification fails, log out
         privyLogout();
@@ -135,7 +162,7 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
     };
     
     syncWithBackend();
-  }, [ready, authenticated, privyUser, getAccessToken]);
+  }, [ready, authenticated, privyUser, getAccessToken, privyLogout]);
   
   // Check comprehensive auth status including Privy link status
   /**

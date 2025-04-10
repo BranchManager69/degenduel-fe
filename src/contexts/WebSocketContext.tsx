@@ -13,11 +13,11 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { authDebug } from '../config/config';
 import { useAuth } from '../hooks/useAuth';
 import {
-  ConnectionState,
-  MessageType,
-  SOCKET_TYPES,
-  WEBSOCKET_ENDPOINT,
-  WebSocketMessage
+    ConnectionState,
+    MessageType,
+    SOCKET_TYPES,
+    WEBSOCKET_ENDPOINT,
+    WebSocketMessage
 } from '../hooks/websocket/types';
 import { useStore } from '../store/useStore';
 import { dispatchWebSocketEvent, initializeWebSocketTracking } from '../utils/wsMonitor';
@@ -125,12 +125,51 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timestamp: new Date().toISOString()
     });
     
+    // Listen for token refresh fallback events
+    // This handles cases where a primary token refresh fails but a fallback is available
+    const handleTokenFallback = (event: CustomEvent) => {
+      const { type, source } = event.detail;
+      authDebug('WebSocketContext', 'Received token fallback event', { type, source });
+      
+      // If we're already connected, try to re-authenticate with the fallback token
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        authDebug('WebSocketContext', 'Re-authenticating with fallback token');
+        authenticate(false, false); // Use existing tokens, don't retry or force refresh
+      }
+    };
+    
+    // Listen for wallet disconnected events to clean up WebSocket connections
+    const handleWalletDisconnected = (event: CustomEvent) => {
+      authDebug('WebSocketContext', 'Wallet disconnected event received', { 
+        timestamp: event.detail?.timestamp,
+        readyState: wsRef.current?.readyState
+      });
+      
+      // Clean up existing connection if any
+      cleanupConnection();
+      
+      // Reset connection state
+      setConnectionState(ConnectionState.DISCONNECTED);
+      
+      // Wait longer before attempting to reconnect
+      // This will connect with public topics only since user is not logged in
+      setTimeout(() => {
+        authDebug('WebSocketContext', 'Reconnecting as public user after wallet disconnect');
+        connect();
+      }, 2000); // Increased from 500ms to 2000ms
+    };
+    
+    window.addEventListener('token-refresh-fallback', handleTokenFallback as EventListener);
+    window.addEventListener('wallet-disconnected', handleWalletDisconnected as EventListener);
+    
     // Attempt to connect
     connect();
     
     // Clean up on unmount
     return () => {
       authDebug('WebSocketContext', 'Cleaning up WebSocket context');
+      window.removeEventListener('token-refresh-fallback', handleTokenFallback as EventListener);
+      window.removeEventListener('wallet-disconnected', handleWalletDisconnected as EventListener);
       cleanupConnection();
     };
   }, []);
@@ -524,11 +563,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [stopHeartbeat]);
   
-  // Send authentication message
+  // Send authentication message with enhanced error handling and retry mechanism
   /**
    * Sends an authentication message to the WebSocket
+   * 
+   * @param retryOnFailure Whether to retry if no tokens are available (will trigger getAccessToken)
+   * @param forceRefresh Whether to force a token refresh before authentication
    */
-  const authenticate = useCallback(() => {
+  const authenticate = useCallback(async (retryOnFailure = true, forceRefresh = false) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       authDebug('WebSocketContext', 'Cannot authenticate - WebSocket not open');
       return;
@@ -539,11 +581,39 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
     
-    // Get token for authentication
+    // Get user state with tokens
     const user = useStore.getState().user;
-    const wsToken = user?.wsToken;
-    const jwt = user?.jwt;
+    let wsToken = user?.wsToken;
+    let jwt = user?.jwt;
     const sessionToken = user?.session_token;
+    
+    // Detect if this is Twitter authentication
+    const isTwitterAuth = authContext.activeAuthMethod === 'twitter' || 
+                          authContext.isTwitterAuth?.() || 
+                          (authContext.authMethods?.twitter?.active === true); // Check using auth context methods
+    
+    // Force token refresh if needed
+    if ((forceRefresh || isTwitterAuth) && authContext.getAccessToken) {
+      try {
+        if (isTwitterAuth) {
+          authDebug('WebSocketContext', 'Twitter auth detected, ensuring we have a WebSocket token');
+        } else {
+          authDebug('WebSocketContext', 'Forcing token refresh before authentication');
+        }
+        
+        const newToken = await authContext.getAccessToken();
+        if (newToken && user) {
+          wsToken = newToken;
+          // Update the token in the store as well
+          useStore.getState().setUser({
+            ...user,
+            wsToken: newToken
+          } as any); // Type assertion to avoid TS error
+        }
+      } catch (error) {
+        authDebug('WebSocketContext', 'Token refresh failed', { error });
+      }
+    }
     
     // Log available tokens
     authDebug('WebSocketContext', 'Authentication tokens available', {
@@ -552,11 +622,58 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       hasSessionToken: !!sessionToken
     });
     
-    // Choose token in order of preference
+    // Use tokens in order of priority: WebSocket token first, then JWT, then session token
     const authToken = wsToken || jwt || sessionToken;
     
     if (!authToken) {
-      authDebug('WebSocketContext', 'Cannot authenticate - No auth token available');
+      authDebug('WebSocketContext', 'No auth token available');
+      
+      // If we should retry and can get a token, do so
+      if (retryOnFailure && authContext.getAccessToken) {
+        authDebug('WebSocketContext', 'Attempting to get a fresh access token');
+        try {
+          const token = await authContext.getAccessToken();
+          if (token && user) {
+            authDebug('WebSocketContext', 'Received new token, updating and retrying auth');
+            // Update the token in the store
+            useStore.getState().setUser({
+              ...user,
+              wsToken: token
+            } as any); // Type assertion to avoid TS error
+            // Retry authentication with the new token but don't allow further retries
+            authenticate(false, false);
+            return;
+          }
+        } catch (error) {
+          authDebug('WebSocketContext', 'Failed to get fresh token', { error });
+        }
+      }
+      
+      // If we got here, we couldn't get a token or decided not to retry
+      authDebug('WebSocketContext', 'Authentication failed - No valid auth token available');
+      
+      // Dispatch event for monitoring
+      dispatchWebSocketEvent('auth_failure', {
+        timestamp: new Date().toISOString(),
+        reason: 'No valid auth token available'
+      });
+      
+      // Still subscribe to public topics to allow app to function with market data
+      authDebug('WebSocketContext', 'Subscribing to public topics only (market data will be available)');
+      try {
+        const publicSubscriptionMessage = {
+          type: MessageType.SUBSCRIBE,
+          topics: [
+            SOCKET_TYPES.SYSTEM,
+            SOCKET_TYPES.MARKET_DATA
+          ]
+        };
+        
+        wsRef.current.send(JSON.stringify(publicSubscriptionMessage));
+      } catch (error) {
+        authDebug('WebSocketContext', 'Error subscribing to public topics', { error });
+      }
+      
       return;
     }
     
@@ -567,7 +684,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setConnectionState(ConnectionState.AUTHENTICATING);
     
     try {
-      // Subscribe to public topics first
+      // Subscribe to public topics first to ensure we get data regardless of auth status
       const publicSubscriptionMessage = {
         type: MessageType.SUBSCRIBE,
         topics: [
@@ -600,8 +717,15 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (error) {
       authDebug('WebSocketContext', 'Error sending authentication message', { error });
       setConnectionError(error instanceof Error ? error.message : String(error));
+      
+      // Dispatch error event for monitoring
+      dispatchWebSocketEvent('auth_error', {
+        timestamp: new Date().toISOString(),
+        tokenType,
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
-  }, [authState.isLoggedIn]);
+  }, [authState.isLoggedIn, authContext]);
   
   // Register a message listener
   /**
