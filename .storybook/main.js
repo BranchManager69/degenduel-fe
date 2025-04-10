@@ -1,4 +1,7 @@
 /** @type { import('@storybook/react-vite').StorybookConfig } */
+const path = require('path');
+const controlHmrPlugin = require('./disable-hmr-plugin');
+
 const config = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   addons: [
@@ -32,6 +35,12 @@ const config = {
     // Add any custom Vite configuration here
     config.define = {
       ...config.define,
+      // Force React into development mode
+      'process.env.NODE_ENV': JSON.stringify('development'),
+      // Additional flags
+      '__REACT_DEVTOOLS_GLOBAL_HOOK__': '({ isDisabled: true })',
+      'global': '({})',
+      // Original environment variables
       'process.env': {
         VITE_CONTRACT_ADDRESS_REAL: JSON.stringify('0x1111111111111111111111111111111111111111'),
         VITE_CONTRACT_ADDRESS_FAKE: JSON.stringify('0x42069'),
@@ -45,21 +54,50 @@ const config = {
         VITE_TREASURY_WALLET: JSON.stringify('STORYBOOK_PLACEHOLDER'),
         VITE_VIRTUALS_GAME_SDK_API_KEY: JSON.stringify('STORYBOOK_PLACEHOLDER'),
         VITE_OPENAI_API_KEY: JSON.stringify('STORYBOOK_PLACEHOLDER'),
+        // Explicitly set NODE_ENV
+        NODE_ENV: JSON.stringify('development')
       }
     };
     
-    // Server configuration - allow design.degenduel.me
+    // Ensure React is in development mode - more direct approach
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      // Use our custom React dev loaders instead of direct module paths
+      'react': path.resolve(__dirname, './react-dev-fix/react.js'),
+      'react-dom': path.resolve(__dirname, './react-dev-fix/react-dom.js'),
+      // Enable normal Vite client instead of our custom stub for better HMR
+      // '/@vite/client': path.resolve(__dirname, './vite-client-stub.js'),
+      // '@vite/client': path.resolve(__dirname, './vite-client-stub.js'),
+    };
+    
+    // Server configuration - Enable standard HMR
     config.server = {
       ...config.server,
-      host: '0.0.0.0',
-      cors: true,
-      hmr: false,
-      // Allow requests from design.degenduel.me domain
+      host: '0.0.0.0', // Allow external connections
+      port: 6006,
+      strictPort: false, // Allow fallback to another port if 6006 is in use
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+      hmr: {
+        // Use automatic host detection instead of hardcoding
+        host: undefined, 
+        clientPort: undefined, // Let Vite determine the best port to use
+        protocol: 'ws',
+        timeout: 10000, // Increased timeout for better connection stability
+        overlay: true // Show errors in overlay
+      },
+      // Allow requests from any domain
       fs: {
         strict: true,
         allow: [process.cwd()]
       }
     };
+    
+    // Remove our HMR disabling plugin to allow normal HMR operation
+    // config.plugins = config.plugins || [];
+    // config.plugins.push(controlHmrPlugin());
     
     // Handle subpath in production environment
     if (process.env.NODE_ENV === 'production') {
@@ -75,4 +113,4 @@ const config = {
     return config;
   },
 };
-export default config;
+module.exports = config;

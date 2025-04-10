@@ -1,0 +1,1 @@
+export { MarketStatsPanel } from './MarketStatsPanel';

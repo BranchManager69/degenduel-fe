@@ -83,16 +83,9 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
    */
   const login = async () => {
     authDebug('TwitterAuth', 'Initiating Twitter login');
-    try {
-      const authUrl = await getTwitterAuthUrl();
-      authDebug('TwitterAuth', 'Received Twitter auth URL', { authUrl });
-      window.location.href = authUrl;
-    } catch (error) {
-      authDebug('TwitterAuth', 'Login failed, using fallback URL', { error });
-      console.error('[Twitter] Login failed:', error);
-      // Fallback to default URL
-      window.location.href = '/api/auth/twitter/login';
-    }
+    const authUrl = await getTwitterAuthUrl();
+    authDebug('TwitterAuth', 'Using Twitter auth URL', { authUrl });
+    window.location.href = authUrl;
   };
 
   // Function to link Twitter account to existing user
@@ -150,6 +143,18 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
         linked: status.linked,
         username: status.username
       });
+      
+      // If Twitter is linked, ensure we have WebSocket token
+      // This proactively acquires a WebSocket token right after Twitter auth
+      if (status.linked && user) {
+        import('../services/TokenManager').then(({ TokenManager, TokenType }) => {
+          // Request a WebSocket token from the server
+          TokenManager.refreshToken(TokenType.WS_TOKEN);
+          authDebug('TwitterAuth', 'Proactively requesting WebSocket token after Twitter auth success');
+        }).catch(err => {
+          authDebug('TwitterAuth', 'Error importing TokenManager', { error: err });
+        });
+      }
     } catch (error) {
       authDebug('TwitterAuth', 'Failed to check Twitter status', { error });
       console.error('[Twitter] Failed to check auth status:', error);

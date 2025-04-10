@@ -36,21 +36,65 @@ const corsOptions = {
 router.options('*', cors(corsOptions));
 
 /**
- * GET handler for blink metadata
- * Returns information about what the action does
+ * GET handler for join-contest blink metadata
+ * Returns information about joining a contest
  */
 router.get('/join-contest', cors(corsOptions), async (req, res) => {
   try {
     const contestId = req.query.contestId || 'sample-contest-123';
+    const contestName = req.query.contestName || 'Sample Contest';
     const contest = CONTESTS[contestId] || CONTESTS['sample-contest-123'];
     
     // Return metadata conforming to Solana Actions protocol
     res.status(200).json({
-      title: `Join ${contest.name}`,
+      title: `Join ${contestName}`,
       description: `Entry fee: ${contest.entryFee} SOL - Prize pool: ${contest.prize} SOL`,
-      icon: `${req.protocol}://${req.get('host')}/assets/images/contests/default.png`,
+      icon: `${req.protocol}://${req.get('host')}/assets/media/logos/dd150.png`,
       label: 'Join Contest',
-      // You can include multiple actions in a chain, but we'll keep it simple
+    });
+  } catch (error) {
+    console.error('Error generating blink metadata:', error);
+    res.status(500).json({ error: 'Failed to generate action metadata' });
+  }
+});
+
+/**
+ * GET handler for view-contest blink metadata
+ * Returns information about viewing a live contest
+ */
+router.get('/view-contest', cors(corsOptions), async (req, res) => {
+  try {
+    const contestId = req.query.contestId || 'sample-contest-123';
+    const contestName = req.query.contestName || 'Sample Contest';
+    
+    // Return metadata conforming to Solana Actions protocol
+    res.status(200).json({
+      title: `Live Contest: ${contestName}`,
+      description: `View the live leaderboard and portfolio performance`,
+      icon: `${req.protocol}://${req.get('host')}/assets/media/logos/dd150.png`,
+      label: 'View Live Contest',
+    });
+  } catch (error) {
+    console.error('Error generating blink metadata:', error);
+    res.status(500).json({ error: 'Failed to generate action metadata' });
+  }
+});
+
+/**
+ * GET handler for view-results blink metadata
+ * Returns information about viewing contest results
+ */
+router.get('/view-results', cors(corsOptions), async (req, res) => {
+  try {
+    const contestId = req.query.contestId || 'sample-contest-123';
+    const contestName = req.query.contestName || 'Sample Contest';
+    
+    // Return metadata conforming to Solana Actions protocol
+    res.status(200).json({
+      title: `Results: ${contestName}`,
+      description: `View the final leaderboard and contest results`,
+      icon: `${req.protocol}://${req.get('host')}/assets/media/logos/dd150.png`,
+      label: 'View Results',
     });
   } catch (error) {
     console.error('Error generating blink metadata:', error);

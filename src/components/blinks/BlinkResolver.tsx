@@ -19,8 +19,9 @@ export const BlinkResolver: React.FC = () => {
   const [metadata, setMetadata] = useState<BlinkMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Detect if current URL is a blink URL
+  // Detect if current URL is a blink URL or if a blink path was passed through query params
   useEffect(() => {
+    // Check if we have a direct blink URL
     if (location.pathname.startsWith('/blinks/')) {
       setBlinkUrl(location.pathname);
       
@@ -36,6 +37,30 @@ export const BlinkResolver: React.FC = () => {
       
       // Try to fetch metadata
       fetchMetadata(location.pathname, extractedParams);
+    } 
+    // Check if we have a blink path in the query parameters (from our blinks.html redirect)
+    else if (location.pathname === '/' && location.search) {
+      const searchParams = new URLSearchParams(location.search);
+      const blinkPath = searchParams.get('blinkPath');
+      
+      if (blinkPath && blinkPath.startsWith('/blinks/')) {
+        // Parse the blink path
+        const url = new URL(blinkPath, window.location.origin);
+        setBlinkUrl(url.pathname);
+        
+        // Extract query parameters from the blink path
+        const blinkParams = new URLSearchParams(url.search);
+        const extractedParams: Record<string, string> = {};
+        
+        blinkParams.forEach((value, key) => {
+          extractedParams[key] = value;
+        });
+        
+        setParams(extractedParams);
+        
+        // Try to fetch metadata
+        fetchMetadata(url.pathname, extractedParams);
+      }
     }
   }, [location]);
   
@@ -59,11 +84,35 @@ export const BlinkResolver: React.FC = () => {
     }
   };
   
-  // Handle successful execution
+  // Handle successful execution or navigation
   const handleSuccess = (signature: string) => {
     console.log('Transaction successful:', signature);
-    // Redirect to a success page or back to home
-    navigate('/', { state: { transactionSuccess: true, signature } });
+    
+    if (!blinkUrl) return;
+    
+    // Extract contestId from params
+    const contestId = params.contestId;
+    
+    if (!contestId) {
+      // If no contestId, just go to home
+      navigate('/', { state: { transactionSuccess: true, signature } });
+      return;
+    }
+    
+    // Route to appropriate page based on the blink URL
+    if (blinkUrl.includes('/join-contest')) {
+      // If it was a join contest action, redirect to contest detail
+      navigate(`/contests/${contestId}`, { state: { transactionSuccess: true, signature } });
+    } else if (blinkUrl.includes('/view-contest')) {
+      // If it was a view live contest action, redirect to contest lobby
+      navigate(`/contests/${contestId}/lobby`, { state: { blinkRedirect: true } });
+    } else if (blinkUrl.includes('/view-results')) {
+      // If it was a view results action, redirect to contest results
+      navigate(`/contests/${contestId}/results`, { state: { blinkRedirect: true } });
+    } else {
+      // Default fallback to home
+      navigate('/', { state: { transactionSuccess: true, signature } });
+    }
   };
   
   // Handle errors
@@ -100,6 +149,12 @@ export const BlinkResolver: React.FC = () => {
                   className="w-full py-3"
                   onSuccess={handleSuccess}
                   onError={handleError}
+                  label={
+                    blinkUrl?.includes('/view-contest') ? 'View Contest' :
+                    blinkUrl?.includes('/view-results') ? 'View Results' :
+                    blinkUrl?.includes('/join-contest') ? 'Join Contest' :
+                    'Proceed'
+                  }
                 />
                 
                 <button

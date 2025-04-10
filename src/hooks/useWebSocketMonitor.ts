@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useStore } from "../store/useStore";
 import { useInterval } from "./useInterval";
+import { useWebSocketContext } from "../contexts/WebSocketContext";
+import { ConnectionState } from "./websocket/types";
 
 interface WebSocketMetrics {
   totalConnections: number;
@@ -64,10 +66,20 @@ export interface WebSocketMonitorData {
   lastActivityTime: Date | null;
 }
 
+/**
+ * WebSocket monitoring hook with performance optimizations
+ * 
+ * This hook now properly uses the WebSocketContext instead of
+ * modifying WebSocket prototype methods, which was causing
+ * issues with the tracking system
+ */
 export const useWebSocketMonitor = (): WebSocketMonitorData => {
   const store = useStore();
   const { setWebSocketState, addWebSocketAlert } = store;
   const webSocketState = store.webSocket;
+  
+  // Get context connection state from unified WebSocket system
+  const webSocketContext = useWebSocketContext();
   
   // Local state for UI monitoring
   const [messageCount, setMessageCount] = useState(0);
@@ -77,85 +89,52 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
   const [isAuthError, setIsAuthError] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
   
-  // Message tracking
+  // Track if we've already set up the event listeners
+  const listenerSetupRef = useRef(false);
+  
+  // Message tracking via event listeners instead of prototype modification
   useEffect(() => {
-    // Access global message event listeners to track all WS activity
-    const originalSend = WebSocket.prototype.send;
-    const originalAddEventListener = WebSocket.prototype.addEventListener;
+    if (listenerSetupRef.current) return;
+    listenerSetupRef.current = true;
     
-    // Track message count
-    let localMessageCount = 0;
-    let localErrorCount = 0;
-    
-    // Override addEventListener to track message events
-    // Using type 'any' here is necessary for the proper overriding of the native method
-    WebSocket.prototype.addEventListener = function(
-      type: string, 
-      listener: EventListenerOrEventListenerObject, 
-      options?: boolean | AddEventListenerOptions
-    ): void {
-      if (type === 'message') {
-        const wrappedListener = function(this: WebSocket, event: Event) {
-          // Track all message events
-          localMessageCount++;
-          setMessageCount(prev => prev + 1);
-          setLastActivity(new Date());
-          
-          // Track auth errors
-          try {
-            const messageEvent = event as MessageEvent;
-            const data = JSON.parse(messageEvent.data as string);
-            if (
-              (data.code === 4011) || 
-              (data.error && typeof data.error === 'string' && data.error.includes('auth')) || 
-              (data.message && typeof data.message === 'string' && data.message.includes('auth'))
-            ) {
-              setIsAuthError(true);
-              setAuthErrorMessage(
-                typeof data.message === 'string' ? data.message : 'Authentication failed'
-              );
-            }
-          } catch (e) {
-            // Not JSON or other parsing error, ignore
-          }
-          
-          // Call original listener
-          if (typeof listener === 'function') {
-            listener.call(this, event);
-          } else if (listener && typeof listener.handleEvent === 'function') {
-            listener.handleEvent(event);
-          }
-        };
-        return originalAddEventListener.call(this, type, wrappedListener, options);
+    // Use custom events for tracking instead of prototype modifications
+    const handleWsEvent = (event: CustomEvent) => {
+      const { type, data } = event.detail;
+      
+      // Track messages
+      if (type === 'message' || type === 'sent') {
+        setMessageCount(prev => prev + 1);
+        setLastActivity(new Date());
       }
       
-      // Handle error events
-      if (type === 'error') {
-        const wrappedListener = function(this: WebSocket, event: Event) {
-          localErrorCount++;
-          if (typeof listener === 'function') {
-            listener.call(this, event);
-          } else if (listener && typeof listener.handleEvent === 'function') {
-            listener.handleEvent(event);
-          }
-        };
-        return originalAddEventListener.call(this, type, wrappedListener, options);
+      // Track auth errors
+      if (type === 'error' && data) {
+        const errorData = data;
+        if (
+          (errorData.code === 4011 || errorData.code === 4401) || 
+          (errorData.error && typeof errorData.error === 'string' && errorData.error.includes('auth')) || 
+          (errorData.message && typeof errorData.message === 'string' && errorData.message.includes('auth'))
+        ) {
+          setIsAuthError(true);
+          setAuthErrorMessage(
+            typeof errorData.message === 'string' ? errorData.message : 'Authentication failed'
+          );
+        }
       }
       
-      return originalAddEventListener.call(this, type, listener, options);
+      // Reset auth errors when authenticated
+      if (type === 'authenticated') {
+        setIsAuthError(false);
+        setAuthErrorMessage(null);
+      }
     };
     
-    // Override send to track outgoing messages
-    WebSocket.prototype.send = function(this: WebSocket, data: string | ArrayBufferLike | Blob | ArrayBufferView) {
-      // Record activity time when sending messages
-      setLastActivity(new Date());
-      return originalSend.call(this, data);
-    };
+    // Register for WebSocket events
+    window.addEventListener('ws-debug', handleWsEvent as EventListener);
     
-    // Restore original methods on cleanup
+    // Cleanup
     return () => {
-      WebSocket.prototype.addEventListener = originalAddEventListener;
-      WebSocket.prototype.send = originalSend;
+      window.removeEventListener('ws-debug', handleWsEvent as EventListener);
     };
   }, []);
   
@@ -166,12 +145,24 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
     setPrevMessageCount(messageCount);
   }, 1000);
   
-  // Connect to monitoring WebSocket if available
+  // Connect to monitoring WebSocket if available (only for superadmins)
   useEffect(() => {
+    // Only attempt to connect if user is superadmin
+    const user = store.user;
+    if (!user?.is_superadmin) return;
+    
     let ws: WebSocket | null = null;
+    let connectAttempts = 0;
+    const MAX_CONNECT_ATTEMPTS = 3;
 
     const connect = () => {
+      if (connectAttempts >= MAX_CONNECT_ATTEMPTS) {
+        console.warn("Giving up on monitoring WebSocket after multiple failed attempts");
+        return;
+      }
+      
       try {
+        connectAttempts++;
         ws = new WebSocket(
           `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/api/superadmin/ws/monitor`,
         );
@@ -223,11 +214,13 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
                 break;
 
               default:
+                // Skip warning in production for unknown message types
                 if (process.env.NODE_ENV !== "production") {
                   console.warn("Unknown WebSocket message type:", data.type);
                 }
             }
           } catch (error) {
+            // Only log errors in development
             if (process.env.NODE_ENV !== "production") {
               console.error("Error processing WebSocket message:", error);
             }
@@ -235,26 +228,35 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
         };
 
         ws.onclose = () => {
-          // Attempt to reconnect after 5 seconds
-          setTimeout(connect, 5000);
+          // Only attempt reconnect if we haven't exceeded our limit
+          if (connectAttempts < MAX_CONNECT_ATTEMPTS) {
+            // Exponential backoff: 5s, 10s, 20s
+            const reconnectDelay = Math.min(5000 * Math.pow(2, connectAttempts - 1), 20000);
+            setTimeout(connect, reconnectDelay);
+          }
         };
 
         ws.onerror = (error) => {
           if (process.env.NODE_ENV !== "production") {
-            console.error("WebSocket error:", error);
+            console.error("Monitoring WebSocket error:", error);
           }
-          addWebSocketAlert({
-            type: "error",
-            title: "WebSocket Error",
-            message: "Connection error occurred",
-          });
+          // Only show alerts to superadmins in development
+          if (process.env.NODE_ENV !== "production" && user?.is_superadmin) {
+            addWebSocketAlert({
+              type: "error",
+              title: "Monitoring WebSocket Error",
+              message: "Connection error occurred"
+            });
+          }
         };
       } catch (error) {
-        console.error("Failed to connect to monitoring WebSocket:", error);
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Failed to connect to monitoring WebSocket:", error);
+        }
       }
     };
 
-    // Try to connect if we're not in tes t mode (NOTE: WTF? Such a mode doesn't even exist)
+    // Only try to connect if we're not in test mode
     if (process.env.NODE_ENV !== "test") {
       connect();
     }
@@ -265,23 +267,57 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
         ws.close();
       }
     };
-  }, []);
+  }, [store.user]);
   
-  // Get connection state from global WebSocket context
-  // This will be populated from the unified WebSocket manager
-  const connectionState = webSocketState?.systemHealth?.status === "operational" 
-    ? "connected" 
-    : webSocketState?.systemHealth?.status === "degraded"
-    ? "degraded"
-    : webSocketState?.systemHealth?.status === "error"
-    ? "error"
-    : null;
+  // Map the context connection state to our monitoring state
+  const getContextConnectionState = () => {
+    // Use the context connection state if available
+    if (webSocketContext) {
+      switch (webSocketContext.connectionState) {
+        case ConnectionState.CONNECTED:
+          return "connected";
+        case ConnectionState.AUTHENTICATED:
+          return "authenticated";
+        case ConnectionState.CONNECTING:
+        case ConnectionState.AUTHENTICATING:
+          return "connecting";
+        case ConnectionState.RECONNECTING:
+          return "reconnecting";
+        case ConnectionState.ERROR:
+          return "error";
+        case ConnectionState.DISCONNECTED:
+        default:
+          return "disconnected";
+      }
+    }
+    
+    // Fall back to the legacy system health status
+    return webSocketState?.systemHealth?.status === "operational" 
+      ? "connected" 
+      : webSocketState?.systemHealth?.status === "degraded"
+      ? "degraded"
+      : webSocketState?.systemHealth?.status === "error"
+      ? "error"
+      : null;
+  };
+  
+  // Determine if authenticated based on the context
+  const isAuthenticatedFromContext = () => {
+    // First check the WebSocketContext
+    if (webSocketContext) {
+      return webSocketContext.isAuthenticated;
+    }
+    
+    // Then fall back to our tracked auth error state
+    return !isAuthError;
+  };
   
   // Create the monitor data object to return
+  const connectionStateValue = getContextConnectionState();
   const monitorData: WebSocketMonitorData = {
-    isConnected: !!connectionState && connectionState !== "error",
-    connectionState,
-    isAuthenticated: !isAuthError,
+    isConnected: connectionStateValue === "connected" || connectionStateValue === "authenticated",
+    connectionState: connectionStateValue,
+    isAuthenticated: isAuthenticatedFromContext(),
     isAuthError,
     authErrorMessage,
     messageCount,

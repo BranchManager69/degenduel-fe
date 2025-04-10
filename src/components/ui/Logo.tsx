@@ -18,6 +18,8 @@ interface LogoProps {
   textOnly?: boolean; // Deprecated
   asLink?: boolean;
   animated?: boolean;
+  enhancedGlow?: boolean; // New option for more complex glow effect
+  glowColor?: string; // Color for the enhanced glow
   highlightColor?: string; // Deprecated
 }
 
@@ -34,6 +36,8 @@ const Logo: React.FC<LogoProps> = ({
   className = "",
   asLink = false,
   animated = false,
+  enhancedGlow = false,
+  glowColor = "#9933ff", // Default to brand purple
   // Unused parameters are removed but kept in the interface for backward compatibility
 }) => {
   const { height, width } = LOGO_SIZES[size];
@@ -67,34 +71,115 @@ const Logo: React.FC<LogoProps> = ({
       style={containerStyle}
       {...pulseAnimation}
     >
-      <div className="flex items-center justify-center h-full w-full overflow-hidden">
+      {/* Enhanced multi-layer glow when enabled */}
+      {enhancedGlow && animated && (
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Outer glow layer */}
+          <motion.div 
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `radial-gradient(ellipse at center, ${glowColor}33 0%, transparent 70%)`,
+              borderRadius: '50%',
+              transform: 'scale(1.2)',
+              filter: 'blur(8px)',
+            }}
+            animate={{
+              opacity: [0.4, 0.7, 0.4],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          />
+          
+          {/* Middle glow layer - different opacity/animation */}
+          <motion.div 
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `radial-gradient(ellipse at center, ${glowColor}66 0%, transparent 60%)`,
+              borderRadius: '50%',
+              transform: 'scale(1.05)',
+              filter: 'blur(5px)',
+            }}
+            animate={{
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              repeatType: "reverse",
+              delay: 0.5,
+            }}
+          />
+          
+          {/* Inner sharp glow for highlights */}
+          <motion.div 
+            className="absolute inset-0"
+            style={{
+              backgroundImage: 'radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, transparent 40%)',
+              borderRadius: '50%',
+              transform: 'scale(0.9)',
+              mixBlendMode: 'screen',
+            }}
+            animate={{
+              opacity: [0.4, 0.8, 0.4],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          />
+        </div>
+      )}
+
+      <div className="flex items-center justify-center h-full w-full overflow-hidden relative z-10">
         {/* Image logo with explicit dimensions */}
         <motion.img
           src="/assets/media/logos/transparent_WHITE.png"
           alt="DegenDuel Logo"
-          className="object-contain"
+          className="object-contain relative z-10"
           style={{
             width: `${width}px`,
             height: `${height}px`,
             maxWidth: "100%",
             maxHeight: "100%",
-            filter: animated 
-              ? "drop-shadow(0 0 3px rgba(255, 255, 255, 0.5))" 
-              : "none",
+            filter: enhancedGlow 
+              ? `drop-shadow(0 0 2px ${glowColor}80)` 
+              : "none"
           }}
-          animate={animated ? {
-            filter: [
-              "drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))",
-              "drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))",
-              "drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))",
-            ]
-          } : undefined}
-          transition={animated ? {
-            duration: 2.5,
-            repeat: Infinity,
-            repeatType: "reverse",
-          } : undefined}
         />
+        
+        {/* 
+          ORIGINAL IMPLEMENTATION (preserved for reference):
+          <motion.img
+            src="/assets/media/logos/transparent_WHITE.png"
+            alt="DegenDuel Logo"
+            className="object-contain"
+            style={{
+              width: `${width}px`,
+              height: `${height}px`,
+              maxWidth: "100%",
+              maxHeight: "100%",
+              filter: animated 
+                ? "drop-shadow(0 0 3px rgba(255, 255, 255, 0.5))" 
+                : "none",
+            }}
+            animate={animated ? {
+              filter: [
+                "drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))",
+                "drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))",
+                "drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))",
+              ]
+            } : undefined}
+            transition={animated ? {
+              duration: 2.5,
+              repeat: Infinity,
+              repeatType: "reverse",
+            } : undefined}
+          />
+        */}
 
         {/* SEO text (hidden visually) */}
         <span className="sr-only">DegenDuel</span>

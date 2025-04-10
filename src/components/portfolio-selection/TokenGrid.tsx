@@ -2,6 +2,7 @@ import React from "react";
 import { IconType } from "react-icons";
 import { FaCoins, FaDiscord, FaTelegram, FaTwitter } from "react-icons/fa";
 
+import { TokenListItem } from "./TokenListItem";
 import { TokenSparkline } from "./TokenSparkline";
 import { formatCurrency, formatMarketCap } from "../../lib/utils";
 import { Token } from "../../types/index";
@@ -12,20 +13,17 @@ interface TokenGridProps {
   selectedTokens: Map<string, number>;
   onTokenSelect: (contractAddress: string, weight: number) => void;
   marketCapFilter: string;
+  viewMode?: 'card' | 'list';
 }
 
 // Helper function for dynamic price formatting
 const formatTokenPrice = (price: string | number): string => {
   const numPrice = Number(price);
   if (numPrice >= 1) {
-    ////return `${numPrice.toFixed(2)} SOL`; // Show cents for prices >= 1
-    return `$${numPrice.toFixed(2)}`; // Show cents for prices >= 1
+    return `$${numPrice.toFixed(2)}`;
   } else if (numPrice >= 0.01) {
-    ////return `${numPrice.toFixed(3)} SOL`; // Show 3 decimals for prices >= 0.01
-    return `$${numPrice.toFixed(3)}`; // Show 3 decimals for prices >= 0.01
+    return `$${numPrice.toFixed(3)}`;
   } else {
-    // For very small prices, show significant digits
-    ////return `${numPrice.toPrecision(2)} SOL`;
     return `$${numPrice.toPrecision(3)}`;
   }
 };
@@ -35,6 +33,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
   selectedTokens,
   onTokenSelect,
   marketCapFilter,
+  viewMode = 'card',
 }) => {
   const filteredTokens = tokens.filter((token) => {
     if (!marketCapFilter) return true;
@@ -73,8 +72,9 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
     onTokenSelect(token.contractAddress, Number(e.target.value));
   };
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  // Render card view
+  const renderCardView = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
       {filteredTokens.map((token) => (
         <Card
           key={token.contractAddress}
@@ -85,7 +85,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 ? "ring-2 ring-brand-500 bg-dark-200/80"
                 : "hover:bg-dark-300/80 bg-dark-200/50"
             }
-            hover:shadow-xl hover:shadow-brand-500/10 hover:-translate-y-0.5
+            hover:shadow-xl hover:shadow-brand-500/10 hover:-translate-y-0.5 text-xs sm:text-sm
             `}
         >
           {/* Background Pattern + Animated Logo */}
@@ -119,21 +119,21 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
 
           {/* Content */}
           <div className="relative z-10">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 p-3 sm:p-6">
               <div className="flex items-start justify-between">
                 {/* Token Info */}
-                <div className="flex-1 min-w-0 pr-4">
-                  <h3 className="text-2xl font-bold text-gray-100 tracking-tight">
+                <div className="flex-1 min-w-0 pr-2 sm:pr-4">
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-100 tracking-tight">
                     {token.symbol}
                   </h3>
-                  <span className="text-sm text-gray-400 block truncate max-w-[320px] font-medium">
+                  <span className="text-xs sm:text-sm text-gray-400 block truncate max-w-full sm:max-w-[320px] font-medium">
                     {token.name}
                   </span>
                 </div>
                 {/* Social Links - Moved to right side */}
                 {(token.websites?.length ||
                   Object.keys(token.socials || {}).length) && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     {/* Social Media Links */}
                     {Object.entries(token.socials || {})
                       .filter(([_, data]) => data?.url)
@@ -155,8 +155,9 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-brand-400 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Icon />
+                            <Icon size={14} className="sm:text-base" />
                           </a>
                         );
                       })}
@@ -175,13 +176,13 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
               </div>
             </CardHeader>
 
-            <CardContent className="pt-2">
+            <CardContent className="pt-1 p-3 sm:p-6 sm:pt-2">
               {/* Stats Grid with Gradient Borders */}
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-1 sm:gap-2 text-[10px] sm:text-sm">
                 {/* Price */}
                 <div>
                   <span className="text-gray-400">Price</span>
-                  <div className="font-medium text-gray-200">
+                  <div className="font-medium text-gray-200 truncate">
                     {token.price ? formatTokenPrice(token.price) : "N/A"}
                   </div>
                 </div>
@@ -205,7 +206,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 {/* Market Cap */}
                 <div>
                   <span className="text-gray-400">Market Cap</span>
-                  <div className="font-medium text-gray-200">
+                  <div className="font-medium text-gray-200 truncate">
                     {token.marketCap
                       ? formatMarketCap(Number(token.marketCap))
                       : "N/A"}
@@ -215,7 +216,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 {/* Liquidity */}
                 <div>
                   <span className="text-gray-400">Liquidity</span>
-                  <div className="font-medium text-gray-200">
+                  <div className="font-medium text-gray-200 truncate">
                     {token.liquidity?.usd
                       ? formatCurrency(token.liquidity.usd)
                       : "N/A"}
@@ -225,7 +226,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 {/* 24h Volume */}
                 <div>
                   <span className="text-gray-400">24h Volume</span>
-                  <div className="font-medium text-gray-200">
+                  <div className="font-medium text-gray-200 truncate">
                     {token.volume24h
                       ? formatCurrency(Number(token.volume24h))
                       : "N/A"}
@@ -235,7 +236,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 {/* 24h Trades */}
                 <div>
                   <span className="text-gray-400">24h Trades</span>
-                  <div className="font-medium text-gray-200">
+                  <div className="font-medium text-gray-200 truncate">
                     {token.transactionsJson?.h24
                       ? `${(
                           token.transactionsJson.h24.buys +
@@ -250,21 +251,21 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
               <div
                 className={`transform transition-all duration-200 ease-out overflow-hidden ${
                   selectedTokens.has(token.contractAddress)
-                    ? "h-[72px] opacity-100 mt-4 scale-100"
+                    ? "h-[68px] sm:h-[72px] opacity-100 mt-3 sm:mt-4 scale-100"
                     : "h-0 opacity-0 mt-0 scale-95"
                 }`}
               >
                 <div
-                  className="bg-gradient-to-r from-dark-300/50 via-dark-300/30 to-dark-300/50 rounded-lg p-3 border border-dark-300/50"
+                  className="bg-gradient-to-r from-dark-300/50 via-dark-300/30 to-dark-300/50 rounded-lg p-2 sm:p-3 border border-dark-300/50"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center mb-1 sm:mb-2">
                     {/* Portfolio Weight */}
-                    <label className="text-sm font-medium text-gray-400 flex items-center gap-1">
-                      <FaCoins size={12} className="text-brand-400" />
-                      Portfolio Weight
+                    <label className="text-xs sm:text-sm font-medium text-gray-400 flex items-center gap-1">
+                      <FaCoins size={10} className="text-brand-400 hidden sm:inline" />
+                      Weight
                     </label>
-                    <span className="text-sm font-bold text-brand-400 tabular-nums">
+                    <span className="text-xs sm:text-sm font-bold text-brand-400 tabular-nums">
                       {selectedTokens.get(token.contractAddress)}%
                     </span>
                   </div>
@@ -280,8 +281,10 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                       className="w-full h-1.5 bg-gradient-to-r from-dark-300 via-brand-500/20 to-dark-300 rounded-full appearance-none cursor-pointer
                         focus:outline-none focus:ring-2 focus:ring-brand-500/50
                         [&::-webkit-slider-thumb]:appearance-none
-                        [&::-webkit-slider-thumb]:w-4
-                        [&::-webkit-slider-thumb]:h-4
+                        [&::-webkit-slider-thumb]:w-3
+                        [&::-webkit-slider-thumb]:h-3
+                        [&::-webkit-slider-thumb]:sm:w-4
+                        [&::-webkit-slider-thumb]:sm:h-4
                         [&::-webkit-slider-thumb]:rounded-sm
                         [&::-webkit-slider-thumb]:rotate-45
                         [&::-webkit-slider-thumb]:bg-brand-400
@@ -291,8 +294,10 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                         [&::-webkit-slider-thumb]:border-2
                         [&::-webkit-slider-thumb]:border-dark-200
                         [&::-webkit-slider-thumb]:shadow-lg
-                        [&::-moz-range-thumb]:w-4
-                        [&::-moz-range-thumb]:h-4
+                        [&::-moz-range-thumb]:w-3
+                        [&::-moz-range-thumb]:h-3
+                        [&::-moz-range-thumb]:sm:w-4
+                        [&::-moz-range-thumb]:sm:h-4
                         [&::-moz-range-thumb]:rotate-45
                         [&::-moz-range-thumb]:rounded-sm
                         [&::-moz-range-thumb]:bg-brand-400
@@ -303,15 +308,6 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                         [&::-moz-range-thumb]:border-dark-200
                         [&::-moz-range-thumb]:shadow-lg"
                     />
-                    {/* Glowing progress bar */}
-                    <div
-                      className="absolute top-[7px] left-0 h-1.5 bg-gradient-to-r from-brand-500 to-brand-400 rounded-full pointer-events-none shadow-[0_0_8px_rgba(var(--brand-500-rgb),0.5)]"
-                      style={{
-                        width: `${
-                          selectedTokens.get(token.contractAddress) || 0
-                        }%`,
-                      }}
-                    />
                   </div>
                 </div>
               </div>
@@ -321,4 +317,22 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
       ))}
     </div>
   );
+  
+  // Render list view
+  const renderListView = () => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      {filteredTokens.map(token => (
+        <TokenListItem
+          key={token.contractAddress}
+          token={token}
+          isSelected={selectedTokens.has(token.contractAddress)}
+          weight={selectedTokens.get(token.contractAddress) || 0}
+          onSelect={() => handleCardClick(token)}
+          onWeightChange={(weight: number) => onTokenSelect(token.contractAddress, weight)}
+        />
+      ))}
+    </div>
+  );
+  
+  return viewMode === 'card' ? renderCardView() : renderListView();
 };

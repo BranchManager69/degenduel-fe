@@ -6,15 +6,16 @@
  * This file contains the LoginPage component, which is used to display the login page.
  * 
  * @author @BranchManager69
- * @last-modified 2025-04-02
+ * @last-modified 2025-04-08
  */
 
 import { motion } from "framer-motion";
-import React from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 // @ts-ignore - JSX component without TypeScript definitions
 import LoginOptions from "../../../components/auth/LoginOptions";
+import WalletDebugger from "../../../components/auth/WalletDebugger";
 import Logo from "../../../components/ui/Logo";
 import { authDebug } from "../../../config/config";
 import { useAuthContext } from "../../../contexts/AuthContext";
@@ -28,6 +29,7 @@ const LoginPage: React.FC = () => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showDebugger, setShowDebugger] = useState(true);
   
   // Get the path to redirect to after login (default to home)
   const from = location.state?.from?.pathname || "/";
@@ -122,16 +124,34 @@ const LoginPage: React.FC = () => {
           <p className="text-center text-sm text-gray-400">
             New to DegenDuel? Simply connect your wallet to create an account!
           </p>
-          <p className="text-center text-xs text-gray-500">
+          <div className="flex justify-center space-x-3 text-xs text-gray-500">
             <a 
               href="/biometric-auth-demo" 
               className="text-brand-400 hover:text-brand-300 transition-colors"
             >
               Try our biometric authentication demo →
             </a>
-          </p>
+            <button 
+              onClick={() => setShowDebugger(!showDebugger)}
+              className="text-purple-400 hover:text-purple-300 transition-colors"
+            >
+              {showDebugger ? "Hide" : "Show"} wallet debugger
+            </button>
+          </div>
         </motion.div>
       </motion.div>
+      
+      {/* Wallet Debugger Panel */}
+      {showDebugger && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full z-10 mt-8"
+        >
+          <WalletDebugger />
+        </motion.div>
+      )}
     </div>
   );
 };

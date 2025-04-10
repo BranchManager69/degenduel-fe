@@ -285,8 +285,56 @@ export const mockedHooks = {
     maintenanceMode: false,
     setMaintenanceMode: () => {}
   }),
+  // Enhanced mock implementation of useSystemSettingsWebSocket
+  useSystemSettingsWebSocket: () => ({
+    settings: {
+      background_scene: {
+        enabled: true,
+        scenes: [
+          { name: 'CyberGrid', enabled: true, zIndex: 0, blendMode: 'normal' },
+          { name: 'MarketBrain', enabled: true, zIndex: 1, blendMode: 'screen' }
+        ]
+      },
+      maintenance_mode: false,
+      feature_flags: {
+        enable_animations: true,
+        enable_achievements: true
+      }
+    },
+    loading: false,
+    error: null,
+    lastUpdated: new Date(),
+    refreshSettings: () => console.log('Mock refreshSettings called'),
+    updateBackgroundScene: () => console.log('Mock updateBackgroundScene called'),
+    connect: () => console.log('Mock connect called'),
+    close: () => console.log('Mock close called'),
+    webSocketConnected: true
+  }),
   // Mock implementation of useUnifiedWebSocket for the Footer component
   useUnifiedWebSocket: (id: string, types: string[] = [], callback: Function, topics?: string[]) => {
+    // Immediately invoke callback with mock data if we have a system settings request
+    if (id.includes('system') && topics && topics.includes('system')) {
+      setTimeout(() => {
+        callback({
+          type: "SYSTEM_SETTINGS_UPDATE",
+          data: {
+            background_scene: {
+              enabled: true,
+              scenes: [
+                { name: 'CyberGrid', enabled: true, zIndex: 0, blendMode: 'normal' },
+                { name: 'MarketBrain', enabled: true, zIndex: 1, blendMode: 'screen' }
+              ]
+            },
+            maintenance_mode: false,
+            feature_flags: {
+              enable_animations: true,
+              enable_achievements: true
+            }
+          }
+        });
+      }, 50);
+    }
+    
     return {
       sendMessage: (message: any) => {
         console.log('Mock sendMessage:', message);

@@ -264,41 +264,54 @@ export const Header: React.FC = () => {
                   size={isCompact ? "sm" : "md"}
                   asLink={true}
                   animated={true}
+                  enhancedGlow={true}
+                  glowColor="#9933ff"
                 />
               </div>
 
               {/* Main Navigation - new streamlined version */}
               <nav className="hidden md:flex items-center ml-6">
-                <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20 overflow-visible shadow-md nav-dropdown-container">
-                  
-                  {/* Import directly with existing components for now */}
-                  <ContestsDropdown isCompact={isCompact} />
-                  <TokensDropdown isCompact={isCompact} />
-                  <RankingsDropdown isCompact={isCompact} />
-                  
-                  {/* 
-                    Enhanced dropdowns can be implemented after testing:
-                    <EnhancedDropdown 
-                      label="Contests" 
-                      items={contestItems} 
-                      isCompact={isCompact} 
-                      isAuthenticated={!!user} 
-                      colorScheme="brand" 
-                    />
-                    <EnhancedDropdown 
-                      label="Tokens" 
-                      items={tokenItems} 
-                      isCompact={isCompact} 
-                      colorScheme="cyber" 
-                    />
-                    <EnhancedDropdown 
-                      label="Rankings" 
-                      items={rankingItems} 
-                      isCompact={isCompact} 
-                      colorScheme="success" 
-                    /> 
-                  */}
-                </div>
+                {/* Check if user is authenticated or if we're past the release date */}
+                {(isAuthenticated() || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
+                  <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20 overflow-visible shadow-md nav-dropdown-container">
+                    
+                    {/* Import directly with existing components for now */}
+                    <ContestsDropdown isCompact={isCompact} />
+                    <TokensDropdown isCompact={isCompact} />
+                    <RankingsDropdown isCompact={isCompact} />
+                    
+                    {/* 
+                      Enhanced dropdowns can be implemented after testing:
+                      <EnhancedDropdown 
+                        label="Contests" 
+                        items={contestItems} 
+                        isCompact={isCompact} 
+                        isAuthenticated={!!user} 
+                        colorScheme="brand" 
+                      />
+                      <EnhancedDropdown 
+                        label="Tokens" 
+                        items={tokenItems} 
+                        isCompact={isCompact} 
+                        colorScheme="cyber" 
+                      />
+                      <EnhancedDropdown 
+                        label="Rankings" 
+                        items={rankingItems} 
+                        isCompact={isCompact} 
+                        colorScheme="success" 
+                      /> 
+                    */}
+                  </div>
+                ) : (
+                  /* Show pre-release message for non-authenticated users */
+                  <div className="flex items-center ml-6">
+                    <div className="bg-brand-500/10 text-brand-400 px-4 py-2 rounded-md text-sm font-medium border border-brand-500/20">
+                      <span className="hidden sm:inline">Launch imminent</span>
+                      <span className="sm:hidden">Launch imminent</span>
+                    </div>
+                  </div>
+                )}
               </nav>
             </div>
 

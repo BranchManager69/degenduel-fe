@@ -136,48 +136,76 @@ export function useSystemSettingsWebSocket() {
   
   // Fallback to REST API if WebSocket fails after timeout
   useEffect(() => {
-    // Only use fallback if WebSocket is not connected after a timeout
-    const fallbackTimer = setTimeout(async () => {
+    const fetchSettings = async () => {
       if (isLoading && status !== 'online') {
         try {
+          // Check if we're in a Storybook environment
+          const isStorybook = typeof window !== 'undefined' && (window as any).STORYBOOK_ENV === true;
+          
+          if (isStorybook) {
+            console.log("Running in Storybook environment, skipping API fallback");
+            setIsLoading(false);
+            return;
+          }
+          
           console.log("WebSocket fallback: Fetching system settings via Admin API");
+          
           const { admin } = await import("../../services/api/admin");
+          console.log("WebSocket fallback: Imported admin API client");
+          
           const data = await admin.getSystemSettings();
+          console.log("WebSocket fallback: Received system settings:", data);
           setSettings(data);
           setLastUpdated(new Date());
-          
+
           dispatchWebSocketEvent('system_settings_fallback', {
             socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Fetched system settings via fallback API',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            endpoint: '/admin/system-settings' // Add the actual endpoint for debugging
           });
         } catch (err) {
           console.error("Fallback fetch error:", err);
           dispatchWebSocketEvent('error', {
             socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Error fetching system settings via fallback API',
-            error: err instanceof Error ? err.message : String(err)
+            error: err instanceof Error ? err.message : String(err),
+            endpoint: '/admin/system-settings' // Add the actual endpoint for debugging
           });
         } finally {
           setIsLoading(false);
         }
       }
-    }, 3000); // 3 second timeout before fallback
+    };
     
-    return () => clearTimeout(fallbackTimer);
+    fetchSettings();
   }, [isLoading, status]);
   
   // Function to manually refresh settings
-  const refreshSettings = () => {
+  const refreshSettings = useCallback(() => {
     setIsLoading(true);
     
     if (status === 'online') {
       requestSettings();
     } else {
       // Fallback to API if WebSocket is not connected
+      console.log("Refresh settings: Falling back to Admin API due to WebSocket not connected");
+      
+      // Check if we're in a Storybook environment
+      const isStorybook = typeof window !== 'undefined' && (window as any).STORYBOOK_ENV === true;
+      if (isStorybook) {
+        console.log("Running in Storybook environment, skipping API refresh");
+        setIsLoading(false);
+        return;
+      }
+      
       import("../../services/api/admin")
-        .then(({ admin }) => admin.getSystemSettings())
+        .then(({ admin }) => {
+          console.log("Refresh settings: Imported admin API client");
+          return admin.getSystemSettings();
+        })
         .then((data) => {
+          console.log("Refresh settings: Received system settings:", data);
           setSettings(data);
           setLastUpdated(new Date());
           setIsLoading(false);
@@ -185,20 +213,22 @@ export function useSystemSettingsWebSocket() {
           dispatchWebSocketEvent('system_settings_refresh_api', {
             socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Refreshed system settings via API',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            endpoint: '/admin/system-settings'
           });
         })
         .catch((err) => {
-          console.error("Error refreshing system settings:", err);
+          console.error("Refresh settings error:", err);
           dispatchWebSocketEvent('error', {
             socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
             message: 'Error refreshing system settings via API',
-            error: err instanceof Error ? err.message : String(err)
+            error: err instanceof Error ? err.message : String(err),
+            endpoint: '/admin/system-settings'
           });
           setIsLoading(false);
         });
     }
-  };
+  }, [status, requestSettings, setSettings, setLastUpdated, setIsLoading, dispatchWebSocketEvent]);
   
   // Utility method to update background scene settings
   const updateBackgroundScene = async (value: any) => {

@@ -236,20 +236,21 @@ export const TokensPage: React.FC = () => {
     <div className="flex flex-col min-h-screen">
       <BackgroundEffects />
 
-      {/* Content Section */}
+      {/* Content Section - Improved for mobile */}
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-          <div className="flex justify-between items-start mb-4 sm:mb-8">
+          {/* Mobile-optimized header */}
+          <div className="flex flex-col xs:flex-row justify-between items-center mb-4 sm:mb-8 gap-2 xs:gap-0">
             <OptimizedTokensHeader metadata={metadata} />
             {user?.is_admin && (
               <Button
                 onClick={() => setIsAddTokenModalOpen(true)}
-                className="ml-4 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 relative group overflow-hidden"
+                className="w-full xs:w-auto xs:ml-4 mt-2 xs:mt-0 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg flex items-center justify-center xs:justify-start gap-2 relative group overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
                 <span className="relative flex items-center gap-2">
-                  <span className="hidden sm:inline">Add Token</span>
-                  <span className="sm:hidden">+</span>
+                  <span className="inline">Add Token</span>
+                  <span className="hidden">+</span>
                 </span>
               </Button>
             )}
@@ -284,11 +285,12 @@ export const TokensPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="p-5">
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                {/* Search Bar - Spans 3 columns */}
-                <div className="md:col-span-3 relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 group-focus-within:text-brand-400 transition-colors duration-300">
+            <div className="p-3 sm:p-5">
+              {/* Mobile-optimized control layout */}
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                {/* Search Bar - Full width on mobile, responsive on larger screens */}
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center text-gray-400 group-focus-within:text-brand-400 transition-colors duration-300">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -309,7 +311,7 @@ export const TokensPage: React.FC = () => {
                     placeholder="Search by name or symbol..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-dark-300/50 border-2 border-dark-400 focus:border-brand-400 rounded-lg pl-12 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
+                    className="w-full bg-dark-300/50 border-2 border-dark-400 focus:border-brand-400 rounded-lg pl-10 sm:pl-12 pr-8 py-2 sm:py-3 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
                   />
                   
                   {/* Animated border glow on focus */}
@@ -331,92 +333,95 @@ export const TokensPage: React.FC = () => {
                   )}
                 </div>
                 
-                {/* Sort field dropdown - Spans 2 columns */}
-                <div className="md:col-span-2 relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-brand-400">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                      <path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  
-                  <select
-                    value={sortField}
-                    onChange={(e) => setSortField(e.target.value as keyof Token)}
-                    className="w-full appearance-none bg-dark-300/50 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg pl-12 pr-10 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
-                  >
-                    <option value="marketCap">Market Cap</option>
-                    <option value="volume24h">24h Volume</option>
-                    <option value="change24h">Price Change</option>
-                    <option value="price">Current Price</option>
-                  </select>
-                  
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-cyan-400">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                      <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-                
-                {/* Sort direction button with animation */}
-                <div className="md:col-span-1">
-                  <button
-                    onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
-                    className="w-full h-full flex items-center justify-center bg-dark-300/70 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg px-4 py-3 text-white transition-all duration-300 relative overflow-hidden group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 to-cyan-500/0 group-hover:from-brand-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100">
-                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-400/40 to-transparent"></div>
-                      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"></div>
+                {/* Filters row - responsive grid for mobile and desktop */}
+                <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 sm:gap-4">
+                  {/* Sort field dropdown - Spans 4 columns on mobile, 3 on larger screens */}
+                  <div className="col-span-1 sm:col-span-3 relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center text-brand-400">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
+                        <path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </div>
                     
-                    <div className="transition-transform duration-300 transform">
-                      {sortDirection === "asc" ? (
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                          <path d="M17 8l-5-5-5 5M17 16l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : (
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                          <path d="M17 16l-5-5-5 5M17 8l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                </div>
-                
-                {/* Image source selection */}
-                <div className="md:col-span-1 flex md:justify-end">
-                  <div className="relative group/image w-full md:w-auto">
                     <select
-                      value={imageSource}
-                      onChange={(e) => setImageSource(e.target.value as "default" | "header" | "openGraph")}
-                      className="w-full appearance-none bg-dark-300/50 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg px-4 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300 pr-10"
+                      value={sortField}
+                      onChange={(e) => setSortField(e.target.value as keyof Token)}
+                      className="w-full appearance-none bg-dark-300/50 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg pl-10 sm:pl-12 pr-8 sm:pr-10 py-2 sm:py-3 text-sm sm:text-base text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
                     >
-                      <option value="default">Default</option>
-                      <option value="header">Header</option>
-                      <option value="openGraph">OpenGraph</option>
+                      <option value="marketCap">Market Cap</option>
+                      <option value="volume24h">24h Volume</option>
+                      <option value="change24h">Price Change</option>
+                      <option value="price">Current Price</option>
                     </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-cyan-400">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 sm:pr-4 pointer-events-none text-cyan-400">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
                         <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
                   </div>
+                  
+                  {/* Sort direction button with animation */}
+                  <div className="col-span-1 sm:col-span-2">
+                    <button
+                      onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
+                      className="w-full h-full flex items-center justify-center bg-dark-300/70 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg px-4 py-2 sm:py-3 text-white transition-all duration-300 relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 to-cyan-500/0 group-hover:from-brand-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100">
+                        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-400/40 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"></div>
+                      </div>
+                      
+                      <div className="transition-transform duration-300 transform">
+                        {sortDirection === "asc" ? (
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none">
+                            <path d="M17 8l-5-5-5 5M17 16l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none">
+                            <path d="M17 16l-5-5-5 5M17 8l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                  
+                  {/* Image source selection */}
+                  <div className="col-span-2 sm:col-span-2 sm:flex sm:justify-end">
+                    <div className="relative group/image w-full md:w-auto">
+                      <select
+                        value={imageSource}
+                        onChange={(e) => setImageSource(e.target.value as "default" | "header" | "openGraph")}
+                        className="w-full appearance-none bg-dark-300/50 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300 pr-8 sm:pr-10"
+                      >
+                        <option value="default">Default</option>
+                        <option value="header">Header</option>
+                        <option value="openGraph">OpenGraph</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 sm:pr-4 pointer-events-none text-cyan-400">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                          <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                
+                {/* Search result stats - mobile optimized */}
+                {searchQuery && (
+                  <div className="text-xs sm:text-sm text-gray-400 flex flex-wrap items-center gap-1 sm:gap-2">
+                    <span>Found {filteredAndSortedTokens.length} tokens matching "{searchQuery}"</span>
+                    {filteredAndSortedTokens.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 text-xs whitespace-nowrap">
+                        {sortField === "marketCap" ? "By Market Cap" : 
+                         sortField === "volume24h" ? "By Volume" : 
+                         sortField === "change24h" ? "By Change" : "By Price"}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-              
-              {/* Search result stats */}
-              {searchQuery && (
-                <div className="mt-4 text-sm text-gray-400 flex items-center">
-                  <span>Found {filteredAndSortedTokens.length} tokens matching "{searchQuery}"</span>
-                  {filteredAndSortedTokens.length > 0 && (
-                    <span className="ml-2 px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 text-xs">
-                      {sortField === "marketCap" ? "By Market Cap" : 
-                       sortField === "volume24h" ? "By Volume" : 
-                       sortField === "change24h" ? "By Change" : "By Price"}
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 

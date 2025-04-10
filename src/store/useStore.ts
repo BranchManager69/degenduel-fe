@@ -631,24 +631,45 @@ const getPhantomDeepLink = () => {
   return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
 };
 
+// Define initial WebSocket state compatible with the imported types
+const initialWebSocketState: WebSocketState = {
+  systemHealth: {
+    status: "operational",
+    activeConnections: 0,
+    messageRate: 0,
+    activeIncidents: 0,
+    lastUpdate: "2023-01-01T00:00:00.000Z"
+  },
+  services: []
+};
+
+// Initial state
 const initialState: StateData = {
   isConnecting: false,
   user: null,
   error: null,
-  debugConfig: {},
+  debugConfig: {
+    forceWalletNotFound: false,
+    forceUserRejection: false,
+    forceAPIError: false,
+    simulateHighLatency: false,
+    forceOffline: false,
+    showLayoutBounds: false,
+    slowAnimations: false,
+    forceLoadingStates: false,
+  },
   contests: [],
   tokens: [],
   maintenanceMode: false,
   serviceState: null,
   serviceAlerts: [],
-  // Initialize SkyDuel state
   skyDuel: {
     nodes: [],
     connections: [],
     systemStatus: {
       overall: "operational",
       timestamp: new Date().toISOString(),
-      message: "System initialization",
+      message: "All systems operational",
     },
     selectedNode: null,
     viewMode: "graph",
@@ -677,55 +698,46 @@ const initialState: StateData = {
     backgrounds: {
       movingBackground: {
         enabled: true,
-        intensity: 100,
+        intensity: 0.5,
       },
       tokenVerse: {
-        enabled: true,
-        intensity: 75,
-        starIntensity: 80,
-        bloomStrength: 2.0,
-        particleCount: 1500,
-        updateFrequency: 50,
+        enabled: false,
+        intensity: 0.5,
+        starIntensity: 0.7,
+        bloomStrength: 0.3,
+        particleCount: 1000,
+        updateFrequency: 1,
       },
       marketBrain: {
-        enabled: true,
-        intensity: 100,
+        enabled: false,
+        intensity: 0.5,
         particleCount: 1000,
-        energyLevel: 50,
+        energyLevel: 0.5,
       },
       ambientMarketData: {
-        enabled: true,
-        intensity: 100,
-        updateFrequency: 30,
+        enabled: false,
+        intensity: 0.5,
+        updateFrequency: 1,
       },
       gradientWaves: {
-        enabled: true,
-        intensity: 100,
+        enabled: false,
+        intensity: 0.5,
       },
       fluidTokens: {
         enabled: false,
-        intensity: 100,
+        intensity: 0.5,
       },
       abstractPatterns: {
-        enabled: true,
-        intensity: 100,
+        enabled: false,
+        intensity: 0.5,
       },
       neonGrid: {
         enabled: false,
-        intensity: 100,
+        intensity: 0.5,
       },
     },
   },
-  webSocket: {
-    systemHealth: {
-      status: "operational",
-      activeConnections: 0,
-      messageRate: 0,
-      activeIncidents: 0,
-      lastUpdate: new Date().toISOString(),
-    },
-    services: [],
-  },
+  webSocket: initialWebSocketState,
   webSocketAlerts: [],
 };
 
@@ -909,13 +921,14 @@ export const useStore = create<State>()(
             origin: window.location.origin,
           });
 
+          // 1. Call disconnect endpoint FIRST - before clearing any tokens or cookies
+          // so that the API call can use existing authentication
           if (!user?.wallet_address) {
             console.warn(
               "[Wallet Debug] No wallet address found for disconnect",
             );
             // Still proceed with local cleanup
           } else {
-            // 1. Call disconnect endpoint
             console.log("[Wallet Debug] Calling disconnect endpoint");
             try {
               await retryFetch(`${API_URL}/auth/disconnect`, {
@@ -929,6 +942,7 @@ export const useStore = create<State>()(
                   wallet: user.wallet_address,
                 }),
               });
+              console.log("[Wallet Debug] Disconnect endpoint call successful");
             } catch (error) {
               console.error(
                 "[Wallet Debug] Disconnect endpoint failed:",
@@ -947,7 +961,7 @@ export const useStore = create<State>()(
             await solana.disconnect();
           }
           
-          // 3. Clear all authentication tokens
+          // 3. Clear all authentication tokens AFTER API call
           console.log("[Wallet Debug] Clearing tokens from TokenManager");
           // Import dynamically to avoid circular dependencies
           const { TokenManager } = await import('../services/TokenManager');
@@ -982,12 +996,16 @@ export const useStore = create<State>()(
             });
           });
 
-          // 5. Reset store state
+          // 5. Reset store state LAST
           console.log("[Wallet Debug] Resetting store state");
           set({ 
             user: null, 
             isConnecting: false,
-            achievements: undefined  // Clear achievements as they're tied to the user
+            achievements: {
+              userProgress: null,
+              unlockedAchievements: [],
+              pendingCelebrations: []
+            }  // Initialize achievements structure with empty arrays
           });
 
           console.log("[Wallet Debug] Disconnect complete", {
@@ -998,7 +1016,15 @@ export const useStore = create<State>()(
           // Still clear local state even if something fails
           localStorage.removeItem("degenduel-storage");
           localStorage.removeItem("dd_webauthn_credentials");
-          set({ user: null, isConnecting: false, achievements: undefined });
+          set({ 
+            user: null, 
+            isConnecting: false, 
+            achievements: {
+              userProgress: null,
+              unlockedAchievements: [],
+              pendingCelebrations: []
+            }
+          });
         }
       },
       setMaintenanceMode: async (enabled: boolean) => {
