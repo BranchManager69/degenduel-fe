@@ -328,7 +328,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
           isSelected={selectedTokens.has(token.contractAddress)}
           weight={selectedTokens.get(token.contractAddress) || 0}
           onSelect={() => handleCardClick(token)}
-          onWeightChange={(weight) => onTokenSelect(token.contractAddress, weight)}
+          onWeightChange={(weight: number) => onTokenSelect(token.contractAddress, weight)}
         />
       ))}
     </div>
