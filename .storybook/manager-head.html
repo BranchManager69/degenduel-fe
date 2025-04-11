@@ -1,0 +1,13 @@
+<!-- Disable Vite refreshing in the manager -->
+<script>
+  console.log('[Storybook Manager] Disabling live reload');
+  
+  // Block fetch to live reload endpoints
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    if (typeof url === 'string' && url.includes('24678')) {
+      return Promise.reject(new Error('Blocked by Storybook'));
+    }
+    return originalFetch.apply(this, arguments);
+  };
+</script> 

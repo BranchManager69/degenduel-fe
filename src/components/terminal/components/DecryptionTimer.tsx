@@ -13,14 +13,73 @@ import React, { useEffect, useState } from 'react';
 import { DecryptionTimerProps } from '../types';
 import { TimeUnit } from './TimeUnit';
 import { ContractDisplay } from './ContractDisplay';
+import { fetchTerminalData, useTerminalData } from '../../../services/terminalDataService';
 
 /**
  * DecryptionTimer - Displays a countdown timer for the token launch
  */
 export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({ 
-  targetDate = new Date('2025-03-15T18:00:00-05:00'), 
-  contractAddress = '0x1111111111111111111111111111111111111111' 
+  targetDate = new Date('2025-03-15T18:00:00-05:00')
+  // contractAddress is now fetched from terminal data API
 }) => {
+  // Get real-time terminal data from WebSocket
+  const { 
+    terminalData
+  } = useTerminalData();
+  
+  // Combine WebSocket data with fallback to REST API
+  const [contractData, setContractData] = useState({
+    address: undefined as string | undefined,
+    isRevealed: false
+  });
+  
+  // Update contract data whenever WebSocket updates come in
+  useEffect(() => {
+    // The contract address is now only in the token.address field
+    // So we wait for terminalData.token to be available and use its address property
+    if (terminalData?.token?.address) {
+      setContractData({
+        address: terminalData.token.address,
+        isRevealed: true
+      });
+      
+      console.log('[DecryptionTimer] Contract data updated from WebSocket:', {
+        hasAddress: true,
+        address: terminalData.token.address
+      });
+    }
+  }, [terminalData]);
+  
+  // Fallback to REST API on initial load or if WebSocket is not connected
+  useEffect(() => {
+    const fetchContractInfo = async () => {
+      try {
+        console.log('[DecryptionTimer] Fetching contract data from terminal API (fallback)...');
+        const terminalData = await fetchTerminalData();
+        
+        setContractData(prevData => {
+          // Only update if we don't already have data from WebSocket
+          if (!prevData.address && !prevData.isRevealed && terminalData.token?.address) {
+            return {
+              address: terminalData.token.address,
+              isRevealed: true
+            };
+          }
+          return prevData;
+        });
+        
+        console.log('[DecryptionTimer] Contract data updated from REST API:', {
+          hasAddress: !!terminalData.token?.address,
+          address: terminalData.token?.address
+        });
+      } catch (error) {
+        console.error('[DecryptionTimer] Error fetching contract data:', error);
+      }
+    };
+    
+    // Fetch on initial mount as a fallback
+    fetchContractInfo();
+  }, []);
   const [timeRemaining, setTimeRemaining] = useState({
     days: 0,
     hours: 0,
@@ -90,8 +149,27 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                    timeRemaining.seconds === 0;
   
   // Calculate if it's release time
+  // Note: We primarily use contractData.isRevealed from the API now instead of this
   const now = new Date();
-  const isReleaseTime = now >= targetDate;
+  const isPastReleaseTime = now >= targetDate;
+  
+  // If we're past the release time and don't have contract data yet, try to fetch it again
+  useEffect(() => {
+    if (isPastReleaseTime && !contractData.isRevealed) {
+      // Refresh contract data when the release time passes
+      (async () => {
+        try {
+          const terminalData = await fetchTerminalData();
+          setContractData({
+            address: terminalData.token?.address,
+            isRevealed: !!terminalData.token?.address
+          });
+        } catch (error) {
+          console.error('[DecryptionTimer] Error refreshing contract data after release time:', error);
+        }
+      })();
+    }
+  }, [isPastReleaseTime, contractData.isRevealed]);
                    
   return (
     <motion.div 
@@ -250,7 +328,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                 >
                   ⟳
                 </motion.span>
-                <ContractDisplay isReleaseTime={isReleaseTime} contractAddress={contractAddress} />
+                <ContractDisplay isRevealed={contractData.isRevealed} contractAddress={contractData.address} />
               </motion.div>
               
               {/* Animated progress bar */}

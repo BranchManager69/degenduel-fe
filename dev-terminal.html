@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DegenDuel // Dev Terminal</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #00FF80;
+      font-family: "Courier New", monospace;
+      font-size: 16px;
+      padding: 20px;
+    }
+    .terminal {
+      max-width: 800px;
+      margin: 0 auto;
+      white-space: pre-wrap;
+    }
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      background-color: #00FF80;
+      animation: blink 1s step-start infinite;
+      height: 1em;
+    }
+    @keyframes blink {
+      50% { background-color: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <p>
+DEGENDUEL SYSTEM v0.1-alpha
+==============================
+
+> boot --node dev.degenduel.sol
+Initializing terminal access...
+
+> query --status --global
+Active contests found: 0
+Staked SOL: CLASSIFIED
+AI GM Status: Experimental (Agent_01_Eliza)
+
+> decode --transmission.log
+--------------------------------------------
+"This isn't a game. It's the future of trading.
+It's the Coliseum of market instincts."
+--------------------------------------------
+
+> countdown --launch
+Estimated go-live: syncing with real-time relay...
+
+> trace --wallets
+Anonymous players detected across 74 nodes
+
+> connect --manual_override
+ACCESS RESTRICTED
+
+> logout
+Terminal closing...
+
+    </p>
+    <span class="cursor"></span>
+  </div>
+</body>
+</html>
