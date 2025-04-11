@@ -50,7 +50,10 @@ export const TopicType = {
   
   // Special topics
   LOGS: 'logs',
-  TEST: SOCKET_TYPES.TEST
+  TEST: SOCKET_TYPES.TEST,
+  
+  // Terminal and platform data topics
+  TERMINAL: 'terminal'
 };
 
 // Type definition for TopicType
@@ -61,6 +64,20 @@ import useUnifiedWebSocket from './useUnifiedWebSocket';
 
 // New standardized format hooks
 export * from './topic-hooks/useNotifications';
+export * from './topic-hooks/useTerminalData';
+export * from './topic-hooks/useTokenData';
+export * from './topic-hooks/useMarketData';
+export * from './topic-hooks/useContests';
+export * from './topic-hooks/usePortfolio';
+export * from './topic-hooks/useWallet';
+export * from './topic-hooks/useContestChat';
+export * from './topic-hooks/useAchievements';
+export * from './topic-hooks/useServerStatus';
+export * from './topic-hooks/useSystemSettings';
+export * from './topic-hooks/useSkyDuel';
+export * from './topic-hooks/useCircuitBreaker';
+export * from './topic-hooks/useService';
+export * from './topic-hooks/useRPCBenchmark';
 
 // DEPRECATED - The individual WebSocket hooks below will be replaced
 // with topic-based hooks that use the unified WebSocket system
@@ -68,19 +85,19 @@ export const WEBSOCKET_SYSTEM_DEPRECATED = true;
 
 // Legacy hooks (still exported for backward compatibility)
 // These will gradually be replaced with standardized topic-based hooks
-export * from './useAchievementWebSocket';
+export * from './useAchievementWebSocket'; // DEPRECATED - use topic-hooks/useAchievements instead
 export * from './useAnalyticsWebSocket';
-export * from './useCircuitBreakerSocket';
-export * from './useContestChatWebSocket';
-export * from './useContestWebSocket';
-export * from './useMarketDataWebSocket';
+export * from './useCircuitBreakerSocket'; // DEPRECATED - use topic-hooks/useCircuitBreaker instead
+export * from './useContestChatWebSocket'; // DEPRECATED - use topic-hooks/useContestChat instead
+export * from './useContestWebSocket'; // DEPRECATED - use topic-hooks/useContests instead
+export * from './useMarketDataWebSocket'; // DEPRECATED - use topic-hooks/useMarketData instead
 export * from './useNotificationWebSocket'; // DEPRECATED - use topic-hooks/useNotifications instead
-export * from './usePortfolioWebSocket';
-export * from './useRPCBenchmarkWebSocket';
-export * from './useServerStatusWebSocket';
-export * from './useServiceWebSocket';
-export * from './useSkyDuelWebSocket';
-export * from './useSystemSettingsWebSocket';
-export * from './useTokenDataWebSocket'; // DEPRECATED - will be replaced
-export * from './useWalletWebSocket';
+export * from './usePortfolioWebSocket'; // DEPRECATED - use topic-hooks/usePortfolio instead
+export * from './useRPCBenchmarkWebSocket'; // DEPRECATED - use topic-hooks/useRPCBenchmark instead
+export * from './useServerStatusWebSocket'; // DEPRECATED - use topic-hooks/useServerStatus instead
+export * from './useServiceWebSocket'; // DEPRECATED - use topic-hooks/useService instead
+export * from './useSkyDuelWebSocket'; // DEPRECATED - use topic-hooks/useSkyDuel instead
+export * from './useSystemSettingsWebSocket'; // DEPRECATED - use topic-hooks/useSystemSettings instead
+export * from './useTokenDataWebSocket'; // DEPRECATED - use topic-hooks/useTokenData instead
+export * from './useWalletWebSocket'; // DEPRECATED - use topic-hooks/useWallet instead
 export * from './useWebSocket';

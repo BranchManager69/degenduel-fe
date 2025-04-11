@@ -46,8 +46,8 @@ export interface TimeUnitProps {
 
 // Props for the ContractDisplay component
 export interface ContractDisplayProps {
-  isReleaseTime: boolean;
-  contractAddress: string;
+  isRevealed: boolean;
+  contractAddress?: string;
 }
 
 // Props for the TerminalConsole component

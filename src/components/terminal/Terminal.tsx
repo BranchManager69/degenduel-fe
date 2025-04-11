@@ -16,6 +16,7 @@ import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AIMessage, aiService } from '../../services/ai';
 import { commandMap } from './commands';
+import { fetchTerminalData, formatTerminalCommands, useTerminalData } from '../../services/terminalDataService';
 import './Terminal.css';
 
 // Import extracted components
@@ -66,10 +67,12 @@ declare global {
  * @returns The terminal component.
  */
 export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: TerminalProps) => {
-  // Set window.contractAddress safely in useEffect (client-side only)
+  // We no longer need to set window.contractAddress as it's now fetched from the API
+  // This is kept for backward compatibility but will be phased out
   useEffect(() => {
     if (!window.contractAddress) {
       window.contractAddress = config.CONTRACT_ADDRESS;
+      console.log('[Terminal] Setting window.contractAddress for backward compatibility. This will be deprecated.');
     }
   }, [config.CONTRACT_ADDRESS]);
   
@@ -339,6 +342,20 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
     } else {
       setRevealStage(0);
     }
+    
+    // Add the DegenDuel banner as initial console output
+    setConsoleOutput([`
+  _____  ______ _____ ______ _   _     _____  _    _ ______ _      
+ |  __ \\|  ____/ ____|  ____| \\ | |   |  __ \\| |  | |  ____| |     
+ | |  | | |__ | |  __| |__  |  \\| |   | |  | | |  | | |__  | |     
+ | |  | |  __|| | |_ |  __| | . \` |   | |  | | |  | |  __| | |     
+ | |__| | |___| |__| | |____| |\\  |   | |__| | |__| | |____| |____ 
+ |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|
+ 
+ - High-stakes crypto trading competitions -
+ 
+ Type 'help' for available commands`
+    ]);
   }, [daysUntilRelease, isReleaseTime, showContractReveal, now, config]);
 
   // Auto-restore minimized terminal after a delay
@@ -351,6 +368,67 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
       return () => clearTimeout(restoreTimeout);
     }
   }, [terminalMinimized]);
+  
+  // Use the WebSocket hook for real-time updates
+  const { 
+    terminalData: wsTerminalData, 
+    refreshTerminalData: refreshWsTerminalData,
+    isConnected: wsConnected
+  } = useTerminalData();
+  
+  // Update commands when WebSocket data changes
+  useEffect(() => {
+    if (wsTerminalData) {
+      try {
+        console.log('[Terminal] Updating terminal data from WebSocket...');
+        const updatedCommands = formatTerminalCommands(wsTerminalData);
+        
+        // Check if commands have changed
+        if (JSON.stringify(commandMap) !== JSON.stringify(updatedCommands)) {
+          console.log('[Terminal] WebSocket data updated - commands refreshed');
+          Object.assign(commandMap, updatedCommands);
+        }
+      } catch (error) {
+        console.error('[Terminal] Failed to update terminal data from WebSocket:', error);
+      }
+    }
+  }, [wsTerminalData]);
+  
+  // Periodic refresh of terminal data from server (fallback or when WebSocket is not connected)
+  useEffect(() => {
+    // Manual refresh function - combines REST API fetch with WebSocket refresh request
+    const refreshTerminalData = async () => {
+      // Always try to refresh WebSocket data
+      if (wsConnected) {
+        refreshWsTerminalData();
+      }
+      
+      // Fallback to REST API
+      try {
+        console.log('[Terminal] Refreshing terminal data from REST API...');
+        const terminalData = await fetchTerminalData();
+        const updatedCommands = formatTerminalCommands(terminalData);
+        
+        // Only log if something actually changed
+        if (JSON.stringify(commandMap) !== JSON.stringify(updatedCommands)) {
+          console.log('[Terminal] Terminal data refreshed from REST API - commands updated');
+          Object.assign(commandMap, updatedCommands);
+        }
+      } catch (error) {
+        console.error('[Terminal] Failed to refresh terminal data from REST API:', error);
+      }
+    };
+    
+    // Initial refresh
+    refreshTerminalData();
+    
+    // Set up periodic refresh every 1 minute
+    const refreshInterval = setInterval(refreshTerminalData, 60 * 1000);
+    
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, [wsConnected, refreshWsTerminalData]);
 
   // Random glitch effect for contract address
   useEffect(() => {
@@ -608,35 +686,58 @@ Discovered patterns: ${discoveredCount}/4`
             // Process Didi's response to possibly include glitches and hidden messages
             const processedResponse = processDidiResponse(response.content, command);
             
+            // Create a typewriter effect for the AI response
+            const typeWriterEffect = (text: string) => {
+              let charIndex = 0;
+              // Replace processing message with empty response initially
+              setConsoleOutput(prev => [
+                ...prev.slice(0, -1), // Remove processing message
+                `[Didi] `
+              ]);
+              
+              // Type out the response character by character
+              const typingInterval = setInterval(() => {
+                if (charIndex < text.length) {
+                  setConsoleOutput(prev => {
+                    // Replace the last line (current partial response) with updated text
+                    const updatedLines = [...prev];
+                    updatedLines[updatedLines.length - 1] = `[Didi] ${text.substring(0, charIndex + 1)}`;
+                    return updatedLines;
+                  });
+                  charIndex++;
+                } else {
+                  clearInterval(typingInterval);
+                }
+              }, 20); // Adjust typing speed here (lower = faster)
+            };
+            
             if (typeof processedResponse === 'string') {
               // Simple response with glitches
-              setConsoleOutput(prev => [
-                ...prev.slice(0, -1), // Remove processing message
-                `[Didi] ${processedResponse}`
-              ]);
+              typeWriterEffect(processedResponse);
             } else {
               // Complex response with a hidden message
-              setConsoleOutput(prev => [
-                ...prev.slice(0, -1), // Remove processing message
-                `[Didi] ${processedResponse.visible}`
-              ]);
+              typeWriterEffect(processedResponse.visible);
               
               // Check if the hidden message sequence activates the Easter egg
               const didActivate = storeHiddenMessage(processedResponse.hidden);
               if (didActivate) {
-                // Activate Didi's Easter egg
-                activateDidiEasterEgg();
+                // Activate Didi's Easter egg after typing is complete
+                setTimeout(() => {
+                  activateDidiEasterEgg();
+                }, processedResponse.visible.length * 20 + 500); // Wait for typing to finish
               }
             }
             
-            // Execute callback if provided
+            // Execute callback if provided - after typing completes
             if (onCommandExecuted) {
-              onCommandExecuted(
-                command, 
-                typeof processedResponse === 'string' 
-                  ? processedResponse 
-                  : processedResponse.visible
-              );
+              const finalResponse = typeof processedResponse === 'string' 
+                ? processedResponse 
+                : processedResponse.visible;
+                
+              // Wait for the typing to complete before executing callback
+              setTimeout(() => {
+                onCommandExecuted(command, finalResponse);
+              }, finalResponse.length * 20 + 100); // Wait for typing to finish
             }
           })
           .catch((error: Error) => {
@@ -651,19 +752,59 @@ Discovered patterns: ${discoveredCount}/4`
             
             const didiErrorResponse = errorResponses[Math.floor(Math.random() * errorResponses.length)];
             
+            // First, update the processing message to the error message
             setConsoleOutput(prev => [
               ...prev.slice(0, -1), // Remove processing message
-              `[Didi] ${didiErrorResponse}`,
-              `[SYSTEM] Error: ${error.message || 'Unknown error'}`
+              `[Didi] `
             ]);
+            
+            // Type the error message character by character
+            let charIndex = 0;
+            const typingInterval = setInterval(() => {
+              if (charIndex < didiErrorResponse.length) {
+                setConsoleOutput(prev => {
+                  // Replace the last line with more characters
+                  const updatedLines = [...prev];
+                  updatedLines[updatedLines.length - 1] = `[Didi] ${didiErrorResponse.substring(0, charIndex + 1)}`;
+                  return updatedLines;
+                });
+                charIndex++;
+              } else {
+                clearInterval(typingInterval);
+                // When finished typing the error, add the system error message
+                setConsoleOutput(prev => [
+                  ...prev,
+                  `[SYSTEM] Error: ${error.message || 'Unknown error'}`
+                ]);
+              }
+            }, 20);
           });
       } catch (error) {
         // Fallback if the AI service throws synchronously
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Start with empty error message
         setConsoleOutput(prev => [
           ...prev.slice(0, -1), // Remove processing message
-          `[SYSTEM] Error processing request: ${errorMessage}`
+          `[SYSTEM] `
         ]);
+        
+        // Type the system error message
+        const errorText = `Error processing request: ${errorMessage}`;
+        let charIndex = 0;
+        const typingInterval = setInterval(() => {
+          if (charIndex < errorText.length) {
+            setConsoleOutput(prev => {
+              // Replace the last line with more characters
+              const updatedLines = [...prev];
+              updatedLines[updatedLines.length - 1] = `[SYSTEM] ${errorText.substring(0, charIndex + 1)}`;
+              return updatedLines;
+            });
+            charIndex++;
+          } else {
+            clearInterval(typingInterval);
+          }
+        }, 20);
       }
     }
   };

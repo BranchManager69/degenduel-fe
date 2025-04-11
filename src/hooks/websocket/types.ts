@@ -121,4 +121,7 @@ export const SOCKET_TYPES = {
   
   // Testing socket
   TEST: 'test',
+  
+  // Terminal data socket
+  TERMINAL: 'terminal',
 };

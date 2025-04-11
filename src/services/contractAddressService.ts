@@ -1,29 +1,32 @@
 /**
- * Contract Address Service
+ * Contract Address Service - DEPRECATED
  * 
- * This service handles fetching the contract address from the backend
- * when the countdown timer expires.
+ * @deprecated This service has been deprecated in favor of using terminalDataService
+ * for fetching contract address information. Please use terminalDataService.fetchTerminalData()
+ * instead, which centralizes all terminal data in a single API.
+ * 
+ * This file is kept for backward compatibility but will be removed in a future release.
  */
 
-// Mock delay to simulate API request
-const MOCK_DELAY = 1000;
+import { fetchTerminalData } from './terminalDataService';
 
-// Poll interval in milliseconds (5 seconds)
+// Export logging message when this module is imported
+console.warn(
+  '[contractAddressService] This service is deprecated. Please use terminalDataService instead.' +
+  ' The contract address is now available via fetchTerminalData() in terminalDataService.ts'
+);
+
+// Poll interval in milliseconds (5 seconds) - kept for backward compatibility
 export const CONTRACT_POLL_INTERVAL = 5000;
 
 // Placeholder address for testing while waiting for real address
 const PLACEHOLDER = 'Fetching contract address...';
 
-// Flag to track if the contract address is available
-let isContractAddressPublic = false;
-
-// Store the fetched contract address
-let cachedContractAddress: string | null = null;
-
 /**
  * Check if the release date has passed
  * @param releaseDate The configured release date
  * @returns True if the release date has passed
+ * @deprecated Use terminalDataService.fetchTerminalData().contractAddressRevealed instead
  */
 export const isReleaseTimePassed = (releaseDate: Date): boolean => {
   const now = new Date();
@@ -44,79 +47,51 @@ export const getTimeRemainingUntilRelease = (releaseDate: Date): number => {
 /**
  * Fetch the contract address from the backend
  * @returns Promise that resolves to the contract address
+ * @deprecated Use terminalDataService.fetchTerminalData().contractAddress instead
  */
 export const fetchContractAddress = async (): Promise<string> => {
-  // If we already have the address cached, return it
-  if (cachedContractAddress) {
-    return cachedContractAddress;
-  }
-  
-  // Mock an API endpoint URL - in production, use a real endpoint
-  const apiEndpoint = '/api/v1/contract-address';
-  console.log(`Fetching contract address from endpoint: ${apiEndpoint}`);
-  
   try {
-    // In a real implementation, you would uncomment this:
-    /*
-    const response = await fetch(apiEndpoint);
-    if (!response.ok) {
-      throw new Error(`Error fetching contract address: ${response.statusText}`);
-    }
+    console.warn('[contractAddressService] fetchContractAddress is deprecated. Using terminalDataService instead.');
     
-    const data = await response.json();
-    if (data.success && data.address) {
-      cachedContractAddress = data.address;
-      console.log(`Contract address fetched: ${data.address}`);
-      return data.address;
+    // Use the new terminalDataService to get the contract address
+    const terminalData = await fetchTerminalData();
+    
+    if (terminalData.token?.address) {
+      return terminalData.token.address;
     } else {
-      console.log('Contract address not available yet');
       return PLACEHOLDER;
     }
-    */
-    
-    // For demonstration purposes, we'll use a mock implementation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // In a real implementation, the backend would determine if the contract is public
-        const shouldBePublic = isContractAddressPublic;
-        
-        if (shouldBePublic) {
-          // This is a dummy contract address - in production, your server would return the real address
-          // that is not stored anywhere in the frontend code
-          const address = '6nBDWZmMB328dH3YBq8T2x8J6eVLXCvXVAQULL8BGYXx';
-          
-          console.log(`Contract address now available: ${address}`);
-          cachedContractAddress = address;
-          resolve(address);
-        } else {
-          console.log('Contract address not yet available from server');
-          resolve(PLACEHOLDER);
-        }
-      }, MOCK_DELAY);
-    });
   } catch (error) {
-    console.error('Error fetching contract address:', error);
+    console.error('[contractAddressService] Error fetching contract address:', error);
     return PLACEHOLDER;
   }
 };
 
 /**
  * Mark the contract address as public (for testing)
- * In a real implementation, the backend would determine this
+ * @deprecated This function no longer has any effect. Contract status is controlled by the backend.
  */
-export const setContractAddressPublic = (isPublic: boolean): void => {
-  isContractAddressPublic = isPublic;
-  
-  // Clear cache if we're setting to non-public
-  if (!isPublic) {
-    cachedContractAddress = null;
-  }
+export const setContractAddressPublic = (_isPublic: boolean): void => {
+  // Using param name with underscore to indicate unused parameter
+  console.warn(
+    '[contractAddressService] setContractAddressPublic is deprecated and has no effect. ' +
+    'Contract address reveal status is now controlled by the backend API.'
+  );
 };
 
 /**
  * Check if the contract address is available
- * This can be used to decide whether to poll or not
+ * @deprecated Use terminalDataService.fetchTerminalData().contractAddressRevealed instead
  */
-export const isContractAddressAvailable = (): boolean => {
-  return !!cachedContractAddress;
+export const isContractAddressAvailable = async (): Promise<boolean> => {
+  try {
+    console.warn('[contractAddressService] isContractAddressAvailable is deprecated. Using terminalDataService instead.');
+    
+    // Use the new terminalDataService to check if contract is revealed
+    const terminalData = await fetchTerminalData();
+    return !!terminalData.token?.address;
+  } catch (error) {
+    console.error('[contractAddressService] Error checking if contract address is available:', error);
+    return false;
+  }
 };

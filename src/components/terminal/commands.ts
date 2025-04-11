@@ -1,57 +1,54 @@
 /**
- * Terminal command responses with feature flags
+ * Terminal command responses loaded from server
+ * 
+ * This file now uses the terminalDataService to load all terminal data
+ * from a centralized server endpoint.
  */
 
-// Feature flags to easily enable/disable command sets
-const FEATURES = {
-  CORE_COMMANDS: true,         // Basic essential commands
-  PLATFORM_INFO: true,         // Platform-related information
-  EASTER_EGGS: false,          // Easter egg hidden commands
-  UPCOMING_FEATURES: false,    // Teaser for upcoming features
-  TIME_GATED: true,            // Time-gated commands that unlock closer to launch
-};
+import { fetchTerminalData, formatTerminalCommands } from '../../services/terminalDataService';
 
-// Core commands that are always available
-const coreCommands = {
-  help: "Available commands: help, status, info, contract, stats, clear\nAI: Type any question to speak with the AI assistant.",
-  status: "Platform status: Ready for launch on scheduled date.",
-  clear: "", // Special case handled in Terminal.tsx
-};
-
-// Platform information commands
-const platformCommands = {
-  info: "DegenDuel: Next-generation competitive crypto trading platform.",
+// Default commands to use while loading from the server
+export const defaultCommandMap: Record<string, string> = {
+  help: "Available commands: help, status, info, contract, stats, clear, banner\nAI: Type any question to speak with the AI assistant.",
+  status: "Platform status: Loading from server...",
+  info: "DegenDuel: Loading information from server...",
   contract: "Contract address will be revealed at launch.",
-  stats: "Current users: 0\nUpcoming contests: 3\nTotal prize pool: $50,000",
-  roadmap: "DegenDuel Roadmap:\n• Q2 2025: Platform launch\n• Q3 2025: Tournament system\n• Q4 2025: Mobile app\n• Q1 2026: Cross-chain expansion",
-};
-
-// Easter egg commands (disabled by default)
-const easterEggCommands = {
+  stats: "Loading statistics from server...",
+  roadmap: "Loading roadmap from server...",
+  tokenomics: "Loading tokenomics from server...",
+  "launch-details": "Loading launch details from server...",
+  analytics: "Loading analytics from server...",
+  clear: "", // Special case handled in Terminal.tsx
+  banner: `
+  _____  ______ _____ ______ _   _     _____  _    _ ______ _      
+ |  __ \\|  ____/ ____|  ____| \\ | |   |  __ \\| |  | |  ____| |     
+ | |  | | |__ | |  __| |__  |  \\| |   | |  | | |  | | |__  | |     
+ | |  | |  __|| | |_ |  __| | . \` |   | |  | | |  | |  __| | |     
+ | |__| | |___| |__| | |____| |\\  |   | |__| | |__| | |____| |____ 
+ |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|
+ 
+ - Loading terminal data... -
+ 
+ Type 'help' for available commands
+`,
+  token: "Loading token information from server...",
   "dd-debug": "Developer mode activated. Welcome, team member.",
   "branch-mode": "Branch Manager special access granted. Unique identifier: BM-69420",
-  "lambo-when": "According to our calculations, approximately 741 days after launch.", 
+  "lambo-when": "According to calculations, TBD days after launch. Checking markets..."
 };
 
-// Upcoming feature teasers (disabled by default)
-const upcomingCommands = {
-  "preview-tournaments": "Tournament system preview: Users will compete in time-limited trading contests with prize pools.",
-  "preview-staking": "Staking preview: Lock $DUEL tokens to earn platform fees and exclusive benefits.",
-  "preview-governance": "Governance preview: $DUEL holders will vote on platform upgrades and feature prioritization.",
-};
+// Initial command map starts with defaults while we fetch from server
+export let commandMap = { ...defaultCommandMap };
 
-// Time-gated commands that reveal more info closer to launch
-const timeGatedCommands = {
-  "tokenomics": "DUEL token:\n• Total supply: 100,000,000\n• Initial circulating: 20,000,000\n• Community allocation: 50%\n• Team (locked): 15%\n• Treasury: 35%",
-  "launch-details": "Launch method: Initial DEX Offering\nInitial price: $0.10\nLiquidity lock: 12 months\nInitial market cap: $2M",
-  "analytics": "Platform traffic: Increasing 23% week over week\nSocial growth: Twitter +5.2K followers this week\nWaitlist: 12,500 users",
-};
-
-// Combine all enabled command sets
-export const commandMap: Record<string, string> = {
-  ...coreCommands,
-  ...(FEATURES.PLATFORM_INFO ? platformCommands : {}),
-  ...(FEATURES.EASTER_EGGS ? easterEggCommands : {}),
-  ...(FEATURES.UPCOMING_FEATURES ? upcomingCommands : {}),
-  ...(FEATURES.TIME_GATED ? timeGatedCommands : {}),
-};
+// Immediately start loading terminal data when this module is imported
+(async () => {
+  try {
+    console.log('[Terminal Commands] Loading terminal data from server...');
+    const terminalData = await fetchTerminalData();
+    commandMap = formatTerminalCommands(terminalData);
+    console.log('[Terminal Commands] Terminal data loaded successfully');
+  } catch (error) {
+    console.error('[Terminal Commands] Error loading terminal data:', error);
+    console.log('[Terminal Commands] Using default command responses');
+  }
+})();

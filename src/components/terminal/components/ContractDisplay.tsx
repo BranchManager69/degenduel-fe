@@ -10,17 +10,23 @@
 
 import { motion } from 'framer-motion';
 import React from 'react';
-import { ContractDisplayProps } from '../types';
+
+// Updated props interface to match the new implementation
+interface ContractDisplayProps {
+  isRevealed: boolean;
+  contractAddress?: string;
+}
 
 /**
  * ContractDisplay - Displays contract address with appropriate styling
+ * Now gets data from the terminal data API instead of hardcoded props
  */
 export const ContractDisplay: React.FC<ContractDisplayProps> = ({ 
-  isReleaseTime, 
+  isRevealed, 
   contractAddress 
 }) => {
-  if (isReleaseTime) {
-    // When release time has passed, show the real contract in 24-style green
+  if (isRevealed && contractAddress) {
+    // When contract is revealed, show the real contract address in terminal-style green
     return (
       <span className="text-green-400 font-mono tracking-wider relative">
         {contractAddress}
@@ -33,7 +39,7 @@ export const ContractDisplay: React.FC<ContractDisplayProps> = ({
       </span>
     );
   } else {
-    // Before release, show redacted display
+    // Before reveal, show redacted display (placeholder)
     const redactedDisplay = "[ ██-█████████-████████ ]";
     return (
       <span className="text-red-400 font-mono tracking-wider relative">
