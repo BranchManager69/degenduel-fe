@@ -173,3 +173,29 @@ If orphaned connections are detected:
 - [x] Create WebSocketMonitor component for debugging
 - [x] Update WebSocketManager to use centralized utilities
 - [x] Document standardization approach
+- [x] Standardize all WebSocket hooks (April 10, 2025)
+
+## Standardized WebSocket Hooks
+
+All WebSocket hooks have been standardized to follow the V69 pattern:
+
+| Original Hook | Standardized Hook | Status |
+|---------------|-------------------|--------|
+| useTokenDataWebSocket | useTokenData | ✅ Complete |
+| useMarketDataWebSocket | useMarketData | ✅ Complete |
+| useContestWebSocket | useContests | ✅ Complete |
+| useContestChatWebSocket | useContestChat | ✅ Complete |
+| usePortfolioWebSocket | usePortfolio | ✅ Complete |
+| useWalletWebSocket | useWallet | ✅ Complete |
+| useAchievementWebSocket | useAchievements | ✅ Complete |
+| useNotificationWebSocket | useNotifications | ✅ Complete |
+| useServerStatusWebSocket | useServerStatus | ✅ Complete |
+| useSystemSettingsWebSocket | useSystemSettings | ✅ Complete |
+| useAnalyticsWebSocket | useAnalytics | ✅ Complete |
+| useSkyDuelWebSocket | useSkyDuel | ✅ Complete |
+| useCircuitBreakerSocket | useCircuitBreaker | ✅ Complete |
+| useServiceWebSocket | useService | ✅ Complete |
+| useRPCBenchmarkWebSocket | useRPCBenchmark | ✅ Complete |
+| N/A (New) | useTerminalData | ✅ Complete |
+
+All standardized hooks are located in `/src/hooks/websocket/topic-hooks/` and use the unified WebSocket system through `useUnifiedWebSocket`.

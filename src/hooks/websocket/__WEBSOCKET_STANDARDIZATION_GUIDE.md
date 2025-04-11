@@ -10,6 +10,7 @@ The DegenDuel frontend initially used multiple separate WebSocket connections fo
 - Contest updates
 - User data
 - Administrative features
+- Terminal data
 
 This led to inefficiency, duplicated code, authentication issues, and difficulty maintaining consistent connection states across the application.
 
@@ -18,6 +19,129 @@ The v69 unified WebSocket system was created to solve these issues by providing 
 ## Migration Plan
 
 All components should use hooks that connect to the unified WebSocket system through a standardized pattern. This document outlines that pattern and how to implement it.
+
+## Migration Status
+
+| Feature | Legacy Hook | Status | Standardized Hook | Notes |
+|---------|-------------|--------|------------------|-------|
+| Notifications | useNotificationWebSocket | ✅ Migrated | useNotifications | Complete and in production |
+| Terminal Data | *None (Previously API)* | ✅ Migrated | useTerminalData | Implemented directly in v69 format |
+| Token Data | useTokenDataWebSocket | ✅ Migrated | useTokenData | Completed April 10, 2025 |
+| Market Data | useMarketDataWebSocket | ✅ Migrated | useMarketData | Completed April 10, 2025 |
+| Contest | useContestWebSocket | ✅ Migrated | useContests | Completed April 10, 2025 |
+| Contest Chat | useContestChatWebSocket | ✅ Migrated | useContestChat | Completed April 10, 2025 |
+| Portfolio | usePortfolioWebSocket | ✅ Migrated | usePortfolio | Completed April 10, 2025 |
+| Wallet | useWalletWebSocket | ✅ Migrated | useWallet | Completed April 10, 2025 |
+| Achievement | useAchievementWebSocket | ✅ Migrated | useAchievements | Completed April 10, 2025 |
+| System Settings | useSystemSettingsWebSocket | ✅ Migrated | useSystemSettings | Completed April 10, 2025 |
+| Server Status | useServerStatusWebSocket | ✅ Migrated | useServerStatus | Completed April 10, 2025 |
+| Admin Analytics | useAnalyticsWebSocket | ✅ Migrated | useAnalytics | Completed April 10, 2025 |
+| SkyDuel | useSkyDuelWebSocket | ✅ Migrated | useSkyDuel | Completed April 10, 2025 |
+| Circuit Breaker | useCircuitBreakerSocket | ✅ Migrated | useCircuitBreaker | Completed April 10, 2025 |
+| Service | useServiceWebSocket | ✅ Migrated | useService | Completed April 10, 2025 |
+| RPC Benchmark | useRPCBenchmarkWebSocket | ✅ Migrated | useRPCBenchmark | Completed April 10, 2025 |
+
+## Migration Approach
+
+The migration follows these steps for each WebSocket hook:
+
+1. **Create Standardized Hook**
+   - Create a new hook in `src/hooks/websocket/topic-hooks/`
+   - Use the standardized pattern with useUnifiedWebSocket
+   - Match existing interface (or improve it) to minimize component changes
+   - Add error handling and monitoring
+
+2. **Update WebSocket Index**
+   - Export the new hook in `src/hooks/websocket/index.ts`
+   - Mark the legacy hook as deprecated with a comment
+
+3. **Test the Hook**
+   - Verify typings with `npm run type-check`
+   - Ensure feature parity with the original hook
+
+4. **Update Components**
+   - Find components using the legacy hook and update them
+   - Change the import to use the new hook
+   - Update any usage patterns if needed
+
+5. **Update Migration Guide**
+   - Mark the hook as migrated in this guide
+
+## V69 WebSocket Message Format
+
+All messages exchanged with the unified WebSocket system follow a standard format:
+
+### Client to Server Messages
+
+**Subscribe to a topic:**
+```json
+{
+  "type": "SUBSCRIBE",
+  "topics": ["market-data", "system"],
+  "authToken": "jwt-token-if-needed"
+}
+```
+
+**Unsubscribe from a topic:**
+```json
+{
+  "type": "UNSUBSCRIBE",
+  "topics": ["contest-chat"]
+}
+```
+
+**Request data:**
+```json
+{
+  "type": "REQUEST",
+  "topic": "market-data",
+  "action": "GET_MARKET_DATA"
+}
+```
+
+**Send a command:**
+```json
+{
+  "type": "COMMAND",
+  "topic": "wallet",
+  "action": "TRANSFER",
+  "amount": "100",
+  "recipient": "address"
+}
+```
+
+### Server to Client Messages
+
+**Data update:**
+```json
+{
+  "type": "DATA",
+  "topic": "market-data",
+  "subtype": "token",
+  "action": "update",
+  "data": { /* payload */ },
+  "timestamp": "2025-04-10T12:34:56.789Z"
+}
+```
+
+**Error message:**
+```json
+{
+  "type": "ERROR",
+  "code": 4010,
+  "message": "Authentication required",
+  "timestamp": "2025-04-10T12:34:56.789Z"
+}
+```
+
+**System message:**
+```json
+{
+  "type": "SYSTEM",
+  "message": "WebSocket connected",
+  "timestamp": "2025-04-10T12:34:56.789Z"
+}
+```
 
 ## Core Components
 
@@ -374,15 +498,16 @@ const NotificationsPage: React.FC = () => {
 Hooks should be migrated in the following order:
 
 1. ✅ `useNotificationWebSocket` → `useNotifications`
-2. `useTokenDataWebSocket` → `useTokenData`
-3. `useMarketDataWebSocket` → `useMarketData`
-4. `useContestWebSocket` → `useContests`
-5. `useContestChatWebSocket` → `useContestChat`
-6. `usePortfolioWebSocket` → `usePortfolio`
-7. `useWalletWebSocket` → `useWallet`
-8. `useAchievementWebSocket` → `useAchievements`
-9. `useSystemSettingsWebSocket` → `useSystemSettings`
-10. `useServerStatusWebSocket` → `useServerStatus`
+2. ✅ Terminal Data → `useTerminalData` (exported from terminalDataService)
+3. `useTokenDataWebSocket` → `useTokenData`
+4. `useMarketDataWebSocket` → `useMarketData`
+5. `useContestWebSocket` → `useContests`
+6. `useContestChatWebSocket` → `useContestChat`
+7. `usePortfolioWebSocket` → `usePortfolio`
+8. `useWalletWebSocket` → `useWallet`
+9. `useAchievementWebSocket` → `useAchievements`
+10. `useSystemSettingsWebSocket` → `useSystemSettings`
+11. `useServerStatusWebSocket` → `useServerStatus`
 
 ## API Reference
 
@@ -535,4 +660,4 @@ If you're not receiving authenticated data:
 
 ---
 
-Last Updated: April 4, 2025
+Last Updated: April 10, 2025
