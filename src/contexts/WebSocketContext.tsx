@@ -19,6 +19,7 @@ import {
     WEBSOCKET_ENDPOINT,
     WebSocketMessage
 } from '../hooks/websocket/types';
+import { setupWebSocketInstance } from '../hooks/websocket/useUnifiedWebSocket';
 import { useStore } from '../store/useStore';
 import { dispatchWebSocketEvent, initializeWebSocketTracking } from '../utils/wsMonitor';
 
@@ -124,6 +125,21 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       message: 'WebSocketContext initialized',
       timestamp: new Date().toISOString()
     });
+    
+    // Initialize the WebSocket manager singleton directly here
+    // This is critical - it sets up the instance that useUnifiedWebSocket will access
+    setupWebSocketInstance(
+      // Register listener function that matches the expected signature
+      (id: string, types: string[], callback: (message: any) => void) => {
+        return registerListener(id, types, callback);
+      },
+      // Send message function
+      sendMessage,
+      // Current connection state
+      connectionState,
+      // Current connection error
+      connectionError
+    );
     
     // Listen for token refresh fallback events
     // This handles cases where a primary token refresh fails but a fallback is available
@@ -932,6 +948,25 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const isConnected = connectionState === ConnectionState.CONNECTED || 
                       connectionState === ConnectionState.AUTHENTICATED;
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
+  
+  // Update the singleton instance whenever key state changes
+  useEffect(() => {
+    // Update the WebSocket instance with the current state
+    setupWebSocketInstance(
+      // Register listener function
+      (id: string, types: string[], callback: (message: any) => void) => {
+        return registerListener(id, types, callback);
+      },
+      // Send message function
+      sendMessage,
+      // Current connection state
+      connectionState,
+      // Current connection error
+      connectionError
+    );
+    
+    console.log(`WebSocketContext: Updated WebSocket instance with state: ${connectionState}`);
+  }, [connectionState, connectionError]);
   
   // Context value
   /**

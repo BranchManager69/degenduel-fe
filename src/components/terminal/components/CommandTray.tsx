@@ -16,8 +16,6 @@ import { CommandTrayProps } from '../types';
  * CommandTray - Displays available commands in a tray
  */
 export const CommandTray: React.FC<CommandTrayProps> = ({
-  commandTrayOpen,
-  setCommandTrayOpen,
   commands,
   setUserInput,
   onExecuteCommand,
@@ -59,26 +57,15 @@ export const CommandTray: React.FC<CommandTrayProps> = ({
         style={{ height: '5px', opacity: 0.4 }}
       />
       
-      {/* Command drawer with toggle button */}
-      <div className="w-full mt-6 mb-2">
-        {/* Command Toggle Button */}
-        <button 
-          className="mx-auto block bg-black py-2 px-6 rounded-md border-2 border-mauve-light/50 text-white text-sm font-bold flex items-center space-x-2 hover:bg-mauve/20 transition-colors"
-          onClick={() => setCommandTrayOpen(!commandTrayOpen)}
+      {/* Command List */}
+      <div className="w-full mb-2">
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+          className="p-3 bg-black/80 border border-mauve/40 rounded-md max-h-[200px] overflow-y-auto"
         >
-          <span className="text-cyan-400 text-base">{commandTrayOpen ? '▲' : '▼'}</span>
-          <span>{commandTrayOpen ? 'HIDE COMMANDS' : 'SHOW COMMANDS'}</span>
-        </button>
-        
-        {/* Command List - Animates height */}
-        {commandTrayOpen && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mt-3 p-3 bg-black/80 border border-mauve/40 rounded-md max-h-[200px] overflow-y-auto"
-          >
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3">
               {/* Standard commands */}
               {commands.map((cmd, index) => (
@@ -133,7 +120,6 @@ export const CommandTray: React.FC<CommandTrayProps> = ({
               )}
             </div>
           </motion.div>
-        )}
       </div>
     </motion.div>
   );

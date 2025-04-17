@@ -66,10 +66,8 @@ export interface TerminalInputProps {
 
 // Props for the CommandTray component
 export interface CommandTrayProps {
-  commandTrayOpen: boolean;
-  setCommandTrayOpen: (open: boolean) => void;
   commands: string[];
   setUserInput: (input: string) => void;
-  onExecuteCommand?: (command: string) => void; // Added prop for direct command execution
+  onExecuteCommand?: (command: string) => void;
   easterEggActivated?: boolean;
 }
