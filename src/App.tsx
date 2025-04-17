@@ -676,7 +676,7 @@ export const App: React.FC = () => {
             </PrivyAuthProvider>
           </PrivyProvider>
         </WalletProvider>
-      ) : (
+      {/* removed legacy fallback branch to prevent duplicate layout */}
         // Without WalletProvider (original structure)
         <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
           <PrivyAuthProvider>
@@ -1102,8 +1102,8 @@ export const App: React.FC = () => {
               </TwitterAuthProvider>
             </AuthProvider>
           </PrivyAuthProvider>
-        </PrivyProvider>
-        </SolanaWalletProvider>
+      </PrivyProvider>
+      </SolanaWalletProvider>
       </ConnectionProvider>
     </Router>
   );
