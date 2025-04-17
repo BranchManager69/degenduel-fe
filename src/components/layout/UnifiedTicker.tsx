@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { useTokenData } from "../../hooks/useTokenData";
 import { useStore } from "../../store/useStore";
+import { useScrollTicker } from "../../hooks/useScrollTicker";
 import type { Contest, TokenData } from "../../types";
 
 interface Props {
@@ -34,6 +35,9 @@ export const UnifiedTicker: React.FC<Props> = ({
   const [dragScrollLeft, setDragScrollLeft] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
+  
+  // Use scroll hook to determine if ticker should be expanded
+  const { isExpanded } = useScrollTicker(30);
 
   // Sort contests: active first, then pending
   const sortedContests = [...contests].sort((a, b) => {
@@ -43,9 +47,13 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   // Process tokens without filtering for changes - show all tokens
   useEffect(() => {
+    // Calculate effective connection status for debugging
+    const effectivelyConnected = isConnected || (tokens && tokens.length > 0 && !error);
+    
     // Add more debugging to diagnose connection issues
     console.log(`UnifiedTicker DEBUG: 
-      - isConnected: ${isConnected}
+      - isConnected (WS flag): ${isConnected}
+      - Effectively connected: ${effectivelyConnected}
       - Connection state: ${error ? 'ERROR' : 'OK'}
       - Error: ${error || 'None'} 
       - Tokens received: ${tokens ? tokens.length : 0}
@@ -107,6 +115,23 @@ export const UnifiedTicker: React.FC<Props> = ({
       return () => clearInterval(intervalId);
     }
   }, [isConnected, _refresh]);
+  
+  // Ensure we correctly track connection status even when tokens are loaded
+  useEffect(() => {
+    // If we have tokens AND we don't have an error, then we must be connected
+    // even if isConnected flag isn't accurate
+    if (tokens.length > 0 && !error) {
+      console.log("UnifiedTicker: Tokens are loaded, treating as connected regardless of isConnected flag");
+      // Don't modify the real isConnected state, but modify the UI display logic
+      if (!isConnected) {
+        // Force a refresh to get fresh data
+        if (_refresh) {
+          console.log("UnifiedTicker: Manually refreshing due to detected connected state");
+          _refresh();
+        }
+      }
+    }
+  }, [tokens.length, error, isConnected, _refresh]);
 
   // Handle container resize
   useEffect(() => {
@@ -512,10 +537,12 @@ export const UnifiedTicker: React.FC<Props> = ({
   if (sortedContests.length === 0 && significantChanges.length === 0) {
     console.log(`UnifiedTicker: No content available. Contests: ${contests.length}, Tokens loaded: ${tokens.length}, WebSocket connected: ${isConnected}`);
     
-    // No need for authentication check since we're showing connection status
+    // Calculate effective connection status
+    // If we have tokens but isConnected is false, we're actually connected
+    const effectivelyConnected = isConnected || (tokens.length > 0 && !error);
     
     // Show connection diagnostics first - preserve error visibility for debugging
-    if (error || (tokens.length === 0 && !isConnected)) {
+    if (error || !effectivelyConnected) {
       return (
         <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
           <div
@@ -834,11 +861,17 @@ export const UnifiedTicker: React.FC<Props> = ({
         className="absolute inset-x-0 top-0"
         initial={{ boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
         animate={{ 
-          boxShadow: activeTab === "tokens" 
-            ? "0 1px 6px rgba(0, 225, 255, 0.3)" 
-            : activeTab === "contests" 
-              ? "0 1px 6px rgba(153, 51, 255, 0.3)"
-              : "0 1px 6px rgba(153, 51, 255, 0.2)"
+          boxShadow: isExpanded
+            ? activeTab === "tokens" 
+              ? "0 1px 8px rgba(0, 225, 255, 0.4)" // Stronger glow when expanded
+              : activeTab === "contests" 
+                ? "0 1px 8px rgba(153, 51, 255, 0.4)"
+                : "0 1px 8px rgba(153, 51, 255, 0.3)"
+            : activeTab === "tokens" 
+              ? "0 1px 6px rgba(0, 225, 255, 0.3)" 
+              : activeTab === "contests" 
+                ? "0 1px 6px rgba(153, 51, 255, 0.3)"
+                : "0 1px 6px rgba(153, 51, 255, 0.2)"
         }}
         transition={{ duration: 0.5 }}
       >
@@ -859,11 +892,17 @@ export const UnifiedTicker: React.FC<Props> = ({
         className="absolute inset-x-0 bottom-0"
         initial={{ boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
         animate={{ 
-          boxShadow: activeTab === "tokens" 
-            ? "0 -1px 6px rgba(0, 225, 255, 0.3)" 
-            : activeTab === "contests" 
-              ? "0 -1px 6px rgba(153, 51, 255, 0.3)"
-              : "0 -1px 6px rgba(153, 51, 255, 0.2)"
+          boxShadow: isExpanded
+            ? activeTab === "tokens" 
+              ? "0 -1px 8px rgba(0, 225, 255, 0.4)" // Stronger glow when expanded
+              : activeTab === "contests" 
+                ? "0 -1px 8px rgba(153, 51, 255, 0.4)"
+                : "0 -1px 8px rgba(153, 51, 255, 0.3)"
+            : activeTab === "tokens" 
+              ? "0 -1px 6px rgba(0, 225, 255, 0.3)" 
+              : activeTab === "contests" 
+                ? "0 -1px 6px rgba(153, 51, 255, 0.3)"
+                : "0 -1px 6px rgba(153, 51, 255, 0.2)"
         }}
         transition={{ duration: 0.5 }}
       >
@@ -883,10 +922,14 @@ export const UnifiedTicker: React.FC<Props> = ({
       {/* Tab buttons only shown when we have both contests and tokens */}
       {(sortedContests.length > 0 && significantChanges.length > 0) && floatingTabs}
 
-      {/* Content container */}
+      {/* Content container with dynamic height based on scroll position */}
       <div
-        className={`relative transition-all duration-200 ease-out ${
-          isCompact ? "h-6" : "h-8"
+        className={`relative transition-all duration-300 ease-out ${
+          isCompact 
+            ? "h-5" 
+            : isExpanded 
+              ? "h-8" // Normal height when at top of page
+              : "h-6"  // Smaller height when scrolled down
         }`}
       >
         <div className="h-full overflow-hidden whitespace-nowrap">
@@ -924,8 +967,13 @@ export const UnifiedTicker: React.FC<Props> = ({
             {/* Content Container */}
             <div
               ref={contentRef}
-              className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 transition-all duration-200 ease-out min-w-max
-                ${isCompact ? "text-xs" : "text-sm"}`}
+              className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 transition-all duration-300 ease-out min-w-max
+                ${isCompact 
+                  ? "text-[10px]" 
+                  : isExpanded 
+                    ? "text-sm" // Normal size text when expanded
+                    : "text-xs"  // Smaller text when scrolled down
+                }`}
             >
               {/* Show content based on active tab */}
               {(activeTab === "all" || activeTab === "contests") && sortedContests.map((contest) => (
@@ -1237,9 +1285,33 @@ export const UnifiedTicker: React.FC<Props> = ({
       <div className="debug-info hidden absolute bottom-full left-0 mb-1 p-2 bg-dark-800 text-xs text-white z-50 opacity-80 rounded">
         <div>Size: {containerWidth}px (Mobile: {isMobileView ? 'Yes' : 'No'})</div>
         <div>Contests: {sortedContests.length}, Tokens: {significantChanges.length}</div>
-        <div>WebSocket: {isConnected ? 'Connected' : 'Disconnected'}</div>
+        <div>WebSocket flag: {isConnected ? 'Connected' : 'Disconnected'}</div>
+        <div>Effective status: {isConnected || (tokens && tokens.length > 0 && !error) ? 'Connected' : 'Disconnected'}</div>
+        <div>Tokens loaded: {tokens ? tokens.length : 0}</div>
         <div>Animation: {getAnimationSpeed()}</div>
       </div>
+      
+      {/* Add a small connection status indicator in top-right corner for admins */}
+      {useStore(state => state.user?.is_admin || state.user?.is_superadmin) && (
+        <div 
+          className={`absolute top-0 right-0 h-2 w-2 rounded-full z-50 m-1 ${
+            isConnected || (tokens && tokens.length > 0 && !error) 
+              ? 'bg-green-500' 
+              : error 
+                ? 'bg-red-500' 
+                : 'bg-amber-500'
+          }`}
+          title={`WebSocket status: ${
+            isConnected 
+              ? 'Connected via WebSocket flag' 
+              : (tokens && tokens.length > 0 && !error)
+                ? 'Connected (tokens loaded)' 
+                : error 
+                  ? 'Error: ' + error 
+                  : 'Disconnected'
+          }`}
+        />
+      )}
     </div>
   );
 };

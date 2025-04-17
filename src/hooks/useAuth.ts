@@ -40,12 +40,17 @@ export function useAuth() {
   const { account, connected } = useAptosWallet();
   const jupiterWallet = useJupiterWallet();
   
-  // Use Jupiter wallet when feature flag is enabled
-  const walletConnected = env.USE_JUPITER_WALLET 
+  // Check if we actually have the Jupiter wallet SDK loaded
+  const jupiterAvailable = typeof window !== 'undefined' && 
+                          window.hasOwnProperty('solana') && 
+                          env.USE_JUPITER_WALLET;
+  
+  // Use Jupiter wallet when feature flag is enabled and wallet is available
+  const walletConnected = jupiterAvailable
     ? (jupiterWallet?.isConnected || false)
     : connected;
   
-  const walletAddress = env.USE_JUPITER_WALLET
+  const walletAddress = jupiterAvailable
     ? (jupiterWallet?.walletAddress || null)
     : account?.address;
     

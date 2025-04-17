@@ -45,7 +45,21 @@ const TypeWriter: React.FC<TypeWriterProps> = ({
     timeoutsRef.current = [];
   };
 
+  // Use a ref to store the last typed message to prevent repeating the same message
+  const lastTypedMessageRef = useRef("");
+  
   useEffect(() => {
+    // If we've already typed this exact message, just set it directly without animation
+    if (lastTypedMessageRef.current === text) {
+      setDisplayText(text);
+      setIsComplete(true);
+      if (onComplete) onComplete();
+      return;
+    }
+    
+    // This is a new message, update our reference
+    lastTypedMessageRef.current = text;
+    
     // Reset component mount state
     isMountedRef.current = true;
     
@@ -140,25 +154,20 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
 }) => {
   const consoleOutputRef = useRef<HTMLDivElement>(null);
   
-  // Track if we're currently typing out an AI message
-  const [isTyping, setIsTyping] = useState(false);
-  
   // Track typing completion for auto-scrolling
   const handleTypingComplete = () => {
-    setIsTyping(false);
-    
     // Scroll to bottom when typing completes
     if (consoleOutputRef.current) {
       consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
     }
   };
   
-  // When a new AI message appears, set typing status
+  // When a new message appears, scroll to bottom
   useEffect(() => {
     if (consoleOutput.length > 0) {
-      const lastMsg = consoleOutput[consoleOutput.length - 1];
-      if (typeof lastMsg === 'string' && lastMsg.startsWith('[Didi]')) {
-        setIsTyping(true);
+      // Immediately scroll to bottom when new message appears
+      if (consoleOutputRef.current) {
+        consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
       }
     }
   }, [consoleOutput.length]);
@@ -219,27 +228,26 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
     };
   }, []);
 
-  // Auto-scroll to the bottom when console output changes
-  // Only do this when we're not in the middle of typing
+  // Always auto-scroll to the bottom when console output changes
   useEffect(() => {
-    if (consoleOutputRef.current && !isTyping) {
+    if (consoleOutputRef.current) {
       const scrollTo = () => {
         const element = consoleOutputRef.current;
         if (element) {
-          // Only auto-scroll if already at bottom (or close)
-          const isNearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 50;
-          if (isNearBottom) {
-            element.scrollTop = element.scrollHeight;
-          }
+          // Always scroll to bottom - don't check position
+          element.scrollTop = element.scrollHeight;
         }
       };
       
-      // Have multiple scroll attempts to ensure it happens after content is rendered
+      // Multiple scroll attempts with increasing delays to ensure it happens
+      // even after content is fully rendered
       scrollTo();
       setTimeout(scrollTo, 50);
       setTimeout(scrollTo, 100);
+      setTimeout(scrollTo, 200);
+      setTimeout(scrollTo, 500); // Extra long timeout for slow devices
     }
-  }, [consoleOutput, isTyping]);
+  }, [consoleOutput]);
 
   // Calculate the number of lines to display
   // Limit to a max of 10 lines for a clean, manageable chat
@@ -306,7 +314,22 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
           <div className="text-mauve-light/90 text-xs py-1">
             <div className="relative font-mono text-[10px] sm:text-xs leading-tight mt-1 mb-4 text-center overflow-hidden">
               <pre className="text-mauve bg-black/30 py-2 px-1 rounded border border-mauve/20 inline-block mx-auto max-w-full overflow-x-auto">
-{`    ____  _________________ _   ____  __  ____________
+{window.innerWidth < 400 ? 
+`  ██████╗ ██╗   ██╗███████╗██╗     
+  ██╔══██╗██║   ██║██╔════╝██║     
+  ██║  ██║██║   ██║█████╗  ██║     
+  ██║  ██║██║   ██║██╔══╝  ██║     
+  ██████╔╝╚██████╔╝███████╗███████╗
+  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
+: window.innerWidth < 768 ? 
+`  ██████╗ ██╗   ██╗███████╗██╗     
+  ██╔══██╗██║   ██║██╔════╝██║     
+  ██║  ██║██║   ██║█████╗  ██║     
+  ██║  ██║██║   ██║██╔══╝  ██║     
+  ██████╔╝╚██████╔╝███████╗███████╗
+  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
+:
+`    ____  _________________ _   ____  __  ____________
    / __ \\/ ____/ ____/ __ \\ | / / / / / / / / ____/ / /
   / / / / __/ / / __/ / / / |/ / / / / / / / __/ / / 
  / /_/ / /___/ /_/ / /_/ / /|  / /_/ / /_/ / /___/ /___
@@ -343,10 +366,21 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
             const isError = typeof output === 'string' && output.startsWith('Error:');
             const isAI = typeof output === 'string' && output.startsWith('[Didi]');
             
+            // Generate a stable, consistent key for each output item
+            const getStableKey = () => {
+              if (typeof output !== 'string') return `node-${i}`;
+              // For Didi responses, use the first 20 chars to create a more unique key
+              if (output.startsWith('[Didi]')) {
+                return `didi-${i}-${output.substr(7, 20).replace(/[^a-z0-9]/gi, '')}`;
+              }
+              // For other outputs, use a simpler key
+              return `output-${i}-${output.substr(0, 10).replace(/[^a-z0-9]/gi, '')}`;
+            };
+            
             // Use framer-motion for smooth entry of new lines
             return (
               <motion.div 
-                key={`${i}-${typeof output === 'string' ? output.substr(0, 10) : 'node'}`}
+                key={getStableKey()}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ 
@@ -357,13 +391,18 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
               >
                 {typeof output === 'string' ? (
                   isAI ? (
-                    // TypeWriter effect for AI messages
-                    <TypeWriter 
-                      text={output}
-                      speed={25} // Adjust speed as needed
-                      className="text-cyan-300"
-                      onComplete={handleTypingComplete}
-                    />
+                    // Only apply typing effect to the newest message
+                    i === displayedOutput.length - 1 ? (
+                      <TypeWriter 
+                        text={output}
+                        speed={15} // Faster typing speed
+                        className="text-cyan-300"
+                        onComplete={handleTypingComplete}
+                      />
+                    ) : (
+                      // Display older AI messages immediately without animation
+                      <span className="text-cyan-300">{output}</span>
+                    )
                   ) : (
                     // Instant display for other text
                     <span 

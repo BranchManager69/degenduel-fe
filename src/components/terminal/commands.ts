@@ -19,18 +19,43 @@ export const defaultCommandMap: Record<string, string> = {
   "launch-details": "Loading launch details from server...",
   analytics: "Loading analytics from server...",
   clear: "", // Special case handled in Terminal.tsx
-  banner: `
+  // @ts-ignore - This is a special case for dynamic content
+  banner: function getBanner() {
+    // Responsive ASCII art that adapts to screen size
+    const isMobile = window.innerWidth < 768;
+    // Use more compact art for extra-small screens
+    const isExtraSmall = window.innerWidth < 400;
+    const asciiArt = isExtraSmall ? 
+    `
+  ██████╗ ██╗   ██╗███████╗██╗     
+  ██╔══██╗██║   ██║██╔════╝██║     
+  ██║  ██║██║   ██║█████╗  ██║     
+  ██║  ██║██║   ██║██╔══╝  ██║     
+  ██████╔╝╚██████╔╝███████╗███████╗
+  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
+    : isMobile ? 
+    `
+  ██████╗ ██╗   ██╗███████╗██╗     
+  ██╔══██╗██║   ██║██╔════╝██║     
+  ██║  ██║██║   ██║█████╗  ██║     
+  ██║  ██║██║   ██║██╔══╝  ██║     
+  ██████╔╝╚██████╔╝███████╗███████╗
+  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
+    : 
+    `
   _____  ______ _____ ______ _   _     _____  _    _ ______ _      
  |  __ \\|  ____/ ____|  ____| \\ | |   |  __ \\| |  | |  ____| |     
  | |  | | |__ | |  __| |__  |  \\| |   | |  | | |  | | |__  | |     
  | |  | |  __|| | |_ |  __| | . \` |   | |  | | |  | |  __| | |     
  | |__| | |___| |__| | |____| |\\  |   | |__| | |__| | |____| |____ 
- |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|
+ |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|`;
+    
+    return `${asciiArt}
  
  - Loading terminal data... -
  
- Type 'help' for available commands
-`,
+ Type 'help' for available commands`;
+  },
   token: "Loading token information from server...",
   "dd-debug": "Developer mode activated. Welcome, team member.",
   "branch-mode": "Branch Manager special access granted. Unique identifier: BM-69420",

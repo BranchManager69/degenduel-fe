@@ -33,19 +33,62 @@ export interface UseJupiterWalletReturn {
 export function useJupiterWallet(): UseJupiterWalletReturn {
   // Create a try/catch block to handle errors in the hook itself
   try {
-    const {
-      connecting,
-      connected,
-      publicKey,
-      disconnect: jupiterDisconnect,
-      connect: jupiterConnect,
-      wallet,
-      wallets,
-      signMessage: jupiterSignMessage
-    } = useJupiterWalletAdapter();
+    // Safely access wallet adapter values with defensive coding
+    // If the provider isn't available yet, these will be undefined
+    let connecting = false;
+    let connected = false;
+    let publicKey = null;
+    let jupiterDisconnect = async () => {};
+    let jupiterConnect = async () => {};
+    let wallet = null;
+    let wallets: any[] = [];
+    let jupiterSignMessage = null;
+    
+    try {
+      // IMPORTANT: Instead of directly accessing the adapter properties which can throw errors,
+      // we'll use a more defensive approach where we first check if the adapter exists
+      
+      // Create a safe wrapper function to access adapter properties
+      const safeGet = (obj: any, prop: string, fallback: any) => {
+        if (!obj) return fallback;
+        try {
+          const value = obj[prop];
+          return value !== undefined ? value : fallback;
+        } catch (e) {
+          return fallback;
+        }
+      };
+      
+      // Try to get the adapter object without accessing its properties
+      let adapter;
+      try {
+        adapter = useJupiterWalletAdapter();
+      } catch (e) {
+        console.warn("[Jupiter Wallet] Unable to access wallet adapter, using fallbacks");
+        adapter = null;
+      }
+      
+      // Now safely access each property with fallbacks
+      connecting = safeGet(adapter, 'connecting', false);
+      connected = safeGet(adapter, 'connected', false);
+      publicKey = safeGet(adapter, 'publicKey', null);
+      jupiterDisconnect = safeGet(adapter, 'disconnect', async () => {});
+      jupiterConnect = safeGet(adapter, 'connect', async () => {});
+      wallet = safeGet(adapter, 'wallet', null);
+      wallets = safeGet(adapter, 'wallets', []);
+      jupiterSignMessage = safeGet(adapter, 'signMessage', null);
+      
+      // Only log success if we actually got the adapter
+      if (adapter && connected !== undefined) {
+        console.log("[Jupiter Wallet] Adapter accessed successfully");
+      }
+    } catch (adapterError) {
+      // Don't crash here - gracefully fall back
+      console.warn("[Jupiter Wallet] Error in adapter access, using fallbacks");
+    }
 
-  // Convert publicKey to string format expected by our app
-  const walletAddress = publicKey?.toString() || null;
+    // Convert publicKey to string format expected by our app
+    const walletAddress = publicKey?.toString() || null;
   
   // Wrap the connect method to handle our app-specific flow
   const connect = useCallback(async () => {

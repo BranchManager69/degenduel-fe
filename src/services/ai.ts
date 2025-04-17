@@ -96,7 +96,7 @@ class AIService {
         console.log('AI Chat Request:', { messages, options });
       }
 
-      // Filter out system messages as they're now handled by the backend
+      // Filter out system messages as they're handled by the backend
       const filteredMessages = messages.filter(msg => msg.role !== 'system');
       
       const response = await fetch(`${this.API_BASE}/chat`, {

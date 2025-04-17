@@ -24,7 +24,6 @@ import { DecryptionTimer } from './components/DecryptionTimer';
 // No need to import TimeUnit and ContractDisplay as they're used by DecryptionTimer internally
 import { TerminalConsole } from './components/TerminalConsole';
 import { TerminalInput } from './components/TerminalInput';
-import { CommandTray } from './components/CommandTray';
 
 // Import utility functions
 import { 
@@ -66,7 +65,7 @@ declare global {
  * 
  * @returns The terminal component.
  */
-export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: TerminalProps) => {
+export const Terminal = ({ config, onCommandExecuted, size = 'large' }: TerminalProps) => {
   // We no longer need to set window.contractAddress as it's now fetched from the API
   // This is kept for backward compatibility but will be phased out
   useEffect(() => {
@@ -89,7 +88,6 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
   const [userInput, setUserInput] = useState('');
   const [consoleOutput, setConsoleOutput] = useState<ConsoleOutputItem[]>([]);
   const [showContractReveal, setShowContractReveal] = useState(false);
-  const [revealStage, setRevealStage] = useState(0);
   const [terminalMinimized, setTerminalMinimized] = useState(false);
   const [terminalExitComplete, setTerminalExitComplete] = useState(false);
   const [currentPhrase, setCurrentPhrase] = useState('');
@@ -97,7 +95,6 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
   // Visual state for Easter egg effects
   const [easterEggActive, setEasterEggActive] = useState(false);
   const [glitchActive, setGlitchActive] = useState(false);
-  const [commandTrayOpen, setCommandTrayOpen] = useState(false);
   
   // When exit animation completes, we'll set this state
   useEffect(() => {
@@ -137,34 +134,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
   // Calculate how close we are to the release date
   const daysUntilRelease = Math.max(0, Math.floor((config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
   
-  // Time-gated commands
-  const timeGatedCommands = useMemo(() => [
-    // Always visible (stage 0)
-    [
-      "$ help",
-      "$ status",
-      "$ info",
-      "$ contract",
-      "$ stats",
-    ],
-    // 48 hours before release (stage 1)
-    [
-      "$ roadmap",
-      "$ analytics",
-    ],
-    // 24 hours before release (stage 2)
-    [
-      "$ tokenomics",
-    ],
-    // 2 hours before release (stage 3)
-    [
-      "$ launch-details",
-    ],
-    // 15 minutes before release (stage 4)
-    [
-      "$ contract", // This appears in multiple stages because it will show different information
-    ]
-  ], []);
+  // We no longer need time-gated commands as we removed the command tray
 
   // Secret phrases that animate in the terminal (Didi's thoughts)
   const secretPhrases = useMemo(() => {
@@ -327,34 +297,59 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
     // Force window to top when component mounts
     window.scrollTo(0, 0);
     
-    // Set the reveal stage based on hours/minutes until release
-    const hoursUntilRelease = (config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60);
-    const minutesUntilRelease = (config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60);
-    
-    if (minutesUntilRelease <= 15) {
-      setRevealStage(4);
-    } else if (hoursUntilRelease <= 2) {
-      setRevealStage(3);
-    } else if (hoursUntilRelease <= 24) {
-      setRevealStage(2);
-    } else if (hoursUntilRelease <= 48) {
-      setRevealStage(1);
-    } else {
-      setRevealStage(0);
-    }
+    // We no longer need to set reveal stages for command tray
     
     // Add the DegenDuel banner as initial console output
-    setConsoleOutput([`
+    // Different sizes for mobile vs desktop
+    const isMobile = window.innerWidth < 768;
+    // Use more compact art for extra-small screens
+    const isExtraSmall = window.innerWidth < 400;
+    const asciiArt = isExtraSmall ?
+    `
+  ██████╗ ██╗   ██╗███████╗██╗     
+  ██╔══██╗██║   ██║██╔════╝██║     
+  ██║  ██║██║   ██║█████╗  ██║     
+  ██║  ██║██║   ██║██╔══╝  ██║     
+  ██████╔╝╚██████╔╝███████╗███████╗
+  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
+    : isMobile ? 
+    `
+  ██████╗ ██╗   ██╗███████╗██╗     
+  ██╔══██╗██║   ██║██╔════╝██║     
+  ██║  ██║██║   ██║█████╗  ██║     
+  ██║  ██║██║   ██║██╔══╝  ██║     
+  ██████╔╝╚██████╔╝███████╗███████╗
+  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
+    : 
+    `
   _____  ______ _____ ______ _   _     _____  _    _ ______ _      
  |  __ \\|  ____/ ____|  ____| \\ | |   |  __ \\| |  | |  ____| |     
  | |  | | |__ | |  __| |__  |  \\| |   | |  | | |  | | |__  | |     
  | |  | |  __|| | |_ |  __| | . \` |   | |  | | |  | |  __| | |     
  | |__| | |___| |__| | |____| |\\  |   | |__| | |__| | |____| |____ 
- |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|
- 
- - High-stakes crypto trading competitions -
- 
- Type 'help' for available commands`
+ |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|`;
+    
+    setConsoleOutput([
+      // ASCII art
+      <div key="ascii-art" className="text-mauve">
+        {asciiArt}
+      </div>,
+      
+      // Empty line
+      " ",
+      
+      // High-stakes line with styling
+      <div key="tagline" className="text-cyan-400 font-medium">
+        - High-stakes crypto trading competitions -
+      </div>,
+      
+      // Empty line
+      " ",
+      
+      // Help text in subtle gray
+      <div key="help-text" className="text-gray-400">
+        Type 'help' for available commands
+      </div>
     ]);
   }, [daysUntilRelease, isReleaseTime, showContractReveal, now, config]);
 
@@ -561,14 +556,14 @@ export const Terminal = ({ config, onCommandExecuted, size = 'middle' }: Termina
   // Toggle through terminal sizes
   const cycleSize = () => {
     switch(sizeState) {
-      case 'contracted':
+      case 'large':
         setSizeState('middle');
         break;
       case 'middle':
-        setSizeState('large');
-        break;
-      case 'large':
         setSizeState('contracted');
+        break;
+      case 'contracted':
+        setSizeState('large');
         break;
     }
   };
@@ -629,12 +624,24 @@ Discovered patterns: ${discoveredCount}/4`
         activateDidiEasterEgg();
       }
     } else if (commandMap[command.toLowerCase()]) {
-      // Handle regular command from map
-      setConsoleOutput(prev => [...prev, commandMap[command.toLowerCase()]]);
+      // Handle regular command from map - check if it's a special banner command
+      let commandOutput = commandMap[command.toLowerCase()];
+      
+      // Special case for banner command which returns a function
+      if (command.toLowerCase() === 'banner' && typeof commandOutput === 'function') {
+        try {
+          // @ts-ignore - We know this is a function
+          commandOutput = commandOutput();
+        } catch (error) {
+          console.error('Error executing banner command:', error);
+        }
+      }
+        
+      setConsoleOutput(prev => [...prev, commandOutput]);
       
       // Execute callback if provided
       if (onCommandExecuted) {
-        onCommandExecuted(command, commandMap[command.toLowerCase()]);
+        onCommandExecuted(command, commandOutput);
       }
       
       // Special case for direct Easter egg activation
@@ -659,15 +666,15 @@ Discovered patterns: ${discoveredCount}/4`
           content: command
         };
         
-        // Build conversation history with previous exchanges for context
-        const historyToSend = [...conversationHistory.slice(-4), message]; // Keep recent context
+        // Build conversation history with full context - no arbitrary limits
+        const historyToSend = [...conversationHistory, message]; // Keep FULL conversation history
         
         // Update our history
         setConversationHistory(prev => [...prev, message]);
         
         // Use the chat method with conversation history for context
         aiService.chat(historyToSend, { 
-          context: 'trading',
+          context: 'default', // Use default context for better general knowledge
           conversationId: conversationId 
         })
           .then((response) => {
@@ -686,7 +693,7 @@ Discovered patterns: ${discoveredCount}/4`
             // Process Didi's response to possibly include glitches and hidden messages
             const processedResponse = processDidiResponse(response.content, command);
             
-            // Create a typewriter effect for the AI response
+            // Create a typewriter effect for the AI response (only for the newest message)
             const typeWriterEffect = (text: string) => {
               let charIndex = 0;
               // Replace processing message with empty response initially
@@ -923,7 +930,7 @@ Discovered patterns: ${discoveredCount}/4`
             }
           }}
         >
-          {/* Terminal Header */}
+          {/* Terminal Header - Browser style window controls */}
           <div className="flex justify-between items-center mb-2 border-b border-mauve/30 pb-2">
             <div className="text-xs font-bold">
               <span className="text-mauve">DEGEN</span>
@@ -933,49 +940,42 @@ Discovered patterns: ${discoveredCount}/4`
                 <span className="text-green-400 ml-1">UNLOCKED</span>
               )}
             </div>
-            <div className="flex space-x-2">
-              {/* Command tray toggle */}
-              <button 
-                type="button"
-                onClick={() => setCommandTrayOpen(!commandTrayOpen)} 
-                className="px-1 py-0.5 text-xs text-mauve-light hover:text-white border border-mauve-dark/30 hover:border-mauve/50 rounded bg-mauve-dark/20 hover:bg-mauve-dark/40 transition-colors"
-              >
-                {commandTrayOpen ? 'Hide Commands' : 'Show Commands'}
-              </button>
-
-              {/* Resize button */}
-              <button
-                type="button"
-                onClick={cycleSize}
-                className="px-1 py-0.5 text-xs text-mauve-light hover:text-white border border-mauve-dark/30 hover:border-mauve/50 rounded bg-mauve-dark/20 hover:bg-mauve-dark/40 transition-colors"
-                title={sizeState === 'contracted' ? 'Expand to Medium' : sizeState === 'middle' ? 'Expand to Large' : 'Contract to Small'}
-              >
-                {sizeState === 'contracted' ? '↔️' : sizeState === 'middle' ? '⤢' : '⤏'}
-              </button>
-              
+            
+            {/* Browser-style window controls */}
+            <div className="flex items-center space-x-1">
               {/* Minimize button */}
               <button
                 type="button" 
-                onClick={() => setTerminalMinimized(true)} 
-                className="text-xs text-mauve/50 hover:text-mauve transition-colors"
+                onClick={() => setTerminalMinimized(true)}
+                className="h-4 w-4 rounded-full bg-amber-400 hover:bg-amber-300 flex items-center justify-center transition-colors"
+                title="Minimize"
               >
-                _
+                <span className="text-black text-xs font-bold scale-90">_</span>
+              </button>
+              
+              {/* Resize/maximize button */}
+              <button
+                type="button"
+                onClick={cycleSize}
+                className="h-4 w-4 rounded-full bg-green-500 hover:bg-green-400 flex items-center justify-center transition-colors"
+                title={sizeState === 'large' ? 'Contract to Medium' : sizeState === 'middle' ? 'Contract to Small' : 'Expand to Large'}
+              >
+                <span className="text-black text-[11px] font-bold transform">
+                  {sizeState === 'large' ? '-' : '+'}
+                </span>
+              </button>
+              
+              {/* Close button (just for looks, will minimize) */}
+              <button
+                type="button" 
+                onClick={() => setTerminalMinimized(true)}
+                className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors ml-1"
+                title="Close"
+              >
+                <span className="text-black text-[10px] font-bold transform">×</span>
               </button>
             </div>
           </div>
-          
-          {/* Command Tray - Use extracted CommandTray component */}
-          {commandTrayOpen && (
-            <CommandTray
-              commandTrayOpen={commandTrayOpen}
-              setCommandTrayOpen={setCommandTrayOpen}
-              commands={timeGatedCommands.slice(0, revealStage + 1).flat()}
-              setUserInput={setUserInput}
-              onExecuteCommand={handleEnterCommand}
-              easterEggActivated={easterEggActivated}
-            />
-          )}
-          
           <div ref={terminalContentRef} className="relative">
             {/* Countdown Timer - Use extracted DecryptionTimer component */}
             <div>
@@ -1001,7 +1001,6 @@ Discovered patterns: ${discoveredCount}/4`
                 )}
               </div>
             )}
-            
             {/* Use extracted TerminalConsole component */}
             <TerminalConsole 
               consoleOutput={consoleOutput}
@@ -1015,6 +1014,28 @@ Discovered patterns: ${discoveredCount}/4`
               onEnter={handleEnterCommand}
               glitchActive={glitchActive}
             />
+            
+            {/* System status - Positioned below input field */}
+            {!isReleaseTime && (
+              <motion.div 
+                className="mt-3 text-sm font-mono px-3 py-2 bg-black/40 rounded border-l-2 w-full"
+                style={{ borderColor: "#33ff66", color: "#33ff66" }}
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <span style={{ opacity: 0.7 }}>// </span>
+                {/* Mobile-friendly layout with flex wrapping */}
+                <div className="inline sm:inline-flex items-center flex-wrap">
+                  <span className="block sm:inline mr-1">SYSTEM STATUS:</span> 
+                  <span className="block sm:inline font-bold">AWAITING COUNTDOWN COMPLETION</span>
+                  <motion.span 
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    style={{ marginLeft: 2 }}
+                  >_</motion.span>
+                </div>
+              </motion.div>
+            )}
           </div>
         </motion.div>
       )}

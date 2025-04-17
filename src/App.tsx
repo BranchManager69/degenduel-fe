@@ -66,6 +66,7 @@ import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import { SystemReports } from "./pages/admin/SystemReports";
 import VanityWalletManagementPage from "./pages/admin/VanityWalletManagementPage";
 import WebSocketHub from "./pages/admin/WebSocketHub";
+import WalletManagementPage from "./pages/admin/WalletManagementPage";
 import { ReferralPage } from "./pages/authenticated/AffiliatePage";
 import MyContestsPage from "./pages/authenticated/MyContestsPage";
 import MyPortfoliosPage from "./pages/authenticated/MyPortfoliosPage";
@@ -92,6 +93,7 @@ import { PublicProfile } from "./pages/public/general/PublicProfile";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
 import { DegenLevelPage } from "./pages/public/leaderboards/DegenLevelPage";
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
+import WalletPage from "./pages/authenticated/WalletPage";
 import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding";
 import { TokensPage } from "./pages/public/tokens/TokensPage";
 // import { TokenWhitelistPage } from "./pages/public/tokens/whitelist"; // Commented out 2025-04-05 - Page hidden
@@ -112,7 +114,8 @@ import { WalletProvider } from "@jup-ag/wallet-adapter";
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
-import { env } from "./config/env";
+// No need to import env if not using it anywhere
+// import { env } from "./config/env";
 import WebSocketAPIPage from "./pages/public/WebSocketAPIPage";
 
 // Lazy AdminChatDashboard
@@ -238,21 +241,22 @@ export const App: React.FC = () => {
     <Router>
       <ConnectionProvider endpoint={solanaEndpoint}>
         <SolanaWalletProvider {...walletConfigSolana}>
-          {env.USE_JUPITER_WALLET && typeof window !== 'undefined' && window.hasOwnProperty('solana') ? (
-            // With Jupiter WalletProvider - only if env flag is true AND window.solana exists
-            <WalletProvider 
-              wallets={walletAdapters}
-              autoConnect={false}
-            >
-              <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
-            <PrivyAuthProvider>
-              <AuthProvider>
-                <TwitterAuthProvider>
-                  <InviteSystemProvider>
-                    <AffiliateSystemProvider>
-                      <WebSocketProvider>
-                        <TokenDataProvider>
-                          <ToastProvider>
+          {/* Always include BOTH wallet providers to avoid conditional provider rendering issues */}
+          {/* The Jupiter wallet provider will be used when env flag is enabled */}
+          <WalletProvider 
+            wallets={walletAdapters}
+            autoConnect={false}
+          >
+            <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
+              <PrivyAuthProvider>
+                <AuthProvider>
+                  <TwitterAuthProvider>
+                    <InviteSystemProvider>
+                      <AffiliateSystemProvider>
+                        {/* WebSocketProvider must come BEFORE components that use it */}
+                        <WebSocketProvider>
+                          <TokenDataProvider>
+                            <ToastProvider>
                             <div className="min-h-screen flex flex-col">
                               <ToastListener />
                               {user?.is_superadmin && <UiDebugPanel />}
@@ -399,6 +403,16 @@ export const App: React.FC = () => {
                                       <AuthenticatedRoute>
                                         <MaintenanceGuard>
                                           <MyPortfoliosPage />
+                                        </MaintenanceGuard>
+                                      </AuthenticatedRoute>
+                                    }
+                                  />
+                                  <Route
+                                    path="/wallet"
+                                    element={
+                                      <AuthenticatedRoute>
+                                        <MaintenanceGuard>
+                                          <WalletPage />
                                         </MaintenanceGuard>
                                       </AuthenticatedRoute>
                                     }
@@ -884,6 +898,14 @@ export const App: React.FC = () => {
                                   }
                                 />
                                 <Route
+                                  path="/admin/wallet-trader"
+                                  element={
+                                    <AdminRoute>
+                                      <WalletManagementPage />
+                                    </AdminRoute>
+                                  }
+                                />
+                                <Route
                                   path="/admin/contest-management/regenerate-image/:contestId"
                                   element={
                                     <AdminRoute>
@@ -1081,7 +1103,6 @@ export const App: React.FC = () => {
             </AuthProvider>
           </PrivyAuthProvider>
         </PrivyProvider>
-      )}
         </SolanaWalletProvider>
       </ConnectionProvider>
     </Router>

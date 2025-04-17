@@ -17,8 +17,28 @@ interface WebSocketInstance {
   connectionError: string | null;
 }
 
-// Singleton instance set by the WebSocketManager [OUTDATED?] component
+// Singleton instance set by the WebSocketManager or WebSocketContext
 let instance: WebSocketInstance | null = null;
+
+// Track which component IDs have already logged warnings to reduce console spam
+const loggedInstanceWarnings = new Set<string>();
+
+// Create a default instance to prevent "WebSocketManager not initialized" errors
+// This ensures hooks will work even before the main WebSocket connection is ready
+if (!instance) {
+  instance = {
+    registerListener: (id: string, _types: string[], _callback: (message: any) => void) => {
+      console.log(`WebSocket: Component '${id}' registered but WebSocket not yet fully initialized`);
+      return () => {}; // No-op cleanup
+    },
+    sendMessage: () => {
+      console.log("WebSocket: Attempted to send message before initialization");
+      return false;
+    },
+    connectionState: ConnectionState.CONNECTING,
+    connectionError: null
+  };
+}
 
 // Function to set up the singleton instance
 /**
@@ -89,15 +109,22 @@ export function useUnifiedWebSocket<T = any>(
     return unregister;
   }, [id, types, topics, onMessage]);
   
-  // Safety check
+  // We should always have an instance now with our default initialization
+  // But just in case, add an extra safety check with much friendlier messaging
   if (!instance) {
+    // Only log once per component ID
+    if (!loggedInstanceWarnings.has(id)) {
+      console.log(`WebSocket: Component '${id}' waiting for WebSocket to fully initialize`);
+      loggedInstanceWarnings.add(id);
+    }
+    
+    // Return a benign fallback that won't crash components
     return {
       sendMessage: () => false,
       isConnected: false,
       isAuthenticated: false,
-      connectionState: ConnectionState.DISCONNECTED,
-      error: "WebSocketManager not initialized",
-      // Subscription helpers
+      connectionState: ConnectionState.CONNECTING,
+      error: "Connecting...",
       subscribe: () => false,
       unsubscribe: () => false,
       request: () => false
