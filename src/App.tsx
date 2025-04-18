@@ -10,11 +10,11 @@
 import React, { lazy, Suspense, useEffect } from "react";
 /* Router */
 import {
-    Navigate,
-    Route,
-    BrowserRouter as Router,
-    Routes,
-    useLocation,
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  useLocation,
 } from "react-router-dom";
 
 // Helper component to redirect while preserving query parameters
@@ -65,14 +65,15 @@ import LogForwarderDebug from "./pages/admin/LogForwarderDebug";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
 import { SystemReports } from "./pages/admin/SystemReports";
 import VanityWalletManagementPage from "./pages/admin/VanityWalletManagementPage";
-import WebSocketHub from "./pages/admin/WebSocketHub";
 import WalletManagementPage from "./pages/admin/WalletManagementPage";
+import WebSocketHub from "./pages/admin/WebSocketHub";
 import { ReferralPage } from "./pages/authenticated/AffiliatePage";
 import MyContestsPage from "./pages/authenticated/MyContestsPage";
 import MyPortfoliosPage from "./pages/authenticated/MyPortfoliosPage";
 import NotificationsPage from "./pages/authenticated/NotificationsPage";
 import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage";
 import { PrivateProfilePage } from "./pages/authenticated/PrivateProfilePage";
+import WalletPage from "./pages/authenticated/WalletPage";
 import ContestChatExample from "./pages/examples/ContestChatExample";
 import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
@@ -93,7 +94,6 @@ import { PublicProfile } from "./pages/public/general/PublicProfile";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
 import { DegenLevelPage } from "./pages/public/leaderboards/DegenLevelPage";
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
-import WalletPage from "./pages/authenticated/WalletPage";
 import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding";
 import { TokensPage } from "./pages/public/tokens/TokensPage";
 // import { TokenWhitelistPage } from "./pages/public/tokens/whitelist"; // Commented out 2025-04-05 - Page hidden
@@ -353,6 +353,16 @@ export const App: React.FC = () => {
                                     path="/rankings/performance"
                                     element={<ContestPerformance />}
                                   />
+
+                                  <Route
+                                    path="/admin/wallet-management"
+                                    element={
+                                      <AdminRoute>
+                                        <WalletManagementPage />
+                                      </AdminRoute>
+                                    }
+                                  />
+
                                   <Route
                                     path="/rankings/global"
                                     element={<GlobalRankings />}
@@ -676,433 +686,7 @@ export const App: React.FC = () => {
             </PrivyAuthProvider>
           </PrivyProvider>
         </WalletProvider>
-      {/* removed legacy fallback branch to prevent duplicate layout */}
-        // Without WalletProvider (original structure)
-        <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
-          <PrivyAuthProvider>
-            <AuthProvider>
-              <TwitterAuthProvider>
-                <InviteSystemProvider>
-                  <AffiliateSystemProvider>
-                    <WebSocketProvider>
-                      <TokenDataProvider>
-                        <ToastProvider>
-                          <div className="min-h-screen flex flex-col">
-                            <ToastListener />
-                            {user?.is_superadmin && <UiDebugPanel />}
-                            {user?.is_superadmin && <ServiceDebugPanel />}
-                            {user?.is_superadmin && <GameDebugPanel />}
-                            <MovingBackground />
-                            <Header />
-                            <EdgeToEdgeTicker />
-                            <ServerDownBanner />
-                            <main className="flex-1 pb-12">
-                              <Routes>
-                                <Route path="/" element={<LandingPage />} />
-                                <Route
-                                  path="/join"
-                                  element={<PreserveQueryParamsRedirect to="/" />}
-                                />
-                                <Route
-                                  path="/contests"
-                                  element={
-                                    <MaintenanceGuard>
-                                      <ContestBrowser />
-                                    </MaintenanceGuard>
-                                  }
-                                />
-                                <Route
-                                  path="/contests/:id"
-                                  element={
-                                    <MaintenanceGuard>
-                                      <ContestDetails />
-                                    </MaintenanceGuard>
-                                  }
-                                />
-                                <Route
-                                  path="/contests/:id/live"
-                                  element={
-                                    <MaintenanceGuard>
-                                      <ContestLobby />
-                                    </MaintenanceGuard>
-                                  }
-                                />
-                                <Route
-                                  path="/contests/:id/results"
-                                  element={
-                                    <MaintenanceGuard>
-                                      <ContestResults />
-                                    </MaintenanceGuard>
-                                  }
-                                />
-                                <Route
-                                  path="/tokens"
-                                  element={
-                                    <MaintenanceGuard>
-                                      <TokensPage />
-                                    </MaintenanceGuard>
-                                  }
-                                />
-                                <Route
-                                  path="/game/virtual-agent"
-                                  element={
-                                    <MaintenanceGuard>
-                                      <VirtualAgentPage />
-                                    </MaintenanceGuard>
-                                  }
-                                />
-                                <Route
-                                  path="/profile/:identifier"
-                                  element={
-                                    <MaintenanceGuard>
-                                      <PublicProfile />
-                                    </MaintenanceGuard>
-                                  }
-                                />
-                                <Route 
-                                  path="/login" 
-                                  element={
-                                    <MaintenanceGuard>
-                                      <LoginPage />
-                                    </MaintenanceGuard>
-                                  } 
-                                />
-                                <Route path="/faq" element={<FAQ />} />
-                                <Route path="/how-it-works" element={<HowItWorks />} />
-                                <Route path="/contact" element={<Contact />} />
-                                <Route path="/blinks-demo" element={<BlinksDemo />} />
-                                <Route
-                                  path="/leaderboards"
-                                  element={<LeaderboardLanding />}
-                                />
-                                <Route 
-                                  path="/leaderboard" 
-                                  element={<DegenLevelPage />} 
-                                />
-                                <Route
-                                  path="/rankings/performance"
-                                  element={<ContestPerformance />}
-                                />
-                                <Route
-                                  path="/rankings/global"
-                                  element={<GlobalRankings />}
-                                />
-                                <Route
-                                  path="/me"
-                                  element={
-                                    <AuthenticatedRoute>
-                                      <MaintenanceGuard>
-                                        <PrivateProfilePage />
-                                      </MaintenanceGuard>
-                                    </AuthenticatedRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/referrals"
-                                  element={
-                                    <AuthenticatedRoute>
-                                      <MaintenanceGuard>
-                                        <ReferralPage />
-                                      </MaintenanceGuard>
-                                    </AuthenticatedRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/notifications"
-                                  element={
-                                    <AuthenticatedRoute>
-                                      <MaintenanceGuard>
-                                        <NotificationsPage />
-                                      </MaintenanceGuard>
-                                    </AuthenticatedRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/my-contests"
-                                  element={
-                                    <AuthenticatedRoute>
-                                      <MaintenanceGuard>
-                                        <MyContestsPage />
-                                      </MaintenanceGuard>
-                                    </AuthenticatedRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/my-portfolios"
-                                  element={
-                                    <AuthenticatedRoute>
-                                      <MaintenanceGuard>
-                                        <MyPortfoliosPage />
-                                      </MaintenanceGuard>
-                                    </AuthenticatedRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/contests/:id/select-tokens"
-                                  element={
-                                    <AuthenticatedRoute>
-                                      <MaintenanceGuard>
-                                        <TokenSelection />
-                                      </MaintenanceGuard>
-                                    </AuthenticatedRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/skyduel"
-                                  element={
-                                    <AdminRoute>
-                                      <Suspense fallback={<div>Loading...</div>}>
-                                        <SkyDuelPage />
-                                      </Suspense>
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/system-reports"
-                                  element={
-                                    <AdminRoute>
-                                      <SystemReports />
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/client-errors"
-                                  element={
-                                    <AdminRoute>
-                                      <ClientErrorsPage />
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin"
-                                  element={
-                                    <AdminRoute>
-                                      <AdminDashboard />
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/ip-ban"
-                                  element={
-                                    <AdminRoute>
-                                      <IpBanManagementPage />
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/vanity-wallets"
-                                  element={
-                                    <AdminRoute>
-                                      <VanityWalletManagementPage />
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/wallet-trader"
-                                  element={
-                                    <AdminRoute>
-                                      <WalletManagementPage />
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/contest-management/regenerate-image/:contestId"
-                                  element={
-                                    <AdminRoute>
-                                      <div>Contest Image Generator Page</div>
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/chat-dashboard"
-                                  element={
-                                    <AdminRoute>
-                                      <Suspense fallback={<div>Loading...</div>}>
-                                        <AdminChatDashboard />
-                                      </Suspense>
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/connection-debugger"
-                                  element={
-                                    <AdminRoute>
-                                      <ConnectionDebugger />
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/websocket-hub"
-                                  element={
-                                    <AdminRoute>
-                                      <Suspense fallback={<div>Loading...</div>}>
-                                        <WebSocketHub />
-                                      </Suspense>
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <SuperAdminDashboard />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/wallet-monitoring"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <WalletMonitoring />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/control-hub"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <ControlPanelHub />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/chat-dashboard"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <Suspense fallback={<div>Loading...</div>}>
-                                        <AdminChatDashboard />
-                                      </Suspense>
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/services"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <ServiceControlPage />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/switchboard"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <ServiceSwitchboard />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/circuit-breaker"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <CircuitBreakerPage />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/service-command-center"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <ServiceCommandCenter />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/websocket-monitor"
-                                  element={
-                                    <Navigate
-                                      to="/superadmin/service-command-center"
-                                      replace
-                                    />
-                                  }
-                                />
-                                <Route
-                                  path="/api-playground"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <ApiPlayground />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/wss-playground"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <WssPlayground />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/admin/ai-testing"
-                                  element={
-                                    <AdminRoute>
-                                      <Suspense fallback={<div>Loading...</div>}>
-                                        <AiTesting />
-                                      </Suspense>
-                                    </AdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/websocket-test"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <Navigate to="/connection-debugger" replace />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/websocket-dashboard"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <Navigate to="/connection-debugger" replace />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/amm-sim"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <AmmSim />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route
-                                  path="/superadmin/log-forwarder"
-                                  element={
-                                    <SuperAdminRoute>
-                                      <LogForwarderDebug />
-                                    </SuperAdminRoute>
-                                  }
-                                />
-                                <Route path="/blinks/*" element={<></>} />
-                                <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
-                                <Route path="*" element={<NotFound />} />
-                                <Route path="/banned" element={<BannedUser />} />
-                                <Route path="/banned-ip" element={<BannedIP />} />
-                                <Route path="/maintenance" element={<Maintenance />} />
-                                <Route path="/examples/contest-chat" element={
-                                  <Suspense fallback={<div>Loading...</div>}>
-                                    <ContestChatExample />
-                                  </Suspense>
-                                } />
-                              </Routes>
-                            </main>
-                            <Footer />
-                            {user && <ContestChatManager />}
-                            <AchievementNotification />
-                            <InviteWelcomeModal />
-                            <BlinkResolver />
-                            <ToastContainer />
-                          </div>
-                        </ToastProvider>
-                      </TokenDataProvider>
-                    </WebSocketProvider>
-                  </AffiliateSystemProvider>
-                </InviteSystemProvider>
-              </TwitterAuthProvider>
-            </AuthProvider>
-          </PrivyAuthProvider>
-      </PrivyProvider>
+
       </SolanaWalletProvider>
       </ConnectionProvider>
     </Router>
