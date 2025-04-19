@@ -66,9 +66,8 @@ const config = {
       // Use our custom React dev loaders instead of direct module paths
       'react': path.resolve(__dirname, './react-dev-fix/react.js'),
       'react-dom': path.resolve(__dirname, './react-dev-fix/react-dom.js'),
-      // Enable normal Vite client instead of our custom stub for better HMR
-      // '/@vite/client': path.resolve(__dirname, './vite-client-stub.js'),
-      // '@vite/client': path.resolve(__dirname, './vite-client-stub.js'),
+      // Stub Vite client to prevent HMR refresh loops in Storybook
+      '/@vite/client': path.resolve(__dirname, './vite-client-stub.js'),
     };
     
     // Server configuration - Enable standard HMR
@@ -80,14 +79,8 @@ const config = {
       headers: {
         'Access-Control-Allow-Origin': '*',
       },
-      hmr: {
-        // Use automatic host detection instead of hardcoding
-        host: undefined, 
-        clientPort: undefined, // Let Vite determine the best port to use
-        protocol: 'ws',
-        timeout: 10000, // Increased timeout for better connection stability
-        overlay: true // Show errors in overlay
-      },
+      // Disable HMR entirely to prevent continuous refresh loops
+      hmr: false,
       // Allow requests from any domain
       fs: {
         strict: true,
