@@ -30,6 +30,17 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Design folder
+design/
+design/screenshots/
+design/OUTDATED_*
+
+# Purgatory
+purgatory/
+
+# HTML tests
+html_tests/
+
 # Runtime data
 pids/
 *.pid
