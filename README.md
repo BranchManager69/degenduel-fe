@@ -1,9 +1,6 @@
-# ⚔️ DEGENDUEL ⚔️
-> **Trade. Compete. Conquer.**
-
 <div align="center">
-  <img src="https://your-logo-url-here.com/logo.png" alt="DegenDuel Logo" width="300">
-
+  <img src="https://degenduel.me/assets/media/logos/transparent_WHITE.png" alt="DegenDuel Logo (White)" width="300">
+  
   [![CI/CD](https://github.com/BranchManager69/degenduel-fe/actions/workflows/test.yml/badge.svg)](https://github.com/BranchManager69/degenduel-fe/actions/workflows/test.yml)
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
@@ -12,6 +9,8 @@
   [![Tailwind](https://img.shields.io/badge/Tailwind-3.4-cyan)](https://tailwindcss.com/)
   [![Solana](https://img.shields.io/badge/Solana-SDK-green)](https://solana.com/)
 </div>
+
+> **Trade. Compete. Conquer.**
 
 ## 📋 Overview
 
