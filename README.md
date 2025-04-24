@@ -1,6 +1,3 @@
-# ⚔️ DEGENDUEL ⚔️
-> **Trade. Compete. Conquer.**
-
 <div align="center">
   <img src="https://degenduel.me/assets/media/logos/transparent_WHITE.png" alt="DegenDuel Logo (White)" width="300">
   
@@ -12,6 +9,8 @@
   [![Tailwind](https://img.shields.io/badge/Tailwind-3.4-cyan)](https://tailwindcss.com/)
   [![Solana](https://img.shields.io/badge/Solana-SDK-green)](https://solana.com/)
 </div>
+
+> **Trade. Compete. Conquer.**
 
 ## 📋 Overview
 
