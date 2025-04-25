@@ -50,6 +50,7 @@ import { PrivyAuthProvider } from "./contexts/PrivyAuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 import { TwitterAuthProvider } from "./contexts/TwitterAuthContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
+import { SolanaConnectionProvider } from "./contexts/SolanaConnectionContext";
 /* Hooks */
 import "jupiverse-kit/dist/index.css";
 import { AffiliateSystemProvider } from "./hooks/useAffiliateSystem";
@@ -90,6 +91,7 @@ import { LandingPage } from "./pages/public/general/LandingPage";
 import LoginPage from "./pages/public/general/LoginPage";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
+import SolanaBlockchainDemo from "./pages/public/general/SolanaBlockchainDemo";
 import { PublicProfile } from "./pages/public/general/PublicProfile";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
 import { DegenLevelPage } from "./pages/public/leaderboards/DegenLevelPage";
@@ -113,7 +115,6 @@ import "./styles/color-schemes.css";
 import { WalletProvider } from "@jup-ag/wallet-adapter";
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
 // No need to import env if not using it anywhere
 // import { env } from "./config/env";
 import WebSocketAPIPage from "./pages/public/WebSocketAPIPage";
@@ -219,6 +220,7 @@ export const App: React.FC = () => {
   // Privy configuration
   const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
   const privyConfig: PrivyClientConfig = {
+    // Login methods configuration
     loginMethods: [
       'email',
       'wallet',
@@ -227,14 +229,62 @@ export const App: React.FC = () => {
       'sms',
       'passkey',
     ],
+    // UI appearance configuration
     appearance: {
       theme: 'dark',
       accentColor: '#5865F2',
+      showWalletLoginFirst: false, // Show all login options equally
     },
+    // Comprehensive embedded wallet configuration
+    // Reference: https://docs.privy.io/wallets/wallets/create/overview
+    embeddedWallets: {
+      // Create embedded wallets for users without existing wallets
+      createOnLogin: 'users-without-wallets',
+      // Allow users to recover wallets across devices
+      requireUserPasswordOnCreate: true
+    },
+    // Social auth configuration (including Twitter)
+    // URL handling is done automatically by auth context
+    // Note: WalletConnect metadata is configured in the wallet provider below
+    // This enables Solana integrations
+    // Reference: https://docs.privy.io/wallets/connectors/setup/configuring-external-connector-chains#solana
+    supportedChains: [
+      {
+        name: 'Solana',
+        // Use the correct ID type (number) for the Chain interface
+        id: 101, // Solana mainnet chain ID
+        // Native currency info required by Chain type
+        nativeCurrency: {
+          name: 'Solana',
+          symbol: 'SOL',
+          decimals: 9
+        },
+        // Properly formatted RPC URLs according to Privy's Chain type
+        rpcUrls: {
+          default: {
+            // Use the appropriate tier endpoint - based on user role
+            http: [
+              // This is for authenticated users
+              `${window.location.origin}/api/solana-rpc`
+            ]
+          },
+          public: {
+            // Endpoint for public visitors with rate limiting
+            http: [`${window.location.origin}/api/solana-rpc/public`]
+          },
+          admin: {
+            // Endpoint for admin operations
+            http: [`${window.location.origin}/api/solana-rpc/admin`]
+          }
+        }
+      }
+    ]
   };      
 
-  // Create a connection to use with Solana wallet adapter - using official Solana cluster API
-  const solanaEndpoint = clusterApiUrl('mainnet-beta');
+  // Create a connection to use with Solana wallet adapter - using our tiered secure RPC proxy
+  // Before authentication, use the public endpoint with limited rate/methods
+  // After authentication, this will be replaced with the appropriate tier endpoint
+  const solanaEndpoint = `${window.location.origin}/api/solana-rpc${user?.is_admin || user?.is_superadmin ? '/admin' : user ? '' : '/public'}`;
   
   // DegenDuel entry
   return (
@@ -255,7 +305,9 @@ export const App: React.FC = () => {
                       <AffiliateSystemProvider>
                         {/* WebSocketProvider must come BEFORE components that use it */}
                         <WebSocketProvider>
-                          <TokenDataProvider>
+                          {/* SolanaConnectionProvider provides RPC connections based on user role */}
+                          <SolanaConnectionProvider>
+                            <TokenDataProvider>
                             <ToastProvider>
                             <div className="min-h-screen flex flex-col">
                               <ToastListener />
@@ -341,6 +393,7 @@ export const App: React.FC = () => {
                                   <Route path="/how-it-works" element={<HowItWorks />} />
                                   <Route path="/contact" element={<Contact />} />
                                   <Route path="/blinks-demo" element={<BlinksDemo />} />
+                                  <Route path="/solana-demo" element={<SolanaBlockchainDemo />} />
                                   <Route
                                     path="/leaderboards"
                                     element={<LeaderboardLanding />}
@@ -678,6 +731,7 @@ export const App: React.FC = () => {
                             </div>
                           </ToastProvider>
                         </TokenDataProvider>
+                        </SolanaConnectionProvider>
                       </WebSocketProvider>
                     </AffiliateSystemProvider>
                   </InviteSystemProvider>

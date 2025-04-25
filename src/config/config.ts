@@ -146,6 +146,9 @@ export const SYSTEM_SETTINGS = {
 // Official Contract Address
 const CONTRACT_ADDRESS_REAL = import.meta.env.VITE_CONTRACT_ADDRESS_REAL || '0x1111111111111111111111111111111111111111';
 const CONTRACT_ADDRESS_FAKE = import.meta.env.VITE_CONTRACT_ADDRESS_FAKE || '0x42069';
+
+// Solana RPC Base URL - points to our proxy system
+const SOLANA_RPC_BASE_URL = `${window.location.origin}/api/solana-rpc`;
 // Token Launch Date/Time
 const RELEASE_DATE_TOKEN_LAUNCH_DATETIME = new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00'); // December 31, 2025 at 11:59 PM EST
 const RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL = import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL || 'December 31, 2025';
@@ -170,6 +173,12 @@ export const config = {
   CONTRACT_ADDRESS: {
     REAL: CONTRACT_ADDRESS_REAL,
     FAKE: CONTRACT_ADDRESS_FAKE
+  },
+  SOLANA: {
+    // Use the real contract address for the DegenDuel token
+    DEGEN_TOKEN_ADDRESS: CONTRACT_ADDRESS_REAL,
+    // Our RPC proxy system URL
+    RPC_BASE_URL: SOLANA_RPC_BASE_URL,
   },
   RELEASE_DATE: {
     PRE_LAUNCH_COUNTDOWN_START: RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_START,

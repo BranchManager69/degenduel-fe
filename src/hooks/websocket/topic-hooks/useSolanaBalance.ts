@@ -2,16 +2,17 @@
  * useSolanaBalance Hook
  * 
  * V69 Standardized WebSocket Hook for Solana Balance Data
- * Implements the exact message format defined in the backend documentation
  * 
  * @author Branch Manager
  * @created 2025-04-10
+ * @updated 2025-04-24 - Updated to use v69 wallet topic
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 import { MessageType } from '../types';
+import { TopicType } from '../index';
 
 // Solana balance state
 export interface SolanaBalanceState {
@@ -29,13 +30,14 @@ const DEFAULT_STATE: SolanaBalanceState = {
   lastUpdate: null
 };
 
-// WebSocket message interface
-interface WebSocketSolanaBalanceMessage {
-  type: string;
-  topic: string;
-  balance?: number;
-  walletAddress?: string;
-  requestId?: string;
+// WebSocket message interface - v69 format
+interface WebSocketWalletMessage {
+  type: string; // 'DATA'
+  topic: string; // 'wallet' or 'wallet-balance'
+  data?: {
+    wallet_address?: string;
+    sol_balance?: number;
+  };
   timestamp?: string;
   message?: string;
   code?: number;
@@ -43,7 +45,7 @@ interface WebSocketSolanaBalanceMessage {
 
 /**
  * Hook for accessing and managing Solana balance data with real-time updates
- * Uses the unified WebSocket system with the solana_balance topic
+ * Uses the unified WebSocket system with the wallet topic
  * 
  * @param walletAddress Optional specific wallet address to monitor
  */
@@ -52,39 +54,35 @@ export function useSolanaBalance(walletAddress?: string) {
   const [state, setState] = useState<SolanaBalanceState>(DEFAULT_STATE);
 
   // Message handler for WebSocket messages
-  const handleMessage = useCallback((message: Partial<WebSocketSolanaBalanceMessage>) => {
+  const handleMessage = useCallback((message: Partial<WebSocketWalletMessage>) => {
     try {
-      // Handle Solana balance updates
-      if (message.type === 'SOLANA_BALANCE_UPDATE' && message.balance !== undefined) {
-        setState(prevState => ({
-          ...prevState,
-          balance: message.balance || 0,
-          isLoading: false,
-          lastUpdate: new Date()
-        }));
+      // Handle wallet balance updates via v69 format
+      if (message.type === 'DATA' && message.topic === 'wallet-balance' && message.data) {
+        const { sol_balance, wallet_address } = message.data;
         
-        dispatchWebSocketEvent('solana_balance_update', {
-          socketType: 'solana_balance',
-          message: `Updated Solana balance: ${message.balance}`,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      // Handle subscription confirmations
-      else if (message.type === 'SUBSCRIBED' && message.topic === 'solana_balance') {
-        console.log(`Successfully subscribed to Solana balance for wallet: ${message.walletAddress}`);
-        
-        if (message.walletAddress && !state.walletAddress) {
+        // Update wallet address if provided
+        if (wallet_address && !state.walletAddress) {
           setState(prevState => ({
             ...prevState,
-            walletAddress: message.walletAddress
+            walletAddress: wallet_address
           }));
         }
-      }
-      
-      // Handle refresh confirmations
-      else if (message.type === 'BALANCE_REFRESHED' && message.topic === 'solana_balance') {
-        console.log(`Solana balance refreshed for wallet: ${message.walletAddress}`);
+        
+        // Update Solana balance if provided
+        if (sol_balance !== undefined) {
+          setState(prevState => ({
+            ...prevState,
+            balance: sol_balance,
+            isLoading: false,
+            lastUpdate: new Date()
+          }));
+          
+          dispatchWebSocketEvent('solana_balance_update', {
+            socketType: TopicType.WALLET,
+            message: `Updated Solana balance: ${sol_balance}`,
+            timestamp: new Date().toISOString()
+          });
+        }
       }
       
       // Handle errors
@@ -100,7 +98,7 @@ export function useSolanaBalance(walletAddress?: string) {
         }
         
         dispatchWebSocketEvent('error', {
-          socketType: 'solana_balance',
+          socketType: TopicType.WALLET,
           message: 'Error in Solana balance WebSocket',
           error: message.message || 'Unknown error'
         });
@@ -109,7 +107,7 @@ export function useSolanaBalance(walletAddress?: string) {
     } catch (err) {
       console.error('[Solana Balance WebSocket] Error processing message:', err);
       dispatchWebSocketEvent('error', {
-        socketType: 'solana_balance',
+        socketType: TopicType.WALLET,
         message: 'Error processing Solana balance data',
         error: err instanceof Error ? err.message : String(err)
       });
@@ -119,9 +117,9 @@ export function useSolanaBalance(walletAddress?: string) {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'solana-balance-hook',
-    [MessageType.DATA, MessageType.ERROR, 'SOLANA_BALANCE_UPDATE', 'SUBSCRIBED', 'BALANCE_REFRESHED', 'ERROR'],
+    [MessageType.DATA, MessageType.ERROR],
     handleMessage,
-    ['solana_balance'] // Use the exact topic name from documentation
+    [TopicType.WALLET, 'wallet-balance', TopicType.SYSTEM] // v69 topics
   );
 
   // Subscribe to Solana balance data when connected
@@ -135,18 +133,15 @@ export function useSolanaBalance(walletAddress?: string) {
         }));
       }
       
-      // Subscribe to Solana balance updates
-      if (walletAddress) {
-        ws.sendMessage({
-          type: 'REQUEST',
-          topic: 'solana_balance',
-          action: 'subscribe',
-          walletAddress
-        });
-      }
+      // Subscribe to wallet balance topic
+      ws.subscribe([TopicType.WALLET, 'wallet-balance']);
+      
+      // Request wallet data including Solana balance
+      const requestParams = walletAddress ? { walletAddress } : {};
+      ws.request(TopicType.WALLET, 'GET_WALLET_DATA', requestParams);
       
       dispatchWebSocketEvent('solana_balance_subscribe', {
-        socketType: 'solana_balance',
+        socketType: TopicType.WALLET,
         message: 'Subscribing to Solana balance data',
         timestamp: new Date().toISOString(),
         walletAddress: walletAddress || 'user wallet'
@@ -165,7 +160,7 @@ export function useSolanaBalance(walletAddress?: string) {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [ws.isConnected, state.isLoading, walletAddress, state.walletAddress]);
+  }, [ws.isConnected, state.isLoading, walletAddress, state.walletAddress, ws.subscribe, ws.request]);
 
   // Get Solana balance
   const refreshBalance = useCallback(() => {
@@ -179,17 +174,12 @@ export function useSolanaBalance(walletAddress?: string) {
       isLoading: true
     }));
     
-    // Request Solana balance
-    ws.sendMessage({
-      type: 'REQUEST',
-      topic: 'solana_balance',
-      action: 'getBalance',
-      walletAddress: walletAddress || state.walletAddress,
-      requestId: `refresh-sol-${Date.now()}`
-    });
+    // Request fresh wallet data
+    const requestParams = walletAddress ? { walletAddress } : {};
+    ws.request(TopicType.WALLET, 'GET_WALLET_DATA', requestParams);
     
     dispatchWebSocketEvent('solana_balance_refresh', {
-      socketType: 'solana_balance',
+      socketType: TopicType.WALLET,
       message: 'Refreshing Solana balance',
       timestamp: new Date().toISOString()
     });
@@ -201,39 +191,7 @@ export function useSolanaBalance(walletAddress?: string) {
         isLoading: false
       }));
     }, 10000);
-  }, [ws.isConnected, walletAddress, state.walletAddress]);
-
-  // Unsubscribe from Solana balance updates
-  const unsubscribe = useCallback(() => {
-    if (!ws.isConnected) {
-      console.warn('[Solana Balance WebSocket] Cannot unsubscribe - WebSocket not connected');
-      return;
-    }
-    
-    // Unsubscribe from Solana balance updates
-    ws.sendMessage({
-      type: 'REQUEST',
-      topic: 'solana_balance',
-      action: 'unsubscribe',
-      walletAddress: walletAddress || state.walletAddress
-    });
-    
-    dispatchWebSocketEvent('solana_balance_unsubscribe', {
-      socketType: 'solana_balance',
-      message: 'Unsubscribing from Solana balance data',
-      timestamp: new Date().toISOString()
-    });
-  }, [ws.isConnected, walletAddress, state.walletAddress]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Unsubscribe when component unmounts
-      if (ws.isConnected && (walletAddress || state.walletAddress)) {
-        unsubscribe();
-      }
-    };
-  }, [ws.isConnected, unsubscribe, walletAddress, state.walletAddress]);
+  }, [ws.isConnected, walletAddress, ws.request]);
 
   // Return Solana balance data and helper functions
   return {
@@ -243,7 +201,6 @@ export function useSolanaBalance(walletAddress?: string) {
     error: ws.error,
     lastUpdate: state.lastUpdate,
     refreshBalance,
-    unsubscribe,
     
     // Helper functions
     getFormattedBalance: useCallback((decimals = 4) => {
