@@ -3,7 +3,7 @@
   "description": "DegenDuel",
   "author": "Branch Manager<branch@branch.bet>",
   "private": true,
-  "version": "1.6.9",
+  "version": "1.9.0",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
