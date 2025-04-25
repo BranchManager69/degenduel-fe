@@ -1,12 +1,15 @@
 import React from 'react';
-import TokenBalance from '../../components/TokenBalance';
-import SolanaBalance from '../../components/SolanaBalance';
+import SolanaTokenDisplay from '../../components/SolanaTokenDisplay';
+import SolanaWalletDisplay from '../../components/SolanaWalletDisplay';
 import { useStore } from '../../store/useStore';
+import { config } from '../../config/config';
 
 /**
  * Wallet Page Component
  * 
- * Displays the user's wallet balances and transactions
+ * Displays the user's wallet balances and transactions with direct blockchain data
+ * 
+ * @updated 2025-04-25 - Using new Solana components with direct blockchain access
  */
 const WalletPage: React.FC = () => {
   const { user } = useStore();
@@ -29,23 +32,34 @@ const WalletPage: React.FC = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Solana Balance Card */}
-        <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-brand-500/20 shadow-lg p-6">
-          <SolanaBalance walletAddress={walletAddress} />
+        <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-brand-500/20 shadow-lg overflow-hidden">
+          <SolanaWalletDisplay 
+            walletAddress={walletAddress} 
+            showTokens={false}
+            showTransactions={false}
+          />
         </div>
         
         {/* Token Balances Card */}
-        <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-brand-500/20 shadow-lg p-6">
-          <TokenBalance walletAddress={walletAddress} />
+        <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-brand-500/20 shadow-lg overflow-hidden">
+          <SolanaTokenDisplay 
+            mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
+            walletAddress={walletAddress}
+            showSupply={true}
+            showHolders={false}
+          />
         </div>
       </div>
       
-      {/* Transactions section could be added here in the future */}
+      {/* Transactions section now shows real transaction data */}
       <div className="mt-12">
         <h2 className="text-2xl font-semibold text-white mb-6">Recent Transactions</h2>
-        <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-brand-500/20 shadow-lg p-6">
-          <p className="text-gray-400 text-center py-10">
-            Transaction history coming soon
-          </p>
+        <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-brand-500/20 shadow-lg overflow-hidden">
+          <SolanaWalletDisplay 
+            walletAddress={walletAddress} 
+            showTokens={false}
+            showTransactions={true}
+          />
         </div>
       </div>
     </div>

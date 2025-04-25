@@ -7,9 +7,10 @@ import { useAuth } from "../../../hooks/useAuth";
 import useBiometricAuth from "../../../hooks/useBiometricAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
-import SolanaBalance from "../../SolanaBalance";
-import TokenBalance from "../../TokenBalance";
+import SolanaWalletDisplay from "../../SolanaWalletDisplay";
+import SolanaTokenDisplay from "../../SolanaTokenDisplay";
 import { AdminControls } from "./UserMenuAdminControls";
+import { config } from "../../../config/config";
 
 // Define the shape of our menu items
 interface MenuItemType {
@@ -449,7 +450,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-400">SOL Balance</span>
                       <div className="text-sm font-medium text-white">
-                        <SolanaBalance walletAddress={user.wallet_address} compact={true} />
+                        <SolanaWalletDisplay walletAddress={user.wallet_address} compact={true} />
                       </div>
                     </div>
                     
@@ -458,7 +459,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                       <span className="text-xs text-gray-400">DegenDuel</span>
                       <div className="text-sm font-medium text-white flex items-center">
                         <span className="text-brand-300">
-                          <TokenBalance walletAddress={user.wallet_address} compact={true} />
+                          <SolanaTokenDisplay 
+                            mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS} 
+                            walletAddress={user.wallet_address} 
+                            compact={true} 
+                          />
                         </span>
                       </div>
                     </div>

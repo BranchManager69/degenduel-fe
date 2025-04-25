@@ -116,8 +116,29 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
 
       const { transaction } = await response.json();
 
+      // Handle different transaction encoding formats
+      // Newer backend returns base64, older code might return base58
+      let processedTransaction = transaction;
+      
+      // Check if transaction is base64 encoded (standard for real @solana/web3.js transactions)
+      const isBase64 = /^[A-Za-z0-9+/=]+$/.test(transaction) && 
+                       (transaction.includes('+') || transaction.includes('/') || transaction.includes('='));
+                       
+      // Check if transaction is base58 encoded (older format)
+      const isBase58 = /^[1-9A-HJ-NP-Za-km-z]+$/.test(transaction);
+      
+      if (isBase64) {
+        // Base64 format - this is the new standard format from real transactions
+        console.log('Using base64 encoded transaction');
+      } else if (isBase58) {
+        // Base58 format - convert if needed for your wallet adapter
+        console.log('Using base58 encoded transaction');
+      } else {
+        console.warn('Unknown transaction format - attempting to use as-is');
+      }
+
       // Actually sign and send the transaction using the Solana wallet
-      const result = await signAndSendTransaction(transaction);
+      const result = await signAndSendTransaction(processedTransaction);
       
       // Return the real signature
       onSuccess?.(result.signature);

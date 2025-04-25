@@ -32,7 +32,7 @@ DegenDuel is a cutting-edge DeFi trading competition platform where users test t
 ### Development Setup
 ```bash
 # Clone repository (with correct URL)
-git clone https://github.com/yourusername/degenduel-fe.git
+git clone https://github.com/branchmanager69/degenduel-fe.git
 cd degenduel-fe
 
 # Install dependencies
