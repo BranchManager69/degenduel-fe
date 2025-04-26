@@ -78,10 +78,8 @@ export function useJupiterWallet(): UseJupiterWalletReturn {
       wallets = safeGet(adapter, 'wallets', []);
       jupiterSignMessage = safeGet(adapter, 'signMessage', null);
       
-      // Only log success if we actually got the adapter
-      if (adapter && connected !== undefined) {
-        console.log("[Jupiter Wallet] Adapter accessed successfully");
-      }
+      // Don't log successful adapter access to avoid console spam
+      // The message was previously causing excessive log entries
     } catch (adapterError) {
       // Don't crash here - gracefully fall back
       console.warn("[Jupiter Wallet] Error in adapter access, using fallbacks");

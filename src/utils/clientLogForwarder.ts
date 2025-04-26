@@ -43,6 +43,58 @@ interface LogEntry {
   tags?: string[];
 }
 
+// Rate limiting for repeated logs
+interface MessageCacheEntry {
+  count: number;
+  lastTime: number;
+}
+let messageCache: Map<string, MessageCacheEntry> = new Map();
+const MESSAGE_COOLDOWN = 5000; // 5 seconds between showing the same log message
+const MAX_REPEAT_COUNT = 3; // Show the message at most 3 times in the cooldown period
+
+// Check if a message should be rate limited
+const shouldRateLimit = (message: string): boolean => {
+  // Only rate-limit specific noisy messages
+  if (!message.includes('[Jupiter Wallet]') && 
+      !message.includes('WebSocketManager:') && 
+      !message.includes('WalletContext') &&
+      !message.includes('Cannot refresh tokens') &&
+      !message.includes('App configuration has Solana wallet login enabled')) {
+    return false;
+  }
+  
+  const key = message.substring(0, 50); // Use first 50 chars as cache key
+  const now = Date.now();
+  const cacheEntry = messageCache.get(key);
+  
+  if (cacheEntry) {
+    // If we've shown this message too many times recently, suppress it
+    if (cacheEntry.count >= MAX_REPEAT_COUNT && now - cacheEntry.lastTime < MESSAGE_COOLDOWN) {
+      return true; // Should be rate limited
+    }
+    
+    // Update count and time
+    cacheEntry.count++;
+    cacheEntry.lastTime = now;
+    messageCache.set(key, cacheEntry);
+  } else {
+    // First time seeing this message
+    messageCache.set(key, { count: 1, lastTime: now });
+  }
+  
+  return false; // Should not be rate limited
+};
+
+// Periodically clean up the message cache to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of messageCache.entries()) {
+    if (now - entry.lastTime > MESSAGE_COOLDOWN * 2) {
+      messageCache.delete(key);
+    }
+  }
+}, 60000); // Clean up every minute
+
 // Queue to store logs
 let logQueue: LogEntry[] = [];
 let isSending = false;
@@ -77,18 +129,45 @@ export const initializeClientLogForwarder = (): void => {
 
   // Replace console methods to capture logs
   console.log = (...args: any[]) => {
+    // Rate limit noisy log messages
+    if (args.length > 0) {
+      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
+      if (shouldRateLimit(message)) {
+        // Skip showing this message due to rate limiting
+        return;
+      }
+    }
+    
     originalConsole.log(...args);
     // Don't capture regular logs by default (would be too noisy)
     // addToQueue(LogLevel.DEBUG, args);
   };
 
   console.info = (...args: any[]) => {
+    // Rate limit noisy log messages
+    if (args.length > 0) {
+      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
+      if (shouldRateLimit(message)) {
+        // Skip showing this message due to rate limiting
+        return;
+      }
+    }
+    
     originalConsole.info(...args);
     // Don't capture info logs by default (would be too noisy)
     // addToQueue(LogLevel.INFO, args);
   };
 
   console.warn = (...args: any[]) => {
+    // Rate limit noisy log messages
+    if (args.length > 0) {
+      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
+      if (shouldRateLimit(message)) {
+        // Skip showing this message due to rate limiting
+        return;
+      }
+    }
+    
     originalConsole.warn(...args);
     
     // Only send if verbose logging is enabled, or filter noisy warnings
@@ -105,8 +184,11 @@ export const initializeClientLogForwarder = (): void => {
             message.includes('WalletContext without providing one') ||
             message.includes('Solana wallet connectors have been passed') ||
             message.includes('[Jupiter Wallet]') ||
-            message.includes('UnifiedTicker: ')) {
-          // Don't forward to server, but still visible in console
+            message.includes('UnifiedTicker: ') ||
+            message.includes('[TokenData]') ||
+            message.includes('WebSocketManager:') ||
+            message.includes('Cannot refresh tokens')) {
+          // Don't forward to server, but still visible in console (unless rate limited)
           return;
         }
         
@@ -120,6 +202,15 @@ export const initializeClientLogForwarder = (): void => {
   };
 
   console.error = (...args: any[]) => {
+    // Rate limit noisy log messages
+    if (args.length > 0) {
+      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
+      if (shouldRateLimit(message)) {
+        // Skip showing this message due to rate limiting
+        return;
+      }
+    }
+    
     originalConsole.error(...args);
     
     // Only send if verbose logging is enabled, or filter noisy errors
@@ -135,9 +226,12 @@ export const initializeClientLogForwarder = (): void => {
         if (message.includes('tried to read "publicKey" on a WalletContext') ||
             message.includes('tried to read "wallet" on a WalletContext') ||
             message.includes('tried to read "wallets" on a WalletContext') ||
-            message.includes('You have tried to read') && message.includes('WalletContext') ||
-            message.includes('[Jupiter Wallet]')) {
-          // Don't forward to server, but still visible in console
+            (message.includes('You have tried to read') && message.includes('WalletContext')) ||
+            message.includes('[Jupiter Wallet]') ||
+            message.includes('App configuration has Solana wallet login enabled') ||
+            message.includes('WebSocketManager:') ||
+            message.includes('Solana wallet connectors have been passed')) {
+          // Don't forward to server, but still visible in console (unless rate limited)
           return;
         }
         
