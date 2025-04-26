@@ -45,6 +45,7 @@ import { ToastContainer, ToastListener, ToastProvider } from "./components/toast
 import { MovingBackground } from "./components/ui/MovingBackground";
 /* Contexts */
 import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
+import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PrivyAuthProvider } from "./contexts/PrivyAuthContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
@@ -114,6 +115,7 @@ import "./styles/color-schemes.css";
 /* eslint-disable no-unused-vars */
 import { WalletProvider } from "@jup-ag/wallet-adapter";
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
+import { Adapter } from "@solana/wallet-adapter-base";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 // No need to import env if not using it anywhere
 // import { env } from "./config/env";
@@ -132,7 +134,7 @@ export const App: React.FC = () => {
   const { user } = useStore();
   
   // Create wallet adapters for both Jupiter wallet and Solana wallet adapter
-  const walletAdapters = [
+  const walletAdapters: Adapter[] = [
     new PhantomWalletAdapter(),
     new SolflareWalletAdapter()
   ];
@@ -234,6 +236,7 @@ export const App: React.FC = () => {
       theme: 'dark',
       accentColor: '#5865F2',
       showWalletLoginFirst: false, // Show all login options equally
+      walletChainType: 'ethereum-and-solana', // Enable Solana wallets in UI
     },
     // Comprehensive embedded wallet configuration
     // Reference: https://docs.privy.io/wallets/wallets/create/overview
@@ -242,6 +245,17 @@ export const App: React.FC = () => {
       createOnLogin: 'users-without-wallets',
       // Allow users to recover wallets across devices
       requireUserPasswordOnCreate: true
+    },
+    // External wallets integration - this wires up Solana connectors to Privy
+    // This is the fix for issue #4 - wire Solana connectors into Privy
+    externalWallets: {
+      solana: {
+        // Use Privy's helper from @privy-io/react-auth/solana to set up connectors
+        connectors: toSolanaWalletConnectors({
+          // Specify that we don't want automatic connection
+          shouldAutoConnect: false
+        })
+      }
     },
     // Social auth configuration (including Twitter)
     // URL handling is done automatically by auth context

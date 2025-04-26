@@ -133,7 +133,7 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       ) : (
         <FaTwitter className="text-[#1DA1F2]" />
       )}
-      {linkMode ? "Link Twitter Account" : "Login with Twitter"}
+      {linkMode ? "Link Twitter" : "Twitter"}
     </Button>
   );
 };

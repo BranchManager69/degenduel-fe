@@ -112,7 +112,7 @@ const PrivyLoginButton: React.FC<PrivyLoginButtonProps> = ({
           <path d="M78 78L95.7756 87.75V107.25L78 117L60.2244 107.25V87.75L78 78Z" fill="currentColor" stroke="currentColor" strokeWidth="3"/>
         </svg>
       )}
-      <span>Sign in with Privy</span>
+      <span>Privy</span>
     </Button>
   );
 };

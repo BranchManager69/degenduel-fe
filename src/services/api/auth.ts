@@ -267,6 +267,11 @@ export const verifyPrivyToken = async (
       ...deviceInfo
     };
 
+    // Create an AbortController for timeout control
+    const controller = new AbortController();
+    // Set a 15-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const response = await axios.post(
       `${API_URL}/auth/verify-privy`,
       requestData,
@@ -276,10 +281,17 @@ export const verifyPrivyToken = async (
           Accept: "application/json",
           "X-Debug": "true",
           Origin: window.location.origin,
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache"
         },
         withCredentials: true,
+        signal: controller.signal,
+        timeout: 15000, // 15-second timeout
       }
     );
+
+    // Clear the timeout
+    clearTimeout(timeoutId);
 
     // If debug mode is enabled, log the response
     if (DDAPI_DEBUG_MODE === "true") {
@@ -311,17 +323,51 @@ export const verifyPrivyToken = async (
       device: response.data.device,
     };
   } catch (error: any) {
-    // Handle 502 Bad Gateway specifically
-    if (error?.response?.status === 502) {
-      throw new Error(
-        "Server is currently unavailable. Please try again in a few minutes."
-      );
+    // Handle AbortController timeout
+    if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+      throw new Error("Privy verification timed out. Please try again later.");
     }
 
-    const errorMessage =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to verify Privy login";
+    // Handle specific HTTP error status codes
+    if (error?.response) {
+      switch (error.response.status) {
+        case 400:
+          // Missing required fields
+          throw new Error("Missing required information for login. Please try again.");
+        
+        case 401:
+          // Invalid token
+          throw new Error("Your login session has expired. Please log in again.");
+        
+        case 404:
+          // No user found
+          throw new Error("User account not found. Please create an account first.");
+        
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          // Server errors
+          throw new Error("Server is currently unavailable. Please try again in a few minutes.");
+        
+        default:
+          // Use server-provided error if available
+          if (error.response.data?.message) {
+            throw new Error(error.response.data.message);
+          }
+      }
+    }
+
+    // Check for specific error patterns
+    const errorMsg = error.message || '';
+    if (errorMsg.includes('Failed to get user details from Privy')) {
+      throw new Error("Unable to retrieve your account information. Please try again later.");
+    } else if (errorMsg.includes('No wallet address')) {
+      throw new Error("No wallet found in your account. Please connect a wallet first.");
+    }
+
+    // Default error message
+    const errorMessage = error?.message || "Failed to verify Privy login";
     throw new Error(errorMessage);
   }
 };
