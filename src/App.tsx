@@ -248,7 +248,10 @@ export const App: React.FC = () => {
     externalWallets: {
       solana: {
         // Use the wallet adapters that were defined above
-        connectors: walletAdapters
+        connectors: walletAdapters,
+        // Enable built-in Phantom wallet in case the user doesn't have adapters
+        // This ensures we always have at least one wallet option
+        enabled: true
       }
     },
     // Social auth configuration (including Twitter)

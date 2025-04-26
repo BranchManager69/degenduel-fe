@@ -328,17 +328,46 @@ export const verifyPrivyToken = async (
       throw new Error("Privy verification timed out. Please try again later.");
     }
 
-    // Handle 502 Bad Gateway specifically
-    if (error?.response?.status === 502) {
-      throw new Error(
-        "Server is currently unavailable. Please try again in a few minutes."
-      );
+    // Handle specific HTTP error status codes
+    if (error?.response) {
+      switch (error.response.status) {
+        case 400:
+          // Missing required fields
+          throw new Error("Missing required information for login. Please try again.");
+        
+        case 401:
+          // Invalid token
+          throw new Error("Your login session has expired. Please log in again.");
+        
+        case 404:
+          // No user found
+          throw new Error("User account not found. Please create an account first.");
+        
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          // Server errors
+          throw new Error("Server is currently unavailable. Please try again in a few minutes.");
+        
+        default:
+          // Use server-provided error if available
+          if (error.response.data?.message) {
+            throw new Error(error.response.data.message);
+          }
+      }
     }
 
-    const errorMessage =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to verify Privy login";
+    // Check for specific error patterns
+    const errorMsg = error.message || '';
+    if (errorMsg.includes('Failed to get user details from Privy')) {
+      throw new Error("Unable to retrieve your account information. Please try again later.");
+    } else if (errorMsg.includes('No wallet address')) {
+      throw new Error("No wallet found in your account. Please connect a wallet first.");
+    }
+
+    // Default error message
+    const errorMessage = error?.message || "Failed to verify Privy login";
     throw new Error(errorMessage);
   }
 };
