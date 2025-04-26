@@ -173,12 +173,12 @@ export const App: React.FC = () => {
   
   // Initialize scrollbar visibility
   useScrollbarVisibility();
+  
+  // Call useAuth at the component top level to follow React hook rules
+  const { checkAuth } = useAuth();
 
   useEffect(() => {
     // Only run auth checks after all providers are properly initialized
-    // Get auth context inside this effect to avoid circular dependencies
-    const { checkAuth } = useAuth();
-    
     // Always validate auth on startup, regardless of stored user state
     const validateAuth = async () => {
       console.log("[Auth] Validating authentication status on app startup");
@@ -246,7 +246,7 @@ export const App: React.FC = () => {
       ); // Remove visibility change listener
       window.removeEventListener("online", handleOnlineStatus); // Remove online status listener
     };
-  }, [user]);
+  }, [user, checkAuth]);
 
   // Privy configuration
   const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
