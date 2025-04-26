@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
-import { ddApi } from "../../../services/dd-api";
+import useTokenData from "../../../hooks/useTokenData";
 
 interface TokensPreviewSectionProps {
   maxTokens?: number; // Maximum number of tokens to display
@@ -18,21 +18,17 @@ export const TokensPreviewSection: React.FC<TokensPreviewSectionProps> = ({
   const [loading, setLoading] = useState(initialLoading);
   const [error, setError] = useState<string | null>(null);
   
-  // Fetch tokens data
+  // Use WebSocket-based token data hook
+  const { tokens: wsTokens, isConnected } = useTokenData("all");
+  
+  // Process tokens when WebSocket data is available
   useEffect(() => {
-    const fetchTokens = async () => {
-      try {
-        setLoading(true);
+    try {
+      if (wsTokens && wsTokens.length > 0) {
+        setLoading(false);
         
-        // Fetch tokens data from the API
-        const response = await ddApi.fetch("/dd-serv/tokens");
-        const data = await response.json();
-        
-        // Extract the tokens data from the response
-        const tokensData = Array.isArray(data) ? data : data.data || [];
-        
-        // Transform the data to match our Token interface
-        const transformedTokens = tokensData.map((token: any) => ({
+        // Transform tokens to match our expected format
+        const transformedTokens = wsTokens.map((token: any) => ({
           contractAddress: token.contractAddress || token.address,
           name: token.name,
           symbol: token.symbol,
@@ -61,16 +57,13 @@ export const TokensPreviewSection: React.FC<TokensPreviewSectionProps> = ({
         
         // Take only the top N tokens
         setTokens(sortedTokens.slice(0, maxTokens));
-        setLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch tokens:", err);
-        setError("Failed to load tokens data");
-        setLoading(false);
       }
-    };
-
-    fetchTokens();
-  }, [maxTokens]);
+    } catch (err) {
+      console.error("Failed to process tokens:", err);
+      setError("Failed to process tokens data");
+      setLoading(false);
+    }
+  }, [wsTokens, maxTokens]);
 
   // Helper function to get a color based on token symbol - for visual variety
   const getTokenColor = useCallback((symbol: string): string => {

@@ -23,6 +23,8 @@ export const TokenSparkline: React.FC<TokenSparklineProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // For now, we'll keep using the existing API endpoint
+    // This will be replaced with WebSocket-based price history in a future update
     const fetchPriceHistory = async () => {
       try {
         setError(null);
@@ -68,6 +70,9 @@ export const TokenSparkline: React.FC<TokenSparklineProps> = ({
     };
 
     fetchPriceHistory();
+    
+    // TODO: In the future, implement WebSocket subscription for real-time price history
+    // This would use the market-data topic with a specific request for historical data
   }, [tokenAddress]);
 
   if (error === "unavailable") {

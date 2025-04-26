@@ -6,6 +6,8 @@ import { ddApi } from "../../services/dd-api";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Select } from "../ui/Select";
+// Note: Admin functionality still uses API for mutations
+// WebSocket is read-only for token data
 
 interface AddTokenModalProps {
   isOpen: boolean;
