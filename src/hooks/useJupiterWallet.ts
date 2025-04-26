@@ -60,12 +60,22 @@ export function useJupiterWallet(): UseJupiterWalletReturn {
       };
       
       // Try to get the adapter object without accessing its properties
-      let adapter;
-      try {
-        adapter = useJupiterWalletAdapter();
-      } catch (e) {
-        console.warn("[Jupiter Wallet] Unable to access wallet adapter, using fallbacks");
-        adapter = null;
+      // Do this in a way that doesn't throw when no provider exists
+      let adapter = null;
+      
+      // Detect if the WalletProvider exists in the React context tree
+      const hasWalletProvider = typeof window !== 'undefined' && 
+                               (window as any)?.__JUP_WALLET_PROVIDER_EXISTS === true;
+      
+      if (hasWalletProvider) {
+        try {
+          adapter = useJupiterWalletAdapter();
+          // Only set window flag to true if we successfully get an adapter
+          (window as any).__JUP_WALLET_ADAPTER_INITIALIZED = true;
+        } catch (e) {
+          // Silent failure - don't log warning every time
+          adapter = null;
+        }
       }
       
       // Now safely access each property with fallbacks
