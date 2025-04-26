@@ -345,14 +345,18 @@ export const AdminDashboard: React.FC = () => {
       <div data-testid="admin-dashboard">
 
       <div className="container mx-auto p-6 space-y-8 relative z-10">
-        {/* Header */}
+        {/* Header with animated gradient */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-100">
-              Admin Control Center
+          <div className="relative group">
+            <h1 className="text-3xl font-display text-gray-100 relative">
+              <span className="bg-gradient-to-r from-brand-400 to-cyber-400 bg-clip-text text-transparent animate-gradientX">
+                Admin Control Center
+              </span>
+              <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-brand-400 to-cyber-400 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
             </h1>
-            <p className="text-gray-400 mt-2">
+            <p className="text-gray-400 mt-2 font-mono text-sm">
               System management and monitoring interface
+              <span className="inline-block ml-1 w-2 h-4 bg-brand-500 opacity-80 animate-pulse"></span>
             </p>
           </div>
           <div className="flex gap-3">
@@ -800,7 +804,13 @@ export const AdminDashboard: React.FC = () => {
 
             {/* User Management Section */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-100 mb-4 bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">User</h2>
+              <h2 className="text-xl font-display mb-3 relative group">
+                <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent animate-gradientX">
+                  User Management
+                </span>
+                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-purple-400 to-purple-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+              </h2>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {adminSections
                   .filter(section => section.category === "User")
@@ -808,16 +818,19 @@ export const AdminDashboard: React.FC = () => {
                     <motion.div
                       key={section.id}
                       className={`
-                        bg-dark-200/70 backdrop-blur-lg rounded-xl border-2
+                        bg-dark-200/75 backdrop-blur-lg border-2
                         ${
                           selectedSection === section.id
-                            ? `border-${section.color}-500/50 shadow-lg shadow-${section.color}-500/10`
-                            : `border-${section.color}-500/30 hover:border-${section.color}-500/50`
+                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                         }
-                        transition-all duration-300 group relative
+                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
                       `}
                       whileHover={{ scale: 1.02, y: -4 }}
                     >
+                      {/* Scanner line effect */}
+                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                      
                       {section.isNew && (
                         <div className="absolute -top-2 -right-2 z-10">
                           <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
@@ -825,30 +838,30 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      
                       {/* Card content rendering */}
                       {section.link ? (
-                        <Link to={section.link} className="block p-6 h-full">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                        <Link to={section.link} className="block h-full">
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${section.color}-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity`}
-                            >
-                              →
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </Link>
                       ) : (
@@ -859,33 +872,33 @@ export const AdminDashboard: React.FC = () => {
                             )
                           }
                           data-section-id={section.id}
-                          className="block w-full p-6 text-left"
+                          className="block w-full text-left"
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${
-                                section.color
-                              }-300 text-lg transform transition-all ${
-                                selectedSection === section.id ? "rotate-180" : ""
-                              }`}
-                            >
-                              ↓
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Toggle indicator */}
+                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                            ↓
+                          </div>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </button>
                       )}
@@ -896,7 +909,7 @@ export const AdminDashboard: React.FC = () => {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="px-6 pb-6"
+                          className="mt-4"
                         >
                           <div className="pt-4 border-t border-dark-300">
                             {section.component}
@@ -910,7 +923,13 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Contest Management Section */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-100 mb-4 bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">Contest</h2>
+              <h2 className="text-xl font-display mb-3 relative group">
+                <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradientX">
+                  Contest Management
+                </span>
+                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-yellow-400 to-yellow-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+              </h2>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {adminSections
                   .filter(section => section.category === "Contest")
@@ -918,16 +937,19 @@ export const AdminDashboard: React.FC = () => {
                     <motion.div
                       key={section.id}
                       className={`
-                        bg-dark-200/70 backdrop-blur-lg rounded-xl border-2
+                        bg-dark-200/75 backdrop-blur-lg border-2
                         ${
                           selectedSection === section.id
-                            ? `border-${section.color}-500/50 shadow-lg shadow-${section.color}-500/10`
-                            : `border-${section.color}-500/30 hover:border-${section.color}-500/50`
+                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                         }
-                        transition-all duration-300 group relative
+                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
                       `}
                       whileHover={{ scale: 1.02, y: -4 }}
                     >
+                      {/* Scanner line effect */}
+                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                      
                       {section.isNew && (
                         <div className="absolute -top-2 -right-2 z-10">
                           <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
@@ -935,30 +957,30 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      
                       {/* Card content rendering */}
                       {section.link ? (
-                        <Link to={section.link} className="block p-6 h-full">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                        <Link to={section.link} className="block h-full">
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${section.color}-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity`}
-                            >
-                              →
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </Link>
                       ) : (
@@ -969,33 +991,33 @@ export const AdminDashboard: React.FC = () => {
                             )
                           }
                           data-section-id={section.id}
-                          className="block w-full p-6 text-left"
+                          className="block w-full text-left"
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${
-                                section.color
-                              }-300 text-lg transform transition-all ${
-                                selectedSection === section.id ? "rotate-180" : ""
-                              }`}
-                            >
-                              ↓
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Toggle indicator */}
+                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                            ↓
+                          </div>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </button>
                       )}
@@ -1006,7 +1028,7 @@ export const AdminDashboard: React.FC = () => {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="px-6 pb-6"
+                          className="mt-4"
                         >
                           <div className="pt-4 border-t border-dark-300">
                             {section.component}
@@ -1020,7 +1042,13 @@ export const AdminDashboard: React.FC = () => {
 
             {/* Financial Operations Section */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-100 mb-4 bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent">Financial</h2>
+              <h2 className="text-xl font-display mb-3 relative group">
+                <span className="bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent animate-gradientX">
+                  Financial Operations
+                </span>
+                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-green-400 to-green-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+              </h2>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {adminSections
                   .filter(section => section.category === "Financial")
@@ -1028,16 +1056,19 @@ export const AdminDashboard: React.FC = () => {
                     <motion.div
                       key={section.id}
                       className={`
-                        bg-dark-200/70 backdrop-blur-lg rounded-xl border-2
+                        bg-dark-200/75 backdrop-blur-lg border-2
                         ${
                           selectedSection === section.id
-                            ? `border-${section.color}-500/50 shadow-lg shadow-${section.color}-500/10`
-                            : `border-${section.color}-500/30 hover:border-${section.color}-500/50`
+                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                         }
-                        transition-all duration-300 group relative
+                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
                       `}
                       whileHover={{ scale: 1.02, y: -4 }}
                     >
+                      {/* Scanner line effect */}
+                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                      
                       {section.isNew && (
                         <div className="absolute -top-2 -right-2 z-10">
                           <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
@@ -1045,30 +1076,30 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      
                       {/* Card content rendering */}
                       {section.link ? (
-                        <Link to={section.link} className="block p-6 h-full">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                        <Link to={section.link} className="block h-full">
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${section.color}-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity`}
-                            >
-                              →
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </Link>
                       ) : (
@@ -1079,33 +1110,33 @@ export const AdminDashboard: React.FC = () => {
                             )
                           }
                           data-section-id={section.id}
-                          className="block w-full p-6 text-left"
+                          className="block w-full text-left"
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${
-                                section.color
-                              }-300 text-lg transform transition-all ${
-                                selectedSection === section.id ? "rotate-180" : ""
-                              }`}
-                            >
-                              ↓
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Toggle indicator */}
+                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                            ↓
+                          </div>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </button>
                       )}
@@ -1116,7 +1147,7 @@ export const AdminDashboard: React.FC = () => {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="px-6 pb-6"
+                          className="mt-4"
                         >
                           <div className="pt-4 border-t border-dark-300">
                             {section.component}
@@ -1130,10 +1161,17 @@ export const AdminDashboard: React.FC = () => {
 
             {/* System Section */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-100 mb-4 bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">System</h2>
+              <h2 className="text-xl font-display mb-3 relative group">
+                <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent animate-gradientX">
+                  System
+                </span>
+                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-blue-400 to-blue-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+              </h2>
               
               {/* Core System */}
-              <h3 className="text-lg font-medium text-gray-300 mb-3 ml-1">Core System</h3>
+              <h3 className="font-medium text-gray-300 mb-3 ml-1 font-mono text-sm">
+                <span className="text-blue-400">☰</span> CORE SYSTEM
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 {adminSections
                   .filter(section => section.category === "System-Core")
@@ -1141,16 +1179,19 @@ export const AdminDashboard: React.FC = () => {
                     <motion.div
                       key={section.id}
                       className={`
-                        bg-dark-200/70 backdrop-blur-lg rounded-xl border-2
+                        bg-dark-200/75 backdrop-blur-lg border-2
                         ${
                           selectedSection === section.id
-                            ? `border-${section.color}-500/50 shadow-lg shadow-${section.color}-500/10`
-                            : `border-${section.color}-500/30 hover:border-${section.color}-500/50`
+                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                         }
-                        transition-all duration-300 group relative
+                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
                       `}
                       whileHover={{ scale: 1.02, y: -4 }}
                     >
+                      {/* Scanner line effect */}
+                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                      
                       {section.isNew && (
                         <div className="absolute -top-2 -right-2 z-10">
                           <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
@@ -1158,30 +1199,30 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      
                       {/* Card content rendering */}
                       {section.link ? (
-                        <Link to={section.link} className="block p-6 h-full">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                        <Link to={section.link} className="block h-full">
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${section.color}-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity`}
-                            >
-                              →
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </Link>
                       ) : (
@@ -1192,33 +1233,33 @@ export const AdminDashboard: React.FC = () => {
                             )
                           }
                           data-section-id={section.id}
-                          className="block w-full p-6 text-left"
+                          className="block w-full text-left"
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${
-                                section.color
-                              }-300 text-lg transform transition-all ${
-                                selectedSection === section.id ? "rotate-180" : ""
-                              }`}
-                            >
-                              ↓
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Toggle indicator */}
+                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                            ↓
+                          </div>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </button>
                       )}
@@ -1229,7 +1270,7 @@ export const AdminDashboard: React.FC = () => {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="px-6 pb-6"
+                          className="mt-4"
                         >
                           <div className="pt-4 border-t border-dark-300">
                             {section.component}
@@ -1241,7 +1282,9 @@ export const AdminDashboard: React.FC = () => {
               </div>
               
               {/* Testing & Playground */}
-              <h3 className="text-lg font-medium text-gray-300 mb-3 ml-1">Testing & Playground</h3>
+              <h3 className="font-medium text-gray-300 mb-3 ml-1 font-mono text-sm">
+                <span className="text-blue-400">⚡</span> TESTING & PLAYGROUND
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {adminSections
                   .filter(section => section.category === "System-Testing")
@@ -1249,16 +1292,19 @@ export const AdminDashboard: React.FC = () => {
                     <motion.div
                       key={section.id}
                       className={`
-                        bg-dark-200/70 backdrop-blur-lg rounded-xl border-2
+                        bg-dark-200/75 backdrop-blur-lg border-2
                         ${
                           selectedSection === section.id
-                            ? `border-${section.color}-500/50 shadow-lg shadow-${section.color}-500/10`
-                            : `border-${section.color}-500/30 hover:border-${section.color}-500/50`
+                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                         }
-                        transition-all duration-300 group relative
+                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
                       `}
                       whileHover={{ scale: 1.02, y: -4 }}
                     >
+                      {/* Scanner line effect */}
+                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                      
                       {section.isNew && (
                         <div className="absolute -top-2 -right-2 z-10">
                           <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
@@ -1266,30 +1312,30 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      
                       {/* Card content rendering */}
                       {section.link ? (
-                        <Link to={section.link} className="block p-6 h-full">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                        <Link to={section.link} className="block h-full">
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${section.color}-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity`}
-                            >
-                              →
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </Link>
                       ) : (
@@ -1300,33 +1346,33 @@ export const AdminDashboard: React.FC = () => {
                             )
                           }
                           data-section-id={section.id}
-                          className="block w-full p-6 text-left"
+                          className="block w-full text-left"
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div
-                                className={`text-3xl mb-3 text-${section.color}-300 group-hover:scale-110 transition-transform`}
-                              >
-                                {section.icon}
-                              </div>
-                              <h3
-                                className={`text-xl font-bold text-${section.color}-200 mb-2`}
-                              >
-                                {section.title}
-                              </h3>
-                              <p className="text-gray-400 text-sm">
-                                {section.description}
-                              </p>
+                          <div className="flex items-center mb-3">
+                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                              {section.icon}
                             </div>
-                            <div
-                              className={`text-${
-                                section.color
-                              }-300 text-lg transform transition-all ${
-                                selectedSection === section.id ? "rotate-180" : ""
-                              }`}
-                            >
-                              ↓
-                            </div>
+                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                              {section.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Divider that matches the card's color theme */}
+                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                          
+                          {/* Enhanced description with better formatting */}
+                          <p className="text-gray-300 text-sm font-mono">
+                            <span className={`text-${section.color}-200`}>→</span> {section.description}
+                          </p>
+                          
+                          {/* Toggle indicator */}
+                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                            ↓
+                          </div>
+                          
+                          {/* Corner accent - sharper edge */}
+                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                           </div>
                         </button>
                       )}
@@ -1337,7 +1383,7 @@ export const AdminDashboard: React.FC = () => {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="px-6 pb-6"
+                          className="mt-4"
                         >
                           <div className="pt-4 border-t border-dark-300">
                             {section.component}
@@ -1352,7 +1398,7 @@ export const AdminDashboard: React.FC = () => {
 
           {/* Admin Logs Panel - 25% width on desktop, full width on mobile */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6 space-y-6">
+            <div className="sticky top-6 space-y-6 max-h-screen overflow-hidden">
               <AdminLogsPanel />
             </div>
           </div>

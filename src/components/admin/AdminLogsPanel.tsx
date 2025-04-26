@@ -101,45 +101,60 @@ export const AdminLogsPanel: React.FC = () => {
         bgClass: 'bg-red-900/50',
         textClass: 'text-red-200',
         borderClass: 'border-red-500/70',
-        hoverClass: 'group-hover:bg-red-500/15'
+        hoverClass: 'group-hover:bg-red-500/15',
+        gradientClass: 'from-red-500/10 via-red-500/5 to-transparent'
       };
     } else if (action.includes('ADD') || action.includes('CREATE') || action.includes('INSERT')) {
       return {
         bgClass: 'bg-green-900/50',
         textClass: 'text-green-200',
         borderClass: 'border-green-500/70',
-        hoverClass: 'group-hover:bg-green-500/15'
+        hoverClass: 'group-hover:bg-green-500/15',
+        gradientClass: 'from-green-500/10 via-green-500/5 to-transparent'
       };
     } else if (action.includes('UPDATE') || action.includes('EDIT') || action.includes('MODIFY')) {
       return {
         bgClass: 'bg-yellow-900/50',
         textClass: 'text-yellow-200',
         borderClass: 'border-yellow-500/70',
-        hoverClass: 'group-hover:bg-yellow-500/15'
+        hoverClass: 'group-hover:bg-yellow-500/15',
+        gradientClass: 'from-yellow-500/10 via-yellow-500/5 to-transparent'
       };
     } else {
       return {
         bgClass: 'bg-blue-900/50',
         textClass: 'text-blue-200',
         borderClass: 'border-blue-500/70',
-        hoverClass: 'group-hover:bg-blue-500/15'
+        hoverClass: 'group-hover:bg-blue-500/15',
+        gradientClass: 'from-blue-500/10 via-blue-500/5 to-transparent'
       };
     }
   };
 
   return (
-    <div className="bg-dark-200/60 backdrop-blur-sm border border-dark-300 rounded-lg p-4 shadow-lg relative h-full">
-      {/* Horizontal scan line animation */}
-      <div className="absolute inset-0 h-px w-full bg-cyber-500/30 animate-scan-fast"></div>
+    <div className="bg-dark-200/60 backdrop-blur-sm border border-dark-300 p-4 shadow-lg relative h-full">
+      {/* Top horizontal scanner line animation */}
+      <div className="absolute inset-0 h-px w-full bg-brand-400/30 animate-scan-fast"></div>
       
+      {/* Vertical scan line */}
+      <div className="absolute inset-0 w-px h-full bg-brand-400/10 animate-cyber-scan"></div>
+      
+      {/* Background subtle gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-dark-100/5 to-dark-300/10 pointer-events-none"></div>
+      
+      {/* Header with refresh button */}
       <div className="flex items-center justify-between mb-4 relative">
         <h2 className="text-lg font-bold text-white">Recent Admin Actions</h2>
         <button 
           onClick={fetchLogs} 
-          className="text-xs text-cyber-400 hover:text-cyber-300 flex items-center"
+          className="text-xs text-cyber-400 hover:text-cyber-300 flex items-center group"
           disabled={loading}
         >
-          <span className="mr-1">↻</span> Refresh
+          <span className="mr-1 transform group-hover:rotate-180 transition-transform duration-500">↻</span> 
+          <span className="relative overflow-hidden">
+            Refresh
+            <span className="absolute bottom-0 left-0 w-full h-px bg-cyber-400/50 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
+          </span>
         </button>
       </div>
 
@@ -160,15 +175,21 @@ export const AdminLogsPanel: React.FC = () => {
 
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="w-8 h-8 border-4 border-cyber-600 border-t-cyber-300 rounded-full animate-spin shadow-lg shadow-cyber-500/20"></div>
+          <div className="relative">
+            <div className="w-10 h-10 border-4 border-brand-600 border-t-brand-300 rounded-full animate-spin shadow-lg shadow-brand-500/20"></div>
+            <div className="absolute inset-0 w-10 h-10 border-4 border-transparent border-t-brand-400/30 rounded-full animate-ping"></div>
+          </div>
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-8 text-gray-400 font-mono">
-          No admin logs found
+        <div className="text-center py-8 font-mono">
+          <div className="text-gray-400 border border-dark-400 rounded p-4 bg-dark-300/30 inline-block">
+            <div className="text-xs text-brand-400 mb-2">NO_LOGS_FOUND</div>
+            <div className="text-sm">No administrator actions recorded</div>
+          </div>
         </div>
       ) : (
         <>
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-4 max-h-[460px] overflow-y-auto hide-scrollbar pr-1">
             <AnimatePresence>
               {logs.map((log, index) => {
                 const theme = getActionTheme(log.action);
@@ -180,8 +201,15 @@ export const AdminLogsPanel: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-dark-300/60 border-2 border-dark-400 overflow-hidden hover:bg-dark-300/80 transition-colors rounded group"
+                    className="bg-dark-300/60 border-2 border-dark-400 overflow-hidden hover:bg-dark-300/80 transition-all duration-300 group relative"
                   >
+                    {/* Background scanner effect */}
+                    <div className={`absolute inset-0 bg-gradient-to-r ${theme.gradientClass} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                    
+                    {/* Corner markers for cyberpunk feel - more pronounced */}
+                    <div className={`absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 ${theme.borderClass}`}></div>
+                    <div className={`absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 ${theme.borderClass}`}></div>
+                    
                     {/* Edge-to-edge colored header with action and time */}
                     <div className={`flex items-center justify-between px-3 py-2 ${theme.bgClass} ${theme.textClass}`}>
                       <span className="text-xs font-medium whitespace-nowrap">
@@ -193,14 +221,7 @@ export const AdminLogsPanel: React.FC = () => {
                     </div>
                     
                     {/* Content area with padding */}
-                    <div className="p-3 relative overflow-hidden">
-                      {/* Scanner effect */}
-                      <div className={`absolute inset-0 w-full h-16 bg-gradient-to-r from-transparent via-${theme.textClass.split('-')[1]}-500/5 to-transparent -translate-x-full group-hover:translate-x-full duration-1500 ease-in-out transition-transform`}></div>
-                    
-                      {/* Corner markers for cyberpunk feel */}
-                      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-brand-500/30"></div>
-                      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-brand-500/30"></div>
-                      
+                    <div className="p-3">
                       {/* Details as a grid */}
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         {Object.entries(log.details)
@@ -227,10 +248,11 @@ export const AdminLogsPanel: React.FC = () => {
                               href={`https://solscan.io/account/${log.admin_address}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-cyber-400 hover:text-cyber-300"
+                              className="text-cyber-400 hover:text-cyber-300 relative group"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {formatShortAddress(log.admin_address)}
+                              <span className="absolute -bottom-px left-0 right-0 h-px bg-cyber-400/50 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
                             </a>
                           ) : (
                             <span className="text-gray-500">{formatShortAddress(log.admin_address)}</span>
@@ -249,7 +271,7 @@ export const AdminLogsPanel: React.FC = () => {
             </AnimatePresence>
           </div>
 
-          {/* Pagination */}
+          {/* Pagination - stylized version */}
           {pagination && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-xs text-gray-400 whitespace-nowrap">
@@ -261,10 +283,13 @@ export const AdminLogsPanel: React.FC = () => {
                   disabled={!pagination.hasPrevPage}
                   className={`px-3 py-1 text-xs border-2 ${
                     pagination.hasPrevPage
-                      ? 'border-cyber-500/60 bg-cyber-900/25 text-cyber-400 hover:bg-cyber-900/40'
+                      ? 'border-cyber-500/60 bg-cyber-900/25 text-cyber-400 hover:bg-cyber-900/40 relative overflow-hidden group'
                       : 'border-gray-700 bg-gray-900/40 text-gray-600 cursor-not-allowed'
-                  } whitespace-nowrap`}
+                  } whitespace-nowrap transition-all duration-300`}
                 >
+                  {pagination.hasPrevPage && (
+                    <span className="absolute inset-0 w-full h-px bg-cyber-400/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></span>
+                  )}
                   ← Prev
                 </button>
                 <button
@@ -272,10 +297,13 @@ export const AdminLogsPanel: React.FC = () => {
                   disabled={!pagination.hasNextPage}
                   className={`px-3 py-1 text-xs border-2 ${
                     pagination.hasNextPage
-                      ? 'border-cyber-500/60 bg-cyber-900/25 text-cyber-400 hover:bg-cyber-900/40'
+                      ? 'border-cyber-500/60 bg-cyber-900/25 text-cyber-400 hover:bg-cyber-900/40 relative overflow-hidden group'
                       : 'border-gray-700 bg-gray-900/40 text-gray-600 cursor-not-allowed'
-                  } whitespace-nowrap`}
+                  } whitespace-nowrap transition-all duration-300`}
                 >
+                  {pagination.hasNextPage && (
+                    <span className="absolute inset-0 w-full h-px bg-cyber-400/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></span>
+                  )}
                   Next →
                 </button>
               </div>
