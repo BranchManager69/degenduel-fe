@@ -297,7 +297,15 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     // Force window to top when component mounts
     window.scrollTo(0, 0);
     
-    // We no longer need to set reveal stages for command tray
+    // Preload terminal data in background to prevent future errors
+    // This also pre-populates the cache
+    try {
+      fetchTerminalData().catch(() => {
+        // Silently fail - we'll handle errors in the regular refresh cycle
+      });
+    } catch (error) {
+      // Silently catch any synchronous errors
+    }
     
     // Add the DegenDuel banner as initial console output
     // Different sizes for mobile vs desktop
@@ -351,6 +359,15 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
         Type 'help' for available commands
       </div>
     ]);
+    
+    // Clean up error trackers on unmount
+    return () => {
+      // Reset error counters when component unmounts
+      // to prevent them from persisting between sessions
+      window.terminalDataErrorCount = 0;
+      window.terminalDataWarningShown = false;
+      window.terminalRefreshCount = 0;
+    };
   }, [daysUntilRelease, isReleaseTime, showContractReveal, now, config]);
 
   // Auto-restore minimized terminal after a delay
@@ -391,33 +408,67 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   
   // Periodic refresh of terminal data from server (fallback or when WebSocket is not connected)
   useEffect(() => {
+    // Initialize refresh counter if not already set
+    if (typeof window.terminalRefreshCount === 'undefined') {
+      window.terminalRefreshCount = 0;
+    }
+    
     // Manual refresh function - combines REST API fetch with WebSocket refresh request
     const refreshTerminalData = async () => {
-      // Always try to refresh WebSocket data
+      // Track refresh attempts
+      window.terminalRefreshCount = (window.terminalRefreshCount || 0) + 1;
+      
+      // Always try to refresh WebSocket data first if connected
       if (wsConnected) {
         refreshWsTerminalData();
+        return; // Skip REST API call if WebSocket is connected
       }
       
-      // Fallback to REST API
+      // Only continue with REST API fallback if WebSocket is not connected
+      // Exponential backoff for REST API calls
+      // First 5 attempts: every minute
+      // Next 5 attempts: every 2 minutes
+      // After that: every 5 minutes
+      const refreshCount = window.terminalRefreshCount || 0;
+      const shouldRefresh = 
+        refreshCount <= 5 || 
+        (refreshCount <= 10 && refreshCount % 2 === 0) ||
+        refreshCount % 5 === 0;
+      
+      if (!shouldRefresh) {
+        return; // Skip this refresh based on backoff strategy
+      }
+      
+      // Fallback to REST API with reduced logging
       try {
-        console.log('[Terminal] Refreshing terminal data from REST API...');
+        // Only log on first few attempts
+        if (refreshCount <= 3) {
+          console.log('[Terminal] Refreshing terminal data from REST API...');
+        }
+        
         const terminalData = await fetchTerminalData();
         const updatedCommands = formatTerminalCommands(terminalData);
         
-        // Only log if something actually changed
+        // Only update if something actually changed, log minimally
         if (JSON.stringify(commandMap) !== JSON.stringify(updatedCommands)) {
-          console.log('[Terminal] Terminal data refreshed from REST API - commands updated');
+          // Only log first few updates or occasional updates
+          if (refreshCount <= 3 || refreshCount % 10 === 0) {
+            console.log('[Terminal] Terminal data refreshed - commands updated');
+          }
           Object.assign(commandMap, updatedCommands);
         }
       } catch (error) {
-        console.error('[Terminal] Failed to refresh terminal data from REST API:', error);
+        // Minimize error logging, only log on first few errors
+        if (refreshCount <= 3) {
+          console.error('[Terminal] Failed to refresh terminal data:', error);
+        }
       }
     };
     
     // Initial refresh
     refreshTerminalData();
     
-    // Set up periodic refresh every 1 minute
+    // Set up periodic refresh every 1 minute, but actual fetch may be throttled
     const refreshInterval = setInterval(refreshTerminalData, 60 * 1000);
     
     return () => {
