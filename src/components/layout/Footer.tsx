@@ -90,6 +90,27 @@ export const Footer: React.FC = () => {
       connectedSockets: isConnected ? 1 : 0 // We now have only 1 socket
     });
     
+    // Update server status based on WebSocket connection state
+    // This ensures the status indicator correctly shows offline when disconnected
+    if (!isConnected && serverStatus.status === 'online') {
+      setServerStatus({
+        status: 'offline',
+        message: 'WebSocket connection lost',
+        timestamp: new Date().toISOString(),
+        lastChecked: new Date().toISOString(),
+        loading: false
+      });
+    } else if (isConnected && serverStatus.status === 'offline') {
+      // If we've reconnected, update status to online
+      setServerStatus({
+        status: 'online',
+        message: 'Server is operating normally',
+        timestamp: new Date().toISOString(),
+        lastChecked: new Date().toISOString(),
+        loading: false
+      });
+    }
+    
     console.log("Unified WebSocket Connection Status:", {
       connected: isConnected ? "Connected" : "Disconnected",
       authenticated: unifiedWs.isAuthenticated ? "Yes" : "No",
@@ -97,7 +118,7 @@ export const Footer: React.FC = () => {
       error: unifiedWs.error,
       showLightningBolt: isConnected
     });
-  }, [unifiedWs.isConnected, unifiedWs.isAuthenticated, unifiedWs.connectionState]);
+  }, [unifiedWs.isConnected, unifiedWs.isAuthenticated, unifiedWs.connectionState, serverStatus.status]);
 
   // State to manage modal visibility
   const [showStatusModal, setShowStatusModal] = useState(false);
