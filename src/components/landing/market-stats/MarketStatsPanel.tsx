@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ddApi } from "../../../services/dd-api";
 import { formatNumber } from "../../../utils/format";
+import useTokenData from "../../../hooks/useTokenData";
 
 interface MarketStats {
   totalVolume24h: number;
@@ -28,24 +28,14 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
   const [loading, setLoading] = useState(initialLoading);
   const [error, setError] = useState<string | null>(null);
   
-  // Fetch market stats data
+  // Use WebSocket-based token data hook
+  const { tokens } = useTokenData("all");
+  
+  // Calculate market stats from WebSocket token data
   useEffect(() => {
-    const fetchMarketStats = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch tokens data from API
-        const response = await ddApi.fetch("/dd-serv/tokens");
-        const data = await response.json();
-        
-        // Extract tokens data
-        const tokensData = Array.isArray(data) ? data : data.data || [];
-        
-        if (!tokensData.length) {
-          setError("No token data available");
-          setLoading(false);
-          return;
-        }
+    try {
+      if (tokens && tokens.length > 0) {
+        setLoading(false);
         
         // Calculate market stats from tokens data
         let totalVolume24h = 0;
@@ -53,7 +43,7 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
         let topGainer = { symbol: "", change: -Infinity };
         let topLoser = { symbol: "", change: Infinity };
         
-        tokensData.forEach((token: any) => {
+        tokens.forEach((token: any) => {
           // Calculate totals
           totalVolume24h += Number(token.volume24h || 0);
           totalMarketCap += Number(token.marketCap || 0);
@@ -73,22 +63,18 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
         // Set the calculated stats
         setStats({
           totalVolume24h,
-          totalTokens: tokensData.length,
+          totalTokens: tokens.length,
           topGainer,
           topLoser,
           totalMarketCap
         });
-        
-        setLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch market stats:", err);
-        setError("Failed to load market statistics");
-        setLoading(false);
       }
-    };
-    
-    fetchMarketStats();
-  }, []);
+    } catch (err) {
+      console.error("Failed to calculate market stats:", err);
+      setError("Failed to calculate market statistics");
+      setLoading(false);
+    }
+  }, [tokens]);
   
   // Loading state
   if (loading) {

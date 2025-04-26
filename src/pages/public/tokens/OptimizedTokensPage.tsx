@@ -13,6 +13,7 @@ import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";
 import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
+import useTokenData from "../../../hooks/useTokenData";
 
 /**
  * OptimizedTokensPage component with improved performance
@@ -99,101 +100,102 @@ export const OptimizedTokensPage: React.FC = () => {
     navigate(location.pathname, { replace: true });
   }, [location.pathname, navigate]);
 
-  // Main data fetching function
-  const fetchTokensData = useCallback(async () => {
+  // Use WebSocket-based token data hook instead of API
+  const { tokens: wsTokens, isConnected, connectionState, lastUpdate } = useTokenData("all");
+
+  // Process tokens when WebSocket data is available
+  useEffect(() => {
+    // Check maintenance mode first
+    const checkMaintenanceMode = async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+  
+        if (isInMaintenance) {
+          setError(
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          );
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        // If can't check maintenance mode, continue anyway
+        console.warn("Failed to check maintenance mode:", err);
+      }
+    };
+    
+    checkMaintenanceMode();
+  }, []);
+  
+  // Process WebSocket token data
+  useEffect(() => {
     try {
-      // First check maintenance mode
-      const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-      setIsMaintenanceMode(isInMaintenance);
-
-      // If in maintenance mode, don't fetch tokens
-      if (isInMaintenance) {
-        setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
-        );
+      if (wsTokens && wsTokens.length > 0) {
+        // Create metadata from lastUpdate
+        const metadata: TokenResponseMetadata = {
+          timestamp: lastUpdate ? lastUpdate.toISOString() : new Date().toISOString(),
+          _cached: false,
+          _stale: false,
+          _cachedAt: undefined,
+        };
+        setMetadata(metadata);
+        
+        // Transform tokens to match our expected format
+        const transformedTokens = wsTokens.map((token: any) => ({
+          contractAddress: token.contractAddress || token.address,
+          name: token.name,
+          symbol: token.symbol,
+          price: token.price?.toString() || "0",
+          marketCap: token.marketCap?.toString() || "0",
+          volume24h: token.volume24h?.toString() || "0",
+          change24h: token.change24h?.toString() || "0",
+          liquidity: {
+            usd: token.liquidity?.usd?.toString() || "0",
+            base: token.liquidity?.base?.toString() || "0",
+            quote: token.liquidity?.quote?.toString() || "0",
+          },
+          images: {
+            imageUrl: token.imageUrl || token.image,
+            headerImage: token.headerImage,
+            openGraphImage: token.openGraphImage,
+          },
+          socials: {
+            twitter: token.socials?.twitter || null,
+            telegram: token.socials?.telegram || null,
+            discord: token.socials?.discord || null,
+          },
+          websites: token.websites || [],
+        }));
+        
+        setTokens(transformedTokens);
         setLoading(false);
-        return;
       }
-
-      // Get all tokens in one request
-      const response = await ddApi.fetch("/dd-serv/tokens");
-      const responseData = await response.json();
-
-      // Extract metadata
-      const metadata: TokenResponseMetadata = {
-        timestamp: responseData.timestamp,
-        _cached: responseData._cached,
-        _stale: responseData._stale,
-        _cachedAt: responseData._cachedAt,
-      };
-      setMetadata(metadata);
-
-      // Check if the data is in a 'data' property or is the response itself
-      const tokensData = Array.isArray(responseData)
-        ? responseData
-        : responseData.data;
-
-      if (!Array.isArray(tokensData)) {
-        console.error("Unexpected API response format:", responseData);
-        setError("Invalid data format received from server");
-        return;
-      }
-
-      // Transform the data to match our Token interface
-      const transformedTokens = tokensData.map((token: any) => ({
-        contractAddress: token.contractAddress || token.address,
-        name: token.name,
-        symbol: token.symbol,
-        price: token.price?.toString() || "0",
-        marketCap: token.marketCap?.toString() || "0",
-        volume24h: token.volume24h?.toString() || "0",
-        change24h: token.change24h?.toString() || "0",
-        liquidity: {
-          usd: token.liquidity?.usd?.toString() || "0",
-          base: token.liquidity?.base?.toString() || "0",
-          quote: token.liquidity?.quote?.toString() || "0",
-        },
-        images: {
-          imageUrl: token.imageUrl || token.image,
-          headerImage: token.headerImage,
-          openGraphImage: token.openGraphImage,
-        },
-        socials: {
-          twitter: token.socials?.twitter || null,
-          telegram: token.socials?.telegram || null,
-          discord: token.socials?.discord || null,
-        },
-        websites: token.websites || [],
-      }));
-
-      setTokens(transformedTokens);
-      setLoading(false);
     } catch (err) {
-      console.error("Failed to fetch tokens:", err);
-
-      // Check if the error is a 503 (maintenance mode)
-      if (err instanceof Error && err.message.includes("503")) {
-        setIsMaintenanceMode(true);
-        setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
-        );
-      } else {
-        setError("Failed to load tokens");
-      }
+      console.error("Failed to process token data:", err);
+      setError("Failed to process token data");
       setLoading(false);
     }
-  }, []);
+  }, [wsTokens, lastUpdate]);
+  
+  // Handle connection state changes
+  useEffect(() => {
+    if (connectionState === 'error') {
+      setError("Connection error. Please try again later.");
+    } else if (connectionState === 'connecting' && !isConnected) {
+      // Only show loading if we're connecting for the first time
+      if (tokens.length === 0) {
+        setLoading(true);
+      }
+    }
+  }, [connectionState, isConnected, tokens.length]);
 
-  // Initial data fetch and refresh timer setup
+  // Handle Storybook environment
   useEffect(() => {
     // Check if running in Storybook environment
     const isStorybook = typeof window !== 'undefined' && 'STORYBOOK_ENV' in window;
     
-    // Only fetch data if not in Storybook or use mock data
-    if (!isStorybook) {
-      // Initial fetch for real application
-      fetchTokensData();
-    } else {
+    // Only use mock data in Storybook
+    if (isStorybook) {
       // For Storybook, use mock data directly
       setLoading(false);
       const mockData = {
@@ -279,10 +281,9 @@ export const OptimizedTokensPage: React.FC = () => {
         window.clearTimeout(refreshTimerRef.current);
       }
     };
-  }, [fetchTokensData]);
+  }, []);
   
-  // Setup refreshing based on data staleness, using setTimeout instead of setInterval
-  // to prevent overlapping calls if the network is slow
+  // WebSocket update handling - no need for manual refresh
   useEffect(() => {
     // Check if running in Storybook environment
     const isStorybook = typeof window !== 'undefined' && 'STORYBOOK_ENV' in window;
@@ -292,27 +293,13 @@ export const OptimizedTokensPage: React.FC = () => {
       return;
     }
     
-    // Clear any existing timer
-    if (refreshTimerRef.current) {
-      window.clearTimeout(refreshTimerRef.current);
-    }
-    
-    // Only set up a refresh timer if not loading, not in maintenance mode, and not in error state
-    if (!loading && !isMaintenanceMode && !error) {
-      // Set new timer - Use 60s for fresh data and 15s for stale
-      const refreshTime = metadata._stale ? 15000 : 60000;
-      
-      refreshTimerRef.current = window.setTimeout(() => {
-        fetchTokensData();
-      }, refreshTime);
-    }
-    
+    // Clear any existing timer on unmount
     return () => {
       if (refreshTimerRef.current) {
         window.clearTimeout(refreshTimerRef.current);
       }
     };
-  }, [metadata._stale, fetchTokensData, isMaintenanceMode, error, loading]);
+  }, []);
 
   // Compute filtered and sorted tokens list
   const filteredAndSortedTokens = useMemo(() => {

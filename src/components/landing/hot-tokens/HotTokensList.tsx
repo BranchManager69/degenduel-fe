@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import useSound from 'use-sound';
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
-import { ddApi } from "../../../services/dd-api";
+import useTokenData from "../../../hooks/useTokenData";
 
 interface HotTokensListProps {
   maxTokens?: number;
@@ -91,27 +91,17 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
     return colors[symbol] || '#7F00FF'; // Default to brand purple
   }, []);
   
-  // Fetch initial hot tokens data
+  // Use WebSocket-based token data hook
+  const { tokens: wsTokens, isConnected } = useTokenData("all");
+
+  // Process tokens when WebSocket data is available
   useEffect(() => {
-    const fetchHotTokens = async () => {
-      try {
-        setLoading(true);
+    try {
+      if (wsTokens && wsTokens.length > 0) {
+        setLoading(false);
         
-        // Fetch tokens data from API
-        const response = await ddApi.fetch("/dd-serv/tokens");
-        const data = await response.json();
-        
-        // Extract tokens data
-        const tokensData = Array.isArray(data) ? data : data.data || [];
-        
-        if (!tokensData.length) {
-          setError("No token data available");
-          setLoading(false);
-          return;
-        }
-        
-        // Transform each token into our Token type
-        const transformedTokens = tokensData.map((token: any) => ({
+        // Transform tokens to match our expected format
+        const transformedTokens = wsTokens.map((token: any) => ({
           contractAddress: token.contractAddress || token.address,
           name: token.name,
           symbol: token.symbol,
@@ -133,8 +123,7 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
           websites: token.websites,
         }));
         
-        // Here we would normally apply your special algorithm
-        // For now, we'll simulate it with a combination of factors
+        // Apply hot tokens algorithm
         const sortedTokens = transformedTokens
           .filter((token: Token) => Number(token.volume24h) > 0) // Basic filter
           .sort((a: Token, b: Token) => {
@@ -156,18 +145,20 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
         
         // Take only the top N tokens
         setHotTokens(sortedTokens.slice(0, maxTokens));
-        setLoading(false);
         
-        // Setup WebSocket connection after we have initial data
+        // Setup WebSocket connection for token updates
         setupWebSocket();
-      } catch (err) {
-        console.error("Failed to fetch hot tokens:", err);
-        setError("Failed to load hot tokens data");
-        setLoading(false);
       }
-    };
-    
-    fetchHotTokens();
+    } catch (err) {
+      console.error("Failed to process hot tokens:", err);
+      setError("Failed to process hot tokens data");
+      setLoading(false);
+    }
+  }, [wsTokens, maxTokens]);
+  
+  // Set WebSocket connection status
+  useEffect(() => {
+    setIsWebSocketActive(isConnected);
     
     // Cleanup function
     return () => {
@@ -175,7 +166,7 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
         wsRef.current.close();
       }
     };
-  }, [maxTokens]);
+  }, [isConnected]);
   
   // Setup WebSocket connection
   const setupWebSocket = useCallback(() => {

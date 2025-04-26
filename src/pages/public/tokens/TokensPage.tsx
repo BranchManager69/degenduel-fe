@@ -13,6 +13,7 @@ import { Card, CardContent } from "../../../components/ui/Card";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";
+import useTokenData from "../../../hooks/useTokenData";
 
 // Tokens page
 export const TokensPage: React.FC = () => {
@@ -57,48 +58,24 @@ export const TokensPage: React.FC = () => {
     }
   }, [location.search]);
 
+  // Use WebSocket-based token data hook
+  const { tokens: wsTokens, lastUpdate } = useTokenData("all");
+
+  // Process tokens when WebSocket data is available
   useEffect(() => {
-    const checkMaintenanceAndFetchTokens = async () => {
-      try {
-        // First check maintenance mode
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        setIsMaintenanceMode(isInMaintenance);
-
-        // If in maintenance mode, don't fetch tokens
-        if (isInMaintenance) {
-          setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
-          );
-          setLoading(false);
-          return;
-        }
-
-        // Get all tokens in one request
-        const response = await ddApi.fetch("/dd-serv/tokens");
-        const responseData = await response.json();
-
-        // Extract metadata
+    try {
+      if (wsTokens && wsTokens.length > 0) {
+        // Create metadata from lastUpdate
         const metadata: TokenResponseMetadata = {
-          timestamp: responseData.timestamp,
-          _cached: responseData._cached,
-          _stale: responseData._stale,
-          _cachedAt: responseData._cachedAt,
+          timestamp: lastUpdate ? lastUpdate.toISOString() : new Date().toISOString(),
+          _cached: false,
+          _stale: false,
+          _cachedAt: undefined,
         };
         setMetadata(metadata);
-
-        // Check if the data is in a 'data' property or is the response itself
-        const tokensData = Array.isArray(responseData)
-          ? responseData
-          : responseData.data;
-
-        if (!Array.isArray(tokensData)) {
-          console.error("Unexpected API response format:", responseData);
-          setError("Invalid data format received from server");
-          return;
-        }
-
-        // Transform the data to match our Token interface
-        const transformedTokens = tokensData.map((token: any) => ({
+        
+        // Transform tokens to match our expected format
+        const transformedTokens = wsTokens.map((token: any) => ({
           contractAddress: token.contractAddress || token.address,
           name: token.name,
           symbol: token.symbol,
@@ -123,35 +100,39 @@ export const TokensPage: React.FC = () => {
           },
           websites: token.websites || [],
         }));
-
+        
         setTokens(transformedTokens);
-      } catch (err) {
-        console.error("Failed to fetch tokens:", err);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Failed to process token data:", err);
+      setError("Failed to process token data");
+      setLoading(false);
+    }
+  }, [wsTokens, lastUpdate]);
+  
+  // Check maintenance mode
+  useEffect(() => {
+    const checkMaintenanceMode = async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
 
-        // Check if the error is a 503 (maintenance mode)
-        if (err instanceof Error && err.message.includes("503")) {
-          setIsMaintenanceMode(true);
+        if (isInMaintenance) {
           setError(
             "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
           );
-        } else {
-          setError("Failed to load tokens");
+          setLoading(false);
         }
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.warn("Failed to check maintenance mode:", err);
       }
     };
 
-    checkMaintenanceAndFetchTokens();
-
-    // Set up auto-refresh interval - 30s for fresh data, 5s for stale
-    const refreshInterval = setInterval(
-      checkMaintenanceAndFetchTokens,
-      metadata._stale ? 5000 : 30000,
-    );
-
-    return () => clearInterval(refreshInterval);
-  }, [metadata._stale]); // Add dependency on stale status
+    checkMaintenanceMode();
+    
+    // No need for auto-refresh interval as WebSocket provides real-time updates
+  }, []);
 
   // Close the detail modal and reset URL
   const handleCloseDetailModal = () => {
