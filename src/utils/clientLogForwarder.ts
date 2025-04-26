@@ -15,6 +15,10 @@ const BATCH_SEND_INTERVAL = 10000; // 10 seconds
 const ERROR_RETRY_COUNT = 3;
 const MAX_LOG_SIZE = 5000; // Truncate large logs
 
+// Debug verbosity flag - set to false to reduce log spam
+// You can toggle this manually whenever needed
+const VERBOSE_SERVER_LOGGING = false;
+
 // Log levels
 export enum LogLevel {
   DEBUG = "debug",
@@ -86,12 +90,64 @@ export const initializeClientLogForwarder = (): void => {
 
   console.warn = (...args: any[]) => {
     originalConsole.warn(...args);
-    addToQueue(LogLevel.WARN, args);
+    
+    // Only send if verbose logging is enabled, or filter noisy warnings
+    if (VERBOSE_SERVER_LOGGING) {
+      // Send all warnings in verbose mode
+      addToQueue(LogLevel.WARN, args);
+    } else {
+      // In non-verbose mode, filter out common noise
+      if (args.length > 0) {
+        const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
+        
+        // Skip common warnings that create lots of noise
+        if (message.includes('App configuration has Solana wallet login enabled') ||
+            message.includes('WalletContext without providing one') ||
+            message.includes('Solana wallet connectors have been passed') ||
+            message.includes('[Jupiter Wallet]') ||
+            message.includes('UnifiedTicker: ')) {
+          // Don't forward to server, but still visible in console
+          return;
+        }
+        
+        // Forward other warnings to server
+        addToQueue(LogLevel.WARN, args);
+      } else {
+        // If no message to check, just forward it
+        addToQueue(LogLevel.WARN, args);
+      }
+    }
   };
 
   console.error = (...args: any[]) => {
     originalConsole.error(...args);
-    addToQueue(LogLevel.ERROR, args);
+    
+    // Only send if verbose logging is enabled, or filter noisy errors
+    if (VERBOSE_SERVER_LOGGING) {
+      // Send all errors in verbose mode
+      addToQueue(LogLevel.ERROR, args);
+    } else {
+      // In non-verbose mode, filter out common noise
+      if (args.length > 0) {
+        const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
+        
+        // Skip common errors that create lots of noise
+        if (message.includes('tried to read "publicKey" on a WalletContext') ||
+            message.includes('tried to read "wallet" on a WalletContext') ||
+            message.includes('tried to read "wallets" on a WalletContext') ||
+            message.includes('You have tried to read') && message.includes('WalletContext') ||
+            message.includes('[Jupiter Wallet]')) {
+          // Don't forward to server, but still visible in console
+          return;
+        }
+        
+        // Forward other errors to server
+        addToQueue(LogLevel.ERROR, args);
+      } else {
+        // If no message to check, just forward it
+        addToQueue(LogLevel.ERROR, args);
+      }
+    }
   };
 
   // Capture unhandled errors
