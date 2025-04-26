@@ -949,6 +949,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                       connectionState === ConnectionState.AUTHENTICATED;
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
   
+  // Ref to track previous connection state for logging
+  const prevStateRef = useRef<ConnectionState | null>(null);
+  
   // Update the singleton instance whenever key state changes
   useEffect(() => {
     // Update the WebSocket instance with the current state
@@ -965,7 +968,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       connectionError
     );
     
-    console.log(`WebSocketContext: Updated WebSocket instance with state: ${connectionState}`);
+    // Avoid excessive logging by only logging when state changes
+    if (prevStateRef.current !== connectionState) {
+      prevStateRef.current = connectionState;
+      console.log(`WebSocketContext: Updated WebSocket instance with state: ${connectionState}`);
+    }
   }, [connectionState, connectionError]);
   
   // Context value

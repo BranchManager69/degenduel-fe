@@ -113,8 +113,7 @@ import { WssPlayground } from "./pages/superadmin/WssPlayground";
 import { useStore } from "./store/useStore";
 import "./styles/color-schemes.css";
 /* eslint-disable no-unused-vars */
-import { WalletProvider } from "@jup-ag/wallet-adapter";
-import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
+import { UnifiedWalletProvider } from "@jup-ag/wallet-adapter";
 import { Adapter } from "@solana/wallet-adapter-base";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 // No need to import env if not using it anywhere
@@ -128,10 +127,15 @@ const AdminChatDashboard = lazy(
 
 // App entry
 export const App: React.FC = () => {
-  // Get the auth checker from the auth context
-  const { checkAuth } = useAuth();  
-  // Get the user from the store
+  // Get the user from the store directly - DO NOT use useAuth() here
+  // This avoids circular dependencies since useAuth depends on wallet providers that aren't initialized yet
   const { user } = useStore();
+  
+  // We'll get checkAuth from useAuth() inside the useEffect
+  
+  // Create a role-based Solana RPC endpoint for use with the wallet provider
+  // This tiered RPC setup is important for our application
+  const solanaRpcEndpoint = `${window.location.origin}/api/solana-rpc${user?.is_admin || user?.is_superadmin ? '/admin' : user ? '' : '/public'}`;
   
   // Create wallet adapters for both Jupiter wallet and Solana wallet adapter
   const walletAdapters: Adapter[] = [
@@ -139,16 +143,42 @@ export const App: React.FC = () => {
     new SolflareWalletAdapter()
   ];
   
-  // Complete configuration for Solana wallet adapter
-  const walletConfigSolana = {
-    wallets: walletAdapters,
-    autoConnect: false
+  // Create a component to set the global flag for our hooks to check
+  const FlagSetter: React.FC = () => {
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        (window as any).__JUP_WALLET_PROVIDER_EXISTS = true;
+      }
+    }, []);
+    return null;
+  };
+  
+  // Configuration for UnifiedWalletProvider
+  const uwkConfig = {
+    autoConnect: false,
+    env: import.meta.env.PROD ? 'mainnet-beta' as const : 'devnet' as const,
+    metadata: {
+      name: 'DegenDuel',
+      description: 'Battle-tested onchain contest platform',
+      url: window.location.origin,
+      iconUrls: [`${window.location.origin}/favicon.ico`],
+    },
+    theme: 'dark' as const,
+    // Pass our role-based RPC endpoint to the wallet provider
+    connectionConfig: {
+      commitment: 'confirmed' as const,
+      endpoint: solanaRpcEndpoint
+    }
   };
   
   // Initialize scrollbar visibility
   useScrollbarVisibility();
 
   useEffect(() => {
+    // Only run auth checks after all providers are properly initialized
+    // Get auth context inside this effect to avoid circular dependencies
+    const { checkAuth } = useAuth();
+    
     // Always validate auth on startup, regardless of stored user state
     const validateAuth = async () => {
       console.log("[Auth] Validating authentication status on app startup");
@@ -161,7 +191,6 @@ export const App: React.FC = () => {
         if (user) {
           console.log("[Auth] Stored user found but validation failed, logging out");
           // Disconnect the wallet
-          //   TODO: Does this log the user out of ALL the possible authentication methods?
           useStore.getState().disconnectWallet();
         }
       }
@@ -217,7 +246,7 @@ export const App: React.FC = () => {
       ); // Remove visibility change listener
       window.removeEventListener("online", handleOnlineStatus); // Remove online status listener
     };
-  }, [checkAuth, user]);
+  }, [user]);
 
   // Privy configuration
   const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
@@ -295,22 +324,14 @@ export const App: React.FC = () => {
     ]
   };      
 
-  // Create a connection to use with Solana wallet adapter - using our tiered secure RPC proxy
-  // Before authentication, use the public endpoint with limited rate/methods
-  // After authentication, this will be replaced with the appropriate tier endpoint
-  const solanaEndpoint = `${window.location.origin}/api/solana-rpc${user?.is_admin || user?.is_superadmin ? '/admin' : user ? '' : '/public'}`;
+  // The RPC endpoint is now being used in the UnifiedWalletProvider configuration above
   
   // DegenDuel entry
   return (
     <Router>
-      <ConnectionProvider endpoint={solanaEndpoint}>
-        <SolanaWalletProvider {...walletConfigSolana}>
-          {/* Always include BOTH wallet providers to avoid conditional provider rendering issues */}
-          {/* The Jupiter wallet provider will be used when env flag is enabled */}
-          <WalletProvider 
-            wallets={walletAdapters}
-            autoConnect={false}
-          >
+      {/* The UnifiedWalletProvider replaces all three wallet providers with a single one */}
+      <UnifiedWalletProvider wallets={walletAdapters} config={uwkConfig}>
+        <FlagSetter /> {/* Maintains global flag for backward compatibility */}
             <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
               <PrivyAuthProvider>
                 <AuthProvider>
@@ -753,10 +774,7 @@ export const App: React.FC = () => {
               </AuthProvider>
             </PrivyAuthProvider>
           </PrivyProvider>
-        </WalletProvider>
-
-      </SolanaWalletProvider>
-      </ConnectionProvider>
+      </UnifiedWalletProvider>
     </Router>
   );
 };
