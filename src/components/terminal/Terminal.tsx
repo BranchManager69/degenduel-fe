@@ -297,7 +297,15 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     // Force window to top when component mounts
     window.scrollTo(0, 0);
     
-    // We no longer need to set reveal stages for command tray
+    // Preload terminal data in background to prevent future errors
+    // This also pre-populates the cache
+    try {
+      fetchTerminalData().catch(() => {
+        // Silently fail - we'll handle errors in the regular refresh cycle
+      });
+    } catch (error) {
+      // Silently catch any synchronous errors
+    }
     
     // Add the DegenDuel banner as initial console output
     // Different sizes for mobile vs desktop
@@ -351,6 +359,15 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
         Type 'help' for available commands
       </div>
     ]);
+    
+    // Clean up error trackers on unmount
+    return () => {
+      // Reset error counters when component unmounts
+      // to prevent them from persisting between sessions
+      window.terminalDataErrorCount = 0;
+      window.terminalDataWarningShown = false;
+      window.terminalRefreshCount = 0;
+    };
   }, [daysUntilRelease, isReleaseTime, showContractReveal, now, config]);
 
   // Auto-restore minimized terminal after a delay

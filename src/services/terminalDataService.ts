@@ -154,7 +154,18 @@ let lastFetchTime = 0;
 const CACHE_TTL = 60 * 1000; // 1 minute
 
 /**
- * Fetch terminal data from the backend
+ * Maximum number of retries for terminal data fetch
+ */
+const MAX_RETRIES = 3;
+
+/**
+ * Flag to track if terminal data is currently being fetched
+ * This prevents multiple parallel fetch attempts
+ */
+let isFetchingTerminalData = false;
+
+/**
+ * Fetch terminal data from the backend with retry mechanism
  * @returns Promise that resolves to the terminal data
  */
 export const fetchTerminalData = async (): Promise<TerminalData> => {
@@ -162,40 +173,29 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
   
   // Return cached data if it's still fresh
   if (cachedTerminalData && (now - lastFetchTime < CACHE_TTL)) {
-    // Reduced logging - only log in verbose mode or when debugging
-    // console.log('[TerminalDataService] Using cached terminal data');
     return cachedTerminalData;
   }
   
-  // API endpoint for fetching terminal data
-  const endpoint = `${API_URL}/terminal/terminal-data`;
+  // If already fetching, return cached data or default
+  if (isFetchingTerminalData) {
+    return cachedTerminalData || DEFAULT_TERMINAL_DATA;
+  }
+  
+  // Set fetching flag
+  isFetchingTerminalData = true;
   
   try {
-    // Reduced logging - logging endpoint once is enough
-    // console.log(`[TerminalDataService] Fetching terminal data from endpoint: ${endpoint}`);
+    // API endpoint for fetching terminal data
+    const endpoint = `${API_URL}/terminal/terminal-data`;
+    const result = await fetchWithRetry(endpoint);
     
-    const response = await fetch(endpoint, { 
-      // Add timeout and credentials to improve fetching
-      signal: AbortSignal.timeout(5000), // 5 second timeout
-      credentials: 'same-origin'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Error fetching terminal data: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      // Update cache
-      cachedTerminalData = data.terminalData;
+    // Update cache with new data
+    if (result && result.success) {
+      cachedTerminalData = result.terminalData;
       lastFetchTime = now;
-      
-      // Reduced logging - success doesn't need to be logged every time
-      // console.log('[TerminalDataService] Terminal data fetched successfully');
-      return data.terminalData;
+      return result.terminalData;
     } else {
-      // Only warn once per session about this
+      // Only warn once per session if API returns unsuccessful response
       if (!window.terminalDataWarningShown) {
         console.warn('[TerminalDataService] Terminal data not available from API, using default');
         window.terminalDataWarningShown = true;
@@ -203,7 +203,7 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
       return DEFAULT_TERMINAL_DATA;
     }
   } catch (error) {
-    // Don't spam errors to console - we'll handle them gracefully
+    // Error handling after all retries have failed
     // Limit repetitive error messages
     if (!window.terminalDataErrorCount) {
       window.terminalDataErrorCount = 0;
@@ -211,14 +211,62 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
     
     // Only log first few errors, then reduce frequency
     if (window.terminalDataErrorCount < 3 || window.terminalDataErrorCount % 10 === 0) {
-      console.error('[TerminalDataService] Error fetching terminal data:', error);
+      console.error('[TerminalDataService] Error fetching terminal data after multiple retries');
     }
     
     window.terminalDataErrorCount++;
     
     return DEFAULT_TERMINAL_DATA;
+  } finally {
+    // Reset fetching flag
+    isFetchingTerminalData = false;
   }
 };
+
+/**
+ * Fetch with retry and exponential backoff
+ * @param url URL to fetch from
+ * @param retries Number of retries remaining
+ * @param delay Delay before next retry in ms
+ * @returns Promise that resolves to the API response
+ */
+async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000): Promise<any> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+    
+    const response = await fetch(url, {
+      signal: controller.signal,
+      credentials: 'same-origin',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    if (retries <= 0) {
+      throw error;
+    }
+    
+    // Only log first retry attempt to reduce console spam
+    if (retries === MAX_RETRIES) {
+      console.warn(`[TerminalDataService] Fetch attempt failed, retrying in ${delay}ms...`);
+    }
+    
+    // Implement exponential backoff
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Retry with decreased retries count and increased delay
+    return fetchWithRetry(url, retries - 1, delay * 1.5);
+  }
+}
 
 /**
  * Format terminal commands based on data from the API
