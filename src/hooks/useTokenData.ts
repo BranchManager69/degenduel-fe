@@ -1,3 +1,5 @@
+// src/hooks/useTokenData.ts
+
 /**
  * Token Data Hook
  * 
@@ -8,7 +10,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { MessageType, TopicType } from "./websocket";
 import { useWebSocketTopic } from "./websocket/useWebSocketTopic";
-import { NODE_ENV } from "../config/config";
+
+// Config
+import { config } from "../config/config";
+const NODE_ENV = config.ENV.NODE_ENV;
+const VERBOSE_USETOKENDATA_LOGGING = 'true'; // (quick fix) Logging verbosity
 
 export interface TokenData {
   symbol: string;
@@ -79,6 +85,10 @@ export function useTokenData(
     try {
       if (NODE_ENV === "development") {
         console.log(`[TokenData] Received message:`, message);
+      } else {
+        if (VERBOSE_USETOKENDATA_LOGGING === "true") {
+          console.log(`[TokenData] Received message:`, message);
+        }
       }
 
       // Handle token data messages
