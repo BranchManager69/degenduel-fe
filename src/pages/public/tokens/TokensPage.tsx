@@ -59,7 +59,7 @@ export const TokensPage: React.FC = () => {
   }, [location.search]);
 
   // Use WebSocket-based token data hook
-  const { tokens: wsTokens, isConnected, connectionState, lastUpdate } = useTokenData("all");
+  const { tokens: wsTokens, lastUpdate } = useTokenData("all");
 
   // Process tokens when WebSocket data is available
   useEffect(() => {
@@ -70,7 +70,7 @@ export const TokensPage: React.FC = () => {
           timestamp: lastUpdate ? lastUpdate.toISOString() : new Date().toISOString(),
           _cached: false,
           _stale: false,
-          _cachedAt: null,
+          _cachedAt: undefined,
         };
         setMetadata(metadata);
         

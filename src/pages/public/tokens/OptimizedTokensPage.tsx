@@ -136,7 +136,7 @@ export const OptimizedTokensPage: React.FC = () => {
           timestamp: lastUpdate ? lastUpdate.toISOString() : new Date().toISOString(),
           _cached: false,
           _stale: false,
-          _cachedAt: null,
+          _cachedAt: undefined,
         };
         setMetadata(metadata);
         
@@ -283,8 +283,7 @@ export const OptimizedTokensPage: React.FC = () => {
     };
   }, []);
   
-  // Setup refreshing based on data staleness, using setTimeout instead of setInterval
-  // to prevent overlapping calls if the network is slow
+  // WebSocket update handling - no need for manual refresh
   useEffect(() => {
     // Check if running in Storybook environment
     const isStorybook = typeof window !== 'undefined' && 'STORYBOOK_ENV' in window;
@@ -294,27 +293,13 @@ export const OptimizedTokensPage: React.FC = () => {
       return;
     }
     
-    // Clear any existing timer
-    if (refreshTimerRef.current) {
-      window.clearTimeout(refreshTimerRef.current);
-    }
-    
-    // Only set up a refresh timer if not loading, not in maintenance mode, and not in error state
-    if (!loading && !isMaintenanceMode && !error) {
-      // Set new timer - Use 60s for fresh data and 15s for stale
-      const refreshTime = metadata._stale ? 15000 : 60000;
-      
-      refreshTimerRef.current = window.setTimeout(() => {
-        fetchTokensData();
-      }, refreshTime);
-    }
-    
+    // Clear any existing timer on unmount
     return () => {
       if (refreshTimerRef.current) {
         window.clearTimeout(refreshTimerRef.current);
       }
     };
-  }, [metadata._stale, fetchTokensData, isMaintenanceMode, error, loading]);
+  }, []);
 
   // Compute filtered and sorted tokens list
   const filteredAndSortedTokens = useMemo(() => {

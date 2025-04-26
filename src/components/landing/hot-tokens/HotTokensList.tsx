@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import useSound from 'use-sound';
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
-import { ddApi } from "../../../services/dd-api";
 import useTokenData from "../../../hooks/useTokenData";
 
 interface HotTokensListProps {

@@ -29,7 +29,7 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   // Use WebSocket-based token data hook
-  const { tokens, isConnected } = useTokenData("all");
+  const { tokens } = useTokenData("all");
   
   // Calculate market stats from WebSocket token data
   useEffect(() => {

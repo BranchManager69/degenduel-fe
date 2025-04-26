@@ -19,7 +19,7 @@ export const TokensPreviewSection: React.FC<TokensPreviewSectionProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   // Use WebSocket-based token data hook
-  const { tokens: wsTokens, isConnected } = useTokenData("all");
+  const { tokens: wsTokens } = useTokenData("all");
   
   // Process tokens when WebSocket data is available
   useEffect(() => {
