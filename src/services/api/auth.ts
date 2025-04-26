@@ -267,6 +267,11 @@ export const verifyPrivyToken = async (
       ...deviceInfo
     };
 
+    // Create an AbortController for timeout control
+    const controller = new AbortController();
+    // Set a 15-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const response = await axios.post(
       `${API_URL}/auth/verify-privy`,
       requestData,
@@ -276,10 +281,17 @@ export const verifyPrivyToken = async (
           Accept: "application/json",
           "X-Debug": "true",
           Origin: window.location.origin,
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache"
         },
         withCredentials: true,
+        signal: controller.signal,
+        timeout: 15000, // 15-second timeout
       }
     );
+
+    // Clear the timeout
+    clearTimeout(timeoutId);
 
     // If debug mode is enabled, log the response
     if (DDAPI_DEBUG_MODE === "true") {
@@ -311,6 +323,11 @@ export const verifyPrivyToken = async (
       device: response.data.device,
     };
   } catch (error: any) {
+    // Handle AbortController timeout
+    if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+      throw new Error("Privy verification timed out. Please try again later.");
+    }
+
     // Handle 502 Bad Gateway specifically
     if (error?.response?.status === 502) {
       throw new Error(

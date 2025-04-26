@@ -243,6 +243,14 @@ export const App: React.FC = () => {
       // Allow users to recover wallets across devices
       requireUserPasswordOnCreate: true
     },
+    // External wallets integration - this wires up Solana connectors to Privy
+    // This is the fix for issue #4 - wire Solana connectors into Privy
+    externalWallets: {
+      solana: {
+        // Use the wallet adapters that were defined above
+        connectors: walletAdapters
+      }
+    },
     // Social auth configuration (including Twitter)
     // URL handling is done automatically by auth context
     // Note: WalletConnect metadata is configured in the wallet provider below

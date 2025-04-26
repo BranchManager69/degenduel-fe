@@ -108,16 +108,65 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
           userId, deviceInfo: { ...deviceInfo, device_id: deviceInfo.device_id ? '[REDACTED]' : undefined } 
         });
         
-        // Add error handling with timeout (increased to 30 seconds per backend recommendation)
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Privy verification timed out after 30 seconds")), 30000)
-        );
+        // Add error handling with longer timeout and retry mechanism
+        const MAX_RETRIES = 3;
+        const TIMEOUT_MS = 45000; // Increased to 45 seconds
         
-        // Race between the actual request and the timeout
-        const authResult = await Promise.race([
-          verifyPrivyToken(token, userId, deviceInfo),
-          timeoutPromise
-        ]) as any;
+        let lastError: any = null;
+        let attempt = 0;
+        let authResult = null;
+        
+        // Try multiple times with exponential backoff
+        while (attempt < MAX_RETRIES) {
+          try {
+            authDebug('PrivyAuth', `Verification attempt ${attempt + 1}/${MAX_RETRIES}`);
+            
+            // Set up timeout for this attempt
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error(`Privy verification timed out after ${TIMEOUT_MS/1000} seconds`)), TIMEOUT_MS)
+            );
+            
+            // Race between the actual request and the timeout
+            authResult = await Promise.race([
+              verifyPrivyToken(token, userId, deviceInfo),
+              timeoutPromise
+            ]) as any;
+            
+            // If we got here, the request succeeded - break out of retry loop
+            authDebug('PrivyAuth', 'Verification succeeded on attempt', { attempt: attempt + 1 });
+            break;
+          } catch (error) {
+            lastError = error;
+            authDebug('PrivyAuth', `Attempt ${attempt + 1} failed`, { error });
+            
+            // Only retry on network errors or timeouts, not on auth failures
+            const errorMsg = error.message || '';
+            if (!errorMsg.includes('timed out') && !errorMsg.includes('network') && !errorMsg.includes('connection')) {
+              // Don't retry if it's not a timeout or network error
+              authDebug('PrivyAuth', 'Not retrying - not a network/timeout error');
+              break;
+            }
+            
+            attempt++;
+            if (attempt < MAX_RETRIES) {
+              const delayMs = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff up to 10 seconds
+              authDebug('PrivyAuth', `Retrying in ${delayMs}ms`);
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+          }
+        }
+        
+        // If we didn't get a successful result after all retries
+        if (!authResult) {
+          authDebug('PrivyAuth', 'All verification attempts failed');
+          throw lastError || new Error("Privy verification failed after multiple attempts");
+        }
+        
+        // If we got here, we have a successful result
+        authDebug('PrivyAuth', 'Verification successful after retries', { 
+          attempts: attempt + 1,
+          userId: authResult.user?.id 
+        });
         
         // Set the authenticated user
         setAuthUser(authResult.user);
