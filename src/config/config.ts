@@ -14,6 +14,7 @@ const DEV_PORT = "3005";
 const LOCAL_PORT = "3006"; // almost NEVER if EVER used
 // NODE_ENV gets set and exported; is either "development" or "production"
 export const NODE_ENV = isDev ? "development" : "production";
+// ^ Note: I'm going to allow this to stay exported for now but the new preferred method is to just use the config object at config.ENV.NODE_ENV
 
 /* Debug Mode */
 export const DDAPI_DEBUG_MODE = isDev ? "true" : "false";
@@ -170,6 +171,12 @@ const RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES = new Date(RELEASE_DATE_TOKEN
 
 // Config export
 export const config = {
+  // Environment
+  ENV: {
+    NODE_ENV: NODE_ENV,
+    IS_DEV: isDev,
+    IS_PROD: !isDev
+  },
   CONTRACT_ADDRESS: {
     REAL: CONTRACT_ADDRESS_REAL,
     FAKE: CONTRACT_ADDRESS_FAKE
