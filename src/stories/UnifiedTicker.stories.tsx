@@ -151,6 +151,7 @@ const TickerStoryWrapper: React.FC<any> = (props) => {
   // Create mock data and setup window objects
   window.useTokenDataMock = () => ({
     tokens: generateMockTokens(),
+    isConnected: true,
     error: props.showError ? 'Connection error' : null,
     _refresh: () => console.log('TokenData refresh called')
   });
