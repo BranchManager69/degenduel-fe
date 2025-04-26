@@ -162,7 +162,8 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
   
   // Return cached data if it's still fresh
   if (cachedTerminalData && (now - lastFetchTime < CACHE_TTL)) {
-    console.log('[TerminalDataService] Using cached terminal data');
+    // Reduced logging - only log in verbose mode or when debugging
+    // console.log('[TerminalDataService] Using cached terminal data');
     return cachedTerminalData;
   }
   
@@ -170,9 +171,14 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
   const endpoint = `${API_URL}/terminal/terminal-data`;
   
   try {
-    console.log(`[TerminalDataService] Fetching terminal data from endpoint: ${endpoint}`);
+    // Reduced logging - logging endpoint once is enough
+    // console.log(`[TerminalDataService] Fetching terminal data from endpoint: ${endpoint}`);
     
-    const response = await fetch(endpoint);
+    const response = await fetch(endpoint, { 
+      // Add timeout and credentials to improve fetching
+      signal: AbortSignal.timeout(5000), // 5 second timeout
+      credentials: 'same-origin'
+    });
     
     if (!response.ok) {
       throw new Error(`Error fetching terminal data: ${response.statusText}`);
@@ -185,15 +191,31 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
       cachedTerminalData = data.terminalData;
       lastFetchTime = now;
       
-      console.log('[TerminalDataService] Terminal data fetched successfully');
+      // Reduced logging - success doesn't need to be logged every time
+      // console.log('[TerminalDataService] Terminal data fetched successfully');
       return data.terminalData;
     } else {
-      console.warn('[TerminalDataService] Terminal data not available from API, using default');
+      // Only warn once per session about this
+      if (!window.terminalDataWarningShown) {
+        console.warn('[TerminalDataService] Terminal data not available from API, using default');
+        window.terminalDataWarningShown = true;
+      }
       return DEFAULT_TERMINAL_DATA;
     }
   } catch (error) {
-    console.error('[TerminalDataService] Error fetching terminal data:', error);
-    console.log('[TerminalDataService] Using default terminal data');
+    // Don't spam errors to console - we'll handle them gracefully
+    // Limit repetitive error messages
+    if (!window.terminalDataErrorCount) {
+      window.terminalDataErrorCount = 0;
+    }
+    
+    // Only log first few errors, then reduce frequency
+    if (window.terminalDataErrorCount < 3 || window.terminalDataErrorCount % 10 === 0) {
+      console.error('[TerminalDataService] Error fetching terminal data:', error);
+    }
+    
+    window.terminalDataErrorCount++;
+    
     return DEFAULT_TERMINAL_DATA;
   }
 };

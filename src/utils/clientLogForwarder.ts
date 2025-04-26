@@ -54,12 +54,15 @@ const MAX_REPEAT_COUNT = 3; // Show the message at most 3 times in the cooldown 
 
 // Check if a message should be rate limited
 const shouldRateLimit = (message: string): boolean => {
-  // Only rate-limit specific noisy messages
+  // Rate-limit noisy messages - expanded list to include Terminal/TerminalDataService errors
   if (!message.includes('[Jupiter Wallet]') && 
       !message.includes('WebSocketManager:') && 
       !message.includes('WalletContext') &&
       !message.includes('Cannot refresh tokens') &&
-      !message.includes('App configuration has Solana wallet login enabled')) {
+      !message.includes('App configuration has Solana wallet login enabled') &&
+      !message.includes('[TerminalDataService]') &&
+      !message.includes('[Terminal]') &&
+      !message.includes('Error fetching terminal data')) {
     return false;
   }
   
@@ -71,6 +74,13 @@ const shouldRateLimit = (message: string): boolean => {
     // If we've shown this message too many times recently, suppress it
     if (cacheEntry.count >= MAX_REPEAT_COUNT && now - cacheEntry.lastTime < MESSAGE_COOLDOWN) {
       return true; // Should be rate limited
+    }
+    
+    // More aggressive throttling for Terminal data errors
+    if (message.includes('Error fetching terminal data') && 
+        cacheEntry.count >= 2 && 
+        now - cacheEntry.lastTime < MESSAGE_COOLDOWN * 5) {
+      return true; // Rate limit more aggressively for terminal errors
     }
     
     // Update count and time

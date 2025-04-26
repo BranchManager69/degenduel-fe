@@ -85,4 +85,9 @@ interface Window {
   
   // Terminal component properties
   contractAddress?: string;
+  
+  // Terminal data service properties for logging management
+  terminalDataWarningShown?: boolean;
+  terminalDataErrorCount?: number;
+  terminalRefreshCount?: number;
 }
