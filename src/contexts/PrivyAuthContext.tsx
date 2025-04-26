@@ -140,7 +140,7 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
             authDebug('PrivyAuth', `Attempt ${attempt + 1} failed`, { error });
             
             // Only retry on network errors or timeouts, not on auth failures
-            const errorMsg = error.message || '';
+            const errorMsg = error instanceof Error ? error.message : String(error);
             if (!errorMsg.includes('timed out') && !errorMsg.includes('network') && !errorMsg.includes('connection')) {
               // Don't retry if it's not a timeout or network error
               authDebug('PrivyAuth', 'Not retrying - not a network/timeout error');

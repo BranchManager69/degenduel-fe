@@ -132,7 +132,11 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
         >
           <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 transition-colors duration-300"></div>
           <div className="relative flex items-center justify-center py-2 px-4 font-cyber text-white">
-            Connect Wallet
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+              <path d="M22 10H17C15.8954 10 15 10.8954 15 12V12C15 13.1046 15.8954 14 17 14H22" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+            Wallet
           </div>
         </div>
       );
@@ -157,11 +161,11 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
               onClick={handleConnect}
               className="w-full h-full bg-transparent border-0 text-white font-cyber flex items-center justify-center py-3 px-4"
             >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M13 7H7v6h6V7z" />
-                <path fillRule="evenodd" d="M7 2a5 5 0 00-5 5v6a5 5 0 005 5h6a5 5 0 005-5V7a5 5 0 00-5-5H7zm6 2a3 3 0 013 3v6a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h6z" clipRule="evenodd" />
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                <path d="M22 10H17C15.8954 10 15 10.8954 15 12V12C15 13.1046 15.8954 14 17 14H22" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              Connect Wallet
+              Wallet
             </button>
           </div>
         </div>
@@ -210,7 +214,15 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       variant="gradient"
       size={compact ? "sm" : "md"}
     >
-      {isConnecting || jupiterWallet.isConnecting ? "Connecting..." : "Connect Wallet"}
+      {isConnecting || jupiterWallet.isConnecting ? "Connecting..." : (
+        <>
+          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+            <path d="M22 10H17C15.8954 10 15 10.8954 15 12V12C15 13.1046 15.8954 14 17 14H22" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+          Wallet
+        </>
+      )}
     </Button>
   );
 };

@@ -405,13 +405,13 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       } else if (buttonStyle === 'minimal') {
         return "Register";
       } else {
-        return "Register Biometrics";
+        return "Register Passkey";
       }
     } else {
       if (buttonStyle === 'minimal') {
         return "Sign in";
       } else {
-        return "Sign in with Biometrics";
+        return "Passkey";
       }
     }
   };
