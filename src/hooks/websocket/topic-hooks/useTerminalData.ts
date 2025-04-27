@@ -212,3 +212,4 @@ export function useTerminalData() {
     contractAddressRevealed: !!terminalData.token?.address
   };
 }
+
