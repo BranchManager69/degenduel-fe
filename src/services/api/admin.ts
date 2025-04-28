@@ -137,6 +137,204 @@ interface CreateContestResponse {
 }
 
 export const admin = {
+  // Token Liquidation Simulation API
+  tokenLiquidation: {
+    // Get token information for simulation
+    getTokenInfo: async (tokenAddress: string): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/token-liquidation/token-info/${tokenAddress}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch token info: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get token info:", error);
+        throw error;
+      }
+    },
+    
+    // Run a single simulation
+    simulate: async (params: {
+      totalSupply: number;
+      currentPrice: number;
+      baseReserve: number;
+      quoteReserve: number;
+      acquisitionLevel: string;
+      personalRatio: number;
+      days: number;
+      scenarioType: string;
+    }): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/token-liquidation/simulate", {
+          method: "POST",
+          body: JSON.stringify(params)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to run simulation: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to run simulation:", error);
+        throw error;
+      }
+    },
+    
+    // Run a grid simulation with multiple parameters
+    simulateGrid: async (params: {
+      totalSupply: number;
+      currentPrice: number;
+      baseReserve: number;
+      quoteReserve: number;
+      acquisitionLevels: string[];
+      scenarios: string[];
+    }): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/token-liquidation/simulation-grid", {
+          method: "POST",
+          body: JSON.stringify(params)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to run grid simulation: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to run grid simulation:", error);
+        throw error;
+      }
+    },
+    
+    // Save simulation results
+    saveSimulation: async (data: {
+      tokenInfo: any;
+      params: any;
+      results: any;
+      name: string;
+      description?: string;
+      tags?: string[];
+    }): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/token-liquidation/save", {
+          method: "POST",
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to save simulation: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to save simulation:", error);
+        throw error;
+      }
+    },
+    
+    // Get saved simulations list
+    getSavedSimulations: async (filters?: {
+      tokenAddress?: string;
+      tags?: string[];
+      page?: number;
+      limit?: number;
+    }): Promise<any> => {
+      try {
+        const api = createApiClient();
+        
+        // Build query params
+        const queryParams = new URLSearchParams();
+        if (filters) {
+          if (filters.tokenAddress) queryParams.append('tokenAddress', filters.tokenAddress);
+          if (filters.tags && filters.tags.length) queryParams.append('tags', filters.tags.join(','));
+          if (filters.page) queryParams.append('page', filters.page.toString());
+          if (filters.limit) queryParams.append('limit', filters.limit.toString());
+        }
+        
+        const url = `/admin/token-liquidation/saved${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const response = await api.fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch saved simulations: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to fetch saved simulations:", error);
+        throw error;
+      }
+    },
+    
+    // Get a specific saved simulation by ID
+    getSavedSimulation: async (id: string): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/token-liquidation/saved/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch saved simulation: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to fetch saved simulation with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Delete a saved simulation
+    deleteSavedSimulation: async (id: string): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/token-liquidation/saved/${id}`, {
+          method: "DELETE"
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete saved simulation: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to delete saved simulation with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Generate PDF report for a simulation
+    generateReport: async (data: {
+      simulationId?: string;
+      simulationData?: any;
+      reportType: 'detailed' | 'summary' | 'comparative';
+      title?: string;
+      includeCharts?: boolean;
+    }): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/token-liquidation/report", {
+          method: "POST",
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to generate report: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to generate report:", error);
+        throw error;
+      }
+    }
+  },
+  
   // Contest Scheduler API
   contestScheduler: {
     // Get the current status of the contest scheduler service

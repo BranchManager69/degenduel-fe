@@ -982,6 +982,8 @@ export const useStore = create<State>()(
             `.${window.location.hostname}`,
             "degenduel.me",
             ".degenduel.me",
+            "dduel.me",
+            ".dduel.me",
           ];
           const paths = ["/", "/api"];
 

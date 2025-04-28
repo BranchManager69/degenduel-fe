@@ -5,7 +5,12 @@
  * 
  * This file contains standardized interfaces and types used across the WebSocket system.
  * All endpoints and types have been verified against backend API documentation.
- * Last updated: March 27, 2025
+ * Last updated: April 25, 2025
+ * 
+ * IMPORTANT NOTE: This file is actively being updated as part of the v69 WebSocket system rollout.
+ * Some topic types might be missing or in flux as new features are implemented.
+ * If you notice missing topic types, please coordinate with the team before making changes.
+ * The SOCKET_TYPES constant below should be used as the source of truth for available topics.
  */
 
 // Standardized message types from the server - all uppercase as expected by the server
@@ -114,6 +119,7 @@ export const SOCKET_TYPES = {
   CONTEST_CHAT: 'contest-chat', // Being deprecated in favor of unified CONTEST socket
   
   // Admin sockets
+  ADMIN: 'admin',
   ANALYTICS: 'analytics',
   CIRCUIT_BREAKER: 'circuit-breaker',
   SERVICE: 'service',
@@ -124,4 +130,7 @@ export const SOCKET_TYPES = {
   
   // Terminal data socket
   TERMINAL: 'terminal',
+
+  // Liquidity simulation socket
+  LIQUIDITY_SIM: 'liquidity-sim',
 };

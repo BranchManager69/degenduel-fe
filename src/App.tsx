@@ -36,6 +36,7 @@ import { EdgeToEdgeTicker } from "./components/layout/EdgeToEdgeTicker";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { ServerDownBanner } from "./components/layout/ServerDownBanner";
+import { WalletBalanceTicker } from "./components/layout/WalletBalanceTicker";
 import { InviteWelcomeModal } from "./components/modals/InviteWelcomeModal";
 import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
@@ -104,6 +105,7 @@ import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
 import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage";
 import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub";
+import LiquiditySimulatorPage from "./pages/superadmin/LiquiditySimulatorPage";
 import ServiceCommandCenter from "./pages/superadmin/ServiceCommandCenter";
 import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
@@ -352,6 +354,7 @@ export const App: React.FC = () => {
                               <MovingBackground />
                               <Header />
                               <EdgeToEdgeTicker />
+                              {user && <WalletBalanceTicker isCompact={true} />}
                               <ServerDownBanner />
                               <main className="flex-1 pb-12">
                                 <Routes>
@@ -733,6 +736,14 @@ export const App: React.FC = () => {
                                     element={
                                       <SuperAdminRoute>
                                         <AmmSim />
+                                      </SuperAdminRoute>
+                                    }
+                                  />
+                                  <Route
+                                    path="/superadmin/liquidity-simulator"
+                                    element={
+                                      <SuperAdminRoute>
+                                        <LiquiditySimulatorPage />
                                       </SuperAdminRoute>
                                     }
                                   />
