@@ -2,8 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
 import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
@@ -223,7 +221,6 @@ export const ContestBrowser: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       {/* Content Section */}
       <div className="relative flex-1" style={{ zIndex: 10 }}>

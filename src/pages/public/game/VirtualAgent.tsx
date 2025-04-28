@@ -1,8 +1,6 @@
 import { CharacterRoom } from "@virtual-protocol/react-virtual-ai";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { Card } from "../../../components/ui/Card";
 import { useStore } from "../../../store/useStore";
 
@@ -118,7 +116,6 @@ export const VirtualAgentPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       {/* Content Section */}
       <div className="relative z-10">

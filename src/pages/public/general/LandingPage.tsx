@@ -7,34 +7,32 @@
  */
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Link as RouterLink } from "react-router-dom";
 // Import the Terminal component
 import { Terminal } from '../../../components/terminal';
 // CSS is now loaded from public/assets/degen-components.css via index.html
 // import { processTerminalChat } from '../../../services/mockTerminalService';
-import { 
-  fetchContractAddress, 
-  isReleaseTimePassed, 
-  setContractAddressPublic,
+import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
+import { config as globalConfig } from '../../../config/config';
+import {
+  CONTRACT_POLL_INTERVAL,
+  fetchContractAddress,
   getTimeRemainingUntilRelease,
-  CONTRACT_POLL_INTERVAL 
+  isReleaseTimePassed,
+  setContractAddressPublic
 } from '../../../services/contractAddressService';
 import {
+  FALLBACK_RELEASE_DATE,
   fetchReleaseDate,
-  formatReleaseDate,
-  FALLBACK_RELEASE_DATE
+  formatReleaseDate
 } from '../../../services/releaseDateService';
-import { config as globalConfig } from '../../../config/config';
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
-import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 // Import WebSocketMonitor conditionally only for admins
 // Features import removed and controlled by feature flag
+import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { FEATURE_FLAGS } from "../../../config/config";
 import { useAuth } from "../../../hooks/useAuth";
 import { isContestLive } from "../../../lib/utils";
-import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
 
@@ -285,8 +283,6 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden">
-      {/* 3D Background Scene */}
-      <BackgroundEffects />
 
       {/* Content Section */}
       <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>
@@ -439,468 +435,352 @@ export const LandingPage: React.FC = () => {
                 </motion.div>
               )}
 
-              {/* Only show content below this point when user is logged in */}
-              {user && (
-                <>
-                  {/* Enhanced tagline with properly masked shine effect - increased top margin */}
-                  <motion.div
-                    className="mt-8 mb-6"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{
-                      opacity: animationPhase > 0 ? 1 : 0,
-                      y: animationPhase > 0 ? 0 : 20,
-                      transition: {
-                        delay: 0.3,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    <motion.div
-                      className="relative"
-                      initial={{ backgroundPosition: "200% center" }}
-                      animate={{
-                        backgroundPosition: ["200% center", "-200% center"],
-                      }}
-                      transition={{
-                        duration: 3,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        repeatDelay: 0.5,
-                      }}
-                      style={{
-                        backgroundImage: `
-                          linear-gradient(
-                            to right, 
-                            #b266ff, #9933ff, #6600cc, #9933ff, 
-                            #b266ff 50%, #9933ff 50%,
-                            #b266ff 55%, #9933ff 55%, 
-                            #ddbcff 56%, #ffffff 58%, 
-                            #ddbcff 60%, #9933ff 62%,
-                            #b266ff 70%
-                          )
-                        `,
-                        backgroundSize: "200% auto",
-                        WebkitBackgroundClip: "text",
-                        backgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        color: "transparent",
-                        display: "inline-block"
-                      }}
-                    >
-                      <h2 className="text-2xl sm:text-3xl font-black leading-tight px-4">
-                        High-Stakes Trading Competitions on Solana
-                      </h2>
-                    </motion.div>
-                  </motion.div>
+              {/* Common tagline for all users */}
+              <motion.div
+                className="mt-8 mb-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                  opacity: animationPhase > 0 ? 1 : 0,
+                  y: animationPhase > 0 ? 0 : 20,
+                  transition: {
+                    delay: 0.3,
+                    duration: 0.8,
+                  },
+                }}
+              >
+                <motion.div
+                  className="relative"
+                  initial={{ backgroundPosition: "200% center" }}
+                  animate={{
+                    backgroundPosition: ["200% center", "-200% center"],
+                  }}
+                  transition={{
+                    duration: 3,
+                    ease: "easeInOut",
+                    repeat: Infinity,
+                    repeatDelay: 0.5,
+                  }}
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(
+                        to right, 
+                        #b266ff, #9933ff, #6600cc, #9933ff, 
+                        #b266ff 50%, #9933ff 50%,
+                        #b266ff 55%, #9933ff 55%, 
+                        #ddbcff 56%, #ffffff 58%, 
+                        #ddbcff 60%, #9933ff 62%,
+                        #b266ff 70%
+                      )
+                    `,
+                    backgroundSize: "200% auto",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    color: "transparent",
+                    display: "inline-block"
+                  }}
+                >
+                  <h2 className="text-2xl sm:text-3xl font-black leading-tight px-4">
+                    High-Stakes Trading Competitions on Solana
+                  </h2>
+                </motion.div>
+              </motion.div>
 
-                  {/* Call to action buttons */}
-                  <motion.div
-                    className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6 px-4 sm:px-0 max-w-full"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{
-                      opacity: animationPhase > 0 ? 1 : 0,
-                      y: animationPhase > 0 ? 0 : 20,
-                      transition: {
-                        delay: 0.6,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    {/* HOW TO PLAY button first */}
-                    <RouterLink to="/how-it-works" className="w-full sm:w-auto">
-                      <button className="w-full relative group overflow-hidden">
-                        <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500">
-                          <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
-                              <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
-                                HOW TO PLAY
-                              </span>
-                              <svg
-                                className="w-6 h-6 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                                fill="none" 
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    </RouterLink>
-
-                    {/* START DUELING button second */}
-                    <RouterLink to="/contests" className="w-full sm:w-auto">
-                      <button className="w-full relative group overflow-hidden">
-                        <div className="relative clip-edges bg-gradient-to-r from-emerald-500 to-teal-600 p-[1px] transition-all duration-300 group-hover:from-emerald-400 group-hover:to-teal-500">
-                          <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
-                              <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
-                                START DUELING
-                              </span>
-                              <svg
-                                className="w-6 h-6 text-emerald-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    </RouterLink>
-                  </motion.div>
-                  
-                  {/* Market Overview Panel */}
-                  <motion.div
-                    className="w-full mt-8 mb-4"
-                    initial={{ opacity: 0 }}
-                    animate={{
-                      opacity: animationPhase > 1 ? 1 : 0,
-                      transition: {
-                        delay: 0.7,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    {(() => {
-                      // Lazy-load the MarketStatsPanel component
-                      const MarketStatsPanel = React.lazy(() => 
-                        import("../../../components/landing/market-stats").then(module => ({ 
-                          default: module.MarketStatsPanel 
-                        }))
-                      );
-                      
-                      return (
-                        <React.Suspense 
-                          fallback={
-                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                              <div className="h-32 bg-dark-300/20 rounded-xl animate-pulse"></div>
-                            </div>
-                          }
-                        >
-                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <MarketStatsPanel />
-                          </div>
-                        </React.Suspense>
-                      );
-                    })()}
-                  </motion.div>
-                  
-                  {/* Elite Hot Tokens List */}
-                  <motion.div
-                    className="w-full mt-8 mb-6"
-                    initial={{ opacity: 0 }}
-                    animate={{
-                      opacity: animationPhase > 1 ? 1 : 0,
-                      transition: {
-                        delay: 0.7,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    {(() => {
-                      // Lazy-load the HotTokensList component
-                      const HotTokensList = React.lazy(() => 
-                        import("../../../components/landing/hot-tokens").then(module => ({ 
-                          default: module.HotTokensList 
-                        }))
-                      );
-                      
-                      return (
-                        <React.Suspense 
-                          fallback={
-                            <div className="py-10 flex justify-center">
-                              <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                            </div>
-                          }
-                        >
-                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <HotTokensList maxTokens={5} />
-                          </div>
-                        </React.Suspense>
-                      );
-                    })()}
-                  </motion.div>
-                  
-                  {/* Top Tokens Display */}
-                  <motion.div
-                    className="w-full mt-8"
-                    initial={{ opacity: 0 }}
-                    animate={{
-                      opacity: animationPhase > 1 ? 1 : 0,
-                      transition: {
-                        delay: 0.9,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    {(() => {
-                      // Lazy-load the TokensPreviewSection component
-                      const TokensPreviewSection = React.lazy(() => 
-                        import("../../../components/landing/tokens-preview").then(module => ({ 
-                          default: module.TokensPreviewSection 
-                        }))
-                      );
-                      
-                      return (
-                        <React.Suspense 
-                          fallback={
-                            <div className="py-10 flex justify-center">
-                              <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                            </div>
-                          }
-                        >
-                          <TokensPreviewSection maxTokens={6} />
-                        </React.Suspense>
-                      );
-                    })()}
-                  </motion.div>
-                  
-                  {/* Contest sections */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{
-                      opacity: animationPhase > 0 ? 1 : 0,
-                      y: animationPhase > 0 ? 0 : 40,
-                      transition: {
-                        delay: 1.2,
-                        duration: 0.8,
-                        type: "spring",
-                        stiffness: 50,
-                      },
-                    }}
-                  >
-                    {isMaintenanceMode ? (
-                      <div className="relative">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-                          <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-                            <div className="flex items-center justify-center gap-2 text-yellow-400">
-                              <span className="animate-pulse">⚠</span>
-                              <span>
-                                DegenDuel is in Maintenance Mode. Please try again later.
-                              </span>
-                              <span className="animate-pulse">⚙️</span>
-                            </div>
-                          </div>
+              {/* Call to action buttons - different for logged in vs non-logged in */}
+              <motion.div
+                className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6 px-4 sm:px-0 max-w-full"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                  opacity: animationPhase > 0 ? 1 : 0,
+                  y: animationPhase > 0 ? 0 : 20,
+                  transition: {
+                    delay: 0.6,
+                    duration: 0.8,
+                  },
+                }}
+              >
+                {/* HOW TO PLAY button for all users */}
+                <RouterLink to="/how-it-works" className="w-full sm:w-auto">
+                  <button className="w-full relative group overflow-hidden">
+                    <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500">
+                      <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                        <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
+                          <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
+                            HOW TO PLAY
+                          </span>
+                          <svg
+                            className="w-6 h-6 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                            fill="none" 
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M14 5l7 7m0 0l-7 7m7-7H3"
+                            />
+                          </svg>
                         </div>
                       </div>
-                    ) : error ? (
-                      <div className="relative">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                          <div className="text-center p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg">
-                            <div className="text-red-500 animate-glitch">{error}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                          {/* Add significant bottom margin to prevent footer overlap */}
-                          <div className="mb-32">
-                            {/* Use the shared ContestSection component for active contests */}
-                            {activeContests.length > 0 && (
-                              <ContestSection
-                                title="Live Duels"
-                                type="active"
-                                contests={activeContests}
-                                loading={loading}
+                    </div>
+                  </button>
+                </RouterLink>
+
+                {/* Conditional second button based on auth status */}
+                {user ? (
+                  <RouterLink to="/contests" className="w-full sm:w-auto">
+                    <button className="w-full relative group overflow-hidden">
+                      <div className="relative clip-edges bg-gradient-to-r from-emerald-500 to-teal-600 p-[1px] transition-all duration-300 group-hover:from-emerald-400 group-hover:to-teal-500">
+                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                          <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
+                            <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
+                              START DUELING
+                            </span>
+                            <svg
+                              className="w-6 h-6 text-emerald-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"
                               />
-                            )}
-
-                            {/* Use the shared ContestSection component for upcoming contests */}
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </RouterLink>
+                ) : (
+                  <RouterLink to="/login" className="w-full sm:w-auto">
+                    <button className="w-full relative group overflow-hidden">
+                      <div className="relative clip-edges bg-gradient-to-r from-brand-500 to-brand-600 p-[1px] transition-all duration-300 group-hover:from-brand-400 group-hover:to-brand-500">
+                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                          <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
+                            <span className="bg-gradient-to-r from-brand-300 to-brand-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-brand-200">
+                              CONNECT WALLET
+                            </span>
+                            <svg
+                              className="w-6 h-6 text-brand-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                              fill="none" 
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </RouterLink>
+                )}
+              </motion.div>
+              
+              {/* Market Overview Panel - shown to all users */}
+              <motion.div
+                className="w-full mt-8 mb-4"
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: animationPhase > 1 ? 1 : 0,
+                  transition: {
+                    delay: 0.7,
+                    duration: 0.8,
+                  },
+                }}
+              >
+                {(() => {
+                  // Lazy-load the MarketStatsPanel component
+                  const MarketStatsPanel = React.lazy(() => 
+                    import("../../../components/landing/market-stats").then(module => ({ 
+                      default: module.MarketStatsPanel 
+                    }))
+                  );
+                  
+                  return (
+                    <React.Suspense 
+                      fallback={
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                          <div className="h-32 bg-dark-300/20 rounded-xl animate-pulse"></div>
+                        </div>
+                      }
+                    >
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <MarketStatsPanel />
+                      </div>
+                    </React.Suspense>
+                  );
+                })()}
+              </motion.div>
+              
+              {/* Elite Hot Tokens List - shown to all users with consistent token count */}
+              <motion.div
+                className="w-full mt-8 mb-6"
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: animationPhase > 1 ? 1 : 0,
+                  transition: {
+                    delay: 0.7,
+                    duration: 0.8,
+                  },
+                }}
+              >
+                {(() => {
+                  // Lazy-load the HotTokensList component
+                  const HotTokensList = React.lazy(() => 
+                    import("../../../components/landing/hot-tokens").then(module => ({ 
+                      default: module.HotTokensList 
+                    }))
+                  );
+                  
+                  return (
+                    <React.Suspense 
+                      fallback={
+                        <div className="py-10 flex justify-center">
+                          <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        </div>
+                      }
+                    >
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <HotTokensList maxTokens={5} />
+                      </div>
+                    </React.Suspense>
+                  );
+                })()}
+              </motion.div>
+              
+              {/* Top Tokens Display - shown to all users with consistent token count */}
+              <motion.div
+                className="w-full mt-8"
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: animationPhase > 1 ? 1 : 0,
+                  transition: {
+                    delay: 0.9,
+                    duration: 0.8,
+                  },
+                }}
+              >
+                {(() => {
+                  // Lazy-load the TokensPreviewSection component
+                  const TokensPreviewSection = React.lazy(() => 
+                    import("../../../components/landing/tokens-preview").then(module => ({ 
+                      default: module.TokensPreviewSection 
+                    }))
+                  );
+                  
+                  return (
+                    <React.Suspense 
+                      fallback={
+                        <div className="py-10 flex justify-center">
+                          <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        </div>
+                      }
+                    >
+                      <TokensPreviewSection maxTokens={6} />
+                    </React.Suspense>
+                  );
+                })()}
+              </motion.div>
+              
+              {/* Contest sections - only shown to logged in users */}
+              {user && (
+                <motion.div
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{
+                    opacity: animationPhase > 0 ? 1 : 0,
+                    y: animationPhase > 0 ? 0 : 40,
+                    transition: {
+                      delay: 1.2,
+                      duration: 0.8,
+                      type: "spring",
+                      stiffness: 50,
+                    },
+                  }}
+                >
+                  {isMaintenanceMode ? (
+                    <div className="relative">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+                          <div className="flex items-center justify-center gap-2 text-yellow-400">
+                            <span className="animate-pulse">⚠</span>
+                            <span>
+                              DegenDuel is in Maintenance Mode. Please try again later.
+                            </span>
+                            <span className="animate-pulse">⚙️</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : error ? (
+                    <div className="relative">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="text-center p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg">
+                          <div className="text-red-500 animate-glitch">{error}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                        {/* Add significant bottom margin to prevent footer overlap */}
+                        <div className="mb-32">
+                          {/* Use the shared ContestSection component for active contests */}
+                          {activeContests.length > 0 && (
                             <ContestSection
-                              title="Starting Soon"
-                              type="pending"
-                              contests={openContests}
+                              title="Live Duels"
+                              type="active"
+                              contests={activeContests}
                               loading={loading}
                             />
+                          )}
 
-                            {activeContests.length === 0 &&
-                              openContests.length === 0 &&
-                              !loading && (
-                                <div className="text-center py-16">
-                                  <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
-                                    No Duels Available
-                                  </h2>
-                                  <p className="text-gray-400 mb-8">
-                                    Check back soon for new Duels.
-                                  </p>
-                                  <Link
-                                    to="/contests/create"
-                                    className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
-                                  >
-                                    Create a Duel
-                                  </Link>
-                                </div>
-                              )}
-                          </div>
+                          {/* Use the shared ContestSection component for upcoming contests */}
+                          <ContestSection
+                            title="Starting Soon"
+                            type="pending"
+                            contests={openContests}
+                            loading={loading}
+                          />
+
+                          {activeContests.length === 0 &&
+                            openContests.length === 0 &&
+                            !loading && (
+                              <div className="text-center py-16">
+                                <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
+                                  No Duels Available
+                                </h2>
+                                <p className="text-gray-400 mb-8">
+                                  Check back soon for new Duels.
+                                </p>
+                                <Link
+                                  to="/contests/create"
+                                  className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
+                                >
+                                  Create a Duel
+                                </Link>
+                              </div>
+                            )}
                         </div>
                       </div>
-                    )}
-                  </motion.div>
-                </>
+                    </div>
+                  )}
+                </motion.div>
               )}
               
-              {/* When user is not logged in, show a message beneath the terminal */}
-              {!user && (
-                <div className="mt-8 mb-32 text-center p-6">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4 sm:px-0 max-w-full"
-                  >
-                    <RouterLink to="/login" className="w-full sm:w-auto">
-                      <button className="w-full relative group overflow-hidden">
-                        <div className="relative clip-edges bg-gradient-to-r from-brand-500 to-brand-600 p-[1px] transition-all duration-300 group-hover:from-brand-400 group-hover:to-brand-500">
-                          <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
-                              <span className="bg-gradient-to-r from-brand-300 to-brand-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-brand-200">
-                                CONNECT WALLET
-                              </span>
-                              <svg
-                                className="w-6 h-6 text-brand-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                                fill="none" 
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    </RouterLink>
-                  </motion.div>
-                  
-                  {/* Market Overview Panel for non-logged in users */}
-                  <motion.div
-                    className="w-full mt-8"
-                    initial={{ opacity: 0 }}
-                    animate={{ 
-                      opacity: 1,
-                      transition: {
-                        delay: 0.6,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    {(() => {
-                      // Lazy-load the MarketStatsPanel component
-                      const MarketStatsPanel = React.lazy(() => 
-                        import("../../../components/landing/market-stats").then(module => ({ 
-                          default: module.MarketStatsPanel 
-                        }))
-                      );
-                      
-                      return (
-                        <React.Suspense 
-                          fallback={
-                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                              <div className="h-32 bg-dark-300/20 rounded-xl animate-pulse"></div>
-                            </div>
-                          }
-                        >
-                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <MarketStatsPanel />
-                          </div>
-                        </React.Suspense>
-                      );
-                    })()}
-                  </motion.div>
-                  
-                  {/* Elite Hot Tokens List for non-logged in users */}
-                  <motion.div
-                    className="w-full mt-8 mb-6"
-                    initial={{ opacity: 0 }}
-                    animate={{ 
-                      opacity: 1,
-                      transition: {
-                        delay: 0.7,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    {(() => {
-                      // Lazy-load the HotTokensList component
-                      const HotTokensList = React.lazy(() => 
-                        import("../../../components/landing/hot-tokens").then(module => ({ 
-                          default: module.HotTokensList 
-                        }))
-                      );
-                      
-                      return (
-                        <React.Suspense 
-                          fallback={
-                            <div className="py-10 flex justify-center">
-                              <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                            </div>
-                          }
-                        >
-                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <HotTokensList maxTokens={3} />
-                          </div>
-                        </React.Suspense>
-                      );
-                    })()}
-                  </motion.div>
-                  
-                  {/* Top Tokens Display for non-logged in users */}
-                  <motion.div
-                    className="w-full mt-8"
-                    initial={{ opacity: 0 }}
-                    animate={{ 
-                      opacity: 1,
-                      transition: {
-                        delay: 0.9,
-                        duration: 0.8,
-                      },
-                    }}
-                  >
-                    {(() => {
-                      // Lazy-load the TokensPreviewSection component
-                      const TokensPreviewSection = React.lazy(() => 
-                        import("../../../components/landing/tokens-preview").then(module => ({ 
-                          default: module.TokensPreviewSection 
-                        }))
-                      );
-                      
-                      return (
-                        <React.Suspense 
-                          fallback={
-                            <div className="py-10 flex justify-center">
-                              <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                            </div>
-                          }
-                        >
-                          <TokensPreviewSection maxTokens={3} />
-                        </React.Suspense>
-                      );
-                    })()}
-                  </motion.div>
-                </div>
-              )}
+              {/* Bottom spacing for non-authenticated users */}
+              {!user && <div className="mb-32"></div>}
             </div>
           </div>
         </div>

@@ -1,8 +1,6 @@
 // src/pages/public/general/HowItWorks.tsx
 
 import React from "react";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { Card, CardContent } from "../../../components/ui/Card";
 
 export const HowItWorks: React.FC = () => {
@@ -35,7 +33,6 @@ export const HowItWorks: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       {/* Content Section */}
       <div className="relative z-10">

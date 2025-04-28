@@ -12,7 +12,6 @@ import { SuperAdminWalletManagement } from "../../components/admin/SuperAdminWal
 import { VanityPool } from "../../components/admin/VanityPool";
 import WalletBalanceAnalytics from "../../components/admin/WalletBalanceAnalytics";
 import WebSocketConnectionPanel from "../../components/admin/WebSocketConnectionPanel";
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -387,8 +386,6 @@ export const SuperAdminDashboard: React.FC = () => {
 
   return (
     <ContestProvider>
-      {/* Add BackgroundEffects for visual consistency with other pages */}
-      <BackgroundEffects />
       <div data-testid="superadmin-dashboard">
 
       <div className="container mx-auto p-6 space-y-8 relative z-10">

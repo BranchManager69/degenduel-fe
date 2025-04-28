@@ -7,8 +7,6 @@ import {
 import React, { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Input } from "../../../components/ui/Input";
@@ -292,7 +290,6 @@ export const TokenWhitelistPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       {/* Content Section */}
       <div className="relative z-10">

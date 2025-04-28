@@ -43,7 +43,7 @@ import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
-import { MovingBackground } from "./components/ui/MovingBackground";
+import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
 /* Contexts */
 import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
@@ -351,7 +351,7 @@ export const App: React.FC = () => {
                               {user?.is_superadmin && <UiDebugPanel />}
                               {user?.is_superadmin && <ServiceDebugPanel />}
                               {user?.is_superadmin && <GameDebugPanel />}
-                              <MovingBackground />
+                              <BackgroundEffects />
                               <Header />
                               <EdgeToEdgeTicker />
                               {user && <WalletBalanceTicker isCompact={true} />}

@@ -3,14 +3,12 @@
 import React, { useEffect, useState } from "react";
 import {
   FaChartPie,
+  FaFilter,
   FaSearch,
   FaSortAmountDown,
   FaSortAmountUp,
-  FaFilter,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import {
@@ -23,9 +21,9 @@ import {
 } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import {
-  SelectItem,
   Select,
   SelectContent,
+  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/SelectAdvanced";
@@ -251,7 +249,6 @@ export const MyPortfoliosPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <BackgroundEffects />
 
       <div className="relative z-10 py-8 container mx-auto px-4">
         <header className="mb-8">

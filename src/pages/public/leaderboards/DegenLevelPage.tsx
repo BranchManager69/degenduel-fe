@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { useStore } from "../../../store/useStore";
@@ -183,7 +181,6 @@ export const DegenLevelPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 py-8">

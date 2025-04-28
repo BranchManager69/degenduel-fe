@@ -1,19 +1,17 @@
 // src/pages/public/tokens/TokensPage.tsx
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
-import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailModal";
-import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
+import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
+import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailModal";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
+import useTokenData from "../../../hooks/useTokenData";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";
-import useTokenData from "../../../hooks/useTokenData";
 
 // Tokens page
 export const TokensPage: React.FC = () => {
@@ -158,7 +156,6 @@ export const TokensPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 gap-4">
             {[...Array(6)].map((_, i) => (
@@ -183,7 +180,6 @@ export const TokensPage: React.FC = () => {
   if (isMaintenanceMode) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
             <div className="flex items-center justify-center gap-2 text-yellow-400">
@@ -203,7 +199,6 @@ export const TokensPage: React.FC = () => {
   if (error) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-red-500 p-8 bg-dark-200/50 rounded-lg">
             {error}
@@ -215,7 +210,6 @@ export const TokensPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       {/* Content Section - Improved for mobile */}
       <div className="relative z-10">

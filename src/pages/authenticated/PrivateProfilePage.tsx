@@ -14,7 +14,6 @@ import React from "react";
 
 import { AchievementsSection } from "../../components/achievements/AchievementsSection";
 import { UserProgress } from "../../components/achievements/UserProgress";
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import SimpleAvatar from "../../components/character-avatars";
 import { ContestHistorySection } from "../../components/profile/contest-history/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/profile-header/ProfileHeaderSection";
@@ -29,7 +28,6 @@ export const PrivateProfilePage: React.FC = () => {
   if (!user) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -53,8 +51,6 @@ export const PrivateProfilePage: React.FC = () => {
   // Profile Page
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Background Effects */}
-      <BackgroundEffects />
 
       {/* Content Section */}
       <motion.div

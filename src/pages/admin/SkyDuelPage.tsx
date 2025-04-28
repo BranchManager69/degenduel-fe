@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
 import { SkyDuelDashboard } from "../../components/admin/skyduel/SkyDuelDashboard";
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import SkyDuelDebugPanel from "../../components/debug/websocket/SkyDuelDebugPanel";
 import { useAuth } from "../../hooks/useAuth";
 import { useSkyDuelWebSocket } from "../../hooks/websocket/useSkyDuelWebSocket";
@@ -61,8 +60,6 @@ export const SkyDuelPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-900 to-dark-950 text-white">
-      {/* Background visualization */}
-      <BackgroundEffects />
 
       {/* Main content */}
       <div className="container mx-auto px-4 py-8 relative z-10">

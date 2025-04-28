@@ -1,20 +1,18 @@
 // src/pages/public/contests/ContestResultsPage.tsx
 
-import React, { useState, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { formatCurrency } from "../../../lib/utils";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
+import { ContestChat } from "../../../components/contest-chat/ContestChat";
+import { VisualTester } from "../../../components/contest-lobby/VisualTester";
 import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
 import { FinalLeaderboard } from "../../../components/contest-results/FinalLeaderboard";
 import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
 import { TokenPerformance } from "../../../components/contest-results/TokenPerformance";
-import { ContestChat } from "../../../components/contest-chat/ContestChat";
-import { VisualTester } from "../../../components/contest-lobby/VisualTester";
+import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
-import { Badge } from "../../../components/ui/Badge";
+import { formatCurrency } from "../../../lib/utils";
 
 // Contest Results page - enhanced with next-level UI and interactive features
 export const ContestResults: React.FC = () => {
@@ -199,7 +197,6 @@ export const ContestResults: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
-      <BackgroundEffects />
       
       {/* Enhanced celebration overlay with custom handler */}
       {showCelebration && (
