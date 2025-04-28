@@ -1,19 +1,18 @@
 // src/pages/public/tokens/OptimizedTokensPage.tsx
 
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { OptimizedTokensGrid } from "../../../components/tokens-list/OptimizedTokensGrid";
 import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
 import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailModal";
-import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
+import useTokenData from "../../../hooks/useTokenData";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
-import useTokenData from "../../../hooks/useTokenData";
 
 /**
  * OptimizedTokensPage component with improved performance
@@ -320,7 +319,6 @@ export const OptimizedTokensPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 gap-4">
             {[...Array(6)].map((_, i) => (
@@ -346,7 +344,6 @@ export const OptimizedTokensPage: React.FC = () => {
   if (isMaintenanceMode) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
             <div className="flex items-center justify-center gap-2 text-yellow-400">
@@ -367,7 +364,6 @@ export const OptimizedTokensPage: React.FC = () => {
   if (error) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-red-500 p-8 bg-dark-200/50 rounded-lg">
             {error}

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 import { SpyPanel } from "../../../components/admin/SpyPanel";
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { useEnhancedDiagnostics } from "../../../hooks/useEnhancedDiagnostics";
 import { useStore } from "../../../store/useStore";
 
@@ -87,7 +86,6 @@ const UserDiagnostics: React.FC = () => {
 
   return (
     <>
-      <BackgroundEffects />
       <div className="container mx-auto p-8 relative z-10">
         {/* Header */}
         <div className="mb-8">

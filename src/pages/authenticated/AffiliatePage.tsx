@@ -10,7 +10,6 @@
 
 import React from "react";
 import { AffiliateDashboard } from "../../components/affiliate-dashboard/AffiliateDashboard";
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 
 // This component should be renamed to AffiliatePage.tsx in a future update
 export const ReferralPage: React.FC = () => {
@@ -23,7 +22,6 @@ export const ReferralPage: React.FC = () => {
   }, []);
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       {/* Content Section */}
       <div className="relative z-10">

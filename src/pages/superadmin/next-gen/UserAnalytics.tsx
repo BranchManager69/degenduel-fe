@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 import { LiveUserActivityMap } from "../../../components/admin/LiveUserActivityMap";
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { useEnhancedAnalytics } from "../../../hooks/useEnhancedAnalytics";
 import { useStore } from "../../../store/useStore";
 
@@ -26,7 +25,6 @@ const UserAnalytics: React.FC = () => {
 
   return (
     <>
-      <BackgroundEffects />
       <div className="container mx-auto p-8 relative z-10">
         {/* Header */}
         <div className="mb-8">

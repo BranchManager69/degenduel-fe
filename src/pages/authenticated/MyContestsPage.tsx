@@ -2,15 +2,13 @@
 
 import React, { useEffect, useMemo } from "react";
 import {
-  FaTrophy,
+  FaBan,
   FaCalendarAlt,
   FaFire,
-  FaBan,
   FaHourglassHalf,
+  FaTrophy,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestCard } from "../../components/contest-browser/ContestCard";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
@@ -109,7 +107,6 @@ export const MyContestsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <BackgroundEffects />
 
       <div className="relative z-10 py-8 container mx-auto px-4">
         <header className="mb-8">

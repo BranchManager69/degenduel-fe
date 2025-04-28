@@ -1,22 +1,20 @@
 // src/pages/public/contests/ContestLobbyPage.tsx
 
-import React, { useEffect, useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
+import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
 import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
 import { PortfolioPerformance } from "../../../components/contest-lobby/PortfolioPerformance";
 import { TestSkipButton } from "../../../components/contest-lobby/TestSkipButton";
 import { TokenPerformance } from "../../../components/contest-lobby/TokenPerformance";
 import { VisualTester } from "../../../components/contest-lobby/VisualTester";
-import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
+import { Badge } from "../../../components/ui/Badge";
 import { formatCurrency, isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest as BaseContest } from "../../../types";
-import { Badge } from "../../../components/ui/Badge";
 
 // Contest Lobby page
 export const ContestLobby: React.FC = () => {
@@ -221,7 +219,6 @@ export const ContestLobby: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-8">
             <div className="h-16 bg-dark-200/50 rounded-lg w-3/4"></div>
@@ -244,7 +241,6 @@ export const ContestLobby: React.FC = () => {
   if (isMaintenanceMode) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
             <div className="flex items-center justify-center gap-2 text-yellow-400">
@@ -264,7 +260,6 @@ export const ContestLobby: React.FC = () => {
   if (error) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
             {error}
@@ -276,7 +271,6 @@ export const ContestLobby: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
-      <BackgroundEffects />
 
       {/* Content Section */}
       <div className="relative z-10 flex-grow">

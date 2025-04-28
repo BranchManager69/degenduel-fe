@@ -12,8 +12,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../components/portfolio-selection/TokenFilters";
 import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
@@ -558,7 +556,6 @@ export const TokenSelection: React.FC = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
 
         {/* Content Section */}
         <div className="relative z-10">

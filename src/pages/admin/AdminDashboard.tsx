@@ -8,7 +8,6 @@ import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import AdminLogsPanel from "../../components/admin/AdminLogsPanel";
 import { BalanceManager } from "../../components/admin/BalanceManager";
 import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
-import { BackgroundEffects } from "../../components/animated-background/BackgroundEffects";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -340,8 +339,6 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <ContestProvider>
-      {/* Add BackgroundEffects for visual consistency with other pages */}
-      <BackgroundEffects />
       <div data-testid="admin-dashboard">
 
       <div className="container mx-auto p-6 space-y-8 relative z-10">

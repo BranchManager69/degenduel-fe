@@ -3,8 +3,6 @@
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-import { BackgroundEffects } from "../../../components/animated-background/BackgroundEffects";
 import { ContestDetailHeader } from "../../../components/contest-detail/ContestDetailHeader";
 import { ContestRules } from "../../../components/contest-detail/ContestRules";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
@@ -299,7 +297,6 @@ export const ContestDetails: React.FC = () => {
   if (isLoading)
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[...Array(4)].map((_, i) => (
@@ -324,7 +321,6 @@ export const ContestDetails: React.FC = () => {
   if (isMaintenanceMode) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
             <div className="flex items-center justify-center gap-2 text-yellow-400">
@@ -344,7 +340,6 @@ export const ContestDetails: React.FC = () => {
   if (error || !contest) {
     return (
       <div className="flex flex-col min-h-screen">
-        <BackgroundEffects />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
@@ -359,7 +354,6 @@ export const ContestDetails: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <BackgroundEffects />
 
       {/* Content Section */}
       <div className="relative z-10">
