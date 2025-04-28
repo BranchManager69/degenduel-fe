@@ -694,93 +694,148 @@ export const LandingPage: React.FC = () => {
                 })()}
               </motion.div>
               
-              {/* Contest sections - only shown to logged in users */}
-              {user && (
-                <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{
-                    opacity: animationPhase > 0 ? 1 : 0,
-                    y: animationPhase > 0 ? 0 : 40,
-                    transition: {
-                      delay: 1.2,
-                      duration: 0.8,
-                      type: "spring",
-                      stiffness: 50,
-                    },
-                  }}
-                >
-                  {isMaintenanceMode ? (
-                    <div className="relative">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-                        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-                          <div className="flex items-center justify-center gap-2 text-yellow-400">
-                            <span className="animate-pulse">⚠</span>
-                            <span>
-                              DegenDuel is in Maintenance Mode. Please try again later.
-                            </span>
-                            <span className="animate-pulse">⚙️</span>
-                          </div>
+              {/* Contest sections - shown to all users */}
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{
+                  opacity: animationPhase > 0 ? 1 : 0,
+                  y: animationPhase > 0 ? 0 : 40,
+                  transition: {
+                    delay: 1.2,
+                    duration: 0.8,
+                    type: "spring",
+                    stiffness: 50,
+                  },
+                }}
+              >
+                {isMaintenanceMode ? (
+                  <div className="relative">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                      <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+                        <div className="flex items-center justify-center gap-2 text-yellow-400">
+                          <span className="animate-pulse">⚠</span>
+                          <span>
+                            DegenDuel is in Maintenance Mode. Please try again later.
+                          </span>
+                          <span className="animate-pulse">⚙️</span>
                         </div>
                       </div>
                     </div>
-                  ) : error ? (
-                    <div className="relative">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        <div className="text-center p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg">
-                          <div className="text-red-500 animate-glitch">{error}</div>
-                        </div>
+                  </div>
+                ) : error ? (
+                  <div className="relative">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <div className="text-center p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg">
+                        <div className="text-red-500 animate-glitch">{error}</div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="relative">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                        {/* Add significant bottom margin to prevent footer overlap */}
-                        <div className="mb-32">
-                          {/* Use the shared ContestSection component for active contests */}
-                          {activeContests.length > 0 && (
-                            <ContestSection
-                              title="Live Duels"
-                              type="active"
-                              contests={activeContests}
-                              loading={loading}
-                            />
-                          )}
-
-                          {/* Use the shared ContestSection component for upcoming contests */}
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                      {/* Add significant bottom margin to prevent footer overlap */}
+                      <div className="mb-32">
+                        {/* Use the shared ContestSection component for active contests */}
+                        {activeContests.length > 0 && (
                           <ContestSection
-                            title="Starting Soon"
-                            type="pending"
-                            contests={openContests}
+                            title="Live Duels"
+                            type="active"
+                            contests={activeContests}
                             loading={loading}
                           />
+                        )}
 
-                          {activeContests.length === 0 &&
-                            openContests.length === 0 &&
-                            !loading && (
-                              <div className="text-center py-16">
-                                <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
-                                  No Duels Available
-                                </h2>
-                                <p className="text-gray-400 mb-8">
-                                  Check back soon for new Duels.
-                                </p>
-                                <Link
-                                  to="/contests/create"
-                                  className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
-                                >
-                                  Create a Duel
-                                </Link>
-                              </div>
-                            )}
-                        </div>
+                        {/* Use the shared ContestSection component for upcoming contests */}
+                        <ContestSection
+                          title="Starting Soon"
+                          type="pending"
+                          contests={openContests}
+                          loading={loading}
+                        />
+
+                        {activeContests.length === 0 &&
+                          openContests.length === 0 &&
+                          !loading && (
+                            <div className="text-center py-16">
+                              <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
+                                No Duels Available
+                              </h2>
+                              <p className="text-gray-400 mb-8">
+                                Check back soon for new Duels.
+                              </p>
+                              {(() => {
+                                const [showCreateModal, setShowCreateModal] = useState(false);
+                                
+                                return (
+                                  <>
+                                    {!user ? (
+                                      <Link
+                                        to="/login"
+                                        className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
+                                      >
+                                        Login to Duel
+                                      </Link>
+                                    ) : (
+                                      <div className="relative group">
+                                        <button
+                                          onClick={() => {
+                                            if (user.is_admin || user.is_superadmin) {
+                                              // For admins and superadmins, show the modal directly
+                                              setShowCreateModal(true);
+                                            } else {
+                                              // For regular users, show the tooltip message
+                                              const message = "Contest creation is coming soon! Earn credits to create your own contests.";
+                                              window.alert(message);
+                                            }
+                                          }}
+                                          className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
+                                        >
+                                          {user.is_superadmin ? (
+                                            "Create Contest (SuperAdmin)"
+                                          ) : user.is_admin ? (
+                                            "Create Contest (Admin)"
+                                          ) : (
+                                            "Create Contest"
+                                          )}
+                                        </button>
+                                        
+                                        {/* Coming soon tooltip - only for regular users */}
+                                        {!user.is_admin && !user.is_superadmin && (
+                                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-60 bg-dark-200 text-white text-xs p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                            Contest creation coming soon! Earn credits to create your own contests.
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Reuse the same modal component from ContestBrowserPage */}
+                                    {showCreateModal && user && (user.is_admin || user.is_superadmin) && (
+                                      <React.Suspense fallback={<div>Loading...</div>}>
+                                        {(() => {
+                                          const CreateContestModal = React.lazy(() => 
+                                            import("../../../components/contest-browser/CreateContestModal").then(module => ({
+                                              default: module.CreateContestModal
+                                            }))
+                                          );
+                                          return (
+                                            <CreateContestModal
+                                              isOpen={showCreateModal}
+                                              onClose={() => setShowCreateModal(false)}
+                                            />
+                                          );
+                                        })()}
+                                      </React.Suspense>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          )}
                       </div>
                     </div>
-                  )}
-                </motion.div>
-              )}
-              
-              {/* Bottom spacing for non-authenticated users */}
-              {!user && <div className="mb-32"></div>}
+                  </div>
+                )}
+              </motion.div>
             </div>
           </div>
         </div>

@@ -232,8 +232,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           // Trigger success callback
           onSuccess?.();
 
-          // Refresh the page to show the new contest
-          window.location.reload();
+          // Navigate to the contest detail page instead of refreshing
+          if (response.id) {
+            window.location.href = `/contests/${response.id}`;
+          } else {
+            // Fallback to contest browser if no ID is available
+            window.location.href = "/contests";
+          }
           break;
         } else {
           console.warn(
