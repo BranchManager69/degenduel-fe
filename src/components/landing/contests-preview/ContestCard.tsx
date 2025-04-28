@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
@@ -7,6 +7,9 @@ import { ContestDifficulty } from "./ContestDifficulty";
 import { formatCurrency } from "../../../lib/utils";
 import { ContestStatus, DifficultyLevel } from "../../../types/index";
 import { Card, CardHeader } from "../../ui/Card";
+
+// DEPRECATED: This component is deprecated. Please use the ContestCard from /components/contest-browser/ instead.
+// See the ContestSection component for correct usage example.
 
 interface ContestCardProps {
   id: string;
@@ -24,6 +27,10 @@ interface ContestCardProps {
   isParticipating: boolean;
 }
 
+// Forward the correct component (uncomment this to automatically redirect to the correct component)
+// export { ContestCard } from "../../../components/contest-browser/ContestCard";
+
+// Keep the old implementation for backward compatibility, but with a warning
 export const ContestCard: React.FC<ContestCardProps> = ({
   id,
   name,
@@ -39,6 +46,16 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   contestCode,
   isParticipating,
 }) => {
+  // Log deprecation warning
+  useEffect(() => {
+    console.warn(
+      "DEPRECATED: The ContestCard in /components/landing/contests-preview/ is deprecated. " +
+      "Please use the ContestCard from /components/contest-browser/ instead."
+    );
+    
+    // We could use clientLogger from clientLogForwarder.ts if needed for tracking
+    // But we'll just use console.warn for now to avoid adding dependencies
+  }, []);
   const isLive = status === "active";
   const progress = (participantCount / maxParticipants) * 100;
 
