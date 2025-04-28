@@ -473,6 +473,25 @@ export const AdminDashboard: React.FC = () => {
                 →
               </div>
             </Link>
+            <Link
+              to="/admin/contest-scheduler"
+              className="flex items-center gap-2 bg-yellow-500/30 px-4 py-2.5 rounded-xl hover:bg-yellow-500/40 transition-all border-2 border-yellow-500/40 shadow-lg hover:shadow-yellow-500/20 group relative"
+            >
+              <div className="absolute -top-2 -left-2">
+                <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-yellow-500/30 text-yellow-100 font-mono">
+                  NEW
+                </div>
+              </div>
+              <div className="text-yellow-300 text-xl group-hover:scale-110 transition-transform">
+                🔄
+              </div>
+              <span className="text-yellow-100 font-semibold group-hover:text-white transition-colors">
+                Contest Scheduler
+              </span>
+              <div className="ml-2 text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
           </div>
         </div>
 

@@ -30,5 +30,8 @@ export const ddApi = {
   ai,
 };
 
+// Export specific modules directly
+export { admin };
+
 // Export utility functions
 export * from "./utils";

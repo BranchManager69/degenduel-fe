@@ -305,6 +305,15 @@ export const SuperAdminDashboard: React.FC = () => {
       category: "Tools"
     },
     {
+      id: "liquidity-simulator",
+      title: "Liquidity Simulator",
+      icon: "💰",
+      description: "Simulate token liquidation strategies with real-time analysis",
+      link: "/superadmin/liquidity-simulator",
+      color: "cyber",
+      category: "Tools"
+    },
+    {
       id: "amm-sim",
       title: "AMM Simulator",
       icon: "📊",
@@ -451,6 +460,20 @@ export const SuperAdminDashboard: React.FC = () => {
                 Wallet Monitoring
               </span>
               <div className="ml-2 text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                →
+              </div>
+            </Link>
+            <Link
+              to="/admin/contest-scheduler"
+              className="flex items-center gap-2 bg-yellow-500/30 px-4 py-2.5 rounded-xl hover:bg-yellow-500/40 transition-all border-2 border-yellow-500/40 shadow-lg hover:shadow-yellow-500/20 group relative"
+            >
+              <div className="text-yellow-300 text-xl group-hover:scale-110 transition-transform">
+                🔄
+              </div>
+              <span className="text-yellow-100 font-semibold group-hover:text-white transition-colors">
+                Contest Scheduler
+              </span>
+              <div className="ml-2 text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity">
                 →
               </div>
             </Link>

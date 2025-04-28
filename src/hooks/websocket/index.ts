@@ -47,6 +47,7 @@ export const TopicType = {
   CIRCUIT_BREAKER: SOCKET_TYPES.CIRCUIT_BREAKER,
   SERVICE: SOCKET_TYPES.SERVICE,
   SKYDUEL: SOCKET_TYPES.SKYDUEL,
+  LIQUIDITY_SIM: 'liquidity-sim',
   
   // Special topics
   LOGS: 'logs',
@@ -79,6 +80,7 @@ export * from './topic-hooks/useService';
 export * from './topic-hooks/useRPCBenchmark';
 export * from './topic-hooks/useVanityDashboard';
 export * from './topic-hooks/useContestScheduler';
+export * from './topic-hooks/useLiquiditySim';
 
 // Just export useWallet and don't worry about the types to avoid conflicts
 import { useWallet } from './topic-hooks/useWallet';
