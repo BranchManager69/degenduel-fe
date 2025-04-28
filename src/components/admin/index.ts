@@ -11,3 +11,7 @@ export { VanityWalletCreate } from './VanityWalletCreate';
 export { VanityWalletBatchCreate } from './VanityWalletBatchCreate';
 export { VanityWalletSummary } from './VanityWalletSummary';
 export { VanityWalletPool } from './VanityWalletPool';
+export { VanityWalletDashboard } from './VanityWalletDashboard';
+
+// Contest Scheduler
+export { default as ContestScheduler } from './ContestScheduler';

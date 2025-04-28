@@ -31,7 +31,357 @@ interface ArtStyle {
   description: string;
 }
 
+// Contest Scheduler Interfaces
+interface ContestSchedulerStatus {
+  isRunning: boolean;
+  stats: {
+    contests: {
+      created: number;
+      createdDuringMaintenance: number;
+      createdFromDatabaseSchedules: number;
+    };
+  };
+  config: {
+    contests: {
+      schedules: any[];
+    };
+  };
+  health: {
+    status: string;
+    circuitBreaker: {
+      isOpen: boolean;
+      failureCount: number;
+    };
+  };
+  maintenance: {
+    systemInMaintenanceMode: boolean;
+  };
+}
+
+interface ContestSchedulerControlResponse {
+  success: boolean;
+  message: string;
+  status: {
+    isRunning: boolean;
+    health: {
+      status: string;
+      circuitBreaker: {
+        isOpen: boolean;
+        failureCount: number;
+      };
+    };
+  };
+}
+
+interface ContestSchedulerConfig {
+  contests: {
+    schedules: any[];
+  };
+}
+
+interface ContestSchedule {
+  id: number;
+  name: string;
+  template_id: number;
+  hour: number;
+  minute: number;
+  days: number[];
+  duration_hours: number;
+  enabled: boolean;
+  entry_fee_override?: string;
+  advance_notice_hours?: number;
+  allow_multiple_hours?: boolean;
+  template?: {
+    id: number;
+    name: string;
+    description: string;
+  };
+  contests?: {
+    id: number;
+    name: string;
+    start_time: string;
+    end_time: string;
+  }[];
+}
+
+interface ContestTemplate {
+  id: number;
+  name: string;
+  description: string;
+  entry_fee: string;
+  min_participants: number;
+  max_participants: number;
+}
+
+interface CreateContestResponse {
+  success: boolean;
+  message: string;
+  data: {
+    contest: {
+      id: number;
+      name: string;
+      contest_code: string;
+      start_time: string;
+      end_time: string;
+      entry_fee: string;
+      status: string;
+    };
+    wallet?: {
+      address: string;
+    };
+    schedule?: {
+      id: number;
+      name: string;
+    };
+  };
+}
+
 export const admin = {
+  // Contest Scheduler API
+  contestScheduler: {
+    // Get the current status of the contest scheduler service
+    getStatus: async (): Promise<{ success: boolean; data: ContestSchedulerStatus }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/status");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch contest scheduler status: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get contest scheduler status:", error);
+        throw error;
+      }
+    },
+    
+    // Control the contest scheduler service state (start, stop, restart, status)
+    control: async (action: 'start' | 'stop' | 'restart' | 'status'): Promise<ContestSchedulerControlResponse> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/contest-scheduler/control/${action}`, {
+          method: "POST"
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to control contest scheduler: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to ${action} contest scheduler:`, error);
+        throw error;
+      }
+    },
+    
+    // Get the raw configuration from the config file
+    getConfigFile: async (): Promise<{ success: boolean; data: { configFile: ContestSchedulerConfig } }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/config-file");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch contest scheduler config file: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get contest scheduler config file:", error);
+        throw error;
+      }
+    },
+    
+    // Update the contest scheduler configuration
+    updateConfig: async (configuration: ContestSchedulerConfig): Promise<{ success: boolean; message: string; data: { config: ContestSchedulerConfig } }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/config", {
+          method: "PUT",
+          body: JSON.stringify({ configuration })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update contest scheduler config: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to update contest scheduler config:", error);
+        throw error;
+      }
+    },
+    
+    // Create a contest immediately based on a named schedule from config
+    createContestFromConfig: async (scheduleName: string): Promise<CreateContestResponse> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/create-contest", {
+          method: "POST",
+          body: JSON.stringify({ scheduleName })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create contest from config: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to create contest from config:", error);
+        throw error;
+      }
+    },
+    
+    // Get all schedules from the database
+    getAllDbSchedules: async (): Promise<{ success: boolean; data: ContestSchedule[] }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/db-schedules");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch database schedules: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get database schedules:", error);
+        throw error;
+      }
+    },
+    
+    // Get a single schedule by ID
+    getDbScheduleById: async (id: number): Promise<{ success: boolean; data: ContestSchedule }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/contest-scheduler/db-schedules/${id}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch database schedule: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to get database schedule with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Create a new schedule in the database
+    createDbSchedule: async (schedule: Omit<ContestSchedule, 'id'>): Promise<{ success: boolean; message: string; data: ContestSchedule }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/db-schedules", {
+          method: "POST",
+          body: JSON.stringify(schedule)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create database schedule: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to create database schedule:", error);
+        throw error;
+      }
+    },
+    
+    // Update an existing schedule in the database
+    updateDbSchedule: async (id: number, schedule: Partial<ContestSchedule>): Promise<{ success: boolean; message: string; data: ContestSchedule }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/contest-scheduler/db-schedules/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(schedule)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update database schedule: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to update database schedule with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Delete a schedule from the database
+    deleteDbSchedule: async (id: number): Promise<{ success: boolean; message: string }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/contest-scheduler/db-schedules/${id}`, {
+          method: "DELETE"
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete database schedule: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error(`Failed to delete database schedule with ID ${id}:`, error);
+        throw error;
+      }
+    },
+    
+    // Get all available contest templates
+    getTemplates: async (): Promise<{ success: boolean; data: ContestTemplate[] }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/templates");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch contest templates: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get contest templates:", error);
+        throw error;
+      }
+    },
+    
+    // Create a contest immediately based on a database schedule
+    createContestFromDb: async (scheduleId: number): Promise<CreateContestResponse> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/create-db-contest", {
+          method: "POST",
+          body: JSON.stringify({ scheduleId })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create contest from database: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to create contest from database:", error);
+        throw error;
+      }
+    },
+    
+    // Migrate configuration-based schedules to the database
+    migrateConfig: async (): Promise<{ success: boolean; message: string; data: { schedules: ContestSchedule[] } }> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/contest-scheduler/migrate-config", {
+          method: "POST"
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to migrate config schedules: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to migrate config schedules:", error);
+        throw error;
+      }
+    }
+  },
+  
   // Vanity Wallet Management
   vanityWallets: {
     // List all vanity wallets with filters

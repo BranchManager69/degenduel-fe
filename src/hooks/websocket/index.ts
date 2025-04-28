@@ -77,6 +77,8 @@ export * from './topic-hooks/useSkyDuel';
 export * from './topic-hooks/useCircuitBreaker';
 export * from './topic-hooks/useService';
 export * from './topic-hooks/useRPCBenchmark';
+export * from './topic-hooks/useVanityDashboard';
+export * from './topic-hooks/useContestScheduler';
 
 // Just export useWallet and don't worry about the types to avoid conflicts
 import { useWallet } from './topic-hooks/useWallet';
