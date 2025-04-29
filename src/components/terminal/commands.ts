@@ -19,6 +19,7 @@ export const defaultCommandMap: Record<string, string> = {
   "launch-details": "Loading launch details from server...",
   analytics: "Loading analytics from server...",
   clear: "", // Special case handled in Terminal.tsx
+
   // @ts-ignore - This is a special case for dynamic content
   banner: function getBanner() {
     // Responsive ASCII art that adapts to screen size
@@ -56,6 +57,7 @@ export const defaultCommandMap: Record<string, string> = {
  
  Type 'help' for available commands`;
   },
+
   token: "Loading token information from server...",
   "dd-debug": "Developer mode activated. Welcome, team member.",
   "branch-mode": "Branch Manager special access granted. Unique identifier: BM-69420",

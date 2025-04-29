@@ -20,6 +20,17 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isWebSocketActive, setIsWebSocketActive] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true); // User can toggle sounds
+  const [debugInfo, setDebugInfo] = useState<{
+    connectionStatus: string;
+    lastError: string | null;
+    tokenCount: number;
+    lastAttempt: string;
+  }>({
+    connectionStatus: 'initializing',
+    lastError: null,
+    tokenCount: 0,
+    lastAttempt: new Date().toISOString()
+  });
   const wsRef = useRef<WebSocket | null>(null);
   
   // Sound throttling to prevent audio spam
@@ -91,12 +102,45 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
     return colors[symbol] || '#7F00FF'; // Default to brand purple
   }, []);
   
-  // Use WebSocket-based token data hook
-  const { tokens: wsTokens, isConnected } = useTokenData("all");
+  // Use WebSocket-based token data hook with enhanced debugging
+  const tokenData = useTokenData("all");
+  const { tokens: wsTokens, isConnected, connectionState, error: wsError, _refresh } = tokenData;
+  
+  // Update debug info whenever connection status changes
+  useEffect(() => {
+    setDebugInfo(prev => ({
+      ...prev,
+      connectionStatus: connectionState || 'unknown',
+      lastError: wsError || null,
+      tokenCount: (wsTokens || []).length,
+      lastAttempt: new Date().toISOString()
+    }));
+    
+    // Log websocket state for debugging
+    console.log("[HotTokensList] WebSocket state update:", {
+      connectionState,
+      isConnected,
+      errorMsg: wsError,
+      tokensAvailable: (wsTokens || []).length
+    });
+    
+    // Force refresh if connected but no tokens
+    if (isConnected && (!wsTokens || wsTokens.length === 0)) {
+      console.log("[HotTokensList] Connected but no tokens, requesting refresh");
+      _refresh?.();
+    }
+    
+  }, [isConnected, connectionState, wsError, wsTokens]);
 
   // Process tokens when WebSocket data is available
   useEffect(() => {
     try {
+      console.log("[HotTokensList] Tokens data update:", {
+        receivedTokens: wsTokens?.length || 0,
+        firstFew: wsTokens?.slice(0, 3).map(t => t.symbol),
+        isConnected,
+      });
+      
       if (wsTokens && wsTokens.length > 0) {
         setLoading(false);
         
@@ -148,13 +192,18 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
         
         // Setup WebSocket connection for token updates
         setupWebSocket();
+      } else if (isConnected && (!wsTokens || wsTokens.length === 0)) {
+        // We're connected but have no tokens - request a refresh
+        console.log("[HotTokensList] Connected but no tokens available, requesting refresh");
+        _refresh?.();
+        setError("No token data available from WebSocket (trying to refresh)");
       }
     } catch (err) {
-      console.error("Failed to process hot tokens:", err);
-      setError("Failed to process hot tokens data");
+      console.error("[HotTokensList] Failed to process hot tokens:", err);
+      setError(`Failed to process hot tokens data: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
     }
-  }, [wsTokens, maxTokens]);
+  }, [wsTokens, maxTokens, isConnected, _refresh]);
   
   // Set WebSocket connection status
   useEffect(() => {
@@ -173,58 +222,63 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
     // Get the environment WebSocket URL
     const wsUrl = import.meta.env.VITE_WS_URL || 'wss://dev.degenduel.me';
     
-    // Create WebSocket connection
-    const ws = new WebSocket(`${wsUrl}/api/v69/ws`);
-    wsRef.current = ws;
-    
-    // Connection opened
-    ws.addEventListener('open', () => {
-      console.log('WebSocket connected for hot tokens');
-      setIsWebSocketActive(true);
+    try {
+      // Create WebSocket connection
+      const ws = new WebSocket(`${wsUrl}/api/v69/ws`);
+      wsRef.current = ws;
       
-      // Subscribe to market-data topic
-      ws.send(JSON.stringify({
-        type: 'SUBSCRIBE',
-        topics: ['market-data']
-      }));
-    });
-    
-    // Listen for messages
-    ws.addEventListener('message', (event) => {
-      try {
-        const message = JSON.parse(event.data);
+      // Connection opened
+      ws.addEventListener('open', () => {
+        console.log('[HotTokensList] WebSocket connected for hot tokens');
+        setIsWebSocketActive(true);
         
-        // Handle market data updates
-        if (message.type === 'DATA' && message.topic === 'market-data') {
-          // In a real implementation, this would filter for 'hot tokens' specifically
-          // For now, we'll just refresh our algorithm if we get any market data
-          
-          // This is where you'd update tokens based on your algorithm when data comes in
-          // For demo purposes, we'll just simulate a token update every now and then
-          if (Math.random() < 0.2) { // 20% chance to "update" on each message
-            updateRandomToken();
-          }
-        }
-      } catch (err) {
-        console.error('Error processing WebSocket message', err);
-      }
-    });
-    
-    // Handle errors & reconnection
-    ws.addEventListener('error', (error) => {
-      console.error('WebSocket error:', error);
-      setIsWebSocketActive(false);
-    });
-    
-    ws.addEventListener('close', () => {
-      console.log('WebSocket closed');
-      setIsWebSocketActive(false);
+        // Subscribe to market-data topic
+        ws.send(JSON.stringify({
+          type: 'SUBSCRIBE',
+          topics: ['market-data']
+        }));
+      });
       
-      // Attempt to reconnect after a delay
-      setTimeout(() => {
-        setupWebSocket();
-      }, 3000);
-    });
+      // Listen for messages
+      ws.addEventListener('message', (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          
+          // Handle market data updates
+          if (message.type === 'DATA' && message.topic === 'market-data') {
+            // In a real implementation, this would filter for 'hot tokens' specifically
+            // For now, we'll just refresh our algorithm if we get any market data
+            
+            // This is where you'd update tokens based on your algorithm when data comes in
+            // For demo purposes, we'll just simulate a token update every now and then
+            if (Math.random() < 0.2) { // 20% chance to "update" on each message
+              updateRandomToken();
+            }
+          }
+        } catch (err) {
+          console.error('[HotTokensList] Error processing WebSocket message', err);
+        }
+      });
+      
+      // Handle errors & reconnection
+      ws.addEventListener('error', (error) => {
+        console.error('[HotTokensList] WebSocket error:', error);
+        setIsWebSocketActive(false);
+      });
+      
+      ws.addEventListener('close', () => {
+        console.log('[HotTokensList] WebSocket closed');
+        setIsWebSocketActive(false);
+        
+        // Attempt to reconnect after a delay
+        setTimeout(() => {
+          setupWebSocket();
+        }, 3000);
+      });
+    } catch (err) {
+      console.error('[HotTokensList] Error setting up WebSocket:', err);
+      setError(`WebSocket setup failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }, []);
   
   // Simulate token updates for demo purposes
@@ -306,6 +360,28 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
     });
   }, [hotTokens, soundEnabled, playUpSound, playDownSound, playRankChangeSound, playThrottledSound, SIGNIFICANT_CHANGE_THRESHOLD]);
   
+  // Function to manually retry fetching tokens
+  const retryFetch = useCallback(() => {
+    console.log("[HotTokensList] Manually retrying token fetch...");
+    setLoading(true);
+    setError(null);
+    
+    // Try to refresh tokens via the hook
+    if (_refresh) {
+      const success = _refresh();
+      console.log("[HotTokensList] Manual refresh result:", success);
+    }
+    
+    // Also attempt to reconnect the direct WebSocket
+    setupWebSocket();
+    
+    // Update debug info
+    setDebugInfo(prev => ({
+      ...prev,
+      lastAttempt: new Date().toISOString()
+    }));
+  }, [_refresh, setupWebSocket]);
+
   // Loading state UI
   if (loading) {
     return (
@@ -324,12 +400,34 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
     );
   }
   
-  // Error state UI
+  // Error state UI with debugging and retry functionality
   if (error || hotTokens.length === 0) {
     return (
       <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
-        <div className="text-red-400 text-center py-6">
-          {error || "No hot tokens data available"}
+        <div className="text-center py-4">
+          <div className="text-red-400 mb-2">
+            {error || "No hot tokens data available"}
+          </div>
+          
+          {/* Debug information (hidden by default) */}
+          <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
+            <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
+            <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
+              <div>Connection Status: <span className="text-blue-400">{debugInfo.connectionStatus}</span></div>
+              <div>WebSocket Connected: <span className={isConnected ? "text-green-400" : "text-red-400"}>{isConnected ? "Yes" : "No"}</span></div>
+              <div>Tokens Available: <span className="text-blue-400">{debugInfo.tokenCount}</span></div>
+              <div>Last Error: <span className="text-red-400">{debugInfo.lastError || "None"}</span></div>
+              <div>Last Attempt: <span className="text-blue-400">{debugInfo.lastAttempt}</span></div>
+            </div>
+          </details>
+          
+          {/* Retry button */}
+          <button 
+            onClick={retryFetch}
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -400,6 +498,17 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
             <span className={`w-2 h-2 rounded-full ${isWebSocketActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'} mr-1.5`}></span>
             <span className="text-xs font-mono">{isWebSocketActive ? 'LIVE' : 'SYNC'}</span>
           </div>
+          
+          {/* Debug button */}
+          <button
+            onClick={retryFetch}
+            className="w-8 h-8 rounded-md flex items-center justify-center bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+            title="Refresh data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+          </button>
         </div>
       </div>
       

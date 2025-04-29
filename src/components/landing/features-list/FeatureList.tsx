@@ -9,7 +9,12 @@ import React from "react";
 import { motion } from "framer-motion";
 
 import { FeatureCard } from "./FeatureCard";
+import { AdvancedAnalyticsAnimation } from "./animations/AdvancedAnalyticsAnimation";
+import { DegenReputationAnimation } from "./animations/DegenReputationAnimation";
+import { InstantSettlementAnimation } from "./animations/InstantSettlementAnimation";
+import { RealTimeMarketDataAnimation } from "./animations/RealTimeMarketDataAnimation";
 import { ReflectionSystemAnimation } from "./animations/ReflectionSystemAnimation";
+import { TradingCompetitionsAnimation } from "./animations/TradingCompetitionsAnimation";
 
 // Platform features with real descriptions and animations
 const features = [
@@ -81,6 +86,7 @@ const features = [
         />
       </svg>
     ),
+    animation: <TradingCompetitionsAnimation />
   },
   {
     title: "Real-Time Market Data",
@@ -110,6 +116,7 @@ const features = [
         />
       </svg>
     ),
+    animation: <RealTimeMarketDataAnimation />
   },
   {
     title: "Advanced Analytics",
@@ -138,6 +145,7 @@ const features = [
         />
       </svg>
     ),
+    animation: <AdvancedAnalyticsAnimation />
   },
   {
     title: "Degen Reputation System",
@@ -180,6 +188,7 @@ const features = [
         />
       </svg>
     ),
+    animation: <DegenReputationAnimation />
   },
   {
     title: "Instant Settlement",
@@ -202,6 +211,7 @@ const features = [
         />
       </svg>
     ),
+    animation: <InstantSettlementAnimation />
   },
 ];
 

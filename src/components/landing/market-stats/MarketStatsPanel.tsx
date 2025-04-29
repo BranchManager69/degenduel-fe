@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { formatNumber } from "../../../utils/format";
 import useTokenData from "../../../hooks/useTokenData";
@@ -27,13 +27,57 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
   const [stats, setStats] = useState<MarketStats | null>(null);
   const [loading, setLoading] = useState(initialLoading);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{
+    connectionStatus: string;
+    lastError: string | null;
+    tokenCount: number;
+    lastAttempt: string;
+  }>({
+    connectionStatus: 'initializing',
+    lastError: null,
+    tokenCount: 0,
+    lastAttempt: new Date().toISOString()
+  });
   
-  // Use WebSocket-based token data hook
-  const { tokens } = useTokenData("all");
+  // Use WebSocket-based token data hook with enhanced debugging
+  const tokenData = useTokenData("all");
+  const { tokens, isConnected, connectionState, error: wsError, _refresh } = tokenData;
+  
+  // Update debug info whenever connection status changes
+  useEffect(() => {
+    setDebugInfo(prev => ({
+      ...prev,
+      connectionStatus: connectionState || 'unknown',
+      lastError: wsError || null,
+      tokenCount: (tokens || []).length,
+      lastAttempt: new Date().toISOString()
+    }));
+    
+    // Log websocket state for debugging
+    console.log("[MarketStatsPanel] WebSocket state update:", {
+      connectionState,
+      isConnected,
+      errorMsg: wsError,
+      tokensAvailable: (tokens || []).length
+    });
+    
+    // Force refresh if connected but no tokens
+    if (isConnected && (!tokens || tokens.length === 0)) {
+      console.log("[MarketStatsPanel] Connected but no tokens, requesting refresh");
+      _refresh?.();
+    }
+    
+  }, [isConnected, connectionState, wsError, tokens, _refresh]);
   
   // Calculate market stats from WebSocket token data
   useEffect(() => {
     try {
+      console.log("[MarketStatsPanel] Tokens data update:", {
+        receivedTokens: tokens?.length || 0,
+        firstFew: tokens?.slice(0, 3).map(t => t.symbol),
+        isConnected,
+      });
+      
       if (tokens && tokens.length > 0) {
         setLoading(false);
         
@@ -45,18 +89,23 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
         
         tokens.forEach((token: any) => {
           // Calculate totals
-          totalVolume24h += Number(token.volume24h || 0);
-          totalMarketCap += Number(token.marketCap || 0);
+          const volume = Number(token.volume24h || 0);
+          const marketCap = Number(token.marketCap || 0);
+          
+          if (!isNaN(volume)) totalVolume24h += volume;
+          if (!isNaN(marketCap)) totalMarketCap += marketCap;
           
           // Find top gainer
           const change = Number(token.change24h || 0);
-          if (change > topGainer.change) {
-            topGainer = { symbol: token.symbol, change };
-          }
-          
-          // Find top loser
-          if (change < topLoser.change) {
-            topLoser = { symbol: token.symbol, change };
+          if (!isNaN(change)) {
+            if (change > topGainer.change) {
+              topGainer = { symbol: token.symbol, change };
+            }
+            
+            // Find top loser
+            if (change < topLoser.change) {
+              topLoser = { symbol: token.symbol, change };
+            }
           }
         });
         
@@ -68,13 +117,37 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
           topLoser,
           totalMarketCap
         });
+      } else if (isConnected && (!tokens || tokens.length === 0)) {
+        // We're connected but have no tokens - request a refresh
+        console.log("[MarketStatsPanel] Connected but no tokens available, requesting refresh");
+        _refresh?.();
+        setError("No market data available from WebSocket (trying to refresh)");
       }
     } catch (err) {
-      console.error("Failed to calculate market stats:", err);
-      setError("Failed to calculate market statistics");
+      console.error("[MarketStatsPanel] Failed to calculate market stats:", err);
+      setError(`Failed to calculate market statistics: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
     }
-  }, [tokens]);
+  }, [tokens, isConnected, _refresh]);
+
+  // Function to manually retry fetching tokens
+  const retryFetch = useCallback(() => {
+    console.log("[MarketStatsPanel] Manually retrying token fetch...");
+    setLoading(true);
+    setError(null);
+    
+    // Try to refresh tokens via the hook
+    if (_refresh) {
+      const success = _refresh();
+      console.log("[MarketStatsPanel] Manual refresh result:", success);
+    }
+    
+    // Update debug info
+    setDebugInfo(prev => ({
+      ...prev,
+      lastAttempt: new Date().toISOString()
+    }));
+  }, [_refresh]);
   
   // Loading state
   if (loading) {
@@ -92,12 +165,34 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
     );
   }
   
-  // Error state
+  // Error state with debugging information and retry button
   if (error || !stats) {
     return (
       <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
-        <div className="text-red-400 text-center py-4">
-          {error || "Unable to load market statistics"}
+        <div className="text-center py-4">
+          <div className="text-red-400 mb-2">
+            {error || "Unable to load market statistics"}
+          </div>
+          
+          {/* Debug information (hidden by default) */}
+          <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
+            <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
+            <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
+              <div>Connection Status: <span className="text-blue-400">{debugInfo.connectionStatus}</span></div>
+              <div>WebSocket Connected: <span className={isConnected ? "text-green-400" : "text-red-400"}>{isConnected ? "Yes" : "No"}</span></div>
+              <div>Tokens Available: <span className="text-blue-400">{debugInfo.tokenCount}</span></div>
+              <div>Last Error: <span className="text-red-400">{debugInfo.lastError || "None"}</span></div>
+              <div>Last Attempt: <span className="text-blue-400">{debugInfo.lastAttempt}</span></div>
+            </div>
+          </details>
+          
+          {/* Retry button */}
+          <button 
+            onClick={retryFetch}
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -140,14 +235,27 @@ export const MarketStatsPanel: React.FC<MarketStatsPanelProps> = ({
       <div className="absolute top-6 right-0 w-16 h-px bg-gradient-to-l from-cyan-500/30 to-transparent"></div>
       <div className="absolute bottom-6 left-0 w-16 h-px bg-gradient-to-r from-brand-500/30 to-transparent"></div>
       
-      {/* Panel header */}
+      {/* Panel header with refresh button */}
       <div className="mb-4 flex items-center">
         <h3 className="text-lg font-bold text-white">Market Overview</h3>
         <div className="ml-2 px-2 py-0.5 bg-dark-300/70 rounded-full flex items-center">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-1.5"></span>
           <span className="text-xs text-gray-300">Live</span>
         </div>
-        <div className="ml-auto text-xs text-gray-400 font-mono">24h Data</div>
+        <div className="ml-auto flex items-center space-x-3">
+          <div className="text-xs text-gray-400 font-mono">24h Data</div>
+          
+          {/* Refresh button */}
+          <button 
+            onClick={retryFetch}
+            className="w-6 h-6 rounded-md flex items-center justify-center bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+            title="Refresh data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
       </div>
       
       {/* Stats Grid */}

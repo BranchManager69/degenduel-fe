@@ -64,6 +64,17 @@ export const LandingPage: React.FC = () => {
   const countdownCheckerRef = useRef<number | null>(null);
   const countdownEndedRef = useRef<boolean>(false);
   
+  // Debug state for contests section
+  const [contestDebugInfo, setContestDebugInfo] = useState<{
+    lastFetchAttempt: string;
+    errorDetails: string | null;
+    contestApiResponse: string | null;
+  }>({
+    lastFetchAttempt: '',
+    errorDetails: null,
+    contestApiResponse: null
+  });
+  
   // Fetch release date from backend when component mounts
   useEffect(() => {
     const loadReleaseDate = async () => {
@@ -200,6 +211,89 @@ export const LandingPage: React.FC = () => {
   // Shared debug mode state - controls both HeroTitle debug panel and WebSocketMonitor visibility
   const [debugMode, setDebugMode] = useState(false);
 
+  // Function to manually retry contest fetch
+  const retryContestFetch = useCallback(async () => {
+    console.log("[LandingPage] Manually retrying contest fetch...");
+    setLoading(true);
+    setError(null);
+    
+    // Update the debug info with attempt timestamp
+    setContestDebugInfo(prev => ({
+      ...prev,
+      lastFetchAttempt: new Date().toISOString()
+    }));
+    
+    try {
+      // First check maintenance mode
+      const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+      setIsMaintenanceMode(isInMaintenance);
+      
+      // If in maintenance mode, don't fetch contests
+      if (isInMaintenance) {
+        setError("DegenDuel is in Maintenance Mode. Please try again later.");
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch contests with detailed logging
+      console.log("[LandingPage] Fetching contests...");
+      const response = await ddApi.contests.getAll();
+      console.log("[LandingPage] Contest API response:", response);
+      
+      // Store response in debug info
+      setContestDebugInfo(prev => ({
+        ...prev,
+        contestApiResponse: JSON.stringify(response, null, 2)
+      }));
+      
+      // Process response
+      const contestsArray: Contest[] = Array.isArray(response)
+        ? response
+        : (response as ContestResponse).contests;
+      
+      // Log info about contests received
+      console.log("[LandingPage] Contest fetch success:", {
+        total: contestsArray.length,
+        statuses: contestsArray.map(c => c.status),
+        names: contestsArray.map(c => c.name)
+      });
+      
+      // Set active ('live') contests
+      setActiveContests(contestsArray.filter(isContestLive));
+      
+      // Set open ('pending' / 'upcoming') contests
+      setOpenContests(
+        contestsArray.filter(
+          (contest: Contest) => contest.status === "pending",
+        ),
+      );
+      
+      // Clear any errors
+      setError(null);
+    } catch (err) {
+      console.error(`[LandingPage] Failed to load contests:`, err);
+      
+      // Store detailed error for debugging
+      const errorDetails = err instanceof Error 
+        ? `${err.name}: ${err.message}\n${err.stack || "No stack trace"}`
+        : String(err);
+      
+      setContestDebugInfo(prev => ({
+        ...prev,
+        errorDetails
+      }));
+      
+      if (err instanceof Error && err.message.includes("503")) {
+        setIsMaintenanceMode(true);
+        setError("DegenDuel is in Maintenance Mode. Please try again later.");
+      } else {
+        setError(`Failed to load contests: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // useEffect for the animation phases with better HeroTitle/Terminal coordination
   useEffect(() => {
     // Adjust animation timing based on whether HeroTitle is shown
@@ -217,46 +311,10 @@ export const LandingPage: React.FC = () => {
 
     // Fetch contests
     const fetchContests = async () => {
-      try {
-        // First check maintenance mode
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode(); // TODO: improve MM checks via WSS
-        setIsMaintenanceMode(isInMaintenance);
-
-        // If in maintenance mode, don't fetch contests
-        if (isInMaintenance) {
-          setError("DegenDuel is in Maintenance Mode. Please try again later.");
-          setLoading(false);
-          return;
-        }
-
-        const response = await ddApi.contests.getAll();
-        const contestsArray: Contest[] = Array.isArray(response)
-          ? response
-          : (response as ContestResponse).contests;
-
-        // Set active ('live') contests
-        setActiveContests(contestsArray.filter(isContestLive));
-
-        // Set open ('pending' / 'upcoming') contests
-        setOpenContests(
-          contestsArray.filter(
-            (contest: Contest) => contest.status === "pending",
-          ),
-        );
-      } catch (err) {
-        console.error(`Failed to load contests: ${err}`);
-        if (err instanceof Error && err.message.includes("503")) {
-          // TODO: improve MM checks via WSS
-          setIsMaintenanceMode(true);
-          setError("DegenDuel is in Maintenance Mode. Please try again later.");
-        } else {
-          setError("Failed to load contests");
-        }
-      } finally {
-        setLoading(false);
-      }
+      await retryContestFetch();
     };
-    // Fetch contests since we're not in maintenance mode
+    
+    // Fetch contests immediately
     fetchContests();
 
     // Poll maintenance status every n seconds
@@ -279,7 +337,7 @@ export const LandingPage: React.FC = () => {
       clearTimeout(phaseOneTimer);
       clearTimeout(phaseTwoTimer);
     };
-  }, []);
+  }, [retryContestFetch]);
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden">
@@ -694,7 +752,7 @@ export const LandingPage: React.FC = () => {
                 })()}
               </motion.div>
               
-              {/* Contest sections - shown to all users */}
+              {/* Contest sections */}
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 animate={{
@@ -725,8 +783,39 @@ export const LandingPage: React.FC = () => {
                 ) : error ? (
                   <div className="relative">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <div className="text-center p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg">
-                        <div className="text-red-500 animate-glitch">{error}</div>
+                      <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
+                        <div className="text-center py-4">
+                          <div className="text-red-400 mb-2">
+                            {error}
+                          </div>
+                          
+                          {/* Debug information (hidden by default) */}
+                          {isAdmin() && (
+                            <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
+                              <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
+                              <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
+                                <div>Last Fetch Attempt: <span className="text-blue-400">{contestDebugInfo.lastFetchAttempt}</span></div>
+                                <div>Error Details:</div>
+                                <pre className="text-red-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
+                                  {contestDebugInfo.errorDetails || "No specific error details available"}
+                                </pre>
+                                
+                                <div>API Response:</div>
+                                <pre className="text-gray-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
+                                  {contestDebugInfo.contestApiResponse || "No API response recorded"}
+                                </pre>
+                              </div>
+                            </details>
+                          )}
+                          
+                          {/* Retry button */}
+                          <button 
+                            onClick={retryContestFetch}
+                            className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+                          >
+                            Retry
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -763,72 +852,12 @@ export const LandingPage: React.FC = () => {
                               <p className="text-gray-400 mb-8">
                                 Check back soon for new Duels.
                               </p>
-                              {(() => {
-                                const [showCreateModal, setShowCreateModal] = useState(false);
-                                
-                                return (
-                                  <>
-                                    {!user ? (
-                                      <Link
-                                        to="/login"
-                                        className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
-                                      >
-                                        Login to Duel
-                                      </Link>
-                                    ) : (
-                                      <div className="relative group">
-                                        <button
-                                          onClick={() => {
-                                            if (user.is_admin || user.is_superadmin) {
-                                              // For admins and superadmins, show the modal directly
-                                              setShowCreateModal(true);
-                                            } else {
-                                              // For regular users, show the tooltip message
-                                              const message = "Contest creation is coming soon! Earn credits to create your own contests.";
-                                              window.alert(message);
-                                            }
-                                          }}
-                                          className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
-                                        >
-                                          {user.is_superadmin ? (
-                                            "Create Contest (SuperAdmin)"
-                                          ) : user.is_admin ? (
-                                            "Create Contest (Admin)"
-                                          ) : (
-                                            "Create Contest"
-                                          )}
-                                        </button>
-                                        
-                                        {/* Coming soon tooltip - only for regular users */}
-                                        {!user.is_admin && !user.is_superadmin && (
-                                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-60 bg-dark-200 text-white text-xs p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                            Contest creation coming soon! Earn credits to create your own contests.
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Reuse the same modal component from ContestBrowserPage */}
-                                    {showCreateModal && user && (user.is_admin || user.is_superadmin) && (
-                                      <React.Suspense fallback={<div>Loading...</div>}>
-                                        {(() => {
-                                          const CreateContestModal = React.lazy(() => 
-                                            import("../../../components/contest-browser/CreateContestModal").then(module => ({
-                                              default: module.CreateContestModal
-                                            }))
-                                          );
-                                          return (
-                                            <CreateContestModal
-                                              isOpen={showCreateModal}
-                                              onClose={() => setShowCreateModal(false)}
-                                            />
-                                          );
-                                        })()}
-                                      </React.Suspense>
-                                    )}
-                                  </>
-                                );
-                              })()}
+                              <Link
+                                to="/contests/create"
+                                className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
+                              >
+                                Create a Duel
+                              </Link>
                             </div>
                           )}
                       </div>

@@ -8,6 +8,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useRef, useState } from "react";
 
+import { FEATURE_FLAGS } from "../../../config/config";
 import { MeasureRender } from "../../../utils/performance";
 
 interface FeatureCardProps {
@@ -341,12 +342,12 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   
                   {/* Right column: Animation/Diagram */}
                   <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center min-h-[300px]">
-                    {animation ? (
+                    {animation && FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS ? (
                       <div className="w-full h-full">
                         {animation}
                       </div>
                     ) : (
-                      // Enhanced placeholder animation if none provided
+                      // Enhanced placeholder animation if none provided or animations disabled
                       <div className="text-center p-10 h-full flex flex-col items-center justify-center">
                         {featureImage ? (
                           // Show a more dynamic version of the feature image
@@ -385,7 +386,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                             </div>
                           </motion.div>
                         )}
-                        <p className="mt-6 text-gray-400">Interactive demo coming soon</p>
+                        <p className="mt-6 text-gray-400">
+                          {animation && !FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS 
+                            ? "Animations disabled" 
+                            : "Interactive demo coming soon"}
+                        </p>
                       </div>
                     )}
                   </div>

@@ -1,5 +1,14 @@
 // src/config/config.ts
 
+/**
+ * Config
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-01-01
+ * @updated 2025-04-28
+ */
+
 /* Environment */
 const isDev =
   window.location.hostname === "localhost" ||
@@ -58,6 +67,10 @@ export const API_URL = isDev
   : `${PROD_URL}/api`;
 
 /* WebSocket Base URL */
+//
+// TODO:
+//   Should this include the full path after the domain just like the rest api URL does?Because this doesn't right now...
+//
 export const WS_URL = window.location.hostname === "localhost" ||
     window.location.hostname.startsWith("127.0.0.1")
     ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
@@ -80,8 +93,7 @@ export const SUPERADMIN_SECRET = import.meta.env.VITE_SUPERADMIN_SECRET;
 export const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET;
 
 /* Virtuals Game SDK API Key */
-export const VIRTUALS_GAME_SDK_API_KEY = import.meta.env
-  .VITE_VIRTUALS_GAME_SDK_API_KEY;
+export const VIRTUALS_GAME_SDK_API_KEY = import.meta.env.VITE_VIRTUALS_GAME_SDK_API_KEY;
 
 /* OpenAI API Key */
 export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -96,6 +108,7 @@ export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 export const FEATURE_FLAGS = {
   SHOW_FEATURES_SECTION: true, // Set to false to hide the FeatureCards on the landing page
   SHOW_HERO_TITLE: false, // Set to false to hide the animated HeroTitle component
+  SHOW_FEATURE_ANIMATIONS: true, // Set to false to disable feature animations
 };
 
 /* System Settings */

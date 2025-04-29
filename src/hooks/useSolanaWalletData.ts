@@ -1,17 +1,25 @@
+// src/hooks/useSolanaWalletData.ts
+
 /**
  * useSolanaWalletData Hook
  * 
  * Hook for fetching wallet data directly from the Solana blockchain.
  * This provides real-time balance and transaction information for Solana wallets.
  * 
- * @author Claude
+ * @author @BranchManager69
  * @created 2025-04-24
+ * @updated 2025-04-28 - [ongoing fixes; TBA]
  */
 
-import { PublicKey, ParsedAccountData, ParsedTransactionWithMeta } from '@solana/web3.js';
-import { useState, useEffect, useCallback } from 'react';
+import { ParsedAccountData, ParsedTransactionWithMeta, PublicKey } from '@solana/web3.js';
+import { useCallback, useEffect, useState } from 'react';
 import { useSolanaConnection } from '../contexts/SolanaConnectionContext';
 import { useStore } from '../store/useStore';
+
+// Config
+import { config } from '../config/config';
+const DEGENDUEL_RPC_BASE_URL = config.SOLANA.RPC_BASE_URL;
+console.log('[Solana] DegenDuel RPC:', DEGENDUEL_RPC_BASE_URL);
 
 export interface SolanaTransaction {
   signature: string;

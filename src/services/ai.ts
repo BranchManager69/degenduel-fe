@@ -1,7 +1,20 @@
+// src/services/ai.ts
+
 /**
+ * AI Service
+ * 
  * Comprehensive AI service client for DegenDuel
  * Handles interactions with backend AI services
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-28
+ * @updated 2025-04-28
  */
+
+// Config
+import { API_URL } from '../config/config';
+const API_URL_BASE = API_URL; // Base URL for DegenDuel API; used by the AI Service
 
 // Messages have standard OpenAI-compatible format
 export interface AIMessage {
@@ -82,8 +95,11 @@ export class AIServiceError extends Error {
  * AI Service implementation
  */
 class AIService {
-  private readonly API_BASE = '/api/ai';
-  
+  // TODO: Are we positive that this is the correct AI Service API URL?
+  //       For websocket, we actually use the api/v69/ws path.
+  private readonly API_AI_SVC_REST_URL = `${API_URL_BASE}/api/ai`;
+  private readonly API_AI_SVC_WS_URL = `${API_URL_BASE}/api/v69/ws`;
+
   /**
    * Get a chat completion from the AI
    * @param messages Array of messages in the conversation
@@ -99,7 +115,9 @@ class AIService {
       // Filter out system messages as they're handled by the backend
       const filteredMessages = messages.filter(msg => msg.role !== 'system');
       
-      const response = await fetch(`${this.API_BASE}/chat`, {
+      // Create the DegenDuel AI Service API URL
+      const responseUrl = `${this.API_AI_SVC_REST_URL}/chat`;
+      const response = await fetch(responseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,9 +156,64 @@ class AIService {
       );
     }
   }
-  
-  /* Removed fallback response mechanism as no longer needed */
-  
+
+  /**
+   * Get a chat completion from the AI via WebSocket
+   * @param messages Array of messages in the conversation
+   * @param options Configuration options
+   * @returns Promise with the AI response
+   */
+  async chatWebSocket(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
+    try {
+      // Create the WebSocket connection
+      const ws = new WebSocket(this.API_AI_SVC_WS_URL);
+
+      // Return a promise that resolves when the WebSocket connection is closed
+      return new Promise((resolve, reject) => {
+        // Handle WebSocket connection events
+        ws.onopen = () => {
+          console.log('AI Chat WebSocket connected');
+          
+          // Send the messages to the AI service
+          ws.send(JSON.stringify({
+            messages: messages,
+            context: options.context || 'default',
+            conversationId: options.conversationId
+          }));
+        };
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          console.log('AI Chat WebSocket message:', data);
+        };
+
+        ws.onclose = () => {
+          console.log('AI Chat WebSocket closed');
+          resolve({
+            content: '',
+            usage: undefined,
+            conversationId: options.conversationId
+          });
+        };
+
+        // Handle WebSocket connection errors
+        ws.onerror = (error) => {
+          console.error('AI Chat WebSocket error:', error);
+          reject(new AIServiceError(
+            'Failed to get AI response. Please try again later.',
+            AIErrorType.UNKNOWN
+          ));
+        };
+      });
+    } catch (error) {
+      console.error('AI Chat WebSocket Error:', error);
+      throw new AIServiceError(
+        'Failed to get AI response. Please try again later.',
+        AIErrorType.UNKNOWN
+      );
+    }
+  } 
+
   /**
    * Process API error responses
    * @param response The fetch response object
@@ -198,8 +271,7 @@ class AIService {
   }
 }
 
-// Create and export a singleton instance
+// Create and export a singleton AI Service instance
 export const aiService = new AIService();
-
 // Export default for convenience
 export default aiService;
