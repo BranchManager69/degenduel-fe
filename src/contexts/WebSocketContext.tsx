@@ -1,3 +1,5 @@
+// src/contexts/WebSocketContext.tsx
+
 /**
  * WebSocketContext
  * 
@@ -13,15 +15,22 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { authDebug } from '../config/config';
 import { useAuth } from '../hooks/useAuth';
 import {
-    ConnectionState,
-    MessageType,
-    SOCKET_TYPES,
-    WEBSOCKET_ENDPOINT,
-    WebSocketMessage
+  ConnectionState,
+  MessageType,
+  SOCKET_TYPES,
+  WEBSOCKET_ENDPOINT,
+  WebSocketMessage
 } from '../hooks/websocket/types';
 import { setupWebSocketInstance } from '../hooks/websocket/useUnifiedWebSocket';
 import { useStore } from '../store/useStore';
 import { dispatchWebSocketEvent, initializeWebSocketTracking } from '../utils/wsMonitor';
+
+// Config
+import { config } from '../config/config';
+
+// Get the secure DegenDuel RPC URL
+const DEGENDUEL_RPC_URL = config.SOLANA.RPC_BASE_URL; 
+console.log('[WebSocketContext] DegenDuel RPC:', DEGENDUEL_RPC_URL);
 
 // Interface for message listeners
 interface MessageListener {

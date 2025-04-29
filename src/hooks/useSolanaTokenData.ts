@@ -1,3 +1,5 @@
+// src/hooks/useSolanaTokenData.ts
+
 /**
  * useSolanaTokenData Hook
  * 
@@ -11,9 +13,11 @@
  */
 
 import { PublicKey, TokenAccountsFilter } from '@solana/web3.js';
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSolanaConnection } from '../contexts/SolanaConnectionContext';
 import { useStore } from '../store/useStore';
+
+// Config
 import { config } from '../config/config';
 
 export interface TokenData {

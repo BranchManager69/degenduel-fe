@@ -1,3 +1,5 @@
+// src/contexts/SolanaConnectionContext.tsx
+
 /**
  * SolanaConnectionContext
  * 
@@ -12,6 +14,8 @@ import { Connection } from '@solana/web3.js';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
+
+// Config
 import { config } from '../config/config';
 
 // Define the context type
