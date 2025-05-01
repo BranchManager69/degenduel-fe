@@ -1,18 +1,24 @@
+// src/hooks/websocket/topic-hooks/useNotifications.ts
+
 /**
  * useNotifications Hook
  * 
  * V69 Standardized WebSocket Hook for Notifications
  * This hook provides a standardized interface for notifications using the unified WebSocket system
  * 
+ * MAY need to be updated to the latest tenets of v69 unified, but it's a start.
+ * 
  * @author @BranchManager69
+ * @version 1.8.0
  * @created 2025-04-02
+ * @updated 2025-04-02
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType, SOCKET_TYPES } from '../types';
 import { TopicType } from '../index';
+import { MessageType, SOCKET_TYPES } from '../types';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Define the Notification interface for consumers of this hook
 interface Notification {

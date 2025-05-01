@@ -26,6 +26,7 @@ const mockToken: Token = {
   marketCap: '42000000000',
   volume24h: '1500000000',
   change24h: '5.63',
+  status: 'active', // Add required status field
   liquidity: {
     usd: '120000000',
     base: '1000000',

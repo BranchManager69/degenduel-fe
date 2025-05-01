@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { TokenData } from "../../types";
+import { Token } from "../../types";
 import ThreeManager from "./ThreeManager";
 
 interface TokenNode {
@@ -199,7 +199,7 @@ export class TokenVerseScene {
   }
 
   // Update token data
-  public updateTokenData(tokens: TokenData[]): void {
+  public updateTokenData(tokens: Token[]): void {
     // Process token data
     const nodes: TokenNode[] = tokens.map((token, index) => ({
       id: index,
@@ -208,7 +208,7 @@ export class TokenVerseScene {
       price: parseFloat(token.price.toString() || "0"),
       marketCap: parseFloat(token.marketCap?.toString() || "0"),
       volume24h: parseFloat(token.volume24h?.toString() || "0"),
-      change24h: parseFloat(token.change5m?.toString() || "0"), // Use 5m for animations
+      change24h: parseFloat(token.change24h?.toString() || "0"), // Use 24h change for animations
       position: new THREE.Vector3(
         (Math.random() - 0.5) * 50,
         (Math.random() - 0.5) * 50,

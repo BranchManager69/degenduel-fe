@@ -36,6 +36,8 @@ export const TokensPreviewSection: React.FC<TokensPreviewSectionProps> = ({
           marketCap: token.marketCap?.toString() || "0",
           volume24h: token.volume24h?.toString() || "0",
           change24h: token.change24h?.toString() || "0",
+          // Ensure status field is present and valid
+          status: token.status || "active",
           liquidity: {
             usd: token.liquidity?.usd?.toString() || "0",
             base: token.liquidity?.base?.toString() || "0",
@@ -48,11 +50,16 @@ export const TokensPreviewSection: React.FC<TokensPreviewSectionProps> = ({
           },
           socials: token.socials,
           websites: token.websites,
+          // Include any optional fields that might be used elsewhere
+          changesJson: token.changesJson,
+          transactionsJson: token.transactionsJson,
+          baseToken: token.baseToken,
+          quoteToken: token.quoteToken
         }));
         
-        // Sort by market cap (descending)
-        const sortedTokens = transformedTokens.sort(
-          (a: Token, b: Token) => Number(b.marketCap) - Number(a.marketCap)
+        // Sort by market cap (descending) - explicitly typing as Token[]
+        const sortedTokens: Token[] = transformedTokens.sort(
+          (a, b) => Number(b.marketCap) - Number(a.marketCap)
         );
         
         // Take only the top N tokens

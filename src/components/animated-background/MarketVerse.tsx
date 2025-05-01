@@ -1,26 +1,34 @@
 // src/components/visualization/MarketVerse.tsx
 
-import React, { useEffect, useRef, useState } from "react";
+/**
+ * @description A component that displays a 3D marketverse background
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-02-14
+ * @updated 2025-04-30
+ */
 
-import { useTokenData } from "../../contexts/TokenDataContext";
+import React, { useEffect, useRef, useState } from "react";
+import { useStandardizedTokenData } from "../../hooks/useStandardizedTokenData";
 import { useStore } from "../../store/useStore";
 import MarketVerseScene from "../../utils/three/MarketVerseScene";
 
+// MarketVerse background component
 export const MarketVerse: React.FC = () => {
   const { maintenanceMode, user } = useStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<MarketVerseScene | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { tokens, isConnected, lastUpdate } = useTokenData();
+  const { tokens, isConnected, lastUpdate } = useStandardizedTokenData("all");
 
-  // Effect to check for maintenance mode and handle accordingly
+  // Effect to check for Maintenance Mode and handle accordingly
   useEffect(() => {
     if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
       setError(
         "System is currently in maintenance mode. Please check back later.",
       );
       return;
-    } else if (error?.includes("maintenance mode")) {
+    } else if (error?.toLowerCase().includes("maintenance mode")) {
       setError(null);
     }
   }, [maintenanceMode, user, error]);

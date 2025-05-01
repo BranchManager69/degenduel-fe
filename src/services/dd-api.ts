@@ -1608,6 +1608,38 @@ export const ddApi = {
         throw error;
       }
     },
+    
+    // Get AI-selected portfolio for a contest
+    getAIPortfolio: async (contestId: string | number) => {
+      const user = useStore.getState().user;
+      
+      if (!user?.wallet_address) {
+        throw new Error("Please connect your wallet first");
+      }
+      
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(
+          `/blinks/ai-portfolio?contest_id=${contestId}&wallet_address=${encodeURIComponent(user.wallet_address)}`
+        );
+        
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || 'Failed to generate AI portfolio');
+        }
+        
+        const data = await response.json();
+        
+        // The expected response format includes portfolio (array of tokens) and a summary string
+        return {
+          portfolio: data.portfolio || [],
+          summary: data.summary || 'AI-selected tokens for this contest',
+        };
+      } catch (error) {
+        console.error('[getAIPortfolio] Error:', error);
+        throw error instanceof Error ? error : new Error('Failed to generate AI portfolio');
+      }
+    },
   },
 
   // Portfolio endpoints

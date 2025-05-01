@@ -307,6 +307,7 @@ interface StateData {
   };
   webSocket: WebSocketState;
   webSocketAlerts: WebSocketAlert[];
+  isEasterEggActive: boolean;
 }
 
 // Full state type including actions
@@ -504,6 +505,8 @@ interface State extends StateData {
     state: WebSocketState | ((prev: WebSocketState) => WebSocketState),
   ) => void;
   addWebSocketAlert: (alert: WebSocketAlert) => void;
+  activateEasterEgg: () => void;
+  updateWebSocketState: (newState: Partial<WebSocketState>) => void;
 }
 
 type StorePersist = PersistOptions<
@@ -523,6 +526,7 @@ type StorePersist = PersistOptions<
     | "achievements"
     | "webSocket"
     | "webSocketAlerts"
+    | "isEasterEggActive"
   >
 >;
 
@@ -542,6 +546,7 @@ const persistConfig: StorePersist = {
     achievements: state.achievements,
     webSocket: state.webSocket,
     webSocketAlerts: state.webSocketAlerts,
+    isEasterEggActive: state.isEasterEggActive,
   }),
 };
 
@@ -739,6 +744,7 @@ const initialState: StateData = {
   },
   webSocket: initialWebSocketState,
   webSocketAlerts: [],
+  isEasterEggActive: false,
 };
 
 // Create the store
@@ -1175,6 +1181,18 @@ export const useStore = create<State>()(
         // Implementation will add trade notification
         console.log("Trade notification added:", data);
       },
+      activateEasterEgg: () => {
+        console.log("🥚✨ Easter Egg Activated in Zustand Store!");
+        set({ isEasterEggActive: true });
+      },
+      updateWebSocketState: (newState: Partial<WebSocketState>) =>
+        set((prev) => ({
+          ...prev,
+          webSocket: {
+            ...prev.webSocket,
+            ...newState,
+          },
+        })),
       updateContest: (data) => {
         // Implementation will update contest state
         console.log("Contest updated:", data);

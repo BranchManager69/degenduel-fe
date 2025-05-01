@@ -12,10 +12,10 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { authDebug } from "../config/config";
 import { MessageType } from "../hooks/websocket/types";
 import { useUnifiedWebSocket } from "../hooks/websocket/useUnifiedWebSocket";
-import { TokenData } from "../types";
+import { Token } from "../types";
 
 interface TokenDataContextType {
-  tokens: TokenData[];
+  tokens: Token[];
   isConnected: boolean;
   error: string | null;
   lastUpdate: Date | null;
@@ -27,7 +27,7 @@ const TokenDataContext = createContext<TokenDataContextType | undefined>(
 );
 
 // Default fallback tokens for when connection is unavailable
-const FALLBACK_TOKENS: TokenData[] = [
+const FALLBACK_TOKENS: Token[] = [
   {
     symbol: "SOL",
     name: "Solana",
@@ -36,6 +36,12 @@ const FALLBACK_TOKENS: TokenData[] = [
     volume24h: "420420069",
     change24h: "42069.69",
     status: "active",
+    contractAddress: "So11111111111111111111111111111111111111112", // Solana native token
+    liquidity: {
+      usd: "69420000",
+      base: "420000",
+      quote: "69000",
+    }
   },
 ];
 
@@ -43,7 +49,7 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   // State for token data
-  const [tokens, setTokens] = useState<TokenData[]>(FALLBACK_TOKENS);
+  const [tokens, setTokens] = useState<Token[]>(FALLBACK_TOKENS);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date());
   const [error, setError] = useState<string | null>(null);
   

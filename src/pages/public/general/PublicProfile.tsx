@@ -18,6 +18,8 @@ import { ErrorMessage } from "../../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { ContestHistory } from "../../../components/profile/contest-history/ContestHistory";
 import SocialAccountsPanel from "../../../components/profile/SocialAccountsPanel";
+import { AuthDebugPanel } from "../../../components/debug";
+import UserProfileExtras from "../../../components/UserProfileExtras";
 
 // Import and extend the ContestEntry type from ContestHistory
 import { ContestEntry as BaseContestEntry } from "../../../components/profile/contest-history/ContestHistory";
@@ -432,6 +434,23 @@ export const PublicProfile: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Admin-only wallet tracking - only added for admins/superadmins */}
+      {userData && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <UserProfileExtras 
+            walletAddress={userData.wallet_address}
+            nickname={userData.nickname || undefined}
+            showWalletSelector={true}
+            compareMode={true}
+          />
+        </div>
+      )}
+
+      {/* Auth Debug Panel */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <AuthDebugPanel />
       </div>
     </div>
   );

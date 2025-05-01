@@ -1,11 +1,33 @@
-import { AnimatePresence, motion } from "framer-motion";
-import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { FaBell, FaTrophy, FaUser, FaUserFriends } from "react-icons/fa";
+/**
+ * Mobile Menu Button Component
+ * 
+ * Part of DegenDuel's Unified Menu System: This component handles the mobile version
+ * of the application's main navigation menu. It shares core functionality with the desktop
+ * UserMenu component through shared configuration and components.
+ * 
+ * @see /components/layout/menu/menuConfig.tsx - Shared menu structure
+ * @see /components/layout/menu/SharedMenuComponents.tsx - Shared UI components
+ * @see /components/layout/user-menu/UserMenu.tsx - Desktop counterpart
+ */
 
-import { useStore } from "../../store/useStore";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
 import { useAuth } from "../../hooks/useAuth";
+import { useStore } from "../../store/useStore";
 import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton";
+
+// Import shared menu components and configuration
+import { getMenuItems } from './menu/menuConfig';
+import { NotificationsDropdown } from './menu/NotificationsDropdown';
+import {
+  BiometricAuthComponent,
+  MenuBackdrop,
+  MenuDivider,
+  SectionHeader,
+  WalletDetailsSection
+} from './menu/SharedMenuComponents';
 
 interface MobileMenuButtonProps {
   className?: string;
@@ -30,6 +52,9 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
   const { achievements } = useStore();
   const userLevel = achievements?.userProgress?.level || 0;
   
+  // Get shared menu items from unified configuration
+  const { profileItems, contestItems, tokenItems, rankingItems } = getMenuItems(user, userLevel);
+  
   const handleDisconnect = () => {
     if (onDisconnect) {
       onDisconnect();
@@ -44,11 +69,11 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
   };
 
   const profileImageUrl = useMemo(() => {
-    if (imageError || !user?.profile_image?.url) {
+    if (!user || imageError || !user?.profile_image?.url) {
       return "/assets/media/default/profile_pic.png";
     }
     return user.profile_image.thumbnail_url || user.profile_image.url;
-  }, [user?.profile_image, imageError]);
+  }, [user, user?.profile_image, imageError]);
 
   const displayName = useMemo(() => {
     if (!user) return "";
@@ -59,56 +84,166 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
       : `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }, [user?.nickname, user?.wallet_address, isCompact]);
 
+  // Shared animation variants for menu items
+  const itemVariants = {
+    open: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1],
+      },
+    },
+    closed: {
+      opacity: 0,
+      y: 10,
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1],
+      },
+    },
+  };
+
+  // Get level color scheme for styling the level badge
+  const getLevelColorScheme = useMemo(() => {
+    // Default colors for no level
+    if (userLevel <= 0) {
+      return {
+        bg: "bg-brand-500/80",
+        border: "border-brand-400/50",
+        text: "text-white"
+      };
+    }
+    
+    // Return color scheme based on level tiers
+    if (userLevel >= 40) {
+      return {
+        bg: "bg-amber-500/80",
+        border: "border-amber-400/50",
+        text: "text-white"
+      };
+    } else if (userLevel >= 30) {
+      return {
+        bg: "bg-fuchsia-500/80",
+        border: "border-fuchsia-400/50",
+        text: "text-white"
+      };
+    } else if (userLevel >= 20) {
+      return {
+        bg: "bg-blue-500/80", 
+        border: "border-blue-400/50",
+        text: "text-white"
+      };
+    } else if (userLevel >= 10) {
+      return {
+        bg: "bg-emerald-500/80",
+        border: "border-emerald-400/50",
+        text: "text-white"
+      };
+    } else {
+      // Level 1-9
+      return {
+        bg: "bg-brand-500/80",
+        border: "border-brand-400/50",
+        text: "text-white"
+      };
+    }
+  }, [userLevel]);
+
   return (
     <div className={`relative ${className}`}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-center transition-all duration-200 group
-          ${isCompact ? "w-8 h-8" : "w-9 h-9"}
-          hover:bg-dark-300/30 active:bg-dark-300/40 rounded-md relative z-50`}
-      >
-        <div
-          className={`flex flex-col gap-[3px] items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-            ${isCompact ? "w-3" : "w-4"}`}
+      {/* Header Menu Controls - Row Layout for Profile and Notifications */}
+      <div className="flex items-center space-x-1">
+        {/* Notifications Dropdown (only for logged in users) */}
+        {user && (
+          <NotificationsDropdown 
+            unreadCount={unreadNotifications} 
+            isMobile={true}
+          />
+        )}
+        
+        {/* User Menu Button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`relative flex items-center justify-center transition-all duration-200 group
+            ${isCompact ? "w-8 h-8" : "w-9 h-9"}
+            hover:bg-dark-300/30 active:bg-dark-300/40 rounded-full relative z-50`}
+          aria-label="User menu"
+          aria-expanded={isOpen}
+          aria-haspopup="true"
         >
-          <motion.div
-            animate={isOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            className={`${
-              isCompact ? "w-2.5" : "w-3"
-            } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center`}
-          />
-          <motion.div
-            animate={
-              isOpen ? { opacity: 0, scale: 0 } : { opacity: 1, scale: 1 }
-            }
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            className={`${
-              isCompact ? "w-2" : "w-2.5"
-            } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
-          />
-          <motion.div
-            animate={isOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            className={`${
-              isCompact ? "w-2.5" : "w-3"
-            } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center`}
-          />
-        </div>
-      </button>
+          {user ? (
+            <>
+              {/* User Profile Avatar Button */}
+              <div className="relative">
+                {/* Profile Image */}
+                <div className="relative rounded-full overflow-hidden ring-2 ring-brand-400/30 group-hover:ring-brand-400/50 transition-all duration-300 shadow-lg bg-dark-300 w-full h-full">
+                  <img
+                    src={profileImageUrl}
+                    alt={displayName}
+                    onError={handleImageError}
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                    crossOrigin="anonymous"
+                  />
+                </div>
+                
+                {/* Level Badge - Small circle with level number */}
+                {userLevel > 0 && (
+                  <div className={`absolute -bottom-0.5 -right-0.5 flex items-center justify-center h-4 w-4 
+                    ${getLevelColorScheme.bg} text-xs font-bold rounded-full border ${getLevelColorScheme.border} 
+                    ${getLevelColorScheme.text} shadow-md`}
+                  >
+                    {userLevel > 99 ? "99+" : userLevel}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Hamburger Menu for Non-Logged-In Users */}
+              <div
+                className={`flex flex-col gap-[3px] items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                  ${isCompact ? "w-3" : "w-4"}`}
+              >
+                <motion.div
+                  animate={isOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  className={`${
+                    isCompact ? "w-2.5" : "w-3"
+                  } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center`}
+                />
+                <motion.div
+                  animate={
+                    isOpen ? { opacity: 0, scale: 0 } : { opacity: 1, scale: 1 }
+                  }
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  className={`${
+                    isCompact ? "w-2" : "w-2.5"
+                  } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
+                />
+                <motion.div
+                  animate={isOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  className={`${
+                    isCompact ? "w-2.5" : "w-3"
+                  } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center`}
+                />
+              </div>
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Dropdown Menu */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop - positioned to start below the header */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="fixed inset-0 top-16 bg-black/60 backdrop-blur-[2px] z-40"
-              onClick={() => setIsOpen(false)}
+            {/* Use the shared MenuBackdrop component with mobile-specific settings */}
+            <MenuBackdrop 
+              isOpen={isOpen} 
+              onClose={() => setIsOpen(false)} 
+              isMobile={true}
             />
 
             {/* Menu */}
@@ -119,6 +254,9 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               className={`absolute right-0 mt-2 w-56 bg-dark-200/95 border border-brand-500/30 
                 rounded-b-md rounded-tl-md rounded-tr-[24px] shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-xl`}
+              role="menu"
+              aria-orientation="vertical"
+              aria-labelledby="mobile-menu-button"
             >
               {/* Enhanced gradient overlays */}
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/20 via-transparent to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -149,9 +287,13 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     <div className="px-4 py-3 bg-dark-300/40 border-b border-brand-500/20">
                       <div className="flex items-center">
                         <div className="relative mr-3">
-                          {unreadNotifications > 0 && (
-                            <div className="absolute -top-1 -right-1 z-10 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-red-500 text-white border border-dark-200 shadow-lg animate-pulse">
-                              {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                          {/* Level Badge */}
+                          {userLevel > 0 && (
+                            <div className={`absolute -bottom-0.5 -right-0.5 z-10 flex items-center justify-center h-4 w-4 
+                              ${getLevelColorScheme.bg} text-xs font-bold rounded-full border ${getLevelColorScheme.border} 
+                              ${getLevelColorScheme.text} shadow-md`}
+                            >
+                              {userLevel > 99 ? "99+" : userLevel}
                             </div>
                           )}
                           <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-brand-400/30 group-hover:ring-brand-400/50 transition-all duration-300 shadow-lg bg-dark-300">
@@ -174,44 +316,28 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       </div>
                     </div>
                     
+                    {/* Add Wallet Details Section (shared component) */}
+                    <WalletDetailsSection user={user} />
+                    
                     {/* User menu items */}
-                    <ProfileMenuItem 
-                      to="/me" 
-                      icon={FaUser} 
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Profile
-                    </ProfileMenuItem>
-                    <ProfileMenuItem 
-                      to="/leaderboard" 
-                      icon={FaTrophy} 
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Degen Level
-                    </ProfileMenuItem>
-                    <ProfileMenuItem 
-                      to="/notifications" 
-                      icon={FaBell} 
-                      badge={unreadNotifications > 0 ? unreadNotifications : undefined}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Notifications
-                    </ProfileMenuItem>
-                    <ProfileMenuItem 
-                      to="/referrals" 
-                      icon={FaUserFriends} 
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Invite & Earn
-                    </ProfileMenuItem>
+                    {profileItems.map((item) => (
+                      <ProfileMenuItem 
+                        key={item.id}
+                        to={item.to} 
+                        icon={item.icon} 
+                        badge={item.badge}
+                        onClick={() => setIsOpen(false)}
+                        variants={itemVariants}
+                      >
+                        {item.label}
+                      </ProfileMenuItem>
+                    ))}
                     
                     {/* Admin controls section if applicable */}
                     {(isAdmin() || isSuperAdmin()) && (
                       <>
-                        <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
-                        <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          Admin Access
-                        </div>
+                        <MenuDivider />
+                        <SectionHeader title="Admin Access" />
                         
                         {/* Side-by-side Admin and Super Admin buttons */}
                         <div className="grid grid-cols-2 gap-2 px-4 py-2">
@@ -256,7 +382,14 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       </>
                     )}
                     
-                    <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
+                    {/* Add Biometric Authentication Option */}
+                    <MenuDivider />
+                    <BiometricAuthComponent 
+                      userId={user.wallet_address} 
+                      onClose={() => setIsOpen(false)} 
+                      menuItemClass="flex items-center gap-2 px-4 py-2 text-sm text-blue-300 hover:bg-blue-500/20 hover:backdrop-blur-md hover:text-blue-200 rounded-lg transition-all duration-300"
+                    />
+                    <MenuDivider />
                   </>
                 ) : (
                   <>
@@ -276,65 +409,56 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       </div>
                     </div>
                     
-                    <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
+                    <MenuDivider />
                   </>
                 )}
 
-                {/* Contests Section */}
-                <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Contests
-                </div>
-                <MenuItem to="/contests" onClick={() => setIsOpen(false)}>
-                  Browse Contests
-                </MenuItem>
-                {user && (
-                  <>
-                    <MenuItem
-                      to="/my-contests"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      My Contests
-                    </MenuItem>
-                    <MenuItem
-                      to="/my-portfolios"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      My Portfolios
-                    </MenuItem>
-                  </>
-                )}
+                {/* Contests Section - using shared config */}
+                <SectionHeader title="Contests" />
+                {contestItems.map((item) => (
+                  <MenuItem 
+                    key={item.id}
+                    to={item.to} 
+                    onClick={() => setIsOpen(false)}
+                    variants={itemVariants}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
 
-                {/* Tokens Section */}
-                <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
-                  Tokens
-                </div>
-                <MenuItem to="/tokens" onClick={() => setIsOpen(false)}>
-                  Browse Tokens
-                </MenuItem>
-                {/* Whitelist link removed 2025-04-05 */}
+                {/* Tokens Section - using shared config */}
+                <MenuDivider />
+                <SectionHeader title="Tokens" />
+                {tokenItems.map((item) => (
+                  <MenuItem 
+                    key={item.id}
+                    to={item.to} 
+                    onClick={() => setIsOpen(false)}
+                    variants={itemVariants}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
 
-                {/* Rankings Section */}
-                <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
-                  Rankings
-                </div>
-                <MenuItem
-                  to="/rankings/global"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Global Rankings
-                </MenuItem>
-                <MenuItem
-                  to="/rankings/performance"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Performance Rankings
-                </MenuItem>
+                {/* Rankings Section - using shared config */}
+                <MenuDivider />
+                <SectionHeader title="Rankings" />
+                {rankingItems.map((item) => (
+                  <MenuItem
+                    key={item.id}
+                    to={item.to}
+                    onClick={() => setIsOpen(false)}
+                    variants={itemVariants}
+                  >
+                    {item.label}
+                  </MenuItem>
+                ))}
 
                 {/* Disconnect button (if logged in) */}
                 {user && (
                   <>
-                    <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
-                    <LogoutButton onClick={handleDisconnect} />
+                    <MenuDivider />
+                    <LogoutButton onClick={handleDisconnect} variants={itemVariants} />
                   </>
                 )}
               </motion.div>
@@ -351,32 +475,17 @@ const MenuItem: React.FC<{
   to: string;
   onClick?: () => void;
   className?: string;
+  variants?: any;
   children: React.ReactNode;
-}> = ({ to, onClick, className = "", children }) => (
+}> = ({ to, onClick, className = "", variants, children }) => (
   <motion.div
-    variants={{
-      open: {
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: 0.3,
-          ease: [0.4, 0, 0.2, 1],
-        },
-      },
-      closed: {
-        opacity: 0,
-        y: 10,
-        transition: {
-          duration: 0.3,
-          ease: [0.4, 0, 0.2, 1],
-        },
-      },
-    }}
+    variants={variants}
   >
     <Link
       to={to}
-      className={`block px-4 py-2 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${className}`}
+      className={`block px-4 py-2 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ${className}`}
       onClick={onClick}
+      role="menuitem"
     >
       {children}
     </Link>
@@ -386,36 +495,21 @@ const MenuItem: React.FC<{
 // Profile menu item with icon
 const ProfileMenuItem: React.FC<{
   to: string;
-  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  icon?: React.ComponentType<any>;
   onClick?: () => void;
   className?: string;
-  badge?: number;
+  badge?: string | number;
+  variants?: any;
   children: React.ReactNode;
-}> = ({ to, icon: Icon, onClick, className = "", badge, children }) => (
+}> = ({ to, icon: Icon, onClick, className = "", badge, variants, children }) => (
   <motion.div
-    variants={{
-      open: {
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: 0.3,
-          ease: [0.4, 0, 0.2, 1],
-        },
-      },
-      closed: {
-        opacity: 0,
-        y: 10,
-        transition: {
-          duration: 0.3,
-          ease: [0.4, 0, 0.2, 1],
-        },
-      },
-    }}
+    variants={variants}
   >
     <Link
       to={to}
-      className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${className}`}
+      className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ${className}`}
       onClick={onClick}
+      role="menuitem"
     >
       {Icon && <Icon className="w-4 h-4 text-brand-300" />}
       <span className="flex-1">{children}</span>
@@ -431,30 +525,15 @@ const ProfileMenuItem: React.FC<{
 // Logout button
 const LogoutButton: React.FC<{
   onClick?: () => void;
-}> = ({ onClick }) => (
+  variants?: any;
+}> = ({ onClick, variants }) => (
   <motion.div
-    variants={{
-      open: {
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: 0.3,
-          ease: [0.4, 0, 0.2, 1],
-        },
-      },
-      closed: {
-        opacity: 0,
-        y: 10,
-        transition: {
-          duration: 0.3,
-          ease: [0.4, 0, 0.2, 1],
-        },
-      },
-    }}
+    variants={variants}
   >
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-300 hover:bg-red-500/20 hover:backdrop-blur-md hover:text-red-200 rounded-lg transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-300 hover:bg-red-500/20 hover:backdrop-blur-md hover:text-red-200 rounded-lg transition-all duration-300"
+      role="menuitem"
     >
       <svg
         className="w-4 h-4 text-red-300"

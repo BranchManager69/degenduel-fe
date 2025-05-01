@@ -38,6 +38,7 @@ const createMockTokens = (): Token[] => {
       marketCap: '42000000000',
       volume24h: '1500000000',
       change24h: '5.63',
+      status: 'active', // Add required status field
       liquidity: {
         usd: '120000000',
         base: '1000000',
@@ -63,6 +64,7 @@ const createMockTokens = (): Token[] => {
       marketCap: '1320000000000',
       volume24h: '28500000000',
       change24h: '-2.34',
+      status: 'active', // Add required status field
       liquidity: {
         usd: '820000000',
         base: '12000000',
@@ -88,6 +90,7 @@ const createMockTokens = (): Token[] => {
       marketCap: '410000000000',
       volume24h: '12500000000',
       change24h: '2.25',
+      status: 'active', // Add required status field
       liquidity: {
         usd: '450000000',
         base: '8000000',
@@ -113,6 +116,7 @@ const createMockTokens = (): Token[] => {
       marketCap: '8500000000',
       volume24h: '450000000',
       change24h: '1.21',
+      status: 'active', // Add required status field
       liquidity: {
         usd: '120000000',
         base: '5000000',
@@ -137,6 +141,7 @@ const createMockTokens = (): Token[] => {
       marketCap: '16000000000',
       volume24h: '350000000',
       change24h: '-1.85',
+      status: 'active', // Add required status field
       liquidity: {
         usd: '95000000',
         base: '4000000',
@@ -175,6 +180,7 @@ const createMockTokens = (): Token[] => {
       marketCap: randomMarketCap,
       volume24h: randomVolume,
       change24h: randomChange,
+      status: 'active', // Add required status field
       liquidity: {
         usd: (Number(randomVolume) / 10).toFixed(0),
         base: (Number(randomVolume) / 100).toFixed(0),

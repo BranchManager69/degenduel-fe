@@ -5,14 +5,12 @@
  * It is used in the App component to initialize the auth state and get the access token for WebSocket authentication.
  */
 
-import { useWallet as useAptosWallet } from "@aptos-labs/wallet-adapter-react";
 import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
 
-import { useDebounce } from "./useDebounce";
-import { useStore } from "../store/useStore";
 import { NODE_ENV, authDebug } from "../config/config";
-import { env } from "../config/env";
+import { useStore } from "../store/useStore";
+import { useDebounce } from "./useDebounce";
 import { useJupiterWallet } from "./useJupiterWallet";
 
 interface AuthState {
@@ -36,23 +34,12 @@ interface AuthState {
 export function useAuth() {
   const store = useStore();
   
-  // Choose between Jupiter wallet and Aptos wallet based on feature flag
-  const { account, connected } = useAptosWallet();
+  // Use Jupiter wallet for Solana connectivity
   const jupiterWallet = useJupiterWallet();
   
-  // Check if we actually have the Jupiter wallet SDK loaded
-  const jupiterAvailable = typeof window !== 'undefined' && 
-                          window.hasOwnProperty('solana') && 
-                          env.USE_JUPITER_WALLET;
-  
-  // Use Jupiter wallet when feature flag is enabled and wallet is available
-  const walletConnected = jupiterAvailable
-    ? (jupiterWallet?.isConnected || false)
-    : connected;
-  
-  const walletAddress = jupiterAvailable
-    ? (jupiterWallet?.walletAddress || null)
-    : account?.address;
+  // Use Jupiter wallet
+  const walletConnected = jupiterWallet?.isConnected || false;
+  const walletAddress = jupiterWallet?.walletAddress || null;
     
   const [shouldCheck, setShouldCheck] = useState<boolean>(true);
   const [authState, setAuthState] = useState<AuthState>({
@@ -304,7 +291,7 @@ export function useAuth() {
         authDebug('useAuth', 'Wallet connection detected, checking auth status', {
           address: walletAddress,
           connected: walletConnected,
-          adapter: env.USE_JUPITER_WALLET ? 'jupiter' : 'aptos'
+          adapter: 'jupiter'
         });
         // Wait a short time for wallet connection to complete
         setTimeout(() => setShouldCheck(true), 500);
@@ -331,7 +318,7 @@ export function useAuth() {
       isWalletConnected,
       walletAddress,
       storeUser: !!store.user,
-      adapter: env.USE_JUPITER_WALLET ? 'jupiter' : 'aptos'
+      adapter: 'jupiter'
     });
   }, [store.user, walletConnected, walletAddress, authState.isWalletConnected, authState.user, authState.walletAddress]);
 

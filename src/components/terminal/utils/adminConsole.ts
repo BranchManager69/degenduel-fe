@@ -1,18 +1,24 @@
+// src/components/terminal/utils/adminConsole.ts
+
 /**
- * @fileoverview
  * Admin console handler for the terminal
  * 
- * @description
  * Provides access to hidden admin features for testing
  * 
  * @author Branch Manager
+ * @version 1.9.0
+ * @created 2025-04-01
+ * @updated 2025-04-30
  */
 
-import { 
-  getHiddenMessageCache, 
-  resetHiddenMessageCache, 
-  addRandomHiddenMessages 
+import {
+  addRandomHiddenMessages,
+  getHiddenMessageCache,
+  resetHiddenMessageCache
 } from './easterEggHandler';
+
+// Debugging
+const DEBUG_DIDI = true;
 
 // Command mapping for admin console commands
 export const ADMIN_COMMANDS: Record<string, (args?: string) => string> = {
@@ -63,11 +69,16 @@ First letters: ${cache.map(msg => msg.charAt(0)).join('')}`;
  * Process an admin console command
  */
 export const processAdminCommand = (command: string): string => {
-  // Handle digit commands
+  // If DEBUG_DIDI is true, Didi evolves into KingDidi (Didi gains admin perms and new capabilities)
+  if (DEBUG_DIDI) {
+    return `[ 👑 ] Didi evolved into KingDidi! Commands: 0-5`;
+  }
+
+  // Handle digit commands (0-5)
   if (ADMIN_COMMANDS[command]) {
     return ADMIN_COMMANDS[command]();
   }
   
-  // Default response for unknown commands
+  // Default response for unknown commands (?)
   return `[ADMIN] Unknown command: ${command}. Available commands: 0-5`;
 };

@@ -1,10 +1,12 @@
+// src/components/SolanaTokenDisplay.tsx
+
 /**
  * SolanaTokenDisplay Component
  * 
  * A component that displays token data fetched directly from the Solana blockchain.
  * Supports both detailed and compact display modes.
  * 
- * @author Claude
+ * @author BranchManager69
  * @created 2025-04-24
  * @updated 2025-04-25 - Added compact mode for user menu
  */
@@ -22,7 +24,7 @@ interface SolanaTokenDisplayProps {
 }
 
 export const SolanaTokenDisplay: React.FC<SolanaTokenDisplayProps> = ({
-  mintAddress = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // Default to DegenDuel token
+  mintAddress,
   walletAddress,
   showSupply = true,
   showHolders = true,

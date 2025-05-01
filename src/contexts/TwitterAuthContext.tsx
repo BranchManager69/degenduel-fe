@@ -5,7 +5,10 @@
  * It handles Twitter login, account linking, and status checking.
  * 
  * @author @BranchManager69
-\ * @last-modified 2025-04-02
+ * @version 1.0.1
+ * @created 2025-04-02
+ * @updated 2025-05-01
+ * 
  */
 
 import React, { createContext, ReactNode, useContext, useEffect } from 'react';

@@ -38,6 +38,9 @@ design/OUTDATED_*
 # Purgatory
 purgatory/
 
+# Incinerator
+src/components/_incinerator
+
 # HTML tests
 html_tests/
 

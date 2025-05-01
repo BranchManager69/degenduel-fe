@@ -104,17 +104,17 @@ export const FluidTokens: React.FC = () => {
       const y = dimensions.height / 2 + Math.sin(angle) * radius;
 
       // Use 5-minute change instead of 24h for more dynamic animations
-      const change = parseFloat(token.change5m?.toString() || token.change24h?.toString() || "0");
+      const change = token.changesJson?.m5 || parseFloat(token.change24h?.toString() || "0");
       let color: [number, number, number];
 
       if (change > 1) {
-        color = [0, 255, 120]; // Strong positive - bright green
+        color = [0, 255, 120];   // Strong positive - bright green
       } else if (change > 0) {
         color = [100, 255, 150]; // Slight positive - light green
       } else if (change > -1) {
-        color = [255, 70, 70]; // Slight negative - light red
+        color = [255, 70, 70];   // Slight negative - light red
       } else {
-        color = [255, 0, 0]; // Strong negative - bright red
+        color = [255, 0, 0];     // Strong negative - bright red
       }
 
       // Determine strength of influence based on market cap

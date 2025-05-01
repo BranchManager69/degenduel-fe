@@ -148,6 +148,8 @@ export const OptimizedTokensPage: React.FC = () => {
           marketCap: token.marketCap?.toString() || "0",
           volume24h: token.volume24h?.toString() || "0",
           change24h: token.change24h?.toString() || "0",
+          // Add required status field
+          status: token.status || "active",
           liquidity: {
             usd: token.liquidity?.usd?.toString() || "0",
             base: token.liquidity?.base?.toString() || "0",
@@ -164,6 +166,11 @@ export const OptimizedTokensPage: React.FC = () => {
             discord: token.socials?.discord || null,
           },
           websites: token.websites || [],
+          // Include optional fields
+          changesJson: token.changesJson,
+          transactionsJson: token.transactionsJson,
+          baseToken: token.baseToken,
+          quoteToken: token.quoteToken
         }));
         
         setTokens(transformedTokens);
@@ -215,6 +222,7 @@ export const OptimizedTokensPage: React.FC = () => {
           marketCap: '42000000000',
           volume24h: '1500000000',
           change24h: '5.63',
+          status: 'active', // Add required status field
           liquidity: { usd: '120000000', base: '1000000', quote: '2000000' },
           images: {
             imageUrl: '',
@@ -236,6 +244,7 @@ export const OptimizedTokensPage: React.FC = () => {
           marketCap: '1320000000000',
           volume24h: '28500000000',
           change24h: '-2.34',
+          status: 'active', // Add required status field
           liquidity: { usd: '820000000', base: '12000000', quote: '18000000' },
           images: {
             imageUrl: '',
@@ -257,6 +266,7 @@ export const OptimizedTokensPage: React.FC = () => {
           marketCap: '410000000000',
           volume24h: '12500000000',
           change24h: '2.25',
+          status: 'active', // Add required status field
           liquidity: { usd: '450000000', base: '8000000', quote: '10000000' },
           images: {
             imageUrl: '',

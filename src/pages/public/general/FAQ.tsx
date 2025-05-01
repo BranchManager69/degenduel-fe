@@ -1,8 +1,18 @@
 // src/pages/public/general/FAQ.tsx
 
-import React, { useState, useRef, useEffect } from "react";
+/**
+ * @fileoverview DegenDuel FAQ page
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2024-03-14
+ * @updated 2025-04-30
+ */
+
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "../../../components/ui/Card";
 
+// FAQ page component
 export const FAQ: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>("platform");
   const [openQuestions, setOpenQuestions] = useState<Record<string, number | null>>({
@@ -70,6 +80,7 @@ export const FAQ: React.FC = () => {
 
   // Categories and their FAQs
   const faqCategories = {
+    
     platform: {
       title: "Platform Basics",
       icon: (
@@ -84,6 +95,7 @@ export const FAQ: React.FC = () => {
         }
       ]
     },
+
     gettingStarted: {
       title: "Getting Started",
       icon: (
@@ -98,6 +110,7 @@ export const FAQ: React.FC = () => {
         }
       ]
     },
+
     contests: {
       title: "Contests",
       icon: (
@@ -120,6 +133,7 @@ export const FAQ: React.FC = () => {
         }
       ]
     },
+
     token: {
       title: "DUEL Token",
       icon: (
@@ -134,6 +148,7 @@ export const FAQ: React.FC = () => {
         }
       ]
     }
+    
   };
 
   // Toggle question visibility within a category

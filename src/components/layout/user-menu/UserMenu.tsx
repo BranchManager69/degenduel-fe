@@ -1,25 +1,34 @@
+/**
+ * UserMenu Component (Desktop)
+ * 
+ * Part of DegenDuel's Unified Menu System: This component handles the desktop version
+ * of the application's user menu. It shares core functionality with the mobile 
+ * MobileMenuButton component through shared configuration and components.
+ * 
+ * @see /components/layout/menu/menuConfig.tsx - Shared menu structure
+ * @see /components/layout/menu/SharedMenuComponents.tsx - Shared UI components
+ * @see /components/layout/MobileMenuButton.tsx - Mobile counterpart
+ */
+
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
-import { FaBell, FaFingerprint, FaTrophy, FaUserFriends } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../hooks/useAuth";
-import useBiometricAuth from "../../../hooks/useBiometricAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
-import SolanaWalletDisplay from "../../SolanaWalletDisplay";
-import SolanaTokenDisplay from "../../SolanaTokenDisplay";
 import { AdminControls } from "./UserMenuAdminControls";
-import { config } from "../../../config/config";
 
-// Define the shape of our menu items
-interface MenuItemType {
-  label: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  to: string;
-  badge?: number | string;
-  badgeColor?: string;
-}
+// Import shared menu components and configuration
+import { getMenuItems } from '../menu/menuConfig';
+import { NotificationsDropdown } from '../menu/NotificationsDropdown';
+import {
+  BiometricAuthComponent,
+  MenuBackdrop,
+  MenuDivider,
+  SectionHeader,
+  WalletDetailsSection
+} from '../menu/SharedMenuComponents';
 
 interface UserMenuProps {
   user: User;
@@ -27,83 +36,6 @@ interface UserMenuProps {
   isCompact?: boolean;
   unreadNotifications?: number;
 }
-
-// Biometric Auth Menu Option Component
-const BiometricAuthMenuOption: React.FC<{ userId: string }> = ({ userId }) => {
-  const { isAvailable, isRegistered, registerCredential } = useBiometricAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const user = useStore(state => state.user);
-  
-  // Don't show if biometric auth is not available
-  if (!isAvailable) return null;
-  
-  // Handle registration for users who aren't registered yet
-  const handleRegister = async () => {
-    setIsLoading(true);
-    
-    try {
-      // Register biometric credential with platform authenticator (Face ID, Touch ID, etc.)
-      await registerCredential(
-        userId, 
-        user?.nickname || userId,
-        { 
-          authenticatorType: 'platform',
-          nickname: user?.nickname || undefined
-        }
-      );
-    } catch (err) {
-      console.error('Biometric auth error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  return (
-    <Menu.Item>
-      {({ active }) => (
-        isRegistered ? (
-          // For registered users - use a simple Link component
-          <Link
-            to="/biometric-auth-demo"
-            className={`
-              w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
-              ${active ? "bg-blue-500/20 text-blue-200" : "text-blue-300 hover:text-blue-200"}
-            `}
-          >
-            <FaFingerprint 
-              className={`
-                w-4 h-4 transition-colors duration-300
-                ${active ? "text-blue-200" : "text-blue-300"}
-              `} 
-            />
-            <span className="flex-1">Manage Biometrics</span>
-          </Link>
-        ) : (
-          // For unregistered users - use a button with registration handler
-          <button
-            onClick={handleRegister}
-            disabled={isLoading}
-            className={`
-              w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
-              ${active ? "bg-blue-500/20 text-blue-200" : "text-blue-300 hover:text-blue-200"}
-              ${isLoading ? "opacity-70 cursor-not-allowed" : ""}
-            `}
-          >
-            <FaFingerprint 
-              className={`
-                w-4 h-4 transition-colors duration-300
-                ${active ? "text-blue-200" : "text-blue-300"}
-              `} 
-            />
-            <span className="flex-1">
-              {isLoading ? "Processing..." : "Setup Biometrics"}
-            </span>
-          </button>
-        )
-      )}
-    </Menu.Item>
-  );
-};
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   user,
@@ -117,6 +49,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   // Get user level information
   const userLevel = achievements?.userProgress?.level || 0;
+  
+  // Get shared menu items from unified configuration
+  const { profileItems, contestItems, tokenItems, rankingItems } = getMenuItems(user, userLevel);
 
   // Define a function to get color scheme based on level
   const getLevelColorScheme = useMemo(() => {
@@ -291,281 +226,308 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     setImageError(true);
     console.warn("Failed to load profile image, falling back to default");
   };
+  
+  // Create a function to close the menu by simulating a click outside
+  const closeMenu = () => {
+    document.body.click(); // This will trigger the Menu to close
+  };
 
-  const menuItems: MenuItemType[] = [
-    // Add Profile entry back to the menu
-    {
-      label: "Profile",
-      icon: ({ className }) => (
-        <svg 
-          className={className}
-          xmlns="http://www.w3.org/2000/svg" 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
-          />
-        </svg>
-      ),
-      to: "/me"
-    },
-    // Degen Level item that links to leaderboard
-    {
-      label: "Degen Level",
-      icon: FaTrophy,
-      to: "/leaderboard",
-      badge: userLevel > 0 ? `Lvl ${userLevel}` : undefined,
-      badgeColor: userLevel > 0 ? getLevelColorScheme.badge : undefined,
-    },
-    {
-      label: "Noti's",
-      icon: FaBell,
-      to: "/notifications",
-      badge: unreadNotifications > 0 ? unreadNotifications : undefined,
-    },
-    {
-      label: "Invite & Earn",
-      icon: FaUserFriends,
-      to: "/referrals",
-    },
-  ];
-
-  // No navigation function needed now that we're using Link components
+  // Active menu item style
+  const activeItemStyles = `bg-brand-500/20 text-white`;
+  // Inactive menu item style
+  const inactiveItemStyles = `text-gray-200 hover:text-white hover:bg-brand-500/10`;
+  
+  // Common menu item class for consistency
+  const menuItemClass = `group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md`;
 
   return (
-    <Menu as="div" className="relative">
-      {({ open }) => (
-        <>
-          <div className="relative">
-            
-            <Menu.Button
-              className={`
-                relative group overflow-hidden transition-all duration-300 ease-out
-                ${isCompact ? "h-7" : "h-8"} flex items-center
-                rounded-full border ${buttonStyles.border} ${
-                  buttonStyles.hover.border
-                }
-                ${buttonStyles.hover.glow} transition-shadow duration-500
-              `}
-            >
-              {/* Background gradient */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
+    <div className="flex items-center space-x-2">
+      {/* Notifications Dropdown - Separated from Main Menu */}
+      <NotificationsDropdown 
+        unreadCount={unreadNotifications} 
+        isMobile={false}
+      />
+      
+      {/* User Menu */}
+      <Menu as="div" className="relative">
+        {({ open }) => (
+          <>
+            {/* Add a backdrop when menu is open */}
+            {open && (
+              <MenuBackdrop 
+                isOpen={open} 
+                onClose={closeMenu} 
+                isMobile={false}
               />
-
-              {/* Shine effect */}
-              <div className="absolute inset-0">
+            )}
+            
+            <div className="relative z-50">
+              <Menu.Button
+                className={`
+                  relative group overflow-hidden transition-all duration-300 ease-out
+                  ${isCompact ? "h-7" : "h-8"} flex items-center
+                  rounded-full border ${buttonStyles.border} ${
+                    buttonStyles.hover.border
+                  }
+                  ${buttonStyles.hover.glow} transition-shadow duration-500
+                `}
+                aria-label="User menu"
+                aria-expanded={open}
+                aria-haspopup="true"
+              >
+                {/* Background gradient */}
                 <div
-                  className={`absolute inset-0 bg-gradient-to-r from-transparent ${buttonStyles.shine} to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000`}
+                  className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
                 />
-              </div>
 
-              {/* Content */}
-              <div className="relative flex items-center justify-between w-full px-3">
-                <div className="flex items-center gap-2">
-                  {/* Level Badge - Only show if level > 0 */}
-                  {userLevel > 0 && (
-                    <div
-                      className={`
-                        flex items-center justify-center 
-                        ${isCompact ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"} 
-                        px-1 font-bold rounded-full 
-                        ${getLevelColorScheme.badge}
-                        border ${getLevelColorScheme.badgeBorder}
-                        shadow-inner transition-all duration-300
-                      `}
-                    >
-                      <span className="mx-0.5">{userLevel}</span>
-                    </div>
-                  )}
-
-                  {/* Username with profile link indicator */}
-                  <span
-                    className={`
-                      ${buttonStyles.text} ${buttonStyles.hover.text}
-                      font-medium tracking-wide transition-all duration-300
-                      ${isCompact ? "text-sm" : "text-base"} group-hover:underline
-                    `}
-                  >
-                    {displayName}
-                  </span>
-                </div>
-
-                {/* Avatar */}
-                <div className="relative">
-                  {unreadNotifications > 0 && (
-                    <div className="absolute -top-1 -right-1.5 z-10 flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-red-500 text-white border border-dark-200 shadow-lg animate-pulse">
-                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                    </div>
-                  )}
+                {/* Shine effect */}
+                <div className="absolute inset-0">
                   <div
-                    className={`
-                      ml-2 rounded-full overflow-hidden ring-2 ${buttonStyles.ring}
-                      transition-all duration-300 shadow-lg
-                      ${isCompact ? "w-5 h-5" : "w-6 h-6"}
-                      bg-dark-300 group-hover:ring-opacity-80 
-                      group-hover:scale-105 group-hover:ring-white/30
-                    `}
-                  >
-                    <img
-                      src={profileImageUrl}
-                      alt={displayName}
-                      onError={handleImageError}
-                      className="w-full h-full object-cover group-hover:brightness-110"
-                      loading="eager"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Menu.Button>
-          </div>
-
-          <Transition
-            show={open}
-            as={Fragment}
-            enter="transition ease-out duration-200"
-            enterFrom="transform opacity-0 scale-95"
-            enterTo="transform opacity-100 scale-100"
-            leave="transition ease-in duration-150"
-            leaveFrom="transform opacity-100 scale-100"
-            leaveTo="transform opacity-0 scale-95"
-          >
-            <Menu.Items className="absolute right-0 mt-1 w-56 origin-top-right bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 rounded-lg shadow-lg overflow-hidden z-50">
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-              <div className="relative">
-                {/* Admin Controls Section */}
-                <AdminControls />
-
-                {/* Wallet Balances Section */}
-                <div className="p-3 bg-dark-300/50 border-b border-brand-500/20">
-                  <div className="flex flex-col gap-2">
-                    {/* SOL Balance */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">SOL Balance</span>
-                      <div className="text-sm font-medium text-white">
-                        <SolanaWalletDisplay walletAddress={user.wallet_address} compact={true} />
-                      </div>
-                    </div>
-                    
-                    {/* Token Balance - Shows our token */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">DegenDuel</span>
-                      <div className="text-sm font-medium text-white flex items-center">
-                        <span className="text-brand-300">
-                          <SolanaTokenDisplay 
-                            mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS} 
-                            walletAddress={user.wallet_address} 
-                            compact={true} 
-                          />
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Link to="/wallet" className="text-xs text-brand-400 hover:text-brand-300 transition-colors duration-200 flex justify-end items-center">
-                      <span>View wallet details</span>
-                      <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                      </svg>
-                    </Link>
-                  </div>
+                    className={`absolute inset-0 bg-gradient-to-r from-transparent ${buttonStyles.shine} to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000`}
+                  />
                 </div>
 
-                {/* Regular Menu Items */}
-                <div className="p-1">
-                  {menuItems.map((item) => (
-                    <Menu.Item key={item.label}>
-                      {({ active }) => (
-                        <Link
-                          to={item.to}
-                          className={`
-                            group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
-                            ${
-                              active
-                                ? "bg-brand-500/20 text-white"
-                                : "text-gray-200 hover:text-white"
-                            }
-                          `}
-                        >
-                          <item.icon
-                            className={`
-                              w-4 h-4 transition-colors duration-300
-                              ${active ? "text-brand-200" : "text-brand-300"}
-                            `}
-                          />
-                          <span className="flex-1">{item.label}</span>
-                          {item.badge !== undefined && (
-                            <span
-                              className={`
-                                flex items-center justify-center min-w-5 h-5 text-xs font-semibold 
-                                rounded-full px-1.5 shadow-sm
-                                ${item.badgeColor ? item.badgeColor : "bg-red-500/80"} 
-                                text-white
-                              `}
-                            >
-                              {typeof item.badge === "number" && item.badge > 99
-                                ? "99+"
-                                : item.badge}
-                            </span>
-                          )}
-                        </Link>
-                      )}
-                    </Menu.Item>
-                  ))}
-
-                  <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
-                  
-                  {/* Biometric Authentication Option */}
-                  <BiometricAuthMenuOption userId={user.wallet_address} />
-
-                  <div className="h-[1px] bg-gradient-to-r from-transparent via-brand-500/30 to-transparent my-1" />
-
-                  <Menu.Item>
-                    {({ active }) => (
-                      <button
-                        onClick={onDisconnect}
+                {/* Content */}
+                <div className="relative flex items-center justify-between w-full px-3">
+                  <div className="flex items-center gap-2">
+                    {/* Level Badge - Only show if level > 0 */}
+                    {userLevel > 0 && (
+                      <div
                         className={`
-                          w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
-                          ${
-                            active
-                              ? "bg-red-500/20 text-red-200"
-                              : "text-red-300 hover:text-red-200"
-                          }
+                          flex items-center justify-center 
+                          ${isCompact ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"} 
+                          px-1 font-bold rounded-full 
+                          ${getLevelColorScheme.badge}
+                          border ${getLevelColorScheme.badgeBorder}
+                          shadow-inner transition-all duration-300
                         `}
                       >
-                        <svg
-                          className={`
-                            w-4 h-4 transition-colors duration-300
-                            ${active ? "text-red-200" : "text-red-300"}
-                          `}
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                          <polyline points="16 17 21 12 16 7" />
-                          <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
-                        <span>Disconnect</span>
-                      </button>
+                        <span className="mx-0.5">{userLevel}</span>
+                      </div>
                     )}
-                  </Menu.Item>
+
+                    {/* Username with profile link indicator */}
+                    <span
+                      className={`
+                        ${buttonStyles.text} ${buttonStyles.hover.text}
+                        font-medium tracking-wide transition-all duration-300
+                        ${isCompact ? "text-sm" : "text-base"} group-hover:underline
+                      `}
+                    >
+                      {displayName}
+                    </span>
+                  </div>
+
+                  {/* Avatar */}
+                  <div className="relative">
+                    <div
+                      className={`
+                        ml-2 rounded-full overflow-hidden ring-2 ${buttonStyles.ring}
+                        transition-all duration-300 shadow-lg
+                        ${isCompact ? "w-5 h-5" : "w-6 h-6"}
+                        bg-dark-300 group-hover:ring-opacity-80 
+                        group-hover:scale-105 group-hover:ring-white/30
+                      `}
+                    >
+                      <img
+                        src={profileImageUrl}
+                        alt={displayName}
+                        onError={handleImageError}
+                        className="w-full h-full object-cover group-hover:brightness-110"
+                        loading="eager"
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </Menu.Items>
-          </Transition>
-        </>
-      )}
-    </Menu>
+              </Menu.Button>
+            </div>
+
+            <Transition
+              show={open}
+              as={Fragment}
+              enter="transition ease-out duration-200"
+              enterFrom="transform opacity-0 scale-95"
+              enterTo="transform opacity-100 scale-100"
+              leave="transition ease-in duration-150"
+              leaveFrom="transform opacity-100 scale-100"
+              leaveTo="transform opacity-0 scale-95"
+            >
+              <Menu.Items 
+                className="absolute right-0 mt-1 w-56 origin-top-right bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 rounded-lg shadow-lg overflow-hidden z-50"
+                static
+              >
+                {/* Enhanced gradient overlays for consistency with mobile */}
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 rounded-lg bg-[radial-gradient(circle_at_50%_0%,rgba(127,0,255,0.12),transparent_70%)]" />
+
+                <div className="relative">
+                  {/* Admin Controls Section */}
+                  <AdminControls />
+
+                  {/* Wallet Balances Section - Use shared component */}
+                  <WalletDetailsSection user={user} />
+
+                  {/* Profile Menu Items */}
+                  <div className="p-1">
+                    {/* User-specific menu items mapped from shared config */}
+                    {profileItems.map((item: { 
+                      id: string; 
+                      label: string; 
+                      to: string; 
+                      icon: React.ComponentType<{ className?: string }>;
+                      badge?: string | number;
+                    }) => (
+                      <Menu.Item key={item.id}>
+                        {({ active }) => (
+                          <Link
+                            to={item.to}
+                            className={`
+                              ${menuItemClass}
+                              ${active ? activeItemStyles : inactiveItemStyles}
+                            `}
+                            role="menuitem"
+                          >
+                            <item.icon
+                              className={`
+                                w-4 h-4 transition-colors duration-300
+                                ${active ? "text-brand-200" : "text-brand-300"}
+                              `}
+                            />
+                            <span className="flex-1">{item.label}</span>
+                            {item.badge && (
+                              <span
+                                className={`
+                                  flex items-center justify-center min-w-5 h-5 text-xs font-semibold 
+                                  rounded-full px-1.5 shadow-sm
+                                  bg-red-500/80 text-white
+                                `}
+                              >
+                                {typeof item.badge === "string" || typeof item.badge === "number" ? 
+                                  (typeof item.badge === "number" && item.badge > 99 ? "99+" : item.badge) 
+                                  : ""}
+                              </span>
+                            )}
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    ))}
+
+                    <MenuDivider />
+                    
+                    {/* Use shared Biometric Authentication Component */}
+                    <BiometricAuthComponent 
+                      userId={user.wallet_address}
+                      menuItemClass={`${menuItemClass} text-blue-300 hover:text-blue-200 hover:bg-blue-500/20`}
+                      onClose={closeMenu}
+                    />
+
+                    {/* Add navigation sections from shared config */}
+                    <MenuDivider />
+                    
+                    {/* Contests Section */}
+                    <SectionHeader title="Contests" />
+                    {contestItems.map((item) => (
+                      <Menu.Item key={item.id}>
+                        {({ active }) => (
+                          <Link
+                            to={item.to}
+                            className={`
+                              ${menuItemClass}
+                              ${active ? activeItemStyles : inactiveItemStyles}
+                            `}
+                            role="menuitem"
+                          >
+                            <span className="flex-1">{item.label}</span>
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    ))}
+
+                    {/* Tokens Section */}
+                    <MenuDivider />
+                    <SectionHeader title="Tokens" />
+                    {tokenItems.map((item) => (
+                      <Menu.Item key={item.id}>
+                        {({ active }) => (
+                          <Link
+                            to={item.to}
+                            className={`
+                              ${menuItemClass}
+                              ${active ? activeItemStyles : inactiveItemStyles}
+                            `}
+                            role="menuitem"
+                          >
+                            <span className="flex-1">{item.label}</span>
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    ))}
+
+                    {/* Rankings Section */}
+                    <MenuDivider />
+                    <SectionHeader title="Rankings" />
+                    {rankingItems.map((item) => (
+                      <Menu.Item key={item.id}>
+                        {({ active }) => (
+                          <Link
+                            to={item.to}
+                            className={`
+                              ${menuItemClass}
+                              ${active ? activeItemStyles : inactiveItemStyles}
+                            `}
+                            role="menuitem"
+                          >
+                            <span className="flex-1">{item.label}</span>
+                          </Link>
+                        )}
+                      </Menu.Item>
+                    ))}
+
+                    <MenuDivider />
+
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={onDisconnect}
+                          className={`
+                            w-full group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md
+                            ${
+                              active
+                                ? "bg-red-500/20 text-red-200"
+                                : "text-red-300 hover:text-red-200 hover:bg-red-500/10"
+                            }
+                          `}
+                          role="menuitem"
+                        >
+                          <svg
+                            className={`
+                              w-4 h-4 transition-colors duration-300
+                              ${active ? "text-red-200" : "text-red-300"}
+                            `}
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                          </svg>
+                          <span>Disconnect</span>
+                        </button>
+                      )}
+                    </Menu.Item>
+                  </div>
+                </div>
+              </Menu.Items>
+            </Transition>
+          </>
+        )}
+      </Menu>
+    </div>
   );
 };

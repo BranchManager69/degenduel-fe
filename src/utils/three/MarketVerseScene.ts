@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { TokenData } from "../../types";
+import { Token } from "../../types";
 import ThreeManager from "./ThreeManager";
 
 export class MarketVerseScene {
@@ -118,7 +118,7 @@ export class MarketVerseScene {
   }
 
   // Update market data
-  public updateMarketData(marketData: TokenData[]): void {
+  public updateMarketData(marketData: Token[]): void {
     // Clear existing spheres
     this.spheres.forEach((sphere) => this.scene.remove(sphere));
     this.spheres = [];

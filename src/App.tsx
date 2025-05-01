@@ -4,20 +4,16 @@
  * Main entry point for the DegenDuel frontend.
  * 
  * @author @BranchManager69
- * @since 2025-04-02
+ * @version 1.9.0
+ * @created 2025-04-02
+ * @updated 2025-04-30
  */
 
 import React, { lazy, Suspense, useEffect } from "react";
-/* Router */
-import {
-  Navigate,
-  Route,
-  BrowserRouter as Router,
-  Routes,
-  useLocation,
-} from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
-// Helper component to redirect while preserving query parameters
+// QUEUED FOR DELETION:
+//   Helper component to redirect while preserving query parameters
 const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
   const location = useLocation();
   // Preserve all query parameters by appending the search string to the destination
@@ -25,10 +21,11 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
 };
 
 /* Components */
-// WebSocketManager is now provided by WebSocketProvider
+////[WebSocketManager is now provided by WebSocketProvider] [4-30-25: NEED TO RE-VERIFY THIS!]
+////import { ContestChatManager } from "./components/contest-chat/ContestChatManager";
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
+import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
 import { BlinkResolver } from "./components/blinks/BlinkResolver";
-import { ContestChatManager } from "./components/contest-chat/ContestChatManager";
 import { GameDebugPanel } from "./components/debug/game/GameDebugPanel";
 import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
 import { UiDebugPanel } from "./components/debug/ui/UiDebugPanel";
@@ -42,17 +39,21 @@ import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
-import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
-import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
+import LoadingFallback from "./components/shared/LoadingFallback";
+import {
+  toast,
+  ToastContainer, ToastListener, ToastProvider
+} from "./components/toast"; // really? soooooooooooo many!?
+
 /* Contexts */
-import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
+import { PrivyProvider, usePrivy, type PrivyClientConfig } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PrivyAuthProvider } from "./contexts/PrivyAuthContext";
+import { SolanaConnectionProvider } from "./contexts/SolanaConnectionContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 import { TwitterAuthProvider } from "./contexts/TwitterAuthContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
-import { SolanaConnectionProvider } from "./contexts/SolanaConnectionContext";
 /* Hooks */
 import "jupiverse-kit/dist/index.css";
 import { AffiliateSystemProvider } from "./hooks/useAffiliateSystem";
@@ -71,6 +72,7 @@ import VanityWalletManagementPage from "./pages/admin/VanityWalletManagementPage
 import WalletManagementPage from "./pages/admin/WalletManagementPage";
 import WebSocketHub from "./pages/admin/WebSocketHub";
 import { ReferralPage } from "./pages/authenticated/AffiliatePage";
+import { ContestCreditsPage } from "./pages/authenticated/ContestCreditsPage";
 import MyContestsPage from "./pages/authenticated/MyContestsPage";
 import MyPortfoliosPage from "./pages/authenticated/MyPortfoliosPage";
 import NotificationsPage from "./pages/authenticated/NotificationsPage";
@@ -93,19 +95,20 @@ import { LandingPage } from "./pages/public/general/LandingPage";
 import LoginPage from "./pages/public/general/LoginPage";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
-import SolanaBlockchainDemo from "./pages/public/general/SolanaBlockchainDemo";
 import { PublicProfile } from "./pages/public/general/PublicProfile";
+import SolanaBlockchainDemo from "./pages/public/general/SolanaBlockchainDemo";
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
 import { DegenLevelPage } from "./pages/public/leaderboards/DegenLevelPage";
 import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings";
 import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding";
-import { TokensPage } from "./pages/public/tokens/TokensPage";
+import { EnhancedTokensPage } from "./pages/public/tokens/EnhancedTokensPage";
+import WebSocketAPIPage from "./pages/public/WebSocketAPIPage";
 // import { TokenWhitelistPage } from "./pages/public/tokens/whitelist"; // Commented out 2025-04-05 - Page hidden
+// Lazy LiquiditySimulatorPage
 import AmmSim from "./pages/superadmin/AmmSim";
 import ApiPlayground from "./pages/superadmin/ApiPlayground";
 import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage";
 import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub";
-import LiquiditySimulatorPage from "./pages/superadmin/LiquiditySimulatorPage";
 import ServiceCommandCenter from "./pages/superadmin/ServiceCommandCenter";
 import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage";
 import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard";
@@ -114,29 +117,41 @@ import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
 import { useStore } from "./store/useStore";
 import "./styles/color-schemes.css";
+
 /* eslint-disable no-unused-vars */
 import { UnifiedWalletProvider } from "@jup-ag/wallet-adapter";
 import { Adapter } from "@solana/wallet-adapter-base";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-// No need to import env if not using it anywhere
-// import { env } from "./config/env";
-import WebSocketAPIPage from "./pages/public/WebSocketAPIPage";
 
+// QUEUED FOR DELETION:
 // Lazy AdminChatDashboard
 const AdminChatDashboard = lazy(
   () => import("./pages/admin/AdminChatDashboard"),
 );
 
+// Lazy LiquiditySimulatorPage
+const LiquiditySimulatorPage = lazy(
+  () => import("./pages/admin/LiquiditySimulatorPage"),
+);
+
+// QUEUED FOR DELETION:
+// Lazy TokensStandardizedTestPage
+const LazyTokensStandardizedTestPage = React.lazy(() => import("./pages/public/tokens/TokensStandardizedTestPage"));
+
 // App entry
 export const App: React.FC = () => {
   // Get the user from the store directly - DO NOT use useAuth() here
-  // This avoids circular dependencies since useAuth depends on wallet providers that aren't initialized yet
+  //   This avoids circular dependencies since useAuth depends on wallet providers that aren't initialized yet
+  //   [4-30-25: NEED TO RE-VERIFY THIS!]
   const { user } = useStore();
   
   // We'll get checkAuth from useAuth() inside the useEffect
-  
-  // Create a role-based Solana RPC endpoint for use with the wallet provider
-  // This tiered RPC setup is important for our application
+  //   [4-30-25: NEED TO RE-VERIFY THIS!]
+
+  // Role-based Solana RPC endpoint for use with the wallet provider.
+  // This tiered RPC setup is important for our application.
+  //     [4-30-25: Done! The RPC endpoint is now available at the ___ endpoint]
+  //     [         Check if this is being used in the UnifiedWalletProvider configuration above]
   const solanaRpcEndpoint = `${window.location.origin}/api/solana-rpc${user?.is_admin || user?.is_superadmin ? '/admin' : user ? '' : '/public'}`;
   
   // Create wallet adapters for both Jupiter wallet and Solana wallet adapter
@@ -145,6 +160,7 @@ export const App: React.FC = () => {
     new SolflareWalletAdapter()
   ];
   
+  // QUEUED FOR DELETION:
   // Create a component to set the global flag for our hooks to check
   const FlagSetter: React.FC = () => {
     useEffect(() => {
@@ -166,7 +182,7 @@ export const App: React.FC = () => {
       iconUrls: [`${window.location.origin}/favicon.ico`],
     },
     theme: 'dark' as const,
-    // Pass our role-based RPC endpoint to the wallet provider
+    // Pass our (role-based) DegenDuel RPC endpoint to the client wallet provider
     connectionConfig: {
       commitment: 'confirmed' as const,
       endpoint: solanaRpcEndpoint
@@ -176,12 +192,21 @@ export const App: React.FC = () => {
   // Initialize scrollbar visibility
   useScrollbarVisibility();
   
-  // Call useAuth at the component top level to follow React hook rules
+  // Hooks (always at top level)
+  const privy = usePrivy();
   const { checkAuth } = useAuth();
 
+  // Effect to validate auth on startup
+  //   [4-30-25: NEED TO RE-VERIFY THIS!]
   useEffect(() => {
-    // Only run auth checks after all providers are properly initialized
+    
+    // Only run auth checks after all providers have properly initialized
+    //   [4-30-25: NEED TO RE-VERIFY THIS!]
+    
     // Always validate auth on startup, regardless of stored user state
+    //   [4-30-25: NEED TO RE-VERIFY THIS!]
+
+    // Validate auth on startup
     const validateAuth = async () => {
       console.log("[Auth] Validating authentication status on app startup");
       try {
@@ -194,16 +219,24 @@ export const App: React.FC = () => {
           console.log("[Auth] Stored user found but validation failed, logging out");
           // Disconnect the wallet
           useStore.getState().disconnectWallet();
+          // Clear the user from the store
+          useStore.getState().setUser(null); // [4-30-25: ADDED]
+          // Logout the user using the top-level instance
+          privy.logout(); // Use the instance from the top level
+          // Redirect to the login page
+          window.location.href = "/login"; // [4-30-25: ADDED]
+          // TODO: Add a toast notification to the user
+          toast.error("Logged out."); // [4-30-25: ADDED]
+          // (did i use the right toast function?)
         }
       }
     };
 
-    /* Auth checks */
-
-    // Run validation immediately on page load
-    validateAuth();
-
-    // Set up regular auth checks (1 minute in production, 30 seconds in development)
+    // Run auth validation immediately upon page load
+    validateAuth();//     [4-30-25: WHY??]
+    // Set up regular auth checks 
+    //   (1 minute in production, 30 seconds in development)
+    //   [4-30-25: WHY??]
     const checkInterval = import.meta.env.PROD ? 60 * 1000 : 30 * 1000; // 1 minute in production, 30 seconds in development
     const authCheckInterval = setInterval(checkAuth, checkInterval);
 
@@ -217,6 +250,7 @@ export const App: React.FC = () => {
         // Clear any existing timeout
         clearTimeout(visibilityTimeout);
         // Wait 1 second before checking auth
+        //   [4-30-25: WHY??]
         visibilityTimeout = setTimeout(checkAuth, 1000);
       }
     };
@@ -229,6 +263,7 @@ export const App: React.FC = () => {
         // Clear any existing timeout
         clearTimeout(onlineTimeout);
         // Wait 1 second before checking auth
+        //   [4-30-25: WHY??]
         onlineTimeout = setTimeout(checkAuth, 1000);
       }
     };
@@ -248,35 +283,40 @@ export const App: React.FC = () => {
       ); // Remove visibility change listener
       window.removeEventListener("online", handleOnlineStatus); // Remove online status listener
     };
-  }, [user, checkAuth]);
+  }, [user, checkAuth, privy]); //     [4-30-25: Added privy to dependency array]
 
   // Privy configuration
+  //   [4-30-25: The official DegenDuel RPC is now being used for Privy configuration!
   const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
   const privyConfig: PrivyClientConfig = {
     // Login methods configuration
     loginMethods: [
-      'email',
+//      'email',
       'wallet',
-      'google',
-      'twitter',
-      'sms',
+//      'google',
+//      'twitter',
+//      'sms',
       'passkey',
     ],
+
     // UI appearance configuration
     appearance: {
       theme: 'dark',
       accentColor: '#5865F2',
       showWalletLoginFirst: false, // Show all login options equally
       walletChainType: 'ethereum-and-solana', // Enable Solana wallets in UI
+      // TODO: Can this be set to Solana only?
     },
+
     // Comprehensive embedded wallet configuration
-    // Reference: https://docs.privy.io/wallets/wallets/create/overview
+    //   Reference: https://docs.privy.io/wallets/wallets/create/overview
     embeddedWallets: {
       // Create embedded wallets for users without existing wallets
       createOnLogin: 'users-without-wallets',
       // Allow users to recover wallets across devices
       requireUserPasswordOnCreate: true
     },
+
     // External wallets integration - this wires up Solana connectors to Privy
     // This is the fix for issue #4 - wire Solana connectors into Privy
     externalWallets: {
@@ -288,10 +328,11 @@ export const App: React.FC = () => {
         })
       }
     },
+
     // Social auth configuration (including Twitter)
     // URL handling is done automatically by auth context
-    // Note: WalletConnect metadata is configured in the wallet provider below
-    // This enables Solana integrations
+    //   Note: WalletConnect metadata is configured in the wallet provider below
+    //     This enables Solana integrations
     // Reference: https://docs.privy.io/wallets/connectors/setup/configuring-external-connector-chains#solana
     supportedChains: [
       {
@@ -325,466 +366,567 @@ export const App: React.FC = () => {
       }
     ]
   };      
-
-  // The RPC endpoint is now being used in the UnifiedWalletProvider configuration above
   
   // DegenDuel entry
   return (
     <Router>
+
       {/* The UnifiedWalletProvider replaces all three wallet providers with a single one */}
-      <UnifiedWalletProvider wallets={walletAdapters} config={uwkConfig}>
-        <FlagSetter /> {/* Maintains global flag for backward compatibility */}
-            <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
-              <PrivyAuthProvider>
-                <AuthProvider>
-                  <TwitterAuthProvider>
-                    <InviteSystemProvider>
-                      <AffiliateSystemProvider>
-                        {/* WebSocketProvider must come BEFORE components that use it */}
-                        <WebSocketProvider>
-                          {/* SolanaConnectionProvider provides RPC connections based on user role */}
-                          <SolanaConnectionProvider>
-                            <TokenDataProvider>
+      {/* [4-30-25: NEED TO RE-VERIFY THIS!] */}
+      <UnifiedWalletProvider 
+        wallets={walletAdapters}
+        config={uwkConfig}
+      >
+
+        {/* FlagSetter maintains global flag for backward compatibility */}
+        {/* [4-30-25: NEED TO RE-VERIFY THIS!] */}
+        <FlagSetter />
+            
+          {/* PrivyProvider provides authentication for the app */}
+          <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
+
+            {/* PrivyAuthProvider provides authentication AND supports wallet custody AND (...))*/}
+            <PrivyAuthProvider>
+
+              {/* AuthProvider provides ??????????? */}
+              <AuthProvider>
+
+                {/* TwitterAuthProvider provides non-initial registration via Twitter authentication for the app */}
+                <TwitterAuthProvider>
+                  
+                  {/* InviteSystemProvider provides ??????????? */}
+                  <InviteSystemProvider>
+
+                    {/* AffiliateSystemProvider provides ??????????? */}
+                    <AffiliateSystemProvider>
+                      
+                      {/* WebSocketProvider must come BEFORE components that use it */}
+                      <WebSocketProvider>
+                        
+                        {/* SolanaConnectionProvider provides throttled DegenDuel RPC connections based on user role */}
+                        <SolanaConnectionProvider>
+                          
+                          {/* TokenDataProvider provides token data for the app */}
+                          <TokenDataProvider>
+
+                            {/* ToastProvider provides toast notifications for the app */}
                             <ToastProvider>
-                            <div className="min-h-screen flex flex-col">
-                              <ToastListener />
-                              {user?.is_superadmin && <UiDebugPanel />}
-                              {user?.is_superadmin && <ServiceDebugPanel />}
-                              {user?.is_superadmin && <GameDebugPanel />}
-                              <BackgroundEffects />
-                              <Header />
-                              <EdgeToEdgeTicker />
-                              {user && <WalletBalanceTicker isCompact={true} />}
-                              <ServerDownBanner />
-                              <main className="flex-1 pb-12">
-                                <Routes>
-                                  <Route path="/" element={<LandingPage />} />
-                                  <Route
-                                    path="/join"
-                                    element={<PreserveQueryParamsRedirect to="/" />}
-                                  />
-                                  <Route
-                                    path="/contests"
-                                    element={
-                                      <MaintenanceGuard>
-                                        <ContestBrowser />
-                                      </MaintenanceGuard>
-                                    }
-                                  />
-                                  <Route
-                                    path="/contests/:id"
-                                    element={
-                                      <MaintenanceGuard>
-                                        <ContestDetails />
-                                      </MaintenanceGuard>
-                                    }
-                                  />
-                                  <Route
-                                    path="/contests/:id/live"
-                                    element={
-                                      <MaintenanceGuard>
-                                        <ContestLobby />
-                                      </MaintenanceGuard>
-                                    }
-                                  />
-                                  <Route
-                                    path="/contests/:id/results"
-                                    element={
-                                      <MaintenanceGuard>
-                                        <ContestResults />
-                                      </MaintenanceGuard>
-                                    }
-                                  />
-                                  <Route
-                                    path="/tokens"
-                                    element={
-                                      <MaintenanceGuard>
-                                        <TokensPage />
-                                      </MaintenanceGuard>
-                                    }
-                                  />
-                                  <Route
-                                    path="/game/virtual-agent"
-                                    element={
-                                      <MaintenanceGuard>
-                                        <VirtualAgentPage />
-                                      </MaintenanceGuard>
-                                    }
-                                  />
-                                  <Route
-                                    path="/profile/:identifier"
-                                    element={
-                                      <MaintenanceGuard>
-                                        <PublicProfile />
-                                      </MaintenanceGuard>
-                                    }
-                                  />
-                                  <Route 
-                                    path="/login" 
-                                    element={
-                                      <MaintenanceGuard>
-                                        <LoginPage />
-                                      </MaintenanceGuard>
-                                    } 
-                                  />
-                                  <Route path="/faq" element={<FAQ />} />
-                                  <Route path="/how-it-works" element={<HowItWorks />} />
-                                  <Route path="/contact" element={<Contact />} />
-                                  <Route path="/blinks-demo" element={<BlinksDemo />} />
-                                  <Route path="/solana-demo" element={<SolanaBlockchainDemo />} />
-                                  <Route
-                                    path="/leaderboards"
-                                    element={<LeaderboardLanding />}
-                                  />
-                                  <Route 
-                                    path="/leaderboard" 
-                                    element={<DegenLevelPage />} 
-                                  />
-                                  <Route
-                                    path="/rankings/performance"
-                                    element={<ContestPerformance />}
-                                  />
 
-                                  <Route
-                                    path="/admin/wallet-management"
-                                    element={
-                                      <AdminRoute>
-                                        <WalletManagementPage />
-                                      </AdminRoute>
-                                    }
-                                  />
+                              {/* The main content of the app */}
+                              <div className="min-h-screen flex flex-col">
 
-                                  <Route
-                                    path="/rankings/global"
-                                    element={<GlobalRankings />}
-                                  />
-                                  <Route
-                                    path="/me"
-                                    element={
-                                      <AuthenticatedRoute>
+                                {/* ToastListener listens for toast notifications */}
+                                <ToastListener />
+
+                                {/* UiDebugPanel is a debugging tool for the UI */}
+                                {user?.is_superadmin && <UiDebugPanel />}
+                                {user?.is_superadmin && <ServiceDebugPanel />}
+                                {user?.is_superadmin && <GameDebugPanel />}
+
+                                {/* BackgroundEffects is a component that provides background effects for the app */}
+                                <BackgroundEffects />
+
+                                {/* Header is the main header of the app */}
+                                <Header />
+
+                                {/* EdgeToEdgeTicker is a component that provides a ticker for the app */}
+                                <EdgeToEdgeTicker />
+
+                                {/* WalletBalanceTicker is a component that provides a wallet balance for the app */}
+                                {user && <WalletBalanceTicker isCompact={true} />}
+
+                                {/* ServerDownBanner is a component that provides a banner for the app */}
+                                <ServerDownBanner />
+
+                                {/* The main content of the app */}
+                                <main className="flex-1 pb-12">
+
+                                  {/* The routes of the app */}
+                                  <Routes>
+
+                                    {/* The landing page of the app */}
+                                    <Route path="/" element={<LandingPage />} />
+
+                                    {/* The join page of the app */}
+                                    <Route
+                                      path="/join"
+                                      element={<PreserveQueryParamsRedirect to="/" />}
+                                    />
+
+                                    {/* Redirect from any old path variations to the enhanced tokens page */}
+                                    <Route
+                                      path="/tokens/legacy"
+                                      element={<PreserveQueryParamsRedirect to="/tokens" />}
+                                    />
+                                    <Route
+                                      path="/contests"
+                                      element={
                                         <MaintenanceGuard>
-                                          <PrivateProfilePage />
+                                          <ContestBrowser />
                                         </MaintenanceGuard>
-                                      </AuthenticatedRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/referrals"
-                                    element={
-                                      <AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/contests/:id"
+                                      element={
                                         <MaintenanceGuard>
-                                          <ReferralPage />
+                                          <ContestDetails />
                                         </MaintenanceGuard>
-                                      </AuthenticatedRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/notifications"
-                                    element={
-                                      <AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/contests/:id/live"
+                                      element={
                                         <MaintenanceGuard>
-                                          <NotificationsPage />
+                                          <ContestLobby />
                                         </MaintenanceGuard>
-                                      </AuthenticatedRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/my-contests"
-                                    element={
-                                      <AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/contests/:id/results"
+                                      element={
                                         <MaintenanceGuard>
-                                          <MyContestsPage />
+                                          <ContestResults />
                                         </MaintenanceGuard>
-                                      </AuthenticatedRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/my-portfolios"
-                                    element={
-                                      <AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/tokens"
+                                      element={
                                         <MaintenanceGuard>
-                                          <MyPortfoliosPage />
+                                          <EnhancedTokensPage />
                                         </MaintenanceGuard>
-                                      </AuthenticatedRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/wallet"
-                                    element={
-                                      <AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/tokens/standardized-test"
+                                      element={
                                         <MaintenanceGuard>
-                                          <WalletPage />
+                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading Tokens Page..." />}>
+                                            <LazyTokensStandardizedTestPage />
+                                          </Suspense>
                                         </MaintenanceGuard>
-                                      </AuthenticatedRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/contests/:id/select-tokens"
-                                    element={
-                                      <AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/game/virtual-agent"
+                                      element={
                                         <MaintenanceGuard>
-                                          <TokenSelection />
+                                          <VirtualAgentPage />
                                         </MaintenanceGuard>
-                                      </AuthenticatedRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/skyduel"
-                                    element={
-                                      <AdminRoute>
-                                        <Suspense fallback={<div>Loading...</div>}>
-                                          <SkyDuelPage />
-                                        </Suspense>
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/system-reports"
-                                    element={
-                                      <AdminRoute>
-                                        <SystemReports />
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/client-errors"
-                                    element={
-                                      <AdminRoute>
-                                        <ClientErrorsPage />
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin"
-                                    element={
-                                      <AdminRoute>
-                                        <AdminDashboard />
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/ip-ban"
-                                    element={
-                                      <AdminRoute>
-                                        <IpBanManagementPage />
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/vanity-wallets"
-                                    element={
-                                      <AdminRoute>
-                                        <VanityWalletManagementPage />
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/contest-management/regenerate-image/:contestId"
-                                    element={
-                                      <AdminRoute>
-                                        <div>Contest Image Generator Page</div>
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/chat-dashboard"
-                                    element={
-                                      <AdminRoute>
-                                        <Suspense fallback={<div>Loading...</div>}>
-                                          <AdminChatDashboard />
-                                        </Suspense>
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/connection-debugger"
-                                    element={
-                                      <AdminRoute>
-                                        <ConnectionDebugger />
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/websocket-hub"
-                                    element={
-                                      <AdminRoute>
-                                        <Suspense fallback={<div>Loading...</div>}>
-                                          <WebSocketHub />
-                                        </Suspense>
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <SuperAdminDashboard />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/wallet-monitoring"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <WalletMonitoring />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/control-hub"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <ControlPanelHub />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/chat-dashboard"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <Suspense fallback={<div>Loading...</div>}>
-                                          <AdminChatDashboard />
-                                        </Suspense>
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/services"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <ServiceControlPage />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/switchboard"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <ServiceSwitchboard />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/circuit-breaker"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <CircuitBreakerPage />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/service-command-center"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <ServiceCommandCenter />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/websocket-monitor"
-                                    element={
-                                      <Navigate
-                                        to="/superadmin/service-command-center"
-                                        replace
-                                      />
-                                    }
-                                  />
-                                  <Route
-                                    path="/api-playground"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <ApiPlayground />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/wss-playground"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <WssPlayground />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/admin/ai-testing"
-                                    element={
-                                      <AdminRoute>
-                                        <Suspense fallback={<div>Loading...</div>}>
-                                          <AiTesting />
-                                        </Suspense>
-                                      </AdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/websocket-test"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <Navigate to="/connection-debugger" replace />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/websocket-dashboard"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <Navigate to="/connection-debugger" replace />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/amm-sim"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <AmmSim />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/liquidity-simulator"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <LiquiditySimulatorPage />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route
-                                    path="/superadmin/log-forwarder"
-                                    element={
-                                      <SuperAdminRoute>
-                                        <LogForwarderDebug />
-                                      </SuperAdminRoute>
-                                    }
-                                  />
-                                  <Route path="/blinks/*" element={<BlinkResolver />} />
-                                  <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
-                                  <Route path="*" element={<NotFound />} />
-                                  <Route path="/banned" element={<BannedUser />} />
-                                  <Route path="/banned-ip" element={<BannedIP />} />
-                                  <Route path="/maintenance" element={<Maintenance />} />
-                                  <Route path="/examples/contest-chat" element={
-                                    <Suspense fallback={<div>Loading...</div>}>
-                                      <ContestChatExample />
-                                    </Suspense>
-                                  } />
-                                </Routes>
-                              </main>
+                                      }
+                                    />
+                                    <Route
+                                      path="/profile/:identifier"
+                                      element={
+                                        <MaintenanceGuard>
+                                          <PublicProfile />
+                                        </MaintenanceGuard>
+                                      }
+                                    />
+                                    <Route 
+                                      path="/login" 
+                                      element={
+                                        <MaintenanceGuard>
+                                          <LoginPage />
+                                        </MaintenanceGuard>
+                                      } 
+                                    />
+                                    <Route path="/faq" element={<FAQ />} />
+                                    <Route path="/how-it-works" element={<HowItWorks />} />
+                                    <Route path="/contact" element={<Contact />} />
+                                    <Route path="/blinks-demo" element={<BlinksDemo />} />
+                                    <Route path="/solana-demo" element={<SolanaBlockchainDemo />} />
+                                    <Route
+                                      path="/leaderboards"
+                                      element={<LeaderboardLanding />}
+                                    />
+                                    <Route 
+                                      path="/leaderboard" 
+                                      element={<DegenLevelPage />} 
+                                    />
+                                    <Route
+                                      path="/rankings/performance"
+                                      element={<ContestPerformance />}
+                                    />
+
+                                    <Route
+                                      path="/admin/wallet-management"
+                                      element={
+                                        <AdminRoute>
+                                          <WalletManagementPage />
+                                        </AdminRoute>
+                                      }
+                                    />
+
+                                    <Route
+                                      path="/rankings/global"
+                                      element={<GlobalRankings />}
+                                    />
+                                    <Route
+                                      path="/me"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <PrivateProfilePage />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/referrals"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <ReferralPage />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/notifications"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <NotificationsPage />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/my-contests"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <MyContestsPage />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/my-portfolios"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <MyPortfoliosPage />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/wallet"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <WalletPage />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/contest-credits"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <ContestCreditsPage />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/contests/:id/select-tokens"
+                                      element={
+                                        <AuthenticatedRoute>
+                                          <MaintenanceGuard>
+                                            <TokenSelection />
+                                          </MaintenanceGuard>
+                                        </AuthenticatedRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/skyduel"
+                                      element={
+                                        <AdminRoute>
+                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading SkyDuel..." />}>
+                                            <SkyDuelPage />
+                                          </Suspense>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/system-reports"
+                                      element={
+                                        <AdminRoute>
+                                          <SystemReports />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/client-errors"
+                                      element={
+                                        <AdminRoute>
+                                          <ClientErrorsPage />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin"
+                                      element={
+                                        <AdminRoute>
+                                          <AdminDashboard />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/ip-ban"
+                                      element={
+                                        <AdminRoute>
+                                          <IpBanManagementPage />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/vanity-wallets"
+                                      element={
+                                        <AdminRoute>
+                                          <VanityWalletManagementPage />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/contest-management/regenerate-image/:contestId"
+                                      element={
+                                        <AdminRoute>
+                                          <div>Contest Image Generator Page</div>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/chat-dashboard"
+                                      element={
+                                        <AdminRoute>
+                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading Chat Dashboard..." />}>
+                                            <AdminChatDashboard />
+                                          </Suspense>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/connection-debugger"
+                                      element={
+                                        <AdminRoute>
+                                          <ConnectionDebugger />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/websocket-hub"
+                                      element={
+                                        <AdminRoute>
+                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading WebSocket Hub..." />}>
+                                            <WebSocketHub />
+                                          </Suspense>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <SuperAdminDashboard />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/wallet-monitoring"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <WalletMonitoring />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/control-hub"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <ControlPanelHub />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/chat-dashboard"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <Suspense fallback={<LoadingFallback variant="full" message="Loading SuperAdmin Chat Dashboard..." />}>
+                                            <AdminChatDashboard />
+                                          </Suspense>
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/services"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <ServiceControlPage />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/switchboard"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <ServiceSwitchboard />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/circuit-breaker"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <CircuitBreakerPage />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/service-command-center"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <ServiceCommandCenter />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/websocket-monitor"
+                                      element={
+                                        <Navigate
+                                          to="/superadmin/service-command-center"
+                                          replace
+                                        />
+                                      }
+                                    />
+                                    <Route
+                                      path="/api-playground"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <ApiPlayground />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/wss-playground"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <WssPlayground />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/ai-testing"
+                                      element={
+                                        <AdminRoute>
+                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading AI Testing..." />}>
+                                            <AiTesting />
+                                          </Suspense>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/wallet-monitoring"
+                                      element={
+                                        <AdminRoute>
+                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading Wallet Monitoring..." />}>
+                                            <WalletMonitoring />
+                                          </Suspense>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/liq-sim"
+                                      element={
+                                        <AdminRoute>
+                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading Liquidity Simulator..." />}>
+                                            <LiquiditySimulatorPage />
+                                          </Suspense>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/websocket-test"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <Navigate to="/connection-debugger" replace />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/websocket-dashboard"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <Navigate to="/connection-debugger" replace />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/amm-sim"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <AmmSim />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/superadmin/log-forwarder"
+                                      element={
+                                        <SuperAdminRoute>
+                                          <LogForwarderDebug />
+                                        </SuperAdminRoute>
+                                      }
+                                    />
+                                    <Route path="/blinks/*" element={<BlinkResolver />} />
+                                    <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
+                                    <Route path="*" element={<NotFound />} />
+                                    <Route path="/banned" element={<BannedUser />} />
+                                    <Route path="/banned-ip" element={<BannedIP />} />
+                                    <Route path="/maintenance" element={<Maintenance />} />
+                                    <Route path="/examples/contest-chat" element={
+                                      <Suspense fallback={<LoadingFallback variant="minimal" message="Loading Example..." />}>
+                                        <ContestChatExample />
+                                      </Suspense>
+                                    } />
+                                  </Routes>
+                                </main>
+
+                              {/* The footer */}
+                              {/* [4-30-25: NOTE: WE NEED FOOTER 2.0!!!] */}
                               <Footer />
-                              {user && <ContestChatManager />}
+
+
+                              {/* XXX-factor?! */}
+
+                              {/* The achievement notification of the app */}
+                              {/* [4-30-25: ??????] */}
                               <AchievementNotification />
+
+                              {/* The invite welcome modal of the app */}
                               <InviteWelcomeModal />
+
+                              {/* The blink resolver of the app */}
                               <BlinkResolver />
+                          
+                              {/* The toast container of the app */}
                               <ToastContainer />
+
                             </div>
                           </ToastProvider>
                         </TokenDataProvider>
-                        </SolanaConnectionProvider>
-                      </WebSocketProvider>
-                    </AffiliateSystemProvider>
-                  </InviteSystemProvider>
-                </TwitterAuthProvider>
-              </AuthProvider>
-            </PrivyAuthProvider>
-          </PrivyProvider>
+                      </SolanaConnectionProvider>
+                    </WebSocketProvider>
+                  </AffiliateSystemProvider>
+                </InviteSystemProvider>
+              </TwitterAuthProvider>
+            </AuthProvider>
+          </PrivyAuthProvider>
+        </PrivyProvider>
       </UnifiedWalletProvider>
     </Router>
   );

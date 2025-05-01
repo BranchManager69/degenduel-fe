@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { FloatingContestChat } from "./FloatingContestChat";
 import { useCustomToast } from "../../components/toast";
 import { useUserContests } from "../../hooks/useUserContests";
 import { UserContest } from "../../services/contestService";
 import { shouldThrottleErrorToast } from "../../utils/wsMonitor";
+import { FloatingContestChat } from "./FloatingContestChat";
 
 export const ContestChatManager: React.FC = () => {
   const { contests, loading } = useUserContests();
@@ -256,6 +256,7 @@ export const ContestChatManager: React.FC = () => {
     return null;
   }
 
+  // Contest chat manager component
   return (
     <>
       {/* Connection error notification - Removed to avoid duplication with toast system */}
@@ -568,6 +569,31 @@ export const ContestChatManager: React.FC = () => {
               <div className="w-10 h-1 bg-gray-700 rounded-full"></div>
             </div>
           )}
+
+          {/* Floating chat windows */}
+          {openChats.map((contestId, index) => {
+
+            // Get a specific contest by ID (REST API call; returns UserContest)
+            const contest = getContestById(contestId);
+            if (!contest) return null;
+
+            // On mobile, only show the active chat
+            if (isMobile && activeChat !== contestId) return null;
+
+            // Render the floating chat window
+            return (
+              <FloatingContestChat
+                key={contestId}
+                contest={contest}
+                position={isMobile ? 0 : index}
+                isActive={activeChat === contestId}
+                onActivate={() => handleActivateChat(contestId)}
+                onClose={() => handleCloseChat(contestId)}
+                className={isMobile ? "w-full left-0 right-0 mx-auto" : ""}
+              />
+            );
+
+          })}
         </div>
       )}
 

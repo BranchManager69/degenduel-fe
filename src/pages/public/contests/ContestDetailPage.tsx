@@ -1,14 +1,36 @@
 // src/pages/public/ContestDetailPage.tsx
 
-import { useWallet } from "@aptos-labs/wallet-adapter-react";
+/**
+ * NEEDS:
+ *   = Refactoring
+ *   = To use the new design (see ./ContestDetailPage.tsx.new)
+ *     (This file is the old design)
+ *   = Connect via useWallet hook (the one in websocket/topic-hooks/useWallet.ts)
+ * 
+ * 
+ 
+  useWallet.ts (in websocket/topic-hooks):
+    - This is part of your WebSocket system and connects to your backend services
+    - It handles real-time updates about wallet balances, transactions, and settings
+  through your server
+    - It doesn't directly connect to the user's browser wallet extension
+    - Instead, it receives wallet data that's already been processed by your backend
+    - Used for displaying wallet information, transaction history, and receiving
+  updates
+
+ */
+
+// No longer using Aptos wallet
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContestDetailHeader } from "../../../components/contest-detail/ContestDetailHeader";
 import { ContestRules } from "../../../components/contest-detail/ContestRules";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
+import AuthDebugPanel from "../../../components/debug/AuthDebugPanel";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
+// PortfolioPreviewModal has been moved for future use in MyPortfoliosPage
 import { useAuth } from "../../../hooks/useAuth";
 import {
   formatCurrency,
@@ -44,31 +66,47 @@ type Contest = Omit<BaseContest, "participants"> & {
   max_prize_pool: number;
 };
 
+
+// Using Solana Actions pattern, we don't need this anymore as 
+// transaction results will be handled by the wallet
+
+// Note: We're intentionally not defining showErrorMessage outside
+// the component as it needs access to the setError state function
+
+// Note: We're intentionally not defining showPortfolioPreview outside
+// the component as it needs access to state functions
+
 export const ContestDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [contest, setContest] = useState<Contest | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const { account, connected, connect, wallet } = useWallet();
-  const { isFullyConnected, walletAddress } = useAuth();
+  const { 
+    isFullyConnected, 
+    walletAddress, 
+    isWalletConnected,
+    isAuthenticated,
+    activeAuthMethod,
+    authMethods
+  } = useAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-
-  // Add a computed state for wallet connection that uses both sources
-  const isWalletConnected = React.useMemo(() => {
-    return connected && !!walletAddress;
-  }, [connected, walletAddress]);
+  
+  // We've removed the portfolio modal in favor of using the standard Solana Actions pattern
 
   useEffect(() => {
     console.log("Wallet State Changed:", {
-      connected,
-      wallet: wallet?.name,
-      accountExists: !!account,
-      accountAddress: account?.address,
+      connected: isWalletConnected,
+      authenticated: isAuthenticated(),
+      activeMethod: activeAuthMethod,
+      methods: authMethods,
+      walletAddress,
       timestamp: new Date().toISOString(),
     });
-  }, [connected, account, wallet]);
+  }, [isWalletConnected, walletAddress, isAuthenticated, activeAuthMethod, authMethods]);
+  
+  // We're using the AuthDebugPanel component now, which has its own visibility logic
 
   const fetchContest = async () => {
     if (!id) return;
@@ -231,37 +269,37 @@ export const ContestDetails: React.FC = () => {
     // Get contest status for logic branching
     const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
 
-    // Not connected to wallet - need to connect first
-    if (!isFullyConnected) {
-      console.log("Wallet Connection Check Failed:", {
-        isWalletConnected,
-        isFullyConnected,
-        walletAddress,
-        timestamp: new Date().toISOString(),
-      });
-
-      if (wallet && !connected) {
-        // Trigger connect if wallet exists but not connected
-        connect(wallet.name);
-      } else {
-        setError("Please connect your wallet to participate.");
-      }
+    // If it's a completed contest, anyone can view results regardless of wallet connection
+    if (contestStatus === "ended") {
+      console.log("Navigating to contest results page");
+      navigate(`/contests/${contest.id}/results`);
+      return;
+    }
+    
+    // If it's a live contest and user is not participating, they can view as spectator
+    if (contestStatus === "live" && !isParticipating) {
+      console.log("Navigating to contest lobby page as spectator");
+      navigate(`/contests/${contest.id}/lobby`);
+      return;
+    }
+    
+    // Check if wallet is connected only when trying to participate
+    if (!isWalletConnected) {
+      // Just show error message - don't try to force wallet connection
+      setError("Please connect your wallet to participate in this contest");
+      // We should use our authentication system to prompt for login
+      // (handled by global auth state, no need to call connect directly)
       return;
     }
 
     // User is already participating - determine where to navigate based on contest status
     if (isParticipating) {
-      if (contestStatus === "ended") {
-        // Navigate to results page for completed contests
-        console.log("Navigating to contest results page");
-        navigate(`/contests/${contest.id}/results`);
-        return;
-      } else if (contestStatus === "live") {
+      if (contestStatus === "live") {
         // Navigate to lobby/live view for active contests
-        console.log("Navigating to contest lobby page");
+        console.log("Navigating to contest lobby page as participant");
         navigate(`/contests/${contest.id}/lobby`);
         return;
-      } else {
+      } else if (contestStatus === "upcoming") {
         // For upcoming contests, allow portfolio modification
         console.log(
           "Navigating to portfolio token selection page for modification",
@@ -269,29 +307,42 @@ export const ContestDetails: React.FC = () => {
         navigate(`/contests/${contest.id}/select-tokens`);
         return;
       }
+      // Note: "ended" case is already handled above
     }
 
-    // User is not participating
-    if (contestStatus === "ended") {
-      // Contest is over, can't join
-      setError("This contest has ended and is no longer accepting entries.");
-      return;
-    } else if (contestStatus === "live") {
-      // Contest is in progress, can't join
+    // User is not participating and wants to join an upcoming contest
+    if (contestStatus === "live") {
+      // Contest is in progress, can't join - already handled by spectator view above
       setError(
         "This contest is already in progress and not accepting new entries.",
       );
       return;
-    } else {
-      // Contest is upcoming, allow joining
-      console.log("Navigating to portfolio token selection page:", {
-        contestId: contest.id,
-        userAddress: walletAddress,
-        timestamp: new Date().toISOString(),
-      });
-      navigate(`/contests/${contest.id}/select-tokens`);
+    } else if (contestStatus === "upcoming") {
+      // Check for Solana Actions support for AI portfolio selection
+      // @ts-ignore - window.solana is injected by the Solana Wallet adapter
+      const hasSolanaActions = window.solana && typeof window.solana.action === 'function';
+      
+      if (hasSolanaActions) {
+        // The button has data-solana-action attributes, so we should allow
+        // the native Solana Actions flow to proceed without interruption
+        // This is the key part of implementing the standard pattern - we don't
+        // prevent default or interfere with the normal action handling
+        return;
+      } else {
+        // For browsers/wallets without Solana Actions support, provide a fallback
+        // by redirecting to the manual selection page
+        console.log("Solana Actions not supported, navigating to manual selection:", {
+          contestId: contest.id,
+          userAddress: walletAddress,
+          timestamp: new Date().toISOString(),
+        });
+        navigate(`/contests/${contest.id}/select-tokens`);
+      }
       return;
     }
+    
+    // Fallback error message if we somehow reach here
+    setError("Something went wrong. Please try again later.");
   };
 
   if (isLoading)
@@ -352,8 +403,12 @@ export const ContestDetails: React.FC = () => {
     );
   }
 
+  // We've removed portfolio confirmation in favor of using the standard Solana Actions pattern
+
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Reusable Auth Debug Panel */}
+      <AuthDebugPanel position="floating" />
 
       {/* Content Section */}
       <div className="relative z-10">
@@ -614,12 +669,15 @@ export const ContestDetails: React.FC = () => {
                         <p className="text-gray-400">
                           No duelers have entered yet.
                         </p>
-                        {!isParticipating && (
+                        {!isParticipating && contest.status === "pending" && (
                           <div className="mt-4">
                             <button
                               onClick={handleJoinContest}
                               disabled={!isWalletConnected}
-                              className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
+                              data-solana-action="true"
+                              data-action-title="Join Contest with AI Portfolio"
+                              data-action-url={`https://degenduel.me/api/blinks/join-contest?contest_id=${contest.id}`}
+                              className={`px-4 py-2 ${!isWalletConnected ? 'bg-dark-300/50 text-gray-500 cursor-not-allowed' : 'bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300'} rounded-md transition-colors duration-300 flex items-center gap-2`}
                             >
                               <svg
                                 className="w-5 h-5"
@@ -634,7 +692,7 @@ export const ContestDetails: React.FC = () => {
                                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                                 />
                               </svg>
-                              <span>Be the First to Join</span>
+                              <span>Join with AI Portfolio</span>
                             </button>
                           </div>
                         )}
@@ -648,12 +706,16 @@ export const ContestDetails: React.FC = () => {
                         Duelers
                       </h3>
                       <p className="text-gray-400">No duelers yet.</p>
-                      {!isParticipating && (
+                      {!isParticipating && contest.status === "pending" && (
                         <div className="mt-4">
                           <button
                             onClick={handleJoinContest}
                             disabled={!isWalletConnected}
-                            className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
+                            data-solana-action="true"
+                            data-action-title="Join Contest with AI Portfolio"
+                            data-action-url={`https://degenduel.me/api/blinks/join-contest?contest_id=${contest.id}`}
+                            data-action-message="Join this contest with an AI-selected portfolio of trending tokens"
+                            className={`px-4 py-2 ${!isWalletConnected ? 'bg-dark-300/50 text-gray-500 cursor-not-allowed' : 'bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300'} rounded-md transition-colors duration-300 flex items-center gap-2`}
                           >
                             <svg
                               className="w-5 h-5"
@@ -668,7 +730,7 @@ export const ContestDetails: React.FC = () => {
                                 d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                               />
                             </svg>
-                            <span>Be the First to Join</span>
+                            <span>Join with AI Portfolio</span>
                           </button>
                         </div>
                       )}
@@ -699,22 +761,49 @@ export const ContestDetails: React.FC = () => {
                   ? "live"
                   : "upcoming";
 
-              // Not connected to wallet
+              // Not connected to wallet - still allow viewing but show connection CTA for entering
               if (!isWalletConnected) {
-                return (
-                  <button
-                    onClick={() =>
-                      wallet ? connect(wallet.name) : handleJoinContest()
-                    }
-                    className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold animate-pulse-slow"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <span className="font-medium">Connect Wallet</span>
-                      <span>to Enter</span>
-                    </span>
-                  </button>
-                );
+                if (contestStatus === "ended") {
+                  // For ended contests, anyone can view results
+                  return (
+                    <button
+                      onClick={handleJoinContest}
+                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-gray-500/20 bg-gray-500/20 text-gray-300 font-bold"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        <span className="font-medium">View Results</span>
+                      </span>
+                    </button>
+                  );
+                } else if (contestStatus === "live") {
+                  // For live contests, anyone can view as spectator
+                  return (
+                    <button
+                      onClick={handleJoinContest}
+                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-green-500/20 bg-green-500/20 text-green-400 font-bold"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        <span className="font-medium">View Live Contest</span>
+                      </span>
+                    </button>
+                  );
+                } else {
+                  // For upcoming contests, show connect wallet CTA
+                  return (
+                    <button
+                      onClick={handleJoinContest}
+                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold animate-pulse-slow"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        <span className="font-medium">Connect Wallet</span>
+                        <span>to Enter</span>
+                      </span>
+                    </button>
+                  );
+                }
               }
 
               // Connected and participating
@@ -846,11 +935,122 @@ export const ContestDetails: React.FC = () => {
                 ? "live"
                 : "upcoming";
 
-            // Not connected to wallet - We'll show no button here, as the wallet connection
-            // button is already handled in the mobile view at lines 654-666.
-            // The ContestDetailHeader component also manages this already
+            // Not connected to wallet - But we'll still show appropriate buttons based on state
             if (!isWalletConnected) {
-              return null; // No additional button needed
+              if (contestStatus === "ended") {
+                // For ended contests, anyone can view results
+                return (
+                  <button
+                    onClick={handleJoinContest}
+                    className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-gray-500/20 bg-gray-500/20 text-gray-300 font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-500/20"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+                    <span className="relative flex items-center justify-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                      <span>View Results</span>
+                      <svg
+                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                );
+              } else if (contestStatus === "live") {
+                // For live contests, anyone can view as spectator
+                return (
+                  <button
+                    onClick={handleJoinContest}
+                    className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-green-500/30 bg-green-500/20 text-green-400 font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-green-500/20"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+                    <span className="relative flex items-center justify-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                      <span>Spectate Live</span>
+                      <svg
+                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                );
+              } else {
+                // For upcoming contests, indicate wallet connection is needed to join
+                return (
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-brand-400 to-cyan-400 rounded-lg blur opacity-75 group-hover:opacity-100 animate-pulse-slow"></div>
+                    <button
+                      onClick={handleJoinContest}
+                      className="relative flex items-center gap-2 px-6 md:px-8 py-4 md:py-5 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-white/10 shadow-2xl"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                      </svg>
+                      <span>Connect to Enter</span>
+                    </button>
+                  </div>
+                );
+              }
             }
 
             // Connected and participating
@@ -1008,7 +1208,7 @@ export const ContestDetails: React.FC = () => {
                         d="M13 10V3L4 14h7v7l9-11h-7z"
                       />
                     </svg>
-                    <span>Select Your Portfolio</span>
+                    <span>Join with AI Portfolio</span>
                     <svg
                       className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
                       fill="none"

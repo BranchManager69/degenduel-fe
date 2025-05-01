@@ -1,8 +1,21 @@
+// src/components/blinks/BlinkResolver.tsx
+
+/**
+ * BlinkResolver component
+ * 
+ * This component is used to resolve the blink URL and display the blink button
+ * 
+ * @author @BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-30
+ * @updated 2025-04-30
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSolanaWallet } from '../../hooks/useSolanaWallet';
 import { BlinkButton } from './BlinkButton';
 import { SolanaWalletConnector } from './SolanaWalletConnector';
-import { useSolanaWallet } from '../../hooks/useSolanaWallet';
 
 interface BlinkMetadata {
   title: string;

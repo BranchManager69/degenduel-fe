@@ -1,4 +1,13 @@
 /**
+ * NOTE: THIS COMPONENT IS CURRENTLY NOT BEING USED, BUT KEPT FOR FUTURE REPURPOSING
+ * We're planning to repurpose this component rather than deleting it completely.
+ * Possible repurposing ideas:
+ * - Use as a context menu for terminal commands
+ * - Implement as a floating help panel
+ * - Adapt as a command history browser
+ * - Convert into a quick-access terminal toolbar
+ * - Use in a guided tutorial mode for new users
+ * 
  * @fileoverview
  * Command tray component for the terminal
  * 

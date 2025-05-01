@@ -1,6 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useSolanaWallet } from '../../hooks/useSolanaWallet';
+// src/components/blinks/BlinkButton.tsx
 
+/**
+ * BlinkButton component
+ * 
+ * This component is used to display the blink button
+ * 
+ * @author @BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-30
+ * @updated 2025-04-30
+ */
+
+import React, { useEffect, useState } from 'react';
+import { useSolanaWallet } from '../../hooks/useSolanaWallet'; // Import the useSolanaWallet hook
+
+// Define the BlinkMetadata interface
 interface BlinkMetadata {
   title: string;
   description: string;
@@ -8,6 +22,7 @@ interface BlinkMetadata {
   label: string;
 }
 
+// Define the BlinkButtonProps interface
 interface BlinkButtonProps {
   blinkUrl: string;
   params?: Record<string, string>;
@@ -17,6 +32,7 @@ interface BlinkButtonProps {
   onError?: (error: Error) => void;
 }
 
+// Define the BlinkButton component
 export const BlinkButton: React.FC<BlinkButtonProps> = ({
   blinkUrl,
   params = {},
@@ -55,6 +71,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
     fetchMetadata();
   }, [blinkUrl, params]);
 
+  // Define the handleClick function
   const handleClick = async () => {
     // Check if this is a view-only action (for active or completed contests)
     const isViewOnlyAction = blinkUrl.includes('/view-contest') || blinkUrl.includes('/view-results');
@@ -114,7 +131,15 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
         throw new Error(`Failed to generate transaction: ${response.statusText}`);
       }
 
-      const { transaction } = await response.json();
+      // Get the full response with all fields
+      const data = await response.json();
+      const { transaction, message } = data;
+
+      // Log the portfolio details if present (useful for debugging)
+      if (data.portfolio_summary) {
+        console.log('Portfolio Summary:', data.portfolio_summary);
+        console.log('Portfolio Source:', data.portfolio_source);
+      }
 
       // Handle different transaction encoding formats
       // Newer backend returns base64, older code might return base58
@@ -138,7 +163,11 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
       }
 
       // Actually sign and send the transaction using the Solana wallet
-      const result = await signAndSendTransaction(processedTransaction);
+      // Pass the message for better wallet UX if available
+      const result = await signAndSendTransaction(
+        processedTransaction, 
+        message ? { message } : undefined
+      );
       
       // Return the real signature
       onSuccess?.(result.signature);
@@ -151,6 +180,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
     }
   };
 
+  // Define the render logic for the button
   if (!metadata && !error) {
     return (
       <button 
@@ -162,6 +192,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
     );
   }
 
+  // Define the render logic for the error
   if (error) {
     return (
       <button 
@@ -173,12 +204,15 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
     );
   }
 
+  // Define the render logic for the button
   return (
+    // Start of button component
     <button
       className={`px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors ${isLoading || connecting ? 'opacity-75 cursor-not-allowed' : ''} ${className}`}
       onClick={handleClick}
       disabled={isLoading || connecting}
     >
+      {/* Start of button label */}
       {isLoading || connecting ? 
         (connecting ? 'Connecting...' : 'Processing...') : 
         (!connected ? 'Connect Wallet' : (label || metadata?.label || 'Execute'))}

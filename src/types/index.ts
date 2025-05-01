@@ -11,15 +11,8 @@ export type {
 
 // Re-export admin types
 export type {
-  VanityWallet,
-  VanityWalletStatus,
-  VanityWalletListParams,
-  VanityWalletCreateParams,
-  VanityWalletBatchCreateParams,
-  VanityWalletListResponse,
-  VanityWalletCreateResponse,
-  VanityWalletBatchCreateResponse,
-  VanityWalletCancelResponse
+  VanityWallet, VanityWalletBatchCreateParams, VanityWalletBatchCreateResponse,
+  VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
 } from "./admin";
 
 // Core Entity Types
@@ -132,10 +125,16 @@ export interface TokensResponse {
 // Token interface (matches DegenDuel market data API)
 export interface Token {
   contractAddress: string;
+  status: string;
   name: string;
   symbol: string;
   price: string;
   marketCap: string;
+  liquidity: {
+    usd: string;
+    base: string;
+    quote: string;
+  };
   volume24h: string;
   change24h: string;
   changesJson?: {
@@ -154,11 +153,6 @@ export interface Token {
   };
   baseToken?: BaseToken;
   quoteToken?: BaseToken;
-  liquidity?: {
-    usd: string;
-    base: string;
-    quote: string;
-  };
   images?: {
     imageUrl: string;
     headerImage: string;
@@ -178,6 +172,16 @@ export interface Token {
 /**
  * WebSocket-specific token data interface
  * Used by the WebSocket token data system
+ * 
+ * NOTE:  SEEMS TO BE VERY OUTDATED!
+ * 
+ */
+/**
+ * TokenData interface - Legacy WebSocket interface
+ * 
+ * @deprecated Use Token interface instead for new development
+ * This interface is maintained for backward compatibility with older components
+ * that expect this structure.
  */
 export interface TokenData {
   symbol: string;
@@ -190,8 +194,9 @@ export interface TokenData {
   change5m?: string;
   change1h?: string;
   imageUrl?: string;
-  liquidity?: number;
+  liquidity?: number; // Legacy definition as a number
   status?: "active" | "inactive";
+  contractAddress?: string; // Optional to match how it's used with fallbacks
 }
 
 // Token response metadata

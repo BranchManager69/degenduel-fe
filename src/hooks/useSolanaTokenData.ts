@@ -1,25 +1,35 @@
 // src/hooks/useSolanaTokenData.ts
 
 /**
+ * 
  * useSolanaTokenData Hook
  * 
  * Hook for fetching token data directly from the Solana blockchain.
  * This supplements the WebSocket-based token data with real-time on-chain data.
  * Now supports both token metadata and user token balance.
  * 
- * @author Claude
+ * ⚠️ HOOK CLARIFICATION ⚠️
+ * This hook is specifically for ON-CHAIN Solana token data, not market price data.
+ * 
+ * This hook serves a different purpose than:
+ * - useTokenData.ts - General market data via WebSocket (original)
+ * - topic-hooks/useTokenData.ts - Market data via v69 WebSocket architecture
+ * - useStandardizedTokenData.ts - Standardized UI data processing for components
+ * 
+ * @author BranchManager69
  * @created 2025-04-24
  * @updated 2025-04-25 - Added user balance support
+ * @updated 2025-04-29 - Added clarification about hook purpose
+ * @updated 2025-04-30 - Added info about DD-RPC v2.0
  */
 
 import { PublicKey, TokenAccountsFilter } from '@solana/web3.js';
 import { useCallback, useEffect, useState } from 'react';
+import { config } from '../config/config';
 import { useSolanaConnection } from '../contexts/SolanaConnectionContext';
 import { useStore } from '../store/useStore';
 
-// Config
-import { config } from '../config/config';
-
+// old interface (use Token instead)
 export interface TokenData {
   mintAddress: string;
   supply: string;
@@ -34,6 +44,20 @@ export interface TokenData {
   userBalance?: number; // User's balance of this token
   error?: string;
 }
+
+/**
+ * useSolanaTokenData Hook
+ * 
+ * Hook for fetching token data directly from the Solana blockchain.
+ * This supplements the WebSocket-based token data with real-time on-chain data.
+ * Now supports both token metadata and user token balance.
+ * 
+ * @author BranchManager69
+ * @created 2025-04-24
+ * @updated 2025-04-25 - Added user balance support
+ * @updated 2025-04-29 - Added clarification about hook purpose
+ * @updated 2025-04-30 - Added info about DD-RPC
+ */
 
 export function useSolanaTokenData(
   mintAddress?: string,

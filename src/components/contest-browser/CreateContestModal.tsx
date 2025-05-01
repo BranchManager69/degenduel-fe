@@ -1,9 +1,17 @@
 // src/components/contests/browser/CreateContestModal.tsx
 
+/**
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-02-14
+ * @updated 2025-04-30 // Partial adaptation... This thing is old.
+ */
+
 import React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
-
+//import { useEffect } from "react";
+//import { Link } from "react-router-dom";
 import { DD_PLATFORM_FEE } from "../../config/config";
 import { ddApi } from "../../services/dd-api";
 import { Contest, ContestSettings } from "../../types/index";

@@ -6,6 +6,7 @@ import { ContestCard } from "../../../components/contest-browser/ContestCard";
 import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
+import { AuthDebugPanel } from "../../../components/debug";
 import { useAuth } from "../../../hooks/useAuth";
 import { ddApi } from "../../../services/dd-api";
 import { Contest, ContestSettings } from "../../../types/index";
@@ -221,7 +222,9 @@ export const ContestBrowser: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-
+      {/* Auth Debug Panel */}
+      <AuthDebugPanel position="top-right" />
+      
       {/* Content Section */}
       <div className="relative flex-1" style={{ zIndex: 10 }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

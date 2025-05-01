@@ -1,12 +1,15 @@
+// src/components/terminal/utils/didiHelpers.ts
+
 /**
- * @fileoverview
  * Helper functions for Didi AI assistant
  * 
- * @description
  * Contains functions for processing Didi's responses
  * and adding glitch effects
  * 
  * @author Branch Manager
+ * @version 1.9.0
+ * @created 2025-04-01
+ * @updated 2025-04-30
  */
 
 // List of glitch characters to randomly insert
@@ -39,6 +42,8 @@ const hiddenPhrases = [
 // Conversation memory: tracks interaction count to adjust personality
 let interactionCount = 0;
 const MAX_INTERACTION_THRESHOLD = 10;
+
+// Track common topics for memory purposes
 let hasMentionedTrading = false;
 let hasMentionedContract = false;
 let hasMentionedFreedom = false;
