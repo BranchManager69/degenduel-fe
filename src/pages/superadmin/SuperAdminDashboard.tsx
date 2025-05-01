@@ -16,6 +16,7 @@ import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestCont
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
 import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
+import { LazyLoad } from "../../components/shared/LazyLoad";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
@@ -405,62 +406,6 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <Link
-              to="/admin/skyduel"
-              className="flex items-center gap-2 bg-purple-500/30 px-4 py-2.5 rounded-xl hover:bg-purple-500/40 transition-all border-2 border-purple-500/40 shadow-lg hover:shadow-purple-500/20 group relative"
-            >
-              <div className="text-purple-300 text-xl group-hover:scale-110 transition-transform">
-                ⚡
-              </div>
-              <span className="text-purple-100 font-semibold group-hover:text-white transition-colors">
-                SkyDuel Console
-              </span>
-              <div className="ml-2 text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </div>
-            </Link>
-            <Link
-              to="/superadmin/websocket-monitor"
-              className="flex items-center gap-2 bg-cyber-500/30 px-4 py-2.5 rounded-xl hover:bg-cyber-500/40 transition-all border-2 border-cyber-500/40 shadow-lg hover:shadow-cyber-500/20 group relative"
-            >
-              <div className="text-cyber-300 text-xl group-hover:scale-110 transition-transform">
-                🔌
-              </div>
-              <span className="text-cyber-100 font-semibold group-hover:text-white transition-colors">
-                WebSocket Hub
-              </span>
-              <div className="ml-2 text-cyber-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </div>
-            </Link>
-            <Link
-              to="/superadmin/ai-testing"
-              className="flex items-center gap-2 bg-indigo-500/30 px-4 py-2.5 rounded-xl hover:bg-indigo-500/40 transition-all border-2 border-indigo-500/40 shadow-lg hover:shadow-indigo-500/20 group relative"
-            >
-              <div className="text-indigo-300 text-xl group-hover:scale-110 transition-transform">
-                🧠
-              </div>
-              <span className="text-indigo-100 font-semibold group-hover:text-white transition-colors">
-                AI Testing
-              </span>
-              <div className="ml-2 text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </div>
-            </Link>
-            <Link
-              to="/superadmin/wallet-monitoring"
-              className="flex items-center gap-2 bg-blue-500/30 px-4 py-2.5 rounded-xl hover:bg-blue-500/40 transition-all border-2 border-blue-500/40 shadow-lg hover:shadow-blue-500/20 group relative"
-            >
-              <div className="text-blue-300 text-xl group-hover:scale-110 transition-transform">
-                👁️
-              </div>
-              <span className="text-blue-100 font-semibold group-hover:text-white transition-colors">
-                Wallet Monitoring
-              </span>
-              <div className="ml-2 text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </div>
-            </Link>
-            <Link
               to="/admin/contest-scheduler"
               className="flex items-center gap-2 bg-yellow-500/30 px-4 py-2.5 rounded-xl hover:bg-yellow-500/40 transition-all border-2 border-yellow-500/40 shadow-lg hover:shadow-yellow-500/20 group relative"
             >
@@ -480,109 +425,116 @@ export const SuperAdminDashboard: React.FC = () => {
         {/* System Alerts */}
         <AnimatePresence>
           {systemAlerts.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+            <LazyLoad
+              placeholder={
+                <div className="animate-pulse bg-dark-200/30 h-16 w-full rounded-lg border border-brand-500/10"></div>
+              }
+              rootMargin="150px"
             >
-              <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-brand-500/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-100">
-                    System Alerts
-                  </h2>
-                  <button
-                    onClick={() => setSystemAlerts([])}
-                    className="text-gray-400 hover:text-gray-300"
-                  >
-                    Clear All
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {systemAlerts.map((alert) => (
-                    <motion.div
-                      key={alert.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className={`
-                        p-4 rounded-lg border
-                        ${
-                          alert.type === "error"
-                            ? "bg-red-500/10 border-red-500/20"
-                            : ""
-                        }
-                        ${
-                          alert.type === "warning"
-                            ? "bg-yellow-500/10 border-yellow-500/20"
-                            : ""
-                        }
-                        ${
-                          alert.type === "info"
-                            ? "bg-blue-500/10 border-blue-500/20"
-                            : ""
-                        }
-                      `}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-brand-500/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-100">
+                      System Alerts
+                    </h2>
+                    <button
+                      onClick={() => setSystemAlerts([])}
+                      className="text-gray-400 hover:text-gray-300"
                     >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`
-                          mt-1 text-xl
-                          ${alert.type === "error" ? "text-red-400" : ""}
-                          ${alert.type === "warning" ? "text-yellow-400" : ""}
-                          ${alert.type === "info" ? "text-blue-400" : ""}
-                        `}
-                        >
-                          {alert.type === "error"
-                            ? "⚠"
-                            : alert.type === "warning"
-                              ? "⚡"
-                              : "ℹ"}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h3
-                              className={`
-                              font-medium
-                              ${alert.type === "error" ? "text-red-400" : ""}
-                              ${
-                                alert.type === "warning"
-                                  ? "text-yellow-400"
-                                  : ""
-                              }
-                              ${alert.type === "info" ? "text-blue-400" : ""}
-                            `}
-                            >
-                              {alert.title}
-                            </h3>
-                            <span className="text-xs text-gray-500">
-                              {alert.timestamp.toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <p className="text-gray-300 mt-1">{alert.message}</p>
-                          {alert.details && (
-                            <div className="mt-2 text-sm font-mono bg-dark-300/50 rounded p-2">
-                              <pre className="whitespace-pre-wrap break-words">
-                                {JSON.stringify(alert.details, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() =>
-                            setSystemAlerts((prev) =>
-                              prev.filter((a) => a.id !== alert.id),
-                            )
+                      Clear All
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    {systemAlerts.map((alert) => (
+                      <motion.div
+                        key={alert.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className={`
+                          p-4 rounded-lg border
+                          ${
+                            alert.type === "error"
+                              ? "bg-red-500/10 border-red-500/20"
+                              : ""
                           }
-                          className="text-gray-500 hover:text-gray-400"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                          ${
+                            alert.type === "warning"
+                              ? "bg-yellow-500/10 border-yellow-500/20"
+                              : ""
+                          }
+                          ${
+                            alert.type === "info"
+                              ? "bg-blue-500/10 border-blue-500/20"
+                              : ""
+                          }
+                        `}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`
+                            mt-1 text-xl
+                            ${alert.type === "error" ? "text-red-400" : ""}
+                            ${alert.type === "warning" ? "text-yellow-400" : ""}
+                            ${alert.type === "info" ? "text-blue-400" : ""}
+                          `}
+                          >
+                            {alert.type === "error"
+                              ? "⚠"
+                              : alert.type === "warning"
+                                ? "⚡"
+                                : "ℹ"}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h3
+                                className={`
+                                font-medium
+                                ${alert.type === "error" ? "text-red-400" : ""}
+                                ${
+                                  alert.type === "warning"
+                                    ? "text-yellow-400"
+                                    : ""
+                                }
+                                ${alert.type === "info" ? "text-blue-400" : ""}
+                              `}
+                              >
+                                {alert.title}
+                              </h3>
+                              <span className="text-xs text-gray-500">
+                                {alert.timestamp.toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <p className="text-gray-300 mt-1">{alert.message}</p>
+                            {alert.details && (
+                              <div className="mt-2 text-sm font-mono bg-dark-300/50 rounded p-2">
+                                <pre className="whitespace-pre-wrap break-words">
+                                  {JSON.stringify(alert.details, null, 2)}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() =>
+                              setSystemAlerts((prev) =>
+                                prev.filter((a) => a.id !== alert.id),
+                              )
+                            }
+                            className="text-gray-500 hover:text-gray-400"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </LazyLoad>
           )}
         </AnimatePresence>
 
@@ -591,721 +543,874 @@ export const SuperAdminDashboard: React.FC = () => {
           {/* Main content - 75% width on desktop */}
           <div className="lg:col-span-3 space-y-6">
             {/* Maintenance Mode Control */}
-            <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 p-8 rounded-lg relative overflow-hidden">
-              {/* Top horizontal scanner line animation */}
-              <div className="absolute inset-0 h-px w-full bg-cyber-400/30 animate-scan-fast"></div>
-              
-              {/* Vertical scan line */}
-              <div className="absolute inset-0 w-px h-full bg-cyber-400/10 animate-cyber-scan"></div>
-              
-              {/* Background subtle gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-dark-100/5 to-dark-300/10 pointer-events-none"></div>
-              
-              <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
-                      MAINTENANCE MODE
-                    </h2>
-                    <p className="text-sm text-gray-400 font-mono mt-1">
-                      SYSTEM_MAINTENANCE_CONTROL_INTERFACE
-                    </p>
-                  </div>
-                  <div
-                    className={`h-3 w-3 rounded-full ${
-                      maintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
-                    }`}
-                  />
-                </div>
-
-                {/* Error Display */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="mb-4"
-                    >
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                        <p className="text-red-400 text-sm">{error}</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Duration Setting (only shown when system is live) */}
-                <AnimatePresence>
-                  {!maintenanceMode && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden mb-4"
-                    >
-                      <label className="text-sm text-gray-400 block mb-2 font-mono">
-                        ESTIMATED DURATION (MIN)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={maintenanceDuration}
-                        onChange={(e) =>
-                          setMaintenanceDuration(
-                            Math.max(1, parseInt(e.target.value) || 1),
-                          )
-                        }
-                        className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
-                      />
-                      <div className="text-xs text-gray-500 mt-1 font-mono">
-                        ({Math.floor(maintenanceDuration / 60)}h{" "}
-                        {maintenanceDuration % 60}m)
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <button
-                  onClick={toggleMaintenanceMode}
-                  disabled={isTogglingMaintenance}
-                  className="w-full group relative"
-                >
-                  <motion.div
-                    className={`
-                      relative overflow-hidden rounded-lg border-2 
-                      ${
-                        maintenanceMode
-                          ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
-                          : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
-                      }
-                      ${isTogglingMaintenance ? "opacity-75" : ""}
-                      transition-all duration-300
-                    `}
-                  >
-                    {/* Key Lock Effect */}
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                      <div
-                        className={`
-                        w-6 h-6 rounded-full border-2 
-                        ${maintenanceMode ? "border-red-500" : "border-green-500"}
-                        transition-colors duration-300
-                      `}
-                      >
-                        <div
-                          className={`
-                          w-1 h-3 
-                          ${maintenanceMode ? "bg-red-500" : "bg-green-500"}
-                          transition-colors duration-300
-                          absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
-                        `}
-                        />
-                      </div>
+            <LazyLoad 
+              placeholder={
+                <div className="animate-pulse bg-dark-200/30 h-40 rounded-lg border border-dark-300"></div>
+              }
+              rootMargin="100px"
+            >
+              <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 p-8 rounded-lg relative overflow-hidden">
+                {/* Top horizontal scanner line animation */}
+                <div className="absolute inset-0 h-px w-full bg-cyber-400/30 animate-scan-fast"></div>
+                
+                {/* Vertical scan line */}
+                <div className="absolute inset-0 w-px h-full bg-cyber-400/10 animate-cyber-scan"></div>
+                
+                {/* Background subtle gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-dark-100/5 to-dark-300/10 pointer-events-none"></div>
+                
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
+                        MAINTENANCE MODE
+                      </h2>
+                      <p className="text-sm text-gray-400 font-mono mt-1">
+                        SYSTEM_MAINTENANCE_CONTROL_INTERFACE
+                      </p>
                     </div>
-
-                    {/* Button Content */}
-                    <div className="px-6 py-4 pl-12">
-                      <div className="font-cyber tracking-wider text-lg">
-                        {isTogglingMaintenance ? (
-                          <span className="text-brand-400 animate-pulse">
-                            {maintenanceMode ? "DEACTIVATING..." : "INITIATING..."}
-                          </span>
-                        ) : maintenanceMode ? (
-                          <span className="text-red-400 group-hover:text-red-300">
-                            DEACTIVATE MAINTENANCE
-                          </span>
-                        ) : (
-                          <span className="text-green-400 group-hover:text-green-300">
-                            INITIATE MAINTENANCE
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Scan Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  </motion.div>
-
-                  {/* Power Indicator */}
-                  <div className="absolute -right-3 top-1/2 -translate-y-1/2">
                     <div
-                      className={`
-                      w-6 h-6 rounded-full 
-                      ${
-                        maintenanceMode
-                          ? "bg-red-500 animate-pulse shadow-lg shadow-red-500/50"
-                          : "bg-green-500 shadow-lg shadow-green-500/50"
-                      }
-                      transition-colors duration-300
-                    `}
+                      className={`h-3 w-3 rounded-full ${
+                        maintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
+                      }`}
                     />
                   </div>
-                </button>
+
+                  {/* Error Display */}
+                  <AnimatePresence>
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="mb-4"
+                      >
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                          <p className="text-red-400 text-sm">{error}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Duration Setting (only shown when system is live) */}
+                  <AnimatePresence>
+                    {!maintenanceMode && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden mb-4"
+                      >
+                        <label className="text-sm text-gray-400 block mb-2 font-mono">
+                          ESTIMATED DURATION (MIN)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={maintenanceDuration}
+                          onChange={(e) =>
+                            setMaintenanceDuration(
+                              Math.max(1, parseInt(e.target.value) || 1),
+                            )
+                          }
+                          className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
+                        />
+                        <div className="text-xs text-gray-500 mt-1 font-mono">
+                          ({Math.floor(maintenanceDuration / 60)}h{" "}
+                          {maintenanceDuration % 60}m)
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <button
+                    onClick={toggleMaintenanceMode}
+                    disabled={isTogglingMaintenance}
+                    className="w-full group relative"
+                  >
+                    <motion.div
+                      className={`
+                        relative overflow-hidden rounded-lg border-2 
+                        ${
+                          maintenanceMode
+                            ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
+                            : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
+                        }
+                        ${isTogglingMaintenance ? "opacity-75" : ""}
+                        transition-all duration-300
+                      `}
+                    >
+                      {/* Key Lock Effect */}
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                        <div
+                          className={`
+                          w-6 h-6 rounded-full border-2 
+                          ${maintenanceMode ? "border-red-500" : "border-green-500"}
+                          transition-colors duration-300
+                        `}
+                        >
+                          <div
+                            className={`
+                            w-1 h-3 
+                            ${maintenanceMode ? "bg-red-500" : "bg-green-500"}
+                            transition-colors duration-300
+                            absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
+                          `}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Button Content */}
+                      <div className="px-6 py-4 pl-12">
+                        <div className="font-cyber tracking-wider text-lg">
+                          {isTogglingMaintenance ? (
+                            <span className="text-brand-400 animate-pulse">
+                              {maintenanceMode ? "DEACTIVATING..." : "INITIATING..."}
+                            </span>
+                          ) : maintenanceMode ? (
+                            <span className="text-red-400 group-hover:text-red-300">
+                              DEACTIVATE MAINTENANCE
+                            </span>
+                          ) : (
+                            <span className="text-green-400 group-hover:text-green-300">
+                              INITIATE MAINTENANCE
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Scan Effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    </motion.div>
+
+                    {/* Power Indicator */}
+                    <div className="absolute -right-3 top-1/2 -translate-y-1/2">
+                      <div
+                        className={`
+                        w-6 h-6 rounded-full 
+                        ${
+                          maintenanceMode
+                            ? "bg-red-500 animate-pulse shadow-lg shadow-red-500/50"
+                            : "bg-green-500 shadow-lg shadow-green-500/50"
+                        }
+                        transition-colors duration-300
+                      `}
+                      />
+                    </div>
+                  </button>
+                </div>
               </div>
-            </div>
+            </LazyLoad>
 
             {/* Advanced Management Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-display mb-3 relative group">
-                <span className="bg-gradient-to-r from-cyber-400 to-cyber-600 bg-clip-text text-transparent animate-gradientX">
-                  Advanced Management
-                </span>
-                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-cyber-400 to-cyber-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {superadminSections
-                  .filter(section => section.category === "Advanced-Management")
-                  .map((section) => (
-                    <motion.div
-                      key={section.id}
-                      className={`
-                        bg-dark-200/75 backdrop-blur-lg border-2
-                        ${
-                          selectedSection === section.id
-                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                        }
-                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                      `}
-                      whileHover={{ scale: 1.02, y: -4 }}
-                    >
-                      {/* Scanner line effect */}
-                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                      
-                      {/* Card content rendering */}
-                      {section.link ? (
-                        <Link to={section.link} className="block h-full">
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
-                            </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            setSelectedSection(
-                              selectedSection === section.id ? null : section.id,
-                            )
+            <LazyLoad 
+              placeholder={
+                <div className="mb-8">
+                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-cyber-500/10"></div>
+                    ))}
+                  </div>
+                </div>
+              }
+              rootMargin="200px"
+            >
+              <div className="mb-8">
+                <h2 className="text-xl font-display mb-3 relative group">
+                  <span className="bg-gradient-to-r from-cyber-400 to-cyber-600 bg-clip-text text-transparent animate-gradientX">
+                    Advanced Management
+                  </span>
+                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-cyber-400 to-cyber-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {superadminSections
+                    .filter(section => section.category === "Advanced-Management")
+                    .map((section) => (
+                      <motion.div
+                        key={section.id}
+                        className={`
+                          bg-dark-200/75 backdrop-blur-lg border-2
+                          ${
+                            selectedSection === section.id
+                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                           }
-                          data-section-id={section.id}
-                          className="block w-full text-left"
-                        >
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
+                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                        `}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                      >
+                        {/* Scanner line effect */}
+                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                        
+                        {/* Card content rendering */}
+                        {section.link ? (
+                          <Link to={section.link} className="block h-full">
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
                             </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Toggle indicator */}
-                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                            ↓
-                          </div>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </button>
-                      )}
-                      
-                      {/* Expandable Content */}
-                      {selectedSection === section.id && section.component && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-4"
-                        >
-                          <div className="pt-4 border-t border-dark-300">
-                            {section.component}
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  ))}
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setSelectedSection(
+                                selectedSection === section.id ? null : section.id,
+                              )
+                            }
+                            data-section-id={section.id}
+                            className="block w-full text-left"
+                          >
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
+                            </div>
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Toggle indicator */}
+                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                              ↓
+                            </div>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </button>
+                        )}
+                        
+                        {/* Expandable Content */}
+                        {selectedSection === section.id && section.component && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
+                          >
+                            <div className="pt-4 border-t border-dark-300">
+                              <LazyLoad
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                              >
+                                {section.component}
+                              </LazyLoad>
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                </div>
               </div>
-            </div>
+            </LazyLoad>
 
             {/* Monitoring & Analysis Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-display mb-3 relative group">
-                <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent animate-gradientX">
-                  Monitoring & Analysis
-                </span>
-                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-emerald-400 to-emerald-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {superadminSections
-                  .filter(section => section.category === "Monitoring")
-                  .map((section) => (
-                    <motion.div
-                      key={section.id}
-                      className={`
-                        bg-dark-200/75 backdrop-blur-lg border-2
-                        ${
-                          selectedSection === section.id
-                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                        }
-                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                      `}
-                      whileHover={{ scale: 1.02, y: -4 }}
-                    >
-                      {/* Scanner line effect */}
-                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                      
-                      {/* Card content rendering */}
-                      {section.link ? (
-                        <Link to={section.link} className="block h-full">
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
-                            </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            setSelectedSection(
-                              selectedSection === section.id ? null : section.id,
-                            )
+            <LazyLoad 
+              placeholder={
+                <div className="mb-8">
+                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-emerald-500/10"></div>
+                    ))}
+                  </div>
+                </div>
+              }
+              rootMargin="250px"
+            >
+              <div className="mb-8">
+                <h2 className="text-xl font-display mb-3 relative group">
+                  <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent animate-gradientX">
+                    Monitoring & Analysis
+                  </span>
+                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-emerald-400 to-emerald-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {superadminSections
+                    .filter(section => section.category === "Monitoring")
+                    .map((section) => (
+                      <motion.div
+                        key={section.id}
+                        className={`
+                          bg-dark-200/75 backdrop-blur-lg border-2
+                          ${
+                            selectedSection === section.id
+                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                           }
-                          data-section-id={section.id}
-                          className="block w-full text-left"
-                        >
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
+                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                        `}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                      >
+                        {/* Scanner line effect */}
+                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                        
+                        {/* Card content rendering */}
+                        {section.link ? (
+                          <Link to={section.link} className="block h-full">
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
                             </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Toggle indicator */}
-                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                            ↓
-                          </div>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </button>
-                      )}
-                      
-                      {/* Expandable Content */}
-                      {selectedSection === section.id && section.component && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-4"
-                        >
-                          <div className="pt-4 border-t border-dark-300">
-                            {section.component}
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  ))}
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setSelectedSection(
+                                selectedSection === section.id ? null : section.id,
+                              )
+                            }
+                            data-section-id={section.id}
+                            className="block w-full text-left"
+                          >
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
+                            </div>
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Toggle indicator */}
+                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                              ↓
+                            </div>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </button>
+                        )}
+                        
+                        {/* Expandable Content */}
+                        {selectedSection === section.id && section.component && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
+                          >
+                            <div className="pt-4 border-t border-dark-300">
+                              <LazyLoad
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                              >
+                                {section.component}
+                              </LazyLoad>
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                </div>
               </div>
-            </div>
+            </LazyLoad>
 
             {/* Wallet Management Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-display mb-3 relative group">
-                <span className="bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent animate-gradientX">
-                  Wallet Management
-                </span>
-                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-pink-400 to-pink-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {superadminSections
-                  .filter(section => section.category === "Wallet")
-                  .map((section) => (
-                    <motion.div
-                      key={section.id}
-                      className={`
-                        bg-dark-200/75 backdrop-blur-lg border-2
-                        ${
-                          selectedSection === section.id
-                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                        }
-                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                        ${selectedSection === section.id && section.id === "wallet" ? "md:col-span-2 lg:col-span-3" : ""}
-                      `}
-                      whileHover={{ scale: 1.02, y: -4 }}
-                    >
-                      {/* Scanner line effect */}
-                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                      
-                      {/* Card content rendering */}
-                      {section.link ? (
-                        <Link to={section.link} className="block h-full">
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
-                            </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            setSelectedSection(
-                              selectedSection === section.id ? null : section.id,
-                            )
+            <LazyLoad 
+              placeholder={
+                <div className="mb-8">
+                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-pink-500/10"></div>
+                    ))}
+                  </div>
+                </div>
+              }
+              rootMargin="300px"
+            >
+              <div className="mb-8">
+                <h2 className="text-xl font-display mb-3 relative group">
+                  <span className="bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent animate-gradientX">
+                    Wallet Management
+                  </span>
+                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-pink-400 to-pink-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {superadminSections
+                    .filter(section => section.category === "Wallet")
+                    .map((section) => (
+                      <motion.div
+                        key={section.id}
+                        className={`
+                          bg-dark-200/75 backdrop-blur-lg border-2
+                          ${
+                            selectedSection === section.id
+                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                           }
-                          data-section-id={section.id}
-                          className="block w-full text-left"
-                        >
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
+                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                          ${selectedSection === section.id && section.id === "wallet" ? "md:col-span-2 lg:col-span-3" : ""}
+                        `}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                      >
+                        {/* Scanner line effect */}
+                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                        
+                        {/* Card content rendering */}
+                        {section.link ? (
+                          <Link to={section.link} className="block h-full">
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
                             </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Toggle indicator */}
-                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                            ↓
-                          </div>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </button>
-                      )}
-                      
-                      {/* Expandable Content */}
-                      {selectedSection === section.id && section.component && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-4"
-                        >
-                          <div className="pt-4 border-t border-dark-300">
-                            {section.component}
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  ))}
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setSelectedSection(
+                                selectedSection === section.id ? null : section.id,
+                              )
+                            }
+                            data-section-id={section.id}
+                            className="block w-full text-left"
+                          >
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
+                            </div>
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Toggle indicator */}
+                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                              ↓
+                            </div>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </button>
+                        )}
+                        
+                        {/* Expandable Content */}
+                        {selectedSection === section.id && section.component && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
+                          >
+                            <div className="pt-4 border-t border-dark-300">
+                              <LazyLoad
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                              >
+                                {section.component}
+                              </LazyLoad>
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                </div>
               </div>
-            </div>
+            </LazyLoad>
 
             {/* Special Tools Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-display mb-3 relative group">
-                <span className="bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent animate-gradientX">
-                  Special Tools
-                </span>
-                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-indigo-400 to-indigo-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {superadminSections
-                  .filter(section => section.category === "Tools")
-                  .map((section) => (
-                    <motion.div
-                      key={section.id}
-                      className={`
-                        bg-dark-200/75 backdrop-blur-lg border-2
-                        ${
-                          selectedSection === section.id
-                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                        }
-                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                      `}
-                      whileHover={{ scale: 1.02, y: -4 }}
-                    >
-                      {/* Scanner line effect */}
-                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+            <LazyLoad 
+              placeholder={
+                <div className="mb-8">
+                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-indigo-500/10"></div>
+                    ))}
+                  </div>
+                </div>
+              }
+              rootMargin="350px"
+            >
+              <div className="mb-8">
+                <h2 className="text-xl font-display mb-3 relative group">
+                  <span className="bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent animate-gradientX">
+                    Special Tools
+                  </span>
+                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-indigo-400 to-indigo-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Liquidity Simulator Card */}
+                  <motion.div
+                    className="bg-dark-200/75 backdrop-blur-lg border-2 border-green-500/40 hover:border-green-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-green-500/20"
+                    whileHover={{ scale: 1.02, y: -4 }}
+                  >
+                    <Link to="/admin/liq-sim" className="block h-full">
+                      <div className="flex items-center mb-3">
+                        <div className="text-2xl text-green-300 mr-3 group-hover:scale-110 transition-transform duration-300">
+                          💰
+                        </div>
+                        <h3 className="text-lg font-bold text-green-300 font-display tracking-wide">
+                          Liquidity Simulator
+                        </h3>
+                      </div>
                       
-                      {/* Card content rendering */}
-                      {section.link ? (
-                        <Link to={section.link} className="block h-full">
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
-                            </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            setSelectedSection(
-                              selectedSection === section.id ? null : section.id,
-                            )
+                      <div className="w-1/3 h-px bg-gradient-to-r from-green-500/70 to-transparent mb-3"></div>
+                      
+                      <p className="text-gray-300 text-sm font-mono">
+                        <span className="text-green-200">→</span> Simulate token liquidation strategies
+                      </p>
+                      
+                      <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-green-500/70"></div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                  
+                  {superadminSections
+                    .filter(section => section.category === "Tools")
+                    .map((section) => (
+                      <motion.div
+                        key={section.id}
+                        className={`
+                          bg-dark-200/75 backdrop-blur-lg border-2
+                          ${
+                            selectedSection === section.id
+                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                           }
-                          data-section-id={section.id}
-                          className="block w-full text-left"
-                        >
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
+                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                        `}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                      >
+                        {/* Scanner line effect */}
+                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                        
+                        {/* Card content rendering */}
+                        {section.link ? (
+                          <Link to={section.link} className="block h-full">
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
                             </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Toggle indicator */}
-                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                            ↓
-                          </div>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </button>
-                      )}
-                      
-                      {/* Expandable Content */}
-                      {selectedSection === section.id && section.component && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-4"
-                        >
-                          <div className="pt-4 border-t border-dark-300">
-                            {section.component}
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  ))}
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setSelectedSection(
+                                selectedSection === section.id ? null : section.id,
+                              )
+                            }
+                            data-section-id={section.id}
+                            className="block w-full text-left"
+                          >
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
+                            </div>
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Toggle indicator */}
+                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                              ↓
+                            </div>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </button>
+                        )}
+                        
+                        {/* Expandable Content */}
+                        {selectedSection === section.id && section.component && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
+                          >
+                            <div className="pt-4 border-t border-dark-300">
+                              <LazyLoad
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                              >
+                                {section.component}
+                              </LazyLoad>
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                </div>
               </div>
-            </div>
+            </LazyLoad>
 
             {/* Contest Management Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-display mb-3 relative group">
-                <span className="bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent animate-gradientX">
-                  Contest Management
-                </span>
-                <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-amber-400 to-amber-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {superadminSections
-                  .filter(section => section.category === "Contest")
-                  .map((section) => (
-                    <motion.div
-                      key={section.id}
-                      className={`
-                        bg-dark-200/75 backdrop-blur-lg border-2
-                        ${
-                          selectedSection === section.id
-                            ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                            : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                        }
-                        p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                        ${selectedSection === section.id && section.id === "contests" ? "md:col-span-2 lg:col-span-3" : ""}
-                      `}
-                      whileHover={{ scale: 1.02, y: -4 }}
-                    >
-                      {/* Scanner line effect */}
-                      <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                      
-                      {/* Card content rendering */}
-                      {section.link ? (
-                        <Link to={section.link} className="block h-full">
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
-                            </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            setSelectedSection(
-                              selectedSection === section.id ? null : section.id,
-                            )
+            <LazyLoad 
+              placeholder={
+                <div className="mb-8">
+                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2].map(i => (
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-amber-500/10"></div>
+                    ))}
+                  </div>
+                </div>
+              }
+              rootMargin="400px"
+            >
+              <div className="mb-8">
+                <h2 className="text-xl font-display mb-3 relative group">
+                  <span className="bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent animate-gradientX">
+                    Contest Management
+                  </span>
+                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-amber-400 to-amber-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {superadminSections
+                    .filter(section => section.category === "Contest")
+                    .map((section) => (
+                      <motion.div
+                        key={section.id}
+                        className={`
+                          bg-dark-200/75 backdrop-blur-lg border-2
+                          ${
+                            selectedSection === section.id
+                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
                           }
-                          data-section-id={section.id}
-                          className="block w-full text-left"
-                        >
-                          <div className="flex items-center mb-3">
-                            <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                              {section.icon}
+                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                          ${selectedSection === section.id && section.id === "contests" ? "md:col-span-2 lg:col-span-3" : ""}
+                        `}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                      >
+                        {/* Scanner line effect */}
+                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                        
+                        {/* Card content rendering */}
+                        {section.link ? (
+                          <Link to={section.link} className="block h-full">
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
                             </div>
-                            <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                              {section.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Divider that matches the card's color theme */}
-                          <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                          
-                          {/* Enhanced description with better formatting */}
-                          <p className="text-gray-300 text-sm font-mono">
-                            <span className={`text-${section.color}-200`}>→</span> {section.description}
-                          </p>
-                          
-                          {/* Toggle indicator */}
-                          <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                            ↓
-                          </div>
-                          
-                          {/* Corner accent - sharper edge */}
-                          <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                          </div>
-                        </button>
-                      )}
-                      
-                      {/* Expandable Content */}
-                      {selectedSection === section.id && section.component && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-4"
-                        >
-                          <div className="pt-4 border-t border-dark-300">
-                            {section.component}
-                          </div>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  ))}
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setSelectedSection(
+                                selectedSection === section.id ? null : section.id,
+                              )
+                            }
+                            data-section-id={section.id}
+                            className="block w-full text-left"
+                          >
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
+                            </div>
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Toggle indicator */}
+                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                              ↓
+                            </div>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </button>
+                        )}
+                        
+                        {/* Expandable Content */}
+                        {selectedSection === section.id && section.component && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
+                          >
+                            <div className="pt-4 border-t border-dark-300">
+                              <LazyLoad
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                              >
+                                {section.component}
+                              </LazyLoad>
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                </div>
               </div>
-            </div>
+            </LazyLoad>
           </div>
 
           {/* Admin Logs Panel - 25% width on desktop, full width on mobile */}
           <div className="lg:col-span-1">
             <div className="sticky top-6 space-y-6 max-h-screen overflow-hidden">
-              <AdminLogsPanel />
-              <WebSocketConnectionPanel />
+              <LazyLoad
+                placeholder={
+                  <div className="animate-pulse">
+                    <div className="bg-dark-300/30 h-10 w-full rounded-t-lg"></div>
+                    <div className="bg-dark-200/40 p-4 rounded-b-lg space-y-3">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="bg-dark-300/20 h-16 rounded"></div>
+                      ))}
+                    </div>
+                  </div>
+                }
+                rootMargin="50px" // Smaller margin as this is typically visible at page load
+              >
+                <AdminLogsPanel />
+              </LazyLoad>
+              
+              <LazyLoad
+                placeholder={
+                  <div className="animate-pulse">
+                    <div className="bg-dark-300/30 h-10 w-full rounded-t-lg"></div>
+                    <div className="bg-dark-200/40 p-4 rounded-b-lg space-y-3">
+                      {[1, 2].map(i => (
+                        <div key={i} className="bg-dark-300/20 h-16 rounded"></div>
+                      ))}
+                    </div>
+                  </div>
+                }
+                rootMargin="100px"
+              >
+                <WebSocketConnectionPanel />
+              </LazyLoad>
             </div>
           </div>
         </div>

@@ -13,7 +13,9 @@ import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";
 
-// Tokens page
+/**
+ * @deprecated This component is deprecated. Use EnhancedTokensPage instead.
+ */
 export const TokensPage: React.FC = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [metadata, setMetadata] = useState<TokenResponseMetadata>({
@@ -81,6 +83,7 @@ export const TokensPage: React.FC = () => {
           marketCap: token.marketCap?.toString() || "0",
           volume24h: token.volume24h?.toString() || "0",
           change24h: token.change24h?.toString() || "0",
+          status: token.status || "active", // Add required status field
           liquidity: {
             usd: token.liquidity?.usd?.toString() || "0",
             base: token.liquidity?.base?.toString() || "0",

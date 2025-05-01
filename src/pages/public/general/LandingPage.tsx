@@ -14,6 +14,8 @@ import { Terminal } from '../../../components/terminal';
 // CSS is now loaded from public/assets/degen-components.css via index.html
 // import { processTerminalChat } from '../../../services/mockTerminalService';
 import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
+// Auth debug tool
+import { AuthDebugPanel } from "../../../components/debug";
 import { config as globalConfig } from '../../../config/config';
 import {
   CONTRACT_POLL_INTERVAL,
@@ -32,6 +34,7 @@ import {
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { FEATURE_FLAGS } from "../../../config/config";
 import { useAuth } from "../../../hooks/useAuth";
+import { useWallet } from "../../../hooks/websocket/topic-hooks/useWallet";
 import { isContestLive } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { Contest } from "../../../types";
@@ -45,6 +48,84 @@ interface ContestResponse {
     total: number;
   };
 }
+
+// Define WhaleRoomButton component
+const WhaleRoomButton = ({ walletAddress }: { walletAddress: string }) => {
+  // Use the wallet hook to get balance data
+  const {
+    balance,
+    isLoading,
+  } = useWallet(walletAddress);
+  
+  // Whale criteria: 
+  // 1. SOL balance > 10 SOL, or
+  // 2. Any token with USD value > $5,000, or
+  // 3. Total portfolio value > $10,000 
+  const isWhale = React.useMemo(() => {
+    if (!balance || isLoading) return false;
+    
+    // Check SOL balance criteria (>10 SOL)
+    if (balance.sol_balance > 10) return true;
+    
+    // Check for any high-value tokens (>$5,000)
+    const hasHighValueToken = balance.tokens.some(token => 
+      token.value_usd && token.value_usd > 5000
+    );
+    
+    if (hasHighValueToken) return true;
+    
+    // Calculate total portfolio value
+    const totalValue = balance.tokens.reduce((sum, token) => 
+      sum + (token.value_usd || 0), 
+      0
+    );
+    
+    // Add SOL value (approximating $100 per SOL)
+    const portfolioValueWithSol = totalValue + (balance.sol_balance * 100);
+    
+    // Check portfolio value criteria (>$10,000) 
+    return portfolioValueWithSol > 10000;
+  }, [balance, isLoading]);
+  
+  // Only show button if user meets whale criteria
+  if (!isWhale) return null;
+  
+  return (
+    <div className="w-full max-w-md">
+      <RouterLink to="/whale-room" className="w-full">
+        <button 
+          className="w-full relative group overflow-hidden"
+          aria-label="Access the exclusive Whale Room"
+        >
+          <div className="relative clip-edges bg-gradient-to-r from-purple-500 to-indigo-600 p-[1px] transition-all duration-300 group-hover:from-purple-400 group-hover:to-indigo-500 shadow-md shadow-purple-900/20">
+            <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+              <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
+                <span className="bg-gradient-to-r from-purple-300 to-indigo-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-purple-200 flex items-center">
+                  <span className="mr-2">💎</span>
+                  WHALE ROOM
+                </span>
+                <svg
+                  className="w-5 h-5 text-purple-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                  fill="none" 
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </button>
+      </RouterLink>
+    </div>
+  );
+};
 
 // Landing Page Component
 export const LandingPage: React.FC = () => {
@@ -365,6 +446,12 @@ export const LandingPage: React.FC = () => {
               {/* WebSocket Demo Section - only visible in debug mode */}
               {debugMode && isAdmin() && (
                 <div className="w-full mb-10">
+                  {/* Auth Debug Panel - shows authentication state for debugging */}
+                  <div className="mb-6 bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                    <h4 className="text-xl font-semibold mb-4 text-amber-400">Authentication Debug</h4>
+                    <AuthDebugPanel />
+                  </div>
+                  
                   {/* Responsive grid layout - one column on mobile, three columns on large screens */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Token Data Demo */}
@@ -422,77 +509,6 @@ export const LandingPage: React.FC = () => {
                 </>
               )}
               
-              {/* Terminal Component - Animation adjusted based on HeroTitle presence */}
-              <motion.div
-                className="w-full max-w-4xl mx-auto mb-10 relative z-20"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: animationPhase > 0 ? 1 : 0,
-                  y: animationPhase > 0 ? 0 : 20,
-                  transition: {
-                    // When HeroTitle is hidden, start Terminal animation immediately
-                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.3 : 0.1,
-                    duration: 0.8,
-                  },
-                }}
-                onAnimationComplete={() => {
-                  // When terminal animation completes, it signals completion
-                  console.log('Terminal animation completed');
-                }}
-              >
-                {isLoadingReleaseDate ? (
-                  <div className="flex items-center justify-center h-[400px]">
-                    <div className="text-center">
-                      <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-xl font-orbitron text-brand-400">Loading countdown timer...</p>
-                    </div>
-                  </div>
-                ) : (
-                  <Terminal 
-                    config={terminalConfig} 
-                    onCommandExecuted={(command, response) => {
-                      console.log('Command executed:', command, 'Response:', response);
-                    }}
-                  />
-                )}
-              </motion.div>
-
-              {/* Enhanced Features section - shown to all users */}
-              {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
-                <motion.div
-                  className="relative w-full mt-12"
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: animationPhase > 0 ? 1 : 0,
-                    transition: {
-                      delay: 0.9,
-                      duration: 1.2,
-                    },
-                  }}
-                >
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Features component is only imported and rendered when the flag is enabled */}
-                    {(() => {
-                      if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
-                        // Dynamic import only when needed
-                        const Features = React.lazy(
-                          () =>
-                            import(
-                              "../../../components/landing/features-list/Features"
-                            ),
-                        );
-                        return (
-                          <React.Suspense fallback={<div>Loading features...</div>}>
-                            <Features />
-                          </React.Suspense>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                </motion.div>
-              )}
-
               {/* Common tagline for all users */}
               <motion.div
                 className="mt-8 mb-6"
@@ -544,9 +560,9 @@ export const LandingPage: React.FC = () => {
                 </motion.div>
               </motion.div>
 
-              {/* Call to action buttons - different for logged in vs non-logged in */}
+              {/* Call to action buttons - using a 2-row layout with primary button on top */}
               <motion.div
-                className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6 px-4 sm:px-0 max-w-full"
+                className="mt-8 mb-10 flex flex-col items-center justify-center gap-6 px-4 sm:px-0 max-w-full"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
                   opacity: animationPhase > 0 ? 1 : 0,
@@ -557,48 +573,22 @@ export const LandingPage: React.FC = () => {
                   },
                 }}
               >
-                {/* HOW TO PLAY button for all users */}
-                <RouterLink to="/how-it-works" className="w-full sm:w-auto">
-                  <button className="w-full relative group overflow-hidden">
-                    <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500">
-                      <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                        <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
-                          <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
-                            HOW TO PLAY
-                          </span>
-                          <svg
-                            className="w-6 h-6 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                            fill="none" 
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M14 5l7 7m0 0l-7 7m7-7H3"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                </RouterLink>
-
-                {/* Conditional second button based on auth status */}
+                {/* Primary action button - larger and with pulse animation */}
                 {user ? (
-                  <RouterLink to="/contests" className="w-full sm:w-auto">
-                    <button className="w-full relative group overflow-hidden">
-                      <div className="relative clip-edges bg-gradient-to-r from-emerald-500 to-teal-600 p-[1px] transition-all duration-300 group-hover:from-emerald-400 group-hover:to-teal-500">
-                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
+                  <RouterLink to="/contests" className="w-full max-w-md">
+                    <button 
+                      className="w-full relative group overflow-hidden"
+                      aria-label="Find a duel to join"
+                    >
+                      <div className="relative clip-edges bg-gradient-to-r from-emerald-500 to-teal-600 p-[2px] transition-all duration-300 group-hover:from-emerald-400 group-hover:to-teal-500 shadow-lg shadow-emerald-900/20 animate-pulse-subtle">
+                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-10 py-5">
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                          <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
+                          <div className="relative flex items-center justify-between space-x-6 text-2xl font-cyber">
                             <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
-                              START DUELING
+                              FIND DUEL
                             </span>
                             <svg
-                              className="w-6 h-6 text-emerald-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                              className="w-7 h-7 text-emerald-400 group-hover:text-white transform group-hover:translate-x-2 transition-all"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -616,17 +606,20 @@ export const LandingPage: React.FC = () => {
                     </button>
                   </RouterLink>
                 ) : (
-                  <RouterLink to="/login" className="w-full sm:w-auto">
-                    <button className="w-full relative group overflow-hidden">
-                      <div className="relative clip-edges bg-gradient-to-r from-brand-500 to-brand-600 p-[1px] transition-all duration-300 group-hover:from-brand-400 group-hover:to-brand-500">
-                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-8 py-4">
+                  <RouterLink to="/login" className="w-full max-w-md">
+                    <button 
+                      className="w-full relative group overflow-hidden"
+                      aria-label="Connect your wallet to start"
+                    >
+                      <div className="relative clip-edges bg-gradient-to-r from-brand-500 to-brand-600 p-[2px] transition-all duration-300 group-hover:from-brand-400 group-hover:to-brand-500 shadow-lg shadow-brand-900/20 animate-pulse-subtle">
+                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-10 py-5">
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                          <div className="relative flex items-center justify-between space-x-4 text-xl font-cyber">
+                          <div className="relative flex items-center justify-between space-x-6 text-2xl font-cyber">
                             <span className="bg-gradient-to-r from-brand-300 to-brand-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-brand-200">
-                              CONNECT WALLET
+                              CONNECT
                             </span>
                             <svg
-                              className="w-6 h-6 text-brand-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                              className="w-7 h-7 text-brand-400 group-hover:text-white transform group-hover:translate-x-2 transition-all"
                               fill="none" 
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -644,7 +637,158 @@ export const LandingPage: React.FC = () => {
                     </button>
                   </RouterLink>
                 )}
+
+                {/* Secondary buttons row - two buttons side by side with same color */}
+                <div className="flex flex-col sm:flex-row w-full max-w-md gap-4 justify-between">
+                  {/* GAMEPLAY button */}
+                  <RouterLink to="/how-it-works" className="w-full sm:w-[48%]">
+                    <button 
+                      className="w-full relative group overflow-hidden"
+                      aria-label="Learn gameplay instructions"
+                    >
+                      <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500 shadow-md shadow-blue-900/20">
+                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                          <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
+                            <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
+                              GAMEPLAY
+                            </span>
+                            <svg
+                              className="w-5 h-5 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                              fill="none" 
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </RouterLink>
+
+                  {/* FAQ button - now using same blue/cyan color scheme as GAMEPLAY */}
+                  <RouterLink to="/faq" className="w-full sm:w-[48%]">
+                    <button 
+                      className="w-full relative group overflow-hidden"
+                      aria-label="View frequently asked questions"
+                    >
+                      <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500 shadow-md shadow-blue-900/20">
+                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                          <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
+                            <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
+                              FAQ
+                            </span>
+                            <svg
+                              className="w-5 h-5 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                              fill="none" 
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </RouterLink>
+                </div>
+
+                {/* Conditional WHALE ROOM button - only shown to users with significant token/SOL balances */}
+                {user && (
+                  <WhaleRoomButton walletAddress={user.wallet_address} />
+                )}
+                
+                {/* Whale room button is conditionally rendered above */}
+                
+                {/* Link to standardized test page */}
+                <RouterLink to="/tokens/standardized-test" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
+                  View Standardized Components
+                </RouterLink>
               </motion.div>
+
+
+              {/* Terminal Component - Animation adjusted based on HeroTitle presence */}
+              <motion.div
+                className="w-full max-w-4xl mx-auto mb-10 relative z-20"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                  opacity: animationPhase > 0 ? 1 : 0,
+                  y: animationPhase > 0 ? 0 : 20,
+                  transition: {
+                    // When HeroTitle is hidden, start Terminal animation immediately
+                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.3 : 0.1,
+                    duration: 0.8,
+                  },
+                }}
+                onAnimationComplete={() => {
+                  // When terminal animation completes, it signals completion
+                  console.log('Terminal animation completed');
+                }}
+              >
+                {isLoadingReleaseDate ? (
+                  <div className="flex items-center justify-center h-[400px]">
+                    <div className="text-center">
+                      <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-xl font-orbitron text-brand-400">Loading countdown timer...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <Terminal 
+                    config={terminalConfig} 
+                    onCommandExecuted={(command, response) => {
+                      console.log('Command executed:', command, 'Response:', response);
+                    }}
+                  />
+                )}
+              </motion.div>
+              
+              {/* Enhanced Features section - shown to all users */}
+              {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
+                <motion.div
+                  className="relative w-full mt-12"
+                  initial={{ opacity: 0 }}
+                  animate={{
+                    opacity: animationPhase > 0 ? 1 : 0,
+                    transition: {
+                      delay: 0.9,
+                      duration: 1.2,
+                    },
+                  }}
+                >
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Features component is only imported and rendered when the flag is enabled */}
+                    {(() => {
+                      if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
+                        // Dynamic import only when needed
+                        const Features = React.lazy(
+                          () =>
+                            import(
+                              "../../../components/landing/features-list/Features"
+                            ),
+                        );
+                        return (
+                          <React.Suspense fallback={<div>Loading features...</div>}>
+                            <Features />
+                          </React.Suspense>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                </motion.div>
+              )}
               
               {/* Market Overview Panel - shown to all users */}
               <motion.div
@@ -659,10 +803,10 @@ export const LandingPage: React.FC = () => {
                 }}
               >
                 {(() => {
-                  // Lazy-load the MarketStatsPanel component
+                  // Lazy-load the StandardizedMarketStatsPanel component
                   const MarketStatsPanel = React.lazy(() => 
                     import("../../../components/landing/market-stats").then(module => ({ 
-                      default: module.MarketStatsPanel 
+                      default: module.StandardizedMarketStatsPanel
                     }))
                   );
                   
@@ -695,10 +839,10 @@ export const LandingPage: React.FC = () => {
                 }}
               >
                 {(() => {
-                  // Lazy-load the HotTokensList component
+                  // Lazy-load the StandardizedHotTokensList component
                   const HotTokensList = React.lazy(() => 
                     import("../../../components/landing/hot-tokens").then(module => ({ 
-                      default: module.HotTokensList 
+                      default: module.StandardizedHotTokensList
                     }))
                   );
                   

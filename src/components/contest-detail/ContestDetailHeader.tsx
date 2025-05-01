@@ -1,3 +1,5 @@
+// src/components/contest-detail/ContestDetailHeader.tsx
+
 import React from "react";
 import { Link } from "react-router-dom";
 

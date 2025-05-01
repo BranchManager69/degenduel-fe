@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useSound from 'use-sound';
+import useTokenData from "../../../hooks/useTokenData";
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
-import useTokenData from "../../../hooks/useTokenData";
 
 interface HotTokensListProps {
   maxTokens?: number;
@@ -153,6 +153,8 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
           marketCap: token.marketCap?.toString() || "0",
           volume24h: token.volume24h?.toString() || "0",
           change24h: token.change24h?.toString() || "0",
+          // Ensure status field is present and valid
+          status: token.status || "active",
           liquidity: {
             usd: token.liquidity?.usd?.toString() || "0",
             base: token.liquidity?.base?.toString() || "0",
@@ -165,19 +167,36 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
           },
           socials: token.socials,
           websites: token.websites,
+          // Include any optional fields that might be used elsewhere
+          changesJson: token.changesJson,
+          transactionsJson: token.transactionsJson,
+          baseToken: token.baseToken,
+          quoteToken: token.quoteToken
         }));
         
-        // Apply hot tokens algorithm
-        const sortedTokens = transformedTokens
-          .filter((token: Token) => Number(token.volume24h) > 0) // Basic filter
-          .sort((a: Token, b: Token) => {
-            // Sample algorithm: Combination of change and volume with a bit of randomness
+        // Apply hot tokens algorithm - explicitly typing as Token[]
+        const sortedTokens: Token[] = transformedTokens
+          .filter((token) => Number(token.volume24h) > 0) // Basic filter
+          .sort((a, b) => {
+            
+            // Sample algorithm: 
+            // Combination of:
+            //    momentum [positive]
+            //    change 
+            //    volume 
+            //    randomness
+            //     ...
+            //     holders... blah blah blah
+
+            // TODO:
+            //   THE BELOW CODE ONLY APPROXIMATES THE ALGORITHM!
+            //   IT IS NOT THE ACTUAL ALGORITHM!
+            //   DESTROY ALL JEETS!!!!
             const aScore = (
               (Number(a.change24h) * 0.6) + 
               (Math.log10(Number(a.volume24h)) * 0.4) +
               (Math.random() * 0.1) // Small random factor to simulate your unique algorithm
             );
-            
             const bScore = (
               (Number(b.change24h) * 0.6) + 
               (Math.log10(Number(b.volume24h)) * 0.4) +

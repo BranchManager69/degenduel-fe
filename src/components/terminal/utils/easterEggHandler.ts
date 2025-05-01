@@ -1,12 +1,15 @@
+// src/components/terminal/utils/easterEggHandler.ts
+
 /**
- * @fileoverview
  * Easter egg handler for the terminal
  * 
- * @description
  * Handles the Didi easter egg functionality with multiple
  * unlock methods and progressive discovery patterns
  * 
  * @author Branch Manager
+ * @version 1.9.0
+ * @created 2025-04-01
+ * @updated 2025-04-30
  */
 
 // Stores hidden messages that Didi sends (maximum 10)
@@ -35,7 +38,8 @@ export const SECRET_COMMANDS = {
 
 /**
  * Store hidden messages for the Easter egg and check for activations
- */
+ * (this is the main function that checks for the easter egg)
+*/
 export const storeHiddenMessage = (message: string): boolean => {
   // Add the new message
   hiddenMessageCache.push(message);

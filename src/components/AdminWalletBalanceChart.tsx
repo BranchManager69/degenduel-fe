@@ -1,6 +1,6 @@
 // src/components/AdminWalletBalanceChart.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import WalletBalanceChart from './WalletBalanceChart';
 
@@ -11,6 +11,8 @@ interface AdminWalletBalanceChartProps {
   title?: string;
   description?: string;
   showControls?: boolean;
+  showWalletSelector?: boolean;
+  compareMode?: boolean;
   className?: string;
   fallbackComponent?: React.ReactNode;
 }
@@ -25,11 +27,14 @@ export const AdminWalletBalanceChart: React.FC<AdminWalletBalanceChartProps> = (
   title = 'Wallet Balance History',
   description = 'Historical SOL balance for this wallet',
   showControls = true,
+  showWalletSelector = false,
+  compareMode = false,
   className = '',
   fallbackComponent = null
 }) => {
   const { user } = useStore();
   const [error, setError] = useState<string | null>(null);
+  const [currentWallet, setCurrentWallet] = useState<string>(walletAddress);
   
   // Check if current user has admin or superadmin role
   const isAdminUser = user?.role === 'admin' || user?.role === 'superadmin';
@@ -38,6 +43,18 @@ export const AdminWalletBalanceChart: React.FC<AdminWalletBalanceChartProps> = (
   if (!isAdminUser) {
     return <>{fallbackComponent}</>;
   }
+  
+  // Update current wallet when the prop changes
+  useEffect(() => {
+    if (walletAddress !== currentWallet) {
+      setCurrentWallet(walletAddress);
+    }
+  }, [walletAddress]);
+  
+  // Handle wallet changes from selector
+  const handleWalletChange = (newWallet: string) => {
+    setCurrentWallet(newWallet);
+  };
   
   // If there was an error loading data, show a simplified error message (only for admins)
   if (error) {
@@ -79,24 +96,35 @@ export const AdminWalletBalanceChart: React.FC<AdminWalletBalanceChartProps> = (
   return (
     <div className={`rounded-lg overflow-hidden ${className}`}>
       <div className="bg-dark-200/50 border-l-4 border-brand-500 px-3 py-2 mb-2">
-        <div className="flex items-center">
-          <svg className="w-5 h-5 text-brand-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-sm text-gray-300">Admin-only wallet monitoring</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-brand-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm text-gray-300">Admin-only wallet monitoring</span>
+          </div>
+          
+          {compareMode && (
+            <div className="text-xs text-brand-300 bg-brand-500/10 px-2 py-1 rounded-full">
+              Comparison Mode
+            </div>
+          )}
         </div>
       </div>
       
       <WalletBalanceChart
-        walletAddress={walletAddress}
-        viewType="single"
+        walletAddress={currentWallet}
+        viewType={compareMode ? 'compare' : 'single'}
         height={height}
         title={title}
         description={description}
         showControls={showControls}
+        showWalletSelector={showWalletSelector}
+        compareMode={compareMode}
         className={className}
         onDataLoaded={() => setError(null)} // Clear error on successful data load
         onError={(errorMsg) => setError(errorMsg)} // Handle error from chart component
+        onWalletChange={handleWalletChange} // Handle wallet changes from selector
       />
     </div>
   );

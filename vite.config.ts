@@ -386,9 +386,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "react",
         "react-dom",
         "react-router-dom",
-        "@aptos-labs/wallet-adapter-react",
-        "@aptos-labs/wallet-adapter-core",
-        "aptos",
+        // Removed Aptos dependencies as they are no longer used
+        // "@aptos-labs/wallet-adapter-react",
+        // "@aptos-labs/wallet-adapter-core",
+        // "aptos",
         "graphql",
         "@telegram-apps/bridge",
       ],
@@ -417,9 +418,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
             ],
             "ui-vendor": ["framer-motion", "react-icons", "styled-components"],
             "wallet-vendor": [
-              "@aptos-labs/wallet-adapter-react",
-              "@mizuwallet-sdk/core",
-              "@mizuwallet-sdk/aptos-wallet-adapter",
+              // Removed Aptos dependencies
+              // "@aptos-labs/wallet-adapter-react",
+              // "@mizuwallet-sdk/core",
+              // "@mizuwallet-sdk/aptos-wallet-adapter",
               "graphql-request",
             ],
           },

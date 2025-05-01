@@ -143,8 +143,8 @@ export const NeonGrid: React.FC = () => {
       const sizeFactor = Math.log10(marketCap) / 12;
       const size = Math.max(15, Math.min(30, sizeFactor * 50));
 
-      // Only use 5-minute change for dynamic animations
-      const change5m = parseFloat(token.change5m?.toString() || "0");
+      // Only use changesJson for dynamic animations if available, or fallback to 24h change
+      const change5m = token.changesJson?.m5 || parseFloat(token.change24h?.toString() || "0") / 10 || 0;
 
       // Base color purely on 5m change
       let color;

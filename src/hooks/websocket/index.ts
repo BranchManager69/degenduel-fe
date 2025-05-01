@@ -97,7 +97,7 @@ export * from './useAnalyticsWebSocket';
 export * from './useCircuitBreakerSocket'; // DEPRECATED - use topic-hooks/useCircuitBreaker instead
 export * from './useContestChatWebSocket'; // DEPRECATED - use topic-hooks/useContestChat instead
 export * from './useContestWebSocket'; // DEPRECATED - use topic-hooks/useContests instead
-export * from './useMarketDataWebSocket'; // DEPRECATED - use topic-hooks/useMarketData instead
+// useMarketDataWebSocket removed - use topic-hooks/useMarketData instead
 export * from './useNotificationWebSocket'; // DEPRECATED - use topic-hooks/useNotifications instead
 export * from './usePortfolioWebSocket'; // DEPRECATED - use topic-hooks/usePortfolio instead
 export * from './useRPCBenchmarkWebSocket'; // DEPRECATED - use topic-hooks/useRPCBenchmark instead
@@ -105,6 +105,6 @@ export * from './useServerStatusWebSocket'; // DEPRECATED - use topic-hooks/useS
 export * from './useServiceWebSocket'; // DEPRECATED - use topic-hooks/useService instead
 export * from './useSkyDuelWebSocket'; // DEPRECATED - use topic-hooks/useSkyDuel instead
 export * from './useSystemSettingsWebSocket'; // DEPRECATED - use topic-hooks/useSystemSettings instead
-export * from './useTokenDataWebSocket'; // DEPRECATED - use topic-hooks/useTokenData instead
+// useTokenDataWebSocket removed - use topic-hooks/useTokenData instead
 export * from './useWalletWebSocket'; // DEPRECATED - use topic-hooks/useWallet instead
 export * from './useWebSocket';

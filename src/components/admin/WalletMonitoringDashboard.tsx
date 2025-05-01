@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { ddApi } from "../../services/dd-api";
+import AdminWalletBalanceChart from "../AdminWalletBalanceChart";
 
 // Types
 interface WalletMonitoringDashboard {
@@ -54,7 +55,7 @@ export const WalletMonitoringDashboard: React.FC = () => {
   // State
   const [dashboardData, setDashboardData] =
     useState<WalletMonitoringDashboard | null>(null);
-  const [balanceHistory, setBalanceHistory] = useState<
+  const [_, setBalanceHistory] = useState<
     BalanceHistoryDataPoint[]
   >([]);
   const [loading, setLoading] = useState(true);
@@ -574,61 +575,17 @@ export const WalletMonitoringDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Balance History Chart */}
-              {selectedWallet && balanceHistory.length > 0 && (
-                <div className="bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-200">
-                      Balance History
-                    </h3>
-                    <div className="text-sm text-gray-400">
-                      {selectedWallet.substring(0, 6)}...
-                      {selectedWallet.substring(selectedWallet.length - 6)}
-                    </div>
-                  </div>
-
-                  {/* Basic Chart Visualization */}
-                  <div className="h-64 relative">
-                    {/* This would be replaced with a proper Chart component */}
-                    <div className="absolute inset-0 flex items-end">
-                      {balanceHistory.map((point, index) => {
-                        const height = `${(parseFloat(point.balance) / Math.max(...balanceHistory.map((p) => parseFloat(p.balance)))) * 100}%`;
-                        return (
-                          <div
-                            key={index}
-                            className="flex-1 flex flex-col items-center"
-                          >
-                            <div
-                              className="w-full bg-gradient-to-t from-brand-500/30 to-brand-500/10 rounded-t"
-                              style={{ height }}
-                            >
-                              <div className="h-1 w-full bg-brand-500"></div>
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1 rotate-45 origin-top-left">
-                              {new Date(point.timestamp).toLocaleDateString()}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Y-axis labels */}
-                    <div className="absolute left-0 inset-y-0 flex flex-col justify-between pointer-events-none">
-                      <div className="text-xs text-gray-500">
-                        {Math.max(
-                          ...balanceHistory.map((p) => parseFloat(p.balance)),
-                        ).toFixed(2)}{" "}
-                        SOL
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {Math.min(
-                          ...balanceHistory.map((p) => parseFloat(p.balance)),
-                        ).toFixed(2)}{" "}
-                        SOL
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* Balance History Chart - Now using our enhanced component */}
+              {selectedWallet && (
+                <AdminWalletBalanceChart
+                  walletAddress={selectedWallet}
+                  title="Wallet Balance History"
+                  description="Historical SOL balance for this wallet"
+                  height={300}
+                  showControls={true}
+                  showWalletSelector={true}
+                  compareMode={true}
+                />
               )}
 
               {/* Force Check Tool */}

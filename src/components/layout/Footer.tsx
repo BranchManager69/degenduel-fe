@@ -1,18 +1,19 @@
 // src/components/layout/Footer.tsx
 
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 
+import { useAuth } from "../../hooks/useAuth";
 import { useScrollFooter } from "../../hooks/useScrollFooter";
 import { MessageType, TopicType, useUnifiedWebSocket } from "../../hooks/websocket";
-import { useAuth } from "../../hooks/useAuth";
+import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
-  // Get user authentication status to check if user is admin and authentication status
   const { isAdmin, isAuthenticated } = useAuth();
   // Use unified WebSocket for server status and system settings
+  
   // Check for storybook mock status
   const initialStatus = typeof window !== 'undefined' && (window as any).serverStatusState
     ? (window as any).serverStatusState
@@ -24,8 +25,8 @@ export const Footer: React.FC = () => {
         loading: false
       };
   
+  // State to manage server status
   const [serverStatus, setServerStatus] = useState(initialStatus);
-  
   const [systemSettings, setSystemSettings] = useState({
     loading: false,
     error: null as string | null,
@@ -36,13 +37,17 @@ export const Footer: React.FC = () => {
   
   // Subscribe to unified WebSocket messages with the new format
   const unifiedWs = useUnifiedWebSocket(
+    // The topic to subscribe to
     'footer-status', 
+    // The message types to subscribe to
     [MessageType.DATA, MessageType.SYSTEM], 
+    // The callback function to handle the message
     (message) => {
       // Handle different message types and topics
       if (message.type === MessageType.DATA && message.topic === TopicType.SYSTEM) {
         // System data (status updates)
         if (message.data?.status) {
+          // Update the server status
           setServerStatus({
             status: message.data.status,
             message: message.data.message || 'Server status update received',
@@ -62,13 +67,18 @@ export const Footer: React.FC = () => {
         });
       }
     },
-    [TopicType.SYSTEM] // Filter by system topic
+    // Filter by system topic
+    [TopicType.SYSTEM] 
   );
   
   // Subscribe to system topic on component mount
   useEffect(() => {
     if (unifiedWs.isConnected) {
+      // Subscribe to the system topic
       unifiedWs.subscribe([TopicType.SYSTEM]);
+      console.log(`👑🤩👍🏻 <<==== Subscribed to ${[TopicType.SYSTEM]}`);
+    } else {
+      console.log(`💩😢👎🏻 <<==== NOT subscribed to ${[TopicType.SYSTEM]}`);
     }
   }, [unifiedWs.isConnected]);
   
@@ -85,14 +95,24 @@ export const Footer: React.FC = () => {
   useEffect(() => {
     const isConnected = unifiedWs.isConnected;
     
+    // :-?
+    console.log(` === ?? === isConnected: ${isConnected}`);
+
+    // Update the combined WebSocket status
     setCombinedWsStatus({
-      isConnected,
-      connectedSockets: isConnected ? 1 : 0 // We now have only 1 socket
+      isConnected,                              // is the unified WebSocket connected?
+      connectedSockets: isConnected ? 1 : 0     // We now have only 1 socket
     });
     
+    // ------------------------------------------------------------
     // Update server status based on WebSocket connection state
-    // This ensures the status indicator correctly shows offline when disconnected
+    //   Ensures the status indicator correctly shows offline when disconnected
+    // ------------------------------------------------------------
+
+    // If the WebSocket is disconnected and the server is online, update the status to offline
     if (!isConnected && serverStatus.status === 'online') {
+
+      // Update the server status
       setServerStatus({
         status: 'offline',
         message: 'WebSocket connection lost',
@@ -101,7 +121,8 @@ export const Footer: React.FC = () => {
         loading: false
       });
     } else if (isConnected && serverStatus.status === 'offline') {
-      // If we've reconnected, update status to online
+
+      // Update the server status
       setServerStatus({
         status: 'online',
         message: 'Server is operating normally',
@@ -109,27 +130,63 @@ export const Footer: React.FC = () => {
         lastChecked: new Date().toISOString(),
         loading: false
       });
+
+      // Update the combined WebSocket connection status
+      setCombinedWsStatus({
+        isConnected: true,
+        connectedSockets: 1
+      });
+
+
+      // Start of ridiculous logging ------------------------------------------------------------
+
+      // ------------------------------------------------------------
+      // Log the unified WebSocket connection status
+      // ------------------------------------------------------------
+
+      // Log the unified WebSocket connection status
+      console.log("Unified WebSocket Connection Status:", {
+        connected: isConnected ? "Connected" : "Disconnected",
+        authenticated: unifiedWs.isAuthenticated ? "Yes" : "No",
+        connectionState: unifiedWs.connectionState,
+        error: unifiedWs.error,
+        showLightningBolt: isConnected
+      });
+
+      // ------------------------------------------------------------
+      // Log the combined WebSocket connection status
+      // ------------------------------------------------------------
+
+      // Log the combined WebSocket connection status
+      console.log("Combined WebSocket Connection Status:", {
+        isConnected: combinedWsStatus.isConnected,
+        connectedSockets: combinedWsStatus.connectedSockets
+      });
+
+      // ------------------------------------------------------------ 
+      // Log the server status
+      // ------------------------------------------------------------
+
+      // Log the server status
+      console.log("Server Status:", {
+        status: serverStatus.status,
+        message: serverStatus.message,
+        timestamp: serverStatus.timestamp,
+        lastChecked: serverStatus.lastChecked
+      });
     }
+        
+    // End of ridiculous logging ------------------------------------------------------------
     
-    console.log("Unified WebSocket Connection Status:", {
-      connected: isConnected ? "Connected" : "Disconnected",
-      authenticated: unifiedWs.isAuthenticated ? "Yes" : "No",
-      connectionState: unifiedWs.connectionState,
-      error: unifiedWs.error,
-      showLightningBolt: isConnected
-    });
   }, [unifiedWs.isConnected, unifiedWs.isAuthenticated, unifiedWs.connectionState, serverStatus.status]);
 
   // State to manage modal visibility
   const [showStatusModal, setShowStatusModal] = useState(false);
   
-  // We don't need the click outside handler anymore as we're handling it in the portal overlay
-  // The modal now closes when clicking the overlay directly
-
-  // Get color scheme and animation based on status
   // Get styles based on server status and unified WebSocket connection
   const getStatusStyles = () => {
-    // Base styles depending on status
+
+    // Base styles depending on server status
     const baseStyles = {
       online: {
         bgColor: "bg-green-500/10",
@@ -159,12 +216,19 @@ export const Footer: React.FC = () => {
         textColor: "text-red-400",
         animate: "",
       },
+      unknown: {
+        bgColor: "bg-gray-500/10",
+        dotColor: "bg-gray-500",
+        shadow: "shadow-[0_0_10px_rgba(128,128,128,0.5)]",
+        textColor: "text-gray-400",
+        animate: "",
+      },
     };
 
     // Get base styles for current status
     const currentStyles = baseStyles[serverStatus.status as keyof typeof baseStyles] || baseStyles.offline;
 
-    // Add WebSocket-specific enhancements when unified WebSocket is connected
+    // If the unified WebSocket is connected, include WebSocket-specific enhancements
     if (combinedWsStatus.isConnected) {
       return {
         ...currentStyles,
@@ -176,8 +240,7 @@ export const Footer: React.FC = () => {
         connectedSockets: 1
       };
     }
-
-    // Regular style without WebSocket enhancements
+    // Otherwise, use the regular style without WebSocket enhancements
     return {
       ...currentStyles,
       wsBorder: "",
@@ -187,8 +250,10 @@ export const Footer: React.FC = () => {
     };
   };
 
+  // Get the styles for the current status
   const styles = getStatusStyles();
 
+  // Return the footer
   return (
     <footer
       className="backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden relative"
@@ -196,11 +261,14 @@ export const Footer: React.FC = () => {
       {/* Full footer-width status background */}
       {serverStatus.status === 'maintenance' && (
         <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+     
           {/* Dark overlay for contrast */}
           <div className="absolute inset-0 bg-gray-900/20" />
           
-          {/* Top caution tape - full width with no left/right boundaries */}
+          {/* Top caution tape */}
           <div className="absolute top-0 w-screen left-1/2 -translate-x-1/2 h-[8px] overflow-visible">
+
+            {/* Caution tape */}
             <div 
               className="absolute top-0 left-[-100%] right-[-100%] h-full animate-caution-tape-scroll"
               style={{
@@ -213,10 +281,19 @@ export const Footer: React.FC = () => {
                 )`
               }}
             />
+
+            {/* Caution tape text */}
+            {/* [NEW TESTING 4/30/2025] */}
+            <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">Maintenance</span>
+            </div>
+
           </div>
           
-          {/* Bottom caution tape - full width with no left/right boundaries */}
+          {/* Bottom caution tape */}
           <div className="absolute bottom-0 w-screen left-1/2 -translate-x-1/2 h-[8px] overflow-visible">
+            
+            {/* Caution tape */}
             <div 
               className="absolute bottom-0 left-[-100%] right-[-100%] h-full animate-caution-tape-scroll-reverse"
               style={{
@@ -233,9 +310,11 @@ export const Footer: React.FC = () => {
           
           {/* Subtle yellow glow in the middle */}
           <div className="absolute inset-0 bg-yellow-500/10" />
+
         </div>
       )}
       
+      {/* Error state */}
       {serverStatus.status === 'error' && (
         <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
           {/* Soft orange gradient background */}
@@ -251,6 +330,7 @@ export const Footer: React.FC = () => {
         </div>
       )}
       
+      {/* Offline state */}
       {serverStatus.status === 'offline' && (
         <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
           {/* Soft red gradient background */}
@@ -267,6 +347,7 @@ export const Footer: React.FC = () => {
         </div>
       )}
       
+      {/* Online state */}
       {serverStatus.status === 'online' && (
         <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
           {/* Soft green gradient background */}
@@ -282,16 +363,24 @@ export const Footer: React.FC = () => {
         </div>
       )}
       
+      {/* Footer container for purpose of horizontal scroll */}
       <div className="max-w-7xl mx-auto px-0 relative z-10">
+        
+        {/* Footer parent - is compact/expanded based on scroll state */}
         <div
           className={`flex items-center min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
             ${isCompact ? "h-[40px]" : "h-[56px]"}`}
         >
+          
           {/* Left side - Links with horizontal scroll if needed */}
+          {/* [NEW 4/30/2025 - WAIT, HORIZONTAL SCROLL?! WHY?! WHAT?! IS THAT BAD?!?!] */}
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0 pl-4">
-            {/* Check if user is authenticated or if we're past the release date */}
+            
+            {/* Check if user is authenticated (is therefore assumed to be a pre-launch beta user) [OR] if we're past launch date/initial reveal (is now fully public) */}
             {(isAuthenticated() || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
               <>
+
+                {/* Left side - Links with horizontal scroll if needed */}
                 <div className="flex items-center space-x-4 shrink-0">
                   <a
                     href="https://status.degenduel.me/"
@@ -305,13 +394,13 @@ export const Footer: React.FC = () => {
                     to="/platform"
                     className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
                   >
-                    Platform
+                    Poop
                   </Link>
                   <Link
-                    to="/referrals"
+                    to="/faq"
                     className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
                   >
-                    Invite & Earn
+                    FAQ
                   </Link>
                   <Link
                     to="/support"
@@ -320,20 +409,25 @@ export const Footer: React.FC = () => {
                     Support
                   </Link>
                   
-                  {/* RPC Benchmark Dashboard - Only visible to admin users */}
+                  {/* RPC Benchmark Dashboard (only visible to admin users) */}
                   {isAdmin() && systemSettings.showDiagnostics && systemSettings.diagOptions.includes('rpc_benchmarks') && (
                     <div className="ml-2 pl-2 border-l border-gray-700">
                       <RPCBenchmarkFooter compactMode={isCompact} />
                     </div>
                   )}
                 </div>
+                
+                {/* Social links */}
                 <div className="flex items-center space-x-4 shrink-0">
+                  
+                  {/* Twitter (https://x.com/DegenDuelMe) */}
                   <a
                     href="https://x.com/DegenDuelMe"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-brand-400"
                   >
+                    {/* X logo */}
                     <span className="sr-only">X</span>
                     <svg
                       className="h-5 w-5"
@@ -343,12 +437,15 @@ export const Footer: React.FC = () => {
                       <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                     </svg>
                   </a>
+
+                  {/* Discord (https://discord.gg/dduel) */}
                   <a
-                    href="https://discord.gg/DegenDuelMe"
+                    href="https://discord.gg/dduel"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-brand-400"
                   >
+                    {/* Discord logo */}
                     <span className="sr-only">Discord</span>
                     <svg
                       className="h-5 w-5"
@@ -358,6 +455,25 @@ export const Footer: React.FC = () => {
                       <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
                     </svg>
                   </a>
+
+                  {/* Telegram (https://t.me/DegenDuel) */}
+                  <a
+                    href="https://t.me/DegenDuel"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-brand-400"
+                  >
+                    {/* Telegram logo */}
+                    <span className="sr-only">Telegram</span>
+                    <svg
+                      className="h-5 w-5"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 2L2 22h20L12 2zm0 18-10-10 10-10 10 10-10 10z" />
+                    </svg>
+                  </a>
+
                 </div>
               </>
             ) : (
@@ -386,6 +502,7 @@ export const Footer: React.FC = () => {
                 transition-all duration-300 relative cursor-pointer
                 hover:brightness-110 active:brightness-90
               `}
+              // Toggle the status modal
               onClick={() => setShowStatusModal(!showStatusModal)}
               title="Click to view WebSocket details and test connection"
             >
@@ -442,10 +559,12 @@ export const Footer: React.FC = () => {
                 onClick={(e) => {
                   // If clicking the backdrop (not the modal itself), close the modal
                   if (e.currentTarget === e.target) {
+                    // Close the modal
                     setShowStatusModal(false);
                   }
                 }}
               >
+                {/* WebSocket status modal */}
                 <div
                   className={`bg-gray-900 p-4 rounded-lg shadow-xl text-xs ${styles.textColor} border border-gray-700 w-full max-w-[400px] max-h-[90vh] overflow-auto relative`}
                   style={{
@@ -708,10 +827,35 @@ Last Check: ${new Date().toLocaleTimeString()}
                       Reset Connection
                     </button>
                   </div>
+
                 </div>
               </div>
             , document.body)}
+
           </div>
+
+          {/* Center Easter Egg */}
+          <div className="flex justify-between items-center">
+            {/* Subtle Easter Egg effect - only visible when activated */}
+            <div 
+              className={`text-xs transition-opacity duration-1000 ${
+                // Read from Zustand store to check if Easter egg is active
+                useStore((state) => state.isEasterEggActive) 
+                  ? 'opacity-100' 
+                  : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              {/* Hidden moon symbol that only appears when Easter egg is activated */}
+              <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 via-blue-300 to-fuchsia-400 overflow-hidden">
+                {/* Actual moon symbol */}
+                <span className="relative z-10">◑</span>
+                
+                {/* Subtle glow effect */}
+                <span className="absolute inset-0 bg-cyan-400/20 blur-sm rounded-full animate-pulse"></span>
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
     </footer>

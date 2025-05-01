@@ -1,17 +1,45 @@
-import { useState, useEffect } from 'react';
+// src/hooks/useSolanaWallet.ts
 
+/**
+ * Hook to detect and interact with Solana wallets in the browser
+ *   This hook is used to detect and interact with Solana wallets in the browser
+ *   It is used to detect the wallet by checking if the window.solana object exists
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @updated 2025-04-30
+ */
+
+import { useEffect, useState } from 'react';
+
+/**
+ * Solana wallet adapter type
+ * 
+ * @typedef {Object} SolanaWalletAdapter
+ * @property {string | null} publicKey - The public key of the wallet
+ * @property {boolean} connected - Whether the wallet is connected
+ * @property {boolean} connecting - Whether the wallet is connecting
+ * @property {function} disconnect - Disconnect from the wallet
+ * @property {function} connect - Connect to the wallet
+ * @property {function} signAndSendTransaction - Sign and send a transaction
+ */
 export type SolanaWalletAdapter = {
   publicKey: string | null;
   connected: boolean;
   connecting: boolean;
   disconnect: () => Promise<void>;
   connect: () => Promise<void>;
-  signAndSendTransaction: (serializedTransaction: string) => Promise<{signature: string}>;
+  signAndSendTransaction: (
+    serializedTransaction: string,
+    options?: { message?: string }
+  ) => Promise<{signature: string}>;
 };
 
 /**
  * Detect and interact with Solana wallets in the browser
  * This hook specifically targets modern Solana wallet adapters for blinks functionality
+ * 
+ * @returns {SolanaWalletAdapter} The wallet adapter
  */
 export function useSolanaWallet() {
   const [walletAdapter, setWalletAdapter] = useState<SolanaWalletAdapter | null>(null);
@@ -57,17 +85,22 @@ export function useSolanaWallet() {
                 setConnecting(false);
               }
             },
-            signAndSendTransaction: async (serializedTransaction: string) => {
+            signAndSendTransaction: async (
+              serializedTransaction: string,
+              options?: { message?: string }
+            ) => {
               try {
-                // In reality, you'd deserialize the transaction first
-                // For now, we're just simulating the functionality
                 if (!window.solana) {
                   throw new Error('No Solana wallet found');
                 }
+                
+                // Pass the transaction and message to the wallet's signAndSendTransaction method
                 const result = await window.solana.signAndSendTransaction({
-                  transaction: serializedTransaction
+                  transaction: serializedTransaction,
+                  message: options?.message
                 });
-                return { signature: result.signature || 'mock_signature' };
+                
+                return { signature: result.signature };
               } catch (e) {
                 console.error('[Solana Wallet] Transaction error:', e);
                 throw e;
@@ -135,8 +168,11 @@ export function useSolanaWallet() {
     }
   };
 
-  // Sign and send transaction
-  const signAndSendTransaction = async (serializedTransaction: string) => {
+  // Sign and send transaction with optional options
+  const signAndSendTransaction = async (
+    serializedTransaction: string,
+    options?: { message?: string }
+  ) => {
     if (!walletAdapter || !connected) {
       const notConnectedError = new Error('Wallet not connected');
       setError(notConnectedError);
@@ -144,7 +180,8 @@ export function useSolanaWallet() {
     }
     
     try {
-      return await walletAdapter.signAndSendTransaction(serializedTransaction);
+      // Pass both transaction and options to the wallet adapter
+      return await walletAdapter.signAndSendTransaction(serializedTransaction, options);
     } catch (e) {
       setError(e as Error);
       throw e;
@@ -163,7 +200,7 @@ export function useSolanaWallet() {
   };
 }
 
-// Add typings for the window object
+// Add typings for the window object (used by the wallet adapter)
 declare global {
   interface Window {
     solana?: {
@@ -171,7 +208,7 @@ declare global {
       publicKey?: { toString: () => string };
       connect: () => Promise<{ publicKey: { toString: () => string } }>;
       disconnect: () => Promise<void>;
-      signAndSendTransaction: (options: {transaction: any}) => Promise<{ signature: string }>;
+      signAndSendTransaction: (options: {transaction: any, message?: string}) => Promise<{ signature: string }>;
     };
   }
 }

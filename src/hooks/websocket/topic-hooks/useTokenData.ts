@@ -4,19 +4,30 @@
  * V69 Standardized WebSocket Hook for Token Data
  * This hook provides real-time updates for token data from the unified WebSocket system
  * 
+ * ⚠️ HOOK MIGRATION GUIDE ⚠️
+ * This is the IMPROVED v69 WebSocket implementation for token data.
+ * - For basic WebSocket operations: Use this hook directly
+ * - For UI components: Use hooks/useStandardizedTokenData.ts which builds on this hook
+ * 
+ * The complete hook migration path:
+ * 1. hooks/useTokenData.ts - Original implementation (legacy)
+ * 2. hooks/websocket/topic-hooks/useTokenData.ts - THIS FILE (v69 architecture)
+ * 3. hooks/useStandardizedTokenData.ts - UI standardization layer (recommended for components)
+ * 
  * @author Branch Manager
  * @created 2025-04-10
+ * @updated 2025-04-29 - Added migration guide
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Token } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
 import { TopicType } from '../index';
-import { TokenData } from '../../../types';
+import { MessageType } from '../types';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Default fallback tokens for when connection is unavailable
-const FALLBACK_TOKENS: TokenData[] = [
+const FALLBACK_TOKENS: Token[] = [
   {
     symbol: "SOL",
     name: "Solana",
@@ -25,6 +36,12 @@ const FALLBACK_TOKENS: TokenData[] = [
     volume24h: "420420069",
     change24h: "42069.69",
     status: "active",
+    contractAddress: "So11111111111111111111111111111111111111112",
+    liquidity: {
+      usd: "69420000",
+      base: "420000",
+      quote: "69000",
+    }
   },
 ];
 
@@ -47,7 +64,9 @@ interface WebSocketTokenMessage {
  */
 export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   // State for token data
-  const [tokens, setTokens] = useState<TokenData[]>(FALLBACK_TOKENS);
+
+  // Using Token interface
+  const [tokens, setTokens] = useState<Token[]>(FALLBACK_TOKENS);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date());
   const [initialized, setInitialized] = useState(false);

@@ -1,3 +1,7 @@
+// WHAT THE FUCK IS THIS FILE?!?!?!
+
+import { formatNumber } from '../../../utils/format';
+
 export const TOKEN_TICKER = 'DUEL';
 
 // Total supply of DUEL tokens
@@ -6,11 +10,12 @@ export const TOTAL_SUPPLY = 1_000_000_000;
 // Target market cap of $2,000,000
 // With SOL at $100.25, that's 19,950.12 SOL
 // Price per token = 19,950.12 SOL / 1,000,000,000 tokens
-export const TOKEN_PRICE = 0.00001995;
+export const TOKEN_PRICE = 0.00001995; // WTF!  This is wrong!
 // Exchange rate: 1 SOL = $100.25 USD
-export const SOL_TO_USD = 100.25;
+export const SOL_TO_USD = 145.25; // WTF!  This is wrong!
 
-const formatNumber = (num: number, decimals = 2, forceDecimals = false): string => {
+// Format a number with commas and optional decimals
+export const formatNumberCurrency = (num: number, decimals = 2, forceDecimals = false): string => {
   // For whole numbers, don't show decimals unless forced
   const actualDecimals = (!forceDecimals && Number.isInteger(num)) ? 0 : decimals;
   

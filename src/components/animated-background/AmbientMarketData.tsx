@@ -89,7 +89,7 @@ export const AmbientMarketData: React.FC = () => {
           symbol: token.symbol,
           name: token.name,
           logo:
-            token.imageUrl ||
+            token.images?.imageUrl ||
             `/assets/tokens/${token.symbol.toLowerCase()}.png`,
           price: currentPrice,
           priceChange: priceChange5m,
@@ -107,7 +107,7 @@ export const AmbientMarketData: React.FC = () => {
           symbol: token.symbol,
           name: token.name,
           logo:
-            token.imageUrl ||
+            token.images?.imageUrl ||
             `/assets/tokens/${token.symbol.toLowerCase()}.png`,
           price: currentPrice,
           priceChange: volumeChange,
@@ -123,7 +123,7 @@ export const AmbientMarketData: React.FC = () => {
           symbol: token.symbol,
           name: token.name,
           logo:
-            token.imageUrl ||
+            token.images?.imageUrl ||
             `/assets/tokens/${token.symbol.toLowerCase()}.png`,
           price: currentPrice,
           priceChange: Math.abs(priceChange5m),
@@ -148,7 +148,7 @@ export const AmbientMarketData: React.FC = () => {
             symbol: token.symbol,
             name: token.name,
             logo:
-              token.imageUrl ||
+              token.images?.imageUrl ||
               `/assets/tokens/${token.symbol.toLowerCase()}.png`,
             price: currentPrice,
             priceChange: 0,

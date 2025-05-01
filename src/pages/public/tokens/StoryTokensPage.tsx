@@ -102,6 +102,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '42000000000',
       volume24h: '1500000000',
       change24h: '5.63',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '120000000', 
         base: '1000000', 
@@ -128,6 +129,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '1320000000000',
       volume24h: '28500000000',
       change24h: '-2.34',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '820000000', 
         base: '12000000', 
@@ -153,6 +155,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '410000000000',
       volume24h: '12500000000',
       change24h: '2.25',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '450000000', 
         base: '8000000', 
@@ -178,6 +181,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '22000000000',
       volume24h: '1850000000',
       change24h: '8.75',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '95000000', 
         base: '5000000', 
@@ -203,6 +207,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '16100000000',
       volume24h: '587000000',
       change24h: '-1.89',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '78000000', 
         base: '4200000', 
@@ -228,6 +233,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '2350000000',
       volume24h: '120000000',
       change24h: '12.4',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '45000000', 
         base: '2200000', 
@@ -253,6 +259,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '5000000000',
       volume24h: '1500000000',
       change24h: '15.8',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '35000000', 
         base: '1800000', 
@@ -278,6 +285,7 @@ export const StoryTokensPage: React.FC = () => {
       marketCap: '1200000000',
       volume24h: '750000000',
       change24h: '25.3',
+      status: 'active', // Add required status field
       liquidity: { 
         usd: '25000000', 
         base: '1500000', 

@@ -6,8 +6,10 @@
  * This context provides a centralized Solana Connection management system
  * that automatically selects the appropriate RPC endpoint based on user role.
  * 
- * @author Claude
- * @last-modified 2025-04-24
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-24
+ * @updated 2025-05-01
  */
 
 import { Connection } from '@solana/web3.js';

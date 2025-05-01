@@ -430,9 +430,20 @@ export default {
         "cybergrid-pulse-slow": "cybergrid-pulse-slow 4s ease-in-out infinite",
         "pulse-brief": "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1)",
         "reveal-content": "fadeIn 0.8s ease-out forwards",
-
+        "pulse-subtle": "pulse-subtle 3s infinite",
       },
       keyframes: {
+        "pulse-subtle": {
+          "0%": {
+            "box-shadow": "0 0 0 0 rgba(16, 185, 129, 0.3)"
+          },
+          "70%": {
+            "box-shadow": "0 0 0 6px rgba(16, 185, 129, 0)"
+          },
+          "100%": {
+            "box-shadow": "0 0 0 0 rgba(16, 185, 129, 0)"
+          }
+        },
         shine: {
           "0%": { "background-position": "300% center" },
           "100%": { "background-position": "0% center" },
@@ -521,6 +532,11 @@ export default {
         "caution-flow-right": {
           "0%": { "background-position": "200% 0%" },
           "100%": { "background-position": "0% 0%" },
+        },
+        "loadingBar": {
+          "0%": { "transform": "translateX(-100%)" },
+          "50%": { "transform": "translateX(0%)" },
+          "100%": { "transform": "translateX(100%)" },
         },
         "caution-tape-scroll": {
           "0%": { "transform": "translateX(0)" },

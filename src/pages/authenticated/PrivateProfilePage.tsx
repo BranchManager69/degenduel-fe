@@ -11,14 +11,16 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
+import { Link } from "react-router-dom";
 
 import { AchievementsSection } from "../../components/achievements/AchievementsSection";
 import { UserProgress } from "../../components/achievements/UserProgress";
-import SimpleAvatar from "../../components/character-avatars";
 import { ContestHistorySection } from "../../components/profile/contest-history/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/profile-header/ProfileHeaderSection";
 import SocialAccountsPanel from "../../components/profile/SocialAccountsPanel";
 import { UserStatsSection } from "../../components/profile/user-stats/UserStatsSection";
+import UserProfileExtras from "../../components/UserProfileExtras";
+import { AuthDebugPanel } from "../../components/debug";
 import { useStore } from "../../store/useStore";
 
 // Private Profile Page
@@ -93,6 +95,42 @@ export const PrivateProfilePage: React.FC = () => {
             >
               <UserStatsSection />
             </motion.div>
+            
+            {/* Contest Credits */}
+            <motion.div
+              key="contest-credits"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-4"
+            >
+              <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
+                Contest Credits
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
+              </h2>
+              
+              <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg overflow-hidden border border-brand-500/20">
+                <div className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Create Your Own Contests</h3>
+                      <p className="text-gray-400 max-w-xl">
+                        Purchase credits to create custom contests that are available to all users.
+                        Each contest creation requires one credit.
+                      </p>
+                    </div>
+                    <div className="mt-4 md:mt-0">
+                      <Link to="/contest-credits" className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
+                        <span>Manage Credits</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
 
             {/* Social Accounts */}
             <motion.div
@@ -140,123 +178,29 @@ export const PrivateProfilePage: React.FC = () => {
                 <ContestHistorySection />
               </div>
               
-              {/* Character Avatars Section */}
-              <div className="mt-8 space-y-4">
+              {/* Admin Wallet Monitoring */}
+              <div className="space-y-4">
                 <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-                  Character Avatars
+                  Wallet Monitoring
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
                 </h2>
-                
-                <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg overflow-hidden border border-brand-500/20">
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">Your Personas</h3>
-                    
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 mb-8">
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          type="degen"
-                          name="degen"
-                          size={80}
-                          animate={true}
-                        />
-                        <span className="mt-2 text-center text-sm font-semibold">Degen</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          type="trader"
-                          name="trader"
-                          size={80}
-                          animate={true}
-                          colorScheme="blue"
-                        />
-                        <span className="mt-2 text-center text-sm font-semibold">Trader</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          type="winner"
-                          name="winner"
-                          size={80}
-                          animate={true}
-                          colorScheme="green"
-                        />
-                        <span className="mt-2 text-center text-sm font-semibold">Winner</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          type="loser"
-                          name="loser"
-                          size={80}
-                          animate={true}
-                          colorScheme="red"
-                        />
-                        <span className="mt-2 text-center text-sm font-semibold">Loser</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          type="admin"
-                          name="admin"
-                          size={80}
-                          animate={true}
-                          colorScheme="orange"
-                        />
-                        <span className="mt-2 text-center text-sm font-semibold">Admin</span>
-                      </div>
-                    </div>
-                    
-                    <h3 className="text-lg font-semibold mt-8 mb-4">Degen Companions</h3>
-                    
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          name="cryptoking"
-                          size={64}
-                          animate={true}
-                        />
-                        <span className="mt-2 text-center text-xs">cryptoking</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          name="hodlqueen"
-                          size={64}
-                          animate={true}
-                        />
-                        <span className="mt-2 text-center text-xs">hodlqueen</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          name="moonboy"
-                          size={64}
-                          animate={true}
-                        />
-                        <span className="mt-2 text-center text-xs">moonboy</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          name="diamondhands"
-                          size={64}
-                          animate={true}
-                        />
-                        <span className="mt-2 text-center text-xs">diamondhands</span>
-                      </div>
-                      
-                      <div className="flex flex-col items-center">
-                        <SimpleAvatar 
-                          name="laserbull" 
-                          size={64}
-                          animate={true}
-                        />
-                        <span className="mt-2 text-center text-xs">laserbull</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {user?.wallet_address && (
+                  <UserProfileExtras 
+                    walletAddress={user.wallet_address}
+                    nickname={user.nickname || undefined}
+                    showWalletSelector={true}
+                    compareMode={true}
+                  />
+                )}
+              </div>
+              
+              {/* Auth Debug Panel */}
+              <div className="space-y-4 mt-8">
+                <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
+                  Auth Debug
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
+                </h2>
+                <AuthDebugPanel position="floating" showByDefault={true} />
               </div>
               
             </motion.div>

@@ -7,6 +7,8 @@ interface UserProfileExtrasProps {
   walletAddress: string;
   nickname?: string;
   className?: string;
+  showWalletSelector?: boolean;
+  compareMode?: boolean;
 }
 
 /**
@@ -16,7 +18,9 @@ interface UserProfileExtrasProps {
 export const UserProfileExtras: React.FC<UserProfileExtrasProps> = ({
   walletAddress,
   nickname,
-  className = ''
+  className = '',
+  showWalletSelector = false,
+  compareMode = false
 }) => {
   return (
     <div className={`space-y-6 ${className}`}>
@@ -27,6 +31,8 @@ export const UserProfileExtras: React.FC<UserProfileExtrasProps> = ({
         description="Historical SOL balance tracking (admin view only)"
         height={250}
         showControls={true}
+        showWalletSelector={showWalletSelector}
+        compareMode={compareMode}
       />
       
       {/* Other profile extras can be added here */}

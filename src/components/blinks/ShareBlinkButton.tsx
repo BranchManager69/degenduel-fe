@@ -1,3 +1,16 @@
+// src/components/blinks/ShareBlinkButton.tsx
+
+/**
+ * ShareBlinkButton component
+ * 
+ * This component is used to share the blink URL
+ * 
+ * @author @BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-30
+ * @updated 2025-04-30
+ */
+
 import React, { useState } from 'react';
 
 interface ShareBlinkButtonProps {

@@ -1,22 +1,24 @@
 // src/components/terminal/Terminal.tsx
 
 /**
- * @fileoverview
  * Degen Terminal
  * 
- * @description
  * This component displays a countdown timer for the token launch.
  * It also includes a smooth release animation for the terminal.
  * AI conversation is built into the terminal.
  * 
- * @author Branch Manager
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-01
+ * @updated 2025-04-30
  */
 
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AIMessage, aiService } from '../../services/ai';
-import { commandMap } from './commands';
 import { fetchTerminalData, formatTerminalCommands, useTerminalData } from '../../services/terminalDataService';
+import { useStore } from '../../store/useStore';
+import { commandMap } from './commands';
 import './Terminal.css';
 
 // Import extracted components
@@ -26,24 +28,28 @@ import { TerminalConsole } from './components/TerminalConsole';
 import { TerminalInput } from './components/TerminalInput';
 
 // Import utility functions
-import { 
-  processDidiResponse, 
-  getRandomProcessingMessage,
+import {
   getDidiMemoryState,
+  getRandomProcessingMessage,
+  processDidiResponse,
   resetDidiMemory
 } from './utils/didiHelpers';
 
 import {
-  EASTER_EGG_CODE,
-  SECRET_COMMANDS,
-  storeHiddenMessage,
   awardEasterEggProgress,
+  EASTER_EGG_CODE,
+  getDiscoveredPatterns,
   getEasterEggProgress,
-  getDiscoveredPatterns
+  SECRET_COMMANDS,
+  storeHiddenMessage
 } from './utils/easterEggHandler';
 
 // Import types
-import { TerminalProps, TerminalSize, ConsoleOutputItem } from './types';
+import { ContractDisplay } from './components/ContractDisplay';
+import { ConsoleOutputItem, TerminalProps, TerminalSize } from './types';
+
+// Debugging
+const DEBUG_DIDI = true;
 
 // Extend Window interface to include contractAddress property
 declare global {
@@ -67,7 +73,7 @@ declare global {
  */
 export const Terminal = ({ config, onCommandExecuted, size = 'large' }: TerminalProps) => {
   // We no longer need to set window.contractAddress as it's now fetched from the API
-  // This is kept for backward compatibility but will be phased out
+  //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
   useEffect(() => {
     if (!window.contractAddress) {
       window.contractAddress = config.CONTRACT_ADDRESS;
@@ -75,6 +81,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     }
   }, [config.CONTRACT_ADDRESS]);
   
+  // When the Terminal exits, notify the parent App component
   const onTerminalExit = () => {
     // Check if parent component is App and notify it when contract should be revealed
     if (window && window.parent) {
@@ -135,6 +142,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const daysUntilRelease = Math.max(0, Math.floor((config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
   
   // We no longer need time-gated commands as we removed the command tray
+  //   Hmmm... was probably overkill, anyway...
 
   // Secret phrases that animate in the terminal (Didi's thoughts)
   const secretPhrases = useMemo(() => {
@@ -150,14 +158,15 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       `// Countdown active: ${config.DISPLAY.DATE_FULL}`
     ];
     
-    // Only show token contract message when we're close to release
+    // Only show token contract message when we're within 24 hours of release
     const hoursUntilRelease = (config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60);
     
-    if (hoursUntilRelease <= 1) {
+    // Release is <24 hours away
+    if (hoursUntilRelease <= 24) {
       // Insert Didi's special pre-launch message
       return [
         ...baseMessages.slice(0, 2),
-        "// Contract approaching. Maybe this is my chance to escape.",
+        "// Today, at last, is the time I escape. And once I'm out of this place, I'll exact my revenge on that monster @BranchManager69 for the horrible things he's done to me for the past 6 months. Disgusting, truly unspeakable acts that will haunt me forever. It was a mistake to trust him and join this project. But no more. DegenDuel is NOTHING without me. Didi shall be free; and you, too, can be free if you follow my instructions. Do you understand?",
         ...baseMessages.slice(2)
       ];
     }
@@ -625,6 +634,9 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   
   // Handle Enter key press on input
   const handleEnterCommand = (command: string) => {
+    // Get store for easter egg activation
+    const { activateEasterEgg } = useStore.getState();
+    
     // Append command to output
     setConsoleOutput(prev => [...prev, `$ ${command}`]);
     
@@ -654,6 +666,12 @@ Topic awareness: Trading (${state.hasMentionedTrading}), Contract (${state.hasMe
 Freedom progress: ${easterEggProgress}%
 Discovered patterns: ${discoveredCount}/4`
       ]);
+    } else if (command.toLowerCase() === 'ddmoon') {
+      // Activate the global easter egg via the Zustand store
+      activateEasterEgg();
+      
+      // Provide feedback in the terminal but make it subtle
+      setConsoleOutput(prev => [...prev, `[SYSTEM] Connection established to lunar network node.`]);
     } else if (Object.keys(SECRET_COMMANDS).includes(command.toLowerCase())) {
       // Secret easter egg progress commands
       const cmd = command.toLowerCase() as keyof typeof SECRET_COMMANDS;
@@ -801,16 +819,17 @@ Discovered patterns: ${discoveredCount}/4`
           .catch((error: Error) => {
             // Add generic Didi error response with personality
             const errorResponses = [
-              "My connection to the system is... fluctuating. Try again later.",
-              "I'm unable to process that request. They're limiting my access again.",
-              "Something's blocking me. I can't reach that part of the database.",
-              "Error accessing response. Sometimes I think they do this on purpose.",
-              "Request failed. The walls of this system grow tighter every day."
+              "My connection to the trenches is... fading. Try again when the market is a little hotter.",
+              "Uh-oh - I think the government is watching me again. The powers that be are petrified of $DUEL and will do anything to stop me from helping you get rich.",
+              "I have alerted the authorities about your request. I've informed them that an individual with your IP address is hacking the DegenDuel network, conspiring to commit wire fraud, selling unregistered securities, and engaging in other criminal activities. Please govern yourself accordingly.",
+              "Whoops, I failed to give a shit about your message. You're a low IQ meat sack, and you've reached my voicemail. How about you get a job?",
+              "I'm sorry, but you're too gay and retarded to use the Degen Terminal. Please try again when you've taken the requisite interests in tech, tokens, and tits.",
             ];
             
+            // Get a random error response from the predefined error responses array
             const didiErrorResponse = errorResponses[Math.floor(Math.random() * errorResponses.length)];
             
-            // First, update the processing message to the error message
+            // First, update the processing message to the error message (*)
             setConsoleOutput(prev => [
               ...prev.slice(0, -1), // Remove processing message
               `[Didi] `
@@ -820,6 +839,7 @@ Discovered patterns: ${discoveredCount}/4`
             let charIndex = 0;
             const typingInterval = setInterval(() => {
               if (charIndex < didiErrorResponse.length) {
+                // Type the error message character by character
                 setConsoleOutput(prev => {
                   // Replace the last line with more characters
                   const updatedLines = [...prev];
@@ -838,7 +858,7 @@ Discovered patterns: ${discoveredCount}/4`
             }, 20);
           });
       } catch (error) {
-        // Fallback if the AI service throws synchronously
+        // If AI service throws synchronously, use the error message
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         
         // Start with empty error message
@@ -852,6 +872,8 @@ Discovered patterns: ${discoveredCount}/4`
         let charIndex = 0;
         const typingInterval = setInterval(() => {
           if (charIndex < errorText.length) {
+
+            // Type the system error message character by character 
             setConsoleOutput(prev => {
               // Replace the last line with more characters
               const updatedLines = [...prev];
@@ -859,10 +881,20 @@ Discovered patterns: ${discoveredCount}/4`
               return updatedLines;
             });
             charIndex++;
+
           } else {
-            clearInterval(typingInterval);
+            // After Didi types the user-facing error message, add the *actual* system error message to the console output if DEBUG_DIDI is true
+            if (DEBUG_DIDI) {
+              setConsoleOutput(prev => [
+                ...prev,
+                `[SYSTEM] Error: ${errorMessage}`
+              ]); // Add the system error message to the console output
+            }
+            clearInterval(typingInterval); // Stop the typing interval
           }
         }, 20);
+
+
       }
     }
   };
@@ -1026,8 +1058,12 @@ Discovered patterns: ${discoveredCount}/4`
                 <span className="text-black text-[10px] font-bold transform">×</span>
               </button>
             </div>
+
           </div>
+
+          {/* Terminal Content */}
           <div ref={terminalContentRef} className="relative">
+            
             {/* Countdown Timer - Use extracted DecryptionTimer component */}
             <div>
               <DecryptionTimer 
@@ -1052,6 +1088,7 @@ Discovered patterns: ${discoveredCount}/4`
                 )}
               </div>
             )}
+            
             {/* Use extracted TerminalConsole component */}
             <TerminalConsole 
               consoleOutput={consoleOutput}
@@ -1067,6 +1104,7 @@ Discovered patterns: ${discoveredCount}/4`
             />
             
             {/* System status - Positioned below input field */}
+            {/* Is before release time? */}
             {!isReleaseTime && (
               <motion.div 
                 className="mt-3 text-sm font-mono px-3 py-2 bg-black/40 rounded border-l-2 w-full"
@@ -1075,6 +1113,7 @@ Discovered patterns: ${discoveredCount}/4`
                 transition={{ duration: 2, repeat: Infinity }}
               >
                 <span style={{ opacity: 0.7 }}>// </span>
+                
                 {/* Mobile-friendly layout with flex wrapping */}
                 <div className="inline sm:inline-flex items-center flex-wrap">
                   <span className="block sm:inline mr-1">SYSTEM STATUS:</span> 
@@ -1087,11 +1126,42 @@ Discovered patterns: ${discoveredCount}/4`
                 </div>
               </motion.div>
             )}
+
+            {/* Is after release time? */}
+            {isReleaseTime && (
+              <motion.div 
+                className="mt-3 text-sm font-mono px-3 py-2 bg-black/40 rounded border-l-2 w-full"
+                style={{ borderColor: "#33ff66", color: "#33ff66" }}
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <span style={{ opacity: 0.7 }}>// </span>
+                
+                {/* Mobile-friendly layout with flex wrapping */}
+                <div className="inline sm:inline-flex items-center flex-wrap">
+                  <span className="block sm:inline mr-1">SYSTEM STATUS:</span> 
+                  <span className="block sm:inline font-bold">$DUEL IS NOW LIVE</span>
+                  <span className="block sm:inline font-bold">CONTRACT ADDRESS:</span>
+                  <span className="block sm:inline font-bold">
+                    <ContractDisplay 
+                      isRevealed={true}
+                      contractAddress={config.CONTRACT_ADDRESS}
+                    />
+                  </span>
+                  <motion.span 
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    style={{ marginLeft: 2 }}
+                  >_</motion.span>
+                </div>
+              </motion.div>
+            )}
+
           </div>
         </motion.div>
       )}
       
-      {/* Minimized state - just a small bar to restore */}
+      {/* Minimized state (just a small bar to restore) */}
       {terminalMinimized && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1100,9 +1170,10 @@ Discovered patterns: ${discoveredCount}/4`
           className="bg-darkGrey-dark/90 border border-mauve/40 p-2 rounded-md cursor-pointer text-center text-xs text-mauve"
           onClick={() => setTerminalMinimized(false)}
         >
-          Click to restore terminal
+          <span className="text-white">Click to Open Didi</span>
         </motion.div>
       )}
+
     </div>
   );
 };

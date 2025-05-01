@@ -1,12 +1,24 @@
-import React, { useEffect, useRef } from "react";
+// src/components/animated-background/TokenVerse.tsx
 
-import { useTokenData } from "../../contexts/TokenDataContext";
+/**
+ * @description A component that displays a 3D tokenverse background
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-02-14
+ * @updated 2025-04-30
+ */
+
+import React, { useEffect, useRef, useState } from "react";
+import { useStandardizedTokenData } from "../../hooks/useStandardizedTokenData";
 import { useStore } from "../../store/useStore";
+import { Token } from "../../types";
 import TokenVerseScene from "../../utils/three/TokenVerseScene";
 
+// TokenVerse background component
 export const TokenVerse: React.FC = () => {
-  const { uiDebug } = useStore();
-  const { tokens, isConnected, lastUpdate } = useTokenData();
+  const [error, setError] = useState<string | null>(null);
+  const { uiDebug, maintenanceMode, user } = useStore();
+  const { tokens, isConnected, lastUpdate } = useStandardizedTokenData("all");
   const {
     enabled,
     intensity,
@@ -16,8 +28,21 @@ export const TokenVerse: React.FC = () => {
     updateFrequency,
   } = uiDebug.backgrounds.tokenVerse;
 
+  // Refs for the container and scene
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<TokenVerseScene | null>(null);
+
+  // Effect to check for Maintenance Mode and handle accordingly
+  useEffect(() => {
+    if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
+      setError(
+        "System is currently in maintenance mode. Please check back later.",
+      );
+      return;
+    } else if (error?.toLowerCase().includes("maintenance mode")) {
+      setError(null);
+    }
+  }, [maintenanceMode, user, error]);
 
   // Initialize scene when component mounts and enabled is true
   useEffect(() => {
@@ -63,8 +88,14 @@ export const TokenVerse: React.FC = () => {
   useEffect(() => {
     if (!isConnected || !tokens.length || !sceneRef.current) return;
 
+    // Ensure we only pass tokens with valid contract addresses
+    const validTokens = tokens.filter((token): token is Token => typeof token.contractAddress === 'string');
+    // Log tokens that got filtered out
+    const invalidTokens = tokens.filter((token): token is Token => typeof token.contractAddress !== 'string');
+    console.log("[TokenVerse] Invalid tokens:", invalidTokens);
+
     // Update the scene with new token data
-    sceneRef.current.updateTokenData(tokens);
+    sceneRef.current.updateTokenData(validTokens);
   }, [tokens, isConnected, lastUpdate]);
 
   if (!enabled) {

@@ -1,18 +1,26 @@
 // src/components/WalletBalanceChart.tsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+/**
+ * @author BranchManager69
+ * @description A component that displays a chart of the balance of a wallet over time
+ * @version 1.9.0
+ * @created 2025-04-28
+ * @updated 2025-04-30
+ */
+
+import axios from 'axios';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  CartesianGrid,
+  Legend,
   Line,
   LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
 } from 'recharts';
 import { useUnifiedWebSocket } from '../hooks/websocket/useUnifiedWebSocket';
-import axios from 'axios';
 
 type TimeRange = '24h' | '7d' | '30d' | 'all';
 
@@ -28,16 +36,29 @@ interface ChartSeries {
   visible: boolean;
 }
 
+interface WalletApiParams {
+  startDate?: string;
+  endDate?: string;
+  wallets?: string[];
+  limit?: number;
+  nonZeroOnly?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 interface WalletBalanceChartProps {
   title?: string;
   description?: string;
   walletAddress?: string;
   viewType?: 'single' | 'compare' | 'total' | 'average' | 'top';
   showControls?: boolean;
+  showWalletSelector?: boolean;
+  compareMode?: boolean;
   height?: number | string;
   className?: string;
   onDataLoaded?: (data: any) => void;
   onError?: (error: string) => void;
+  onWalletChange?: (walletAddress: string) => void;
 }
 
 const COLORS = [
@@ -59,16 +80,37 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
   walletAddress,
   viewType = 'single',
   showControls = true,
+  showWalletSelector = false,
+  compareMode = false,
   height = 300,
   className = '',
   onDataLoaded,
   onError,
+  onWalletChange,
 }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
   const [chartData, setChartData] = useState<DataPoint[]>([]);
   const [series, setSeries] = useState<ChartSeries[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchWallet, setSearchWallet] = useState<string>(walletAddress || '');
+  const [selectedWallets, setSelectedWallets] = useState<string[]>(walletAddress ? [walletAddress] : []);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Update search wallet when walletAddress prop changes
+  useEffect(() => {
+    if (walletAddress && walletAddress !== searchWallet) {
+      setSearchWallet(walletAddress);
+      
+      // Only replace the selected wallets array if we're not in compare mode
+      if (!compareMode) {
+        setSelectedWallets([walletAddress]);
+      } else if (!selectedWallets.includes(walletAddress)) {
+        // In compare mode, add the wallet if it's not already there
+        setSelectedWallets(prev => [...prev, walletAddress]);
+      }
+    }
+  }, [walletAddress]);
   
   // Provide the required parameters to useUnifiedWebSocket
   const { isConnected, isAuthenticated, request } = useUnifiedWebSocket(
@@ -77,15 +119,15 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
     () => {} // Empty callback since we're not using the subscription directly
   );
   
-  // Determine the appropriate action based on view type
-  const getAction = () => {
-    switch (viewType) {
-      case 'single': return 'wallet-balance/history';
-      case 'compare': return 'wallet-balance/compare';
-      case 'total': return 'wallet-balance/total';
-      case 'average': return 'wallet-balance/average';
-      case 'top': return 'wallet-balance/top';
-      default: return 'wallet-balance/history';
+  // Determine the REST API endpoint based on view type
+  const getApiEndpoint = (wallet?: string, type = viewType) => {
+    switch (type) {
+      case 'single': return wallet ? `/api/admin/wallet-monitoring/balances/${wallet}` : '/api/admin/wallet-monitoring/balances';
+      case 'compare': return '/api/admin/wallet-monitoring/balances/compare';
+      case 'total': return '/api/admin/wallet-monitoring/balances/total';
+      case 'average': return '/api/admin/wallet-monitoring/balances/average';
+      case 'top': return '/api/admin/wallet-monitoring/balances/top';
+      default: return '/api/admin/wallet-monitoring/balances';
     }
   };
   
@@ -125,110 +167,59 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
   // Fetch data from REST API as a fallback
   const fetchFromRestApi = async () => {
     try {
-      if (!walletAddress && viewType === 'single') {
+      if (!walletAddress && viewType === 'single' && !compareMode) {
         throw new Error('Wallet address is required for single wallet view');
       }
       
       const timeParams = getTimeRangeForRestApi();
-      let url = '';
-      let params = { ...timeParams };
+      let url = getApiEndpoint(walletAddress);
+      let params: WalletApiParams = { ...timeParams };
       
-      if (viewType === 'single' && walletAddress) {
-        // Use the specific wallet balance endpoint
-        url = `/api/admin/wallet-monitoring/balances/${walletAddress}`;
-      } else {
-        // Use the general balances endpoint
-        url = '/api/admin/wallet-monitoring/balances';
-        
-        // Apply additional filters - ensuring type compatibility
-        if (viewType === 'top') {
-          // Create a temporary variable of the right type
-          const topParams: typeof params & {
-            limit: number;
-            nonZeroOnly: boolean;
-            sortBy: string;
-            sortOrder: string;
-          } = {
-            ...params,
-            limit: 10,
-            nonZeroOnly: true,
-            sortBy: 'balance',
-            sortOrder: 'desc'
-          };
-          // Type assertion to handle the incompatible types
-          params = topParams as typeof params;
-        }
+      // For compare mode, we need to include all selected wallets
+      if (compareMode && selectedWallets.length > 0) {
+        params.wallets = selectedWallets;
+      }
+      
+      // Apply additional filters for top wallets view
+      if (viewType === 'top') {
+        params = {
+          ...params,
+          limit: 10,
+          nonZeroOnly: true,
+          sortBy: 'balance',
+          sortOrder: 'desc'
+        };
       }
       
       const response = await axios.get(url, { params });
       
       if (response.data && response.data.success) {
-        let formattedData;
-        let seriesData: ChartSeries[] = [];
+        // Process API response using our helper function
+        const { chartData: formattedData, seriesData } = processApiResponse(response.data);
         
-        if (viewType === 'single' && response.data.balances) {
-          // For single wallet view, format the data points
-          formattedData = response.data.balances.map((point: any) => ({
-            timestamp: point.timestamp,
-            balance: point.balance_sol
-          }));
-          
-          // Add a single series for this wallet
-          seriesData = [{
-            id: 'balance',
-            name: walletAddress 
-              ? `Wallet ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-              : 'Balance',
-            color: COLORS[0],
-            visible: true
-          }];
-        } else {
-          // For other views, handle multiple wallets or aggregated data
-          // This would need to be adjusted based on the actual API response structure
-          if (response.data.balances) {
-            // Group data by wallet and format for chart
-            const walletSeries: Record<string, ChartSeries> = {};
-            const timeMap: Record<string, DataPoint> = {};
-            
-            // Process each balance record
-            response.data.balances.forEach((balance: any) => {
-              const walletId = balance.wallet_address || 'total';
-              const name = balance.nickname || `Wallet ${walletId.slice(0, 6)}...`;
-              
-              // Create series if it doesn't exist
-              if (!walletSeries[walletId]) {
-                walletSeries[walletId] = {
-                  id: walletId,
-                  name: name,
-                  color: COLORS[Object.keys(walletSeries).length % COLORS.length],
-                  visible: true
-                };
-              }
-              
-              // Add data point
-              const timestamp = new Date(balance.timestamp || balance.last_updated).toISOString();
-              if (!timeMap[timestamp]) {
-                timeMap[timestamp] = { timestamp };
-              }
-              
-              timeMap[timestamp][walletId] = balance.balance_sol;
-            });
-            
-            // Convert timeMap to array for chart
-            formattedData = Object.values(timeMap);
-            seriesData = Object.values(walletSeries);
-          }
-        }
-        
-        // Handle callback and state updates
-        if (formattedData) {
+        // Update state with processed data
+        if (formattedData && formattedData.length > 0) {
           setChartData(formattedData);
-          setSeries(seriesData);
           
+          if (seriesData && seriesData.length > 0) {
+            setSeries(seriesData);
+          } else if (viewType === 'single' && walletAddress) {
+            // Create a default series for single wallet view
+            setSeries([{
+              id: 'balance',
+              name: walletAddress 
+                ? `Wallet ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                : 'Balance',
+              color: COLORS[0],
+              visible: true
+            }]);
+          }
+          
+          // Handle callback if provided
           if (onDataLoaded) {
             onDataLoaded({
               history: formattedData,
-              series: seriesData,
+              series: seriesData || [],
               wallet: response.data.wallet,
               summary: response.data.summary,
               trends: response.data.trends
@@ -250,81 +241,55 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
     setIsLoading(true);
     setError(null);
     
-    // Try WebSocket first if authenticated and connected
-    if (isConnected && isAuthenticated) {
-      let timeRangeParam;
-      switch (timeRange) {
-        case '24h': timeRangeParam = 'last_24_hours'; break;
-        case '7d': timeRangeParam = 'last_7_days'; break;
-        case '30d': timeRangeParam = 'last_30_days'; break;
-        case 'all': timeRangeParam = 'all'; break;
-      }
-      
-      const params: any = { 
-        range: timeRangeParam 
-      };
-      
-      // Add wallet address if provided
-      if (walletAddress && (viewType === 'single' || viewType === 'compare')) {
-        params.wallet = walletAddress;
-      }
-      
-      // Type assertion to make TypeScript happy with promise return
-      (request('admin', getAction(), params) as unknown as Promise<{
-        success: boolean;
-        data: any;
-        message?: string;
-      }>).then(response => {
-        if (response.success && response.data) {
-          setChartData(formatChartData(response.data));
+    // Use REST API to get initial data
+    fetchFromRestApi()
+      .then(success => {
+        // If REST API succeeded, and we have WebSocket connection 
+        // we can also subscribe to real-time updates
+        if (success && isConnected && isAuthenticated) {
+          // Subscribe to real-time wallet balance updates for selected wallets
+          const wallets = compareMode ? selectedWallets : (walletAddress ? [walletAddress] : []);
           
-          // Extract series from the data
-          if (response.data.series) {
-            const seriesData = response.data.series.map((s: any, index: number) => ({
-              id: s.id,
-              name: s.name,
-              color: s.color || COLORS[index % COLORS.length],
-              visible: true
-            }));
-            setSeries(seriesData);
+          if (wallets.length > 0) {
+            // Properly formatted subscribe command for v69 WS system
+            const subscribeData = {
+              type: 'SUBSCRIBE',
+              topics: ['wallet'],
+              data: {
+                wallets: wallets,
+                type: 'balance',
+              }
+            };
+            
+            // Send actual WebSocket subscription
+            request('wallet', 'subscribe', subscribeData);
           }
-          
-          // Callback with data if provided
-          if (onDataLoaded) {
-            onDataLoaded(response.data);
-          }
-        } else {
-          throw new Error(response.message || 'Failed to fetch balance history');
         }
-      }).catch(err => {
-        console.warn('WebSocket fetch failed, trying REST API fallback:', err);
-        
-        // Try REST API as fallback
-        fetchFromRestApi()
-          .catch(restErr => {
-            console.error('REST API fallback also failed:', restErr);
-            const errorMessage = restErr instanceof Error ? restErr.message : 'Failed to fetch balance history';
-            setError(errorMessage);
-            if (onError) onError(errorMessage);
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
+      })
+      .catch(err => {
+        console.error('Error fetching balance history:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch balance history';
+        setError(errorMessage);
+        if (onError) onError(errorMessage);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-    } else {
-      // No WebSocket connection, use REST API directly
-      fetchFromRestApi()
-        .catch(err => {
-          console.error('Error fetching balance history:', err);
-          const errorMessage = err instanceof Error ? err.message : 'Failed to fetch balance history';
-          setError(errorMessage);
-          if (onError) onError(errorMessage);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    }
-  }, [isConnected, isAuthenticated, timeRange, walletAddress, viewType, request, onDataLoaded]);
+      
+    // Cleanup subscription on unmount
+    return () => {
+      if (isConnected) {
+        const wallets = compareMode ? selectedWallets : (walletAddress ? [walletAddress] : []);
+        if (wallets.length > 0) {
+          // Unsubscribe to clean up
+          request('wallet', 'unsubscribe', {
+            type: 'balance',
+            wallets: wallets
+          });
+        }
+      }
+    };
+  }, [isConnected, isAuthenticated, timeRange, walletAddress, selectedWallets, compareMode, viewType, request, onDataLoaded]);
   
   // Make sure the loading state is properly reset when the WebSocket request succeeds
   useEffect(() => {
@@ -333,9 +298,122 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
     }
   }, [chartData]);
   
-  // Format the raw API data into chart-friendly format
-  const formatChartData = (data: any): DataPoint[] => {
-    return data.history || [];
+  // Add a wallet to the comparison
+  const addWalletToComparison = async () => {
+    if (!searchWallet || selectedWallets.includes(searchWallet)) return;
+    
+    setIsSearching(true);
+    
+    try {
+      // First try WebSocket if connected to validate wallet exists
+      if (isConnected && isAuthenticated) {
+        try {
+          // Check if wallet exists via WebSocket
+          const walletExists = await request('admin', 'wallet-balance/exists', { 
+            wallet: searchWallet 
+          }) as unknown as { 
+            success: boolean; 
+            data: { exists: boolean } 
+          };
+          
+          if (walletExists && walletExists.success === true && 
+              walletExists.data && walletExists.data.exists === true) {
+            
+            // Add to selected wallets
+            setSelectedWallets(prev => [...prev, searchWallet]);
+            
+            // If this is the first wallet, update the view type to compare
+            if (viewType === 'single' && onWalletChange) {
+              onWalletChange(searchWallet);
+            }
+            
+            // Clear search field
+            setSearchWallet('');
+            return;
+          }
+        } catch (wsError) {
+          console.warn('WebSocket wallet check failed, trying REST API fallback:', wsError);
+        }
+      }
+      
+      // Fallback to REST API
+      try {
+        const response = await fetch(`/api/admin/wallet-monitoring/balances/${searchWallet}?limit=1`);
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          // Add to selected wallets
+          setSelectedWallets(prev => [...prev, searchWallet]);
+          
+          // If onWalletChange is provided, call it
+          if (onWalletChange) {
+            onWalletChange(searchWallet);
+          }
+          
+          // Clear search field
+          setSearchWallet('');
+        } else {
+          throw new Error('Wallet not found or has no balance history');
+        }
+      } catch (restError) {
+        console.error('Error checking wallet via REST API:', restError);
+        throw restError;
+      }
+    } catch (error) {
+      console.error('Error adding wallet to comparison:', error);
+      // You could add toast notification here
+    } finally {
+      setIsSearching(false);
+    }
+  };
+  
+  // Remove a wallet from the comparison
+  const removeWalletFromComparison = (wallet: string) => {
+    setSelectedWallets(prev => prev.filter(w => w !== wallet));
+    
+    // If removing the last or only wallet, notify parent
+    if (selectedWallets.length <= 1 && onWalletChange) {
+      onWalletChange('');
+    } else if (onWalletChange && walletAddress === wallet) {
+      // If removing the primary wallet, switch to the first remaining one
+      const remaining = selectedWallets.filter(w => w !== wallet);
+      if (remaining.length > 0) {
+        onWalletChange(remaining[0]);
+      }
+    }
+  };
+  
+  // Process the API response data and format for chart display
+  const processApiResponse = (response: any): { 
+    chartData: DataPoint[],
+    seriesData?: ChartSeries[]
+  } => {
+    if (!response || !response.success) {
+      return { chartData: [] };
+    }
+    
+    const chartData = response.balances || response.history || [];
+    let seriesData: ChartSeries[] = [];
+
+    // Extract series data if available
+    if (response.series) {
+      seriesData = response.series.map((s: any, index: number) => ({
+        id: s.id,
+        name: s.name,
+        color: s.color || COLORS[index % COLORS.length],
+        visible: true
+      }));
+    } else if (compareMode && response.wallets) {
+      // Create series from wallet data
+      seriesData = response.wallets.map((wallet: any, index: number) => ({
+        id: wallet.address,
+        name: wallet.nickname || `Wallet ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
+        color: COLORS[index % COLORS.length],
+        visible: true
+      }));
+    }
+
+    return { chartData, seriesData: seriesData.length > 0 ? seriesData : undefined };
   };
   
   // Toggle visibility of a series
@@ -422,6 +500,7 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
     return null;
   };
   
+  // If the chart is loading, render a loading spinner
   if (isLoading) {
     return (
       <div className={`flex justify-center items-center ${typeof height === 'number' ? `h-[${height}px]` : `h-${height}`} ${className}`}>
@@ -430,6 +509,7 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
     );
   }
   
+  // If there is an error, render a message
   if (error) {
     return (
       <div className={`bg-red-500/10 border border-red-500/20 rounded-lg p-4 ${className}`}>
@@ -438,6 +518,7 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
     );
   }
   
+  // If there is no chart data, render a message
   if (!chartData.length) {
     return (
       <div className={`bg-dark-200/50 border border-dark-400 rounded-lg p-4 ${className}`}>
@@ -446,8 +527,10 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
     );
   }
   
+  // Render the wallet balance chart
   return (
     <div className={`bg-dark-200/50 backdrop-blur-sm border border-brand-500/20 rounded-lg p-4 ${className}`}>
+      {/* Title and description */}
       {title && (
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -481,6 +564,66 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
         </div>
       )}
       
+      {/* Wallet Selector */}
+      {showWalletSelector && (
+        <div className="mb-4">
+          <div className="flex flex-col space-y-2">
+            {/* Search and add wallet */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchWallet}
+                onChange={(e) => setSearchWallet(e.target.value)}
+                placeholder="Enter wallet address..."
+                className="flex-1 bg-dark-300/50 border border-dark-400/50 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+              />
+              <button
+                onClick={addWalletToComparison}
+                disabled={!searchWallet || isSearching || selectedWallets.includes(searchWallet)}
+                className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                  !searchWallet || isSearching || selectedWallets.includes(searchWallet)
+                    ? 'bg-brand-500/20 text-brand-400/50 cursor-not-allowed'
+                    : 'bg-brand-500/30 hover:bg-brand-500/40 text-brand-300'
+                }`}
+              >
+                {isSearching ? (
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 rounded-full border-2 border-brand-500/30 border-t-brand-500 animate-spin mr-2"></div>
+                    Add
+                  </div>
+                ) : (
+                  compareMode ? 'Add to Compare' : 'Set Wallet'
+                )}
+              </button>
+            </div>
+            
+            {/* Selected wallets */}
+            {(compareMode || selectedWallets.length > 1) && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedWallets.map(wallet => (
+                  <div key={wallet} 
+                    className="bg-dark-300/30 border border-dark-400/50 rounded-full px-2 py-1 text-xs flex items-center gap-1"
+                  >
+                    <span className="text-gray-300 truncate max-w-[120px]">
+                      {wallet.length > 8 ? `${wallet.slice(0, 4)}...${wallet.slice(-4)}` : wallet}
+                    </span>
+                    <button 
+                      onClick={() => removeWalletFromComparison(wallet)}
+                      className="text-gray-400 hover:text-gray-200 h-4 w-4 flex items-center justify-center rounded-full"
+                    >
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L7 7M1 7L7 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Chart */}
       <div style={{ height: typeof height === 'number' ? `${height}px` : height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -541,6 +684,7 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
         </ResponsiveContainer>
       </div>
       
+      {/* Series toggle */}
       {showControls && series.length > 1 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {series.map(s => (
