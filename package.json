@@ -45,7 +45,7 @@
     "--------------- OTHER COMMANDS ------------------": ""
   },
   "dependencies": {
-    "degenduel-shared": "workspace:*",
+    "degenduel-shared": "file:../degenduel-shared",
     "@bonfida/spl-name-service": "^3.0.10",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.1.1",
