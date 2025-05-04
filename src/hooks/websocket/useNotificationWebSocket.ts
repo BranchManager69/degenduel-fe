@@ -8,7 +8,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
 import { TopicType, useUnifiedWebSocket } from './index';
-import { MessageType, SOCKET_TYPES } from './types';
+import { SOCKET_TYPES } from './types';
+import { MessageType } from './index';
 
 export interface Notification {
   id: string;

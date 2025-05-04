@@ -11,7 +11,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { MessageType, SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
+import { MessageType } from './index';
 import useWebSocket from './useWebSocket';
 
 // SkyDuel service types

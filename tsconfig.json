@@ -41,6 +41,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "archive/websocket"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -5,6 +5,11 @@
  * 
  * Centralizes wallet authentication flow for both Jupiter and original wallet implementations
  * 
+ * WARNING: REFACTOR PENDING (May 2025)
+ * This is one of THREE separate authentication services in the codebase.
+ * This specific file handles wallet authentication.
+ * The complete auth system will be consolidated into a single service.
+ * 
  * @author @BranchManager69
  * @last-modified 2025-04-02
  */

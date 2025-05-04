@@ -25,7 +25,7 @@ const ExampleUsage: React.FC = () => {
         
         <div className="text-4xl font-bold">VS</div>
         
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center" style={{ transform: 'scaleX(-1)' }}>
           <SpriteAnimation 
             type="red" 
             width={150} 

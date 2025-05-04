@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUnifiedWebSocket } from './useUnifiedWebSocket';
-import { MessageType } from './types';
+import { MessageType } from './index';
 
 // Types
 interface BenchmarkProvider {

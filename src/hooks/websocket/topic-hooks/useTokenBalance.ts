@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Token balance interfaces
@@ -150,7 +150,7 @@ export function useTokenBalance(walletAddress?: string, tokenSymbol = 'DEGEN') {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'token-balance-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.WALLET, 'wallet-balance', TopicType.SYSTEM] // v69 topics
   );

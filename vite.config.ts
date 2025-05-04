@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
 import { ModuleFormat } from "rollup";
+import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig, LogLevel, UserConfig } from "vite";
 
 // https://vitejs.dev/config/
@@ -36,7 +37,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
     return {
       resolve: {
         alias: {
-          'degen-components': degenComponentsPath
+          'degen-components': degenComponentsPath,
+          'use-sync-external-store/shim/with-selector': path.resolve(__dirname, '.storybook/shims/use-sync-external-store.js')
         }
       },
       server: {
@@ -177,7 +179,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
           },
         },
       },
-      plugins: [react()],
+      plugins: [
+        react(),
+        visualizer({
+          open: false, // Changed from true to false - don't auto-open browser on headless server
+          filename: 'stats-local.html',
+          gzipSize: true,
+          brotliSize: true,
+        }),
+      ],
       optimizeDeps: {
         include: ["react", "react-dom", "react-router-dom"],
         exclude: ["@react-three/fiber", "@react-three/drei", "degen-components"],
@@ -222,7 +232,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
   const config: UserConfig = {
     resolve: {
       alias: {
-        'degen-components': degenComponentsPath
+        'degen-components': degenComponentsPath,
+        'use-sync-external-store/shim/with-selector': path.resolve(__dirname, '.storybook/shims/use-sync-external-store.js')
       }
     },
     server: {
@@ -379,6 +390,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
             "@babel/preset-typescript",
           ],
         },
+      }),
+      visualizer({
+        open: false, // Changed from true to false - don't auto-open browser on headless server
+        filename: 'stats.html',
+        gzipSize: true,
+        brotliSize: true,
       }),
     ],
     optimizeDeps: {

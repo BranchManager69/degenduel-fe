@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MobileMenuButton } from '../components/layout/MobileMenuButton';
-import { MemoryRouter } from 'react-router-dom';
 
 // Mock the useStore hook
 jest.mock('../store/useStore', () => ({
@@ -85,6 +84,7 @@ const meta = {
         { name: 'dark', value: '#121212' },
       ],
     },
+    route: '/',
   },
   decorators: [
     (Story) => (
@@ -106,9 +106,7 @@ const meta = {
           borderRadius: '8px',
           backdropFilter: 'blur(4px)'
         }}>
-          <MemoryRouter>
-            <Story />
-          </MemoryRouter>
+          <Story />
         </div>
       </div>
     ),

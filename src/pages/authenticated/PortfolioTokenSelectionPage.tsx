@@ -319,7 +319,7 @@ export const TokenSelection: React.FC = () => {
 
       console.log("Creating Solana connection...");
       const connection = new Connection(
-        import.meta.env.VITE_SOLANA_RPC_MAINNET,
+        '/api/solana-rpc', // UPDATED: Using server-side Solana proxy instead of direct RPC endpoint
         "confirmed",
       );
 

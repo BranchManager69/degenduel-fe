@@ -4,6 +4,11 @@
  * This file contains the API endpoints for the authentication service.
  * It is used to get the current session data, verify wallet and Privy auth tokens.
  * 
+ * WARNING: REFACTOR PENDING (May 2025)
+ * This is one of THREE separate authentication services in the codebase.
+ * This file specifically handles Twitter auth and Privy contexts.
+ * The complete auth system will be consolidated into a single service.
+ * 
  * @author @BranchManager69
  * @last-modified 2025-04-02
  */

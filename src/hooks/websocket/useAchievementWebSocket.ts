@@ -10,7 +10,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { MessageType, TopicType } from './WebSocketManager';
+import { MessageType, TopicType } from './index';
 import { useUnifiedWebSocket } from './index';
 import { SOCKET_TYPES } from './types';
 

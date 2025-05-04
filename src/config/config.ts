@@ -86,23 +86,21 @@ export const DD_PLATFORM_FEE = isDev // Contests vig
   ? 0.1 // 10% in dev
   : 0.1; // 10% in prod
 
-/* Superadmin Secret */
-export const SUPERADMIN_SECRET = import.meta.env.VITE_SUPERADMIN_SECRET;
+/* Config values */
+// Using auth context for admin operations
 
 /* Treasury Wallet */
 export const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET;
 
-/* Virtuals Game SDK API Key */
-export const VIRTUALS_GAME_SDK_API_KEY = import.meta.env.VITE_VIRTUALS_GAME_SDK_API_KEY;
-
-/* OpenAI API Key */
-export const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-
-/* Moralis API Key */
-//export const MORALIS_API_KEY = import.meta.env.VITE_MORALIS_API_KEY;
-
-/* OpenRouter API Key */
-//export const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+/* API KEYS REMOVED
+ * All external API interactions have been moved to server-side endpoints
+ * for improved security and performance.
+ * 
+ * If you need to interact with OpenAI, Virtuals, or any other external API,
+ * use the appropriate server-side endpoint instead of direct API calls.
+ * 
+ * DO NOT ADD API KEYS TO CLIENT-SIDE CODE!
+ */
 
 /* Feature Flags */
 export const FEATURE_FLAGS = {

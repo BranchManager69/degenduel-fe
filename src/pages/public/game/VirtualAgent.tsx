@@ -1,4 +1,4 @@
-import { CharacterRoom } from "@virtual-protocol/react-virtual-ai";
+//import { CharacterRoom } from "@virtual-protocol/react-virtual-ai";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Card } from "../../../components/ui/Card";
@@ -67,6 +67,8 @@ export const VirtualAgentPage: React.FC = () => {
     },
     [user?.wallet_address, userName],
   );
+  console.log("Virtual Agent Page - Delete Me!");
+  console.log(user, initAccessToken);
 
   // Wait for component to mount before rendering CharacterRoom
   // This helps prevent hydration issues
@@ -233,12 +235,13 @@ export const VirtualAgentPage: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <CharacterRoom
-                      initAccessToken={initAccessToken}
-                      userName={userName}
-                      virtualId={1}
-                      virtualName="Virtual Branch"
-                    />
+                    //<CharacterRoom
+                    //  initAccessToken={initAccessToken}
+                    //  userName={userName}
+                    //  virtualId={1}
+                    //  virtualName="Virtual Branch"
+                    ///>
+                    <div>Virtual Agent</div>
                   )}
                 </div>
               )}

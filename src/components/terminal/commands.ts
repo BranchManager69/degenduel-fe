@@ -1,6 +1,8 @@
 /**
  * Terminal command responses loaded from server
  * 
+ * // THIS DOES NOT WORK PROPERLY!
+ * 
  * This file now uses the terminalDataService to load all terminal data
  * from a centralized server endpoint.
  */
@@ -9,16 +11,8 @@ import { fetchTerminalData, formatTerminalCommands } from '../../services/termin
 
 // Default commands to use while loading from the server
 export const defaultCommandMap: Record<string, string> = {
-  help: "Available commands: help, status, info, contract, stats, clear, banner\nAI: Type any question to speak with the AI assistant.",
-  status: "Platform status: Loading from server...",
-  info: "DegenDuel: Loading information from server...",
-  contract: "Contract address will be revealed at launch.",
-  stats: "Loading statistics from server...",
-  roadmap: "Loading roadmap from server...",
-  tokenomics: "Loading tokenomics from server...",
-  "launch-details": "Loading launch details from server...",
-  analytics: "Loading analytics from server...",
-  clear: "", // Special case handled in Terminal.tsx
+  help: `Commands: you, are, gay \nDidi: Hi, I'm Didi, the DegenDuel AI. How may I help you retard?`,
+  clear: ``, // Special case handled in Terminal.tsx
 
   // @ts-ignore - This is a special case for dynamic content
   banner: function getBanner() {

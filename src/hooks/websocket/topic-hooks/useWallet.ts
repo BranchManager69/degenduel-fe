@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Wallet data interfaces based on backend API documentation
@@ -208,7 +208,7 @@ export function useWallet(walletAddress?: string) {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'wallet-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.WALLET, 'wallet-balance', TopicType.SYSTEM] // Both wallet and wallet-balance topics
   );

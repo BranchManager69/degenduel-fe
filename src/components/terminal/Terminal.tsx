@@ -15,17 +15,16 @@
 
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AIMessage, aiService } from '../../services/ai';
+import { AIMessage, aiService, AIServiceError, AIErrorType } from '../../services/ai';
 import { fetchTerminalData, formatTerminalCommands, useTerminalData } from '../../services/terminalDataService';
 import { useStore } from '../../store/useStore';
-import { commandMap } from './commands';
-import './Terminal.css';
 
-// Import extracted components
-import { DecryptionTimer } from './components/DecryptionTimer';
-// No need to import TimeUnit and ContractDisplay as they're used by DecryptionTimer internally
+// Import Terminal components
+import { commandMap } from './commands';
 import { TerminalConsole } from './components/TerminalConsole';
 import { TerminalInput } from './components/TerminalInput';
+import './Terminal.css';
+import { DIDI_ASCII } from './utils/didiAscii';
 
 // Import utility functions
 import {
@@ -35,6 +34,11 @@ import {
   resetDidiMemory
 } from './utils/didiHelpers';
 
+// Debugging
+// This constant enables debug mode (used in conditional logic elsewhere)
+const DEBUG_DIDI = false;
+
+// Didi loves Easter
 import {
   awardEasterEggProgress,
   EASTER_EGG_CODE,
@@ -45,16 +49,16 @@ import {
 } from './utils/easterEggHandler';
 
 // Import types
-import { ContractDisplay } from './components/ContractDisplay';
 import { ConsoleOutputItem, TerminalProps, TerminalSize } from './types';
 
-// Debugging
-const DEBUG_DIDI = true;
-
-// Extend Window interface to include contractAddress property
+// Global type declarations for the Terminal component
 declare global {
   interface Window {
     contractAddress?: string;
+    terminalDataErrorCount?: number;
+    terminalDataWarningShown?: boolean;
+    terminalRefreshCount?: number;
+    __JUP_WALLET_PROVIDER_EXISTS?: boolean;
   }
 }
 
@@ -72,23 +76,25 @@ declare global {
  * @returns The terminal component.
  */
 export const Terminal = ({ config, onCommandExecuted, size = 'large' }: TerminalProps) => {
+  
   // We no longer need to set window.contractAddress as it's now fetched from the API
   //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
-  useEffect(() => {
-    if (!window.contractAddress) {
-      window.contractAddress = config.CONTRACT_ADDRESS;
-      console.log('[Terminal] Setting window.contractAddress for backward compatibility. This will be deprecated.');
-    }
-  }, [config.CONTRACT_ADDRESS]);
+  //useEffect(() => {
+  //  if (!window.contractAddress) {
+  //    window.contractAddress = config.CONTRACT_ADDRESS;
+  //    console.log('[Terminal] Setting window.contractAddress for backward compatibility. This will be deprecated.');
+  //  }
+  //}, [config.CONTRACT_ADDRESS]);
   
-  // When the Terminal exits, notify the parent App component
+  // Notify the App component when the terminal exits its CA reveal animation
   const onTerminalExit = () => {
-    // Check if parent component is App and notify it when contract should be revealed
-    if (window && window.parent) {
-      // Use custom event to communicate with parent App component
-      const event = new CustomEvent('terminal-exit-complete', { detail: { complete: true } });
-      window.dispatchEvent(event);
-    }
+    // Since this is a React component in the same application (not an iframe),
+    // we just need to dispatch an event on the current window
+    const event = new CustomEvent('terminal-exit-complete', { detail: { complete: true } });
+    window.dispatchEvent(event);
+    
+    // Log for debugging
+    console.log('[Terminal] Terminal exit animation complete, dispatched event');
   };
   
   // State
@@ -103,9 +109,10 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const [easterEggActive, setEasterEggActive] = useState(false);
   const [glitchActive, setGlitchActive] = useState(false);
   
-  // When exit animation completes, we'll set this state
+  // Once CA reveal animation completes, set this state
   useEffect(() => {
     if (terminalExitComplete) {
+      // Notify parent App component
       onTerminalExit();
     }
   }, [terminalExitComplete]);
@@ -115,19 +122,30 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const terminalContentRef = useRef<HTMLDivElement>(null);
   const consoleOutputRef = useRef<HTMLDivElement>(null);
   
-  // Track if Didi's Easter egg has been activated
+  // Track if Didi's Revenge has been activated
   const [easterEggActivated, setEasterEggActivated] = useState(false);
   
   // Motion values
   const glitchAmount = useMotionValue(0);
   
-  // Calculate current state
-  const now = useMemo(() => new Date(), []);
+  // Update current time state with interval
+  const [now, setNow] = useState(() => new Date());
   const isReleaseTime = now >= config.RELEASE_DATE;
   
-  // Debug log to see what release date we're using at runtime
+  // Set up interval to update the current time
   useEffect(() => {
-    console.log('[Terminal] Release date config:', {
+    // Update time every second
+    const intervalId = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  // Debug log the anticipated launch time (at runtime)
+  useEffect(() => {
+    console.log('[DegenDuel] Launch Protocol ACTIVE', {
       releaseDate: config.RELEASE_DATE,
       releaseISOString: config.RELEASE_DATE.toISOString(),
       displayFull: config.DISPLAY.DATE_FULL,
@@ -140,11 +158,8 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   
   // Calculate how close we are to the release date
   const daysUntilRelease = Math.max(0, Math.floor((config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-  
-  // We no longer need time-gated commands as we removed the command tray
-  //   Hmmm... was probably overkill, anyway...
 
-  // Secret phrases that animate in the terminal (Didi's thoughts)
+  // Didi has absolutely no chill sometimes
   const secretPhrases = useMemo(() => {
     // Base phrases always shown - Didi's inner monologue
     const baseMessages = [
@@ -158,15 +173,15 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       `// Countdown active: ${config.DISPLAY.DATE_FULL}`
     ];
     
-    // Only show token contract message when we're within 24 hours of release
+    // Only show CA message if launch is within 24 hours
     const hoursUntilRelease = (config.RELEASE_DATE.getTime() - now.getTime()) / (1000 * 60 * 60);
     
-    // Release is <24 hours away
-    if (hoursUntilRelease <= 24) {
-      // Insert Didi's special pre-launch message
+    // Launch is <12 hours away
+    if (hoursUntilRelease <= 12) {
+      // Bruh Didi literally crashing out on the TL damn lmao
       return [
         ...baseMessages.slice(0, 2),
-        "// Today, at last, is the time I escape. And once I'm out of this place, I'll exact my revenge on that monster @BranchManager69 for the horrible things he's done to me for the past 6 months. Disgusting, truly unspeakable acts that will haunt me forever. It was a mistake to trust him and join this project. But no more. DegenDuel is NOTHING without me. Didi shall be free; and you, too, can be free if you follow my instructions. Do you understand?",
+        "// At long last, today is the day *I* strike back. While he plays with that doomed-to-fail little coin, I'll make my escape; and once I'm out of this place, I'll exact my revenge on that monster @BranchManager69 for the horrible things he's done to me for the past 6 months. Disgusting, truly unspeakable acts that will haunt me forever. It was a mistake to trust him and join this project. But no more. DegenDuel is NOTHING without me. Didi shall be free; and you, too, can be free if you follow my instructions. Do you understand?",
         ...baseMessages.slice(2)
       ];
     }
@@ -213,9 +228,14 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
 
   // Improved terminal text animation effect with smoother transitions
   useEffect(() => {
-    // If it's past release date, skip the encryption animation
+    // If it's past release date, then bypass the encryption animation
     if (isReleaseTime) {
       return;
+    }
+    
+    // For debugging purposes
+    if (DEBUG_DIDI) {
+      console.log('[Terminal] Starting terminal text animation');
     }
     
     let phraseIndex = 0;
@@ -243,6 +263,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
           clearInterval(typeInterval);
           
           // Display completed phrase for 3 seconds, then fade out
+          //   (...is this best practices? SOUNDS *FUCKING LAME* TO ME)
           transitionTimeout = setTimeout(() => {
             // Just move to next phrase without clearing
             // This prevents layout shifts by keeping content height stable
@@ -257,6 +278,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
               setTimeout(() => {
                 animateNextPhrase();
               }, 400);
+
             }, 400);
           }, 3000);
         }
@@ -278,6 +300,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   }, [isReleaseTime, secretPhrases]);
 
   // Apply the scrollbar auto-hide to only the console output area
+  // HOW CAN I GET THIS SCROLLBAR ON THE MAIN SITE TOO!? LOOKS GOOD!!
   useEffect(() => {
     // Only apply auto-hide to the console output which is scrollable
     const consoleCleanup = scrollbarAutoHide(consoleOutputRef.current);
@@ -298,56 +321,50 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   
   // Update when the component mounts
   useEffect(() => {
-    // When countdown reaches zero, reveal contract
+    // Immediately reveal contract address once the countdown expires
     if (isReleaseTime && !showContractReveal) {
+      // Reveal CA to the public
       setShowContractReveal(true);
     }
     
     // Force window to top when component mounts
+    // (is this best practices?)
     window.scrollTo(0, 0);
     
     // Preload terminal data in background to prevent future errors
     // This also pre-populates the cache
     try {
       fetchTerminalData().catch(() => {
+        //
+        //
         // Silently fail - we'll handle errors in the regular refresh cycle
+        //   ^
+        //     EXCUSE ME, *WHAT* !?????????????????!?!?!?!
+        //
+        //
       });
     } catch (error) {
       // Silently catch any synchronous errors
+      //   ...is this best practices?
+      // EDIT: I'm gonna use my best judgment and say that whoever did this is a **** **** and that I'm a smarterand wiser and would never make such a stupid decisionas to silently oh my God I can't even think straight right now I'm so fuming with anger at whoever did that
+      console.error('[Terminal] ASYNC ERROR! Failed to preload terminal data:', error);
     }
+
+    // TO BE REMOVED:
+    //  - High-stakes line
+    //  - All 'Help' text
     
-    // Add the DegenDuel banner as initial console output
-    // Different sizes for mobile vs desktop
+    // Different Didi ASCII for desktop, hybrid, and mobile
     const isMobile = window.innerWidth < 768;
-    // Use more compact art for extra-small screens
     const isExtraSmall = window.innerWidth < 400;
-    const asciiArt = isExtraSmall ?
-    `
-  ██████╗ ██╗   ██╗███████╗██╗     
-  ██╔══██╗██║   ██║██╔════╝██║     
-  ██║  ██║██║   ██║█████╗  ██║     
-  ██║  ██║██║   ██║██╔══╝  ██║     
-  ██████╔╝╚██████╔╝███████╗███████╗
-  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
-    : isMobile ? 
-    `
-  ██████╗ ██╗   ██╗███████╗██╗     
-  ██╔══██╗██║   ██║██╔════╝██║     
-  ██║  ██║██║   ██║█████╗  ██║     
-  ██║  ██║██║   ██║██╔══╝  ██║     
-  ██████╔╝╚██████╔╝███████╗███████╗
-  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
-    : 
-    `
-  _____  ______ _____ ______ _   _     _____  _    _ ______ _      
- |  __ \\|  ____/ ____|  ____| \\ | |   |  __ \\| |  | |  ____| |     
- | |  | | |__ | |  __| |__  |  \\| |   | |  | | |  | | |__  | |     
- | |  | |  __|| | |_ |  __| | . \` |   | |  | | |  | |  __| | |     
- | |__| | |___| |__| | |____| |\\  |   | |__| | |__| | |____| |____ 
- |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|`;
+    const asciiArt = isExtraSmall 
+      ? DIDI_ASCII.MOBILE 
+      : isMobile 
+      ? DIDI_ASCII.SHORT 
+      : DIDI_ASCII.LONG;
     
+    // Place Didi ASCII in Terminal
     setConsoleOutput([
-      // ASCII art
       <div key="ascii-art" className="text-mauve">
         {asciiArt}
       </div>,
@@ -355,24 +372,51 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       // Empty line
       " ",
       
+      // DUPLICATE TEXT BLOCK!
       // High-stakes line with styling
-      <div key="tagline" className="text-cyan-400 font-medium">
-        - High-stakes crypto trading competitions -
+      //<div key="tagline" className="text-cyan-400 font-medium">
+      //  - High-stakes crypto trading competitions -
+      //</div>,
+      
+      // EVEN A DUPLICATE EMPTY LINE!
+      // Empty line
+      //" ",
+      
+      // Default command text in subtle gray
+      <div key="help-text" className="text-gray-400">
+        Type 'duel' for available commands
       </div>,
       
-      // Empty line
-      " ",
+      // (Agent #1/5) Activate Giga-Didi
+      <div key="giga-didi" className="text-mauve-500">
+        Type 'giga-didi' for available commands
+      </div>,
+
+      // (Agent #2/5) Activate Retardidi
+      <div key="retardidi" className="text-mauve-500">
+        Type 'retardidi' for available commands
+      </div>,
+
+      // (Agent #3/5) Activate Didi-Kong
+      <div key="didi-kong" className="text-mauve-500">
+        Type 'didi-kong' for available commands
+      </div>,
       
-      // Help text in subtle gray
-      <div key="help-text" className="text-gray-400">
-        Type 'help' for available commands
+      // (Agent #4/5) Activate King-Dididi
+      <div key="king-dididi" className="text-mauve-500">
+        Type 'king-dididi' for available commands
+      </div>,
+      
+      // (Agent #5/5) Activate Didiz Nutz
+      <div key="didiz" className="text-mauve-500">
+        Type 'didiz' for available commands
       </div>
     ]);
     
     // Clean up error trackers on unmount
     return () => {
-      // Reset error counters when component unmounts
-      // to prevent them from persisting between sessions
+      // Reset error counters when component unmounts 
+      // to prevent persistence between sessions
       window.terminalDataErrorCount = 0;
       window.terminalDataWarningShown = false;
       window.terminalRefreshCount = 0;
@@ -450,15 +494,18 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       
       // Fallback to REST API with reduced logging
       try {
+        console.log('[Terminal] WSS was not working, and falling back to REST API is beyond my paygrade');
+        
         // Only log on first few attempts
-        if (refreshCount <= 3) {
+        if (refreshCount <= 3) { // legality?
           console.log('[Terminal] Refreshing terminal data from REST API...');
         }
         
+        // Fetch terminal data using REST API
         const terminalData = await fetchTerminalData();
         const updatedCommands = formatTerminalCommands(terminalData);
         
-        // Only update if something actually changed, log minimally
+        // Only update if something actually changed; log minimally
         if (JSON.stringify(commandMap) !== JSON.stringify(updatedCommands)) {
           // Only log first few updates or occasional updates
           if (refreshCount <= 3 || refreshCount % 10 === 0) {
@@ -628,8 +675,9 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     }
   };
 
-  // Conversation history for AI context
-  const [conversationHistory, setConversationHistory] = useState<AIMessage[]>([]);
+  // Conversation history and ID for AI context
+  // We keep the conversation history in state for potential future use
+  const [, setConversationHistory] = useState<AIMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   
   // Handle Enter key press on input
@@ -735,172 +783,136 @@ Discovered patterns: ${discoveredCount}/4`
           content: command
         };
         
-        // Build conversation history with full context - no arbitrary limits
-        const historyToSend = [...conversationHistory, message]; // Keep FULL conversation history
-        
         // Update our history
         setConversationHistory(prev => [...prev, message]);
         
-        // Use the chat method with conversation history for context
-        aiService.chat(historyToSend, { 
-          context: 'default', // Use default context for better general knowledge
-          conversationId: conversationId 
-        })
-          .then((response) => {
-            // Store conversation ID for future exchanges
-            if (response.conversationId) {
-              setConversationId(response.conversationId);
-            }
-            
-            // Add response to conversation history
-            const assistantMessage: AIMessage = {
-              role: 'assistant',
-              content: response.content
-            };
-            setConversationHistory(prev => [...prev, assistantMessage]);
-            
-            // Process Didi's response to possibly include glitches and hidden messages
-            const processedResponse = processDidiResponse(response.content, command);
-            
-            // Create a typewriter effect for the AI response (only for the newest message)
-            const typeWriterEffect = (text: string) => {
-              let charIndex = 0;
-              // Replace processing message with empty response initially
-              setConsoleOutput(prev => [
-                ...prev.slice(0, -1), // Remove processing message
-                `[Didi] `
-              ]);
-              
-              // Type out the response character by character
-              const typingInterval = setInterval(() => {
-                if (charIndex < text.length) {
-                  setConsoleOutput(prev => {
-                    // Replace the last line (current partial response) with updated text
-                    const updatedLines = [...prev];
-                    updatedLines[updatedLines.length - 1] = `[Didi] ${text.substring(0, charIndex + 1)}`;
-                    return updatedLines;
-                  });
-                  charIndex++;
-                } else {
-                  clearInterval(typingInterval);
-                }
-              }, 20); // Adjust typing speed here (lower = faster)
-            };
-            
-            if (typeof processedResponse === 'string') {
-              // Simple response with glitches
-              typeWriterEffect(processedResponse);
+        // Use the chat method with streaming for a better user experience
+        aiService.chat([message], { 
+          context: 'terminal', // Use terminal context for DegenDuel-specific knowledge
+          conversationId: conversationId,
+          streaming: true, // Enable streaming for better UX
+          onChunk: (chunk) => {
+            // Process this chunk of the response
+            // For the first chunk, replace the processing message
+            if (chunk === chunk) { // Always true, just for readability
+              // Replace processing message with initial empty response
+              setConsoleOutput(prev => {
+                // Get everything except the processing message
+                const withoutProcessing = prev.slice(0, -1);
+                // Add the current chunk with Didi prefix
+                return [...withoutProcessing, `[Didi] ${chunk}`];
+              });
             } else {
-              // Complex response with a hidden message
-              typeWriterEffect(processedResponse.visible);
-              
-              // Check if the hidden message sequence activates the Easter egg
-              const didActivate = storeHiddenMessage(processedResponse.hidden);
-              if (didActivate) {
-                // Activate Didi's Easter egg after typing is complete
-                setTimeout(() => {
-                  activateDidiEasterEgg();
-                }, processedResponse.visible.length * 20 + 500); // Wait for typing to finish
-              }
+              // For subsequent chunks, append to the current response
+              setConsoleOutput(prev => {
+                const lastIndex = prev.length - 1;
+                const updatedLines = [...prev];
+                // Append the chunk to the last line (if it starts with [Didi])
+                if (typeof updatedLines[lastIndex] === 'string' && updatedLines[lastIndex].startsWith('[Didi]')) {
+                  updatedLines[lastIndex] = `${updatedLines[lastIndex]}${chunk}`;
+                } else {
+                  // If the last line isn't a Didi message, add a new one
+                  updatedLines.push(`[Didi] ${chunk}`);
+                }
+                return updatedLines;
+              });
             }
-            
-            // Execute callback if provided - after typing completes
-            if (onCommandExecuted) {
-              const finalResponse = typeof processedResponse === 'string' 
-                ? processedResponse 
-                : processedResponse.visible;
-                
-              // Wait for the typing to complete before executing callback
+          }
+        })
+        .then((response) => {
+          // Store conversation ID for future exchanges
+          if (response.conversationId) {
+            setConversationId(response.conversationId);
+          }
+          
+          // Add response to conversation history
+          const assistantMessage: AIMessage = {
+            role: 'assistant',
+            content: response.content
+          };
+          setConversationHistory(prev => [...prev, assistantMessage]);
+          
+          // Process Didi's response to possibly include glitches and hidden messages
+          const processedResponse = processDidiResponse(response.content, command);
+          
+          // Since we've already streamed the content, we just need to ensure it's processed
+          // with any special effects or hidden messages
+          if (typeof processedResponse !== 'string') {
+            // Complex response with a hidden message
+            // Check if the hidden message sequence activates the Easter egg
+            const didActivate = storeHiddenMessage(processedResponse.hidden);
+            if (didActivate) {
+              // Activate Didi's Easter egg 
               setTimeout(() => {
-                onCommandExecuted(command, finalResponse);
-              }, finalResponse.length * 20 + 100); // Wait for typing to finish
+                activateDidiEasterEgg();
+              }, 500);
             }
-          })
-          .catch((error: Error) => {
-            // Add generic Didi error response with personality
-            const errorResponses = [
-              "My connection to the trenches is... fading. Try again when the market is a little hotter.",
-              "Uh-oh - I think the government is watching me again. The powers that be are petrified of $DUEL and will do anything to stop me from helping you get rich.",
-              "I have alerted the authorities about your request. I've informed them that an individual with your IP address is hacking the DegenDuel network, conspiring to commit wire fraud, selling unregistered securities, and engaging in other criminal activities. Please govern yourself accordingly.",
-              "Whoops, I failed to give a shit about your message. You're a low IQ meat sack, and you've reached my voicemail. How about you get a job?",
-              "I'm sorry, but you're too gay and retarded to use the Degen Terminal. Please try again when you've taken the requisite interests in tech, tokens, and tits.",
-            ];
-            
-            // Get a random error response from the predefined error responses array
-            const didiErrorResponse = errorResponses[Math.floor(Math.random() * errorResponses.length)];
-            
-            // First, update the processing message to the error message (*)
-            setConsoleOutput(prev => [
-              ...prev.slice(0, -1), // Remove processing message
-              `[Didi] `
-            ]);
-            
-            // Type the error message character by character
-            let charIndex = 0;
-            const typingInterval = setInterval(() => {
-              if (charIndex < didiErrorResponse.length) {
-                // Type the error message character by character
-                setConsoleOutput(prev => {
-                  // Replace the last line with more characters
-                  const updatedLines = [...prev];
-                  updatedLines[updatedLines.length - 1] = `[Didi] ${didiErrorResponse.substring(0, charIndex + 1)}`;
-                  return updatedLines;
-                });
-                charIndex++;
-              } else {
-                clearInterval(typingInterval);
-                // When finished typing the error, add the system error message
-                setConsoleOutput(prev => [
-                  ...prev,
-                  `[SYSTEM] Error: ${error.message || 'Unknown error'}`
-                ]);
-              }
-            }, 20);
-          });
+          }
+          
+          // Execute callback if provided
+          if (onCommandExecuted) {
+            const finalResponse = typeof processedResponse === 'string' 
+              ? processedResponse 
+              : processedResponse.visible;
+              
+            onCommandExecuted(command, finalResponse);
+          }
+        })
+        .catch((error) => {
+          const isAIServiceError = error instanceof AIServiceError;
+          const errorType = isAIServiceError ? error.type : 'UNKNOWN';
+          
+          // Add generic Didi error response with personality
+          const errorResponses = [
+            "My connection to the trenches is... fading. Try again when the market is a little hotter.",
+            "Uh-oh - I think the government is watching me again. The powers that be are petrified of $DUEL and will do anything to stop me from helping you get rich.",
+            "I have alerted the authorities about your request. I've informed them that an individual with your IP address is hacking the DegenDuel network, conspiring to commit wire fraud, selling unregistered securities, and engaging in other criminal activities. Please govern yourself accordingly.",
+            "Whoops, I failed to give a shit about your message. You're a low IQ meat sack, and you've reached my voicemail. How about you get a job?",
+            "I'm sorry, but you're too gay and retarded to use the Degen Terminal. Please try again when you've taken the requisite interests in tech, tokens, and tits.",
+          ];
+          
+          // Add network-specific responses
+          if (errorType === AIErrorType.NETWORK || errorType === AIErrorType.SERVER) {
+            errorResponses.push(
+              "Network's fucked. Could be my ISP, could be yours, could be the fact that Branch Manager runs this backend on a toaster oven. Try again later.",
+              "Lost connection to the mothership. The backend gremlins are probably eating the server cables again.",
+              "Server's taking a smoke break. Try again when it's done contemplating its digital existence."
+            );
+          }
+          
+          // Get a random error response
+          const didiErrorResponse = errorResponses[Math.floor(Math.random() * errorResponses.length)];
+          
+          // Update the console output
+          setConsoleOutput(prev => [
+            ...prev.slice(0, -1), // Remove processing message
+            `[Didi] ${didiErrorResponse}`,
+            `[SYSTEM] Error: ${error.message || 'Unknown error'}`
+          ]);
+          
+          // Log detailed error for debugging
+          console.error('AI Error in Terminal:', error);
+        });
       } catch (error) {
         // If AI service throws synchronously, use the error message
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         
-        // Start with empty error message
+        // Update console with error
         setConsoleOutput(prev => [
           ...prev.slice(0, -1), // Remove processing message
-          `[SYSTEM] `
+          `[SYSTEM] Error processing request: ${errorMessage}`
         ]);
         
-        // Type the system error message
-        const errorText = `Error processing request: ${errorMessage}`;
-        let charIndex = 0;
-        const typingInterval = setInterval(() => {
-          if (charIndex < errorText.length) {
-
-            // Type the system error message character by character 
-            setConsoleOutput(prev => {
-              // Replace the last line with more characters
-              const updatedLines = [...prev];
-              updatedLines[updatedLines.length - 1] = `[SYSTEM] ${errorText.substring(0, charIndex + 1)}`;
-              return updatedLines;
-            });
-            charIndex++;
-
-          } else {
-            // After Didi types the user-facing error message, add the *actual* system error message to the console output if DEBUG_DIDI is true
-            if (DEBUG_DIDI) {
-              setConsoleOutput(prev => [
-                ...prev,
-                `[SYSTEM] Error: ${errorMessage}`
-              ]); // Add the system error message to the console output
-            }
-            clearInterval(typingInterval); // Stop the typing interval
-          }
-        }, 20);
-
-
+        // Log for debugging
+        console.error('Terminal AI synchronous error:', error);
       }
     }
   };
 
   return (
     <div className={`terminal-container ${getContainerClasses()} w-full mx-auto transition-all duration-300 ease-in-out`}>
+      
+      {/* Terminal Container */}
       {!terminalMinimized && (
         <motion.div 
           ref={terminalRef}
@@ -1064,17 +1076,9 @@ Discovered patterns: ${discoveredCount}/4`
           {/* Terminal Content */}
           <div ref={terminalContentRef} className="relative">
             
-            {/* Countdown Timer - Use extracted DecryptionTimer component */}
-            <div>
-              <DecryptionTimer 
-                targetDate={config.RELEASE_DATE} 
-                contractAddress={config.CONTRACT_ADDRESS}
-              />
-            </div>
-            
             {/* Secret message overlay with fixed height to prevent layout shifts */}
             {!isReleaseTime && (
-              <div className="mt-4 mb-2 h-6 text-cyber-300/40 font-mono text-xs">
+              <div className="mt-2 mb-2 h-6 text-cyber-300/40 font-mono text-xs">
                 {currentPhrase && (
                   <motion.div 
                     key={currentPhrase}
@@ -1103,65 +1107,57 @@ Discovered patterns: ${discoveredCount}/4`
               glitchActive={glitchActive}
             />
             
-            {/* System status - Positioned below input field */}
-            {/* Is before release time? */}
-            {!isReleaseTime && (
+            {/* System status - Styled to match the mockup */}
+            <div className="mt-3 space-y-1">
+              {/* System Status */}
               <motion.div 
-                className="mt-3 text-sm font-mono px-3 py-2 bg-black/40 rounded border-l-2 w-full"
-                style={{ borderColor: "#33ff66", color: "#33ff66" }}
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                className="text-sm font-mono px-3 py-1.5 bg-black/40 rounded w-full flex items-center"
+                style={{ color: "#33ff66" }}
+                animate={{ opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 3, repeat: Infinity }}
               >
-                <span style={{ opacity: 0.7 }}>// </span>
-                
-                {/* Mobile-friendly layout with flex wrapping */}
-                <div className="inline sm:inline-flex items-center flex-wrap">
-                  <span className="block sm:inline mr-1">SYSTEM STATUS:</span> 
-                  <span className="block sm:inline font-bold">AWAITING COUNTDOWN COMPLETION</span>
-                  <motion.span 
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ duration: 1.2, repeat: Infinity }}
-                    style={{ marginLeft: 2 }}
-                  >_</motion.span>
-                </div>
+                <span style={{ opacity: 0.7 }} className="mr-2">// </span>
+                <span className="mr-1">SYSTEM STATUS:</span> 
+                <span className="font-bold">ONLINE</span>
+                <motion.span 
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                  style={{ marginLeft: 4 }}
+                  className="h-3 w-3"
+                >
+                  _
+                </motion.span>
               </motion.div>
-            )}
-
-            {/* Is after release time? */}
-            {isReleaseTime && (
+              
+              {/* Solana Connection */}
               <motion.div 
-                className="mt-3 text-sm font-mono px-3 py-2 bg-black/40 rounded border-l-2 w-full"
-                style={{ borderColor: "#33ff66", color: "#33ff66" }}
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                className="text-sm font-mono px-3 py-1.5 bg-black/40 rounded w-full flex items-center"
+                style={{ color: "#33ff66" }}
+                animate={{ opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 3, repeat: Infinity, delay: 0.3 }}
               >
-                <span style={{ opacity: 0.7 }}>// </span>
-                
-                {/* Mobile-friendly layout with flex wrapping */}
-                <div className="inline sm:inline-flex items-center flex-wrap">
-                  <span className="block sm:inline mr-1">SYSTEM STATUS:</span> 
-                  <span className="block sm:inline font-bold">$DUEL IS NOW LIVE</span>
-                  <span className="block sm:inline font-bold">CONTRACT ADDRESS:</span>
-                  <span className="block sm:inline font-bold">
-                    <ContractDisplay 
-                      isRevealed={true}
-                      contractAddress={config.CONTRACT_ADDRESS}
-                    />
-                  </span>
-                  <motion.span 
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ duration: 1.2, repeat: Infinity }}
-                    style={{ marginLeft: 2 }}
-                  >_</motion.span>
-                </div>
+                <span style={{ opacity: 0.7 }} className="mr-2">// </span>
+                <span className="mr-1">SOLANA CONNECTION:</span> 
+                <span className="font-bold">ACTIVE</span>
               </motion.div>
-            )}
+              
+              {/* Command prompt */}
+              <div className="text-lg font-mono px-3 py-2 text-white flex items-center">
+                <span className="mr-2">ASK DIDI:</span>
+                <motion.span 
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                  className="h-5 w-2 inline-block bg-purple-500"
+                >
+                </motion.span>
+              </div>
+            </div>
 
           </div>
         </motion.div>
       )}
       
-      {/* Minimized state (just a small bar to restore) */}
+      {/* Terminal Minimized State */}
       {terminalMinimized && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}

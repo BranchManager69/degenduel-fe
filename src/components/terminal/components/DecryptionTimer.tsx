@@ -140,7 +140,18 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
   
   // Calculate if it's release time
   // Note: We primarily use contractData.isRevealed from the API now instead of this
-  const now = new Date();
+  // We use a state variable for current time so it refreshes
+  const [now, setNow] = useState(new Date());
+  
+  // Update current time every second
+  useEffect(() => {
+    const timeInterval = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timeInterval);
+  }, []);
+  
   const isPastReleaseTime = now >= targetDate;
   
   // If we're past the release time and don't have contract data yet, try to fetch it again
@@ -163,7 +174,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                    
   return (
     <motion.div 
-      className="font-orbitron"
+      className="font-orbitron bg-black/30 border-2 border-green-500/60 rounded-xl shadow-lg shadow-green-900/20 overflow-hidden"
       layout
       transition={{
         layout: { type: "spring", bounce: 0.2, duration: 0.8 }
@@ -203,21 +214,23 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
           exit={{ opacity: 0 }}
           layoutId="terminal-content"
         >
-          {/* CTU-style counter header */}
-          <motion.div 
-            className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-black px-3 py-1 rounded-sm text-xs font-mono tracking-wider z-10"
-            style={{ color: "#33ff66", borderTop: "1px solid #33ff66", borderLeft: "1px solid #33ff66", borderRight: "1px solid #33ff66" }}
-            animate={{ opacity: [0.7, 1, 0.7] }}
+          {/* COUNTDOWN ACTIVE header */}
+          <motion.div
+            className="w-full bg-green-500/20 text-center py-2 px-3 border-b border-green-500/40 text-sm font-mono tracking-wider z-10"
+            style={{ color: "#33ff66" }}
+            animate={{ 
+              backgroundColor: ["rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.2)", "rgba(34, 197, 94, 0.1)"],
+              textShadow: ["0 0 5px rgba(52, 211, 153, 0.3)", "0 0 10px rgba(52, 211, 153, 0.5)", "0 0 5px rgba(52, 211, 153, 0.3)"]
+            }}
             transition={{ duration: 3, repeat: Infinity }}
           >
             COUNTDOWN ACTIVE
           </motion.div>
           
-          {/* Single unified countdown container */}
-          <div className="w-full max-w-xl mx-auto bg-black/40 border border-opacity-30 rounded px-4 py-5 relative"
-               style={{ 
-                 borderColor: "#33ff66",
-                 boxShadow: "0 0 15px rgba(51, 255, 102, 0.2)"
+          {/* Countdown numbers container */}
+          <div className="w-full px-8 py-6"
+               style={{
+                 backgroundColor: "rgba(0,0,0,0.2)",
                }}>
             <div className="grid grid-cols-4 gap-0 w-full">
               {/* Helper function for getting text color based on urgency */}
@@ -272,11 +285,11 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                     <div className="flex flex-col items-center border-r px-2" 
                          style={{ borderColor: borderColor }}>
                       <motion.div 
-                        className="text-2xl md:text-3xl lg:text-4xl font-mono tabular-nums text-center w-full"
+                        className="text-5xl md:text-7xl lg:text-8xl font-mono tabular-nums text-center w-full"
                         style={{
                           color: textColor,
-                          textShadow: `0 0 10px ${shadowColor}`,
-                          fontFamily: "'Courier New', monospace",
+                          textShadow: `0 0 20px ${shadowColor}`,
+                          fontFamily: "'Orbitron', monospace",
                         }}
                         animate={{ 
                           opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
@@ -294,8 +307,8 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                       >
                         {timeRemaining.days.toString().padStart(2, '0')}
                       </motion.div>
-                      <div className="text-xs sm:text-sm font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.8 }}>
+                      <div className="text-lg sm:text-xl font-bold tracking-wider mt-1 text-center" 
+                           style={{ color: textColor, opacity: 0.9 }}>
                         DAYS
                       </div>
                     </div>
@@ -304,11 +317,11 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                     <div className="flex flex-col items-center border-r px-2" 
                          style={{ borderColor: borderColor }}>
                       <motion.div 
-                        className="text-2xl md:text-3xl lg:text-4xl font-mono tabular-nums text-center w-full"
+                        className="text-5xl md:text-7xl lg:text-8xl font-mono tabular-nums text-center w-full"
                         style={{
                           color: textColor,
-                          textShadow: `0 0 10px ${shadowColor}`,
-                          fontFamily: "'Courier New', monospace",
+                          textShadow: `0 0 20px ${shadowColor}`,
+                          fontFamily: "'Orbitron', monospace",
                         }}
                         animate={{ 
                           opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
@@ -327,8 +340,8 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                       >
                         {timeRemaining.hours.toString().padStart(2, '0')}
                       </motion.div>
-                      <div className="text-xs sm:text-sm font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.8 }}>
+                      <div className="text-lg sm:text-xl font-bold tracking-wider mt-1 text-center" 
+                           style={{ color: textColor, opacity: 0.9 }}>
                         HRS
                       </div>
                     </div>
@@ -337,11 +350,11 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                     <div className="flex flex-col items-center border-r px-2" 
                          style={{ borderColor: borderColor }}>
                       <motion.div 
-                        className="text-2xl md:text-3xl lg:text-4xl font-mono tabular-nums text-center w-full"
+                        className="text-5xl md:text-7xl lg:text-8xl font-mono tabular-nums text-center w-full"
                         style={{
                           color: textColor,
-                          textShadow: `0 0 10px ${shadowColor}`,
-                          fontFamily: "'Courier New', monospace",
+                          textShadow: `0 0 20px ${shadowColor}`,
+                          fontFamily: "'Orbitron', monospace",
                         }}
                         animate={{ 
                           opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
@@ -360,8 +373,8 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                       >
                         {timeRemaining.minutes.toString().padStart(2, '0')}
                       </motion.div>
-                      <div className="text-xs sm:text-sm font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.8 }}>
+                      <div className="text-lg sm:text-xl font-bold tracking-wider mt-1 text-center" 
+                           style={{ color: textColor, opacity: 0.9 }}>
                         MIN
                       </div>
                     </div>
@@ -369,11 +382,11 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                     {/* Seconds */}
                     <div className="flex flex-col items-center px-2">
                       <motion.div 
-                        className="text-2xl md:text-3xl lg:text-4xl font-mono tabular-nums text-center w-full"
+                        className="text-5xl md:text-7xl lg:text-8xl font-mono tabular-nums text-center w-full"
                         style={{
                           color: textColor,
-                          textShadow: `0 0 10px ${shadowColor}`,
-                          fontFamily: "'Courier New', monospace",
+                          textShadow: `0 0 20px ${shadowColor}`,
+                          fontFamily: "'Orbitron', monospace",
                         }}
                         animate={{ 
                           opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
@@ -392,8 +405,8 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                       >
                         {timeRemaining.seconds.toString().padStart(2, '0')}
                       </motion.div>
-                      <div className="text-xs sm:text-sm font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.8 }}>
+                      <div className="text-lg sm:text-xl font-bold tracking-wider mt-1 text-center" 
+                           style={{ color: textColor, opacity: 0.9 }}>
                         SEC
                       </div>
                     </div>

@@ -1,6 +1,6 @@
 // src/pages/authenticated/MyContestsPage.tsx
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FaBan,
   FaCalendarAlt,
@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { ContestCard } from "../../components/contest-browser/ContestCard";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
+import { SearchInput } from "../../components/ui/SearchInput";
 import {
   Tabs,
   TabsContent,
@@ -26,6 +27,7 @@ import { Contest } from "../../types";
 export const MyContestsPage: React.FC = () => {
   const navigate = useNavigate();
   const { contests, loading, error, refetch } = useUserContests();
+  const [searchTerm, setSearchTerm] = useState("");
 
   // We're already inside an AuthenticatedRoute, no need for additional checks
   const { user } = useAuth();
@@ -68,7 +70,7 @@ export const MyContestsPage: React.FC = () => {
     } as Contest;
   };
 
-  // Group contests by status
+  // Group contests by status and filter by search term
   const groupedContests = useMemo(() => {
     const active: Contest[] = [];
     const upcoming: Contest[] = [];
@@ -85,6 +87,13 @@ export const MyContestsPage: React.FC = () => {
       const hasEnded = now >= endTime;
 
       const transformed = transformToContestFormat(contest);
+      
+      // Apply search filter
+      const matchesSearch = 
+        searchTerm === "" || 
+        transformed.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (!matchesSearch) return;
 
       if (transformed.status === "cancelled") {
         cancelled.push(transformed);
@@ -103,7 +112,7 @@ export const MyContestsPage: React.FC = () => {
       completed,
       cancelled,
     };
-  }, [contests]);
+  }, [contests, searchTerm]);
 
   return (
     <div className="min-h-screen">
@@ -118,6 +127,14 @@ export const MyContestsPage: React.FC = () => {
             participating in, or will participate in.
           </p>
         </header>
+
+        <div className="mb-6 mx-auto max-w-md">
+          <SearchInput
+            placeholder="Find your contests..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
+        </div>
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="mb-8 w-full max-w-3xl mx-auto grid grid-cols-4 bg-dark-200/50 backdrop-blur-md">

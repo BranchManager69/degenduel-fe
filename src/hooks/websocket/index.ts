@@ -9,9 +9,15 @@
  * where they use the unified WebSocket system internally.
  */
 
-// Standard WebSocket System exports
-export { ConnectionState, MessageType, SOCKET_TYPES } from './types';
-export { default as WebSocketManager } from './WebSocketManager';
+/**
+ * ✨ UNIFIED WEBSOCKET SYSTEM ✨
+ * This file uses DegenDuel shared types from the degenduel-shared package.
+ * These types are the official standard for frontend-backend communication.
+ */
+
+// Standard WebSocket System exports - combining legacy types with shared types
+export { ConnectionState, SOCKET_TYPES, DDExtendedMessageType as MessageType } from './types';
+export { DDWebSocketTopic } from 'degenduel-shared';
 export { useUnifiedWebSocket };
 export * from './types';
 

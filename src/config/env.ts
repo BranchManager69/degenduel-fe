@@ -1,5 +1,27 @@
 // src/config/env.ts
 
+/***********************************************************************
+ * ⚠️ CRITICAL ENV VARIABLE MANAGEMENT ISSUE ⚠️
+ * 
+ * CURRENT PROBLEM:
+ * - Environment variables (import.meta.env.VITE_*) are used directly in 
+ *   60+ locations throughout the codebase instead of being centralized.
+ * 
+ * URGENT ACTION REQUIRED:
+ * - ALL environment variables should be defined and exported from THIS file
+ * - Components should import from here rather than using import.meta.env directly
+ * - Update the ImportMetaEnv interface to include ALL environment variables
+ * - Add proper typing and documentation for each environment variable
+ * - Add validation for required environment variables
+ * 
+ * This centralization is essential for:
+ *   1. Type safety
+ *   2. Easier refactoring
+ *   3. Better testing
+ *   4. Consistent default values
+ *   5. Documentation of all available env variables
+ ***********************************************************************/
+
 declare global {
   interface ImportMetaEnv {
     readonly VITE_WS_URL: string;

@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
-import { MessageType, SOCKET_TYPES } from '../types';
+import { DDExtendedMessageType, SOCKET_TYPES } from '../types';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Define the Notification interface for consumers of this hook
@@ -151,7 +151,7 @@ export function useNotifications() {
   // Connect to the unified WebSocket system
   const ws = useUnifiedWebSocket(
     'notifications-hook',
-    [MessageType.DATA, MessageType.ERROR], // Message types to subscribe to
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR], // Message types to subscribe to
     handleMessage,
     [TopicType.SYSTEM, TopicType.USER] // Topics to subscribe to (notifications are in USER topic)
   );

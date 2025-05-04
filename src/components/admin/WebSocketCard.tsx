@@ -1,3 +1,13 @@
+// src/components/admin/WebSocketCard.tsx
+
+/**
+ * WebSocket Card
+ * @deprecated
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-01-01
+ */
+
 import { Float, Text } from "@react-three/drei";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
@@ -6,18 +16,18 @@ import { KernelSize } from "postprocessing";
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { FaPowerOff } from "react-icons/fa";
 // Import THREE from the same package that @react-three/fiber uses internally
-// This ensures we use the same instance
+// This ensures we use the same instance (?)
 import {
-    AdditiveBlending,
-    Color,
-    DoubleSide,
-    Group,
-    Points,
-    ShaderMaterial
+  AdditiveBlending,
+  Color,
+  DoubleSide,
+  Group,
+  Points,
+  ShaderMaterial
 } from "three";
-
 import { User } from "../../types";
 
+// WebSocket Service Interface
 interface WebSocketService {
   name: string;
   status: "operational" | "degraded" | "error";
@@ -42,6 +52,7 @@ interface WebSocketService {
   };
 }
 
+// WebSocket Card Props
 interface WebSocketCardProps {
   service: WebSocketService;
   onPowerAction?: () => void;
@@ -55,6 +66,7 @@ interface WebSocketCardProps {
     | "healing";
 }
 
+// Effect Tier
 type EffectTier =
   | "SUPERADMIN_DESKTOP" // Unique effects, not just maxed settings
   | "SUPERADMIN_MOBILE" // Mobile-optimized special effects
@@ -465,6 +477,7 @@ const OrbitingParticles: React.FC<{ color: string; count: number }> = ({
           count={positions.length / 3}
           array={positions}
           itemSize={3}
+          args={[positions, 3]}
         />
       </bufferGeometry>
       <pointsMaterial

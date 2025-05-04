@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Define the structure for vanity dashboard data updates from the server
@@ -124,7 +124,7 @@ export function useVanityDashboard() {
   // Connect to the unified WebSocket system
   const ws = useUnifiedWebSocket(
     'vanity-dashboard-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.TERMINAL, TopicType.SYSTEM]
   );

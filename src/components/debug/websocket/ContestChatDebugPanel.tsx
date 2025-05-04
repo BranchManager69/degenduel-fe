@@ -7,10 +7,16 @@
  * Last updated: March 28, 2025
  */
 
+/**
+ * ✨ UNIFIED WEBSOCKET SYSTEM ✨
+ * This file uses DegenDuel shared types from the degenduel-shared package.
+ * These types are the official standard for frontend-backend communication.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useContestChatWebSocket } from '../../../hooks/websocket/useContestChatWebSocket';
-import { TopicType } from '../../../hooks/websocket/WebSocketManager';
+import { DDWebSocketTopic } from 'degenduel-shared';
 
 interface ContestChatDebugPanelProps {
   contestId: string;
@@ -93,7 +99,7 @@ const ContestChatDebugPanel: React.FC<ContestChatDebugPanelProps> = ({ contestId
         direction: 'outgoing',
         timestamp: new Date().toISOString(),
         type: 'REQUEST',
-        topic: TopicType.CONTEST,
+        topic: DDWebSocketTopic.CONTEST,
         content: {
           action: 'SEND_CHAT_MESSAGE',
           text: testMessageText

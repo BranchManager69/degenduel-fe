@@ -23,7 +23,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Token } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Default fallback tokens for when connection is unavailable
@@ -147,7 +147,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   // Connect to the unified WebSocket system
   const ws = useUnifiedWebSocket(
     'token-data-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.MARKET_DATA, TopicType.TOKEN_DATA, TopicType.SYSTEM] // Subscribe to both market-data and token-data topics
   );

@@ -2,16 +2,21 @@
 
 /**
  * Use Liquidity Simulation Hook
+ * @description This hook provides real-time updates from the liquidation simulation service.
  * 
- * This hook provides real-time updates from the token liquidation simulation service.
- * ADMIN ACCESS ONLY: This hook connects to a restricted topic that requires admin authentication.
+ *     ADMIN ONLY: This hook connects to a restricted topic that requires admin authentication.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-05-01
+ * @updated 2025-05-03 
  */
 
 import { useCallback, useState } from 'react';
-import { useStore } from '../../../store/useStore';
-import { MessageType, SOCKET_TYPES } from '../types';
-import useWebSocketTopic from '../useWebSocketTopic';
 import { admin } from '../../../services/api';
+import { useStore } from '../../../store/useStore';
+import { DDExtendedMessageType, SOCKET_TYPES } from '../types';
+import useWebSocketTopic from '../useWebSocketTopic';
 
 // Acquisition levels for simulation
 export type AcquisitionLevel = 'low' | 'medium' | 'high';
@@ -202,7 +207,7 @@ export function useLiquiditySim() {
   // Connect to the WebSocket topic - requires admin authentication
   const ws = useWebSocketTopic(
     SOCKET_TYPES.LIQUIDITY_SIM,
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     { 
       autoSubscribe: isAdmin

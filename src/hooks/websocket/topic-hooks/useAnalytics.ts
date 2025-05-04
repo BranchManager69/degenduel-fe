@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Analytics interfaces based on backend API documentation
@@ -398,7 +398,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'admin-analytics-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.ADMIN, TopicType.SYSTEM]
   );

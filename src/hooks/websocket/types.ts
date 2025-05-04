@@ -1,6 +1,10 @@
 // src/hooks/websocket/types.ts
 
 /**
+ * ✨ UNIFIED WEBSOCKET SYSTEM ✨
+ * This file uses DegenDuel shared types from the degenduel-shared package.
+ * These types are the official standard for frontend-backend communication.
+ * 
  * Common Types for WebSocket System v69
  * 
  * This file contains standardized interfaces and types used across the WebSocket system.
@@ -13,33 +17,39 @@
  * The SOCKET_TYPES constant below should be used as the source of truth for available topics.
  */
 
-// Standardized message types from the server - all uppercase as expected by the server
-export enum MessageType {
-  // System & status messages
-  SYSTEM = 'SYSTEM',
-  ERROR = 'ERROR',
+// Import the base types from the degenduel-shared package
+import { DDWebSocketMessageType } from 'degenduel-shared';
+
+/**
+ * Extended MessageType enum that includes frontend-specific types.
+ * 
+ * This extends the standard DDWebSocketMessageType with additional types 
+ * needed for the frontend but not yet added to the shared package.
+ * 
+ * NOTE: This should be temporary until the shared package is updated.
+ */
+export enum DDExtendedMessageType {
+  // Forward all the standard types from DDWebSocketMessageType
+  SUBSCRIBE = DDWebSocketMessageType.SUBSCRIBE,
+  UNSUBSCRIBE = DDWebSocketMessageType.UNSUBSCRIBE,
+  REQUEST = DDWebSocketMessageType.REQUEST,
+  COMMAND = DDWebSocketMessageType.COMMAND,
+  DATA = DDWebSocketMessageType.DATA,
+  ERROR = DDWebSocketMessageType.ERROR,
+  SYSTEM = DDWebSocketMessageType.SYSTEM,
+  ACKNOWLEDGMENT = DDWebSocketMessageType.ACKNOWLEDGMENT,
+  
+  // Add additional types used in the frontend
+  LOGS = 'LOGS',
   PING = 'PING',
   PONG = 'PONG',
   AUTH = 'AUTH',
-  AUTH_SUCCESS = 'AUTH_SUCCESS',
-  ACKNOWLEDGMENT = 'ACKNOWLEDGMENT',
-  
-  // Data messages
-  DATA = 'DATA',
-
-  // Subscription messages
-  SUBSCRIBE = 'SUBSCRIBE',
-  UNSUBSCRIBE = 'UNSUBSCRIBE',
-
-  // Request messages
-  REQUEST = 'REQUEST',
-
-  // Command messages
-  COMMAND = 'COMMAND',
-  
-  // Special message types
-  LOGS = 'LOGS'  // Used by the logging system
+  AUTH_SUCCESS = 'AUTH_SUCCESS'
 }
+
+// DEPRECATED: The MessageType enum has been replaced by DDExtendedMessageType.
+// All references should use MessageType from the index export, which points to DDExtendedMessageType.
+// This comment is left here to explain the transition for developers encountering old code.
   
 // Standardized WebSocket connection status types
 export type WebSocketStatus = 'connecting' | 'online' | 'offline' | 'error' | 'reconnecting';

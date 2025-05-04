@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { MessageType, TopicType } from '../';
+import { DDExtendedMessageType, TopicType } from '../';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // SkyDuel service types
@@ -89,7 +89,7 @@ export function useSkyDuel() {
 
   // Process incoming messages
   const handleMessage = useCallback((message: SkyDuelMessage) => {
-    if (message.type !== MessageType.DATA || message.topic !== TopicType.SKYDUEL) {
+    if (message.type !== DDExtendedMessageType.DATA || message.topic !== TopicType.SKYDUEL) {
       return;
     }
 
@@ -209,7 +209,7 @@ export function useSkyDuel() {
   // Set up WebSocket connection
   const ws = useUnifiedWebSocket(
     'skyduel-hook', 
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.SKYDUEL, TopicType.SYSTEM]
   );

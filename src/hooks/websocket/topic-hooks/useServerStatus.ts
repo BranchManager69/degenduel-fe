@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Server status interfaces based on backend API documentation
@@ -232,7 +232,7 @@ export function useServerStatus() {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'server-status-hook',
-    [MessageType.DATA, MessageType.ERROR, MessageType.SYSTEM],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR, DDExtendedMessageType.SYSTEM],
     handleMessage,
     [TopicType.SYSTEM]
   );

@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
 import { NotificationsDropdown } from '../components/layout/menu/NotificationsDropdown';
 import { MobileMenuButton } from '../components/layout/MobileMenuButton';
 import { UserMenu } from '../components/layout/user-menu/UserMenu';
@@ -127,6 +126,7 @@ const meta = {
   title: 'Layouts/HeaderNavigation',
   parameters: {
     layout: 'fullscreen',
+    route: '/',
     backgrounds: {
       default: 'dark',
       values: [
@@ -140,9 +140,7 @@ const meta = {
         background: '#121212',
         minHeight: '100vh'
       }}>
-        <MemoryRouter>
-          <Story />
-        </MemoryRouter>
+        <Story />
       </div>
     ),
   ],

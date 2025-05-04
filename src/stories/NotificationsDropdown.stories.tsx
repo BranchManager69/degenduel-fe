@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { NotificationsDropdown } from '../components/layout/menu/NotificationsDropdown';
-import { MemoryRouter } from 'react-router-dom';
 
 // Mock the useNotifications hook
 jest.mock('../hooks/websocket/topic-hooks/useNotifications', () => ({
@@ -89,6 +88,7 @@ const meta = {
         { name: 'dark', value: '#121212' },
       ],
     },
+    route: '/',
   },
   decorators: [
     (Story) => (
@@ -101,9 +101,7 @@ const meta = {
         alignItems: 'flex-start',
         paddingTop: '100px'
       }}>
-        <MemoryRouter>
-          <Story />
-        </MemoryRouter>
+        <Story />
       </div>
     ),
   ],

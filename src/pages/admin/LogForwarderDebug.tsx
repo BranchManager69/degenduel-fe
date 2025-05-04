@@ -1,14 +1,29 @@
 // src/pages/admin/LogForwarderDebug.tsx
 
 /**
- * This is used to debug the log forwarder.
- * @author @BranchManager69
- * @since 2025-04-02
+ * Log Forwarder Debug Page
+ * @description This page is used for debugging the log forwarder.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-02
+ * @updated 2025-05-02
+ */
+
+/**
+ * ✨ UNIFIED WEBSOCKET SYSTEM ✨
+ * This file uses DegenDuel shared types from the degenduel-shared package.
+ * These types are the official standard for frontend-backend communication.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageType, TopicType, useUnifiedWebSocket } from '../../hooks/websocket/WebSocketManager';
+// Client Logger
 import { clientLogger, LogLevel, sendLogsNow } from '../../utils/clientLogForwarder';
+// UWS
+import { MessageType } from '../../hooks/websocket';
+import { useUnifiedWebSocket } from '../../hooks/websocket/useUnifiedWebSocket';
+// DD
+import { DDWebSocketTopic } from 'degenduel-shared';
 
 // LogForwarderDebug component
 const LogForwarderDebug: React.FC = () => {
@@ -27,17 +42,17 @@ const LogForwarderDebug: React.FC = () => {
     'log-forwarder-debug',
     [MessageType.DATA, MessageType.ACKNOWLEDGMENT, MessageType.LOGS],
     (message) => {
-      if (message.type === MessageType.ACKNOWLEDGMENT && message.topic === TopicType.LOGS) {
+      if (message.type === MessageType.ACKNOWLEDGMENT && message.topic === DDWebSocketTopic.LOGS) {
         // Update status when logs are acknowledged
         setStatus(`Server acknowledged log receipt: ${message.message || 'OK'} (${message.count || 0} logs)`);
-      } else if ((message.type === MessageType.DATA && message.topic === TopicType.LOGS && message.data) || 
+      } else if ((message.type === MessageType.DATA && message.topic === DDWebSocketTopic.LOGS && message.data) || 
                 (message.type === MessageType.LOGS && message.logs)) {
         // Add received logs to the display - handle both formats
         const logsData = message.logs || message.data || [];
         setReceivedLogs(prev => [...prev, ...logsData].slice(-100));
       }
     },
-    [TopicType.LOGS]
+    [DDWebSocketTopic.LOGS]
   );
   
   // Update connection status
@@ -122,10 +137,12 @@ const LogForwarderDebug: React.FC = () => {
     <div className="p-4 md:p-8">
       <h1 className="text-2xl font-bold mb-6">Client Log Forwarder Debug</h1>
       
+      {/* Send Custom Log */}
       <div className="mb-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">Send Custom Log</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
+            {/* Log Level */}
             <label className="block mb-2">Log Level:</label>
             <select 
               className="p-2 border rounded w-full"
@@ -140,6 +157,7 @@ const LogForwarderDebug: React.FC = () => {
             </select>
           </div>
           
+          {/* Message */}
           <div className="mb-4">
             <label className="block mb-2">Message:</label>
             <input 
@@ -151,6 +169,7 @@ const LogForwarderDebug: React.FC = () => {
             />
           </div>
           
+          {/* Context */}
           <div className="mb-4">
             <label className="block mb-2">Context (JSON):</label>
             <textarea 
@@ -160,7 +179,8 @@ const LogForwarderDebug: React.FC = () => {
               rows={5}
             />
           </div>
-          
+
+          {/* Send Log Button */}
           <button 
             type="submit"
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
@@ -169,7 +189,8 @@ const LogForwarderDebug: React.FC = () => {
           </button>
         </form>
       </div>
-      
+
+      {/* Test Error Capture */}
       <div className="mb-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">Test Error Capture</h2>
         <div className="flex flex-wrap gap-4">
@@ -179,14 +200,16 @@ const LogForwarderDebug: React.FC = () => {
           >
             Trigger Caught Error
           </button>
-          
+
+          {/* Trigger Unhandled Error */}
           <button 
             onClick={triggerUnhandledError}
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
           >
             Trigger Unhandled Error
           </button>
-          
+
+          {/* Trigger Promise Rejection */}
           <button 
             onClick={triggerPromiseRejection}
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
@@ -195,13 +218,15 @@ const LogForwarderDebug: React.FC = () => {
           </button>
         </div>
       </div>
-      
+
+      {/* Status */}
       {status && (
         <div className="p-4 bg-green-100 dark:bg-green-900 rounded-lg">
           <p>{status}</p>
         </div>
       )}
-      
+
+      {/* Live Log Stream */}
       <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Live Log Stream</h2>
@@ -210,7 +235,8 @@ const LogForwarderDebug: React.FC = () => {
             <span>{wsConnected ? 'Connected' : 'Disconnected'}</span>
           </div>
         </div>
-        
+
+        {/* Log Container */}
         <div 
           ref={logContainerRef}
           className="h-80 overflow-y-auto bg-black text-green-400 p-4 font-mono text-sm rounded"
@@ -237,7 +263,8 @@ const LogForwarderDebug: React.FC = () => {
           )}
         </div>
       </div>
-      
+
+      {/* Implementation Details */}
       <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">Implementation Details</h2>
         <ul className="list-disc pl-6 space-y-2">

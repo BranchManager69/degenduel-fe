@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Define market data interface based on backend API documentation
@@ -114,7 +114,7 @@ export function useMarketData() {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'market-data-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.MARKET_DATA, TopicType.SYSTEM]
   );

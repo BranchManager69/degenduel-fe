@@ -1,11 +1,12 @@
+// src/stories/OptimizedTokensPage.stories.tsx
+
 // OptimizedTokensPage stories
 import { Meta, StoryObj } from '@storybook/react';
-import { withRouter } from 'storybook-addon-react-router-v6';
 import * as React from 'react';
 
 // Import type declarations to help TypeScript recognize window properties
-import '../types/window.d.ts';
 import { OptimizedTokensPage } from '../pages/public/tokens/OptimizedTokensPage';
+import '../types/window.d.ts';
 import { createMockTokensResponse } from './TokensPage.stories';
 
 // Create a mock context wrapper
@@ -88,9 +89,9 @@ const meta: Meta<typeof OptimizedTokensPage> = {
   component: OptimizedTokensPage,
   parameters: {
     layout: 'fullscreen',
+    route: '/tokens',
   },
   decorators: [
-    withRouter,
     (Story) => (
       <MockContext>
         <div className="bg-dark-100 min-h-screen">
@@ -106,19 +107,12 @@ type Story = StoryObj<typeof OptimizedTokensPage>;
 
 export const Default: Story = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens',
-    },
-  },
+    route: '/tokens',
+  }
 };
 
 export const WithSelectedToken: Story = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens?symbol=BTC',
-      searchParams: { symbol: 'BTC' },
-    },
-  },
+    route: '/tokens?symbol=BTC',
+  }
 };

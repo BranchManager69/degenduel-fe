@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as React from 'react';
 
@@ -277,13 +276,10 @@ const meta: Meta<typeof LoginPageTemplate> = {
   component: LoginPageTemplate,
   parameters: {
     layout: 'fullscreen',
+    route: '/login',
   },
   decorators: [
-    (Story) => React.createElement(
-      MemoryRouter, 
-      null, 
-      React.createElement(Story, null)
-    ),
+    (Story) => React.createElement(Story, null),
   ],
 };
 

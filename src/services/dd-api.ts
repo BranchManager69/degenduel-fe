@@ -1,5 +1,21 @@
 // src/services/dd-api.ts
 
+/***********************************************************************
+ * ⚠️ CRITICAL REFACTORING NEEDED ⚠️
+ * 
+ * THIS FILE IS UNWIELDY AND MUST BE REFACTORED IMMEDIATELY.
+ * 
+ * URGENT ACTION REQUIRED:
+ * - DESTRUCTURE THIS MONOLITHIC FILE INTO MULTIPLE SERVICE FILES
+ * - ORGANIZE BY DOMAIN (USERS, CONTESTS, ADMIN, ETC.)
+ * - IMPLEMENT PROPER ERROR HANDLING AND LOGGING
+ * - MAINTAIN CONSISTENT PATTERNS ACROSS ALL API CALLS
+ * - ELIMINATE REDUNDANT CODE
+ * 
+ * THIS FILE HAS GROWN BEYOND MAINTAINABLE SIZE AND CONTINUES TO
+ * ACCUMULATE TECHNICAL DEBT THAT WILL IMPEDE FUTURE DEVELOPMENT.
+ ***********************************************************************/
+
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { useStore } from "../store/useStore";
 import {

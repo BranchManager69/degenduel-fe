@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Define the structure for contest scheduler data updates from the server
@@ -130,7 +130,7 @@ export function useContestScheduler() {
   // Connect to the unified WebSocket system
   const ws = useUnifiedWebSocket(
     'contest-scheduler-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.ADMIN, TopicType.SYSTEM]
   );
