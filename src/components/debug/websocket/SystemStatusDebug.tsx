@@ -1,9 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { MessageType, TopicType, useUnifiedWebSocket } from '../../../hooks/websocket';
+import { 
+  DDExtendedMessageType, 
+  TopicType, 
+  useUnifiedWebSocket,
+  isMessageType
+} from '../../../hooks/websocket';
 import { NODE_ENV } from '../../../config/config';
 
 interface SystemMessage {
-  type: string;
+  type: DDExtendedMessageType;
   action?: string;
   status?: string;
   message?: string;
@@ -44,7 +49,7 @@ const SystemStatusDebug: React.FC = () => {
       setLastUpdate(new Date());
       
       // Handle specific system messages
-      if (message.type === 'SYSTEM') {
+      if (isMessageType(message.type, DDExtendedMessageType.SYSTEM)) {
         if (message.serverTime) {
           setServerTime(message.serverTime);
         }
@@ -55,13 +60,13 @@ const SystemStatusDebug: React.FC = () => {
         }
       }
       // Handle maintenance mode updates
-      else if (message.type === 'maintenance_status') {
+      else if (message.type === 'maintenance_status') { // Keep string for custom message types
         if (message.data && typeof message.data.mode === 'boolean') {
           setMaintenanceMode(message.data.mode);
         }
       }
       // Handle system status updates
-      else if (message.type === 'system_status') {
+      else if (message.type === 'system_status') { // Keep string for custom message types
         if (message.data && message.data.status) {
           setSystemStatus(message.data.status);
         }
@@ -74,7 +79,11 @@ const SystemStatusDebug: React.FC = () => {
   // Connect to the WebSocket and subscribe to the SYSTEM topic
   const ws = useUnifiedWebSocket(
     wsId,
-    [MessageType.SYSTEM, MessageType.DATA, MessageType.ERROR],
+    [
+      DDExtendedMessageType.SYSTEM, 
+      DDExtendedMessageType.DATA, 
+      DDExtendedMessageType.ERROR
+    ],
     handleMessage,
     [TopicType.SYSTEM]
   );

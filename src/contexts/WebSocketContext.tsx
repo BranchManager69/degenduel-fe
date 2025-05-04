@@ -35,7 +35,7 @@ console.log('[WebSocketContext] DegenDuel RPC:', DEGENDUEL_RPC_URL);
 // Interface for message listeners
 interface MessageListener {
   id: string;
-  types: string[];
+  types: DDExtendedMessageType[];
   topics?: string[];
   callback: (message: any) => void;
 }
@@ -57,7 +57,7 @@ interface WebSocketContextType {
   // Register a listener for messages
   registerListener: (
     id: string,
-    types: string[],
+    types: DDExtendedMessageType[],
     callback: (message: any) => void,
     topics?: string[]
   ) => () => void;
@@ -139,7 +139,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // This is critical - it sets up the instance that useUnifiedWebSocket will access
     setupWebSocketInstance(
       // Register listener function that matches the expected signature
-      (id: string, types: string[], callback: (message: any) => void) => {
+      (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => {
         return registerListener(id, types, callback);
       },
       // Send message function
@@ -768,7 +768,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
    */
   const registerListener = useCallback((
     id: string, 
-    types: string[], 
+    types: DDExtendedMessageType[], 
     callback: (message: WebSocketMessage) => void,
     topics?: string[]
   ) => {
@@ -976,7 +976,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Update the WebSocket instance with the current state
     setupWebSocketInstance(
       // Register listener function
-      (id: string, types: string[], callback: (message: any) => void) => {
+      (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => {
         return registerListener(id, types, callback);
       },
       // Send message function
@@ -1035,7 +1035,7 @@ export const useWebSocketContext = () => {
  */
 export function useUnifiedWebSocket<T = any>(
   id: string,
-  types: string[] = [DDExtendedMessageType.DATA],
+  types: DDExtendedMessageType[] = [DDExtendedMessageType.DATA],
   onMessage: (message: T) => void,
   topics?: string[]
 ) {

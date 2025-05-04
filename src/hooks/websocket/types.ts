@@ -47,6 +47,48 @@ export enum DDExtendedMessageType {
   AUTH_SUCCESS = 'AUTH_SUCCESS'
 }
 
+/**
+ * WebSocket Message Type Utilities
+ * 
+ * These utilities help ensure type safety while maintaining compatibility
+ * with both string literals and enum values throughout the codebase.
+ */
+
+// Type guard to check if a value is a valid message type
+export function isValidMessageType(value: any): value is DDExtendedMessageType {
+  return Object.values(DDExtendedMessageType).includes(value);
+}
+
+// Create a type-safe message with proper enum values
+export function createMessage<T extends Record<string, any>>(
+  type: DDExtendedMessageType, 
+  payload: T
+): { type: DDExtendedMessageType } & T {
+  return { type, ...payload };
+}
+
+// WebSocket message interface for typing
+export interface WebSocketMessage {
+  type: DDExtendedMessageType;
+  [key: string]: any;
+}
+
+// Safe comparison function for message types
+export function isMessageType(
+  message: string | DDExtendedMessageType | WebSocketMessage | { type: DDExtendedMessageType }, 
+  expectedType: DDExtendedMessageType
+): boolean {
+  if (typeof message === 'object' && message !== null && 'type' in message) {
+    return message.type === expectedType;
+  }
+  return message === expectedType;
+}
+
+// Utility function to convert DDExtendedMessageType to string for scenarios where a string is required
+export function messageTypeToString(type: DDExtendedMessageType): string {
+  return type.toString();
+}
+
 // DEPRECATED: The MessageType enum has been replaced by DDExtendedMessageType.
 // All references should use MessageType from the index export, which points to DDExtendedMessageType.
 // This comment is left here to explain the transition for developers encountering old code.
@@ -67,7 +109,7 @@ export enum ConnectionState {
 
 // Base message interface for all WebSocket messages
 export interface WebSocketMessage {
-  type: string; // Using string to catch all message types since it's an enum
+  type: DDExtendedMessageType; // Use enum type directly for proper type safety
   timestamp?: string;
   data?: any;
   error?: string;
@@ -78,11 +120,14 @@ export interface WebSocketMessage {
   authToken?: string;
   topics?: string[];
   initialData?: boolean;
+  requestId?: string;
+  direction?: 'in' | 'out';
+  id?: string; // For message tracking
 }
 
 // Standardized error message structure
 export interface WebSocketError {
-  type: 'ERROR';
+  type: DDExtendedMessageType.ERROR;
   code?: number;
   message: string;
   details?: string;
@@ -91,7 +136,7 @@ export interface WebSocketError {
 
 // Authentication response message
 export interface WebSocketAuthMessage {
-  type: 'auth_success' | 'authenticated';
+  type: DDExtendedMessageType.AUTH_SUCCESS;
   message: string;
   timestamp: string;
 }

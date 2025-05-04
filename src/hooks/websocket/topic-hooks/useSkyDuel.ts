@@ -69,7 +69,7 @@ const DEFAULT_STATE: SkyDuelState = {
 
 // Message types from v69 Unified WebSocket System
 interface SkyDuelMessage {
-  type: string;
+  type: DDExtendedMessageType;
   topic: string;
   subtype?: string;
   action?: string;

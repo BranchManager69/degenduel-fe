@@ -50,7 +50,7 @@ const DEFAULT_MARKET_DATA: MarketData = {
 
 // Define the standard structure for market data updates from the server
 interface WebSocketMarketMessage {
-  type: string; // 'DATA'
+  type: DDExtendedMessageType; // DDExtendedMessageType.DATA
   topic: string; // 'market-data'
   subtype: string; // 'market'
   action: string; // 'update'
@@ -72,7 +72,7 @@ export function useMarketData() {
   const handleMessage = useCallback((message: Partial<WebSocketMarketMessage>) => {
     try {
       // Check if this is a valid market data message
-      if (message.type === 'DATA' && 
+      if (message.type === DDExtendedMessageType.DATA && 
           message.topic === 'market-data' && 
           message.subtype === 'market' && 
           message.action === 'update' && 

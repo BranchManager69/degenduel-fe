@@ -48,7 +48,7 @@ const FALLBACK_TOKENS: Token[] = [
 // Define the standard structure for token data updates from the server
 // Based on backend team's v69 WebSocket unified system specification
 interface WebSocketTokenMessage {
-  type: string; // 'DATA'
+  type: DDExtendedMessageType; // DDExtendedMessageType.DATA
   topic: string; // 'market-data' or 'token-data'
   subtype: string; // 'token'
   action: string; // 'update', 'bulk-update', 'add', 'remove'
@@ -75,7 +75,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   const handleMessage = useCallback((message: Partial<WebSocketTokenMessage>) => {
     try {
       // Check if this is a valid token data message
-      if (message.type === 'DATA' && message.topic === 'market-data') {
+      if (message.type === DDExtendedMessageType.DATA && message.topic === 'market-data') {
         // Handle different action types
         if (message.action === 'bulk-update' && Array.isArray(message.data)) {
           // Bulk token update

@@ -80,7 +80,8 @@ export function useRPCBenchmark() {
 
   // Process incoming messages
   const handleMessage = useCallback((message: BenchmarkMessage) => {
-    if (message.type !== DDExtendedMessageType.DATA) {
+    const { isMessageType } = require('../../websocket');
+    if (!isMessageType(message.type, DDExtendedMessageType.DATA)) {
       return;
     }
 

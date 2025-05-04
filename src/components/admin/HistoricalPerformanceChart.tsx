@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useUnifiedWebSocket } from '../../hooks/websocket/useUnifiedWebSocket';
+import { DDExtendedMessageType } from '../../hooks/websocket/types';
 
 type TimeRange = '24h' | '7d' | '30d' | 'all';
 
@@ -66,7 +67,7 @@ export const HistoricalPerformanceChart: React.FC<HistoricalPerformanceChartProp
   // Provide required parameters to useUnifiedWebSocket hook
   const { isConnected, isAuthenticated, request } = useUnifiedWebSocket(
     'historical-performance-chart', // Unique ID for this component
-    ['DATA'], // Message types to listen for
+    [DDExtendedMessageType.DATA], // Message types to listen for using proper enum
     () => {} // Empty callback since we're not using the subscription directly
   );
   

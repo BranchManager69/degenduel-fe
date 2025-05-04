@@ -81,7 +81,8 @@ export function useCircuitBreaker() {
 
   // Process incoming messages
   const handleMessage = useCallback((message: CircuitBreakerMessage) => {
-    if (message.type !== DDExtendedMessageType.DATA || message.topic !== TopicType.CIRCUIT_BREAKER) {
+    const { isMessageType } = require('../../websocket');
+    if (!isMessageType(message.type, DDExtendedMessageType.DATA) || message.topic !== TopicType.CIRCUIT_BREAKER) {
       return;
     }
 

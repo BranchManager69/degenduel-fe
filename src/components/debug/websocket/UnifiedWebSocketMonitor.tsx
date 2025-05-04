@@ -13,14 +13,14 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-import { MessageType, TopicType } from '../../../hooks/websocket';
+import { DDExtendedMessageType, TopicType, messageTypeToString } from '../../../hooks/websocket';
 import { useStore } from '../../../store/useStore';
 
 // Interface for tracked WebSocket messages
 interface WebSocketMessage {
   id: string;
   timestamp: string;
-  type: string;
+  type: DDExtendedMessageType;
   topic?: string;
   data?: any;
   direction: 'in' | 'out';
@@ -28,18 +28,18 @@ interface WebSocketMessage {
 
 // Color mappings for message types and topics
 const TYPE_COLORS: Record<string, string> = {
-  [MessageType.SUBSCRIBE]: 'text-green-400',
-  [MessageType.UNSUBSCRIBE]: 'text-yellow-400',
-  [MessageType.REQUEST]: 'text-blue-400',
-  [MessageType.COMMAND]: 'text-purple-400',
-  [MessageType.DATA]: 'text-cyan-400',
-  [MessageType.ERROR]: 'text-red-500',
-  [MessageType.SYSTEM]: 'text-gray-400',
-  [MessageType.ACKNOWLEDGMENT]: 'text-indigo-400',
-  [MessageType.AUTH]: 'text-pink-400',
-  [MessageType.AUTH_SUCCESS]: 'text-pink-500',
-  [MessageType.PING]: 'text-gray-500',
-  [MessageType.PONG]: 'text-gray-500',
+  [DDExtendedMessageType.SUBSCRIBE]: 'text-green-400',
+  [DDExtendedMessageType.UNSUBSCRIBE]: 'text-yellow-400',
+  [DDExtendedMessageType.REQUEST]: 'text-blue-400',
+  [DDExtendedMessageType.COMMAND]: 'text-purple-400',
+  [DDExtendedMessageType.DATA]: 'text-cyan-400',
+  [DDExtendedMessageType.ERROR]: 'text-red-500',
+  [DDExtendedMessageType.SYSTEM]: 'text-gray-400',
+  [DDExtendedMessageType.ACKNOWLEDGMENT]: 'text-indigo-400',
+  [DDExtendedMessageType.AUTH]: 'text-pink-400',
+  [DDExtendedMessageType.AUTH_SUCCESS]: 'text-pink-500',
+  [DDExtendedMessageType.PING]: 'text-gray-500',
+  [DDExtendedMessageType.PONG]: 'text-gray-500',
   'default': 'text-white'
 };
 
@@ -96,8 +96,8 @@ const UnifiedWebSocketMonitor: React.FC = () => {
       }
       
       // Track heartbeats for connection health monitoring
-      if (type === MessageType.PING || type === MessageType.PONG || 
-          (type === MessageType.SYSTEM && data?.action === 'ping')) {
+      if (type === DDExtendedMessageType.PING || type === DDExtendedMessageType.PONG || 
+          (type === DDExtendedMessageType.SYSTEM && data?.action === 'ping')) {
         lastHeartbeatRef.current = Date.now();
         
         // Update heartbeat indicator, but don't add to messages unless showHeartbeats is true
@@ -105,13 +105,13 @@ const UnifiedWebSocketMonitor: React.FC = () => {
       }
       
       // Track topic subscriptions
-      if (type === MessageType.ACKNOWLEDGMENT && data?.operation === 'subscribe' && data?.topics) {
+      if (type === DDExtendedMessageType.ACKNOWLEDGMENT && data?.operation === 'subscribe' && data?.topics) {
         setActiveTopics(prev => {
           const newTopics = new Set(prev);
           data.topics.forEach((t: string) => newTopics.add(t));
           return newTopics;
         });
-      } else if (type === MessageType.ACKNOWLEDGMENT && data?.operation === 'unsubscribe' && data?.topics) {
+      } else if (type === DDExtendedMessageType.ACKNOWLEDGMENT && data?.operation === 'unsubscribe' && data?.topics) {
         setActiveTopics(prev => {
           const newTopics = new Set(prev);
           data.topics.forEach((t: string) => newTopics.delete(t));
@@ -179,9 +179,9 @@ const UnifiedWebSocketMonitor: React.FC = () => {
     
     // Hide heartbeat messages if showHeartbeats is false
     if (!showHeartbeats && 
-        (message.type === MessageType.PING || 
-         message.type === MessageType.PONG || 
-         (message.type === MessageType.SYSTEM && message.data?.action === 'ping'))) {
+        (message.type === DDExtendedMessageType.PING || 
+         message.type === DDExtendedMessageType.PONG || 
+         (message.type === DDExtendedMessageType.SYSTEM && message.data?.action === 'ping'))) {
       return false;
     }
     
@@ -213,7 +213,7 @@ const UnifiedWebSocketMonitor: React.FC = () => {
   };
   
   // Get color class for message type
-  const getTypeColor = (type: string) => TYPE_COLORS[type] || TYPE_COLORS.default;
+  const getTypeColor = (type: DDExtendedMessageType) => TYPE_COLORS[type] || TYPE_COLORS.default;
   
   // Get color class for topic badge
   const getTopicColor = (topic: string) => TOPIC_COLORS[topic] || TOPIC_COLORS.default;
@@ -424,7 +424,7 @@ const UnifiedWebSocketMonitor: React.FC = () => {
                         {message.direction === 'in' ? '←' : '→'}
                       </span>
                     </td>
-                    <td className={`p-2 whitespace-nowrap ${getTypeColor(message.type)}`}>{message.type}</td>
+                    <td className={`p-2 whitespace-nowrap ${getTypeColor(message.type)}`}>{messageTypeToString(message.type)}</td>
                     <td className="p-2 whitespace-nowrap">
                       {message.topic && (
                         <span className={`px-1.5 py-0.5 rounded text-xs ${getTopicColor(message.topic)}`}>

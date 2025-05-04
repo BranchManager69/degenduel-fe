@@ -1,7 +1,10 @@
-import React, { useEffect, createElement } from 'react';
+import { useEffect } from 'react';
+
+type LogoVariant = 'primary' | 'blackDuel' | 'whiteDuel';
+
 const DegenDuelLogo = ({
   variant = 'primary'
-}) => {
+}: { variant?: LogoVariant }) => {
   useEffect(() => {
     const link1 = document.createElement('link');
     link1.href = 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap';
@@ -29,7 +32,7 @@ const DegenDuelLogo = ({
       degen: '#9D4EDD', 
       duel: '#FFFFFF'
     }
-  };
+  } as const;
   const currentColors = colors[variant];
   return <div className="relative">
       {/* Logo Text Container */}

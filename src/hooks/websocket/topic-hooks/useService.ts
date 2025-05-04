@@ -35,7 +35,7 @@ export interface ServiceState {
 
 // Message types from v69 Unified WebSocket System
 interface ServiceMessage {
-  type: string;
+  type: DDExtendedMessageType;
   topic: string;
   subtype: string;
   action: string;

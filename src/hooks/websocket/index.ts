@@ -21,6 +21,34 @@ export { DDWebSocketTopic } from 'degenduel-shared';
 export { useUnifiedWebSocket };
 export * from './types';
 
+// Type Migration Support - Utility functions for message handling
+import { 
+  DDExtendedMessageType, 
+  createMessage, 
+  isMessageType, 
+  isValidMessageType 
+} from './types';
+
+// Export utility functions for type-safe message handling
+export { createMessage, isMessageType, isValidMessageType };
+
+// Create helper constants for common message types to ease migration
+export const WS_MESSAGE_TYPES = {
+  SUBSCRIBE: DDExtendedMessageType.SUBSCRIBE,
+  UNSUBSCRIBE: DDExtendedMessageType.UNSUBSCRIBE,
+  REQUEST: DDExtendedMessageType.REQUEST,
+  COMMAND: DDExtendedMessageType.COMMAND,
+  DATA: DDExtendedMessageType.DATA,
+  ERROR: DDExtendedMessageType.ERROR,
+  SYSTEM: DDExtendedMessageType.SYSTEM,
+  ACKNOWLEDGMENT: DDExtendedMessageType.ACKNOWLEDGMENT,
+  LOGS: DDExtendedMessageType.LOGS,
+  PING: DDExtendedMessageType.PING,
+  PONG: DDExtendedMessageType.PONG,
+  AUTH: DDExtendedMessageType.AUTH,
+  AUTH_SUCCESS: DDExtendedMessageType.AUTH_SUCCESS
+};
+
 // Import from types
 import { SOCKET_TYPES } from './types';
 

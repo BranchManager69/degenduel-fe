@@ -11,8 +11,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { dispatchWebSocketEvent } from '../../utils/wsMonitor';
-import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from './types';
-import { MessageType } from './index';
+import { SOCKET_TYPES, WEBSOCKET_ENDPOINT, DDExtendedMessageType, isMessageType } from './types';
 import useWebSocket from './useWebSocket';
 
 // SkyDuel service types
@@ -62,7 +61,7 @@ interface SkyDuelState {
 
 // Message types from v69 Unified WebSocket System
 interface UnifiedMessage {
-  type: string;
+  type: DDExtendedMessageType;
   topic?: string;
   data?: any;
   message?: string;
@@ -143,7 +142,7 @@ export function useSkyDuelWebSocket() {
     try {
       // Subscribe message format according to v69 spec
       const subscribeMessage = {
-        type: MessageType.SUBSCRIBE,
+        type: DDExtendedMessageType.SUBSCRIBE,
         topics: ['skyduel'],
         timestamp: new Date().toISOString()
       };
@@ -173,8 +172,7 @@ export function useSkyDuelWebSocket() {
     
     try {
       // Process the message based on its type according to v69 unified system
-      switch (data.type) {
-        case MessageType.ACKNOWLEDGMENT:
+      if (isMessageType(data, DDExtendedMessageType.ACKNOWLEDGMENT)) {
           // Handle subscription acknowledgment
           if (data.operation === 'SUBSCRIBE' && data.topics?.includes('skyduel')) {
             console.log('[SkyDuelWebSocket] Successfully subscribed to skyduel topic');
@@ -186,9 +184,7 @@ export function useSkyDuelWebSocket() {
               timestamp: new Date().toISOString()
             });
           }
-          break;
-          
-        case MessageType.DATA:
+      } else if (isMessageType(data, DDExtendedMessageType.DATA)) {
           // Handle data messages for the skyduel topic
           if (data.topic === 'skyduel') {
             // Mark as receiving initial data if specified
@@ -254,9 +250,7 @@ export function useSkyDuelWebSocket() {
               });
             }
           }
-          break;
-          
-        case MessageType.ERROR:
+      } else if (isMessageType(data, DDExtendedMessageType.ERROR)) {
           // Handle error messages
           console.error(`[SkyDuelWebSocket] Error (${data.code}): ${data.message}`);
           addServiceAlert("error", `SkyDuel WebSocket error (${data.code}): ${data.message}`);
@@ -267,9 +261,7 @@ export function useSkyDuelWebSocket() {
             code: data.code,
             timestamp: new Date().toISOString()
           });
-          break;
-          
-        case MessageType.SYSTEM:
+      } else if (isMessageType(data, DDExtendedMessageType.SYSTEM)) {
           // Handle system messages
           if (data.action === 'heartbeat') {
             // Heartbeat message
@@ -288,7 +280,6 @@ export function useSkyDuelWebSocket() {
               timestamp: new Date().toISOString()
             });
           }
-          break;
       }
     } catch (err) {
       console.error('Error processing SkyDuel message:', err);
@@ -331,7 +322,7 @@ export function useSkyDuelWebSocket() {
     try {
       // Format according to v69 unified system REQUEST message
       const requestMessage = {
-        type: MessageType.REQUEST,
+        type: DDExtendedMessageType.REQUEST,
         topic: 'skyduel',
         action,
         ...params,
@@ -380,7 +371,7 @@ export function useSkyDuelWebSocket() {
     try {
       // Format according to v69 unified system COMMAND message
       const commandMessage = {
-        type: MessageType.COMMAND,
+        type: DDExtendedMessageType.COMMAND,
         topic: 'skyduel',
         action,
         ...params,
