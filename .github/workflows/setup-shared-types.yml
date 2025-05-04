@@ -1,0 +1,50 @@
+name: Build with Shared Types
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the frontend repo
+      - name: Checkout 
+        uses: actions/checkout@v4
+        
+      # Also checkout the shared repo into the parent directory
+      - name: Checkout shared repo
+        uses: actions/checkout@v4
+        with:
+          repository: BranchManager69/degenduel-shared
+          path: ../degenduel-shared
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+      
+      # Install dependencies (using your package-lock.json)
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      
+      # Run tests 
+      - name: Run tests
+        run: npm test -- --coverage=false
+        
+      # Dev build
+      - name: Development Build
+        run: npm run build:dev
+        
+      # Prod build
+      - name: Production Build
+        run: npm run build:prod
+        
+      # Storybook build
+      - name: Storybook Build
+        run: npm run build-storybook
