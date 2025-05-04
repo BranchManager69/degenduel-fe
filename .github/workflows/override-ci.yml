@@ -1,0 +1,120 @@
+name: DegenDuel CI/CD Override
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # This job runs first and creates a package-lock.json if needed
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      - name: Create minimal package-lock.json for CI
+        run: |
+          if [ ! -f "package-lock.json" ]; then
+            echo "Creating minimal package-lock.json for CI compatibility"
+            echo '{
+              "name": "degenduel-fe",
+              "version": "1.9.0",
+              "lockfileVersion": 3,
+              "requires": true,
+              "packages": {
+                "": {
+                  "name": "degenduel-fe",
+                  "version": "1.9.0"
+                }
+              }
+            }' > package-lock.json
+          fi
+      
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            package-lock.json
+          key: ${{ runner.os }}-modules-${{ hashFiles('package.json') }}
+      
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+      
+      - name: Run tests
+        run: npm test
+  
+  # This replaces the existing build job but works with workspace setup
+  build-dev:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      - name: Restore cached dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            package-lock.json
+          key: ${{ runner.os }}-modules-${{ hashFiles('package.json') }}
+      
+      - name: Build for development
+        run: npm run build:dev
+  
+  # Production build job
+  build-prod:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      - name: Restore cached dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            package-lock.json
+          key: ${{ runner.os }}-modules-${{ hashFiles('package.json') }}
+      
+      - name: Build for production
+        run: npm run build:prod
+  
+  # Storybook build job
+  build-storybook:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      - name: Restore cached dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            package-lock.json
+          key: ${{ runner.os }}-modules-${{ hashFiles('package.json') }}
+      
+      - name: Build Storybook
+        run: npm run build-storybook
