@@ -199,7 +199,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
         minify: false,
         sourcemap: true,
         rollupOptions: {
-          external: ['degen-components']
+          // Mark packages as external to prevent Vite from trying to bundle them
+          // 'degenduel-shared' is marked external to allow local workspace usage without CI build errors
+          // since this package exists locally but is not committed to the repository
+          external: ['degen-components', 'degenduel-shared']
         }
       },
     };
@@ -424,7 +427,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         cache: true,
-        external: ['degen-components'],
+        // Mark packages as external to prevent Vite from trying to bundle them
+        // 'degenduel-shared' is marked external to allow local workspace usage without CI build errors
+        // since this package exists locally but is not committed to the repository
+        external: ['degen-components', 'degenduel-shared'],
         output: {
           manualChunks: {
             "react-vendor": ["react", "react-dom", "react-router-dom"],
