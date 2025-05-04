@@ -43,6 +43,7 @@
     "--------------- OTHER COMMANDS ------------------": ""
   },
   "dependencies": {
+    "@branchmanager69/degenduel-shared": "1.0.1",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.1.1",
     "@hookform/resolvers": "^3.10.0",
@@ -72,12 +73,12 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
-    "degenduel-shared": "file:../degenduel-shared",
     "framer-motion": "^12.9.4",
     "graphql": "^16.10.0",
     "graphql-request": "^7.1.2",
     "gsap": "^3.12.5",
     "jupiverse-kit": "^1.2.1",
+    "lucide-react": "^0.507.0",
     "openai": "^4.80.0",
     "postprocessing": "^6.36.7",
     "react": "^18.3.0",
