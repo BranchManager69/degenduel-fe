@@ -21,7 +21,7 @@
     "build": "npm run build:prod",
     "build:quick": "npx vite build --mode quick",
     "build:prod:analyze": "VITE_FORCE_DISABLE_MINIFY=false npx --node-arg=--max_old_space_size=8192 vite build --mode production && npx source-map-explorer 'dist/assets/*.js' --html dist/bundle-analysis.html --tsv dist/bundle-analysis.tsv && echo '\nBundle analysis report available at: https://degenduel.me/bundle-analysis.html\nDetailed TSV data available at: https://degenduel.me/bundle-analysis.tsv\n'",
-"build:dev:analyze": "npx --node-arg=--max_old_space_size=8192 vite build --mode development && npx source-map-explorer 'dist-dev/assets/*.js' --html dist-dev/bundle-analysis.html --tsv dist-dev/bundle-analysis.tsv > dist-dev/bundle-analysis.log 2>&1 && echo '\nDev bundle analysis report available at: https://dev.degenduel.me/bundle-analysis.html\nDetailed dev TSV data available at: https://dev.degenduel.me/bundle-analysis.tsv\nFull analysis log saved to: dist-dev/bundle-analysis.log\n'",
+    "build:dev:analyze": "npx --node-arg=--max_old_space_size=8192 vite build --mode development && npx source-map-explorer 'dist-dev/assets/*.js' --html dist-dev/bundle-analysis.html --tsv dist-dev/bundle-analysis.tsv > dist-dev/bundle-analysis.log 2>&1 && echo '\nDev bundle analysis report available at: https://dev.degenduel.me/bundle-analysis.html\nDetailed dev TSV data available at: https://dev.degenduel.me/bundle-analysis.tsv\nFull analysis log saved to: dist-dev/bundle-analysis.log\n'",
     "preview": "npx vite preview",
     "dev:local": "npx vite --mode dev-local",
     "--------------- DESIGN COMMANDS -----------------": "",
@@ -43,7 +43,6 @@
     "--------------- OTHER COMMANDS ------------------": ""
   },
   "dependencies": {
-    "@bonfida/spl-name-service": "^0.1.25",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.1.1",
     "@hookform/resolvers": "^3.10.0",
@@ -61,7 +60,7 @@
     "@react-three/fiber": "^9.1.2",
     "@react-three/postprocessing": "3.0.4",
     "@simplewebauthn/browser": "^13.1.0",
-    "@solana/spl-token": "^0.1.8",
+    "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-wallets": "^0.19.36",
     "@solana/web3.js": "^1.98.2",
     "@telegram-apps/bridge": "^2.3.2",
