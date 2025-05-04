@@ -14,12 +14,12 @@ jobs:
       - name: Checkout 
         uses: actions/checkout@v4
         
-      # Also checkout the shared repo into the parent directory
+      # Also checkout the shared repo
       - name: Checkout shared repo
         uses: actions/checkout@v4
         with:
           repository: BranchManager69/degenduel-shared
-          path: ../degenduel-shared
+          path: degenduel-shared
           token: ${{ secrets.GITHUB_TOKEN }}
           
       # Set up Node.js
@@ -28,6 +28,18 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
+          
+      # Build shared package
+      - name: Build shared package
+        run: |
+          cd degenduel-shared
+          npm install
+          npm run build
+          cd -
+          
+      # Update dependency path for CI
+      - name: Update dependency path for CI
+        run: node .github/workflows/update-dependency-path.js
       
       # Install dependencies (using your package-lock.json)
       - name: Install dependencies
