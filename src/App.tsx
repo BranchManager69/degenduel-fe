@@ -127,7 +127,7 @@ import { TwitterAuthProvider } from "./contexts/TwitterAuthContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 /* Hooks */
 import "jupiverse-kit/dist/index.css";
-import { useAuth } from "./hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
 import { AffiliateSystemProvider } from "./hooks/social/legacy/useAffiliateSystem";
 import { InviteSystemProvider } from "./hooks/social/legacy/useInviteSystem";
@@ -262,27 +262,25 @@ export const App: React.FC = () => {
   
   // Hooks (always at top level)
   const privy = usePrivy();
-  const { checkAuth } = useAuth();
+  const { checkAuth } = useMigratedAuth();
 
   // Create refs at component top level to follow React's Rules of Hooks
   const hasRunValidation = React.useRef(false);
   const isLoggedOut = React.useRef(false);
 
-  // Effect to validate auth on startup
-  //   [4-30-25: NEED TO RE-VERIFY THIS!]
-  //   [5-05-25: Fixed hook placement - refs must be created outside useEffect]
+  // Effect to validate auth on startup - FIXED FOR INFINITE LOOP
+  // [5-05-25: Fixed infinite loop with auth system by using useMigratedAuth]
   useEffect(() => {
+    // Skip if already validated or logged out to prevent loops
+    if (hasRunValidation.current || isLoggedOut.current) return;
+    
+    console.log("[Auth] Validating authentication status on app startup");
+    hasRunValidation.current = true;
+    
     // Validate auth on startup
     const validateAuth = async () => {
-      // Skip if already validated or logged out to prevent loops
-      if (hasRunValidation.current || isLoggedOut.current) return;
-      
-      console.log("[Auth] Validating authentication status on app startup");
-      hasRunValidation.current = true;
-      
       try {
-        // Check auth
-        checkAuth();
+        await checkAuth();
       } catch (error) {
         console.error("[Auth] Failed to validate authentication:", error);
         // If validation fails and we have a stored user, clear it
@@ -293,13 +291,13 @@ export const App: React.FC = () => {
           // Disconnect the wallet
           useStore.getState().disconnectWallet();
           // Clear the user from the store
-          useStore.getState().setUser(null); // [4-30-25: ADDED]
+          useStore.getState().setUser(null);
           // Logout the user using the top-level instance
-          privy.logout(); // Use the instance from the top level
+          privy.logout();
           // Redirect to the login page
-          window.location.href = "/login"; // [4-30-25: ADDED]
-          // TODO: Add a toast notification to the user
-          toast.error("Logged out."); // [4-30-25: ADDED]
+          window.location.href = "/login";
+          // Add a toast notification to the user
+          toast.error("Logged out.");
         }
       }
     };
@@ -351,10 +349,7 @@ export const App: React.FC = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("online", handleOnlineStatus);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkAuth, privy]); // 'user' intentionally omitted to prevent infinite render loop.
-  // Including 'user' creates a circular dependency: effect reads user → calls checkAuth → 
-  // checkAuth updates user via store.setUser → triggers effect again → infinite loop
+  }, []); // Empty dependency array to run only once
 
   // Privy configuration
   //   [4-30-25: The official DegenDuel RPC is now being used for Privy configuration!

@@ -4,14 +4,14 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { MessageType, TopicType, useUnifiedWebSocket } from "../../hooks/websocket";
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
-  const { isAdmin, isAuthenticated } = useAuth();
+  const { isAdmin, isAuthenticated } = useMigratedAuth();
   // Use unified WebSocket for server status and system settings
   
   // Check for storybook mock status
@@ -377,7 +377,7 @@ export const Footer: React.FC = () => {
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0 pl-4">
             
             {/* Check if user is authenticated (is therefore assumed to be a pre-launch beta user) [OR] if we're past launch date/initial reveal (is now fully public) */}
-            {(isAuthenticated() || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
+            {(isAuthenticated || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
               <>
 
                 {/* Left side - Links with horizontal scroll if needed */}
@@ -410,7 +410,7 @@ export const Footer: React.FC = () => {
                   </Link>
                   
                   {/* RPC Benchmark Dashboard (only visible to admin users) */}
-                  {isAdmin() && systemSettings.showDiagnostics && systemSettings.diagOptions.includes('rpc_benchmarks') && (
+                  {isAdmin && systemSettings.showDiagnostics && systemSettings.diagOptions.includes('rpc_benchmarks') && (
                     <div className="ml-2 pl-2 border-l border-gray-700">
                       <RPCBenchmarkFooter compactMode={isCompact} />
                     </div>

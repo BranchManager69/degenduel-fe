@@ -12,6 +12,8 @@ branchbet/
 
 coverage/
 
+client_logs/
+
 # Documentation
 docs_drafts/
 CLAUDE.md

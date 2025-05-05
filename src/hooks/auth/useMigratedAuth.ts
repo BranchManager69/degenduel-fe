@@ -16,10 +16,8 @@
  */
 
 import { getFeatureFlag } from "../../config/featureFlags";
-
-// Interface imports are no longer needed due to our normalized interface
-
-// No need to import User types directly as they come through the context types
+import { useAuth as useUnifiedAuth } from "../../contexts/UnifiedAuthContext";
+import { useAuth as useLegacyAuth } from "./legacy/useAuth";
 
 // Create an interface that represents the normalized auth API
 // This way we ensure consistent behavior regardless of which system is used
@@ -29,9 +27,9 @@ interface NormalizedAuthAPI {
   loading: boolean; // For backward compatibility
   isAuthenticated: boolean;
   
-  // Role checks as functions
-  isAdmin: () => boolean;
-  isSuperAdmin: () => boolean;
+  // Role properties (normalized to boolean values)
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
   
   // Auth method checks
   isWalletAuth: () => boolean;
@@ -39,50 +37,41 @@ interface NormalizedAuthAPI {
   isTwitterAuth: () => boolean;
   
   // Other methods
-  checkAuth: () => Promise<boolean>;
+  checkAuth: () => Promise<boolean> | void;  // Handle both return types properly
   getToken: (type?: any) => Promise<string | null>;
   [key: string]: any; // Allow other properties
 }
 
 // Create a hook that returns a normalized auth API
 export function useMigratedAuth(): NormalizedAuthAPI {
-  // Use dynamic imports to avoid circular dependencies
-  const useAuthHook = () => {
-    // Check feature flag
-    const useUnifiedAuth = getFeatureFlag("useUnifiedAuth");
-    
-    if (useUnifiedAuth) {
-      // Use the new unified auth hook
-      const { useAuth } = require("../contexts/UnifiedAuthContext");
-      const auth = useAuth();
-      
-      // Normalize the new auth API
-      return {
-        ...auth,
-        isLoading: auth.isLoading,
-        loading: auth.isLoading, // For backward compatibility
-        isAuthenticated: !!auth.isAuthenticated, // Ensure boolean
-      };
-    } else {
-      // Use the old auth hook
-      const { useAuth } = require("../hooks/useAuth");
-      const auth = useAuth();
-      
-      // Normalize the old auth API
-      return {
-        ...auth,
-        isLoading: auth.loading,
-        loading: auth.loading,
-        // Convert function to boolean if needed
-        isAuthenticated: typeof auth.isAuthenticated === 'function' 
-          ? auth.isAuthenticated() 
-          : !!auth.isAuthenticated,
-      };
-    }
-  };
+  // Check feature flag
+  const useUnifiedAuthFlag = getFeatureFlag("useUnifiedAuth");
   
-  // Call the appropriate hook with normalized interface
-  return useAuthHook();
+  // Get the appropriate auth object based on the feature flag
+  const auth = useUnifiedAuthFlag ? useUnifiedAuth() : useLegacyAuth();
+  
+  // Create normalized auth API with consistent property types
+  return {
+    ...auth,
+    // Loading state - handle both auth systems
+    isLoading: 'isLoading' in auth ? auth.isLoading : (auth.loading || false),
+    loading: 'isLoading' in auth ? auth.isLoading : (auth.loading || false),
+    
+    // Authentication state - ensure it's a boolean
+    isAuthenticated: typeof auth.isAuthenticated === 'function' 
+      ? auth.isAuthenticated() 
+      : !!auth.isAuthenticated,
+    
+    // Role checks - ensure they're booleans
+    isAdmin: typeof auth.isAdmin === 'function' ? auth.isAdmin() : !!auth.isAdmin,
+    isSuperAdmin: typeof auth.isSuperAdmin === 'function' ? auth.isSuperAdmin() : !!auth.isSuperAdmin,
+    
+    // Normalize method names between the two auth systems
+    checkAuth: auth.checkAuth || (() => Promise.resolve(true)),
+    getToken: ('getToken' in auth) ? auth.getToken : 
+              ('getAccessToken' in auth) ? auth.getAccessToken : 
+              (() => Promise.resolve(null)),
+  };
 }
 
 /**

@@ -49,8 +49,8 @@ const AuthSystemTestPage: React.FC = () => {
     // Handle both function and boolean property cases
     const isAuth = auth.isAuthenticated;
     if (isAuth) {
-      if (auth.isSuperAdmin()) return 'Super Admin';
-      if (auth.isAdmin()) return 'Admin';
+      if (auth.isSuperAdmin) return 'Super Admin';
+      if (auth.isAdmin) return 'Admin';
       return 'Regular User';
     }
     return 'Not Authenticated';
