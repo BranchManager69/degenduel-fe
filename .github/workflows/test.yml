@@ -34,9 +34,13 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@branchmanager69'
     
     - name: Install dependencies
       run: npm ci ${{ env.NPM_FLAGS }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       
     - name: Run type checking
       id: type-check
@@ -85,9 +89,13 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@branchmanager69'
     
     - name: Install dependencies
       run: npm ci ${{ env.NPM_FLAGS }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       
     - name: Build development version
       run: |
@@ -143,9 +151,13 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@branchmanager69'
     
     - name: Install dependencies
       run: npm ci ${{ env.NPM_FLAGS }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       
     - name: Build production version
       run: |
@@ -202,9 +214,13 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@branchmanager69'
     
     - name: Install dependencies
       run: npm ci ${{ env.NPM_FLAGS }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       
     - name: Check for Storybook
       id: check-storybook
