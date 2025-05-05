@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { useSolanaTokenData } from '../hooks/useSolanaTokenData';
+import { useSolanaTokenData } from '../hooks/data/useSolanaTokenData';
 
 interface SolanaTokenDisplayProps {
   mintAddress?: string;

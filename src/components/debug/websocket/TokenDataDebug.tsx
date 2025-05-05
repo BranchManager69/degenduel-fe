@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { useTokenData } from '../../../hooks/useTokenData';
-import { useWebSocketMonitor } from '../../../hooks/useWebSocketMonitor';
+import React, { useCallback, useState } from 'react';
+import { useTokenData } from '../../../hooks/data/legacy/useTokenData';
+import { useWebSocketMonitor } from '../../../hooks/utilities/legacy/useWebSocketMonitor';
 
 /**
  * Debug component for testing the TokenData WebSocket hook

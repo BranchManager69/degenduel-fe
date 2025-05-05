@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BlinkButton, ShareBlinkButton, SolanaWalletConnector } from '../../../components/blinks';
 import { toast } from '../../../components/toast';
-import { useSolanaWallet } from '../../../hooks/useSolanaWallet';
+import { useSolanaWallet } from '../../../hooks/data/useSolanaWallet';
 
 const contestData = [
   {

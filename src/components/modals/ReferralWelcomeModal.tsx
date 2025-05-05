@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect } from "react";
 
-import { useAuth } from "../../hooks/useAuth";
-import { useReferral } from "../../hooks/useReferral";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useReferral } from "../../hooks/social/useReferral";
 import { useStore } from "../../store/useStore";
 
 export const ReferralWelcomeModal: React.FC = () => {

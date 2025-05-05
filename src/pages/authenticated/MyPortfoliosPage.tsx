@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/SelectAdvanced";
-import { useUserContests } from "../../hooks/useUserContests";
+import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { formatCurrency } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";

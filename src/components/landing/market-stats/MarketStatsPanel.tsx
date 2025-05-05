@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
+import React, { useCallback, useEffect, useState } from "react";
+import useTokenData from "../../../hooks/data/legacy/useTokenData";
 import { formatNumber } from "../../../utils/format";
-import useTokenData from "../../../hooks/useTokenData";
 
 interface MarketStats {
   totalVolume24h: number;

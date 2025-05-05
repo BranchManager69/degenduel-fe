@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
 import { useStore } from "../../store/useStore";
 import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton";
 

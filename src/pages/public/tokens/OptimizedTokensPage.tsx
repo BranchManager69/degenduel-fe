@@ -10,7 +10,7 @@ import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailMod
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { SearchInput } from "../../../components/ui/SearchInput";
-import useTokenData from "../../../hooks/useTokenData";
+import useTokenData from "../../../hooks/data/legacy/useTokenData";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";

@@ -1,12 +1,25 @@
+import React from 'react';
 import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
 
-import { useAuth } from "../../hooks/useAuth";
-
+/**
+ * @deprecated Use the AuthenticatedRoute from AuthenticatedRoute.unified.tsx instead
+ */
 interface AuthenticatedRouteProps {
   children: React.ReactNode;
 }
 
 export function AuthenticatedRoute({ children }: AuthenticatedRouteProps) {
+  // Log deprecation warning
+  React.useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] AuthenticatedRoute is deprecated and will be replaced in the next release. " +
+      "Please use the AuthenticatedRoute from AuthenticatedRoute.unified.tsx instead. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/AUTH_MIGRATION_PLAN.md for detailed migration instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+  }, []);
+
   const { user, loading } = useAuth();
   const location = useLocation();
 

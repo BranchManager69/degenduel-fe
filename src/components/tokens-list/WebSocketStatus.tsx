@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useTokenData } from '../../hooks/useTokenData';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTokenData } from '../../hooks/data/legacy/useTokenData';
 
 export const WebSocketStatus: React.FC = () => {
   const { isConnected, tokens, lastUpdate, error, connectionState } = useTokenData("all");

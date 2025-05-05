@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { useContestChatWebSocket } from "../../hooks/websocket/useContestChatWebSocket";
+import { useContestChatWebSocket } from "../../hooks/websocket/legacy/useContestChatWebSocket";
 
 // Default profile picture URL
 const DEFAULT_PROFILE_PICTURE = "https://api.dicebear.com/7.x/avataaars/svg?seed=";

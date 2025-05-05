@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import React, { MouseEvent, useEffect, useRef, useState } from "react";
 
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/auth/legacy/useAuth";
 
 interface Particle {
   id: number;

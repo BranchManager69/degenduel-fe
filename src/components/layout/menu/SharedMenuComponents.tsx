@@ -13,16 +13,16 @@
  * - MenuDivider: Consistent divider styling
  */
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { motion } from "framer-motion";
+import React, { useEffect, useState } from 'react';
 import { FaFingerprint } from "react-icons/fa";
+import { Link } from 'react-router-dom';
 import { config } from '../../../config/config';
-import SolanaWalletDisplay from '../../SolanaWalletDisplay';
-import SolanaTokenDisplay from '../../SolanaTokenDisplay';
-import useBiometricAuth from '../../../hooks/useBiometricAuth';
+import useBiometricAuth from '../../../hooks/auth/legacy/useBiometricAuth';
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
-import { motion } from "framer-motion";
+import SolanaTokenDisplay from '../../SolanaTokenDisplay';
+import SolanaWalletDisplay from '../../SolanaWalletDisplay';
 
 /**
  * Wallet Details Section - shared between both menu types

@@ -8,7 +8,7 @@ import { ServiceGraph } from "./ServiceGraph";
 import { ServiceGrid } from "./ServiceGrid";
 import { ServiceList } from "./ServiceList";
 import { SystemStatus } from "./SystemStatus";
-import { useSkyDuelWebSocket } from "../../../hooks/websocket/useSkyDuelWebSocket";
+import { useSkyDuelWebSocket } from "../../../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { useStore } from "../../../store/useStore";
 
 interface SkyDuelDashboardProps {

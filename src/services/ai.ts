@@ -18,13 +18,11 @@
  */
 
 // Config
-import { API_URL, WS_URL } from '../config/config';
+import { API_URL } from '../config/config';
 const API_URL_BASE = API_URL; // Base URL for DegenDuel API; used by the AI Service
-const WS_URL_BASE = WS_URL; // Base WebSocket URL
 
-// Auth service for JWT tokens
-// TODO: what is this?
-import { getAuthToken } from './authService';
+// Import auth and unified websocket services
+import { authService } from './index';
 
 // AI Message
 export interface AIMessage {
@@ -115,191 +113,31 @@ export class AIServiceError extends Error {
   }
 }
 
-// WebSocket connection management
-let ws: WebSocket | null = null;
-let isConnecting = false;
-let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
-const messageHandlers = new Map<string, (data: any) => void>();
-const subscriptions = new Set<string>();
+// No global state needed - using simple REST API approach
 
 /**
  * AI Service implementation
  * 
- * Provides a comprehensive client for the DegenDuel AI API
- * Supports both REST and WebSocket communication
+ * Provides an API client for the DegenDuel AI service
+ * Uses REST API for all functionality
+ *
+ * NOTE: Previously contained a custom WebSocket implementation that has been
+ * removed in favor of the UnifiedWebSocketContext system.
  */
 class AIService {
   private readonly API_AI_SVC_REST_URL = `${API_URL_BASE}/api/ai`;
-  private readonly API_AI_SVC_WS_URL = `${WS_URL_BASE}/api/v69/ws`;
   
   // Cache for conversations to enable history tracking without repeated server calls
-  // WAIT WHAT? If our OpenAI Responses API is managing the conversation id on its own, then is this still necessary?
   private conversationCache = new Map<string, AIMessage[]>();
   
-  // WebSocket connection status
-  private wsConnected = false;
-
-  // Initialize WebSocket connection
-  constructor() {  
-    this.initWebSocket();
+  constructor() {
+    // No initialization needed - we use REST API exclusively
   }
   
-  /**
-   * Initialize WebSocket connection
-   */
-  private initWebSocket() {
-    // Prevent multiple connection attempts
-    if (isConnecting || (ws && ws.readyState === WebSocket.OPEN)) {
-      return;
-    }
-    
-    isConnecting = true;
-    
-    try {
-      // Create WebSocket connection
-      ws = new WebSocket(this.API_AI_SVC_WS_URL);
-      
-      // Set event handlers
-      ws.onopen = this.handleWsOpen.bind(this);
-      ws.onmessage = this.handleWsMessage.bind(this);
-      ws.onclose = this.handleWsClose.bind(this);
-      ws.onerror = this.handleWsError.bind(this);
-    } catch (error) {
-      console.error('WebSocket initialization error:', error);
-      isConnecting = false;
-      this.scheduleReconnect();
-    }
-  }
+  // No WebSocket methods needed - using REST API only
   
   /**
-   * Handle WebSocket open event
-   */
-  private handleWsOpen() {
-    console.log('AI Service: WebSocket connected');
-    this.wsConnected = true;
-    isConnecting = false;
-    
-    // Clear reconnect timeout
-    if (reconnectTimeout) {
-      clearTimeout(reconnectTimeout);
-      reconnectTimeout = null;
-    }
-    
-    // Subscribe to AI topic
-    this.subscribeToAI();
-    
-    // Resubscribe to all active subscriptions
-    subscriptions.forEach(topic => {
-      this.wsSubscribe(topic);
-    });
-  }
-  
-  /**
-   * Handle WebSocket message event
-   */
-  private handleWsMessage(event: MessageEvent) {
-    try {
-      const message = JSON.parse(event.data);
-      
-      // Handle AI responses
-      if (message.topic === 'ai' && 
-         (message.subtype === 'response' || message.subtype === 'stream')) {
-        const requestId = message.requestId;
-        
-        // Find and call the message handler
-        if (requestId && messageHandlers.has(requestId)) {
-          const handler = messageHandlers.get(requestId);
-          
-          if (handler) {
-            handler(message.data);
-          }
-          
-          // Only remove handler if not a streaming response or if it's the final chunk
-          if (message.subtype !== 'stream' || message.data.isComplete) {
-            messageHandlers.delete(requestId);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('WebSocket message handling error:', error);
-    }
-  }
-  
-  /**
-   * Handle WebSocket close event
-   */
-  private handleWsClose() {
-    console.log('AI Service: WebSocket closed');
-    this.wsConnected = false;
-    isConnecting = false;
-    
-    // Schedule reconnect
-    this.scheduleReconnect();
-  }
-  
-  /**
-   * Handle WebSocket error event
-   */
-  private handleWsError(error: Event) {
-    console.error('AI Service: WebSocket error:', error);
-    this.wsConnected = false;
-    isConnecting = false;
-    
-    // Schedule reconnect
-    this.scheduleReconnect();
-  }
-  
-  /**
-   * Schedule WebSocket reconnection
-   */
-  private scheduleReconnect() {
-    // Prevent multiple reconnection attempts
-    if (reconnectTimeout) {
-      clearTimeout(reconnectTimeout);
-    }
-    
-    // Exponential backoff with max 30s
-    const delay = Math.min(5000 * (Math.random() + 1), 30000);
-    
-    reconnectTimeout = setTimeout(() => {
-      this.initWebSocket();
-    }, delay);
-  }
-  
-  /**
-   * Subscribe to AI topic via WebSocket
-   */
-  private subscribeToAI() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    
-    ws.send(JSON.stringify({
-      type: 'SUBSCRIBE',
-      topic: 'ai'
-    }));
-    
-    subscriptions.add('ai');
-  }
-  
-  /**
-   * Subscribe to a topic via WebSocket
-   */
-  private wsSubscribe(topic: string) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    
-    ws.send(JSON.stringify({
-      type: 'SUBSCRIBE',
-      topic
-    }));
-    
-    subscriptions.add(topic);
-  }
-  
-  /**
-   * Generate a chat completion using the new REST API or WebSocket
+   * Generate a chat completion using REST API
    * 
    * @param messages Array of messages in the conversation
    * @param options Configuration options
@@ -331,14 +169,10 @@ class AIService {
       // Filter out system messages as they're handled by the backend
       const filteredMessages = conversationHistory.filter(msg => msg.role !== 'system');
       
-      // Prefer WebSocket if connected and not in streaming mode
-      if (this.wsConnected && !useStreaming) {
-        return this.chatWebSocket(filteredMessages, options);
-      } else if (useStreaming) {
-        // Use streaming API
+      // Use appropriate REST API endpoint based on streaming preference
+      if (useStreaming) {
         return this.chatStreaming(filteredMessages, options);
       } else {
-        // Use REST API as fallback
         return this.chatRest(filteredMessages, options);
       }
     } catch (error) {
@@ -364,7 +198,7 @@ class AIService {
   private async chatRest(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
     try {
       // Get auth token for the request
-      const token = await getAuthToken();
+      const token = await authService.getToken();
       
       // Create the DegenDuel AI Service API URL
       const responseUrl = `${this.API_AI_SVC_REST_URL}/response`;
@@ -430,7 +264,7 @@ class AIService {
   private async chatStreaming(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
     try {
       // Get auth token for the request
-      const token = await getAuthToken();
+      const token = await authService.getToken();
       
       // Create the DegenDuel AI Service API URL
       const streamUrl = `${this.API_AI_SVC_REST_URL}/stream`;
@@ -516,151 +350,7 @@ class AIService {
     }
   }
   
-  /**
-   * Generate a chat completion using WebSocket
-   * 
-   * @param messages Array of messages in the conversation
-   * @param options Configuration options
-   * @returns Promise with the AI response
-   */
-  private chatWebSocket(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
-    return new Promise((resolve, reject) => {
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        // Fallback to REST API if WebSocket is not connected
-        this.chatRest(messages, options)
-          .then(resolve)
-          .catch(reject);
-        return;
-      }
-      
-      // Generate request ID for tracking the response
-      const requestId = crypto.randomUUID();
-      
-      // Register message handler
-      messageHandlers.set(requestId, (data) => {
-        if (data.conversationId) {
-          // Update conversation cache
-          const updatedHistory = [
-            ...messages,
-            { role: 'assistant' as const, content: data.content || '' }
-          ];
-          this.conversationCache.set(data.conversationId, updatedHistory);
-        }
-        
-        resolve({
-          content: data.content || '',
-          functionCalled: data.functionCalled,
-          conversationId: data.conversationId || options.conversationId || ''
-        });
-      });
-      
-      // Send request via WebSocket
-      ws.send(JSON.stringify({
-        type: 'REQUEST',
-        topic: 'ai',
-        action: 'query',
-        requestId,
-        data: {
-          messages,
-          conversationId: options.conversationId,
-          context: options.context || 'terminal'
-        }
-      }));
-      
-      // Set timeout for response
-      setTimeout(() => {
-        if (messageHandlers.has(requestId)) {
-          messageHandlers.delete(requestId);
-          reject(new AIServiceError(
-            'WebSocket request timed out',
-            AIErrorType.NETWORK
-          ));
-        }
-      }, 30000);
-    });
-  }
-  
-  /**
-   * Generate a streaming chat completion using WebSocket
-   * 
-   * @param messages Array of messages in the conversation
-   * @param options Configuration options
-   * @returns Promise with the AI response
-   */
-  async chatWebSocketStreaming(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
-    return new Promise((resolve, reject) => {
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        // Fallback to REST streaming API if WebSocket is not connected
-        this.chatStreaming(messages, options)
-          .then(resolve)
-          .catch(reject);
-        return;
-      }
-      
-      // Generate request ID for tracking the response
-      const requestId = crypto.randomUUID();
-      let fullContent = '';
-      let responseConversationId = options.conversationId || '';
-      let isComplete = false;
-      
-      // Register message handler for streaming chunks
-      messageHandlers.set(requestId, (data) => {
-        if (data.conversationId) {
-          responseConversationId = data.conversationId;
-        }
-        
-        if (data.content) {
-          fullContent += data.content;
-          if (options.onChunk) {
-            options.onChunk(data.content);
-          }
-        }
-        
-        if (data.isComplete) {
-          isComplete = true;
-          messageHandlers.delete(requestId);
-          
-          // Update conversation cache
-          if (responseConversationId) {
-            const updatedHistory = [
-              ...messages,
-              { role: 'assistant' as const, content: fullContent }
-            ];
-            this.conversationCache.set(responseConversationId, updatedHistory);
-          }
-          
-          resolve({
-            content: fullContent,
-            conversationId: responseConversationId
-          });
-        }
-      });
-      
-      // Send streaming request via WebSocket
-      ws.send(JSON.stringify({
-        type: 'REQUEST',
-        topic: 'ai',
-        action: 'stream',
-        requestId,
-        data: {
-          messages,
-          conversationId: options.conversationId,
-          context: options.context || 'terminal'
-        }
-      }));
-      
-      // Set timeout for response (longer for streaming)
-      setTimeout(() => {
-        if (!isComplete && messageHandlers.has(requestId)) {
-          messageHandlers.delete(requestId);
-          reject(new AIServiceError(
-            'WebSocket streaming request timed out',
-            AIErrorType.NETWORK
-          ));
-        }
-      }, 60000);
-    });
-  }
+  // WebSocket methods have been removed in favor of REST API only
   
   /**
    * Get token data directly without using natural language
@@ -693,10 +383,11 @@ class AIService {
   /**
    * Get the WebSocket connection status
    * 
-   * @returns True if WebSocket is connected, false otherwise
+   * @deprecated WebSocket functionality has been removed in favor of the unified WebSocket system
+   * @returns Always returns false since WebSocket is no longer managed by this service
    */
   isWebSocketConnected(): boolean {
-    return this.wsConnected;
+    return false;
   }
   
   /**
@@ -765,7 +456,12 @@ class AIService {
   }
 }
 
-// Create and export a singleton AI Service instance
+/**
+ * Create and export a singleton AI Service instance
+ * 
+ * This service now exclusively uses REST API for all operations
+ * WebSocket functionality was previously removed in favor of the unified WebSocket system
+ */
 export const aiService = new AIService();
 
 // Export default for convenience

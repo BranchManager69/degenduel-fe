@@ -15,7 +15,13 @@ export type {
   VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
 } from "./admin";
 
-// Core Entity Types
+/**
+ * @deprecated Use the User interface from src/types/user.ts instead
+ * This interface is maintained for backward compatibility. The new User interface
+ * in user.ts includes all these fields plus additional fields for the unified auth system.
+ * 
+ * @see src/types/user.ts for the unified User interface
+ */
 export interface User {
   wallet_address: string;
   nickname: string | null;

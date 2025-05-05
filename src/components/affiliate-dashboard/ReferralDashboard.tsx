@@ -22,7 +22,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 
-import { useReferral } from "../../hooks/useReferral";
+import { useReferral } from "../../hooks/social/useReferral";
 import { ddApi } from "../../services/dd-api";
 
 // Clean interfaces

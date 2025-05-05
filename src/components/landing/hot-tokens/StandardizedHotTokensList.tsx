@@ -23,7 +23,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import React, { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useSound from 'use-sound';
-import { useStandardizedTokenData } from '../../../hooks/useStandardizedTokenData';
+import { useStandardizedTokenData } from '../../../hooks/data/useStandardizedTokenData';
 import { Token } from '../../../types';
 import { formatNumber } from '../../../utils/format';
 import { DataContainer } from '../../shared/DataContainer';

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { useDebounce } from "../../hooks/useDebounce";
+import { useDebounce } from "../../hooks/utilities/useDebounce";
 import type { User } from "../../services/userService";
 import { userService } from "../../services/userService";
 

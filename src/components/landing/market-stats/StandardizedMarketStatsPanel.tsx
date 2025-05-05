@@ -10,11 +10,11 @@
  * @created 2025-04-29
  */
 
-import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import React, { useMemo } from 'react';
+import { useStandardizedTokenData } from '../../../hooks/data/useStandardizedTokenData';
 import { formatNumber } from '../../../utils/format';
 import { DataContainer } from '../../shared/DataContainer';
-import { useStandardizedTokenData } from '../../../hooks/useStandardizedTokenData';
 
 interface MarketStatsPanelProps {
   initialLoading?: boolean;

@@ -1,6 +1,6 @@
 // AuthDebugPanel.tsx
 import React from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/auth/legacy/useAuth';
 
 interface AuthDebugPanelProps {
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'floating';

@@ -1,8 +1,8 @@
 // src/components/admin/RPCBenchmarkFooter.tsx
 
-import React from 'react';
 import { motion } from 'framer-motion';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/useRPCBenchmarkWebSocket';
+import React from 'react';
+import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
 
 // This is a standalone component that can be used in the Footer component
 // for admin users to see RPC benchmark diagnostics data

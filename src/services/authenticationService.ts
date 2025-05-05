@@ -1,18 +1,37 @@
 // src/services/authenticationService.ts
+//
+// NOTE: There are multiple auth service files that handle different authentication flows:
+// - authService.ts (lowercase, deprecated)
+// - AuthService.ts (uppercase, new unified system)
+// - authenticationService.ts (this file, deprecated wallet auth)
+//
+// To avoid confusion, use imports from services/index.ts which handles these differences
+// and use the new unified AuthService.ts for all new code.
 
 /**
- * Authentication Service
+ * DEPRECATED Authentication Service
  * 
  * Centralizes wallet authentication flow for both Jupiter and original wallet implementations
  * 
- * WARNING: REFACTOR PENDING (May 2025)
+ * @deprecated This service is deprecated and will be removed in the next release.
+ * Please use the unified AuthService from AuthService.ts instead.
+ * See UNIFIED_AUTH_SYSTEM_README.md for detailed migration instructions.
+ * 
  * This is one of THREE separate authentication services in the codebase.
  * This specific file handles wallet authentication.
- * The complete auth system will be consolidated into a single service.
+ * The complete auth system has been consolidated into the unified AuthService.
  * 
  * @author @BranchManager69
- * @last-modified 2025-04-02
+ * @last-modified 2025-05-05
  */
+
+// Display warning in console
+console.warn(
+  "%c[DEPRECATED] authenticationService.ts is deprecated and will be removed in a future release. " +
+  "Please use the unified AuthService from AuthService.ts instead. " +
+  "See UNIFIED_AUTH_SYSTEM_README.md for detailed migration instructions.",
+  "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+);
 
 // Custom type definition for SignMessageOutput
 interface SignMessageOutput {
@@ -26,6 +45,7 @@ import { TokenManager, TokenType } from './TokenManager';
 /**
  * Authenticate with wallet by signing a message
  * 
+ * @deprecated Use authService.loginWithWallet() from the unified auth system
  * @param walletAddress The wallet address to authenticate
  * @param signMessage Function to sign a message with the wallet
  * @returns Authentication response including token and user data
@@ -34,6 +54,10 @@ export async function authenticateWithWallet(
   walletAddress: string,
   signMessage: (message: Uint8Array) => Promise<SignMessageOutput | any>
 ) {
+  console.warn(
+    "[DEPRECATED] authenticateWithWallet is deprecated. " +
+    "Use authService.loginWithWallet() from the unified auth system instead."
+  );
   console.log('[AUTH DEBUG] Starting wallet authentication process for address:', walletAddress);
   try {
     // Get auth nonce from the backend

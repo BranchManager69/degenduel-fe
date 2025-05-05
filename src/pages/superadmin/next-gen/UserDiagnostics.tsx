@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 import { SpyPanel } from "../../../components/admin/SpyPanel";
-import { useEnhancedDiagnostics } from "../../../hooks/useEnhancedDiagnostics";
+import { useEnhancedDiagnostics } from "../../../hooks/data/legacy/useEnhancedDiagnostics";
 import { useStore } from "../../../store/useStore";
 
 const UserDiagnostics: React.FC = () => {

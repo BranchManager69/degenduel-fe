@@ -1,8 +1,8 @@
 // src/components/admin/FooterDiagnostics.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/useRPCBenchmarkWebSocket';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
 import { isStorybook } from '../../utils/storybook';
 
 // Use a storybook mock if available

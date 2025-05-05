@@ -4,9 +4,12 @@
  * Main entry point for the DegenDuel frontend.
  * 
  * @author @BranchManager69
- * @version 1.9.0
+ * @version 1.9.1
  * @created 2025-04-02
- * @updated 2025-04-30
+ * @updated 2025-05-05
+ * 
+ * Note: This file is being migrated to the unified auth system.
+ * See src/AUTH_README.md for more details.
  */
 
 /***********************************************************************
@@ -124,10 +127,10 @@ import { TwitterAuthProvider } from "./contexts/TwitterAuthContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 /* Hooks */
 import "jupiverse-kit/dist/index.css";
-import { AffiliateSystemProvider } from "./hooks/useAffiliateSystem";
-import { useAuth } from "./hooks/useAuth";
-import { InviteSystemProvider } from "./hooks/useInviteSystem";
-import { useScrollbarVisibility } from "./hooks/useScrollbarVisibility";
+import { useAuth } from "./hooks/auth/legacy/useAuth";
+import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
+import { AffiliateSystemProvider } from "./hooks/social/legacy/useAffiliateSystem";
+import { InviteSystemProvider } from "./hooks/social/legacy/useInviteSystem";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AiTesting } from "./pages/admin/AiTesting";
 import ClientErrorsPage from "./pages/admin/ClientErrorsPage";
@@ -261,14 +264,14 @@ export const App: React.FC = () => {
   const privy = usePrivy();
   const { checkAuth } = useAuth();
 
+  // Create refs at component top level to follow React's Rules of Hooks
+  const hasRunValidation = React.useRef(false);
+  const isLoggedOut = React.useRef(false);
+
   // Effect to validate auth on startup
   //   [4-30-25: NEED TO RE-VERIFY THIS!]
-  //   [5-05-25: Fixed infinite render loop by using refs instead of state dependencies]
+  //   [5-05-25: Fixed hook placement - refs must be created outside useEffect]
   useEffect(() => {
-    // Use refs to prevent infinite loops
-    const hasRunValidation = React.useRef(false);
-    const isLoggedOut = React.useRef(false);
-    
     // Validate auth on startup
     const validateAuth = async () => {
       // Skip if already validated or logged out to prevent loops
@@ -724,6 +727,16 @@ export const App: React.FC = () => {
                                       element={
                                         <AdminRoute>
                                           <ClientErrorsPage />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/auth-system-test"
+                                      element={
+                                        <AdminRoute>
+                                          <React.Suspense fallback={<LoadingFallback variant="default" message="Loading Auth System Test..." />}>
+                                            {React.createElement(React.lazy(() => import("./pages/admin/AuthSystemTestPage")))}
+                                          </React.Suspense>
                                         </AdminRoute>
                                       }
                                     />

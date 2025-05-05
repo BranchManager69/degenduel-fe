@@ -22,7 +22,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 
-import { useAffiliateSystem } from "../../hooks/useAffiliateSystem";
+import { useAffiliateSystem } from "../../hooks/social/legacy/useAffiliateSystem";
 import { ddApi } from "../../services/dd-api";
 
 // Clean interfaces

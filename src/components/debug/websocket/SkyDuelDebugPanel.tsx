@@ -9,7 +9,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { DDExtendedMessageType, messageTypeToString } from '../../../hooks/websocket/types';
-import { useSkyDuelWebSocket } from '../../../hooks/websocket/useSkyDuelWebSocket';
+import { useSkyDuelWebSocket } from '../../../hooks/websocket/legacy/useSkyDuelWebSocket';
 
 // Interface for tracked WebSocket messages
 interface WebSocketMessage {

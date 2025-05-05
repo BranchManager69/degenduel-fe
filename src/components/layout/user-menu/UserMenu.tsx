@@ -14,7 +14,7 @@ import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/auth/legacy/useAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
 import { AdminControls } from "./UserMenuAdminControls";

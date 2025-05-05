@@ -1,7 +1,7 @@
 // src/components/admin/RPCBenchmarkDashboard.tsx
 
 import React, { useEffect } from 'react';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/useRPCBenchmarkWebSocket';
+import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
 
 interface RPCBenchmarkDashboardProps {
   isVisible?: boolean;

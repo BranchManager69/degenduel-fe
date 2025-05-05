@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { useCustomToast } from "../../components/toast";
-import { useUserContests } from "../../hooks/useUserContests";
+import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { UserContest } from "../../services/contestService";
 import { shouldThrottleErrorToast } from "../../utils/wsMonitor";
 import { FloatingContestChat } from "./FloatingContestChat";

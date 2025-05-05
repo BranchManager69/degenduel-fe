@@ -2,9 +2,9 @@
 
 import React, { useEffect } from "react";
 
-import { WebSocketCard } from "./WebSocketCard";
-import { useWebSocketMonitor } from "../../hooks/useWebSocketMonitor";
+import { useWebSocketMonitor } from "../../hooks/utilities/legacy/useWebSocketMonitor";
 import { useStore } from "../../store/useStore";
+import { WebSocketCard } from "./WebSocketCard";
 
 const WebSocketPanel: React.FC = () => {
   const { webSocket, setWebSocketState, addWebSocketAlert } = useStore();

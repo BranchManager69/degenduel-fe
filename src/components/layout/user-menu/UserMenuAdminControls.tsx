@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/auth/legacy/useAuth";
 
 export const AdminControls: React.FC = () => {
   const { isAdmin, isSuperAdmin } = useAuth();

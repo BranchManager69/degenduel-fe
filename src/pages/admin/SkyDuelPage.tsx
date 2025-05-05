@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 
 import { SkyDuelDashboard } from "../../components/admin/skyduel/SkyDuelDashboard";
 import SkyDuelDebugPanel from "../../components/debug/websocket/SkyDuelDebugPanel";
-import { useAuth } from "../../hooks/useAuth";
-import { useSkyDuelWebSocket } from "../../hooks/websocket/useSkyDuelWebSocket";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useSkyDuelWebSocket } from "../../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { useStore } from "../../store/useStore";
 
 export const SkyDuelPage: React.FC = () => {

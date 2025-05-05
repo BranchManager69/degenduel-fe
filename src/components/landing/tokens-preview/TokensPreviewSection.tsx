@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import useTokenData from "../../../hooks/data/legacy/useTokenData";
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
-import useTokenData from "../../../hooks/useTokenData";
 
 interface TokensPreviewSectionProps {
   maxTokens?: number; // Maximum number of tokens to display
