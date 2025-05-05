@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import WalletBalanceChart from './WalletBalanceChart';
-import { useUnifiedWebSocket } from '../hooks/websocket/useUnifiedWebSocket';
+import { useUnifiedWebSocket, DDExtendedMessageType } from '../hooks/websocket';
 
 interface WalletBalanceAnalyticsProps {
   className?: string;
@@ -35,7 +35,7 @@ export const WalletBalanceAnalytics: React.FC<WalletBalanceAnalyticsProps> = ({
   // Provide the required parameters to useUnifiedWebSocket
   const { isConnected, isAuthenticated, request } = useUnifiedWebSocket(
     'wallet-balance-analytics', // Unique ID for this component
-    ['DATA'], // Message types to listen for
+    [DDExtendedMessageType.DATA], // Message types to listen for
     () => {} // Empty callback since we're not using the subscription directly
   );
   

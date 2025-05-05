@@ -35,8 +35,9 @@ export const HeroTitle: React.FC<{
   const [particles, setParticles] = useState<Particle[]>([]); // Particle system for extra pizzazz
 
   // Use internal state if no external control is provided
-  const effectiveDebugMode = setDebugMode === (() => {}) ? internalDebugMode : debugMode;
-  const effectiveSetDebugMode = setDebugMode === (() => {}) ? setInternalDebugMode : setDebugMode;
+  const isDefaultSetDebugMode = setDebugMode === (() => {});
+  const effectiveDebugMode = isDefaultSetDebugMode ? internalDebugMode : debugMode;
+  const effectiveSetDebugMode = isDefaultSetDebugMode ? setInternalDebugMode : setDebugMode;
 
   // Track mouse position for an interactive effect
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });

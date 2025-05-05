@@ -25,9 +25,8 @@ const BASE_SUBMISSION_COST =
     : TOKEN_SUBMISSION_COST;
 
 const RECIPIENT_WALLET = new PublicKey(TREASURY_WALLET);
-const RPC_ENDPOINT =
-  //import.meta.env.VITE_SOLANA_RPC_MAINNET || "https://api.mainnet-beta.solana.com";
-  import.meta.env.VITE_SOLANA_RPC_MAINNET;
+// UPDATED: No longer using direct RPC endpoint - using server-side Solana proxy
+const RPC_ENDPOINT = '/api/solana-rpc'; // Use relative URL to leverage server proxy
 
 // Maximum discount percentage (cap at 50%)
 const MAX_DISCOUNT_PERCENT = 50;

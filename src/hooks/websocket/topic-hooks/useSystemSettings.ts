@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // System settings interfaces based on backend API documentation
@@ -313,7 +313,7 @@ export function useSystemSettings(settingsToWatch?: string[]) {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'system-settings-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.SYSTEM]
   );

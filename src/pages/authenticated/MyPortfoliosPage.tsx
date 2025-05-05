@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   FaChartPie,
   FaFilter,
-  FaSearch,
   FaSortAmountDown,
   FaSortAmountUp,
 } from "react-icons/fa";
@@ -19,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../../components/ui/Card";
-import { Input } from "../../components/ui/Input";
+import { SearchInput } from "../../components/ui/SearchInput";
 import {
   Select,
   SelectContent,
@@ -262,14 +261,12 @@ export const MyPortfoliosPage: React.FC = () => {
 
         {/* Filters & Search */}
         <div className="mb-8 flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <FaSearch className="absolute left-3 top-3 text-gray-400" />
-            <Input
-              type="search"
+          <div className="flex-grow">
+            <SearchInput
               placeholder="Search portfolios by contest or token..."
-              className="pl-10 bg-dark-200/80 border-dark-300 text-gray-200"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={setSearchTerm}
+              className="flex-grow"
             />
           </div>
 

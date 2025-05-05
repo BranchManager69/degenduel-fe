@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Contest data interfaces based on backend API documentation
@@ -273,7 +273,7 @@ export function useContests(userId?: string) {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'contest-data-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.CONTEST, TopicType.SYSTEM]
   );

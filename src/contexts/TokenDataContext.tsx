@@ -10,7 +10,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 
 // Import types from types folder and hooks from websocket folder 
 import { authDebug } from "../config/config";
-import { MessageType } from "../hooks/websocket/types";
+import { MessageType } from "../hooks/websocket";
 import { useUnifiedWebSocket } from "../hooks/websocket/useUnifiedWebSocket";
 import { Token } from "../types";
 

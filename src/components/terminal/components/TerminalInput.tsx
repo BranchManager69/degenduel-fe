@@ -123,7 +123,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                   repeatType: "loop"
                 }}
               >
-                EXECUTE COMMAND::_
+                Ask Didi_
               </motion.div>
             </div>
           )}
@@ -144,7 +144,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               }
             }}
             className="w-full bg-transparent outline-none border-none text-white placeholder-mauve-dark/50 focus:ring-0"
-            placeholder="__________"
+            placeholder="Type to chat with Didi..."
             autoComplete="off"
             spellCheck="false"
             // The key properties to prevent iOS zoom: font-size at least 16px and user-scalable=no

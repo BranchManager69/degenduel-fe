@@ -16,7 +16,7 @@ import { authDebug } from '../config/config';
 import { useAuth } from '../hooks/useAuth';
 import {
   ConnectionState,
-  MessageType,
+  DDExtendedMessageType,
   SOCKET_TYPES,
   WEBSOCKET_ENDPOINT,
   WebSocketMessage
@@ -35,7 +35,7 @@ console.log('[WebSocketContext] DegenDuel RPC:', DEGENDUEL_RPC_URL);
 // Interface for message listeners
 interface MessageListener {
   id: string;
-  types: string[];
+  types: DDExtendedMessageType[];
   topics?: string[];
   callback: (message: any) => void;
 }
@@ -57,7 +57,7 @@ interface WebSocketContextType {
   // Register a listener for messages
   registerListener: (
     id: string,
-    types: string[],
+    types: DDExtendedMessageType[],
     callback: (message: any) => void,
     topics?: string[]
   ) => () => void;
@@ -139,7 +139,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // This is critical - it sets up the instance that useUnifiedWebSocket will access
     setupWebSocketInstance(
       // Register listener function that matches the expected signature
-      (id: string, types: string[], callback: (message: any) => void) => {
+      (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => {
         return registerListener(id, types, callback);
       },
       // Send message function
@@ -149,6 +149,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Current connection error
       connectionError
     );
+    
+    // CRITICAL: Expose WebSocketContext globally for client log forwarder
+    // This allows utilities to access the WebSocket without circular dependencies
+    if (typeof window !== 'undefined') {
+      (window as any).__DD_WEBSOCKET_CONTEXT = {
+        sendMessage,
+        isConnected: connectionState === ConnectionState.CONNECTED || 
+                     connectionState === ConnectionState.AUTHENTICATED
+      };
+    }
     
     // Listen for token refresh fallback events
     // This handles cases where a primary token refresh fails but a fallback is available
@@ -316,12 +326,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const message = JSON.parse(event.data) as WebSocketMessage;
       
       // Process system messages
-      if ((message.type === MessageType.SYSTEM && message.action === 'pong') || 
-          message.type === MessageType.PONG) {
+      if ((message.type === DDExtendedMessageType.SYSTEM && message.action === 'pong') || 
+          message.type === DDExtendedMessageType.PONG) {
         // Reset heartbeat counter
         missedHeartbeatsRef.current = 0;
         return;
-      } else if (message.type === MessageType.ACKNOWLEDGMENT && message.message?.includes('authenticated')) {
+      } else if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && message.message?.includes('authenticated')) {
         // Server acknowledges authentication
         setConnectionState(ConnectionState.AUTHENTICATED);
         dispatchWebSocketEvent('authenticated', {
@@ -329,7 +339,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
         authDebug('WebSocketContext', 'Authentication successful');
         return;
-      } else if (message.type === MessageType.SYSTEM) {
+      } else if (message.type === DDExtendedMessageType.SYSTEM) {
         // Handle server shutdown notification
         if (message.action === 'shutdown') {
           // Update server restart tracking
@@ -347,7 +357,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           // Schedule reconnection with optimal timing
           scheduleServerRestartReconnect(expectedDowntime);
         }
-      } else if (message.type === MessageType.ERROR) {
+      } else if (message.type === DDExtendedMessageType.ERROR) {
         authDebug('WebSocketContext', 'Received error message', { message });
         
         // Handle token expiration
@@ -524,7 +534,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Send ping
         try {
           wsRef.current.send(JSON.stringify({
-            type: MessageType.REQUEST,
+            type: DDExtendedMessageType.REQUEST,
             topic: SOCKET_TYPES.SYSTEM,
             action: 'ping',
             requestId: crypto.randomUUID(),
@@ -687,7 +697,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       authDebug('WebSocketContext', 'Subscribing to public topics only (market data will be available)');
       try {
         const publicSubscriptionMessage = {
-          type: MessageType.SUBSCRIBE,
+          type: DDExtendedMessageType.SUBSCRIBE,
           topics: [
             SOCKET_TYPES.SYSTEM,
             SOCKET_TYPES.MARKET_DATA
@@ -711,7 +721,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       // Subscribe to public topics first to ensure we get data regardless of auth status
       const publicSubscriptionMessage = {
-        type: MessageType.SUBSCRIBE,
+        type: DDExtendedMessageType.SUBSCRIBE,
         topics: [
           SOCKET_TYPES.SYSTEM,
           SOCKET_TYPES.MARKET_DATA
@@ -722,7 +732,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       // Now try to subscribe to restricted topics with auth token
       const restrictedSubscriptionMessage = {
-        type: MessageType.SUBSCRIBE,
+        type: DDExtendedMessageType.SUBSCRIBE,
         topics: [
           SOCKET_TYPES.PORTFOLIO,
           SOCKET_TYPES.NOTIFICATION,
@@ -758,7 +768,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
    */
   const registerListener = useCallback((
     id: string, 
-    types: string[], 
+    types: DDExtendedMessageType[], 
     callback: (message: WebSocketMessage) => void,
     topics?: string[]
   ) => {
@@ -805,7 +815,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       
       // If message type is SYSTEM, always distribute regardless of topic filters
-      if (type === MessageType.SYSTEM) {
+      if (type === DDExtendedMessageType.SYSTEM) {
         return true;
       }
       
@@ -862,7 +872,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     
     const message: any = {
-      type: MessageType.SUBSCRIBE,
+      type: DDExtendedMessageType.SUBSCRIBE,
       topics
     };
     
@@ -885,7 +895,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     
     return sendMessage({
-      type: MessageType.UNSUBSCRIBE,
+      type: DDExtendedMessageType.UNSUBSCRIBE,
       topics
     });
   }, [sendMessage]);
@@ -900,7 +910,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     
     const requestMessage: any = {
-      type: MessageType.REQUEST,
+      type: DDExtendedMessageType.REQUEST,
       topic,
       action,
       ...params
@@ -966,7 +976,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Update the WebSocket instance with the current state
     setupWebSocketInstance(
       // Register listener function
-      (id: string, types: string[], callback: (message: any) => void) => {
+      (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => {
         return registerListener(id, types, callback);
       },
       // Send message function
@@ -1025,7 +1035,7 @@ export const useWebSocketContext = () => {
  */
 export function useUnifiedWebSocket<T = any>(
   id: string,
-  types: string[] = [MessageType.DATA],
+  types: DDExtendedMessageType[] = [DDExtendedMessageType.DATA],
   onMessage: (message: T) => void,
   topics?: string[]
 ) {

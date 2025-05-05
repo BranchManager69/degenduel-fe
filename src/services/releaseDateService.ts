@@ -5,9 +5,6 @@
  * with a fallback to the date defined in environment variables.
  */
 
-// Get API URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'https://degenduel.me';
-
 // Fallback release date from environment variables or default to December 31st, 11:59 PM Eastern
 export const FALLBACK_RELEASE_DATE = new Date(
   import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00'
@@ -26,8 +23,8 @@ export const fetchReleaseDate = async (): Promise<Date> => {
     return cachedReleaseDate;
   }
   
-  // API endpoint for fetching the release date
-  const endpoint = `${API_URL}/api/v1/release-date`;
+  // Use relative URL to leverage Vite's proxy configuration
+  const endpoint = `/api/v1/release-date`;
   
   try {
     console.log(`Fetching release date from endpoint: ${endpoint}`);

@@ -8,14 +8,14 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-import { MessageType } from '../../../hooks/websocket';
+import { DDExtendedMessageType, messageTypeToString } from '../../../hooks/websocket/types';
 import { useSkyDuelWebSocket } from '../../../hooks/websocket/useSkyDuelWebSocket';
 
 // Interface for tracked WebSocket messages
 interface WebSocketMessage {
   id: string;
   timestamp: string;
-  type: string;
+  type: DDExtendedMessageType;
   topic?: string;
   action?: string;
   data?: any;
@@ -24,14 +24,14 @@ interface WebSocketMessage {
 
 // Color mappings for message types
 const TYPE_COLORS: Record<string, string> = {
-  [MessageType.SUBSCRIBE]: 'text-green-400',
-  [MessageType.UNSUBSCRIBE]: 'text-yellow-400',
-  [MessageType.REQUEST]: 'text-blue-400',
-  [MessageType.COMMAND]: 'text-purple-400',
-  [MessageType.DATA]: 'text-cyan-400',
-  [MessageType.ERROR]: 'text-red-500',
-  [MessageType.SYSTEM]: 'text-gray-400',
-  [MessageType.ACKNOWLEDGMENT]: 'text-indigo-400',
+  [DDExtendedMessageType.SUBSCRIBE]: 'text-green-400',
+  [DDExtendedMessageType.UNSUBSCRIBE]: 'text-yellow-400',
+  [DDExtendedMessageType.REQUEST]: 'text-blue-400',
+  [DDExtendedMessageType.COMMAND]: 'text-purple-400',
+  [DDExtendedMessageType.DATA]: 'text-cyan-400',
+  [DDExtendedMessageType.ERROR]: 'text-red-500',
+  [DDExtendedMessageType.SYSTEM]: 'text-gray-400',
+  [DDExtendedMessageType.ACKNOWLEDGMENT]: 'text-indigo-400',
   'default': 'text-white'
 };
 
@@ -65,8 +65,8 @@ const SkyDuelDebugPanel: React.FC = () => {
       }
       
       // Track heartbeats for connection health monitoring
-      if (type === MessageType.PING || type === MessageType.PONG || 
-          (type === MessageType.SYSTEM && data?.action === 'heartbeat')) {
+      if (type === DDExtendedMessageType.PING || type === DDExtendedMessageType.PONG || 
+          (type === DDExtendedMessageType.SYSTEM && data?.action === 'heartbeat')) {
         lastHeartbeatRef.current = Date.now();
         
         // Don't add heartbeat messages unless showHeartbeats is true
@@ -129,9 +129,9 @@ const SkyDuelDebugPanel: React.FC = () => {
     
     // Hide heartbeat messages if showHeartbeats is false
     if (!showHeartbeats && 
-        (message.type === MessageType.PING || 
-         message.type === MessageType.PONG || 
-         (message.type === MessageType.SYSTEM && message.data?.action === 'heartbeat'))) {
+        (message.type === DDExtendedMessageType.PING || 
+         message.type === DDExtendedMessageType.PONG || 
+         (message.type === DDExtendedMessageType.SYSTEM && message.data?.action === 'heartbeat'))) {
       return false;
     }
     
@@ -162,7 +162,7 @@ const SkyDuelDebugPanel: React.FC = () => {
   };
   
   // Get color class for message type
-  const getTypeColor = (type: string) => TYPE_COLORS[type] || TYPE_COLORS.default;
+  const getTypeColor = (type: DDExtendedMessageType) => TYPE_COLORS[type] || TYPE_COLORS.default;
   
   // Test the WebSocket connection with manual subscribe
   const testSubscribe = () => {
@@ -179,7 +179,7 @@ const SkyDuelDebugPanel: React.FC = () => {
         {
           id: `manual-${Date.now()}`,
           timestamp: new Date().toISOString(),
-          type: MessageType.SUBSCRIBE,
+          type: DDExtendedMessageType.SUBSCRIBE,
           topic: 'skyduel',
           data: { topics: ['skyduel'] },
           direction: 'out'
@@ -312,7 +312,7 @@ const SkyDuelDebugPanel: React.FC = () => {
                         {message.direction === 'in' ? '←' : '→'}
                       </span>
                     </td>
-                    <td className={`p-2 whitespace-nowrap ${getTypeColor(message.type)}`}>{message.type}</td>
+                    <td className={`p-2 whitespace-nowrap ${getTypeColor(message.type)}`}>{messageTypeToString(message.type)}</td>
                     <td className="p-2 whitespace-nowrap text-brand-300">
                       {message.action || '-'}
                     </td>

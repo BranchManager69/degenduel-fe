@@ -1,6 +1,5 @@
 // StoryTokensPage stories - Simplified version for Storybook
 import { Meta, StoryObj } from '@storybook/react';
-import { withRouter } from 'storybook-addon-react-router-v6';
 
 // Import the simplified story page with no API dependencies
 import { StoryTokensPage } from '../pages/public/tokens/StoryTokensPage';
@@ -10,9 +9,9 @@ const meta: Meta<typeof StoryTokensPage> = {
   component: StoryTokensPage,
   parameters: {
     layout: 'fullscreen',
+    route: '/tokens',
   },
   decorators: [
-    withRouter,
     (Story) => (
       <div className="bg-dark-100 min-h-screen">
         <Story />
@@ -26,29 +25,18 @@ type Story = StoryObj<typeof StoryTokensPage>;
 
 export const Default: Story = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens',
-    },
+    route: '/tokens',
   },
 };
 
 export const WithBTC: Story = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens?symbol=BTC',
-      searchParams: { symbol: 'BTC' },
-    },
+    route: '/tokens?symbol=BTC',
   },
 };
 
 export const WithETH: Story = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens?symbol=ETH', 
-      searchParams: { symbol: 'ETH' },
-    },
+    route: '/tokens?symbol=ETH',
   },
 };

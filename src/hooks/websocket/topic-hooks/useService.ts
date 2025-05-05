@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../../../store/useStore';
-import { MessageType, TopicType } from '../';
+import { DDExtendedMessageType, TopicType } from '../';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
@@ -35,7 +35,7 @@ export interface ServiceState {
 
 // Message types from v69 Unified WebSocket System
 interface ServiceMessage {
-  type: string;
+  type: DDExtendedMessageType;
   topic: string;
   subtype: string;
   action: string;
@@ -87,7 +87,7 @@ export function useService() {
 
   // Process incoming messages
   const handleMessage = useCallback((message: ServiceMessage) => {
-    if (message.type !== MessageType.DATA || message.topic !== TopicType.SERVICE) {
+    if (message.type !== DDExtendedMessageType.DATA || message.topic !== TopicType.SERVICE) {
       return;
     }
 
@@ -189,7 +189,7 @@ export function useService() {
   // Set up WebSocket connection
   const ws = useUnifiedWebSocket(
     'service-hook', 
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.SERVICE, TopicType.SYSTEM]
   );

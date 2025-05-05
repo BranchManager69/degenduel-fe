@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageType, TopicType } from '../';
+import { DDExtendedMessageType, TopicType } from '../';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // RPC Benchmark types
@@ -80,7 +80,8 @@ export function useRPCBenchmark() {
 
   // Process incoming messages
   const handleMessage = useCallback((message: BenchmarkMessage) => {
-    if (message.type !== MessageType.DATA) {
+    const { isMessageType } = require('../../websocket');
+    if (!isMessageType(message.type, DDExtendedMessageType.DATA)) {
       return;
     }
 
@@ -119,7 +120,7 @@ export function useRPCBenchmark() {
   // Set up WebSocket connection
   const ws = useUnifiedWebSocket(
     'rpc-benchmark-hook',
-    [MessageType.DATA, MessageType.ERROR, MessageType.ACKNOWLEDGMENT],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR, DDExtendedMessageType.ACKNOWLEDGMENT],
     handleMessage,
     [TopicType.ADMIN, TopicType.SYSTEM]
   );

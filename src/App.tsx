@@ -9,7 +9,75 @@
  * @updated 2025-04-30
  */
 
+/***********************************************************************
+ * ⚠️ CRITICAL PERFORMANCE OPTIMIZATION NEEDED ⚠️
+ * 
+ * BEFORE GOING LIVE, WE MUST IMPLEMENT LAZY LOADING ACROSS THE APP.
+ * 
+ * URGENT ACTION REQUIRED:
+ * - LAZY LOAD ALL MAJOR COMPONENTS AND ROUTES
+ * - IMPLEMENT CODE SPLITTING FOR ALL FEATURE MODULES
+ * - ADD SUSPENSE BOUNDARIES WITH APPROPRIATE FALLBACKS
+ * - PRIORITIZE CRITICAL PATH RENDERING
+ * - DEFER LOADING OF NON-ESSENTIAL COMPONENTS
+ * 
+ * CURRENTLY ONLY 2-3 COMPONENTS ARE LAZY LOADED OUT OF DOZENS.
+ * THIS WILL SEVERELY IMPACT INITIAL LOAD PERFORMANCE AND USER EXPERIENCE.
+ ***********************************************************************/
+
+/***********************************************************************
+ * ⚠️ CRITICAL CODE ORGANIZATION ISSUE ⚠️
+ * 
+ * THIS FILE IS APPROACHING 1000 LINES AND MUST BE REFACTORED.
+ * 
+ * URGENT ACTION REQUIRED:
+ * - BREAK ROUTES INTO SEPARATE FILES BY FEATURE AREA
+ * - CREATE A DEDICATED ROUTING MODULE
+ * - MOVE AUTH LOGIC TO DEDICATED AUTH MODULE
+ * - EXTRACT LAYOUT COMPONENTS TO SEPARATE FILES
+ * - ELIMINATE THE MASSIVE LIST OF IMPORTS AT THE TOP
+ * 
+ * THERE IS NO REASON FOR THE APP FILE TO CONTAIN ALL ROUTES AND
+ * IMPORTS IN A SINGLE MASSIVE FILE. THIS HURTS MAINTAINABILITY.
+ ***********************************************************************/
+
+/***********************************************************************
+ * ⚠️ SECURITY VULNERABILITY: EXPOSED SECRETS ⚠️
+ * 
+ * REVIEW ALL DIRECT import.meta.env USAGES FOR EXPOSED SECRETS
+ * 
+ * URGENT ACTION REQUIRED:
+ * - AUDIT ALL ENVIRONMENT VARIABLES FOR SENSITIVE DATA
+ * - ENSURE NO API KEYS OR SECRETS ARE EXPOSED IN CLIENT CODE
+ * - MOVE ALL SECRETS TO SERVER-SIDE ENVIRONMENT
+ * - IMPLEMENT PROPER SECRET ROTATION AND MANAGEMENT
+ * - USE THE env.ts FILE TO CENTRALIZE AND CONTROL ACCESS
+ * 
+ * DIRECT USE OF import.meta.env CAN LEAD TO ACCIDENTAL EXPOSURE
+ * OF SENSITIVE INFORMATION IN CLIENT-SIDE CODE.
+ ***********************************************************************/
+
+/***********************************************************************
+ * ⚠️ UI RENDERING ISSUE: WHITE FLASH DURING ROTATION ⚠️
+ * 
+ * FIX THE WHITE BACKGROUND FLASH DURING DEVICE ROTATION
+ * 
+ * URGENT ACTION REQUIRED:
+ * - SET BACKGROUND COLOR IN THE HTML/BODY ELEMENTS
+ * - ENSURE DARK MODE STYLES ARE APPLIED BEFORE RENDERING
+ * - ADD PERSISTENT BACKGROUND COLOR TO ROOT ELEMENT
+ * - IMPLEMENT PROPER VIEWPORT META TAGS
+ * - CONSIDER USING CSS VARIABLES FOR THEME COLORS
+ * 
+ * ADD TO index.html:
+ * - Set background-color on html and body
+ * - Add proper viewport meta tags
+ * - Consider adding a splash screen for initial load
+ ***********************************************************************/
+
+// React
 import React, { lazy, Suspense, useEffect } from "react";
+// React Router
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
 // QUEUED FOR DELETION:
@@ -21,8 +89,8 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
 };
 
 /* Components */
-////[WebSocketManager is now provided by WebSocketProvider] [4-30-25: NEED TO RE-VERIFY THIS!]
-////import { ContestChatManager } from "./components/contest-chat/ContestChatManager";
+// WebSocketManager is now provided by WebSocketProvider (WebSocketContext.tsx)
+// ContestChatManager functionality is now provided by context providers
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
 import { BlinkResolver } from "./components/blinks/BlinkResolver";
@@ -64,6 +132,7 @@ import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AiTesting } from "./pages/admin/AiTesting";
 import ClientErrorsPage from "./pages/admin/ClientErrorsPage";
 import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger";
+import { ContestImageBrowserPage } from "./pages/admin/ContestImageBrowserPage";
 import IpBanManagementPage from "./pages/admin/ip-ban/IpBanManagementPage";
 import LogForwarderDebug from "./pages/admin/LogForwarderDebug";
 import { SkyDuelPage } from "./pages/admin/SkyDuelPage";
@@ -133,10 +202,6 @@ const AdminChatDashboard = lazy(
 const LiquiditySimulatorPage = lazy(
   () => import("./pages/admin/LiquiditySimulatorPage"),
 );
-
-// QUEUED FOR DELETION:
-// Lazy TokensStandardizedTestPage
-const LazyTokensStandardizedTestPage = React.lazy(() => import("./pages/public/tokens/TokensStandardizedTestPage"));
 
 // App entry
 export const App: React.FC = () => {
@@ -499,16 +564,6 @@ export const App: React.FC = () => {
                                       }
                                     />
                                     <Route
-                                      path="/tokens/standardized-test"
-                                      element={
-                                        <MaintenanceGuard>
-                                          <Suspense fallback={<LoadingFallback variant="default" message="Loading Tokens Page..." />}>
-                                            <LazyTokensStandardizedTestPage />
-                                          </Suspense>
-                                        </MaintenanceGuard>
-                                      }
-                                    />
-                                    <Route
                                       path="/game/virtual-agent"
                                       element={
                                         <MaintenanceGuard>
@@ -698,6 +753,14 @@ export const App: React.FC = () => {
                                       element={
                                         <AdminRoute>
                                           <div>Contest Image Generator Page</div>
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/contest-image-browser"
+                                      element={
+                                        <AdminRoute>
+                                          <ContestImageBrowserPage />
                                         </AdminRoute>
                                       }
                                     />

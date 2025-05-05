@@ -23,7 +23,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Token } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Default fallback tokens for when connection is unavailable
@@ -48,7 +48,7 @@ const FALLBACK_TOKENS: Token[] = [
 // Define the standard structure for token data updates from the server
 // Based on backend team's v69 WebSocket unified system specification
 interface WebSocketTokenMessage {
-  type: string; // 'DATA'
+  type: DDExtendedMessageType; // DDExtendedMessageType.DATA
   topic: string; // 'market-data' or 'token-data'
   subtype: string; // 'token'
   action: string; // 'update', 'bulk-update', 'add', 'remove'
@@ -75,7 +75,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   const handleMessage = useCallback((message: Partial<WebSocketTokenMessage>) => {
     try {
       // Check if this is a valid token data message
-      if (message.type === 'DATA' && message.topic === 'market-data') {
+      if (message.type === DDExtendedMessageType.DATA && message.topic === 'market-data') {
         // Handle different action types
         if (message.action === 'bulk-update' && Array.isArray(message.data)) {
           // Bulk token update
@@ -147,7 +147,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   // Connect to the unified WebSocket system
   const ws = useUnifiedWebSocket(
     'token-data-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.MARKET_DATA, TopicType.TOKEN_DATA, TopicType.SYSTEM] // Subscribe to both market-data and token-data topics
   );

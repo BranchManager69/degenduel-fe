@@ -21,6 +21,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useUnifiedWebSocket } from '../hooks/websocket/useUnifiedWebSocket';
+import { DDExtendedMessageType, createMessage } from '../hooks/websocket/types';
 
 type TimeRange = '24h' | '7d' | '30d' | 'all';
 
@@ -115,7 +116,7 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
   // Provide the required parameters to useUnifiedWebSocket
   const { isConnected, isAuthenticated, request } = useUnifiedWebSocket(
     'wallet-balance-chart', // Unique ID for this component
-    ['DATA'], // Message types to listen for
+    [DDExtendedMessageType.DATA], // Message types to listen for using proper enum
     () => {} // Empty callback since we're not using the subscription directly
   );
   
@@ -251,15 +252,17 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
           const wallets = compareMode ? selectedWallets : (walletAddress ? [walletAddress] : []);
           
           if (wallets.length > 0) {
-            // Properly formatted subscribe command for v69 WS system
-            const subscribeData = {
-              type: 'SUBSCRIBE',
-              topics: ['wallet'],
-              data: {
-                wallets: wallets,
-                type: 'balance',
+            // Properly formatted subscribe command for v69 WS system using enums
+            const subscribeData = createMessage(
+              DDExtendedMessageType.SUBSCRIBE,
+              {
+                topics: ['wallet'],
+                data: {
+                  wallets: wallets,
+                  type: 'balance',
+                }
               }
-            };
+            );
             
             // Send actual WebSocket subscription
             request('wallet', 'subscribe', subscribeData);
@@ -281,11 +284,16 @@ export const WalletBalanceChart: React.FC<WalletBalanceChartProps> = ({
       if (isConnected) {
         const wallets = compareMode ? selectedWallets : (walletAddress ? [walletAddress] : []);
         if (wallets.length > 0) {
-          // Unsubscribe to clean up
-          request('wallet', 'unsubscribe', {
-            type: 'balance',
-            wallets: wallets
-          });
+          // Unsubscribe to clean up using createMessage utility
+          request('wallet', 'unsubscribe', createMessage(
+            DDExtendedMessageType.UNSUBSCRIBE,
+            {
+              data: {
+                type: 'balance',
+                wallets: wallets
+              }
+            }
+          ));
         }
       }
     };

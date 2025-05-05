@@ -8,7 +8,7 @@ import { Card } from "../../components/ui/Card";
 import { useStore } from "../../store/useStore";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useWebSocketContext } from "../../contexts/WebSocketContext";
-import { MessageType, SOCKET_TYPES } from "../../hooks/websocket/types";
+import { MessageType, SOCKET_TYPES } from "../../hooks/websocket";
 
 // Define the contest credit interface
 interface ContestCredit {

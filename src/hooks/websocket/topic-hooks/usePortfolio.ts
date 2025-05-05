@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
+import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
 // Portfolio data interfaces based on backend API documentation
@@ -97,7 +97,7 @@ export function usePortfolio(contestId?: string) {
   // Connect to WebSocket
   const ws = useUnifiedWebSocket(
     'portfolio-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.PORTFOLIO, TopicType.SYSTEM]
   );

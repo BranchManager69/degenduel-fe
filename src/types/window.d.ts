@@ -1,6 +1,12 @@
 import { TokenData } from '.';
 import { AuthContextType } from '../contexts/AuthContext';
 
+/**
+ * ✨ UNIFIED WEBSOCKET SYSTEM ✨
+ * This file has been updated to include global WebSocketContext reference 
+ * used by the client log forwarder and other utility modules.
+ */
+
 // Extend Window interface
 interface Window {
   // Flag for Storybook environment
@@ -90,4 +96,11 @@ interface Window {
   terminalDataWarningShown?: boolean;
   terminalDataErrorCount?: number;
   terminalRefreshCount?: number;
+  
+  // WebSocketContext global reference for utilities
+  // This allows non-React utilities to access the WebSocket connection
+  __DD_WEBSOCKET_CONTEXT?: {
+    sendMessage: (message: any) => boolean;
+    isConnected: boolean;
+  };
 }

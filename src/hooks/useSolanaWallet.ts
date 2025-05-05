@@ -1,13 +1,14 @@
 // src/hooks/useSolanaWallet.ts
 
 /**
+ * Use Solana Wallet Hook
+ * 
  * Hook to detect and interact with Solana wallets in the browser
- *   This hook is used to detect and interact with Solana wallets in the browser
- *   It is used to detect the wallet by checking if the window.solana object exists
  * 
  * @author BranchManager69
  * @version 1.9.0
- * @updated 2025-04-30
+ * @created 2025-02-14
+ * @updated 2025-05-03
  */
 
 import { useEffect, useState } from 'react';
@@ -50,6 +51,8 @@ export function useSolanaWallet() {
 
   // Initialize wallet and check if it's installed
   useEffect(() => {
+    
+    // Detect wallet
     const detectWallet = async () => {
       try {
         // Check if window.solana is available (Phantom, Backpack, etc.)
@@ -122,7 +125,6 @@ export function useSolanaWallet() {
         setError(e as Error);
       }
     };
-
     detectWallet();
     
     // Handle wallet changes

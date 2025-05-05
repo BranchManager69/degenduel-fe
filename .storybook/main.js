@@ -1,3 +1,5 @@
+// .storybook/main.js
+
 /** @type { import('@storybook/react-vite').StorybookConfig } */
 const path = require('path');
 const controlHmrPlugin = require('./disable-hmr-plugin');
@@ -8,7 +10,6 @@ const config = {
     '@storybook/addon-links',
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
-    'storybook-addon-react-router-v6',
   ],
   framework: '@storybook/react-vite',
   docs: {
@@ -66,6 +67,8 @@ const config = {
       // Use our custom React dev loaders instead of direct module paths
       'react': path.resolve(__dirname, './react-dev-fix/react.js'),
       'react-dom': path.resolve(__dirname, './react-dev-fix/react-dom.js'),
+      // Use our shim for use-sync-external-store
+      'use-sync-external-store/shim/with-selector': path.resolve(__dirname, './shims/use-sync-external-store.js'),
       // Stub Vite client to prevent HMR refresh loops in Storybook
       '/@vite/client': path.resolve(__dirname, './vite-client-stub.js'),
     };

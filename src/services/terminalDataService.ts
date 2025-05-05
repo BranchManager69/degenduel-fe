@@ -1,3 +1,7 @@
+// src/services/terminalDataService.ts
+
+// FUCK THIS FILE!!!!!!!!!
+
 /**
  * Terminal Data Service
  * 
@@ -79,9 +83,9 @@ export interface TerminalData {
 }
 
 // Export the hook for components that want to use the WebSocket
-export { useTerminalData };
+export { useTerminalData }; // TODO: WHAT IS THIS????????????
 
-// Minimal fallback data if API completely fails - contains only placeholders
+// (Minimal fallback data if API completely fails - contains only placeholders)
 const DEFAULT_TERMINAL_DATA: TerminalData = {
   platformName: "[Platform information unavailable]",
   platformDescription: "[No description available]",
@@ -133,6 +137,7 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
     }
   ],
   
+  // These are soooo bland
   commands: {
     help: "Available commands: help, status, info, contract, stats, clear, banner\nAI: Type any question to speak with the AI assistant.",
     status: "Platform status: Fetching from server...",
@@ -149,24 +154,42 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
 };
 
 // Cached terminal data
-let cachedTerminalData: TerminalData | null = null;
+const CACHE_PERIOD = 0; // 0 minutes
+const CACHE_TTL = CACHE_PERIOD * 60 * 1000; // People will revolt if they don't get the token address exactly at the scheduled time.
 let lastFetchTime = 0;
-const CACHE_TTL = 60 * 1000; // 1 minute
+let cachedTerminalData: TerminalData | null = null;
 
 /**
  * Maximum number of retries for terminal data fetch
+ * 
+ * @description This is the maximum number of retries for terminal data fetch.
+ * 
+ * @author BranchManager69
+ * @version 1.0.0
+ * @created 2025-05-02
  */
 const MAX_RETRIES = 3;
 
 /**
  * Flag to track if terminal data is currently being fetched
  * This prevents multiple parallel fetch attempts
+ * 
+ * @description This is the flag to track if terminal data is currently being fetched.
+ * 
+ * @author BranchManager69
+ * @version 1.0.0
+ * @created 2025-05-02
  */
 let isFetchingTerminalData = false;
 
 /**
  * Fetch terminal data from the backend with retry mechanism
- * @returns Promise that resolves to the terminal data
+ * 
+ * @description This is the function to fetch terminal data from the backend.
+ * 
+ * @author BranchManager69
+ * @version 1.0.0
+ * @created 2025-05-02
  */
 export const fetchTerminalData = async (): Promise<TerminalData> => {
   const now = Date.now();

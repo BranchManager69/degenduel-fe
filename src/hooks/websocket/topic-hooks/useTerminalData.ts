@@ -1,23 +1,24 @@
+// src/hooks/websocket/topic-hooks/useTerminalData.ts
+
 /**
  * useTerminalData Hook
+ * @description This hook provides real-time updates for terminal data, including contract address
  * 
- * V69 Standardized WebSocket Hook for Terminal Data
- * This hook provides real-time updates for terminal data, including contract address
- * 
- * @author Branch Manager
- * @created 2025-04-10
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-14
+ * @updated 2025-05-03
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { MessageType } from '../types';
-import { TopicType } from '../index';
 import { TerminalData } from '../../../services/terminalDataService';
+import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
+import { TopicType } from '../index';
+import { DDExtendedMessageType } from '../types';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Define the standard structure for terminal data updates from the server
-// Based on backend team's specification
-// This interface describes the message format from the backend
+// Based on backend team's specification, this interface describes the message format from the backend
 interface WebSocketTerminalMessage {
   type: string; // 'DATA'
   topic: string; // 'terminal'
@@ -73,8 +74,8 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
 };
 
 /**
- * Hook for accessing and managing terminal data with real-time updates
  * Uses the unified WebSocket system
+ * Hook for accessing and managing terminal data with real-time updates
  */
 export function useTerminalData() {
   // State for terminal data
@@ -141,7 +142,7 @@ export function useTerminalData() {
   // Connect to the unified WebSocket system
   const ws = useUnifiedWebSocket(
     'terminal-data-hook',
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.TERMINAL, TopicType.SYSTEM] // System messages are always included for all hooks
   );
@@ -181,6 +182,7 @@ export function useTerminalData() {
       // Request fresh terminal data
       ws.request(TopicType.TERMINAL, 'GET_TERMINAL_DATA');
       
+      // Log event for monitoring
       dispatchWebSocketEvent('terminal_data_refresh', {
         socketType: TopicType.TERMINAL,
         message: 'Refreshing terminal data',
@@ -207,7 +209,7 @@ export function useTerminalData() {
     error: ws.error,
     lastUpdate,
     refreshTerminalData,
-    // Contract address specific helpers - now from token.address
+    // Contract address specific helpers (from token.address)
     contractAddress: terminalData.token?.address,
     contractAddressRevealed: !!terminalData.token?.address
   };

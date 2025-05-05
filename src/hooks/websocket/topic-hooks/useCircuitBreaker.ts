@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../../../store/useStore';
-import { MessageType, TopicType } from '../';
+import { DDExtendedMessageType, TopicType } from '../';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
@@ -81,7 +81,8 @@ export function useCircuitBreaker() {
 
   // Process incoming messages
   const handleMessage = useCallback((message: CircuitBreakerMessage) => {
-    if (message.type !== MessageType.DATA || message.topic !== TopicType.CIRCUIT_BREAKER) {
+    const { isMessageType } = require('../../websocket');
+    if (!isMessageType(message.type, DDExtendedMessageType.DATA) || message.topic !== TopicType.CIRCUIT_BREAKER) {
       return;
     }
 
@@ -331,7 +332,7 @@ export function useCircuitBreaker() {
   // Set up WebSocket connection
   const ws = useUnifiedWebSocket(
     'circuit-breaker-hook', 
-    [MessageType.DATA, MessageType.ERROR],
+    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.CIRCUIT_BREAKER, TopicType.SYSTEM]
   );

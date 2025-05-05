@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
 import { UserMenu } from '../components/layout/user-menu/UserMenu';
 
 // Mock the useAuth hook
@@ -110,6 +109,7 @@ const meta = {
         { name: 'dark', value: '#121212' },
       ],
     },
+    route: '/',
   },
   decorators: [
     (Story) => (
@@ -131,9 +131,7 @@ const meta = {
           borderRadius: '8px',
           backdropFilter: 'blur(4px)'
         }}>
-          <MemoryRouter>
-            <Story />
-          </MemoryRouter>
+          <Story />
         </div>
       </div>
     ),

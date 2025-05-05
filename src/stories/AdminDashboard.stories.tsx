@@ -1,6 +1,7 @@
+// src/stories/AdminDashboard.stories.tsx
+
 import type { Meta, StoryObj } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
 
 // Simplified version of the actual CyberGrid component used in the app
 const CyberBackground: React.FC = () => {
@@ -760,6 +761,7 @@ const meta: Meta<typeof SimplifiedAdminDashboard> = {
   component: SimplifiedAdminDashboard,
   parameters: {
     layout: 'fullscreen',
+    route: '/admin',
     backgrounds: {
       default: 'dark',
       values: [
@@ -797,14 +799,12 @@ The dashboard includes a sidebar with recent admin actions and system stats.
       defaultValue: false,
     },
   },
-  // Wrap story in MemoryRouter to handle Link components without errors
+  // Use global MemoryRouter from preview.tsx
   decorators: [
     (Story) => (
-      <MemoryRouter>
-        <div className="font-sans text-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-          <Story />
-        </div>
-      </MemoryRouter>
+      <div className="font-sans text-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <Story />
+      </div>
     ),
   ],
 };

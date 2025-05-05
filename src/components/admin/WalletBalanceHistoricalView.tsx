@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import HistoricalPerformanceChart from './HistoricalPerformanceChart';
 import { useUnifiedWebSocket } from '../../hooks/websocket/useUnifiedWebSocket';
+import { DDExtendedMessageType } from '../../hooks/websocket/types';
 
 interface WalletBalanceHistoricalViewProps {
   className?: string;
@@ -17,7 +18,7 @@ export const WalletBalanceHistoricalView: React.FC<WalletBalanceHistoricalViewPr
   // Provide required parameters to useUnifiedWebSocket hook
   const { isConnected, isAuthenticated, request } = useUnifiedWebSocket(
     'wallet-historical-view', // Unique ID for this component
-    ['DATA'], // Message types to listen for
+    [DDExtendedMessageType.DATA], // Message types to listen for using proper enum
     () => {} // Empty callback since we're not using the subscription directly
   );
   

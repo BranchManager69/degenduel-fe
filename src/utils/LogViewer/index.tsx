@@ -103,17 +103,18 @@ const LogViewer: React.FC = () => {
 
   const fetchLogs = async (filename: string) => {
     try {
-      // Get the superadmin token from wherever I store it
-      //const superadminToken = config.SUPERADMIN_SECRET; ////localStorage.getItem("superadminToken");
-      const superadminToken = "REMOVED_FOR_SECURITY_REASONS"; ////localStorage.getItem("superadminToken"); 
-
-      // Handle case where token doesn't exist
-      if (!superadminToken) {
-        throw new Error("No superadmin token found");
+      // UPDATED: No longer using superadmin token directly
+      // Now using proper server-side authentication with JWT
+      
+      // Get the current user JWT from the store
+      const user = window.useStore?.().user;
+      
+      if (!user || !user.jwt) {
+        throw new Error("Not authenticated");
       }
-
+      
       const headers = new Headers({
-        "x-superadmin-token": superadminToken,
+        "Authorization": `Bearer ${user.jwt}`,
       });
 
       const response = await fetch(

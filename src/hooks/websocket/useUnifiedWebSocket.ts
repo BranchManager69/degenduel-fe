@@ -7,11 +7,11 @@
 
 import { useEffect } from 'react';
 import { useStore } from '../../store/useStore';
-import { ConnectionState, MessageType } from './types';
+import { ConnectionState, DDExtendedMessageType } from './types';
 
 // Interface for the WebSocket instance that the hook can access
 interface WebSocketInstance {
-  registerListener: (id: string, types: string[], callback: (message: any) => void) => () => void;
+  registerListener: (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => () => void;
   sendMessage: (message: any) => boolean;
   connectionState: ConnectionState;
   connectionError: string | null;
@@ -27,7 +27,7 @@ const loggedInstanceWarnings = new Set<string>();
 // This ensures hooks will work even before the main WebSocket connection is ready
 if (!instance) {
   instance = {
-    registerListener: (id: string, _types: string[], _callback: (message: any) => void) => {
+    registerListener: (id: string, _types: DDExtendedMessageType[], _callback: (message: any) => void) => {
       console.log(`WebSocket: Component '${id}' registered but WebSocket not yet fully initialized`);
       return () => {}; // No-op cleanup
     },
@@ -48,7 +48,7 @@ if (!instance) {
  * @param error - Connection error
  */
 export const setupWebSocketInstance = (
-  registerFn: (id: string, types: string[], callback: (message: any) => void) => () => void,
+  registerFn: (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => () => void,
   sendFn: (message: any) => boolean,
   state: ConnectionState,
   error: string | null
@@ -68,7 +68,7 @@ export const setupWebSocketInstance = (
  * @param authToken - Authentication token
  */
 interface SubscriptionMessage {
-  type: MessageType.SUBSCRIBE | MessageType.UNSUBSCRIBE;
+  type: DDExtendedMessageType;
   topics: string[];
   authToken?: string;
 }
@@ -84,7 +84,7 @@ interface SubscriptionMessage {
  */
 export function useUnifiedWebSocket<T = any>(
   id: string, 
-  types: string[] = [MessageType.DATA], 
+  types: DDExtendedMessageType[] = [DDExtendedMessageType.DATA], 
   onMessage: (message: T) => void,
   topics?: string[]
 ) {
@@ -136,7 +136,7 @@ export function useUnifiedWebSocket<T = any>(
     if (!instance || topicsToSubscribe.length === 0) return false;
     
     const message: SubscriptionMessage = {
-      type: MessageType.SUBSCRIBE,
+      type: DDExtendedMessageType.SUBSCRIBE,
       topics: topicsToSubscribe
     };
     
@@ -154,7 +154,7 @@ export function useUnifiedWebSocket<T = any>(
     if (!instance || topicsToUnsubscribe.length === 0) return false;
     
     return instance.sendMessage({
-      type: MessageType.UNSUBSCRIBE,
+      type: DDExtendedMessageType.UNSUBSCRIBE,
       topics: topicsToUnsubscribe
     });
   };
@@ -164,7 +164,7 @@ export function useUnifiedWebSocket<T = any>(
     if (!instance) return false;
     
     const requestMessage: any = {
-      type: MessageType.REQUEST,
+      type: DDExtendedMessageType.REQUEST,
       topic,
       action,
       ...params

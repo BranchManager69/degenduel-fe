@@ -1,66 +1,70 @@
 // src/pages/LandingPage.tsx
 
 /**
- * This is the landing page for the DegenDuel website.
- * It displays an enhanced background with particle effects,
- * animated title, features, and contests.
+ * Landing Page
+ * @description This is the landing page for the DegenDuel website.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-01-01
+ * @updated 2025-05-02
  */
 
-import { motion } from "framer-motion";
+// CSS (now loaded from public/assets/degen-components.css via index.html)
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Link as RouterLink } from "react-router-dom";
-// Import the Terminal component
-import { Terminal } from '../../../components/terminal';
-// CSS is now loaded from public/assets/degen-components.css via index.html
-// import { processTerminalChat } from '../../../services/mockTerminalService';
-import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
-// Auth debug tool
+// Framer Motion
+import { motion } from "framer-motion";
+// Landing page
 import { AuthDebugPanel } from "../../../components/debug";
-import { config as globalConfig } from '../../../config/config';
-import {
-  CONTRACT_POLL_INTERVAL,
-  fetchContractAddress,
-  getTimeRemainingUntilRelease,
-  isReleaseTimePassed,
-  setContractAddressPublic
-} from '../../../services/contractAddressService';
-import {
-  FALLBACK_RELEASE_DATE,
-  fetchReleaseDate,
-  formatReleaseDate
-} from '../../../services/releaseDateService';
-// Import WebSocketMonitor conditionally only for admins
-// Features import removed and controlled by feature flag
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
+import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 import { FEATURE_FLAGS } from "../../../config/config";
+import { isContestLive } from "../../../lib/utils";
+import { Contest } from "../../../types";
+// Terminal components
+import { DecryptionTimer, Terminal } from '../../../components/terminal';
+//// import { processTerminalChat } from '../../../services/mockTerminalService';
+// Hooks
 import { useAuth } from "../../../hooks/useAuth";
 import { useWallet } from "../../../hooks/websocket/topic-hooks/useWallet";
-import { isContestLive } from "../../../lib/utils";
+// DD API
 import { ddApi } from "../../../services/dd-api";
-import { Contest } from "../../../types";
 
-// TODO: move to separate file
-interface ContestResponse {
-  contests: Contest[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-  };
-}
+
+// Contract Address Service (DEPRECATED)
+import {
+  CONTRACT_POLL_INTERVAL, // ?
+  fetchContractAddress, // DEPRECATED
+  getTimeRemainingUntilRelease, // ?
+  isReleaseTimePassed, // DEPRECATED
+  setContractAddressPublic // DEPRECATED
+} from '../../../services/contractAddressService';
+// Release Date Service (?)
+import {
+  FALLBACK_RELEASE_DATE, // ?
+  fetchReleaseDate, // ?
+  formatReleaseDate // ?
+} from '../../../services/releaseDateService';
+
+// Config
+import { config as globalConfig } from '../../../config/config';
+
+// Import PaginatedResponse from types
+import { PaginatedResponse } from '../../../types';
 
 // Define WhaleRoomButton component
 const WhaleRoomButton = ({ walletAddress }: { walletAddress: string }) => {
-  // Use the wallet hook to get balance data
+  // useWallet hook - Retrieve client balance data
   const {
     balance,
     isLoading,
   } = useWallet(walletAddress);
   
-  // Whale criteria: 
-  // 1. SOL balance > 10 SOL, or
-  // 2. Any token with USD value > $5,000, or
-  // 3. Total portfolio value > $10,000 
+  // Whale criteria check: 
+  //   1. SOL balance > 10 SOL, or
+  //   2. Any token with USD value > $5,000, or
+  //   3. Total portfolio value > $10,000 
   const isWhale = React.useMemo(() => {
     if (!balance || isLoading) return false;
     
@@ -87,9 +91,10 @@ const WhaleRoomButton = ({ walletAddress }: { walletAddress: string }) => {
     return portfolioValueWithSol > 10000;
   }, [balance, isLoading]);
   
-  // Only show button if user meets whale criteria
+  // If user meets whale criteria, show button to access the exclusive Whale Room
   if (!isWhale) return null;
   
+  // If user does not meet whale criteria, do not show the button
   return (
     <div className="w-full max-w-md">
       <RouterLink to="/whale-room" className="w-full">
@@ -97,37 +102,40 @@ const WhaleRoomButton = ({ walletAddress }: { walletAddress: string }) => {
           className="w-full relative group overflow-hidden"
           aria-label="Access the exclusive Whale Room"
         >
+          {/* Gradient background */}
           <div className="relative clip-edges bg-gradient-to-r from-purple-500 to-indigo-600 p-[1px] transition-all duration-300 group-hover:from-purple-400 group-hover:to-indigo-500 shadow-md shadow-purple-900/20">
             <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
               <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
                 <span className="bg-gradient-to-r from-purple-300 to-indigo-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-purple-200 flex items-center">
                   <span className="mr-2">💎</span>
-                  WHALE ROOM
-                </span>
-                <svg
-                  className="w-5 h-5 text-purple-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                  fill="none" 
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14 5l7 7m0 0l-7 7m7-7H3"
-                  />
-                </svg>
+                    WHALE ROOM
+                  </span>
+                  {/* Arrow icon */}
+                  <svg
+                    className="w-5 h-5 text-purple-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                    fill="none" 
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    {/* Arrow path */}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
-        </button>
-      </RouterLink>
-    </div>
+          </button>
+        </RouterLink>
+      </div>
   );
 };
 
-// Landing Page Component
+// Landing Page component
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
@@ -136,7 +144,7 @@ export const LandingPage: React.FC = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0);
   
-  // For contract address polling and management
+  // Contract address polling and management
   const [contractAddress, setContractAddress] = useState<string>('');
   const [releaseDate, setReleaseDate] = useState<Date>(FALLBACK_RELEASE_DATE);
   const [isLoadingReleaseDate, setIsLoadingReleaseDate] = useState<boolean>(true);
@@ -145,7 +153,7 @@ export const LandingPage: React.FC = () => {
   const countdownCheckerRef = useRef<number | null>(null);
   const countdownEndedRef = useRef<boolean>(false);
   
-  // Debug state for contests section
+  // Debug state for contests section (?)
   const [contestDebugInfo, setContestDebugInfo] = useState<{
     lastFetchAttempt: string;
     errorDetails: string | null;
@@ -156,8 +164,9 @@ export const LandingPage: React.FC = () => {
     contestApiResponse: null
   });
   
-  // Fetch release date from backend when component mounts
+  // Fetch release date from backend when component mounts (?)
   useEffect(() => {
+    // Fetch release date from backend
     const loadReleaseDate = async () => {
       try {
         setIsLoadingReleaseDate(true);
@@ -176,17 +185,23 @@ export const LandingPage: React.FC = () => {
     loadReleaseDate();
   }, []);
   
-  // Start contract address polling (after countdown ends)
+  // Start contract address polling (after countdown ends) (?)
   const startAddressPolling = useCallback(() => {
     console.log('Starting contract address polling');
     countdownEndedRef.current = true;
     
     // For demo purposes, make the contract address public after countdown ends
-    // In production, your backend would determine this
+    //
+    // TODO: Remove this!
+    //
     setContractAddressPublic(true);
     
     // Trigger immediate fetch
+    //
+    // TODO: remove this after testing
+    //
     fetchContractAddress().then(address => {
+      // Update the contract address
       setContractAddress(address);
     });
     
@@ -231,7 +246,7 @@ export const LandingPage: React.FC = () => {
       }, timeUntilRelease + 100); // Add 100ms buffer
     }
     
-    // Clean up on unmount
+    // Clean up polling on unmount
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -242,10 +257,10 @@ export const LandingPage: React.FC = () => {
     };
   }, [releaseDate, startAddressPolling, isLoadingReleaseDate]);
 
-  // Terminal configuration
+  // Terminal configuration (NEED WEBSOCKET VERSION ASAP!)
   const terminalConfig = {
     // Contract address for display in Terminal
-    CONTRACT_ADDRESS: showContractReveal ? globalConfig.CONTRACT_ADDRESS.REAL : contractAddress, // Use global config or fallback to polled address
+    CONTRACT_ADDRESS: showContractReveal ? globalConfig.CONTRACT_ADDRESS.REAL : contractAddress,
     // Launch date for countdown timer 
     RELEASE_DATE: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME || releaseDate,
     // Format settings for display
@@ -289,10 +304,10 @@ export const LandingPage: React.FC = () => {
     }
   }, [user, isAdmin]);
   
-  // Shared debug mode state - controls both HeroTitle debug panel and WebSocketMonitor visibility
+  // Shared debug mode state - controls both HeroTitle debug panel and WebSocketMonitor visibility (?)
   const [debugMode, setDebugMode] = useState(false);
 
-  // Function to manually retry contest fetch
+  // Function to manually retry contest fetch (?)
   const retryContestFetch = useCallback(async () => {
     console.log("[LandingPage] Manually retrying contest fetch...");
     setLoading(true);
@@ -316,10 +331,9 @@ export const LandingPage: React.FC = () => {
         return;
       }
       
-      // Fetch contests with detailed logging
-      console.log("[LandingPage] Fetching contests...");
+      // If not in maintenance mode, fetch contests with detailed logging
       const response = await ddApi.contests.getAll();
-      console.log("[LandingPage] Contest API response:", response);
+      console.log("[LandingPage] Contests:", response);
       
       // Store response in debug info
       setContestDebugInfo(prev => ({
@@ -330,7 +344,7 @@ export const LandingPage: React.FC = () => {
       // Process response
       const contestsArray: Contest[] = Array.isArray(response)
         ? response
-        : (response as ContestResponse).contests;
+        : (response as PaginatedResponse<Contest>).data || [];
       
       // Log info about contests received
       console.log("[LandingPage] Contest fetch success:", {
@@ -375,7 +389,7 @@ export const LandingPage: React.FC = () => {
     }
   }, []);
 
-  // useEffect for the animation phases with better HeroTitle/Terminal coordination
+  // useEffect for the animation phases with better HeroTitle/Terminal coordination (?)
   useEffect(() => {
     // Adjust animation timing based on whether HeroTitle is shown
     const initialDelay = FEATURE_FLAGS.SHOW_HERO_TITLE ? 1200 : 300;
@@ -399,8 +413,8 @@ export const LandingPage: React.FC = () => {
     fetchContests();
 
     // Poll maintenance status every n seconds
+    // TODO: improve Maintenance Mode checks via WSS if technically possible
     const MM_POLL_INTERVAL = 30; // in seconds
-    // TODO: improve MM checks via WSS
     const maintenanceCheckInterval = setInterval(async () => {
       try {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
@@ -423,10 +437,11 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden">
 
-      {/* Content Section */}
+      {/* Landing Page Content Section */}
       <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center space-y-4">
+            
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
               {/* Admin button now only shows the three topic-specific monitors */}
@@ -443,9 +458,10 @@ export const LandingPage: React.FC = () => {
                 </div>
               )}
               
-              {/* WebSocket Demo Section - only visible in debug mode */}
+              {/* WebSocket Demo Section - only visible to admins with debug mode enabled */}
               {debugMode && isAdmin() && (
                 <div className="w-full mb-10">
+                  
                   {/* Auth Debug Panel - shows authentication state for debugging */}
                   <div className="mb-6 bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
                     <h4 className="text-xl font-semibold mb-4 text-amber-400">Authentication Debug</h4>
@@ -454,6 +470,7 @@ export const LandingPage: React.FC = () => {
                   
                   {/* Responsive grid layout - one column on mobile, three columns on large screens */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
                     {/* Token Data Demo */}
                     <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
                       <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
@@ -718,17 +735,59 @@ export const LandingPage: React.FC = () => {
                 </RouterLink>
               </motion.div>
 
-
-              {/* Terminal Component - Animation adjusted based on HeroTitle presence */}
+              {/* Countdown Timer Component */}
               <motion.div
-                className="w-full max-w-4xl mx-auto mb-10 relative z-20"
+                className="w-full max-w-lg mx-auto mb-8 relative z-20"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
                   opacity: animationPhase > 0 ? 1 : 0,
                   y: animationPhase > 0 ? 0 : 20,
                   transition: {
-                    // When HeroTitle is hidden, start Terminal animation immediately
-                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.3 : 0.1,
+                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.2 : 0.1,
+                    duration: 0.7,
+                  },
+                }}
+              >
+                {isLoadingReleaseDate ? (
+                  <div className="flex items-center justify-center h-[120px]">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-3 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                      <p className="text-md font-orbitron text-green-400">Loading countdown...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <DecryptionTimer
+                    targetDate={releaseDate}
+                    contractAddress={contractAddress}
+                  />
+                )}
+              </motion.div>
+
+              {/* Platform Features Section */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ 
+                  opacity: animationPhase > 0 ? 1 : 0,
+                  transition: { duration: 0.7, delay: 0.4 }
+                }}
+                className="text-center mb-10"
+              >
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-purple-500 mb-4">PLATFORM <span className="text-purple-300">·</span> FEATURES</h2>
+                <div className="w-full max-w-2xl mx-auto h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent mb-8"></div>
+                <p className="text-xl sm:text-2xl md:text-3xl font-light text-white/90">
+                  Experience the future of competitive token trading
+                </p>
+              </motion.div>
+
+              {/* Terminal Component */}
+              <motion.div
+                className="w-full max-w-3xl mx-auto mb-10 relative z-20"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                  opacity: animationPhase > 0 ? 1 : 0,
+                  y: animationPhase > 0 ? 0 : 20,
+                  transition: {
+                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.6 : 0.3,
                     duration: 0.8,
                   },
                 }}
@@ -738,19 +797,33 @@ export const LandingPage: React.FC = () => {
                 }}
               >
                 {isLoadingReleaseDate ? (
-                  <div className="flex items-center justify-center h-[400px]">
+                  <div className="flex items-center justify-center h-[300px]">
                     <div className="text-center">
-                      <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-xl font-orbitron text-brand-400">Loading countdown timer...</p>
+                      <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-xl font-orbitron text-purple-400">Loading terminal...</p>
                     </div>
                   </div>
                 ) : (
-                  <Terminal 
-                    config={terminalConfig} 
-                    onCommandExecuted={(command, response) => {
-                      console.log('Command executed:', command, 'Response:', response);
-                    }}
-                  />
+                  <div className="w-full">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-2xl sm:text-3xl font-bold text-purple-500">TERMINAL</h3>
+                      <motion.div
+                        animate={{ y: [0, -3, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="text-purple-400"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                      </motion.div>
+                    </div>
+                    
+                    <Terminal 
+                      config={terminalConfig} 
+                      onCommandExecuted={(command, response) => {
+                        console.log('Command executed:', command, 'Response:', response);
+                      }}
+                      size="middle"
+                    />
+                  </div>
                 )}
               </motion.div>
               
@@ -802,14 +875,17 @@ export const LandingPage: React.FC = () => {
                   },
                 }}
               >
+                {/* Market Overview Panel */}
                 {(() => {
+
                   // Lazy-load the StandardizedMarketStatsPanel component
                   const MarketStatsPanel = React.lazy(() => 
                     import("../../../components/landing/market-stats").then(module => ({ 
                       default: module.StandardizedMarketStatsPanel
                     }))
                   );
-                  
+
+                  // Return the MarketStatsPanel component
                   return (
                     <React.Suspense 
                       fallback={
@@ -823,6 +899,7 @@ export const LandingPage: React.FC = () => {
                       </div>
                     </React.Suspense>
                   );
+
                 })()}
               </motion.div>
               
@@ -839,6 +916,7 @@ export const LandingPage: React.FC = () => {
                 }}
               >
                 {(() => {
+               
                   // Lazy-load the StandardizedHotTokensList component
                   const HotTokensList = React.lazy(() => 
                     import("../../../components/landing/hot-tokens").then(module => ({ 
@@ -846,6 +924,7 @@ export const LandingPage: React.FC = () => {
                     }))
                   );
                   
+                  // Return the HotTokensList component
                   return (
                     <React.Suspense 
                       fallback={
@@ -854,11 +933,13 @@ export const LandingPage: React.FC = () => {
                         </div>
                       }
                     >
+                      {/* Display the HotTokensList component */}
                       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <HotTokensList maxTokens={5} />
                       </div>
                     </React.Suspense>
                   );
+
                 })()}
               </motion.div>
               
@@ -875,6 +956,7 @@ export const LandingPage: React.FC = () => {
                 }}
               >
                 {(() => {
+               
                   // Lazy-load the TokensPreviewSection component
                   const TokensPreviewSection = React.lazy(() => 
                     import("../../../components/landing/tokens-preview").then(module => ({ 
@@ -882,6 +964,7 @@ export const LandingPage: React.FC = () => {
                     }))
                   );
                   
+                  // Return the TokensPreviewSection component
                   return (
                     <React.Suspense 
                       fallback={
@@ -890,13 +973,14 @@ export const LandingPage: React.FC = () => {
                         </div>
                       }
                     >
-                      <TokensPreviewSection maxTokens={6} />
+                      {/* Display the TokensPreviewSection component */}
+                      <TokensPreviewSection maxTokens={6} />                      
                     </React.Suspense>
                   );
                 })()}
               </motion.div>
               
-              {/* Contest sections */}
+              {/* Contest sections - shown to all users */}
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 animate={{
@@ -910,16 +994,22 @@ export const LandingPage: React.FC = () => {
                   },
                 }}
               >
+                {/* Maintenance mode */}
                 {isMaintenanceMode ? (
                   <div className="relative">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                       <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
                         <div className="flex items-center justify-center gap-2 text-yellow-400">
                           <span className="animate-pulse">⚠</span>
+                          
+                          {/* Maintenance mode message */}
                           <span>
                             DegenDuel is in Maintenance Mode. Please try again later.
                           </span>
+                          
+                          {/* Maintenance mode icon */}
                           <span className="animate-pulse">⚙️</span>
+                          
                         </div>
                       </div>
                     </div>
@@ -933,32 +1023,45 @@ export const LandingPage: React.FC = () => {
                             {error}
                           </div>
                           
-                          {/* Debug information (hidden by default) */}
+                          {/* Debug info (admin only) */}
                           {isAdmin() && (
                             <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
                               <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
+                              
+                              {/* Debug info */}
                               <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
-                                <div>Last Fetch Attempt: <span className="text-blue-400">{contestDebugInfo.lastFetchAttempt}</span></div>
+                               
+                                {/* Last fetch attempt */}
+                                <div>Last Fetch Attempt:
+                                  <span className="text-blue-400">
+                                    {contestDebugInfo.lastFetchAttempt}
+                                  </span>
+                                </div>
+                                
+                                {/* Error details */}
                                 <div>Error Details:</div>
                                 <pre className="text-red-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
                                   {contestDebugInfo.errorDetails || "No specific error details available"}
                                 </pre>
-                                
+
+                                {/* API response */}
                                 <div>API Response:</div>
                                 <pre className="text-gray-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
                                   {contestDebugInfo.contestApiResponse || "No API response recorded"}
                                 </pre>
+
                               </div>
                             </details>
                           )}
                           
-                          {/* Retry button */}
+                          {/* Retry loading button */}
                           <button 
                             onClick={retryContestFetch}
                             className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                           >
                             Retry
                           </button>
+
                         </div>
                       </div>
                     </div>
@@ -966,6 +1069,7 @@ export const LandingPage: React.FC = () => {
                 ) : (
                   <div className="relative">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                      
                       {/* Add significant bottom margin to prevent footer overlap */}
                       <div className="mb-32">
                         {/* Use the shared ContestSection component for active contests */}
@@ -986,33 +1090,44 @@ export const LandingPage: React.FC = () => {
                           loading={loading}
                         />
 
+                        {/* No duels available */}
                         {activeContests.length === 0 &&
                           openContests.length === 0 &&
                           !loading && (
                             <div className="text-center py-16">
+                              
+                              {/* No duels available title */}
                               <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
                                 No Duels Available
                               </h2>
+                              
+                              {/* Check back soon message */}
                               <p className="text-gray-400 mb-8">
                                 Check back soon for new Duels.
                               </p>
+
+                              {/* Create a Duel button */}
                               <Link
                                 to="/contests/create"
                                 className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
                               >
                                 Create a Duel
                               </Link>
+
                             </div>
                           )}
                       </div>
+
                     </div>
                   </div>
                 )}
               </motion.div>
+
             </div>
           </div>
         </div>
       </section>
+
     </div>
   );
 };

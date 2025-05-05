@@ -5,8 +5,14 @@
  * It uses both the WebSocket system and API fallback to ensure reliable delivery.
  */
 
+/**
+ * ✨ UNIFIED WEBSOCKET SYSTEM ✨
+ * This file uses DegenDuel shared types from the degenduel-shared package.
+ * These types are the official standard for frontend-backend communication.
+ */
+
 import { useStore } from "../store/useStore";
-import { MessageType } from "../hooks/websocket/WebSocketManager";
+import { MessageType } from "../hooks/websocket";
 import { clientLogService } from "../services/clientLogService";
 
 // Customize these thresholds based on your needs
@@ -56,13 +62,15 @@ const MAX_REPEAT_COUNT = 3; // Show the message at most 3 times in the cooldown 
 const shouldRateLimit = (message: string): boolean => {
   // Rate-limit noisy messages - expanded list to include Terminal/TerminalDataService errors
   if (!message.includes('[Jupiter Wallet]') && 
+      !message.includes('WebSocketContext:') && 
       !message.includes('WebSocketManager:') && 
       !message.includes('WalletContext') &&
       !message.includes('Cannot refresh tokens') &&
       !message.includes('App configuration has Solana wallet login enabled') &&
       !message.includes('[TerminalDataService]') &&
       !message.includes('[Terminal]') &&
-      !message.includes('Error fetching terminal data')) {
+      !message.includes('Error fetching terminal data') &&
+      !message.includes('[WebSocketContext]')) {
     return false;
   }
   
@@ -197,6 +205,8 @@ export const initializeClientLogForwarder = (): void => {
             message.includes('UnifiedTicker: ') ||
             message.includes('[TokenData]') ||
             message.includes('WebSocketManager:') ||
+            message.includes('WebSocketContext:') ||
+            message.includes('[WebSocketContext]') ||
             message.includes('Cannot refresh tokens')) {
           // Don't forward to server, but still visible in console (unless rate limited)
           return;
@@ -240,6 +250,8 @@ export const initializeClientLogForwarder = (): void => {
             message.includes('[Jupiter Wallet]') ||
             message.includes('App configuration has Solana wallet login enabled') ||
             message.includes('WebSocketManager:') ||
+            message.includes('WebSocketContext:') ||
+            message.includes('[WebSocketContext]') ||
             message.includes('Solana wallet connectors have been passed')) {
           // Don't forward to server, but still visible in console (unless rate limited)
           return;
@@ -448,24 +460,30 @@ const sendLogs = async (): Promise<void> => {
  */
 const sendLogsViaWebSocket = (logs: LogEntry[]): boolean => {
   try {
-    // Import WebSocketManager dynamically to avoid circular dependencies
-    const { instance } = require('../hooks/websocket/WebSocketManager');
+    // Use WebSocketContext instead of requiring WebSocketManager
+    // This provides a stable, persistent connection for log forwarding
+    const webSocketContext = (window as any).__DD_WEBSOCKET_CONTEXT;
     
-    if (!instance) {
+    if (!webSocketContext || !webSocketContext.isConnected) {
       return false;
     }
     
     // Get user info if available
     const user = useStore.getState().user;
     
-    // Use the preferred LOGS message type as specified by backend
-    return instance.sendMessage({
-      type: MessageType.LOGS,
-      logs: logs,
-      sessionId: sessionStorage.getItem('logSessionId') || undefined,
-      userId: user?.wallet_address,
-      timestamp: new Date().toISOString()
-    });
+    try {
+      // Use the standardized message type from our extended type
+      return webSocketContext.sendMessage({
+        type: MessageType.LOGS,
+        logs: logs,
+        sessionId: sessionStorage.getItem('logSessionId') || undefined,
+        userId: user?.wallet_address,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.warn("Error using WebSocketContext to send logs:", err);
+      return false;
+    }
   } catch (err) {
     originalConsoleError('Error sending logs via WebSocket:', err);
     return false;

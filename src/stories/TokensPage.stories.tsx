@@ -1,6 +1,5 @@
 // Enhanced TokensPage stories - Using Storybook-first approach
 import { Meta, StoryObj } from '@storybook/react';
-import { withRouter } from 'storybook-addon-react-router-v6';
 import * as React from 'react';
 
 // Import type declarations to help TypeScript recognize window properties
@@ -251,9 +250,9 @@ const metaOriginal: Meta<typeof OriginalTokensPage> = {
   component: OriginalTokensPage,
   parameters: {
     layout: 'fullscreen',
+    route: '/tokens',
   },
   decorators: [
-    withRouter,
     (Story) => (
       <MockContext>
         <div className="bg-dark-100 min-h-screen">
@@ -269,21 +268,14 @@ type StoryOriginal = StoryObj<typeof OriginalTokensPage>;
 
 export const OriginalDefault: StoryOriginal = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens',
-    },
-  },
+    route: '/tokens',
+  }
 };
 
 export const OriginalWithSelectedToken: StoryOriginal = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens?symbol=BTC',
-      searchParams: { symbol: 'BTC' },
-    },
-  },
+    route: '/tokens?symbol=BTC',
+  }
 };
 
 // Create a separate export for OptimizedTokensPage
@@ -292,9 +284,9 @@ export const optimizedMeta: Meta<typeof OptimizedTokensPage> = {
   component: OptimizedTokensPage,
   parameters: {
     layout: 'fullscreen',
+    route: '/tokens',
   },
   decorators: [
-    withRouter,
     (Story) => (
       <MockContext>
         <div className="bg-dark-100 min-h-screen">
@@ -309,21 +301,14 @@ type StoryOptimized = StoryObj<typeof OptimizedTokensPage>;
 
 export const OptimizedDefault: StoryOptimized = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens',
-    },
-  },
+    route: '/tokens',
+  }
 };
 
 export const OptimizedWithSelectedToken: StoryOptimized = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens?symbol=BTC',
-      searchParams: { symbol: 'BTC' },
-    },
-  },
+    route: '/tokens?symbol=BTC',
+  }
 };
 
 // Create a separate meta for StoryTokensPage - our new cyberpunk design
@@ -332,9 +317,9 @@ export const creativeTokensMeta: Meta<typeof StoryTokensPage> = {
   component: StoryTokensPage,
   parameters: {
     layout: 'fullscreen',
+    route: '/tokens',
   },
   decorators: [
-    withRouter,
     (Story) => (
       <div className="bg-dark-100 min-h-screen">
         <Story />
@@ -347,22 +332,12 @@ type StoryCreative = StoryObj<typeof StoryTokensPage>;
 
 export const CreativeTokensPageDefault: StoryCreative = {
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens',
-    },
-  },
+    route: '/tokens',
+  }
 };
 
 export const CreativeTokensPageWithSelectedToken: StoryCreative = {
-  args: {
-    // No args needed since we're setting this via route
-  },
   parameters: {
-    reactRouter: {
-      routePath: '/tokens',
-      browserPath: '/tokens?symbol=BTC',
-      searchParams: { symbol: 'BTC' },
-    },
-  },
+    route: '/tokens?symbol=BTC',
+  }
 };
