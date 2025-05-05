@@ -348,7 +348,10 @@ export const App: React.FC = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("online", handleOnlineStatus);
     };
-  }, [checkAuth, privy]); // Removed 'user' from dependencies to prevent loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkAuth, privy]); // 'user' intentionally omitted to prevent infinite render loop.
+  // Including 'user' creates a circular dependency: effect reads user → calls checkAuth → 
+  // checkAuth updates user via store.setUser → triggers effect again → infinite loop
 
   // Privy configuration
   //   [4-30-25: The official DegenDuel RPC is now being used for Privy configuration!
