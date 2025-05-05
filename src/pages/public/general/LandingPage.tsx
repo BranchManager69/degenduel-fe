@@ -26,7 +26,7 @@ import { Contest } from "../../../types";
 import { DecryptionTimer, Terminal } from '../../../components/terminal';
 //// import { processTerminalChat } from '../../../services/mockTerminalService';
 // Hooks
-import { useAuth } from "../../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useWallet } from "../../../hooks/websocket/topic-hooks/useWallet";
 // DD API
 import { ddApi } from "../../../services/dd-api";
@@ -291,14 +291,14 @@ export const LandingPage: React.FC = () => {
   }, [releaseDate, terminalConfig]);
   
   // Use auth hook for proper admin status checks
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin } = useMigratedAuth();
   
   // Log user status for debugging
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[LandingPage] User permissions:', { 
         loggedIn: !!user,
-        isAdmin: isAdmin(),
+        isAdmin: isAdmin,
         role: user?.role
       });
     }
@@ -447,7 +447,7 @@ export const LandingPage: React.FC = () => {
               {/* Admin button now only shows the three topic-specific monitors */}
               
               {/* Admin debug button - visible even when HeroTitle is hidden */}
-              {isAdmin() && (
+              {isAdmin && (
                 <div className="flex justify-end mb-2">
                   <button
                     className="bg-black/50 text-white text-xs p-1 rounded-md"
@@ -459,7 +459,7 @@ export const LandingPage: React.FC = () => {
               )}
               
               {/* WebSocket Demo Section - only visible to admins with debug mode enabled */}
-              {debugMode && isAdmin() && (
+              {debugMode && isAdmin && (
                 <div className="w-full mb-10">
                   
                   {/* Auth Debug Panel - shows authentication state for debugging */}
@@ -1024,7 +1024,7 @@ export const LandingPage: React.FC = () => {
                           </div>
                           
                           {/* Debug info (admin only) */}
-                          {isAdmin() && (
+                          {isAdmin && (
                             <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
                               <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
                               

@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/UnifiedAuthContext";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 /**
  * Route guard that only allows authenticated users to access protected routes.
@@ -8,7 +8,7 @@ import { useAuth } from "../../contexts/UnifiedAuthContext";
  * intended destination for post-login redirect.
  */
 export const AuthenticatedRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useMigratedAuth();
   const location = useLocation();
 
   // Show loading spinner while authentication state is being determined

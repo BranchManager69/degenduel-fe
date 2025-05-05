@@ -1,23 +1,23 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 
 export const AdminControls: React.FC = () => {
-  const { isAdmin, isSuperAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useMigratedAuth();
   const navigate = useNavigate();
 
-  if (!isAdmin()) return null;
+  if (!isAdmin) return null;
 
   return (
     <div className="px-2 pt-2 pb-1">
       <div className="flex gap-1">
-        {isAdmin() && (
+        {isAdmin && (
           <button
             onClick={() => navigate("/admin")}
             className={`
               relative group flex-1 px-3 py-1.5 rounded bg-dark-300/50 overflow-hidden
-              ${isSuperAdmin() ? "flex-1" : "w-full"}
+              ${isSuperAdmin ? "flex-1" : "w-full"}
             `}
           >
             {/* Background effects */}
@@ -36,7 +36,7 @@ export const AdminControls: React.FC = () => {
           </button>
         )}
 
-        {isSuperAdmin() && (
+        {isSuperAdmin && (
           <button
             onClick={() => navigate("/superadmin")}
             className="relative group flex-1 px-3 py-1.5 rounded bg-dark-300/50 overflow-hidden"

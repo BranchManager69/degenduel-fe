@@ -307,10 +307,19 @@ const handleServerStatus = (status: number) => {
 const createApiClient = () => {
   return {
     fetch: async (endpoint: string, options: RequestInit = {}) => {
-      // Check if server is already known to be down
+      // If the server has been flagged as down, immediately return a synthetic
+      // 502 Response object instead of throwing.  This prevents callers from
+      // triggering unhandled Promise rejections (which can crash React
+      // components if they do async work inside render) while still allowing
+      // components to decide what to do with the error status.
       if (isServerDown()) {
-        throw new Error(
-          "Server is currently unavailable. Please try again later.",
+        return new Response(
+          JSON.stringify({ message: "Server is currently unavailable." }),
+          {
+            status: 502,
+            statusText: "Bad Gateway",
+            headers: { "Content-Type": "application/json" },
+          },
         );
       }
 

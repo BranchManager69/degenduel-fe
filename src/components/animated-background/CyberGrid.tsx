@@ -2,12 +2,13 @@
 // Copy this entire file to your project
 
 import { motion } from 'framer-motion';
-import React from 'react';
 
-export function CyberGrid({ children }: { children: React.ReactNode }) {
+// Modified to act as a standalone background layer instead of a wrapper
+export function CyberGrid() { // Removed children prop
   return (
-    <div className="min-h-screen bg-gradient-to-br from-darkGrey-dark via-darkGrey to-mauve-dark overflow-hidden relative">
-      {/* Grid overlay */}
+    // Changed to fixed position, full screen, negative z-index, removed overflow-hidden
+    <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-darkGrey-dark via-darkGrey to-mauve-dark">
+      {/* Grid overlay - still absolute within the fixed container */}
       <div 
         className="absolute inset-0 opacity-10"
         style={{
@@ -16,32 +17,40 @@ export function CyberGrid({ children }: { children: React.ReactNode }) {
         }}
       />
 
+      {/* Particles - still absolute within the fixed container */}
       <FloatingParticles />
       
-      {/* Content */}
-      <div className="relative z-10">
-        {children}
-      </div>
+      {/* Removed the children wrapper div */}
     </div>
   );
 }
 
 function FloatingParticles() {
+  // Ensure particles render within the new fixed container bounds
+  // Using 100vw and 100vh for initial positioning relative to viewport
+  const initialX = () => Math.random() * 100 + 'vw';
+  const initialY = () => -20; // Start above the screen
+  const animateY = () => window.innerHeight + 20; // Animate below the screen
+  const animateX = (i: number) => `calc(${Math.random() * 100}vw + ${Math.sin(i) * 50}px)`;
+
   return (
     <div className="absolute inset-0 pointer-events-none">
       {Array.from({ length: 30 }).map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-1 h-1 bg-mauve-light rounded-full opacity-30"
-          initial={{ x: Math.random() * window.innerWidth, y: -20 }}
+          // Updated initial/animate props to use viewport units or explicit window dimensions
+          initial={{ x: initialX(), y: initialY() }}
           animate={{
-            y: window.innerHeight + 20,
-            x: `calc(${Math.random() * 100}vw + ${Math.sin(i) * 50}px)`,
+            y: animateY(),
+            x: animateX(i),
           }}
           transition={{
             duration: Math.random() * 5 + 5,
             repeat: Infinity,
             ease: "linear",
+            // Ensure x animation stays within reasonable bounds if needed
+            // The previous calculation seemed fine, retaining it
             x: {
               duration: Math.random() * 3 + 2,
               repeat: Infinity,

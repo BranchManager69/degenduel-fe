@@ -36,9 +36,8 @@ export const SuperAdminRoute: React.FC = () => {
   }
 
   // Check if user is authenticated and has super admin privileges
-  // Handle both function and boolean property cases
   const isAuth = isAuthenticated;
-  const hasSuperAdminAccess = isAuth && isSuperAdmin();
+  const hasSuperAdminAccess = isAuth && isSuperAdmin;
 
   // If not super admin, redirect to home
   if (!hasSuperAdminAccess) {

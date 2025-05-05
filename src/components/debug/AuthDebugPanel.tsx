@@ -1,6 +1,6 @@
 // AuthDebugPanel.tsx
 import React from 'react';
-import { useAuth } from '../../hooks/auth/legacy/useAuth';
+import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
 
 interface AuthDebugPanelProps {
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'floating';
@@ -34,7 +34,7 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
     authMethods,
     walletAddress,
     user
-  } = useAuth();
+  } = useMigratedAuth();
 
   const [isVisible, setIsVisible] = React.useState(showByDefault);
   
@@ -92,9 +92,9 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
       </div>
       
       <div className="grid grid-cols-1 gap-1">
-        <p><span className="text-gray-400">Authenticated:</span> {isAuthenticated() ? '✅' : '❌'}</p>
+        <p><span className="text-gray-400">Authenticated:</span> {isAuthenticated ? '✅' : '❌'}</p>
         <p><span className="text-gray-400">Wallet Connected:</span> {isWalletConnected ? '✅' : '❌'}</p>
-        <p><span className="text-gray-400">Fully Connected:</span> {isFullyConnected() ? '✅' : '❌'}</p>
+        <p><span className="text-gray-400">Fully Connected:</span> {isFullyConnected ? '✅' : '❌'}</p>
         <p><span className="text-gray-400">Active Method:</span> {activeAuthMethod || 'none'}</p>
         <p><span className="text-gray-400">Wallet Address:</span> {walletAddress ? walletAddress.substring(0, 8) + '...' : 'none'}</p>
         

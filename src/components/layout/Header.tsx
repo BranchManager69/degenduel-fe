@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
 import { useNotificationWebSocket } from "../../hooks/websocket/legacy/useNotificationWebSocket";
 import { ddApi } from "../../services/dd-api";
@@ -26,14 +26,14 @@ export const Header: React.FC = () => {
     maintenanceMode,
     setMaintenanceMode,
   } = useStore();
-  const { isAdmin, isAuthenticated } = useAuth();
+  const { isAdmin, isAuthenticated } = useMigratedAuth();
   
   // For debugging - check if we have a mismatch between store user and auth state
   useEffect(() => {
-    if (user && !isAuthenticated()) {
-      console.warn('[Header] User exists in store but isAuthenticated() is false');
-    } else if (!user && isAuthenticated()) {
-      console.warn('[Header] isAuthenticated() is true but no user in store');
+    if (user && !isAuthenticated) {
+      console.warn('[Header] User exists in store but isAuthenticated is false');
+    } else if (!user && isAuthenticated) {
+      console.warn('[Header] isAuthenticated is true but no user in store');
     }
   }, [user, isAuthenticated]);
   const { unreadCount } = useNotificationWebSocket();
@@ -52,7 +52,7 @@ export const Header: React.FC = () => {
       // Use a fade-out animation and then transition
       setTimeout(() => {
         // Only reload if we're not an admin
-        if (!isAdmin()) {
+        if (!isAdmin) {
           window.location.href = "/maintenance";
         }
         setIsTransitioningToMaintenance(false);
@@ -88,7 +88,7 @@ export const Header: React.FC = () => {
           }
 
           // Only reload for non-admin users entering maintenance mode
-          if (isInMaintenance && !isAdmin()) {
+          if (isInMaintenance && !isAdmin) {
             setTimeout(() => {
               window.location.href = "/maintenance";
             }, 500);
@@ -272,7 +272,7 @@ export const Header: React.FC = () => {
               {/* Main Navigation - new streamlined version */}
               <nav className="hidden md:flex items-center ml-6">
                 {/* Check if user is authenticated or if we're past the release date */}
-                {(isAuthenticated() || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
+                {(isAuthenticated || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
                   <div className="flex items-center bg-dark-300/50 backdrop-blur-md rounded-md border border-brand-400/20 overflow-visible shadow-md nav-dropdown-container">
                     
                     {/* Import directly with existing components for now */}

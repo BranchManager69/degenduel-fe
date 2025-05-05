@@ -7,7 +7,7 @@ import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { AuthDebugPanel } from "../../../components/debug";
-import { useAuth } from "../../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { ddApi } from "../../../services/dd-api";
 import { Contest, ContestSettings } from "../../../types/index";
 import type { SortDirection, SortField } from "../../../types/sort";
@@ -15,7 +15,7 @@ import type { SortDirection, SortField } from "../../../types/sort";
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useMigratedAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -245,7 +245,7 @@ export const ContestBrowser: React.FC = () => {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             </h1>
-            {isAdmin() && (
+            {isAdmin && (
               <CreateContestButton
                 onCreateClick={() => setIsCreateModalOpen(true)}
               />

@@ -3,7 +3,7 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
 
 interface MaintenanceGuardProps {
@@ -14,10 +14,10 @@ export const MaintenanceGuard: React.FC<MaintenanceGuardProps> = ({
   children,
 }) => {
   const { maintenanceMode } = useStore();
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useMigratedAuth();
 
   // If in maintenance mode and not admin, redirect to maintenance page
-  if (maintenanceMode && !isAdmin()) {
+  if (maintenanceMode && !isAdmin) {
     return <Navigate to="/maintenance" replace />;
   }
 

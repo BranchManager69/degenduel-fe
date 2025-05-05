@@ -36,9 +36,8 @@ export const AdminRoute: React.FC = () => {
   }
 
   // Check if user is authenticated and has admin privileges
-  // Handle both function and boolean property cases
   const isAuth = isAuthenticated;
-  const hasAdminAccess = isAuth && isAdmin();
+  const hasAdminAccess = isAuth && isAdmin;
 
   // If not admin, redirect to home
   if (!hasAdminAccess) {

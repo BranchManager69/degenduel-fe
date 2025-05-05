@@ -8,10 +8,10 @@
 import React from 'react';
 import { StandardizedHotTokensList } from '../../../components/landing/hot-tokens';
 import { StandardizedMarketStatsPanel } from '../../../components/landing/market-stats';
-import { useAuth } from '../../../hooks/auth/legacy/useAuth';
+import { useMigratedAuth } from '../../../hooks/auth/useMigratedAuth';
 
 const TokensStandardizedTestPage: React.FC = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useMigratedAuth();
   const [debugMode, setDebugMode] = React.useState(false);
 
   return (
@@ -20,7 +20,7 @@ const TokensStandardizedTestPage: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-white">Standardized Components Test</h1>
           
-          {isAdmin() && (
+          {isAdmin && (
             <button
               className="bg-black/50 text-white text-xs p-1 rounded-md"
               onClick={() => setDebugMode(!debugMode)}

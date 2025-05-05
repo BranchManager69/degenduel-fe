@@ -12,7 +12,7 @@ export const featureFlags = {
    * When true, components will use the new UnifiedAuthContext
    * When false, components will use the old AuthContext
    */
-  useUnifiedAuth: false,
+  useUnifiedAuth: true,
 
   /**
    * Use the new unified WebSocket system

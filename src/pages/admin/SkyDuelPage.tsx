@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 import { SkyDuelDashboard } from "../../components/admin/skyduel/SkyDuelDashboard";
 import SkyDuelDebugPanel from "../../components/debug/websocket/SkyDuelDebugPanel";
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useSkyDuelWebSocket } from "../../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { useStore } from "../../store/useStore";
 
@@ -10,12 +10,12 @@ export const SkyDuelPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDebug, setShowDebug] = useState(true); // Debug shown by default for SkyDuel admin page
   const skyDuelSocket = useSkyDuelWebSocket();
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useMigratedAuth();
   const { addServiceAlert } = useStore();
 
   useEffect(() => {
     // Check if user has admin permissions
-    if (!isAdmin()) {
+    if (!isAdmin) {
       window.location.href = "/";
       return;
     }

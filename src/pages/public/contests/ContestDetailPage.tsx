@@ -31,7 +31,7 @@ import AuthDebugPanel from "../../../components/debug/AuthDebugPanel";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 // PortfolioPreviewModal has been moved for future use in MyPortfoliosPage
-import { useAuth } from "../../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import {
   formatCurrency,
   isContestLive,
@@ -89,7 +89,7 @@ export const ContestDetails: React.FC = () => {
     isAuthenticated,
     activeAuthMethod,
     authMethods
-  } = useAuth();
+  } = useMigratedAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   
@@ -98,7 +98,7 @@ export const ContestDetails: React.FC = () => {
   useEffect(() => {
     console.log("Wallet State Changed:", {
       connected: isWalletConnected,
-      authenticated: isAuthenticated(),
+      authenticated: isAuthenticated,
       activeMethod: activeAuthMethod,
       methods: authMethods,
       walletAddress,

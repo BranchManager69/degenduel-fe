@@ -1,6 +1,6 @@
 import React from "react";
 
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { Button } from "../ui/Button";
 
 interface ContestBrowserHeaderProps {
@@ -10,7 +10,7 @@ interface ContestBrowserHeaderProps {
 export const ContestBrowserHeader: React.FC<ContestBrowserHeaderProps> = ({
   onCreateContest,
 }) => {
-  const { user } = useAuth();
+  const { user } = useMigratedAuth();
 
   return (
     <div className="relative mb-8 overflow-hidden">

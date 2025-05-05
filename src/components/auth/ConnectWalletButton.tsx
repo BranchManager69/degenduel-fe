@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 
 import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
 import { env } from "../../config/env";
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useJupiterWallet } from "../../hooks/social/useJupiterWallet";
 import { authenticateWithWallet } from "../../services/authenticationService";
 import { useStore } from "../../store/useStore";
@@ -27,7 +27,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   onClick,
 }) => {
   const { connectWallet, disconnectWallet, isConnecting, user } = useStore();
-  const { walletAddress } = useAuth();
+  const { walletAddress } = useMigratedAuth();
   const jupiterWallet = useJupiterWallet();
 
   // Handle connect action
@@ -64,7 +64,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           
           // Force a re-check of the auth state
           setTimeout(() => {
-            useAuth().checkAuth();
+            useMigratedAuth().checkAuth();
           }, 300);
         }
       } else {

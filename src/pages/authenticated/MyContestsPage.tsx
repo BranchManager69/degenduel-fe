@@ -19,7 +19,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../components/ui/Tabs";
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { UserContest } from "../../services/contestService";
 import { Contest } from "../../types";
@@ -30,7 +30,7 @@ export const MyContestsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // We're already inside an AuthenticatedRoute, no need for additional checks
-  const { user } = useAuth();
+  const { user } = useMigratedAuth();
 
   // This check is redundant since the AuthenticatedRoute already handles redirection
   // Keeping a simplified version just to be safe

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 /**
  * @deprecated Use the SuperAdminRoute from SuperAdminRoute.unified.tsx instead
@@ -20,10 +20,13 @@ export function SuperAdminRoute({ children }: SuperAdminRouteProps) {
     );
   }, []);
 
-  const { user, loading, isSuperAdmin } = useAuth();
+  const { user, isLoading, loading, isSuperAdmin } = useMigratedAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Use either isLoading or loading (for backward compatibility)
+  const isAuthLoading = isLoading || loading;
+
+  if (isAuthLoading) {
     // You might want to show a loading spinner here
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -32,7 +35,7 @@ export function SuperAdminRoute({ children }: SuperAdminRouteProps) {
     );
   }
 
-  if (!user || !isSuperAdmin()) {
+  if (!user || !isSuperAdmin) {
     // Redirect to home page but save the attempted location for potential future use
     return <Navigate to="/" state={{ from: location }} replace />;
   }
