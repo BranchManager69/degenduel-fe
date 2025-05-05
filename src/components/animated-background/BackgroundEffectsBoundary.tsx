@@ -30,7 +30,7 @@ export class BackgroundEffectsBoundary extends React.Component<
       // [NEW FALLBACK 5/5/2025]
       // Do NOT re-render the original background effects to avoid the update loop.
       //   Keep the UI functional by rendering the CyberGrid fallback instead.
-      return <CyberGrid>{null}</CyberGrid>;
+      return <CyberGrid />;
       //// [OLD FALLBACK]
       //// Do NOT re-render the background effects to avoid the update loop.
       ////   Keep the UI functional by simply omitting the layer.

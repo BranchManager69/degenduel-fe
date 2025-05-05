@@ -193,7 +193,7 @@ export const BackgroundEffects: React.FC = () => {
               mixBlendMode: cyberGridBlendMode,
             }}
           >
-            <CyberGrid>{null}</CyberGrid>
+            <CyberGrid />
           </div>
         )}
 
