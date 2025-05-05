@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { useSolanaWallet } from '../../hooks/useSolanaWallet'; // Import the useSolanaWallet hook
+import { useSolanaWallet } from '../../hooks/data/useSolanaWallet'; // Import the useSolanaWallet hook
 
 // Define the SolanaWalletConnectorProps interface
 interface SolanaWalletConnectorProps {

@@ -13,7 +13,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useSolanaWallet } from '../../hooks/useSolanaWallet';
+import { useSolanaWallet } from '../../hooks/data/useSolanaWallet';
 import { BlinkButton } from './BlinkButton';
 import { SolanaWalletConnector } from './SolanaWalletConnector';
 

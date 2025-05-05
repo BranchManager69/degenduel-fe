@@ -12,7 +12,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useSolanaWallet } from '../../hooks/useSolanaWallet'; // Import the useSolanaWallet hook
+import { useSolanaWallet } from '../../hooks/data/useSolanaWallet'; // Import the useSolanaWallet hook
 
 // Define the BlinkMetadata interface
 interface BlinkMetadata {

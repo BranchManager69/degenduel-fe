@@ -19,8 +19,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../components/ui/Tabs";
-import { useAuth } from "../../hooks/useAuth";
-import { useUserContests } from "../../hooks/useUserContests";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { UserContest } from "../../services/contestService";
 import { Contest } from "../../types";
 

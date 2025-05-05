@@ -14,7 +14,7 @@
 
 import { Connection } from '@solana/web3.js';
 import React, { createContext, useContext, useMemo } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/auth/legacy/useAuth';
 import { useStore } from '../store/useStore';
 
 // Config

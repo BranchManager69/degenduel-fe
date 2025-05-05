@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useTokenData } from "../../hooks/useTokenData";
+import { useTokenData } from "../../hooks/data/legacy/useTokenData";
 import { TokenData } from "../../types";
 
 interface Props {

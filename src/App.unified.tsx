@@ -28,11 +28,11 @@ import { Adapter } from "@solana/wallet-adapter-base";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 
 // Other providers
+import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
 import { SolanaConnectionProvider } from "./contexts/SolanaConnectionContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
-import { ToastProvider, ToastListener, ToastContainer } from "./components/toast";
-import { AffiliateSystemProvider } from "./hooks/useAffiliateSystem";
-import { InviteSystemProvider } from "./hooks/useInviteSystem";
+import { AffiliateSystemProvider } from "./hooks/social/legacy/useAffiliateSystem";
+import { InviteSystemProvider } from "./hooks/social/legacy/useInviteSystem";
 
 // Components
 // Helper component to redirect while preserving query parameters
@@ -61,8 +61,8 @@ import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 
 // Hooks and utils
-import { useScrollbarVisibility } from "./hooks/useScrollbarVisibility";
 import "jupiverse-kit/dist/index.css";
+import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
 import "./styles/color-schemes.css";
 
 // Route components

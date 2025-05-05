@@ -6,9 +6,9 @@
  */
 
 import React from 'react';
-import { StandardizedMarketStatsPanel } from '../../../components/landing/market-stats';
 import { StandardizedHotTokensList } from '../../../components/landing/hot-tokens';
-import { useAuth } from '../../../hooks/useAuth';
+import { StandardizedMarketStatsPanel } from '../../../components/landing/market-stats';
+import { useAuth } from '../../../hooks/auth/legacy/useAuth';
 
 const TokensStandardizedTestPage: React.FC = () => {
   const { isAdmin } = useAuth();

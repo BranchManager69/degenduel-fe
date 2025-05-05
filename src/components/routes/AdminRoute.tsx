@@ -1,6 +1,6 @@
-import { Navigate, useLocation } from "react-router-dom";
 import React from 'react';
-import { useAuth } from "../../hooks/useAuth";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
 
 /**
  * @deprecated Use the AdminRoute from AdminRoute.unified.tsx instead

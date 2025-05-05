@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { useUserContests } from "../../hooks/useUserContests";
+import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { FloatingContestChat } from "../contest-chat/FloatingContestChat";
 
 // Define ContestStatus type based on UserContest

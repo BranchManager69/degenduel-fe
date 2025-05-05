@@ -16,18 +16,18 @@
  */
 
 // Standard WebSocket System exports - combining legacy types with shared types
-export { ConnectionState, SOCKET_TYPES, DDExtendedMessageType as MessageType } from './types';
 export { DDWebSocketTopic } from '@branchmanager69/degenduel-shared';
-export { useUnifiedWebSocket };
 export * from './types';
+export { ConnectionState, DDExtendedMessageType as MessageType, SOCKET_TYPES } from './types';
+export { useUnifiedWebSocket };
 
 // Type Migration Support - Utility functions for message handling
-import { 
-  DDExtendedMessageType, 
-  createMessage, 
-  isMessageType, 
-  isValidMessageType 
-} from './types';
+  import {
+    DDExtendedMessageType,
+    createMessage,
+    isMessageType,
+    isValidMessageType
+  } from './types';
 
 // Export utility functions for type-safe message handling
 export { createMessage, isMessageType, isValidMessageType };
@@ -98,27 +98,27 @@ export type TopicType = keyof typeof TopicType | string;
 import useUnifiedWebSocket from './useUnifiedWebSocket';
 
 // New standardized format hooks
-export * from './topic-hooks/useNotifications';
-export * from './topic-hooks/useTerminalData';
-export * from './topic-hooks/useTokenData';
-export * from './topic-hooks/useMarketData';
-export * from './topic-hooks/useContests';
-export * from './topic-hooks/usePortfolio';
-export * from './topic-hooks/useContestChat';
 export * from './topic-hooks/useAchievements';
-export * from './topic-hooks/useServerStatus';
-export * from './topic-hooks/useSystemSettings';
-export * from './topic-hooks/useSkyDuel';
 export * from './topic-hooks/useCircuitBreaker';
-export * from './topic-hooks/useService';
-export * from './topic-hooks/useRPCBenchmark';
-export * from './topic-hooks/useVanityDashboard';
+export * from './topic-hooks/useContestChat';
+export * from './topic-hooks/useContests';
 export * from './topic-hooks/useContestScheduler';
 export * from './topic-hooks/useLiquiditySim';
+export * from './topic-hooks/useMarketData';
+export * from './topic-hooks/useNotifications';
+export * from './topic-hooks/usePortfolio';
+export * from './topic-hooks/useRPCBenchmark';
+export * from './topic-hooks/useServerStatus';
+export * from './topic-hooks/useService';
+export * from './topic-hooks/useSkyDuel';
+export * from './topic-hooks/useSystemSettings';
+export * from './topic-hooks/useTerminalData';
+export * from './topic-hooks/useTokenData';
+export * from './topic-hooks/useVanityDashboard';
+export { useWallet };
 
 // Just export useWallet and don't worry about the types to avoid conflicts
-import { useWallet } from './topic-hooks/useWallet';
-export { useWallet };
+  import { useWallet } from './topic-hooks/useWallet';
 
 // DEPRECATED - The individual WebSocket hooks below will be replaced
 // with topic-based hooks that use the unified WebSocket system
@@ -126,19 +126,20 @@ export const WEBSOCKET_SYSTEM_DEPRECATED = true;
 
 // Legacy hooks (still exported for backward compatibility)
 // These will gradually be replaced with standardized topic-based hooks
-export * from './useAchievementWebSocket'; // DEPRECATED - use topic-hooks/useAchievements instead
-export * from './useAnalyticsWebSocket';
-export * from './useCircuitBreakerSocket'; // DEPRECATED - use topic-hooks/useCircuitBreaker instead
-export * from './useContestChatWebSocket'; // DEPRECATED - use topic-hooks/useContestChat instead
-export * from './useContestWebSocket'; // DEPRECATED - use topic-hooks/useContests instead
+export * from './legacy/useAchievementWebSocket'; // DEPRECATED - use topic-hooks/useAchievements instead
+export * from './legacy/useAnalyticsWebSocket';
+export * from './legacy/useCircuitBreakerSocket'; // DEPRECATED - use topic-hooks/useCircuitBreaker instead
+export * from './legacy/useContestChatWebSocket'; // DEPRECATED - use topic-hooks/useContestChat instead
+export * from './legacy/useContestWebSocket'; // DEPRECATED - use topic-hooks/useContests instead
 // useMarketDataWebSocket removed - use topic-hooks/useMarketData instead
-export * from './useNotificationWebSocket'; // DEPRECATED - use topic-hooks/useNotifications instead
-export * from './usePortfolioWebSocket'; // DEPRECATED - use topic-hooks/usePortfolio instead
-export * from './useRPCBenchmarkWebSocket'; // DEPRECATED - use topic-hooks/useRPCBenchmark instead
-export * from './useServerStatusWebSocket'; // DEPRECATED - use topic-hooks/useServerStatus instead
-export * from './useServiceWebSocket'; // DEPRECATED - use topic-hooks/useService instead
-export * from './useSkyDuelWebSocket'; // DEPRECATED - use topic-hooks/useSkyDuel instead
-export * from './useSystemSettingsWebSocket'; // DEPRECATED - use topic-hooks/useSystemSettings instead
+export * from './legacy/useNotificationWebSocket'; // DEPRECATED - use topic-hooks/useNotifications instead
+export * from './legacy/usePortfolioWebSocket'; // DEPRECATED - use topic-hooks/usePortfolio instead
+export * from './legacy/useRPCBenchmarkWebSocket'; // DEPRECATED - use topic-hooks/useRPCBenchmark instead
+export * from './legacy/useServerStatusWebSocket'; // DEPRECATED - use topic-hooks/useServerStatus instead
+export * from './legacy/useServiceWebSocket'; // DEPRECATED - use topic-hooks/useService instead
+export * from './legacy/useSkyDuelWebSocket'; // DEPRECATED - use topic-hooks/useSkyDuel instead
+export * from './legacy/useSystemSettingsWebSocket'; // DEPRECATED - use topic-hooks/useSystemSettings instead
 // useTokenDataWebSocket removed - use topic-hooks/useTokenData instead
-export * from './useWalletWebSocket'; // DEPRECATED - use topic-hooks/useWallet instead
-export * from './useWebSocket';
+export * from './legacy/useWalletWebSocket'; // DEPRECATED - use topic-hooks/useWallet instead
+export * from './legacy/useWebSocket';
+

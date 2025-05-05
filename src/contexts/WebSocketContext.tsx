@@ -15,7 +15,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { authDebug } from '../config/config';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/auth/legacy/useAuth';
 import {
   ConnectionState,
   DDExtendedMessageType,

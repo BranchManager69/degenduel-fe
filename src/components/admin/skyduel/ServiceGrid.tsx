@@ -1,6 +1,6 @@
 import React from "react";
 
-import { ServiceNode } from "../../../hooks/websocket/useSkyDuelWebSocket";
+import { ServiceNode } from '../../../hooks/websocket/legacy/useSkyDuelWebSocket';
 import { useStore } from "../../../store/useStore";
 
 export const ServiceGrid: React.FC = () => {

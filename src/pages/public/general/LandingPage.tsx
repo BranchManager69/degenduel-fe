@@ -26,7 +26,7 @@ import { Contest } from "../../../types";
 import { DecryptionTimer, Terminal } from '../../../components/terminal';
 //// import { processTerminalChat } from '../../../services/mockTerminalService';
 // Hooks
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/auth/legacy/useAuth";
 import { useWallet } from "../../../hooks/websocket/topic-hooks/useWallet";
 // DD API
 import { ddApi } from "../../../services/dd-api";

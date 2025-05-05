@@ -5,7 +5,7 @@ import { toast } from "../../components/toast";
 
 import { ServiceDebugPanel } from "../../components/admin/ServiceDebugPanel";
 import { ServiceSwitch } from "../../components/admin/ServiceSwitch";
-import { useServiceWebSocket } from "../../hooks/websocket/useServiceWebSocket";
+import { useServiceWebSocket } from "../../hooks/websocket/legacy/useServiceWebSocket";
 import { useStore } from "../../store/useStore";
 
 // Types

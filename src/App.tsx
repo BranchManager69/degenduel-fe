@@ -127,10 +127,10 @@ import { TwitterAuthProvider } from "./contexts/TwitterAuthContext";
 import { WebSocketProvider } from "./contexts/WebSocketContext";
 /* Hooks */
 import "jupiverse-kit/dist/index.css";
-import { AffiliateSystemProvider } from "./hooks/useAffiliateSystem";
-import { useAuth } from "./hooks/useAuth";
-import { InviteSystemProvider } from "./hooks/useInviteSystem";
-import { useScrollbarVisibility } from "./hooks/useScrollbarVisibility";
+import { useAuth } from "./hooks/auth/legacy/useAuth";
+import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
+import { AffiliateSystemProvider } from "./hooks/social/legacy/useAffiliateSystem";
+import { InviteSystemProvider } from "./hooks/social/legacy/useInviteSystem";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AiTesting } from "./pages/admin/AiTesting";
 import ClientErrorsPage from "./pages/admin/ClientErrorsPage";

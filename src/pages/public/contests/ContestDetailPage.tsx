@@ -31,7 +31,7 @@ import AuthDebugPanel from "../../../components/debug/AuthDebugPanel";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 // PortfolioPreviewModal has been moved for future use in MyPortfoliosPage
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/auth/legacy/useAuth";
 import {
   formatCurrency,
   isContestLive,

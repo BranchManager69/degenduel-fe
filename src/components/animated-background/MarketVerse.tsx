@@ -9,7 +9,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { useStandardizedTokenData } from "../../hooks/useStandardizedTokenData";
+import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../store/useStore";
 import MarketVerseScene from "../../utils/three/MarketVerseScene";
 

@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useSound from 'use-sound';
-import useTokenData from "../../../hooks/useTokenData";
+import useTokenData from "../../../hooks/data/legacy/useTokenData";
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
 

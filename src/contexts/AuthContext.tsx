@@ -12,7 +12,7 @@
  */
 
 import React, { createContext, ReactNode, useContext } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../hooks/auth/legacy/useAuth";
 import { useStore } from "../store/useStore";
 
 // Create a type for the context

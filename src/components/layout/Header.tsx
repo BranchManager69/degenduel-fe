@@ -3,17 +3,17 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 
-import { ContestsDropdown } from "./ContestsDropdown";
-import { MobileMenuButton } from "./MobileMenuButton";
-import { RankingsDropdown } from "./RankingsDropdown";
-import { TokensDropdown } from "./TokensDropdown";
-import { useAuth } from "../../hooks/useAuth";
-import { useNotificationWebSocket } from "../../hooks/websocket/useNotificationWebSocket";
-import { useScrollHeader } from "../../hooks/useScrollHeader";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
+import { useNotificationWebSocket } from "../../hooks/websocket/legacy/useNotificationWebSocket";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import LoginOptionsButton from "../auth/LoginOptionsButton";
 import Logo from "../ui/Logo";
+import { ContestsDropdown } from "./ContestsDropdown";
+import { MobileMenuButton } from "./MobileMenuButton";
+import { RankingsDropdown } from "./RankingsDropdown";
+import { TokensDropdown } from "./TokensDropdown";
 import { UserMenu } from "./user-menu/UserMenu";
 
 export const Header: React.FC = () => {

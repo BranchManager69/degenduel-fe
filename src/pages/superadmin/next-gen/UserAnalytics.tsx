@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 import { LiveUserActivityMap } from "../../../components/admin/LiveUserActivityMap";
-import { useEnhancedAnalytics } from "../../../hooks/useEnhancedAnalytics";
+import { useEnhancedAnalytics } from "../../../hooks/data/legacy/useEnhancedAnalytics";
 import { useStore } from "../../../store/useStore";
 
 const UserAnalytics: React.FC = () => {

@@ -15,8 +15,8 @@
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
-import { WebSocketState } from "../hooks/useWebSocketMonitor";
-import { ServiceConnection, ServiceNode } from "../hooks/websocket/useSkyDuelWebSocket";
+import { WebSocketState } from "../hooks/utilities/legacy/useWebSocketMonitor";
+import { ServiceConnection, ServiceNode } from "../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { Contest, Token, User, WalletError } from "../types/index";
 
 interface WebSocketAlert {

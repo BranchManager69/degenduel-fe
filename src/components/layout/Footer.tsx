@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
-import { useAuth } from "../../hooks/useAuth";
-import { useScrollFooter } from "../../hooks/useScrollFooter";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { MessageType, TopicType, useUnifiedWebSocket } from "../../hooks/websocket";
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";

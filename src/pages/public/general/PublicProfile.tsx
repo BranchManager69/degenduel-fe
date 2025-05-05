@@ -16,9 +16,9 @@ import { BanOnSightButton } from "../../../components/admin/BanOnSightButton";
 import { CopyToClipboard } from "../../../components/common/CopyToClipboard";
 import { ErrorMessage } from "../../../components/common/ErrorMessage";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
+import { AuthDebugPanel } from "../../../components/debug";
 import { ContestHistory } from "../../../components/profile/contest-history/ContestHistory";
 import SocialAccountsPanel from "../../../components/profile/SocialAccountsPanel";
-import { AuthDebugPanel } from "../../../components/debug";
 import UserProfileExtras from "../../../components/UserProfileExtras";
 
 // Import and extend the ContestEntry type from ContestHistory
@@ -35,7 +35,7 @@ interface EnhancedContestEntry extends Omit<BaseContestEntry, 'contest_id' | 'po
 // Use the existing type name for compatibility
 type ContestEntry = EnhancedContestEntry;
 
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/auth/legacy/useAuth";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { UserData, UserStats as UserStatsType } from "../../../types/profile";

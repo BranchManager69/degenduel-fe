@@ -12,7 +12,7 @@ import { ParticlesEffect } from "./ParticlesEffect";
 import { TokenVerse } from "./TokenVerse";
 // experimental visualizations
 import { SYSTEM_SETTINGS } from "../../config/config";
-import { useSystemSettingsWebSocket } from "../../hooks/websocket/useSystemSettingsWebSocket";
+import { useSystemSettingsWebSocket } from "../../hooks/websocket/legacy/useSystemSettingsWebSocket";
 import { useStore } from "../../store/useStore";
 import { extractBackgroundSettings } from "../../utils/extractBackgroundSettings";
 // Brand New Backgrounds

@@ -1,9 +1,9 @@
 // src/components/admin/RPCBenchmarkSuperAdminDashboard.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
 import RPCBenchmarkDashboard from './RPCBenchmarkDashboard';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/useRPCBenchmarkWebSocket';
 
 export const RPCBenchmarkSuperAdminDashboard: React.FC = () => {
   const { 

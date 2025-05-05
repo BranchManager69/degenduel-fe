@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AuthSystemToggle from '../../components/admin/AuthSystemToggle';
-import { useMigratedAuth } from '../../hooks/useMigratedAuth';
 import { getFeatureFlag } from '../../config/featureFlags';
+import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
 
 /**
  * AuthSystemTestPage

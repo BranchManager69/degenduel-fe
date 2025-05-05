@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 
-import CircuitBreakerCard from "./CircuitBreakerCard";
-import { useCircuitBreakerSocket } from "../../hooks/websocket/useCircuitBreakerSocket";
+import { useCircuitBreakerSocket } from "../../hooks/websocket/legacy/useCircuitBreakerSocket";
 import { useStore } from "../../store/useStore";
+import CircuitBreakerCard from "./CircuitBreakerCard";
 
 const CircuitBreakerPanel: React.FC = () => {
   const { circuitBreaker, setCircuitBreakerState, addCircuitAlert } =

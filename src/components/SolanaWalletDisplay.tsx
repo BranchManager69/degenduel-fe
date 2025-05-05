@@ -9,9 +9,9 @@
  * @updated 2025-04-25 - Added compact mode for user menu and header displays
  */
 
-import React, { useState } from 'react';
-import { useSolanaWalletData } from '../hooks/useSolanaWalletData';
 import { format } from 'date-fns';
+import React, { useState } from 'react';
+import { useSolanaWalletData } from '../hooks/data/useSolanaWalletData';
 
 interface SolanaWalletDisplayProps {
   walletAddress?: string;

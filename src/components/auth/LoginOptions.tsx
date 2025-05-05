@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePrivyAuth } from "../../contexts/PrivyAuthContext";
-import useBiometricAuth from "../../hooks/useBiometricAuth";
+import useBiometricAuth from "../../hooks/auth/legacy/useBiometricAuth";
 import { useStore } from "../../store/useStore";
 import {
   Card,
@@ -24,9 +24,9 @@ import {
 import { Divider } from "../ui/Divider";
 import BiometricAuthButton from "./BiometricAuthButton";
 import { ConnectWalletButton } from "./ConnectWalletButton";
+import ConsolidatedLoginButton from "./ConsolidatedLoginButton";
 import PrivyLoginButton from "./PrivyLoginButton";
 import TwitterLoginButton from "./TwitterLoginButton";
-import ConsolidatedLoginButton from "./ConsolidatedLoginButton";
 
 /**
  * Login Options Component

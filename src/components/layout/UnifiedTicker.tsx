@@ -1,9 +1,9 @@
 // src/components/layout/UnifiedTicker.tsx
 
+import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
-import { useTokenData } from "../../hooks/useTokenData";
+import { useTokenData } from "../../hooks/data/legacy/useTokenData";
 import { useStore } from "../../store/useStore";
 import type { Contest, TokenData } from "../../types";
 

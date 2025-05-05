@@ -11,9 +11,20 @@
  */
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { ConnectionState, DDExtendedMessageType } from '../hooks/websocket/types';
+import { DDExtendedMessageType } from '../hooks/websocket/types';
 import { authDebug } from '../config/config';
 import { authService, AuthEventType, TokenType } from '../services';
+
+// Re-export the ConnectionState enum for components that need it
+export enum ConnectionState {
+  DISCONNECTED = 'disconnected',
+  CONNECTING = 'connecting',
+  CONNECTED = 'connected',
+  AUTHENTICATING = 'authenticating',
+  AUTHENTICATED = 'authenticated',
+  RECONNECTING = 'reconnecting',
+  ERROR = 'error'
+}
 
 // WebSocket connection parameters
 interface WebSocketParams {

@@ -3,8 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect } from "react";
 
-import { useAuth } from "../../hooks/useAuth";
-import { useInviteSystem } from "../../hooks/useInviteSystem";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useInviteSystem } from "../../hooks/social/legacy/useInviteSystem";
 import { useStore } from "../../store/useStore";
 
 export const InviteWelcomeModal: React.FC = () => {

@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useMigratedAuth } from "../../hooks/useMigratedAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 /**
  * AuthenticatedRoute Component

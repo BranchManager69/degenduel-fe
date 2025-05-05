@@ -2,7 +2,7 @@ import React from "react";
 
 import { AdminChatManager } from "../../components/admin/AdminChatManager";
 import { SuperAdminChatManager } from "../../components/admin/SuperAdminChatManager";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
 
 const AdminChatDashboard: React.FC = () => {
   const { isSuperAdmin } = useAuth();

@@ -1,12 +1,12 @@
 import React, { useCallback } from "react";
 
+import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
+import { env } from "../../config/env";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useJupiterWallet } from "../../hooks/social/useJupiterWallet";
+import { authenticateWithWallet } from "../../services/authenticationService";
 import { useStore } from "../../store/useStore";
 import { Button } from "../ui/Button";
-import { env } from "../../config/env";
-import { useJupiterWallet } from "../../hooks/useJupiterWallet";
-import { UnifiedWalletButton } from "@jup-ag/wallet-adapter";
-import { useAuth } from "../../hooks/useAuth";
-import { authenticateWithWallet } from "../../services/authenticationService";
 
 interface ConnectWalletButtonProps {
   className?: string;

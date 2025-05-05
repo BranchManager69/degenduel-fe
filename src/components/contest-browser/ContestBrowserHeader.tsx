@@ -1,6 +1,6 @@
 import React from "react";
 
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
 import { Button } from "../ui/Button";
 
 interface ContestBrowserHeaderProps {

@@ -7,7 +7,7 @@ import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { AuthDebugPanel } from "../../../components/debug";
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/auth/legacy/useAuth";
 import { ddApi } from "../../../services/dd-api";
 import { Contest, ContestSettings } from "../../../types/index";
 import type { SortDirection, SortField } from "../../../types/sort";

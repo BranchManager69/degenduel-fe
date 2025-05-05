@@ -10,14 +10,14 @@
  * @last-modified 2025-04-05
  */
 
+import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import useBiometricAuth from '../../hooks/auth/legacy/useBiometricAuth';
 import { Button } from '../ui/Button';
-import { ConnectWalletButton } from './ConnectWalletButton';
-import TwitterLoginButton from './TwitterLoginButton';
-import PrivyLoginButton from './PrivyLoginButton';
 import BiometricAuthButton from './BiometricAuthButton';
-import useBiometricAuth from '../../hooks/useBiometricAuth';
+import { ConnectWalletButton } from './ConnectWalletButton';
+import PrivyLoginButton from './PrivyLoginButton';
+import TwitterLoginButton from './TwitterLoginButton';
 
 interface ConsolidatedLoginButtonProps {
   className?: string;

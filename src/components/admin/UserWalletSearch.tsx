@@ -10,10 +10,10 @@
  * @version 0.6.9
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { AdminWalletBalanceChart } from '../AdminWalletBalanceChart';
 import axios from 'axios';
-import { useDebounce } from '../../hooks/useDebounce';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDebounce } from '../../hooks/utilities/useDebounce';
+import { AdminWalletBalanceChart } from '../AdminWalletBalanceChart';
 
 interface UserResult {
   wallet_address: string;

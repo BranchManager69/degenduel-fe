@@ -1,7 +1,7 @@
 import { useState } from "react";
 
+import { useAuth } from "../../hooks/auth/legacy/useAuth";
 import { UserBanModal } from "./BanUserModal";
-import { useAuth } from "../../hooks/useAuth";
 
 interface BanOnSightButtonProps {
   user: {
