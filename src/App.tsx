@@ -4,9 +4,12 @@
  * Main entry point for the DegenDuel frontend.
  * 
  * @author @BranchManager69
- * @version 1.9.0
+ * @version 1.9.1
  * @created 2025-04-02
- * @updated 2025-04-30
+ * @updated 2025-05-05
+ * 
+ * Note: This file is being migrated to the unified auth system.
+ * See src/AUTH_README.md for more details.
  */
 
 /***********************************************************************
@@ -724,6 +727,16 @@ export const App: React.FC = () => {
                                       element={
                                         <AdminRoute>
                                           <ClientErrorsPage />
+                                        </AdminRoute>
+                                      }
+                                    />
+                                    <Route
+                                      path="/admin/auth-system-test"
+                                      element={
+                                        <AdminRoute>
+                                          <React.Suspense fallback={<LoadingFallback variant="default" message="Loading Auth System Test..." />}>
+                                            {React.createElement(React.lazy(() => import("./pages/admin/AuthSystemTestPage")))}
+                                          </React.Suspense>
                                         </AdminRoute>
                                       }
                                     />

@@ -1,0 +1,43 @@
+/**
+ * Route Guard Feature Flags
+ * 
+ * This extends the featureFlags system to include route-specific flags.
+ * These flags determine whether to use the old or new route guards
+ * for each protected route type.
+ */
+
+import { featureFlags, getFeatureFlag, setFeatureFlag } from './featureFlags';
+
+// Add route guard flags to the feature flags
+declare module './featureFlags' {
+  interface FeatureFlags {
+    // Route guards
+    useUnifiedAuthenticatedRoute: boolean;
+    useUnifiedAdminRoute: boolean;
+    useUnifiedSuperAdminRoute: boolean;
+  }
+}
+
+// Add route guard flags
+featureFlags.useUnifiedAuthenticatedRoute = false;
+featureFlags.useUnifiedAdminRoute = false;
+featureFlags.useUnifiedSuperAdminRoute = false;
+
+// Helper function to enable all route guard feature flags at once
+export function enableAllRouteGuards() {
+  setFeatureFlag('useUnifiedAuthenticatedRoute', true);
+  setFeatureFlag('useUnifiedAdminRoute', true);
+  setFeatureFlag('useUnifiedSuperAdminRoute', true);
+}
+
+// Helper function to disable all route guard feature flags at once
+export function disableAllRouteGuards() {
+  setFeatureFlag('useUnifiedAuthenticatedRoute', false);
+  setFeatureFlag('useUnifiedAdminRoute', false);
+  setFeatureFlag('useUnifiedSuperAdminRoute', false);
+}
+
+export { featureFlags, getFeatureFlag, setFeatureFlag };
+
+// Add this line to the component that updates feature flags:
+// export const RouteGuardToggle = () => { ... }

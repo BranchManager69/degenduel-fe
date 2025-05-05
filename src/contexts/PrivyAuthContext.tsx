@@ -1,11 +1,15 @@
 // src/contexts/PrivyAuthContext.tsx
 
 /**
- * This context is used to manage the Privy authentication state.
- * It is intended to be used to verify the Privy token with our backend and set the authenticated user.
+ * DEPRECATED - This context is scheduled for removal in the next major update.
+ * Please use the UnifiedAuthContext instead, which provides all Privy functionality.
  * 
  * @author @BranchManager69
- * @last-modified 2025-04-02
+ * @last-modified 2025-05-05
+ * @deprecated Use UnifiedAuthContext instead which supports all authentication methods
+ * 
+ * This context is used to manage the Privy authentication state.
+ * It is intended to be used to verify the Privy token with our backend and set the authenticated user.
  */
 
 import { usePrivy } from '@privy-io/react-auth';
@@ -43,7 +47,28 @@ const PrivyAuthContext = createContext<PrivyAuthContextType>({
 });
 
 // Provider component
+/**
+ * @deprecated Use UnifiedAuthProvider from UnifiedAuthContext instead
+ */
 export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Log deprecation warning
+  React.useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] PrivyAuthProvider is deprecated and will be removed in the next release. " +
+      "Please use the UnifiedAuthProvider from UnifiedAuthContext instead. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/AUTH_MIGRATION_PLAN.md for detailed migration instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+    console.info(
+      "Migration steps:\n" +
+      "1. Replace <PrivyAuthProvider> with <UnifiedAuthProvider> in your app component\n" +
+      "2. Remove nested auth provider hierarchy (AuthProvider, PrivyAuthProvider, TwitterAuthProvider)\n" +
+      "3. Update usage of usePrivyAuth() to useAuth() from UnifiedAuthContext\n" +
+      "4. See App.unified.tsx for reference implementation\n" +
+      "5. Reference: https://github.com/company/degenduel-fe/wiki/auth-migration"
+    );
+  }, []);
+
   const { 
     ready,
     authenticated,
@@ -355,9 +380,27 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
 /**
  * Custom hook to use the privy auth context
  * 
+ * @deprecated Use the useAuth hook from UnifiedAuthContext instead which handles all auth methods
  * @returns {PrivyAuthContextType} - The privy auth context
  */
 export const usePrivyAuth = () => {
+  // Log deprecation warning
+  React.useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] usePrivyAuth hook is deprecated and will be removed in the next release. " +
+      "Please use the useAuth hook from UnifiedAuthContext instead. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/AUTH_MIGRATION_PLAN.md for detailed migration instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+    console.info(
+      "Migration steps:\n" +
+      "1. Import from new location: import { useAuth } from '../contexts/UnifiedAuthContext'\n" +
+      "2. Replace usePrivyAuth() with useAuth()\n" +
+      "3. Update method calls: useAuth().loginWithPrivy() instead of usePrivyAuth().login()\n" +
+      "4. See examples in src/examples/AuthMigrationExample.tsx"
+    );
+  }, []);
+
   // For Storybook support, use a mock if defined on window
   if (typeof window !== 'undefined' && (window as any).usePrivyAuth) {
     return (window as any).usePrivyAuth();

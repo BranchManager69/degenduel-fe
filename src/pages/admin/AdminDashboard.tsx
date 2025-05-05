@@ -310,6 +310,16 @@ export const AdminDashboard: React.FC = () => {
     
     // System section - Testing & Playground
     {
+      id: "auth-system-test",
+      title: "Auth System Migration",
+      icon: "🔐",
+      description: "Test and compare old and new auth systems",
+      link: "/admin/auth-system-test",
+      color: "indigo",
+      category: "System-Testing",
+      isNew: true
+    },
+    {
       id: "websocket-hub",
       title: "WebSocket Hub",
       icon: "🌐",

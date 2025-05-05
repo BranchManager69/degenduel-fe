@@ -1,6 +1,13 @@
 // src/hooks/useAuth.ts
 
 /**
+ * DEPRECATED - This hook is scheduled for removal in the next major update.
+ * Please use the useAuth hook from UnifiedAuthContext instead.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-05-05
+ * @deprecated Use the useAuth hook from src/contexts/UnifiedAuthContext.tsx
+ * 
  * This hook is used to check the user's authentication state and get an access token for WebSocket authentication.
  * It is used in the App component to initialize the auth state and get the access token for WebSocket authentication.
  */
@@ -32,6 +39,23 @@ interface AuthState {
 
 // Auth hook
 export function useAuth() {
+  // Log deprecation warning on each usage
+  useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] useAuth hook is deprecated and will be removed in the next release. " +
+      "Please migrate to the new auth system by using the useAuth hook from UnifiedAuthContext. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/AUTH_MIGRATION_PLAN.md for detailed migration instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+    console.info(
+      "Migration path:\n" +
+      "1. Import from new location: import { useAuth } from '../contexts/UnifiedAuthContext'\n" +
+      "2. Update property access (isLoading instead of loading, isAuthenticated is now a boolean not a function)\n" +
+      "3. See examples in src/examples/AuthMigrationExample.tsx\n" +
+      "4. Reference: https://github.com/company/degenduel-fe/wiki/auth-migration"
+    );
+  }, []);
+
   const store = useStore();
   
   // Use Jupiter wallet for Solana connectivity

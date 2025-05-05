@@ -1,14 +1,17 @@
 // src/contexts/TwitterAuthContext.tsx
 
 /**
- * This context is used to manage the Twitter authentication state.
- * It handles Twitter login, account linking, and status checking.
+ * DEPRECATED - This context is scheduled for removal in the next major update.
+ * Please use the UnifiedAuthContext instead, which provides all Twitter functionality.
  * 
  * @author @BranchManager69
  * @version 1.0.1
  * @created 2025-04-02
- * @updated 2025-05-01
+ * @updated 2025-05-05
+ * @deprecated Use UnifiedAuthContext instead which supports all authentication methods
  * 
+ * This context is used to manage the Twitter authentication state.
+ * It handles Twitter login, account linking, and status checking.
  */
 
 import React, { createContext, ReactNode, useContext, useEffect } from 'react';
@@ -46,8 +49,27 @@ const TwitterAuthContext = createContext<TwitterAuthContextType>({
  * 
  * @param {React.ReactNode} children - The children of the TwitterAuthProvider
  * @returns {React.ReactNode} - The TwitterAuthProvider component
+ * @deprecated Use UnifiedAuthProvider from UnifiedAuthContext instead
  */
 export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Log deprecation warning
+  React.useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] TwitterAuthProvider is deprecated and will be removed in the next release. " +
+      "Please use the UnifiedAuthProvider from UnifiedAuthContext instead. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/AUTH_MIGRATION_PLAN.md for detailed migration instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+    console.info(
+      "Migration steps:\n" +
+      "1. Replace <TwitterAuthProvider> with <UnifiedAuthProvider> in your app component\n" +
+      "2. Remove nested auth provider hierarchy (AuthProvider, PrivyAuthProvider, TwitterAuthProvider)\n" +
+      "3. Update usage of useTwitterAuth() to useAuth() from UnifiedAuthContext\n" +
+      "4. See App.unified.tsx for reference implementation\n" +
+      "5. Twitter functions are now accessible via useAuth().linkTwitter()"
+    );
+  }, []);
+
   const { user } = useAuthContext();
   
   const [isTwitterLinked, setIsTwitterLinked] = React.useState<boolean>(false);
@@ -232,9 +254,29 @@ export const TwitterAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
 /**
  * Custom hook to use the Twitter auth context
  * 
+ * @deprecated Use the useAuth hook from UnifiedAuthContext instead which handles all auth methods
  * @returns {TwitterAuthContextType} - The Twitter auth context
  */
 export const useTwitterAuth = () => {
+  // Log deprecation warning
+  React.useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] useTwitterAuth hook is deprecated and will be removed in the next release. " +
+      "Please use the useAuth hook from UnifiedAuthContext instead. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/AUTH_MIGRATION_PLAN.md for detailed migration instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+    console.info(
+      "Migration steps:\n" +
+      "1. Import from new location: import { useAuth } from '../contexts/UnifiedAuthContext'\n" +
+      "2. Replace useTwitterAuth() with useAuth()\n" +
+      "3. Update method calls:\n" +
+      "   - useAuth().isTwitterLinked() instead of useTwitterAuth().isTwitterLinked\n" +
+      "   - useAuth().linkTwitter() instead of useTwitterAuth().linkAccount()\n" +
+      "4. See examples in src/examples/AuthMigrationExample.tsx"
+    );
+  }, []);
+
   const context = useContext(TwitterAuthContext);
   if (context === undefined) {
     throw new Error('useTwitterAuth must be used within a TwitterAuthProvider');

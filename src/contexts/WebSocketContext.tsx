@@ -1,14 +1,16 @@
 // src/contexts/WebSocketContext.tsx
 
 /**
- * WebSocketContext
+ * DEPRECATED - This context is scheduled for removal in the next major update.
+ * Please use the UnifiedWebSocketContext instead, which provides improved WebSocket functionality.
+ * 
+ * @author @BranchManager69
+ * @last-modified 2025-05-05
+ * @deprecated Use UnifiedWebSocketContext instead for improved WebSocket management
  * 
  * This context provides a centralized WebSocket connection management system.
  * It replaces the component-based WebSocketManager with a proper React Context
  * that manages WebSocket connections at the application level.
- * 
- * @author @BranchManager69
- * @last-modified 2025-04-02
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -81,8 +83,26 @@ const WebSocketContext = createContext<WebSocketContextType>({
  * 
  * @param {React.ReactNode} children - The children of the WebSocket provider
  * @returns {React.ReactNode} - The WebSocket provider component
+ * @deprecated Use UnifiedWebSocketProvider from UnifiedWebSocketContext instead
  */
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Log deprecation warning
+  React.useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] WebSocketProvider is deprecated and will be removed in the next release. " +
+      "Please use the UnifiedWebSocketProvider from UnifiedWebSocketContext instead. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/AUTH_MIGRATION_PLAN.md for detailed migration instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+    console.info(
+      "Migration steps:\n" +
+      "1. Replace <WebSocketProvider> with <UnifiedWebSocketProvider> in your app component\n" +
+      "2. Update WebSocket hook usage to new hook patterns in hooks/websocket/topic-hooks\n" +
+      "3. See App.unified.tsx for reference implementation\n" +
+      "4. See src/hooks/websocket/MIGRATION_GUIDE.md for detailed WebSocket hook migration steps"
+    );
+  }, []);
+
   // Get auth state from store and context
   const user = useStore(state => state.user);
   const authContext = useAuth();
@@ -1020,8 +1040,26 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 // Export the hook to use the WebSocket context
 /**
  * Exports the hook to use the WebSocket context
+ * @deprecated Use hooks from UnifiedWebSocketContext or topic-specific hooks instead
  */
 export const useWebSocketContext = () => {
+  // Log deprecation warning
+  React.useEffect(() => {
+    console.warn(
+      "%c[DEPRECATED] useWebSocketContext hook is deprecated and will be removed in the next release. " +
+      "Please use topic-specific hooks from hooks/websocket/topic-hooks directory instead. " +
+      "See UNIFIED_AUTH_SYSTEM_README.md and src/hooks/websocket/MIGRATION_GUIDE.md for detailed instructions.",
+      "color: red; font-weight: bold; background-color: yellow; padding: 2px 4px;"
+    );
+    console.info(
+      "Migration steps:\n" +
+      "1. Identify the specific data type you need (tokens, contests, etc.)\n" +
+      "2. Import the corresponding hook from hooks/websocket/topic-hooks\n" +
+      "3. For example, replace useWebSocketContext() with useTokenData() from topic-hooks\n" +
+      "4. See src/hooks/websocket/topic-hooks/README.md for available topic hooks"
+    );
+  }, []);
+
   const context = useContext(WebSocketContext);
   if (context === undefined) {
     throw new Error('useWebSocketContext must be used within a WebSocketProvider');
