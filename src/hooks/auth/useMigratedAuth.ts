@@ -15,6 +15,7 @@
  * @updated 2025-05-05
  */
 
+import React from "react";
 import { getFeatureFlag } from "../../config/featureFlags";
 import { useAuth as useUnifiedAuth } from "../../contexts/UnifiedAuthContext";
 import { useAuth as useLegacyAuth } from "./legacy/useAuth";
@@ -46,6 +47,14 @@ interface NormalizedAuthAPI {
 export function useMigratedAuth(): NormalizedAuthAPI {
   // Check feature flag
   const useUnifiedAuthFlag = getFeatureFlag("useUnifiedAuth");
+  
+  // Log which auth system is being used (only on initial mount)
+  React.useEffect(() => {
+    console.log(
+      `%c[AUTH SYSTEM] ${useUnifiedAuthFlag ? 'UNIFIED AUTH' : 'LEGACY AUTH'} system is currently active`,
+      `color: white; background-color: ${useUnifiedAuthFlag ? '#4caf50' : '#f44336'}; padding: 4px 8px; border-radius: 4px; font-weight: bold;`
+    );
+  }, []);
   
   // Get the appropriate auth object based on the feature flag
   const auth = useUnifiedAuthFlag ? useUnifiedAuth() : useLegacyAuth();

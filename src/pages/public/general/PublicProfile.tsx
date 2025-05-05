@@ -35,7 +35,7 @@ interface EnhancedContestEntry extends Omit<BaseContestEntry, 'contest_id' | 'po
 // Use the existing type name for compatibility
 type ContestEntry = EnhancedContestEntry;
 
-import { useAuth } from "../../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { UserData, UserStats as UserStatsType } from "../../../types/profile";
@@ -96,8 +96,8 @@ export const PublicProfile: React.FC = () => {
     history: null,
   });
 
-  // Use useAuth hook for role checks
-  const { isAdmin } = useAuth();
+  // Use useMigratedAuth hook for role checks
+  const { isAdmin } = useMigratedAuth();
 
   // Helper to determine if a string is likely a Solana wallet address
   // Simple length-based heuristic - Solana addresses are much longer than usernames
@@ -293,7 +293,7 @@ export const PublicProfile: React.FC = () => {
                   </h1>
 
                   {/* Admin controls - only shown if user has admin role */}
-                  {isAdmin() && !userData.is_banned && (
+                  {isAdmin && !userData.is_banned && (
                     <BanOnSightButton
                       user={{
                         wallet_address: userData.wallet_address,

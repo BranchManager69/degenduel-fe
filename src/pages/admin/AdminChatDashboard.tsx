@@ -2,11 +2,11 @@ import React from "react";
 
 import { AdminChatManager } from "../../components/admin/AdminChatManager";
 import { SuperAdminChatManager } from "../../components/admin/SuperAdminChatManager";
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 const AdminChatDashboard: React.FC = () => {
-  const { isSuperAdmin } = useAuth();
-  const isSuperAdminUser = isSuperAdmin();
+  const { isSuperAdmin } = useMigratedAuth();
+  const isSuperAdminUser = isSuperAdmin;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">

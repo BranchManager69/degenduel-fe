@@ -62,6 +62,7 @@ import LoadingFallback from "./components/shared/LoadingFallback";
 
 // Hooks and utils
 import "jupiverse-kit/dist/index.css";
+import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
 import "./styles/color-schemes.css";
 
@@ -147,24 +148,9 @@ const LiquiditySimulatorPage = lazy(
 
 // App entry
 export const App: React.FC = () => {
-  // Hooks
-  const { useAuth } = React.useMemo(() => {
-    try {
-      // Dynamic import to avoid circular dependencies
-      return require('./contexts/UnifiedAuthContext');
-    } catch (e) {
-      console.error('Failed to import useAuth:', e);
-      // Return dummy implementation
-      return { useAuth: () => ({ user: null, isAuthenticated: false }) };
-    }
-  }, []);
-  
-  // Use auth hook for user data
-  const { user } = useAuth();
-  
-  // Role-based Solana RPC endpoint for wallet provider
-  const solanaRpcEndpoint = `${window.location.origin}/api/solana-rpc${user?.is_admin || user?.is_superadmin ? '/admin' : user ? '' : '/public'}`;
-  
+  // Initialize scrollbar visibility
+  useScrollbarVisibility();
+
   // Create wallet adapters
   const walletAdapters: Adapter[] = [
     new PhantomWalletAdapter(),
@@ -181,6 +167,10 @@ export const App: React.FC = () => {
     return null;
   };
   
+  // Use a public RPC endpoint by default at the root level
+  // The actual role-based endpoint will be used in the AppContent component after auth is available
+  const defaultRpcEndpoint = `${window.location.origin}/api/solana-rpc/public`;
+  
   // Configuration for UnifiedWalletProvider
   const uwkConfig = {
     autoConnect: false,
@@ -192,15 +182,12 @@ export const App: React.FC = () => {
       iconUrls: [`${window.location.origin}/favicon.ico`],
     },
     theme: 'dark' as const,
-    // Pass our role-based RPC endpoint
+    // Use default public endpoint initially
     connectionConfig: {
       commitment: 'confirmed' as const,
-      endpoint: solanaRpcEndpoint
+      endpoint: defaultRpcEndpoint
     }
   };
-  
-  // Initialize scrollbar visibility
-  useScrollbarVisibility();
   
   // Privy configuration
   const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
@@ -288,25 +275,46 @@ export const App: React.FC = () => {
                     <TokenDataProvider>
                       <ToastProvider>
                         
-                        {/* Main App Content */}
-                        <div className="min-h-screen flex flex-col">
-                          {/* Toast Listener */}
-                          <ToastListener />
-                          
-                          {/* Debug Panels */}
-                          {user?.is_superadmin && <UiDebugPanel />}
-                          {user?.is_superadmin && <ServiceDebugPanel />}
-                          {user?.is_superadmin && <GameDebugPanel />}
-                          
-                          {/* Background and Layout */}
-                          <BackgroundEffects />
-                          <Header />
-                          <EdgeToEdgeTicker />
-                          {user && <WalletBalanceTicker isCompact={true} />}
-                          <ServerDownBanner />
-                          
-                          {/* Main Content */}
-                          <main className="flex-1 pb-12">
+                        {/* App Content - Now in a separate component that can safely use auth */}
+                        <AppContent />
+                        
+                      </ToastProvider>
+                    </TokenDataProvider>
+                  </SolanaConnectionProvider>
+                </UnifiedWebSocketProvider>
+              </AffiliateSystemProvider>
+            </InviteSystemProvider>
+          </UnifiedAuthProvider>
+        </PrivyProvider>
+      </UnifiedWalletProvider>
+    </Router>
+  );
+};
+
+// This component can safely use auth hooks because it renders after all providers
+const AppContent: React.FC = () => {
+  // Now we can safely use the migrated auth hook
+  const { user } = useMigratedAuth();
+  
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Toast Listener */}
+      <ToastListener />
+      
+      {/* Debug Panels */}
+      {user?.is_superadmin && <UiDebugPanel />}
+      {user?.is_superadmin && <ServiceDebugPanel />}
+      {user?.is_superadmin && <GameDebugPanel />}
+      
+      {/* Background and Layout */}
+      <BackgroundEffects />
+      <Header />
+      <EdgeToEdgeTicker />
+      {user && <WalletBalanceTicker isCompact={true} />}
+      <ServerDownBanner />
+      
+      {/* Main Content */}
+      <main className="flex-1 pb-12">
                             {/* Routes */}
                             <Routes>
                               {/* Landing and Public Routes */}
@@ -462,16 +470,5 @@ export const App: React.FC = () => {
                           <BlinkResolver />
                           <ToastContainer />
                         </div>
-                        
-                      </ToastProvider>
-                    </TokenDataProvider>
-                  </SolanaConnectionProvider>
-                </UnifiedWebSocketProvider>
-              </AffiliateSystemProvider>
-            </InviteSystemProvider>
-          </UnifiedAuthProvider>
-        </PrivyProvider>
-      </UnifiedWalletProvider>
-    </Router>
   );
 };
