@@ -96,6 +96,7 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
 // ContestChatManager functionality is now provided by context providers
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
+import { BackgroundEffectsBoundary } from "./components/animated-background/BackgroundEffectsBoundary";
 import { BlinkResolver } from "./components/blinks/BlinkResolver";
 import { GameDebugPanel } from "./components/debug/game/GameDebugPanel";
 import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
@@ -489,8 +490,11 @@ export const App: React.FC = () => {
                                 {user?.is_superadmin && <ServiceDebugPanel />}
                                 {user?.is_superadmin && <GameDebugPanel />}
 
-                                {/* BackgroundEffects is a component that provides background effects for the app */}
-                                <BackgroundEffects />
+                                {/* BackgroundEffects are isolated by an error boundary so that failures in
+                                    experimental 3-D scenes never crash the whole application */}
+                                <BackgroundEffectsBoundary>
+                                  <BackgroundEffects />
+                                </BackgroundEffectsBoundary>
 
                                 {/* Header is the main header of the app */}
                                 <Header />

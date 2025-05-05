@@ -44,6 +44,7 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
 
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
+import { BackgroundEffectsBoundary } from "./components/animated-background/BackgroundEffectsBoundary";
 import { BlinkResolver } from "./components/blinks/BlinkResolver";
 import { GameDebugPanel } from "./components/debug/game/GameDebugPanel";
 import { ServiceDebugPanel } from "./components/debug/ServiceDebugPanel";
@@ -307,7 +308,9 @@ const AppContent: React.FC = () => {
       {user?.is_superadmin && <GameDebugPanel />}
       
       {/* Background and Layout */}
-      <BackgroundEffects />
+      <BackgroundEffectsBoundary>
+        <BackgroundEffects />
+      </BackgroundEffectsBoundary>
       <Header />
       <EdgeToEdgeTicker />
       {user && <WalletBalanceTicker isCompact={true} />}

@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { App } from "./App.unified";
+import { AppErrorBoundary } from "./components/shared/AppErrorBoundary";
 import "./index.css";
 import { initializeClientLogForwarder } from "./utils/clientLogForwarder";
 
@@ -10,6 +11,8 @@ initializeClientLogForwarder();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <AppErrorBoundary>
+      <App />
+    </AppErrorBoundary>
   </React.StrictMode>,
 );
