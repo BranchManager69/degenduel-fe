@@ -264,14 +264,14 @@ export const App: React.FC = () => {
   const privy = usePrivy();
   const { checkAuth } = useAuth();
 
+  // Create refs at component top level to follow React's Rules of Hooks
+  const hasRunValidation = React.useRef(false);
+  const isLoggedOut = React.useRef(false);
+
   // Effect to validate auth on startup
   //   [4-30-25: NEED TO RE-VERIFY THIS!]
-  //   [5-05-25: Fixed infinite render loop by using refs instead of state dependencies]
+  //   [5-05-25: Fixed hook placement - refs must be created outside useEffect]
   useEffect(() => {
-    // Use refs to prevent infinite loops
-    const hasRunValidation = React.useRef(false);
-    const isLoggedOut = React.useRef(false);
-    
     // Validate auth on startup
     const validateAuth = async () => {
       // Skip if already validated or logged out to prevent loops
