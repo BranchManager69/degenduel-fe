@@ -263,25 +263,30 @@ export const App: React.FC = () => {
 
   // Effect to validate auth on startup
   //   [4-30-25: NEED TO RE-VERIFY THIS!]
+  //   [5-05-25: Fixed infinite render loop by using refs instead of state dependencies]
   useEffect(() => {
+    // Use refs to prevent infinite loops
+    const hasRunValidation = React.useRef(false);
+    const isLoggedOut = React.useRef(false);
     
-    // Only run auth checks after all providers have properly initialized
-    //   [4-30-25: NEED TO RE-VERIFY THIS!]
-    
-    // Always validate auth on startup, regardless of stored user state
-    //   [4-30-25: NEED TO RE-VERIFY THIS!]
-
     // Validate auth on startup
     const validateAuth = async () => {
+      // Skip if already validated or logged out to prevent loops
+      if (hasRunValidation.current || isLoggedOut.current) return;
+      
       console.log("[Auth] Validating authentication status on app startup");
+      hasRunValidation.current = true;
+      
       try {
         // Check auth
         checkAuth();
       } catch (error) {
         console.error("[Auth] Failed to validate authentication:", error);
         // If validation fails and we have a stored user, clear it
-        if (user) {
+        if (user && !isLoggedOut.current) {
           console.log("[Auth] Stored user found but validation failed, logging out");
+          isLoggedOut.current = true;
+          
           // Disconnect the wallet
           useStore.getState().disconnectWallet();
           // Clear the user from the store
@@ -292,18 +297,20 @@ export const App: React.FC = () => {
           window.location.href = "/login"; // [4-30-25: ADDED]
           // TODO: Add a toast notification to the user
           toast.error("Logged out."); // [4-30-25: ADDED]
-          // (did i use the right toast function?)
         }
       }
     };
 
-    // Run auth validation immediately upon page load
-    validateAuth();//     [4-30-25: WHY??]
-    // Set up regular auth checks 
-    //   (1 minute in production, 30 seconds in development)
-    //   [4-30-25: WHY??]
+    // Run auth validation once on mount
+    validateAuth();
+    
+    // Set up regular auth checks (but don't include them in dependencies)
     const checkInterval = import.meta.env.PROD ? 60 * 1000 : 30 * 1000; // 1 minute in production, 30 seconds in development
-    const authCheckInterval = setInterval(checkAuth, checkInterval);
+    const authCheckInterval = setInterval(() => {
+      if (!isLoggedOut.current) {
+        checkAuth();
+      }
+    }, checkInterval);
 
     // Debounced handlers for visibility and online status
     let visibilityTimeout: NodeJS.Timeout;
@@ -311,44 +318,37 @@ export const App: React.FC = () => {
 
     // Handle visibility change
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && !isLoggedOut.current) {
         // Clear any existing timeout
         clearTimeout(visibilityTimeout);
         // Wait 1 second before checking auth
-        //   [4-30-25: WHY??]
-        visibilityTimeout = setTimeout(checkAuth, 1000);
+        visibilityTimeout = setTimeout(() => checkAuth(), 1000);
       }
     };
 
-    /* Event listeners and handlers */
-    
     // Handle online status
     const handleOnlineStatus = () => {
-      if (navigator.onLine) {
+      if (navigator.onLine && !isLoggedOut.current) {
         // Clear any existing timeout
         clearTimeout(onlineTimeout);
         // Wait 1 second before checking auth
-        //   [4-30-25: WHY??]
-        onlineTimeout = setTimeout(checkAuth, 1000);
+        onlineTimeout = setTimeout(() => checkAuth(), 1000);
       }
     };
 
     // Add event listeners for auth checks
-    document.addEventListener("visibilitychange", handleVisibilityChange); // Handle visibility change
-    window.addEventListener("online", handleOnlineStatus); // Handle online status
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnlineStatus);
 
     // Cleanup
     return () => {
-      clearInterval(authCheckInterval); // Stop regular auth checks
-      clearTimeout(visibilityTimeout); // Clear visibility timeout
-      clearTimeout(onlineTimeout); // Clear online timeout
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange,
-      ); // Remove visibility change listener
-      window.removeEventListener("online", handleOnlineStatus); // Remove online status listener
+      clearInterval(authCheckInterval);
+      clearTimeout(visibilityTimeout);
+      clearTimeout(onlineTimeout);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnlineStatus);
     };
-  }, [user, checkAuth, privy]); //     [4-30-25: Added privy to dependency array]
+  }, [checkAuth, privy]); // Removed 'user' from dependencies to prevent loops
 
   // Privy configuration
   //   [4-30-25: The official DegenDuel RPC is now being used for Privy configuration!
