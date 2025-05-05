@@ -117,7 +117,7 @@ const message = createMessage(
 Import from our local types system instead:
 ```typescript
 // Before:
-import { DDWebSocketTopic } from 'degenduel-shared';
+import { DDWebSocketTopic } from '@branchmanager69/degenduel-shared';
 
 // After:
 import { TopicType } from '../hooks/websocket';

@@ -18,7 +18,7 @@
  */
 
 // Import the base types from the degenduel-shared package
-import { DDWebSocketMessageType } from 'degenduel-shared';
+import { DDWebSocketMessageType } from '@branchmanager69/degenduel-shared';
 
 /**
  * Extended MessageType enum that includes frontend-specific types.
