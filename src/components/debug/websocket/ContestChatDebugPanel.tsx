@@ -16,7 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useContestChatWebSocket } from '../../../hooks/websocket/useContestChatWebSocket';
-import { DDWebSocketTopic } from 'degenduel-shared';
+import { DDWebSocketTopic } from '@branchmanager69/degenduel-shared';
 
 interface ContestChatDebugPanelProps {
   contestId: string;

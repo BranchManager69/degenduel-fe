@@ -8,7 +8,7 @@
  * to our local type definitions in shared-types.ts.
  */
 
-declare module 'degenduel-shared' {
+declare module '@branchmanager69/degenduel-shared' {
   // Re-export all the types from our local shared-types.ts
   export * from '../types/shared-types';
   

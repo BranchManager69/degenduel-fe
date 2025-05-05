@@ -17,7 +17,7 @@
 
 // Standard WebSocket System exports - combining legacy types with shared types
 export { ConnectionState, SOCKET_TYPES, DDExtendedMessageType as MessageType } from './types';
-export { DDWebSocketTopic } from 'degenduel-shared';
+export { DDWebSocketTopic } from '@branchmanager69/degenduel-shared';
 export { useUnifiedWebSocket };
 export * from './types';
 

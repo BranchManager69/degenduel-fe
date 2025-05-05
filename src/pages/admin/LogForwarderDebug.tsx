@@ -23,7 +23,7 @@ import { clientLogger, LogLevel, sendLogsNow } from '../../utils/clientLogForwar
 import { MessageType } from '../../hooks/websocket';
 import { useUnifiedWebSocket } from '../../hooks/websocket/useUnifiedWebSocket';
 // DD
-import { DDWebSocketTopic } from 'degenduel-shared';
+import { DDWebSocketTopic } from '@branchmanager69/degenduel-shared';
 
 // LogForwarderDebug component
 const LogForwarderDebug: React.FC = () => {
