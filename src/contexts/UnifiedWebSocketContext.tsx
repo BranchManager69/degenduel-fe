@@ -35,16 +35,25 @@ interface WebSocketMessage {
 
 // WebSocket context interface
 export interface UnifiedWebSocketContextType {
+  // Connection state
   isConnected: boolean;
   isAuthenticated: boolean;
   connectionState: ConnectionState;
   connectionError: string | null;
   
+  // Enhanced status information
+  isServerDown?: boolean;
+  isReconnecting?: boolean;
+  reconnectAttempt?: number;
+  lastConnectionTime?: number | null;
+  
+  // WebSocket methods
   sendMessage: (message: any) => boolean;
   subscribe: (topics: string[]) => boolean;
   unsubscribe: (topics: string[]) => boolean;
   request: (topic: string, action: string, params?: any) => boolean;
   
+  // Listener management
   registerListener: (
     id: string,
     types: DDExtendedMessageType[],
@@ -69,6 +78,8 @@ export const UnifiedWebSocketProvider: React.FC<{
   // State for WebSocket connection
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isServerDown, setIsServerDown] = useState<boolean>(false);
+  const [lastConnectionTime, setLastConnectionTime] = useState<number | null>(null);
   
   // WebSocket reference
   const wsRef = useRef<WebSocket | null>(null);
@@ -174,6 +185,8 @@ export const UnifiedWebSocketProvider: React.FC<{
     authDebug('WebSocketContext', 'WebSocket connection established');
     setConnectionState(ConnectionState.CONNECTED);
     setConnectionError(null);
+    setIsServerDown(false);
+    setLastConnectionTime(Date.now());
     reconnectAttemptsRef.current = 0;
     
     // Start heartbeat
@@ -211,9 +224,47 @@ export const UnifiedWebSocketProvider: React.FC<{
   
   // Handle WebSocket close
   const handleClose = (event: CloseEvent) => {
+    // Identify specific types of connection issues
+    let errorMessage = '';
+    let localServerDown = false;
+    
+    switch (event.code) {
+      case 1000:
+        // Normal closure
+        errorMessage = 'Connection closed normally';
+        break;
+      case 1001:
+        errorMessage = 'Server is going away';
+        break;
+      case 1006:
+        // Abnormal closure - often indicates server unavailability or network issues
+        errorMessage = 'Connection closed abnormally - server may be down or unreachable';
+        localServerDown = true;
+        break;
+      case 1011:
+        errorMessage = 'Server encountered an error';
+        localServerDown = true;
+        break;
+      case 1012:
+        errorMessage = 'Server is restarting';
+        localServerDown = true;
+        break;
+      case 1013:
+        errorMessage = 'Server is unavailable';
+        localServerDown = true;
+        break;
+      default:
+        errorMessage = `Connection closed with code ${event.code}: ${event.reason || 'Unknown reason'}`;
+    }
+    
+    // Update server down state
+    setIsServerDown(localServerDown);
+    
     authDebug('WebSocketContext', 'WebSocket connection closed', {
       code: event.code,
-      reason: event.reason || 'No reason provided'
+      reason: event.reason || 'No reason provided',
+      message: errorMessage,
+      isServerDown: localServerDown
     });
     
     // Stop heartbeat
@@ -221,6 +272,35 @@ export const UnifiedWebSocketProvider: React.FC<{
     
     // Update state
     setConnectionState(ConnectionState.DISCONNECTED);
+    setConnectionError(errorMessage);
+    
+    // Use a shorter initial reconnect delay for server down scenarios
+    if (localServerDown && reconnectAttemptsRef.current === 0) {
+      // For server down on first attempt, use a shorter delay (5s)
+      // This avoids unnecessary rapid reconnects when server is known to be down
+      const serverDownDelay = 5000;
+      authDebug('WebSocketContext', 'Server appears to be down, using minimum delay', {
+        delay: serverDownDelay
+      });
+      reconnectTimeoutRef.current = window.setTimeout(() => {
+        reconnectTimeoutRef.current = null;
+        // Try to confirm server status before actual reconnect
+        checkServerStatus().then(isUp => {
+          if (isUp) {
+            connect();
+          } else {
+            // If still down, continue with normal exponential backoff
+            reconnectAttemptsRef.current++;
+            scheduleReconnect();
+          }
+        }).catch(() => {
+          // If check fails, proceed with normal reconnect
+          reconnectAttemptsRef.current++;
+          scheduleReconnect();
+        });
+      }, serverDownDelay);
+      return;
+    }
     
     // Reconnect if not a clean close
     if (event.code !== 1000) {
@@ -228,10 +308,31 @@ export const UnifiedWebSocketProvider: React.FC<{
     }
   };
   
+  // Check if the server is available
+  const checkServerStatus = async (): Promise<boolean> => {
+    try {
+      // Try to fetch a lightweight endpoint to check server status
+      const response = await fetch('/api/health', { 
+        method: 'HEAD',
+        // Short timeout to avoid hanging
+        signal: AbortSignal.timeout(2000)
+      });
+      return response.ok;
+    } catch (error) {
+      authDebug('WebSocketContext', 'Server status check failed', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return false;
+    }
+  };
+  
   // Handle WebSocket error
   const handleError = (event: Event) => {
+    // WebSocket error events don't provide much information
+    // Most errors will be captured by the close event
     authDebug('WebSocketContext', 'WebSocket error', { event });
     setConnectionState(ConnectionState.ERROR);
+    setConnectionError('WebSocket connection error - server may be down or unreachable');
   };
   
   // Schedule reconnection with exponential backoff
@@ -522,10 +623,19 @@ export const UnifiedWebSocketProvider: React.FC<{
   
   // Create context value
   const contextValue: UnifiedWebSocketContextType = {
+    // Connection state
     isConnected,
     isAuthenticated,
     connectionState,
     connectionError,
+    
+    // Enhanced status info
+    isServerDown,
+    isReconnecting: connectionState === ConnectionState.RECONNECTING,
+    reconnectAttempt: reconnectAttemptsRef.current,
+    lastConnectionTime,
+    
+    // Methods
     sendMessage,
     subscribe,
     unsubscribe,
