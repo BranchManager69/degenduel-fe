@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect } from "react";
 
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useReferral } from "../../hooks/social/useReferral";
 import { useStore } from "../../store/useStore";
 
@@ -14,12 +14,12 @@ export const ReferralWelcomeModal: React.FC = () => {
     referrerProfile,
     referralRewards,
   } = useReferral();
-  const { isFullyConnected, user } = useAuth();
+  const { isFullyConnected, user } = useMigratedAuth();
   const { connectWallet, isConnecting } = useStore();
 
   // When user successfully connects and gets a profile, track conversion and close modal
   useEffect(() => {
-    if (isFullyConnected() && user && referralCode) {
+    if (isFullyConnected && user && referralCode) {
       trackConversion().catch(console.error);
       setShowWelcomeModal(false);
       localStorage.setItem("has_seen_welcome", "true");
@@ -33,7 +33,7 @@ export const ReferralWelcomeModal: React.FC = () => {
   ]);
 
   const handleGetStarted = () => {
-    if (!isFullyConnected()) {
+    if (!isFullyConnected) {
       // Connect wallet using store's connectWallet
       connectWallet().catch(console.error);
     } else {
@@ -187,7 +187,7 @@ export const ReferralWelcomeModal: React.FC = () => {
                         <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
                           {isConnecting
                             ? "CONNECTING..."
-                            : isFullyConnected()
+                            : isFullyConnected
                               ? "EXPLORE DUELS"
                               : "CONNECT WALLET TO START"}
                         </span>

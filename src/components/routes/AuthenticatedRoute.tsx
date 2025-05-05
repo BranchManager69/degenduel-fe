@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 /**
  * @deprecated Use the AuthenticatedRoute from AuthenticatedRoute.unified.tsx instead
@@ -20,10 +20,13 @@ export function AuthenticatedRoute({ children }: AuthenticatedRouteProps) {
     );
   }, []);
 
-  const { user, loading } = useAuth();
+  const { user, isLoading, loading } = useMigratedAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Use either isLoading or loading (for backward compatibility)
+  const isAuthLoading = isLoading || loading;
+  
+  if (isAuthLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div

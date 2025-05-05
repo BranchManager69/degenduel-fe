@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { useAuth } from "../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { UserBanModal } from "./BanUserModal";
 
 interface BanOnSightButtonProps {
@@ -26,7 +26,7 @@ export function BanOnSightButton({
   // currentUserRole is unused but kept for backward compatibility
 }: BanOnSightButtonProps) {
   const [showBanModal, setShowBanModal] = useState(false);
-  const { isAdmin, isSuperAdmin } = useAuth(); // Use the auth hook's built-in role checks
+  const { isAdmin, isSuperAdmin } = useMigratedAuth(); // Use the auth hook's built-in role checks
 
   // Size classes
   const sizeClasses = {
@@ -47,15 +47,15 @@ export function BanOnSightButton({
     // Log role information for debugging
     console.log("[BanOnSightButton] Checking ban permissions:", {
       targetUserRole,
-      isSuperAdmin: isSuperAdmin(),
-      isAdmin: isAdmin(),
+      isSuperAdmin,
+      isAdmin,
       targetIsBanned: user.is_banned,
     });
 
     // Check permission rules:
 
     // 1. Only superadmins can ban other superadmins
-    if (targetUserRole === "superadmin" && !isSuperAdmin()) {
+    if (targetUserRole === "superadmin" && !isSuperAdmin) {
       console.log(
         "[BanOnSightButton] Cannot ban superadmin: insufficient privileges",
       );
@@ -63,7 +63,7 @@ export function BanOnSightButton({
     }
 
     // 2. Only superadmins can ban admins
-    if (targetUserRole === "admin" && !isSuperAdmin()) {
+    if (targetUserRole === "admin" && !isSuperAdmin) {
       console.log(
         "[BanOnSightButton] Cannot ban admin: insufficient privileges",
       );
@@ -71,7 +71,7 @@ export function BanOnSightButton({
     }
 
     // 3. Ensure current user has admin rights
-    return isAdmin();
+    return isAdmin;
   };
 
   return (

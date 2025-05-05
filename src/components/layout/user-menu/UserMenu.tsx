@@ -14,7 +14,7 @@ import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useAuth } from "../../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
 import { AdminControls } from "./UserMenuAdminControls";
@@ -43,7 +43,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   isCompact = false,
   unreadNotifications = 0,
 }) => {
-  const { isAdmin, isSuperAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useMigratedAuth();
   const { achievements } = useStore();
   const [imageError, setImageError] = useState(false);
 
@@ -140,7 +140,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   const buttonStyles = useMemo(() => {
     // Super Admin styling takes precedence
-    if (isSuperAdmin()) {
+    if (isSuperAdmin) {
       return {
         bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
         text: "text-amber-100",
@@ -157,7 +157,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     }
 
     // Admin styling takes secondary precedence
-    if (isAdmin()) {
+    if (isAdmin) {
       return {
         bg: "from-brand-600/20 via-brand-500/20 to-brand-400/20",
         text: "text-brand-100",

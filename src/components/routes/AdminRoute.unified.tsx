@@ -1,13 +1,13 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/UnifiedAuthContext";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 /**
  * Route guard that only allows admin users to access admin routes.
  * If user is not an admin, redirects to the home page.
  */
 export const AdminRoute: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useMigratedAuth();
   const location = useLocation();
 
   // Show loading spinner while authentication state is being determined
@@ -26,9 +26,8 @@ export const AdminRoute: React.FC = () => {
   }
 
   // Check if user is authenticated and has admin privileges
-  // Using boolean comparisons to avoid function call detection
-  const authState = isAuthenticated === true;
-  const hasAdminRole = authState && user && (user.is_admin || user.is_superadmin);
+  // We now use the isAdmin property directly from the migrated auth hook
+  const hasAdminRole = isAuthenticated && isAdmin;
 
   // If not admin, redirect to home
   if (!hasAdminRole) {

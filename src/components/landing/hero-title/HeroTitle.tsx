@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import React, { MouseEvent, useEffect, useRef, useState } from "react";
 
-import { useAuth } from "../../../hooks/auth/legacy/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 
 interface Particle {
   id: number;
@@ -23,7 +23,7 @@ export const HeroTitle: React.FC<{
   debugMode = false,
   setDebugMode = () => {},
 }) => {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin } = useMigratedAuth();
 
   const [phase, setPhase] = useState(0);
   // Internal state only used if no external debugMode control is provided
@@ -475,7 +475,7 @@ export const HeroTitle: React.FC<{
       onMouseMove={handleMouseMove}
     >
       {/* Debug mode toggle (only visible to superadmin) */}
-      {isSuperAdmin() && (
+      {isSuperAdmin && (
         <div className="absolute top-1 right-1 z-50">
           <button
             className="bg-black/50 text-white text-xs p-1 rounded-md"

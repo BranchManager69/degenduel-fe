@@ -1,13 +1,13 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/UnifiedAuthContext";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 /**
  * Route guard that only allows super admin users to access super admin routes.
  * If user is not a super admin, redirects to the home page.
  */
 export const SuperAdminRoute: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isSuperAdmin } = useMigratedAuth();
   const location = useLocation();
 
   // Show loading spinner while authentication state is being determined
@@ -25,10 +25,8 @@ export const SuperAdminRoute: React.FC = () => {
     );
   }
 
-  // Check if user is authenticated and has super admin privileges
-  // Using boolean comparisons to avoid function call detection
-  const authState = isAuthenticated === true;
-  const hasSuperAdminRole = authState && user && user.is_superadmin;
+  // Check if user is authenticated and has super admin privileges  
+  const hasSuperAdminRole = isAuthenticated && isSuperAdmin;
 
   // If not super admin, redirect to home
   if (!hasSuperAdminRole) {
