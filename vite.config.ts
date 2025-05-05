@@ -14,7 +14,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
   // Add local dev mode check
   const isLocalDev = mode === "dev-local";
   // Check for forced disable of minification
+  //   TODO: I have no evidence that this works whatsoever
   const forceDisableMinify = process.env.VITE_FORCE_DISABLE_MINIFY === "true";
+  // SSL Certificate Path
+  const SSL_CERT_PATH = "/etc/letsencrypt/live/dduel.me";
 
   if (forceDisableMinify) {
     console.log(
@@ -209,11 +212,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
   }
 
   // Try to load SSL certs - both domains use the same certificate
-  const certPath = "/etc/letsencrypt/live/beta.degenduel.me";
+  const certPath = SSL_CERT_PATH; // dduel.me
   const domain = isDev ? "dev.degenduel.me" : "degenduel.me";
   let hasCerts = false;
   let httpsConfig = undefined;
 
+  // Try to load SSL certs
   try {
     if (fs.existsSync(certPath)) {
       const key = fs.readFileSync(path.join(certPath, "privkey.pem"));
@@ -232,6 +236,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
     );
   }
 
+  // Build config
   const config: UserConfig = {
     resolve: {
       alias: {
@@ -281,13 +286,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
           },
           rewrite: (path) => path.replace(/^\/api/, ""),
         },
-        "/portfolio": {
-          target: isDev ? "wss://dev.degenduel.me/api/v69/ws" : "wss://degenduel.me/api/v69/ws",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
+        // "/portfolio": {
+        //   target: isDev ? "wss://dev.degenduel.me/api/v69/ws" : "wss://degenduel.me/api/v69/ws",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
         "/api/v69/ws": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
           ws: true,
@@ -295,92 +300,90 @@ export default defineConfig(({ command, mode }): UserConfig => {
           secure: true,
           cookieDomainRewrite: "localhost",
         },
-        "/api/v69/ws/monitor": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/token-data": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/contest": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/skyduel": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/wallet": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",  
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/market-data": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/notifications": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/portfolio": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/circuit-breaker": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        // "/api/v69/ws/services" endpoint doesn't exist - removed as per backend team guidance
-        // Service monitoring is handled by /api/v69/ws/circuit-breaker and /api/v69/ws/monitor
-        "/api/v69/ws/system-settings": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
-        "/api/v69/ws/analytics": {
-          target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
-          ws: true,
-          changeOrigin: true,
-          secure: true,
-          cookieDomainRewrite: "localhost",
-        },
+        // "/api/v69/ws/monitor": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/token-data": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/contest": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/skyduel": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/wallet": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",  
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/market-data": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/notifications": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/portfolio": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/circuit-breaker": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/system-settings": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
+        // "/api/v69/ws/analytics": {
+        //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
+        //   ws: true,
+        //   changeOrigin: true,
+        //   secure: true,
+        //   cookieDomainRewrite: "localhost",
+        // },
       },
       watch: {
         usePolling: false,
       },
     },
     define: {
-      // Remove environment overrides since we determine this in config.ts
+      // Environment overrides removed since we determine in config.ts
     },
     plugins: [
       react({
@@ -395,7 +398,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         },
       }),
       visualizer({
-        open: false, // Changed from true to false - don't auto-open browser on headless server
+        open: false, // Changed from true to false - don't auto-open browser on headless remote server
         filename: 'stats.html',
         gzipSize: true,
         brotliSize: true,
@@ -406,14 +409,14 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "react",
         "react-dom",
         "react-router-dom",
-        // Removed Aptos dependencies as they are no longer used
-        // "@aptos-labs/wallet-adapter-react",
-        // "@aptos-labs/wallet-adapter-core",
-        // "aptos",
         "graphql",
-        "@telegram-apps/bridge",
+        "@telegram-apps/bridge", // ???
       ],
-      exclude: ["@react-three/fiber", "@react-three/drei", "degen-components"],
+      exclude: [
+        "@react-three/fiber", 
+        "@react-three/drei", 
+        "degen-components"
+      ],
       esbuildOptions: {
         target: "esnext",
       },
@@ -428,23 +431,31 @@ export default defineConfig(({ command, mode }): UserConfig => {
       rollupOptions: {
         cache: true,
         // Mark packages as external to prevent Vite from trying to bundle them
-        // 'degenduel-shared' is marked external to allow local workspace usage without CI build errors
+        // 'degenduel-shared' WAS marked external to allow local workspace usage without CI build errors
         // since this package exists locally but is not committed to the repository
-        external: ['degen-components', 'degenduel-shared'],
+        // BUT NOW it's a GitHub/NPM package, so we don't need to mark it external
+        external: [
+          'degen-components',
+          // 'degenduel-shared' // NO LONGER NEEDED
+        ],
         output: {
           manualChunks: {
-            "react-vendor": ["react", "react-dom", "react-router-dom"],
+            "react-vendor": [
+              "react",
+              "react-dom",
+              "react-router-dom",
+            ],
             "three-vendor": [
               "three",
               "@react-three/fiber",
               "@react-three/drei",
             ],
-            "ui-vendor": ["framer-motion", "react-icons", "styled-components"],
+            "ui-vendor": [
+              "framer-motion",
+              "react-icons",
+              "styled-components"
+            ],
             "wallet-vendor": [
-              // Removed Aptos dependencies
-              // "@aptos-labs/wallet-adapter-react",
-              // "@mizuwallet-sdk/core",
-              // "@mizuwallet-sdk/aptos-wallet-adapter",
               "graphql-request",
             ],
           },

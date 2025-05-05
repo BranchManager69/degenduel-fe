@@ -97,6 +97,10 @@ export type TopicType = keyof typeof TopicType | string;
 // Import and re-export the WebSocket hook
 import useUnifiedWebSocket from './useUnifiedWebSocket';
 
+// Just export useWallet and don't worry about the types to avoid conflicts
+import { useWallet } from './topic-hooks/useWallet';
+
+
 // New standardized format hooks
 export * from './topic-hooks/useAchievements';
 export * from './topic-hooks/useCircuitBreaker';
@@ -116,9 +120,6 @@ export * from './topic-hooks/useTerminalData';
 export * from './topic-hooks/useTokenData';
 export * from './topic-hooks/useVanityDashboard';
 export { useWallet };
-
-// Just export useWallet and don't worry about the types to avoid conflicts
-  import { useWallet } from './topic-hooks/useWallet';
 
 // DEPRECATED - The individual WebSocket hooks below will be replaced
 // with topic-based hooks that use the unified WebSocket system
