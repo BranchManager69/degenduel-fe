@@ -203,39 +203,40 @@
 @media (min-width: 640px) {
   /* Only apply autohide on non-mobile devices */
   html {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    transition: scrollbar-color 0.5s ease;
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); /* Firefox: thumb track - always visible */
+    transition: scrollbar-color 0.5s ease; /* Firefox - transition for hover effect if needed */
   }
-  
-  html:hover, html:focus, html:focus-within, html.scrolling {
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-  
+
+  /* html:hover, html:focus, html:focus-within, html.scrolling {
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); 
+  } */
+
   html::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
-  
+
   html::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
   }
-  
+
   html::-webkit-scrollbar-thumb {
-    background: transparent;
+    background: var(--scrollbar-thumb); /* WebKit: always visible */
     border-radius: 4px;
-    transition: background 0.5s ease;
+    border: 1px solid rgba(0, 0, 0, 0.2); /* Consistent border */
+    transition: background 0.5s ease; /* WebKit - transition for hover effect if needed */
   }
-  
-  html:hover::-webkit-scrollbar-thumb,
+
+  html:hover::-webkit-scrollbar-thumb, /* Still useful for direct thumb hover */
   html:focus::-webkit-scrollbar-thumb,
   html:focus-within::-webkit-scrollbar-thumb,
-  html.scrolling::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border: 1px solid rgba(0, 0, 0, 0.2);
+  html.scrolling::-webkit-scrollbar-thumb { /* Keep .scrolling for active scroll emphasis if desired */
+    background: var(--scrollbar-thumb); /* Ensure it stays consistent or slightly enhances */
+    /* border: 1px solid rgba(0, 0, 0, 0.2); */ /* Already applied above */
   }
-  
-  html:hover::-webkit-scrollbar-thumb:hover {
+
+  html:hover::-webkit-scrollbar-thumb:hover { /* For direct hover ON the thumb */
     background: var(--scrollbar-thumb-hover);
     box-shadow: 0 0 8px rgba(157, 78, 221, 0.5);
   }

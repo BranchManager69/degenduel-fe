@@ -15,7 +15,7 @@
 
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AIMessage, aiService, AIServiceError, AIErrorType } from '../../services/ai';
+import { AIErrorType, AIMessage, aiService, AIServiceError } from '../../services/ai';
 import { formatTerminalCommands, useTerminalData } from '../../services/terminalDataService';
 import { useStore } from '../../store/useStore';
 
@@ -326,10 +326,6 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       // Reveal CA to the public
       setShowContractReveal(true);
     }
-    
-    // Force window to top when component mounts
-    // (is this best practices?)
-    window.scrollTo(0, 0);
     
     // We no longer need to preload terminal data here since we've properly implemented
     // debouncing and error handling in the fetchTerminalData function itself.
