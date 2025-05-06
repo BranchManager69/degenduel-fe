@@ -1,19 +1,23 @@
+// src/hooks/websocket/topic-hooks/useWallet.ts
+
 /**
  * useWallet Hook
  * 
- * V69 Standardized WebSocket Hook for Wallet Data
+ * @description V69 Standardized WebSocket Hook for Wallet Data
  * This hook provides real-time updates for wallet transactions and balances
  * Follows the exact message format defined by the backend team
  * 
- * @author Branch Manager
+ * @author BranchManager69
+ * @version 2.0.0
  * @created 2025-04-10
+ * @updated 2025-05-05
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
+import { DDExtendedMessageType } from '../types';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Wallet data interfaces based on backend API documentation
 export interface WalletTransaction {

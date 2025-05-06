@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       "1. Replace <AuthProvider> with <UnifiedAuthProvider> in your app component\n" +
       "2. Remove <PrivyAuthProvider> and <TwitterAuthProvider> as they are no longer needed\n" +
       "3. Update usage of useAuthContext() to useAuth() from UnifiedAuthContext\n" +
-      "4. See App.unified.tsx for reference implementation\n" +
+      "4. See App.tsx for reference implementation\n" +
       "5. Reference: https://github.com/company/degenduel-fe/wiki/auth-migration"
     );
   }, []);

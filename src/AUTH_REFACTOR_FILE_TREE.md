@@ -9,8 +9,8 @@ The following file tree shows the current structure of the `src/` directory, hig
 
 ```
 src/
-├── App.tsx 🟡 UPDATE (Needs replacing with App.unified.tsx)
-├── App.unified.tsx 🟢 NEW (Ready to replace App.tsx)
+├── App.tsx 🟡 UPDATE (Needs replacing with App.tsx)
+├── App.tsx 🟢 NEW (Ready to replace App.tsx)
 ├── AUTH_IMPLEMENTATION_NOTES.md 🟢 NEW (Documentation for implementation)
 ├── AUTH_MIGRATION_PLAN.md 🟢 NEW (Migration roadmap)
 ├── auth-migration.md 🟢 NEW (Developer guide for migration)
@@ -216,7 +216,7 @@ src/
 │   │   │   ├── GlobalRankings.tsx
 │   │   │   └── LeaderboardLanding.tsx
 │   │   └── tokens/
-│   │       ├── EnhancedTokensPage.tsx
+│   │       ├── TokensPage.tsx
 │   │       ├── OptimizedTokensPage.tsx
 │   │       ├── StoryTokensPage.tsx
 │   │       ├── TokensPage.tsx

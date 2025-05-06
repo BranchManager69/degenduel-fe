@@ -1,5 +1,28 @@
 // src/types/index.ts
 
+/**
+ * @description Index file for all types used throughout the application.
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-05-04
+ * @updated 2025-05-05 - Updated for unified auth system
+ */
+
+// ------------------------------------------------------------------------------------------------
+
+/* Re-exports */
+
+// Re-export user types
+export type {
+  LegacyUser, User
+} from "./user";
+
+// Re-export admin types
+export type {
+  VanityWallet, VanityWalletBatchCreateParams, VanityWalletBatchCreateResponse,
+  VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
+} from "./admin";
+
 // Re-export leaderboard types
 export type {
   ContestPerformanceEntry,
@@ -9,50 +32,33 @@ export type {
   TimeFrame
 } from "./leaderboard";
 
-// Re-export admin types
-export type {
-  VanityWallet, VanityWalletBatchCreateParams, VanityWalletBatchCreateResponse,
-  VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
-} from "./admin";
+// ------------------------------------------------------------------------------------------------
 
-/**
- * @deprecated Use the User interface from src/types/user.ts instead
- * This interface is maintained for backward compatibility. The new User interface
- * in user.ts includes all these fields plus additional fields for the unified auth system.
- * 
- * @see src/types/user.ts for the unified User interface
- */
-export interface User {
-  wallet_address: string;
-  nickname: string | null;
-  created_at: string;
-  last_login: string;
-  role: string;
-  total_contests: number;
-  total_wins: number;
-  total_earnings: string;
-  rank_score: number;
-  settings: Record<string, any>;
-  balance: string;
-  is_banned: boolean;
-  ban_reason: string | null;
-  last_deposit_at?: string;
-  last_withdrawal_at?: string;
-  kyc_status?: string;
-  risk_level: string;
-  is_admin?: boolean;
-  jwt?: string; // JWT token for authentication
-  wsToken?: string; // WebSocket-specific token
-  session_token?: string; // Session token for WebSocket authentication
-  is_superadmin?: boolean;
-  profile_image?: {
-    url: string;
-    thumbnail_url?: string;
-    updated_at?: string;
-  };
-}
+/* Types */
 
-// TODO: Verify!
+// Contest Types
+export type ContestStatus = 
+  | "pending" 
+  | "active" 
+  | "completed" 
+  | "cancelled";
+
+// Contest Difficulty Levels
+// [REPURPOSED / NOT USED]
+export type DifficultyLevel =
+  | "guppy"
+  | "tadpole"
+  | "squid"
+  | "dolphin"
+  | "shark"
+  | "whale";
+
+
+// ------------------------------------------------------------------------------------------------
+
+/* Interfaces */
+
+// Contest Settings (Verify!)
 export interface ContestSettings {
   difficulty: DifficultyLevel;
   min_trades: number;
@@ -66,7 +72,7 @@ export interface ContestSettings {
   }>;
 }
 
-// Verify!
+// Contest Types (Verify!)
 export interface Contest {
   id: number;
   name: string;
@@ -98,24 +104,27 @@ export interface Contest {
   image_url?: string; // AI-generated contest image URL
 }
 
-
+// Base Token
 export interface BaseToken {
   name: string;
   symbol: string;
   address: string;
 }
 
+// Token Liquidity
 export interface TokenLiquidity {
   usd: number;
   base: number;
   quote: number;
 }
 
+// Timeframe Stats
 export interface TimeframeStats {
   buys: number;
   sells: number;
 }
 
+// Price Change
 export interface PriceChange {
   id: number;
   tokenId: number;
@@ -123,6 +132,7 @@ export interface PriceChange {
   percentage: string;
 }
 
+// Tokens Response
 export interface TokensResponse {
   timestamp: string;
   data: Token[];
@@ -175,36 +185,6 @@ export interface Token {
   }>;
 }
 
-/**
- * WebSocket-specific token data interface
- * Used by the WebSocket token data system
- * 
- * NOTE:  SEEMS TO BE VERY OUTDATED!
- * 
- */
-/**
- * TokenData interface - Legacy WebSocket interface
- * 
- * @deprecated Use Token interface instead for new development
- * This interface is maintained for backward compatibility with older components
- * that expect this structure.
- */
-export interface TokenData {
-  symbol: string;
-  name: string;
-  price: string;
-  marketCap: string;
-  volume24h: string;
-  volume5m?: string;
-  change24h: string;
-  change5m?: string;
-  change1h?: string;
-  imageUrl?: string;
-  liquidity?: number; // Legacy definition as a number
-  status?: "active" | "inactive";
-  contractAddress?: string; // Optional to match how it's used with fallbacks
-}
-
 // Token response metadata
 export interface TokenResponseMetadata {
   timestamp: string;
@@ -222,6 +202,7 @@ export interface BaseActivity {
   created_at: string;
 }
 
+// Transaction Types
 export interface Transaction {
   id: number;
   wallet_address: string;
@@ -243,6 +224,7 @@ export interface Transaction {
   processed_at?: string;
 }
 
+// Activity Types
 export interface Activity {
   id: string;
   type: "contest_join" | "contest_complete" | "user_register";
@@ -250,18 +232,6 @@ export interface Activity {
   details: string;
   created_at: Date;
 }
-
-// Contest Types
-export type ContestStatus = "pending" | "active" | "completed" | "cancelled";
-
-// [DEPRECATED]
-export type DifficultyLevel =
-  | "guppy"
-  | "tadpole"
-  | "squid"
-  | "dolphin"
-  | "shark"
-  | "whale";
 
 // Portfolio Types
 export interface Portfolio {
@@ -274,16 +244,6 @@ export interface Portfolio {
   total_value: number; // Total portfolio value in USD     <--- Stupid attribute to have
   performance_24h: number; // 24-hour performance percentage   <--- Makes no sense conceptually
 }
-
-/* 
-export interface ContestPortfolio {  // Used for database representation of contest portfolio entries
-  contest_id: number;
-  wallet_address: string;
-  token_id: number;                  // References token table
-  weight: number;                    // Percentage weight in contest portfolio (0-100)
-  created_at: string;
-} 
-*/
 
 // API Response Types
 export interface PortfolioResponse {
@@ -320,6 +280,7 @@ export interface IpBan {
   metadata?: Record<string, any>;
 }
 
+// IP Ban List Response
 export interface IpBanListResponse {
   success: boolean;
   data: IpBan[];
@@ -331,6 +292,7 @@ export interface IpBanListResponse {
   };
 }
 
+// IP Ban Params  
 export interface IpBanParams {
   page?: number;
   limit?: number;
@@ -339,12 +301,14 @@ export interface IpBanParams {
   filter?: string;
 }
 
+// IP Ban Check Response
 export interface IpBanCheckResponse {
   success: boolean;
   is_banned: boolean;
   ban_details?: IpBan;
 }
 
+// IP Ban Create Params
 export interface IpBanCreateParams {
   ip_address: string;
   reason: string;
@@ -354,6 +318,7 @@ export interface IpBanCreateParams {
   metadata?: Record<string, any>;
 }
 
+// IP Ban Update Params
 export interface IpBanUpdateParams {
   reason?: string;
   is_permanent?: boolean;
@@ -382,3 +347,44 @@ export interface PaginatedResponse<T> {
   };
   data?: T[];
 }
+
+// ------------------------------------------------------------------------------------------------
+
+/* Unused and To Be Removed */
+
+/**
+ * Legacy TokenData interface
+ * 
+ * @deprecated Use Token interface instead for new development
+ * This interface is maintained for backward compatibility with older components
+ * that expect this structure.
+ */
+export interface TokenData {
+  symbol: string;
+  name: string;
+  price: string;
+  marketCap: string;
+  volume24h: string;
+  volume5m?: string;
+  change24h: string;
+  change5m?: string;
+  change1h?: string;
+  imageUrl?: string;
+  liquidity?: number; // Legacy definition as a number
+  status?: "active" | "inactive";
+  contractAddress?: string; // Optional to match how it's used with fallbacks
+}
+
+// ------------------------------------------------------------------------------------------------
+
+/* Unused and To Be Removed */
+
+/* 
+export interface ContestPortfolio {  // Used for database representation of contest portfolio entries
+  contest_id: number;
+  wallet_address: string;
+  token_id: number;                  // References token table
+  weight: number;                    // Percentage weight in contest portfolio (0-100)
+  created_at: string;
+} 
+*/

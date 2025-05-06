@@ -43,7 +43,7 @@
     "--------------- OTHER COMMANDS ------------------": ""
   },
   "dependencies": {
-    "@branchmanager69/degenduel-shared": "1.0.1",
+    "@branchmanager69/degenduel-shared": "^1.0.4",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.1.1",
     "@hookform/resolvers": "^3.10.0",

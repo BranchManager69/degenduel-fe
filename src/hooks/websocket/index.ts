@@ -100,7 +100,6 @@ import useUnifiedWebSocket from './useUnifiedWebSocket';
 // Just export useWallet and don't worry about the types to avoid conflicts
 import { useWallet } from './topic-hooks/useWallet';
 
-
 // New standardized format hooks
 export * from './topic-hooks/useAchievements';
 export * from './topic-hooks/useCircuitBreaker';

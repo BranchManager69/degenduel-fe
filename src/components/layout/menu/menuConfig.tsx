@@ -99,7 +99,7 @@ export const getMenuItems = (user: User | null, userLevel: number) => {
     {
       id: 'browse-tokens',
       label: "Browse Tokens",
-      to: "/tokens" // This route in App.tsx already points to EnhancedTokensPage
+      to: "/tokens" // This route in App.tsx already points to TokensPage
     }
   ];
 

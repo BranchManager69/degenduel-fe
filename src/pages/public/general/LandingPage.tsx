@@ -7,17 +7,18 @@
  * @author BranchManager69
  * @version 2.0.0
  * @created 2025-01-01
- * @updated 2025-05-02
+ * @updated 2025-05-05
  */
 
 // CSS (now loaded from public/assets/degen-components.css via index.html)
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Link as RouterLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 // Framer Motion
 import { motion } from "framer-motion";
 // Landing page
 import { AuthDebugPanel } from "../../../components/debug";
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
+import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
 import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestLive } from "../../../lib/utils";
@@ -27,20 +28,18 @@ import { DecryptionTimer, Terminal } from '../../../components/terminal';
 //// import { processTerminalChat } from '../../../services/mockTerminalService';
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
-import { useWallet } from "../../../hooks/websocket/topic-hooks/useWallet";
+import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
+import { useTerminalData } from "../../../hooks/websocket/topic-hooks/useTerminalData";
 // DD API
 import { ddApi } from "../../../services/dd-api";
 
 
-// Contract Address Service (DEPRECATED)
+// Contract Address Service (deprecated)
 import {
-  CONTRACT_POLL_INTERVAL, // ?
-  fetchContractAddress, // DEPRECATED
   getTimeRemainingUntilRelease, // ?
-  isReleaseTimePassed, // DEPRECATED
-  setContractAddressPublic // DEPRECATED
+  isReleaseTimePassed // deprecated
 } from '../../../services/contractAddressService';
-// Release Date Service (?)
+// Release Date Service (Is this a synonym of contract address service?)
 import {
   FALLBACK_RELEASE_DATE, // ?
   fetchReleaseDate, // ?
@@ -53,87 +52,7 @@ import { config as globalConfig } from '../../../config/config';
 // Import PaginatedResponse from types
 import { PaginatedResponse } from '../../../types';
 
-// Define WhaleRoomButton component
-const WhaleRoomButton = ({ walletAddress }: { walletAddress: string }) => {
-  // useWallet hook - Retrieve client balance data
-  const {
-    balance,
-    isLoading,
-  } = useWallet(walletAddress);
-  
-  // Whale criteria check: 
-  //   1. SOL balance > 10 SOL, or
-  //   2. Any token with USD value > $5,000, or
-  //   3. Total portfolio value > $10,000 
-  const isWhale = React.useMemo(() => {
-    if (!balance || isLoading) return false;
-    
-    // Check SOL balance criteria (>10 SOL)
-    if (balance.sol_balance > 10) return true;
-    
-    // Check for any high-value tokens (>$5,000)
-    const hasHighValueToken = balance.tokens.some(token => 
-      token.value_usd && token.value_usd > 5000
-    );
-    
-    if (hasHighValueToken) return true;
-    
-    // Calculate total portfolio value
-    const totalValue = balance.tokens.reduce((sum, token) => 
-      sum + (token.value_usd || 0), 
-      0
-    );
-    
-    // Add SOL value (approximating $100 per SOL)
-    const portfolioValueWithSol = totalValue + (balance.sol_balance * 100);
-    
-    // Check portfolio value criteria (>$10,000) 
-    return portfolioValueWithSol > 10000;
-  }, [balance, isLoading]);
-  
-  // If user meets whale criteria, show button to access the exclusive Whale Room
-  if (!isWhale) return null;
-  
-  // If user does not meet whale criteria, do not show the button
-  return (
-    <div className="w-full max-w-md">
-      <RouterLink to="/whale-room" className="w-full">
-        <button 
-          className="w-full relative group overflow-hidden"
-          aria-label="Access the exclusive Whale Room"
-        >
-          {/* Gradient background */}
-          <div className="relative clip-edges bg-gradient-to-r from-purple-500 to-indigo-600 p-[1px] transition-all duration-300 group-hover:from-purple-400 group-hover:to-indigo-500 shadow-md shadow-purple-900/20">
-            <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-              <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
-                <span className="bg-gradient-to-r from-purple-300 to-indigo-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-purple-200 flex items-center">
-                  <span className="mr-2">💎</span>
-                    WHALE ROOM
-                  </span>
-                  {/* Arrow icon */}
-                  <svg
-                    className="w-5 h-5 text-purple-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                    fill="none" 
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    {/* Arrow path */}
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </button>
-        </RouterLink>
-      </div>
-  );
-};
+import { useStore } from "../../../store/useStore"; // Ensure useStore is imported
 
 // Landing Page component
 export const LandingPage: React.FC = () => {
@@ -149,9 +68,7 @@ export const LandingPage: React.FC = () => {
   const [releaseDate, setReleaseDate] = useState<Date>(FALLBACK_RELEASE_DATE);
   const [isLoadingReleaseDate, setIsLoadingReleaseDate] = useState<boolean>(true);
   const [showContractReveal, setShowContractReveal] = useState<boolean>(false);
-  const pollingIntervalRef = useRef<number | null>(null);
   const countdownCheckerRef = useRef<number | null>(null);
-  const countdownEndedRef = useRef<boolean>(false);
   
   // Debug state for contests section (?)
   const [contestDebugInfo, setContestDebugInfo] = useState<{
@@ -167,100 +84,101 @@ export const LandingPage: React.FC = () => {
   // Fetch release date from backend when component mounts (?)
   useEffect(() => {
     // Fetch release date from backend
-    const loadReleaseDate = async () => {
+    const fetchReleaseDateFromBackend = async () => {
       try {
+        // Set loading state to true
         setIsLoadingReleaseDate(true);
+        // Fetch release date from backend
         const date = await fetchReleaseDate();
+        // Set release date
         setReleaseDate(date);
+        // Log release date
         console.log(`Release date set to: ${formatReleaseDate(date)}`);
       } catch (error) {
+        // Log error
         console.error('Error fetching release date:', error);
+        // Set fallback date
         setReleaseDate(FALLBACK_RELEASE_DATE);
+        // Log fallback date
         console.log(`Using fallback date: ${formatReleaseDate(FALLBACK_RELEASE_DATE)}`);
       } finally {
+        // Set loading state to false
         setIsLoadingReleaseDate(false);
       }
     };
-    
-    loadReleaseDate();
+    fetchReleaseDateFromBackend();
   }, []);
   
-  // Start contract address polling (after countdown ends) (?)
-  const startAddressPolling = useCallback(() => {
-    console.log('Starting contract address polling');
-    countdownEndedRef.current = true;
-    
-    // For demo purposes, make the contract address public after countdown ends
-    //
-    // TODO: Remove this!
-    //
-    setContractAddressPublic(true);
-    
-    // Trigger immediate fetch
-    //
-    // TODO: remove this after testing
-    //
-    fetchContractAddress().then(address => {
-      // Update the contract address
-      setContractAddress(address);
-    });
-    
-    // Start polling for contract address
-    if (!pollingIntervalRef.current) {
-      pollingIntervalRef.current = window.setInterval(async () => {
-        const address = await fetchContractAddress();
-        setContractAddress(address);
-      }, CONTRACT_POLL_INTERVAL);
-    }
-  }, []);
+  // Get contract address from WebSocket-based Terminal data
+  const { 
+    contractAddress: websocketContractAddress, 
+    contractAddressRevealed: websocketContractRevealed,
+    isConnected: terminalConnected
+  } = useTerminalData();
   
-  // Set up a checker to detect when countdown ends
+  // Update contract address when WebSocket provides it
   useEffect(() => {
+    if (terminalConnected) {
+      if (websocketContractAddress) {
+        console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}`);
+        
+        // Update contract address state
+        setContractAddress(websocketContractAddress);
+        
+        // When a valid contract address is received, set reveal flag to true
+        if (!showContractReveal && websocketContractRevealed) {
+          console.log('[LandingPage] Contract address revealed via WebSocket');
+          setShowContractReveal(true);
+        }
+      }
+    }
+  }, [terminalConnected, websocketContractAddress, websocketContractRevealed, showContractReveal]);
+  
+  // Fallback check for release time - if WebSocket is not connected yet
+  useEffect(() => {
+    // Don't run this if WebSocket is already providing contract data
+    if (websocketContractAddress) {
+      return;
+    }
+    
     // Don't set up the checker if we're still loading the release date
     if (isLoadingReleaseDate) {
       return;
     }
     
-    // Clear any existing timeout when release date changes
-    if (countdownCheckerRef.current) {
-      clearTimeout(countdownCheckerRef.current);
-      countdownCheckerRef.current = null;
-    }
-    
     // Check if countdown has already ended
     if (isReleaseTimePassed(releaseDate)) {
-      console.log(`Release time already passed: ${formatReleaseDate(releaseDate)}`);
+      console.log(`[LandingPage] Release time already passed: ${formatReleaseDate(releaseDate)}`);
+      // Reveal the contract address
       setShowContractReveal(true);
-      startAddressPolling();
     } else {
       // Calculate time until release
       const timeUntilRelease = getTimeRemainingUntilRelease(releaseDate);
       const formattedDate = formatReleaseDate(releaseDate);
-      console.log(`Countdown to ${formattedDate} will end in ${timeUntilRelease}ms`);
       
-      // Set a timeout to start polling when countdown ends
+      // Log countdown info
+      console.log(`[LandingPage] Countdown to ${formattedDate} will end in ${timeUntilRelease}ms`);
+      
+      // Set a timeout to update reveal flag when countdown ends
       countdownCheckerRef.current = window.setTimeout(() => {
-        console.log('Countdown timer complete - starting polling');
+        console.log('[LandingPage] Countdown timer complete - showing address when available');
+        // Reveal the contract address when it becomes available
         setShowContractReveal(true);
-        startAddressPolling();
       }, timeUntilRelease + 100); // Add 100ms buffer
     }
     
-    // Clean up polling on unmount
+    // Clean up timer on unmount
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
       if (countdownCheckerRef.current) {
         clearTimeout(countdownCheckerRef.current);
       }
     };
-  }, [releaseDate, startAddressPolling, isLoadingReleaseDate]);
+  }, [releaseDate, isLoadingReleaseDate, websocketContractAddress]);
 
-  // Terminal configuration (NEED WEBSOCKET VERSION ASAP!)
+  // Terminal configuration (Using WebSocket when available)
   const terminalConfig = {
-    // Contract address for display in Terminal
-    CONTRACT_ADDRESS: showContractReveal ? globalConfig.CONTRACT_ADDRESS.REAL : contractAddress,
+    // Contract address for display in Terminal - prioritize WebSocket, then fallback to legacy
+    CONTRACT_ADDRESS: websocketContractAddress || (showContractReveal ? globalConfig.CONTRACT_ADDRESS.REAL : contractAddress),
     // Launch date for countdown timer 
     RELEASE_DATE: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME || releaseDate,
     // Format settings for display
@@ -292,6 +210,38 @@ export const LandingPage: React.FC = () => {
   
   // Use auth hook for proper admin status checks
   const { user, isAdmin } = useMigratedAuth();
+  
+  // Use WebSocket hook for system settings (including maintenance mode)
+  const { 
+    isMaintenanceMode: wsMaintenanceMode, 
+    maintenanceMessage,
+    isConnected: systemConnected
+  } = useSystemSettings();
+  
+  // Update local and store maintenance mode when WebSocket provides updates
+  useEffect(() => {
+    if (systemConnected && wsMaintenanceMode !== undefined) {
+      // Log that we're receiving maintenance updates via WebSocket
+      console.log(`[LandingPage] WebSocket maintenance mode update received: ${wsMaintenanceMode}`);
+      
+      // Update local state
+      setIsMaintenanceMode(wsMaintenanceMode);
+      
+      // Update store state
+      if (useStore.getState().setMaintenanceMode) {
+        useStore.getState().setMaintenanceMode(wsMaintenanceMode);
+      }
+      
+      // Set error message if in maintenance mode
+      if (wsMaintenanceMode) {
+        const message = maintenanceMessage || "DegenDuel is in Maintenance Mode. Please try again later.";
+        setError(message);
+      } else if (error && error.includes("Maintenance Mode")) {
+        // Clear the error if we're no longer in maintenance mode and the error was about maintenance
+        setError(null);
+      }
+    }
+  }, [systemConnected, wsMaintenanceMode, maintenanceMessage, error]);
   
   // Log user status for debugging
   useEffect(() => {
@@ -353,10 +303,13 @@ export const LandingPage: React.FC = () => {
         names: contestsArray.map(c => c.name)
       });
       
-      // Set active ('live') contests
+      // Update the Zustand store with all contests for caching
+      useStore.getState().setContests(contestsArray);
+      
+      // Set active ('live') contests in local state
       setActiveContests(contestsArray.filter(isContestLive));
       
-      // Set open ('pending' / 'upcoming') contests
+      // Set open ('pending' / 'upcoming') contests in local state
       setOpenContests(
         contestsArray.filter(
           (contest: Contest) => contest.status === "pending",
@@ -389,50 +342,143 @@ export const LandingPage: React.FC = () => {
     }
   }, []);
 
-  // useEffect for the animation phases with better HeroTitle/Terminal coordination (?)
+  // Define animation variants for Framer Motion
+  const landingPageVariants = {
+    // Define variants for hidden state
+    hidden: { opacity: 0 },
+    
+    // Define variants for visible state
+    visible: {
+      opacity: 1,
+      transition: {
+        // When parent becomes visible, stagger children animations
+        staggerChildren: 0.3,
+        // Delay before starting children animations
+        delayChildren: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.8 : 0.2,
+        // Transition duration for the parent itself
+        duration: 0.5
+      }
+    }
+  };
+  
+  // Define variants for children elements
+  const childVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 80,
+        duration: 0.7
+      }
+    }
+  };
+  
+  // Secondary content variants (appears later)
+  const secondaryVariants = {
+    hidden: { opacity: 0, y: 40 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 50,
+        duration: 0.8,
+        delay: 0.4
+      }
+    }
+  };
+  
+  // Define whether animation is done (for use in JSX)
+  const animationDone = useStore.getState().landingPageAnimationDone;
+  
+  // Check if the animation has already run in this session
   useEffect(() => {
-    // Adjust animation timing based on whether HeroTitle is shown
-    const initialDelay = FEATURE_FLAGS.SHOW_HERO_TITLE ? 1200 : 300;
-    const secondDelay = FEATURE_FLAGS.SHOW_HERO_TITLE ? 2400 : 800;
+    const animationDone = useStore.getState().landingPageAnimationDone;
     
-    // Animation phases for the title - timing adjusted based on HeroTitle visibility
-    const phaseOneTimer = setTimeout(() => {
-      setAnimationPhase(1); // Initial reveal 
-    }, initialDelay);
+    if (animationDone) {
+      // Skip animation, set final phase immediately
+      setAnimationPhase(2);
+    } else {
+      // Set up a single timer to mark animation as completed
+      const animationCompleteTimer = setTimeout(() => {
+        // Set the flag in the store after a delay matching our staggered animation duration
+        useStore.getState().setLandingPageAnimationDone(true);
+        setAnimationPhase(2);
+      }, FEATURE_FLAGS.SHOW_HERO_TITLE ? 2400 : 1200);
+      
+      // Initial animation phase
+      setAnimationPhase(1);
+      
+      // Return cleanup function
+      return () => {
+        clearTimeout(animationCompleteTimer);
+      };
+    }
+  }, []); // Run only on initial mount
 
-    const phaseTwoTimer = setTimeout(() => {
-      setAnimationPhase(2); // Full animation
-    }, secondDelay);
-
-    // Fetch contests
-    const fetchContests = async () => {
-      await retryContestFetch();
-    };
+  // Separate useEffect for contest fetch and maintenance status via WebSocket (runs regardless of animation skip)
+  useEffect(() => {
+    // Check for cached contests in Zustand store first
+    const cachedContests = useStore.getState().contests;
     
-    // Fetch contests immediately
-    fetchContests();
+    if (cachedContests && cachedContests.length > 0) {
+      // Log that we're using cached data
+      console.log('[LandingPage] Using cached contests data:', {
+        count: cachedContests.length,
+        cachedAt: new Date().toISOString()
+      });
+      
+      // Filter active and pending contests from cache
+      const cachedActive = cachedContests.filter(isContestLive);
+      const cachedPending = cachedContests.filter(
+        (contest: Contest) => contest.status === "pending"
+      );
+      
+      // Use cached data immediately
+      setActiveContests(cachedActive);
+      setOpenContests(cachedPending);
+      
+      // Update loading state
+      setLoading(false);
+      
+      // Fetch fresh data in the background after a delay
+      setTimeout(() => {
+        retryContestFetch().then(() => {
+          console.log('[LandingPage] Background refresh of contests completed');
+        });
+      }, 2000); // 2 second delay before background refresh
+    } else {
+      // No cached data available, perform normal fetch
+      const fetchContests = async () => {
+        await retryContestFetch();
+      };
+      fetchContests();
+    }
 
-    // Poll maintenance status every n seconds
-    // TODO: improve Maintenance Mode checks via WSS if technically possible
-    const MM_POLL_INTERVAL = 30; // in seconds
-    const maintenanceCheckInterval = setInterval(async () => {
+    // Initial maintenance check (will only run once)
+    const checkInitialMaintenanceStatus = async () => {
       try {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        setIsMaintenanceMode(isInMaintenance);
+        // Update Zustand store directly if available, otherwise use local state
+        if (useStore.getState().setMaintenanceMode) {
+          useStore.getState().setMaintenanceMode(isInMaintenance);
+        } else {
+          setIsMaintenanceMode(isInMaintenance);
+        }
+
         if (isInMaintenance) {
           setError("DegenDuel is in Maintenance Mode. Please try again later.");
         }
       } catch (err) {
-        console.error(`Failed to check maintenance status: ${err}`);
+        console.error(`Failed to check initial maintenance status: ${err}`);
       }
-    }, MM_POLL_INTERVAL * 1000);
-
-    return () => {
-      clearInterval(maintenanceCheckInterval);
-      clearTimeout(phaseOneTimer);
-      clearTimeout(phaseTwoTimer);
     };
-  }, [retryContestFetch]);
+    checkInitialMaintenanceStatus();
+
+    // No cleanup needed as we're not setting up any interval
+  }, [retryContestFetch]); // Depend on retryContestFetch
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden">
@@ -444,11 +490,13 @@ export const LandingPage: React.FC = () => {
             
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
-              {/* Admin button now only shows the three topic-specific monitors */}
               
+              {/* (does this ALL exist within the Title Section!? ) */}
+
               {/* Admin debug button - visible even when HeroTitle is hidden */}
               {isAdmin && (
                 <div className="flex justify-end mb-2">
+                  {/* Debug button - visible even when HeroTitle is hidden */}
                   <button
                     className="bg-black/50 text-white text-xs p-1 rounded-md"
                     onClick={() => setDebugMode(!debugMode)}
@@ -510,6 +558,7 @@ export const LandingPage: React.FC = () => {
               {/* HeroTitle component with better Terminal coordination - conditionally rendered based on feature flag */}
               {FEATURE_FLAGS.SHOW_HERO_TITLE && (
                 <>
+                  {/* HeroTitle component with better Terminal coordination - conditionally rendered based on feature flag */}
                   <div className="w-full h-[15vh] relative overflow-visible z-10">
                     <HeroTitle 
                       onComplete={() => {
@@ -522,22 +571,23 @@ export const LandingPage: React.FC = () => {
                   </div>
 
                   {/* Spacing between hero and terminal - only shown when HeroTitle is visible */}
-                  <div className="h-[8vh] min-h-[40px] w-full"></div>
+                  <div className="h-[8vh] min-h-[40px] w-full">
+                  </div>
                 </>
               )}
+              
+              {/* Main content container using variants */}
+              <motion.div 
+                className="landing-content"
+                initial={animationDone ? "visible" : "hidden"}
+                animate="visible"
+                variants={landingPageVariants}
+              >
               
               {/* Common tagline for all users */}
               <motion.div
                 className="mt-8 mb-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: animationPhase > 0 ? 1 : 0,
-                  y: animationPhase > 0 ? 0 : 20,
-                  transition: {
-                    delay: 0.3,
-                    duration: 0.8,
-                  },
-                }}
+                variants={childVariants}
               >
                 <motion.div
                   className="relative"
@@ -577,176 +627,13 @@ export const LandingPage: React.FC = () => {
                 </motion.div>
               </motion.div>
 
-              {/* Call to action buttons - using a 2-row layout with primary button on top */}
-              <motion.div
-                className="mt-8 mb-10 flex flex-col items-center justify-center gap-6 px-4 sm:px-0 max-w-full"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: animationPhase > 0 ? 1 : 0,
-                  y: animationPhase > 0 ? 0 : 20,
-                  transition: {
-                    delay: 0.6,
-                    duration: 0.8,
-                  },
-                }}
-              >
-                {/* Primary action button - larger and with pulse animation */}
-                {user ? (
-                  <RouterLink to="/contests" className="w-full max-w-md">
-                    <button 
-                      className="w-full relative group overflow-hidden"
-                      aria-label="Find a duel to join"
-                    >
-                      <div className="relative clip-edges bg-gradient-to-r from-emerald-500 to-teal-600 p-[2px] transition-all duration-300 group-hover:from-emerald-400 group-hover:to-teal-500 shadow-lg shadow-emerald-900/20 animate-pulse-subtle">
-                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-10 py-5">
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                          <div className="relative flex items-center justify-between space-x-6 text-2xl font-cyber">
-                            <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
-                              FIND DUEL
-                            </span>
-                            <svg
-                              className="w-7 h-7 text-emerald-400 group-hover:text-white transform group-hover:translate-x-2 transition-all"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  </RouterLink>
-                ) : (
-                  <RouterLink to="/login" className="w-full max-w-md">
-                    <button 
-                      className="w-full relative group overflow-hidden"
-                      aria-label="Connect your wallet to start"
-                    >
-                      <div className="relative clip-edges bg-gradient-to-r from-brand-500 to-brand-600 p-[2px] transition-all duration-300 group-hover:from-brand-400 group-hover:to-brand-500 shadow-lg shadow-brand-900/20 animate-pulse-subtle">
-                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-10 py-5">
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                          <div className="relative flex items-center justify-between space-x-6 text-2xl font-cyber">
-                            <span className="bg-gradient-to-r from-brand-300 to-brand-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-brand-200">
-                              CONNECT
-                            </span>
-                            <svg
-                              className="w-7 h-7 text-brand-400 group-hover:text-white transform group-hover:translate-x-2 transition-all"
-                              fill="none" 
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  </RouterLink>
-                )}
-
-                {/* Secondary buttons row - two buttons side by side with same color */}
-                <div className="flex flex-col sm:flex-row w-full max-w-md gap-4 justify-between">
-                  {/* GAMEPLAY button */}
-                  <RouterLink to="/how-it-works" className="w-full sm:w-[48%]">
-                    <button 
-                      className="w-full relative group overflow-hidden"
-                      aria-label="Learn gameplay instructions"
-                    >
-                      <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500 shadow-md shadow-blue-900/20">
-                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                          <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
-                            <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
-                              GAMEPLAY
-                            </span>
-                            <svg
-                              className="w-5 h-5 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                              fill="none" 
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  </RouterLink>
-
-                  {/* FAQ button - now using same blue/cyan color scheme as GAMEPLAY */}
-                  <RouterLink to="/faq" className="w-full sm:w-[48%]">
-                    <button 
-                      className="w-full relative group overflow-hidden"
-                      aria-label="View frequently asked questions"
-                    >
-                      <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500 shadow-md shadow-blue-900/20">
-                        <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                          <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
-                            <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
-                              FAQ
-                            </span>
-                            <svg
-                              className="w-5 h-5 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                              fill="none" 
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  </RouterLink>
-                </div>
-
-                {/* Conditional WHALE ROOM button - only shown to users with significant token/SOL balances */}
-                {user && (
-                  <WhaleRoomButton walletAddress={user.wallet_address} />
-                )}
-                
-                {/* Whale room button is conditionally rendered above */}
-                
-                {/* Link to standardized test page */}
-                <RouterLink to="/tokens/standardized-test" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
-                  View Standardized Components
-                </RouterLink>
-              </motion.div>
+              {/* Call to action buttons - Now using the CtaSection component */}
+              <CtaSection user={user} animationPhase={animationPhase} />
 
               {/* Countdown Timer Component */}
               <motion.div
                 className="w-full max-w-lg mx-auto mb-8 relative z-20"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: animationPhase > 0 ? 1 : 0,
-                  y: animationPhase > 0 ? 0 : 20,
-                  transition: {
-                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.2 : 0.1,
-                    duration: 0.7,
-                  },
-                }}
+                variants={childVariants}
               >
                 {isLoadingReleaseDate ? (
                   <div className="flex items-center justify-center h-[120px]">
@@ -758,19 +645,15 @@ export const LandingPage: React.FC = () => {
                 ) : (
                   <DecryptionTimer
                     targetDate={releaseDate}
-                    contractAddress={contractAddress}
+                    contractAddress={websocketContractAddress || contractAddress}
                   />
                 )}
               </motion.div>
 
               {/* Platform Features Section */}
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ 
-                  opacity: animationPhase > 0 ? 1 : 0,
-                  transition: { duration: 0.7, delay: 0.4 }
-                }}
                 className="text-center mb-10"
+                variants={childVariants}
               >
                 <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-purple-500 mb-4">PLATFORM <span className="text-purple-300">·</span> FEATURES</h2>
                 <div className="w-full max-w-2xl mx-auto h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent mb-8"></div>
@@ -782,17 +665,8 @@ export const LandingPage: React.FC = () => {
               {/* Terminal Component */}
               <motion.div
                 className="w-full max-w-3xl mx-auto mb-10 relative z-20"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: animationPhase > 0 ? 1 : 0,
-                  y: animationPhase > 0 ? 0 : 20,
-                  transition: {
-                    delay: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.6 : 0.3,
-                    duration: 0.8,
-                  },
-                }}
+                variants={childVariants}
                 onAnimationComplete={() => {
-                  // When terminal animation completes, it signals completion
                   console.log('Terminal animation completed');
                 }}
               >
@@ -866,14 +740,7 @@ export const LandingPage: React.FC = () => {
               {/* Market Overview Panel - shown to all users */}
               <motion.div
                 className="w-full mt-8 mb-4"
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: animationPhase > 1 ? 1 : 0,
-                  transition: {
-                    delay: 0.7,
-                    duration: 0.8,
-                  },
-                }}
+                variants={secondaryVariants}
               >
                 {/* Market Overview Panel */}
                 {(() => {
@@ -906,14 +773,7 @@ export const LandingPage: React.FC = () => {
               {/* Elite Hot Tokens List - shown to all users with consistent token count */}
               <motion.div
                 className="w-full mt-8 mb-6"
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: animationPhase > 1 ? 1 : 0,
-                  transition: {
-                    delay: 0.7,
-                    duration: 0.8,
-                  },
-                }}
+                variants={secondaryVariants}
               >
                 {(() => {
                
@@ -946,14 +806,7 @@ export const LandingPage: React.FC = () => {
               {/* Top Tokens Display - shown to all users with consistent token count */}
               <motion.div
                 className="w-full mt-8"
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: animationPhase > 1 ? 1 : 0,
-                  transition: {
-                    delay: 0.9,
-                    duration: 0.8,
-                  },
-                }}
+                variants={secondaryVariants}
               >
                 {(() => {
                
@@ -982,17 +835,7 @@ export const LandingPage: React.FC = () => {
               
               {/* Contest sections - shown to all users */}
               <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                animate={{
-                  opacity: animationPhase > 0 ? 1 : 0,
-                  y: animationPhase > 0 ? 0 : 40,
-                  transition: {
-                    delay: 1.2,
-                    duration: 0.8,
-                    type: "spring",
-                    stiffness: 50,
-                  },
-                }}
+                variants={secondaryVariants}
               >
                 {/* Maintenance mode */}
                 {isMaintenanceMode ? (
@@ -1122,8 +965,11 @@ export const LandingPage: React.FC = () => {
                   </div>
                 )}
               </motion.div>
+              
+              </motion.div> {/* Close the main landing-content container with variants */}
 
             </div>
+
           </div>
         </div>
       </section>

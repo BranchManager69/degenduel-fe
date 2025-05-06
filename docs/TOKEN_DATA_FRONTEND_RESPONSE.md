@@ -12,7 +12,7 @@ Thank you for your comprehensive proposal on improving the token data delivery s
 ### 1. Token Display
 
 - **Typical Display Count**: 
-  - Our new EnhancedTokensPage uses a tiered display approach:
+  - Our new TokensPage uses a tiered display approach:
     - Featured section: 2-6 tokens with detailed information
     - Trending section: 5-10 tokens with medium detail
     - Main grid: 50-100 tokens visible at once (depending on screen size)

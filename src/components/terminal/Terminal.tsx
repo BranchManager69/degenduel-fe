@@ -16,7 +16,7 @@
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AIMessage, aiService, AIServiceError, AIErrorType } from '../../services/ai';
-import { fetchTerminalData, formatTerminalCommands, useTerminalData } from '../../services/terminalDataService';
+import { formatTerminalCommands, useTerminalData } from '../../services/terminalDataService';
 import { useStore } from '../../store/useStore';
 
 // Import Terminal components
@@ -331,24 +331,12 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     // (is this best practices?)
     window.scrollTo(0, 0);
     
-    // Preload terminal data in background to prevent future errors
-    // This also pre-populates the cache
-    try {
-      fetchTerminalData().catch(() => {
-        //
-        //
-        // Silently fail - we'll handle errors in the regular refresh cycle
-        //   ^
-        //     EXCUSE ME, *WHAT* !?????????????????!?!?!?!
-        //
-        //
-      });
-    } catch (error) {
-      // Silently catch any synchronous errors
-      //   ...is this best practices?
-      // EDIT: I'm gonna use my best judgment and say that whoever did this is a **** **** and that I'm a smarterand wiser and would never make such a stupid decisionas to silently oh my God I can't even think straight right now I'm so fuming with anger at whoever did that
-      console.error('[Terminal] ASYNC ERROR! Failed to preload terminal data:', error);
-    }
+    // We no longer need to preload terminal data here since we've properly implemented
+    // debouncing and error handling in the fetchTerminalData function itself.
+    // The regular refresh cycle will handle data loading with proper error handling
+    // and exponential backoff built in.
+    //
+    // This comment is preserved for reference and to show what was here previously.
 
     // TO BE REMOVED:
     //  - High-stakes line
@@ -459,77 +447,36 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     }
   }, [wsTerminalData]);
   
-  // Periodic refresh of terminal data from server (fallback or when WebSocket is not connected)
+  // PURE WEBSOCKET APPROACH - no REST API, no bullshit
   useEffect(() => {
-    // Initialize refresh counter if not already set
-    if (typeof window.terminalRefreshCount === 'undefined') {
-      window.terminalRefreshCount = 0;
+    // Reset the counter
+    window.terminalRefreshCount = 0;
+    
+    // WebSocket-only approach - no REST API fallback
+    const initializeTerminalData = () => {
+      console.log('[Terminal] Initializing terminal data via WebSocket ONLY');
+      
+      // Request data from WebSocket
+      refreshWsTerminalData();
+      
+      // If not connected, try again when connection becomes available
+      if (!wsConnected) {
+        console.log('[Terminal] WebSocket not connected yet. Will initialize when connected.');
+      }
+    };
+    
+    // Run initialization once
+    initializeTerminalData();
+    
+    // No interval - initial WebSocket connection and subsequent updates only
+  }, [wsConnected, refreshWsTerminalData]);
+  
+  // Re-request terminal data when WebSocket connection state changes
+  useEffect(() => {
+    if (wsConnected) {
+      console.log('[Terminal] WebSocket connected, requesting terminal data');
+      refreshWsTerminalData();
     }
-    
-    // Manual refresh function - combines REST API fetch with WebSocket refresh request
-    const refreshTerminalData = async () => {
-      // Track refresh attempts
-      window.terminalRefreshCount = (window.terminalRefreshCount || 0) + 1;
-      
-      // Always try to refresh WebSocket data first if connected
-      if (wsConnected) {
-        refreshWsTerminalData();
-        return; // Skip REST API call if WebSocket is connected
-      }
-      
-      // Only continue with REST API fallback if WebSocket is not connected
-      // Exponential backoff for REST API calls
-      // First 5 attempts: every minute
-      // Next 5 attempts: every 2 minutes
-      // After that: every 5 minutes
-      const refreshCount = window.terminalRefreshCount || 0;
-      const shouldRefresh = 
-        refreshCount <= 5 || 
-        (refreshCount <= 10 && refreshCount % 2 === 0) ||
-        refreshCount % 5 === 0;
-      
-      if (!shouldRefresh) {
-        return; // Skip this refresh based on backoff strategy
-      }
-      
-      // Fallback to REST API with reduced logging
-      try {
-        console.log('[Terminal] WSS was not working, and falling back to REST API is beyond my paygrade');
-        
-        // Only log on first few attempts
-        if (refreshCount <= 3) { // legality?
-          console.log('[Terminal] Refreshing terminal data from REST API...');
-        }
-        
-        // Fetch terminal data using REST API
-        const terminalData = await fetchTerminalData();
-        const updatedCommands = formatTerminalCommands(terminalData);
-        
-        // Only update if something actually changed; log minimally
-        if (JSON.stringify(commandMap) !== JSON.stringify(updatedCommands)) {
-          // Only log first few updates or occasional updates
-          if (refreshCount <= 3 || refreshCount % 10 === 0) {
-            console.log('[Terminal] Terminal data refreshed - commands updated');
-          }
-          Object.assign(commandMap, updatedCommands);
-        }
-      } catch (error) {
-        // Minimize error logging, only log on first few errors
-        if (refreshCount <= 3) {
-          console.error('[Terminal] Failed to refresh terminal data:', error);
-        }
-      }
-    };
-    
-    // Initial refresh
-    refreshTerminalData();
-    
-    // Set up periodic refresh every 1 minute, but actual fetch may be throttled
-    const refreshInterval = setInterval(refreshTerminalData, 60 * 1000);
-    
-    return () => {
-      clearInterval(refreshInterval);
-    };
   }, [wsConnected, refreshWsTerminalData]);
 
   // Random glitch effect for contract address
