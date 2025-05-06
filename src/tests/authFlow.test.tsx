@@ -1,7 +1,18 @@
 // src/tests/authFlow.test.tsx
+
+/**
+ * Auth Flow Test Suite
+ * 
+ * @description This file contains the test suite for the authentication flow.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-05-06
+ * @updated 2025-05-06
+ */
+
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-
 import { AdminRoute } from "../components/routes/AdminRoute";
 import { AuthenticatedRoute } from "../components/routes/AuthenticatedRoute";
 import { SuperAdminRoute } from "../components/routes/SuperAdminRoute";
@@ -52,9 +63,13 @@ jest.mock("../hooks/useAuth", () => {
   };
 });
 
+// ------------------------------------------------------------------------------------------------
+
 // Import the mock implementaion
 const { __mockImplementation: mockAuth, useAuth } =
   jest.requireMock("../hooks/useAuth");
+
+// ------------------------------------------------------------------------------------------------
 
 // Test components for different route types
 const RegularUserContent = () => <div>Regular User Content</div>;
@@ -62,6 +77,9 @@ const AdminContent = () => <div>Admin Content</div>;
 const SuperAdminContent = () => <div>SuperAdmin Content</div>;
 const PublicContent = () => <div>Public Content</div>;
 
+// ------------------------------------------------------------------------------------------------
+
+// Set the test suite
 describe("Authentication Flow Integration", () => {
   // Helper function to setup the router and render the test app
   const renderAuthFlowTest = () => {
@@ -100,9 +118,14 @@ describe("Authentication Flow Integration", () => {
     );
   };
 
+  // ------------------------------------------------------------------------------------------------
+
+  // Clear all mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
+  // ------------------------------------------------------------------------------------------------
 
   it("redirects unauthenticated user to home page", async () => {
     // Setup mock to be unauthenticated
@@ -122,7 +145,9 @@ describe("Authentication Flow Integration", () => {
   it("allows authenticated regular user to access protected routes", async () => {
     // Setup mock to be authenticated as regular user
     const mockUser: User = {
-      wallet_address: "test-wallet",
+      id: "1",
+      username: "Bobo123",
+      wallet_address: "0x123123123123123123123",
       nickname: "RegularUser",
       role: "user",
       created_at: new Date().toISOString(),
@@ -134,7 +159,7 @@ describe("Authentication Flow Integration", () => {
       settings: {},
       balance: "1000",
       is_banned: false,
-      ban_reason: null,
+      ban_reason: undefined,
       risk_level: "low",
       jwt: "test-jwt-token",
     };
@@ -158,7 +183,9 @@ describe("Authentication Flow Integration", () => {
   it("redirects regular user from admin routes", async () => {
     // Setup mock to be authenticated as regular user
     const mockUser: User = {
-      wallet_address: "test-wallet",
+      id: "1",
+      username: "Bobo123",
+      wallet_address: "0x123123123123123123123",
       nickname: "RegularUser",
       role: "user",
       created_at: new Date().toISOString(),
@@ -170,7 +197,7 @@ describe("Authentication Flow Integration", () => {
       settings: {},
       balance: "1000",
       is_banned: false,
-      ban_reason: null,
+      ban_reason: undefined,
       risk_level: "low",
       jwt: "test-jwt-token",
     };
@@ -212,7 +239,9 @@ describe("Authentication Flow Integration", () => {
   it("allows admin user to access admin routes", async () => {
     // Setup mock to be authenticated as admin
     const mockAdminUser: User = {
-      wallet_address: "admin-wallet",
+      id: "1",
+      username: "Bobo123",
+      wallet_address: "0x123123123123123123123",
       nickname: "AdminUser",
       role: "admin",
       created_at: new Date().toISOString(),
@@ -224,7 +253,7 @@ describe("Authentication Flow Integration", () => {
       settings: {},
       balance: "10000",
       is_banned: false,
-      ban_reason: null,
+      ban_reason: undefined,
       risk_level: "low",
       jwt: "admin-jwt-token",
     };
@@ -265,7 +294,9 @@ describe("Authentication Flow Integration", () => {
   it("redirects admin from superadmin routes", async () => {
     // Setup mock to be authenticated as admin (but not superadmin)
     const mockAdminUser: User = {
-      wallet_address: "admin-wallet",
+      id: "1",
+      username: "Bobo123",
+      wallet_address: "0x123123123123123123123",
       nickname: "AdminUser",
       role: "admin",
       created_at: new Date().toISOString(),
@@ -277,7 +308,7 @@ describe("Authentication Flow Integration", () => {
       settings: {},
       balance: "10000",
       is_banned: false,
-      ban_reason: null,
+      ban_reason: undefined,
       risk_level: "low",
       jwt: "admin-jwt-token",
     };
@@ -319,7 +350,9 @@ describe("Authentication Flow Integration", () => {
   it("allows superadmin to access all protected routes", async () => {
     // Setup mock to be authenticated as superadmin
     const mockSuperAdminUser: User = {
-      wallet_address: "superadmin-wallet",
+      id: "1",
+      username: "Bobo123",
+      wallet_address: "0x123123123123123123123",
       nickname: "SuperAdminUser",
       role: "superadmin",
       created_at: new Date().toISOString(),
@@ -331,7 +364,7 @@ describe("Authentication Flow Integration", () => {
       settings: {},
       balance: "50000",
       is_banned: false,
-      ban_reason: null,
+      ban_reason: undefined,
       risk_level: "low",
       jwt: "superadmin-jwt-token",
     };
@@ -440,4 +473,7 @@ describe("Authentication Flow Integration", () => {
       { timeout: 3000 },
     );
   });
+
+  // ------------------------------------------------------------------------------------------------
+
 });

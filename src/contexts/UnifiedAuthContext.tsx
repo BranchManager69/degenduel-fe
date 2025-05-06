@@ -1,7 +1,9 @@
+// src/contexts/UnifiedAuthContext.tsx
+
 /**
  * UnifiedAuthContext.tsx
  * 
- * A single unified authentication context for DegenDuel that replaces the multiple
+ * @description A single unified authentication context for DegenDuel that replaces the multiple
  * overlapping authentication providers (AuthContext, PrivyAuthContext, TwitterAuthContext).
  * 
  * This context provides state and methods for all authentication operations across different 
@@ -10,12 +12,13 @@
  * @author BranchManager69
  * @version 1.0.0
  * @created 2025-05-05
+ * @updated 2025-05-06
  */
 
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { User } from '../types/user';
-import { authService, AuthEventType, AuthMethod, TokenType } from '../services';
 import { authDebug } from '../config/config';
+import { AuthEventType, AuthMethod, authService, TokenType } from '../services';
+import { User } from '../types/user';
 import { deprecatedFunction } from '../utils/deprecationWarning';
 
 // Auth status interface

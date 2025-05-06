@@ -1,14 +1,22 @@
 // src/services/terminalDataService.ts
 
-// FUCK THIS FILE!!!!!!!!!
+// FUCK THIS FILE!!!!!!!!!  SO FUCKING ANNOYING  CHECK AI SERVICE TOO
 
 /**
  * Terminal Data Service
  * 
- * This service fetches all terminal data from the backend to ensure
+ * @description This service fetches all terminal data from the backend to ensure
  * accurate and consistent information across the application.
  * 
  * V69 UPDATE: Now integrated with WebSocket for real-time updates.
+ * V69 FOLLOW UP: The status of this file is unclear because we've had some setbacks with the web socket implementation although some of it works some of it doesn't the fact is we do not use web socketconnections on the back end with the streaming responsesso if you're getting streaming thenjust use this unless there's a newer ....nt one yeah this is so **** confusing
+ * just use this unless there's a newer replacement one yeah this is so **** confusing 
+ * 
+ * 
+ * @author BranchManager69
+ * @version 1.8.5
+ * @created 2025-04-14
+ * @updated 2025-05-05
  */
 
 import { API_URL } from "../config/config";
@@ -85,7 +93,7 @@ export interface TerminalData {
 // Export the hook for components that want to use the WebSocket
 export { useTerminalData }; // TODO: WHAT IS THIS????????????
 
-// (Minimal fallback data if API completely fails - contains only placeholders)
+// Minimal fallback data if API completely fails (contains only placeholders)
 const DEFAULT_TERMINAL_DATA: TerminalData = {
   platformName: "[Platform information unavailable]",
   platformDescription: "[No description available]",
@@ -160,43 +168,56 @@ let lastFetchTime = 0;
 let cachedTerminalData: TerminalData | null = null;
 
 /**
- * Maximum number of retries for terminal data fetch
- * 
  * @description This is the maximum number of retries for terminal data fetch.
- * 
- * @author BranchManager69
- * @version 1.0.0
- * @created 2025-05-02
  */
 const MAX_RETRIES = 3;
 
 /**
- * Flag to track if terminal data is currently being fetched
- * This prevents multiple parallel fetch attempts
- * 
- * @description This is the flag to track if terminal data is currently being fetched.
- * 
- * @author BranchManager69
- * @version 1.0.0
- * @created 2025-05-02
+ * @description This is the flag to track if terminal data is currently being fetched. This prevents multiple parallel fetch attempts.
  */
 let isFetchingTerminalData = false;
 
 /**
- * Fetch terminal data from the backend with retry mechanism
+ * @description Tracks the last API error time to implement cooldown logic
+ */
+let lastErrorTime = 0;
+
+/**
+ * @description Cooldown period after errors (in milliseconds) - starts with 5 seconds but increases exponentially
+ */
+let errorCooldownPeriod = 5000;
+
+/**
+ * @description Max cooldown period (5 minutes)
+ */
+const MAX_COOLDOWN_PERIOD = 5 * 60 * 1000;
+
+/**
+ * @description Debounce timer for fetch requests
+ */
+let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * @description Debounced fetchTerminalData implementation
+ * This function returns a promise that resolves with terminal data, but automatically
+ * debounces multiple close calls to prevent API flooding.
  * 
- * @description This is the function to fetch terminal data from the backend.
- * 
- * @author BranchManager69
- * @version 1.0.0
- * @created 2025-05-02
+ * @returns Promise that resolves to the TerminalData
  */
 export const fetchTerminalData = async (): Promise<TerminalData> => {
   const now = Date.now();
   
   // Return cached data if it's still fresh
+  //   TODO: Entirely replace with a WSS event instead
   if (cachedTerminalData && (now - lastFetchTime < CACHE_TTL)) {
     return cachedTerminalData;
+  }
+  
+  // If we're in error cooldown period, return cached data or default
+  const timeSinceLastError = now - lastErrorTime;
+  if (lastErrorTime > 0 && timeSinceLastError < errorCooldownPeriod) {
+    console.log(`[TerminalDataService] In error cooldown (${Math.ceil((errorCooldownPeriod - timeSinceLastError) / 1000)}s remaining), using cached data`);
+    return cachedTerminalData || DEFAULT_TERMINAL_DATA;
   }
   
   // If already fetching, return cached data or default
@@ -204,50 +225,79 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
     return cachedTerminalData || DEFAULT_TERMINAL_DATA;
   }
   
-  // Set fetching flag
-  isFetchingTerminalData = true;
-  
-  try {
-    // API endpoint for fetching terminal data
-    const endpoint = `${API_URL}/terminal/terminal-data`;
-    const result = await fetchWithRetry(endpoint);
+  // Create a promise that will resolve with actual data
+  return new Promise<TerminalData>((resolve) => {
+    // Clear any pending debounce timer
+    if (fetchDebounceTimer) {
+      clearTimeout(fetchDebounceTimer);
+    }
     
-    // Update cache with new data
-    if (result && result.success) {
-      cachedTerminalData = result.terminalData;
-      lastFetchTime = now;
-      return result.terminalData;
-    } else {
-      // Only warn once per session if API returns unsuccessful response
-      if (!window.terminalDataWarningShown) {
-        console.warn('[TerminalDataService] Terminal data not available from API, using default');
-        window.terminalDataWarningShown = true;
+    // Set up a new debounce timer
+    fetchDebounceTimer = setTimeout(async () => {
+      // Only proceed if not already fetching 
+      if (isFetchingTerminalData) {
+        resolve(cachedTerminalData || DEFAULT_TERMINAL_DATA);
+        return;
       }
-      return DEFAULT_TERMINAL_DATA;
-    }
-  } catch (error) {
-    // Error handling after all retries have failed
-    // Limit repetitive error messages
-    if (!window.terminalDataErrorCount) {
-      window.terminalDataErrorCount = 0;
-    }
-    
-    // Only log first few errors, then reduce frequency
-    if (window.terminalDataErrorCount < 3 || window.terminalDataErrorCount % 10 === 0) {
-      console.error('[TerminalDataService] Error fetching terminal data after multiple retries');
-    }
-    
-    window.terminalDataErrorCount++;
-    
-    return DEFAULT_TERMINAL_DATA;
-  } finally {
-    // Reset fetching flag
-    isFetchingTerminalData = false;
-  }
+      
+      // Set fetching flag
+      isFetchingTerminalData = true;
+      
+      try {
+        // API endpoint for fetching terminal data
+        const endpoint = `${API_URL}/terminal/terminal-data`;
+        const result = await fetchWithRetry(endpoint);
+        
+        // Update cache with new data
+        if (result && result.success) {
+          cachedTerminalData = result.terminalData;
+          lastFetchTime = Date.now();
+          
+          // Reset error cooldown on success
+          lastErrorTime = 0;
+          errorCooldownPeriod = 5000; // Reset to initial value
+          
+          resolve(result.terminalData);
+        } else {
+          // Only warn once per session if API returns unsuccessful response
+          if (!window.terminalDataWarningShown) {
+            console.warn('[TerminalDataService] Terminal data not available from API, using default');
+            window.terminalDataWarningShown = true;
+          }
+          resolve(DEFAULT_TERMINAL_DATA);
+        }
+      } catch (error) {
+        // Error handling after all retries have failed
+        // Limit repetitive error messages
+        if (!window.terminalDataErrorCount) {
+          window.terminalDataErrorCount = 0;
+        }
+        
+        // Only log first few errors, then reduce frequency
+        if (window.terminalDataErrorCount < 3 || window.terminalDataErrorCount % 10 === 0) {
+          console.error('[TerminalDataService] Error fetching terminal data after multiple retries');
+        }
+        
+        // Increment the error count
+        window.terminalDataErrorCount++;
+        
+        // Set error cooldown
+        lastErrorTime = Date.now();
+        
+        // Increase cooldown period exponentially, capped at MAX_COOLDOWN_PERIOD
+        errorCooldownPeriod = Math.min(errorCooldownPeriod * 2, MAX_COOLDOWN_PERIOD);
+        
+        resolve(DEFAULT_TERMINAL_DATA);
+      } finally {
+        // Reset fetching flag
+        isFetchingTerminalData = false;
+      }
+    }, 300); // Debounce period - 300ms is a good balance
+  });
 };
 
 /**
- * Fetch with retry and exponential backoff
+ * @description This is the function to fetch with retry and exponential backoff.
  * @param url URL to fetch from
  * @param retries Number of retries remaining
  * @param delay Delay before next retry in ms
@@ -258,6 +308,8 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
     
+    // Fetch the data
+    //   TODO: Entirely replace with a WSS event instead
     const response = await fetch(url, {
       signal: controller.signal,
       credentials: 'same-origin',
@@ -266,14 +318,18 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
       }
     });
     
+    // Clear the timeout
     clearTimeout(timeoutId);
     
+    // If the response is not ok, throw an error
     if (!response.ok) {
       throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     
+    // Return the JSON response
     return await response.json();
   } catch (error) {
+    // If retries are exhausted, throw the error
     if (retries <= 0) {
       throw error;
     }
@@ -287,12 +343,12 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
     await new Promise(resolve => setTimeout(resolve, delay));
     
     // Retry with decreased retries count and increased delay
-    return fetchWithRetry(url, retries - 1, delay * 1.5);
+    return fetchWithRetry(url, retries - 1, delay * 2); // Increase to 2x for more aggressive backoff
   }
 }
 
 /**
- * Format terminal commands based on data from the API
+ * @description This is the function to format terminal commands based on data from the API.
  * @param data The terminal data
  * @returns Formatted command map
  */

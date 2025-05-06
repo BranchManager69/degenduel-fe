@@ -1030,6 +1030,7 @@ export const ddApi = {
       } catch (error) {
         console.error("Failed to fetch service capacities:", error);
         // Return default capacities if fetch fails
+        // TODO: Is this a good idea?
         return {
           "dd-serv": 300,
           contests: 200,

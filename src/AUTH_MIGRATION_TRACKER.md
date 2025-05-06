@@ -80,7 +80,7 @@ Use this document to track the progress of migrating components from the old aut
 ## Final Steps
 
 - [ ] Remove old auth files
-- [ ] Rename App.unified.tsx to App.tsx
+- [ ] Rename App.tsx to App.tsx
 - [ ] Run comprehensive tests
 - [ ] Update documentation
 

@@ -61,6 +61,8 @@ jest.mock('../hooks/websocket/topic-hooks/useNotifications', () => ({
 
 // Create a mock user for our stories
 const mockUser = {
+  id: 'user-123456',
+  username: 'cryptodegen',
   wallet_address: '0x1234567890abcdef1234567890abcdef12345678',
   nickname: 'CryptoDegen',
   last_login: '2023-01-01T00:00:00Z',
@@ -76,20 +78,12 @@ const mockUser = {
     push_notifications: true
   },
   is_banned: false,
-  ban_reason: null,
+  ban_reason: undefined,
   risk_level: 'low',
   profile_image: {
     url: 'https://i.pravatar.cc/150?img=3',
     thumbnail_url: 'https://i.pravatar.cc/150?img=3'
   },
-  email: 'user@example.com',
-  social: {
-    twitter: 'cryptodegen',
-    discord: 'cryptodegen#1234'
-  },
-  referral_code: 'DEGEN123',
-  contests_participated: 12,
-  contests_won: 3,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z'
 };
@@ -183,7 +177,7 @@ export const NoNickname: Story = {
   args: {
     user: {
       ...mockUser,
-      nickname: null
+      nickname: undefined
     },
     unreadNotifications: 2,
     onDisconnect: () => console.log('Wallet disconnected')

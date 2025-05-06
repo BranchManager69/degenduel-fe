@@ -8,7 +8,7 @@ We've successfully set up the foundation for migrating to the new unified authen
    - `AuthService.ts` - Central authentication service
    - `UnifiedAuthContext.tsx` - Unified auth provider
    - `UnifiedWebSocketContext.tsx` - WebSocket provider integrated with auth
-   - `App.unified.tsx` - Reimplemented App component using the new system
+   - `App.tsx` - Reimplemented App component using the new system
    - `AuthenticatedRoute.migrated.tsx` - New route guard with migration support
    - `AdminRoute.migrated.tsx` - New admin route guard with migration support
    - `SuperAdminRoute.migrated.tsx` - New super admin route guard with migration support
@@ -69,7 +69,7 @@ We've successfully set up the foundation for migrating to the new unified authen
    - Update WebSocket hooks to use the new system
 
 8. **Final Steps:**
-   - Replace App.tsx with App.unified.tsx after sufficient testing
+   - Replace App.tsx with App.tsx after sufficient testing
    - Remove old auth files
    - Update documentation
 

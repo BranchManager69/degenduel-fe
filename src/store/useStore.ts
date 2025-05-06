@@ -308,6 +308,7 @@ interface StateData {
   webSocket: WebSocketState;
   webSocketAlerts: WebSocketAlert[];
   isEasterEggActive: boolean;
+  landingPageAnimationDone: boolean;
 }
 
 // Full state type including actions
@@ -507,6 +508,7 @@ interface State extends StateData {
   addWebSocketAlert: (alert: WebSocketAlert) => void;
   activateEasterEgg: () => void;
   updateWebSocketState: (newState: Partial<WebSocketState>) => void;
+  setLandingPageAnimationDone: (done: boolean) => void;
 }
 
 type StorePersist = PersistOptions<
@@ -527,6 +529,7 @@ type StorePersist = PersistOptions<
     | "webSocket"
     | "webSocketAlerts"
     | "isEasterEggActive"
+    | "landingPageAnimationDone"
   >
 >;
 
@@ -547,6 +550,10 @@ const persistConfig: StorePersist = {
     webSocket: state.webSocket,
     webSocketAlerts: state.webSocketAlerts,
     isEasterEggActive: state.isEasterEggActive,
+    landingPageAnimationDone: state.landingPageAnimationDone,
+    // Add contests to persisted state for caching
+    contests: state.contests,
+    tokens: state.tokens,
   }),
 };
 
@@ -745,6 +752,7 @@ const initialState: StateData = {
   webSocket: initialWebSocketState,
   webSocketAlerts: [],
   isEasterEggActive: false,
+  landingPageAnimationDone: false,
 };
 
 // Create the store
@@ -886,6 +894,8 @@ export const useStore = create<State>()(
           // 5) Set user in state
           set({
             user: {
+              id: authResponse.user.id,
+              username: authResponse.user.username,
               wallet_address: authResponse.user.wallet_address,
               nickname: authResponse.user.nickname,
               role: authResponse.user.role,
@@ -1359,6 +1369,7 @@ export const useStore = create<State>()(
           ...prev,
           webSocketAlerts: [...prev.webSocketAlerts, alert],
         })),
+      setLandingPageAnimationDone: (done) => set({ landingPageAnimationDone: done }),
     }),
     {
       ...persistConfig,

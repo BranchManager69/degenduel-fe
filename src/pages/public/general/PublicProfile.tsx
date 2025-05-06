@@ -164,9 +164,9 @@ export const PublicProfile: React.FC = () => {
 
         setUserData({
           wallet_address: userResponse.wallet_address,
-          nickname: userResponse.nickname,
-          rank_score: userResponse.rank_score,
-          created_at: userResponse.created_at,
+          nickname: userResponse.nickname || null, // Ensure null instead of undefined
+          rank_score: userResponse.rank_score || 0, // Ensure number instead of undefined
+          created_at: userResponse.created_at || "", // Ensure string instead of undefined
           bonusBalance: formatBonusPoints(balanceResponse.balance),
           is_banned: userResponse.is_banned ?? false,
           ban_reason: userResponse.ban_reason ?? null,

@@ -17,9 +17,11 @@ console.warn(
 );
 
 // Poll interval in milliseconds (5 seconds) - kept for backward compatibility
+//   TODO: Entirely replace with a WSS event instead
 export const CONTRACT_POLL_INTERVAL = 5000;
 
 // Placeholder address for testing while waiting for real address
+//   TODO: Entirely replace with a WSS event instead
 const PLACEHOLDER = 'Fetching contract address...';
 
 /**
@@ -53,7 +55,8 @@ export const fetchContractAddress = async (): Promise<string> => {
   try {
     console.warn('[contractAddressService] fetchContractAddress is deprecated. Using terminalDataService instead.');
     
-    // Use the new terminalDataService to get the contract address
+    // Use the terminalDataService to get the contract address
+    //   TODO: Entirely replace with a WSS event instead
     const terminalData = await fetchTerminalData();
     
     if (terminalData.token?.address) {

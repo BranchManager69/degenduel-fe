@@ -75,7 +75,9 @@ jest.mock('../hooks/websocket/topic-hooks/useNotifications', () => ({
 const Header = ({ isMobile = false }) => {
   // Create a complete mock user that satisfies the User type
   const user: User = {
-    wallet_address: '0x1234567890abcdef1234567890abcdef12345678',
+    id: "1",
+    username: "Bobo123",
+    wallet_address: "0x123123123123123123123",
     nickname: 'CryptoDegen',
     profile_image: {
       url: 'https://i.pravatar.cc/150?img=3',
@@ -91,7 +93,7 @@ const Header = ({ isMobile = false }) => {
     settings: {},
     balance: '1250.75',
     is_banned: false,
-    ban_reason: null,
+    ban_reason: undefined,
     risk_level: 'low'
   };
 
@@ -176,7 +178,9 @@ export const CompleteHeader: Story = {
   render: () => {
     // Create a complete mock user that satisfies the User type
     const user: User = {
-      wallet_address: '0x1234567890abcdef1234567890abcdef12345678',
+      id: "1",
+      username: "Bobo123",
+      wallet_address: "0x123123123123123123123",
       nickname: 'CryptoDegen',
       profile_image: {
         url: 'https://i.pravatar.cc/150?img=3',
@@ -192,7 +196,7 @@ export const CompleteHeader: Story = {
       settings: {},
       balance: '1250.75',
       is_banned: false,
-      ban_reason: null,
+      ban_reason: undefined,
       risk_level: 'low'
     };
 

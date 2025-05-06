@@ -1,3 +1,15 @@
+// src/types/user.ts
+
+/**
+ * User Types
+ * @description User interface and its associated types; used throughout the application for authentication, profiles, etc.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-05-04
+ * @updated 2025-05-05 - Updated for unified auth system
+ */
+
 /**
  * User interface
  * 
@@ -7,6 +19,7 @@
  * @updated 2025-05-05 - Updated for unified auth system
  * @see For comparison with older version, see the User interface in src/types/index.ts
  */
+// User Types
 export interface User {
   // Core identity fields
   id: string;
@@ -84,6 +97,44 @@ export interface User {
   last_withdrawal_at?: string;
   kyc_status?: string;
   risk_level?: string;
+  profile_image?: {
+    url: string;
+    thumbnail_url?: string;
+    updated_at?: string;
+  };
+}
+
+/**
+ * @deprecated Use the User interface from src/types/user.ts instead
+ * This interface is maintained for backward compatibility. The new User interface
+ * in user.ts includes all these fields plus additional fields for the unified auth system.
+ * 
+ * @see src/types/user.ts for the unified User interface
+*/
+// Legacy User Types (DEPRECATED)
+export interface LegacyUser {
+  wallet_address: string;
+  nickname: string | null;
+  created_at: string;
+  last_login: string;
+  role: string;
+  total_contests: number;
+  total_wins: number;
+  total_earnings: string;
+  rank_score: number;
+  settings: Record<string, any>;
+  balance: string;
+  is_banned: boolean;
+  ban_reason: string | null;
+  last_deposit_at?: string;
+  last_withdrawal_at?: string;
+  kyc_status?: string;
+  risk_level: string;
+  is_admin?: boolean;
+  jwt?: string; // JWT token for authentication
+  wsToken?: string; // WebSocket-specific token
+  session_token?: string; // Session token for WebSocket authentication
+  is_superadmin?: boolean;
   profile_image?: {
     url: string;
     thumbnail_url?: string;

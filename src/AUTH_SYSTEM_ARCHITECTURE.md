@@ -9,7 +9,7 @@
 │  │     App.tsx        │◄──┼── Uses legacy contexts individually
 │  └────────────────────┘   │
 │  ┌────────────────────┐   │
-│  │  App.unified.tsx   │◄──┼── Uses UnifiedAuthContext only
+│  │  App.tsx   │◄──┼── Uses UnifiedAuthContext only
 │  └────────────────────┘   │
 └───────────────────────────┘
            │  │
@@ -123,7 +123,7 @@
 8. **Authentication API/Integration**:
    - `/src/services/api/auth.ts` - Auth API endpoints
    - `/src/App.tsx` - Contains the PrivyProvider setup
-   - `/src/App.unified.tsx` - New app root with unified auth
+   - `/src/App.tsx` - New app root with unified auth
 
 ## Data Flow
 

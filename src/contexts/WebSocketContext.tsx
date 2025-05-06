@@ -98,7 +98,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       "Migration steps:\n" +
       "1. Replace <WebSocketProvider> with <UnifiedWebSocketProvider> in your app component\n" +
       "2. Update WebSocket hook usage to new hook patterns in hooks/websocket/topic-hooks\n" +
-      "3. See App.unified.tsx for reference implementation\n" +
+      "3. See App.tsx for reference implementation\n" +
       "4. See src/hooks/websocket/MIGRATION_GUIDE.md for detailed WebSocket hook migration steps"
     );
   }, []);

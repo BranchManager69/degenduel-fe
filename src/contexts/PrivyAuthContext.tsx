@@ -64,7 +64,7 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
       "1. Replace <PrivyAuthProvider> with <UnifiedAuthProvider> in your app component\n" +
       "2. Remove nested auth provider hierarchy (AuthProvider, PrivyAuthProvider, TwitterAuthProvider)\n" +
       "3. Update usage of usePrivyAuth() to useAuth() from UnifiedAuthContext\n" +
-      "4. See App.unified.tsx for reference implementation\n" +
+      "4. See App.tsx for reference implementation\n" +
       "5. Reference: https://github.com/company/degenduel-fe/wiki/auth-migration"
     );
   }, []);

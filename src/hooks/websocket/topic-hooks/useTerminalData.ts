@@ -16,11 +16,13 @@ import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
 import { DDExtendedMessageType } from '../types';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
+// Import directly from the package's specific file
+import { DDWebSocketActions } from '@branchmanager69/degenduel-shared/dist/types/websocket';
 
 // Define the standard structure for terminal data updates from the server
 // Based on backend team's specification, this interface describes the message format from the backend
 interface WebSocketTerminalMessage {
-  type: string; // 'DATA'
+  type: DDExtendedMessageType; // DDExtendedMessageType.DATA
   topic: string; // 'terminal'
   subtype: string; // 'terminal'
   action: string; // 'update'
@@ -89,10 +91,10 @@ export function useTerminalData() {
       console.log('[TerminalData WebSocket] Received message:', message);
       
       // Check if this is a valid terminal data message based on backend team's format
-      if (message.type === 'DATA' && 
-          message.topic === 'terminal' && 
+      if (message.type === DDExtendedMessageType.DATA && 
+          message.topic === TopicType.TERMINAL && 
           message.subtype === 'terminal' && 
-          message.action === 'update' && 
+          message.action === DDWebSocketActions.TERMINAL_UPDATE && 
           message.data) {
         
         // Handle data from the server
@@ -153,8 +155,8 @@ export function useTerminalData() {
       // Subscribe to terminal data topic
       ws.subscribe([TopicType.TERMINAL]);
       
-      // Request initial terminal data
-      ws.request(TopicType.TERMINAL, 'GET_TERMINAL_DATA');
+      // Request initial terminal data using standardized action name
+      ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
       
       dispatchWebSocketEvent('terminal_data_subscribe', {
         socketType: TopicType.TERMINAL,
@@ -179,8 +181,8 @@ export function useTerminalData() {
     setIsLoading(true);
     
     if (ws.isConnected) {
-      // Request fresh terminal data
-      ws.request(TopicType.TERMINAL, 'GET_TERMINAL_DATA');
+      // Request fresh terminal data using standardized action name
+      ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
       
       // Log event for monitoring
       dispatchWebSocketEvent('terminal_data_refresh', {
