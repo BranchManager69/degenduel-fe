@@ -121,13 +121,13 @@ export const PublicProfile: React.FC = () => {
         <div className="flex justify-between items-center mb-2">
           <span className="text-gray-400">Rank Score</span>
           <span className="text-brand-400 font-bold">
-            {profileData.rank_score.toFixed(2)}
+            {profileData.rank_score ? profileData.rank_score.toFixed(2) : '0.00'}
           </span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-gray-400">Member Since</span>
           <span className="text-gray-200">
-            {new Date(profileData.created_at).toLocaleDateString()}
+            {profileData.created_at ? new Date(profileData.created_at).toLocaleDateString() : 'Unknown'}
           </span>
         </div>
       </div>

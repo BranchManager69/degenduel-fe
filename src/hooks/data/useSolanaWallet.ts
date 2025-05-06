@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import type { SolanaWalletGlobal } from '../../types/solana-wallet.d'; // Import the detailed type
 
 /**
  * Solana wallet adapter type
@@ -51,35 +52,37 @@ export function useSolanaWallet() {
 
   // Initialize wallet and check if it's installed
   useEffect(() => {
+    // Use our detailed type for window.solana
+    const solana = window.solana as SolanaWalletGlobal | undefined;
     
     // Detect wallet
     const detectWallet = async () => {
       try {
         // Check if window.solana is available (Phantom, Backpack, etc.)
-        if (window.solana) {
+        if (solana) { // Use the typed solana variable
           console.log('[Solana Wallet] Detected window.solana wallet');
           
           // Basic adapter for window.solana style wallets
           const adapter: SolanaWalletAdapter = {
-            publicKey: window.solana.publicKey?.toString() || null,
-            connected: window.solana.isConnected,
+            publicKey: solana.publicKey?.toString() || null,
+            connected: !!solana.isConnected, // Use the typed solana variable
             connecting: false,
             disconnect: async () => {
-              if (window.solana) {
-                await window.solana.disconnect();
+              if (solana) { // Use the typed solana variable
+                await solana.disconnect();
               }
               setPublicKey(null);
               setConnected(false);
             },
             connect: async () => {
               try {
-                if (!window.solana) {
+                if (!solana) { // Use the typed solana variable
                   throw new Error('No Solana wallet found');
                 }
                 setConnecting(true);
-                await window.solana.connect();
-                setPublicKey(window.solana.publicKey?.toString() || null);
-                setConnected(window.solana.isConnected);
+                await solana.connect();
+                setPublicKey(solana.publicKey?.toString() || null);
+                setConnected(!!solana.isConnected);
               } catch (e) {
                 console.error('[Solana Wallet] Connection error:', e);
                 setError(e as Error);
@@ -93,12 +96,12 @@ export function useSolanaWallet() {
               options?: { message?: string }
             ) => {
               try {
-                if (!window.solana) {
-                  throw new Error('No Solana wallet found');
+                if (!solana?.signAndSendTransaction) { // Check if method exists on typed solana
+                  throw new Error('signAndSendTransaction not supported by this wallet');
                 }
                 
                 // Pass the transaction and message to the wallet's signAndSendTransaction method
-                const result = await window.solana.signAndSendTransaction({
+                const result = await solana.signAndSendTransaction({
                   transaction: serializedTransaction,
                   message: options?.message
                 });
@@ -200,17 +203,4 @@ export function useSolanaWallet() {
     signAndSendTransaction,
     walletAdapter
   };
-}
-
-// Add typings for the window object (used by the wallet adapter)
-declare global {
-  interface Window {
-    solana?: {
-      isConnected: boolean;
-      publicKey?: { toString: () => string };
-      connect: () => Promise<{ publicKey: { toString: () => string } }>;
-      disconnect: () => Promise<void>;
-      signAndSendTransaction: (options: {transaction: any, message?: string}) => Promise<{ signature: string }>;
-    };
-  }
 }

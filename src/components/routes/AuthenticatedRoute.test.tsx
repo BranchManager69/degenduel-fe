@@ -67,7 +67,9 @@ describe("AuthenticatedRoute component", () => {
 
   it("renders children when user is authenticated", () => {
     const mockUser: User = {
-      wallet_address: "test-wallet",
+      id: "1",
+      username: "Bobo123",
+      wallet_address: "0x123123123123123123123",
       nickname: "Test User",
       role: "user",
       created_at: "2023-01-01T00:00:00.000Z",
@@ -79,7 +81,7 @@ describe("AuthenticatedRoute component", () => {
       settings: {},
       balance: "1000",
       is_banned: false,
-      ban_reason: null,
+      ban_reason: undefined,
       risk_level: "low",
       jwt: "test-jwt",
     };
