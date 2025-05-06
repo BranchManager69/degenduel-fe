@@ -13,7 +13,7 @@
  */
 
 // React
-import React, { lazy, Suspense, useEffect } from "react";
+import React, { createContext, lazy, Suspense, useContext, useEffect, useMemo, useState } from "react";
 // React Router
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
@@ -23,14 +23,17 @@ import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
 import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
+// NEW: @solana/kit related imports (actual paths might change after install)
+import { type Rpc } from '@solana/rpc'; // Assuming Rpc type is available
+import { type SolanaRpcMethods } from '@solana/rpc-core'; // Assuming SolanaRpcMethods type is available
+import { createDegenDuelRpcClient } from "./lib/solana/rpcClient"; // Our custom RPC client factory
+
 // Wallet providers
-import { UnifiedWalletProvider } from "@jup-ag/wallet-adapter";
-import { Adapter } from "@solana/wallet-adapter-base";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { WalletName } from "@solana/wallet-adapter-base";
+import { Commitment } from "@solana/web3.js";
 
 // Other providers
 import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
-import { SolanaConnectionProvider } from "./contexts/SolanaConnectionContext";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 import { AffiliateSystemProvider } from "./hooks/social/legacy/useAffiliateSystem";
 import { InviteSystemProvider } from "./hooks/social/legacy/useInviteSystem";
@@ -63,6 +66,7 @@ import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 
 // Hooks and utils
+import "@solana/wallet-adapter-react-ui/styles.css";
 import "jupiverse-kit/dist/index.css";
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
@@ -147,331 +151,334 @@ const LiquiditySimulatorPage = lazy(
   () => import("./pages/admin/LiquiditySimulatorPage"),
 );
 
+interface AppUwkConfig {
+  autoConnect: boolean;
+  env: 'mainnet-beta' | 'devnet';
+  metadata: {
+    name: string;
+    description: string;
+    url: string;
+    iconUrls: string[];
+  };
+  theme: 'dark' | 'light' | 'jupiter';
+  connectionConfig: {
+    endpoint: string;
+    commitment?: Commitment;
+  };
+  walletPrecedence?: WalletName[];
+  notificationCallback?: {
+      onConnect: (props: any) => void;
+      onConnecting: (props: any) => void;
+      onDisconnect: (props: any) => void;
+      onNotInstalled: (props: any) => void;
+  };
+  walletlistExplanation?: { href: string; };
+  walletAttachments?: Record<string, { attachment: React.ReactNode; }>;
+  walletModalAttachments?: { footer?: React.ReactNode; };
+}
+
+const FlagSetter: React.FC = () => {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__JUP_WALLET_PROVIDER_EXISTS = true;
+    }
+  }, []);
+  return null;
+};
+
+const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
+
+// Placeholder for RpcContext if we provide the client globally
+interface RpcContextType {
+  rpcClient: Rpc<SolanaRpcMethods> | null;
+  endpoint: string;
+}
+const RpcContext = createContext<RpcContextType | null>(null);
+export const useDegenDuelRpc = () => {
+  const context = useContext(RpcContext);
+  if (!context) throw new Error("useDegenDuelRpc must be used within an RpcProvider");
+  return context;
+};
+
 // App entry
 export const App: React.FC = () => {
-  // Initialize scrollbar visibility
   useScrollbarVisibility();
 
-  // Create wallet adapters
-  const walletAdapters: Adapter[] = [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter()
-  ];
-  
-  // Global flag to make hooks aware of wallet provider
-  const FlagSetter: React.FC = () => {
-    useEffect(() => {
-      if (typeof window !== 'undefined') {
-        (window as any).__JUP_WALLET_PROVIDER_EXISTS = true;
-      }
-    }, []);
-    return null;
-  };
-  
-  // Use a public RPC endpoint by default at the root level
-  // The actual role-based endpoint will be used in the AppContent component after auth is available
-  const defaultRpcEndpoint = `${window.location.origin}/api/solana-rpc/public`;
-  
-  // Configuration for UnifiedWalletProvider
-  const uwkConfig = {
-    autoConnect: false,
-    env: import.meta.env.PROD ? 'mainnet-beta' as const : 'devnet' as const,
-    metadata: {
-      name: 'DegenDuel',
-      description: 'Battle-tested onchain contest platform',
-      url: window.location.origin,
-      iconUrls: [`${window.location.origin}/favicon.ico`],
-    },
-    theme: 'dark' as const,
-    // Use default public endpoint initially
-    connectionConfig: {
-      commitment: 'confirmed' as const,
-      endpoint: defaultRpcEndpoint
+  return (
+    <Router>
+      <UnifiedAuthProvider>
+        <AppProvidersAndContent />
+      </UnifiedAuthProvider>
+    </Router>
+  );
+};
+
+// Component to house providers that depend on auth state and manage dynamic RPC client
+const AppProvidersAndContent: React.FC = () => {
+  const { user } = useMigratedAuth();
+  const ddJwt = useMemo(() => (user as any)?.ddJwt || null, [user]);
+
+  const [currentRpcEndpoint, setCurrentRpcEndpoint] = useState(() => `${window.location.origin}/api/solana-rpc/public`);
+
+  useEffect(() => {
+    if (ddJwt) {
+      console.log('[App.tsx] User authenticated, setting user-tier DegenDuel RPC proxy for Kit client');
+      setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc`);
+    } else {
+      console.log('[App.tsx] User not authenticated, setting public-tier DegenDuel RPC proxy for Kit client');
+      setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc/public`);
     }
-  };
-  
-  // Privy configuration
-  const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
-  const privyConfig: PrivyClientConfig = {
-    // Login methods configuration
-    loginMethods: [
-      'wallet',
-      'passkey',
-    ],
-    
-    // UI appearance configuration
+  }, [ddJwt]);
+
+  const rpcClientV2 = useMemo(() => {
+    return createDegenDuelRpcClient(currentRpcEndpoint, ddJwt);
+  }, [currentRpcEndpoint, ddJwt]);
+
+  const privyConfig: PrivyClientConfig = useMemo(() => ({
+    loginMethods: ['wallet', 'passkey'],
     appearance: {
       theme: 'dark',
       accentColor: '#5865F2',
       showWalletLoginFirst: false,
       walletChainType: 'ethereum-and-solana',
     },
-    
-    // Embedded wallet configuration
     embeddedWallets: {
       createOnLogin: 'users-without-wallets',
       requireUserPasswordOnCreate: true
     },
-    
-    // External wallets integration
     externalWallets: {
       solana: {
-        connectors: toSolanaWalletConnectors({
-          shouldAutoConnect: false
-        })
+        connectors: toSolanaWalletConnectors({ shouldAutoConnect: false })
       }
     },
-    
-    // Chain configuration
     supportedChains: [
       {
         name: 'Solana',
-        id: 101, // Solana mainnet chain ID
-        nativeCurrency: {
-          name: 'Solana',
-          symbol: 'SOL',
-          decimals: 9
-        },
+        id: 101,
+        nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
         rpcUrls: {
-          default: {
-            http: [
-              `${window.location.origin}/api/solana-rpc`
-            ]
-          },
-          public: {
-            http: [`${window.location.origin}/api/solana-rpc/public`]
-          },
-          admin: {
-            http: [`${window.location.origin}/api/solana-rpc/admin`]
-          }
+          default: { http: [currentRpcEndpoint] }, // Privy also uses the dynamic endpoint
+          public: { http: [`${window.location.origin}/api/solana-rpc/public`] },
+          admin: { http: [`${window.location.origin}/api/solana-rpc/admin`] }
         }
       }
     ]
-  };
-  
+  }), [user, currentRpcEndpoint]); // Added currentRpcEndpoint to privy dependencies
+
+  // THIS IS WHERE @solana/react PROVIDER(S) WOULD GO
+  // Your research will determine what this looks like.
+  // Example conceptual structure:
+  // <SolanaReactProvider
+  //    (props determined by your research - does it take an rpcClient? Or configure one?)
+  // >
+  //    <YourWalletStandardUiModalProviderIfNeeded>
+  //       <RestOfProvidersAndApp />
+  //    </YourWalletStandardUiModalProviderIfNeeded>
+  // </SolanaReactProvider>
+
+  // For now, wrapping remaining providers in a placeholder for clarity
+  // and providing the rpcClientV2 via our custom context.
   return (
-    <Router>
-      {/* Wallet Provider */}
-      <UnifiedWalletProvider 
-        wallets={walletAdapters}
-        config={uwkConfig}
-      >
-        <FlagSetter />
-        
-        {/* Privy Provider */}
-        <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
-          
-          {/* Authentication - Single provider replaces all previous auth providers */}
-          <UnifiedAuthProvider>
-            
-            {/* Support Providers */}
-            <InviteSystemProvider>
-              <AffiliateSystemProvider>
-                
-                {/* WebSocket Provider - Single provider using new auth system */}
-                <UnifiedWebSocketProvider>
-                  
-                  {/* Other Providers */}
-                  <SolanaConnectionProvider>
-                    <TokenDataProvider>
-                      <ToastProvider>
-                        
-                        {/* App Content - Now in a separate component that can safely use auth */}
-                        <AppContent />
-                        
-                      </ToastProvider>
-                    </TokenDataProvider>
-                  </SolanaConnectionProvider>
-                </UnifiedWebSocketProvider>
-              </AffiliateSystemProvider>
-            </InviteSystemProvider>
-          </UnifiedAuthProvider>
-        </PrivyProvider>
-      </UnifiedWalletProvider>
-    </Router>
+    <RpcContext.Provider value={{ rpcClient: rpcClientV2, endpoint: currentRpcEndpoint }}>
+      {/* Placeholder for @solana/react's main wallet state/provider system */}
+      {/* This might be where <SolanaReactProvider> or similar goes, */}
+      {/* consuming rpcClientV2 from context or being configured with it. */}
+      <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
+        <InviteSystemProvider>
+          <AffiliateSystemProvider>
+            <UnifiedWebSocketProvider> 
+              {/* SolanaConnectionProvider will need to be refactored or removed. */}
+              {/* If kept, it should use useDegenDuelRpc() to get the rpcClientV2 */}
+              {/* <SolanaConnectionProvider>  <- Needs refactor/removal */}
+              <TokenDataProvider> { /* May also need refactor if it used old connection context */ }
+                <ToastProvider>
+                  <AppContent />
+                </ToastProvider>
+              </TokenDataProvider>
+              {/* </SolanaConnectionProvider> */}
+            </UnifiedWebSocketProvider>
+          </AffiliateSystemProvider>
+        </InviteSystemProvider>
+      </PrivyProvider>
+    </RpcContext.Provider>
   );
 };
 
 // This component can safely use auth hooks because it renders after all providers
 const AppContent: React.FC = () => {
-  // Now we can safely use the migrated auth hook
-  const { user } = useMigratedAuth();
-  
+  const { user: authUser } = useMigratedAuth(); // Example of using useMigratedAuth in a deeper component
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Toast Listener */}
       <ToastListener />
       
-      {/* Debug Panels */}
-      {user?.is_superadmin && <UiDebugPanel />}
-      {user?.is_superadmin && <ServiceDebugPanel />}
-      {user?.is_superadmin && <GameDebugPanel />}
+      {/* Debug Panels - use authUser here */}
+      {authUser && (authUser as any).is_superadmin && <UiDebugPanel />}
+      {authUser && (authUser as any).is_superadmin && <ServiceDebugPanel />}
+      {authUser && (authUser as any).is_superadmin && <GameDebugPanel />}
       
-      {/* Background and Layout */}
       <BackgroundEffectsBoundary>
         <BackgroundEffects />
       </BackgroundEffectsBoundary>
       <Header />
       <EdgeToEdgeTicker />
-      {user && <WalletBalanceTicker isCompact={true} />}
+      {/* Use authUser here */}
+      {authUser && <WalletBalanceTicker isCompact={true} />}
       <ServerDownBanner />
       
-      {/* Main Content */}
       <main className="flex-1 pb-12">
-                            {/* Routes */}
-                            <Routes>
-                              {/* Landing and Public Routes */}
-                              <Route path="/" element={<LandingPage />} />
-                              <Route path="/join" element={<PreserveQueryParamsRedirect to="/" />} />
-                              <Route path="/tokens/legacy" element={<PreserveQueryParamsRedirect to="/tokens" />} />
-                              
-                              {/* Contest Routes */}
-                              <Route
-                                path="/contests"
-                                element={<MaintenanceGuard><ContestBrowser /></MaintenanceGuard>}
-                              />
-                              <Route
-                                path="/contests/:id"
-                                element={<MaintenanceGuard><ContestDetails /></MaintenanceGuard>}
-                              />
-                              <Route
-                                path="/contests/:id/live"
-                                element={<MaintenanceGuard><ContestLobby /></MaintenanceGuard>}
-                              />
-                              <Route
-                                path="/contests/:id/results"
-                                element={<MaintenanceGuard><ContestResults /></MaintenanceGuard>}
-                              />
-                              
-                              {/* Token Routes */}
-                              <Route
-                                path="/tokens"
-                                element={<MaintenanceGuard><TokensPage /></MaintenanceGuard>}
-                              />
-                              
-                              {/* Game Routes */}
-                              <Route
-                                path="/game/virtual-agent"
-                                element={<MaintenanceGuard><VirtualAgentPage /></MaintenanceGuard>}
-                              />
-                              
-                              {/* Profile Routes */}
-                              <Route
-                                path="/profile/:identifier"
-                                element={<MaintenanceGuard><PublicProfile /></MaintenanceGuard>}
-                              />
-                              
-                              {/* Auth Routes */}
-                              <Route
-                                path="/login"
-                                element={<MaintenanceGuard><LoginPage /></MaintenanceGuard>}
-                              />
-                              
-                              {/* Static Pages */}
-                              <Route path="/faq" element={<FAQ />} />
-                              <Route path="/how-it-works" element={<HowItWorks />} />
-                              <Route path="/contact" element={<Contact />} />
-                              <Route path="/blinks-demo" element={<BlinksDemo />} />
-                              <Route path="/solana-demo" element={<SolanaBlockchainDemo />} />
-                              
-                              {/* Leaderboard Routes */}
-                              <Route path="/leaderboards" element={<LeaderboardLanding />} />
-                              <Route path="/leaderboard" element={<DegenLevelPage />} />
-                              <Route path="/rankings/performance" element={<ContestPerformance />} />
-                              <Route path="/rankings/global" element={<GlobalRankings />} />
-                              
-                              {/* Admin Routes */}
-                              <Route
-                                path="/admin/wallet-management"
-                                element={<AdminRoute><WalletManagementPage /></AdminRoute>}
-                              />
-                              
-                              {/* Authenticated Routes */}
-                              <Route
-                                path="/me"
-                                element={<AuthenticatedRoute><MaintenanceGuard><PrivateProfilePage /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              <Route
-                                path="/referrals"
-                                element={<AuthenticatedRoute><MaintenanceGuard><ReferralPage /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              <Route
-                                path="/notifications"
-                                element={<AuthenticatedRoute><MaintenanceGuard><NotificationsPage /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              <Route
-                                path="/my-contests"
-                                element={<AuthenticatedRoute><MaintenanceGuard><MyContestsPage /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              <Route
-                                path="/my-portfolios"
-                                element={<AuthenticatedRoute><MaintenanceGuard><MyPortfoliosPage /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              <Route
-                                path="/wallet"
-                                element={<AuthenticatedRoute><MaintenanceGuard><WalletPage /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              <Route
-                                path="/contest-credits"
-                                element={<AuthenticatedRoute><MaintenanceGuard><ContestCreditsPage /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              <Route
-                                path="/contests/:id/select-tokens"
-                                element={<AuthenticatedRoute><MaintenanceGuard><TokenSelection /></MaintenanceGuard></AuthenticatedRoute>}
-                              />
-                              
-                              {/* Admin Dashboard Routes */}
-                              <Route path="/admin/skyduel" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading SkyDuel..." />}><SkyDuelPage /></Suspense></AdminRoute>} />
-                              <Route path="/admin/system-reports" element={<AdminRoute><SystemReports /></AdminRoute>} />
-                              <Route path="/admin/client-errors" element={<AdminRoute><ClientErrorsPage /></AdminRoute>} />
-                              <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                              <Route path="/admin/ip-ban" element={<AdminRoute><IpBanManagementPage /></AdminRoute>} />
-                              <Route path="/admin/vanity-wallets" element={<AdminRoute><VanityWalletManagementPage /></AdminRoute>} />
-                              <Route path="/admin/contest-management/regenerate-image/:contestId" element={<AdminRoute><div>Contest Image Generator Page</div></AdminRoute>} />
-                              <Route path="/admin/contest-image-browser" element={<AdminRoute><ContestImageBrowserPage /></AdminRoute>} />
-                              <Route path="/admin/chat-dashboard" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Chat Dashboard..." />}><AdminChatDashboard /></Suspense></AdminRoute>} />
-                              <Route path="/connection-debugger" element={<AdminRoute><ConnectionDebugger /></AdminRoute>} />
-                              <Route path="/websocket-hub" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading WebSocket Hub..." />}><WebSocketHub /></Suspense></AdminRoute>} />
-                              
-                              {/* SuperAdmin Routes */}
-                              <Route path="/superadmin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
-                              <Route path="/superadmin/wallet-monitoring" element={<SuperAdminRoute><WalletMonitoring /></SuperAdminRoute>} />
-                              <Route path="/superadmin/control-hub" element={<SuperAdminRoute><ControlPanelHub /></SuperAdminRoute>} />
-                              <Route path="/superadmin/chat-dashboard" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback variant="full" message="Loading SuperAdmin Chat Dashboard..." />}><AdminChatDashboard /></Suspense></SuperAdminRoute>} />
-                              <Route path="/superadmin/services" element={<SuperAdminRoute><ServiceControlPage /></SuperAdminRoute>} />
-                              <Route path="/superadmin/switchboard" element={<SuperAdminRoute><ServiceSwitchboard /></SuperAdminRoute>} />
-                              <Route path="/superadmin/circuit-breaker" element={<SuperAdminRoute><CircuitBreakerPage /></SuperAdminRoute>} />
-                              <Route path="/superadmin/service-command-center" element={<SuperAdminRoute><ServiceCommandCenter /></SuperAdminRoute>} />
-                              <Route path="/superadmin/websocket-monitor" element={<SuperAdminRoute><Navigate to="/superadmin/service-command-center" replace /></SuperAdminRoute>} />
-                              <Route path="/api-playground" element={<SuperAdminRoute><ApiPlayground /></SuperAdminRoute>} />
-                              <Route path="/wss-playground" element={<SuperAdminRoute><WssPlayground /></SuperAdminRoute>} />
-                              <Route path="/admin/ai-testing" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading AI Testing..." />}><AiTesting /></Suspense></AdminRoute>} />
-                              <Route path="/admin/wallet-monitoring" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Wallet Monitoring..." />}><WalletMonitoring /></Suspense></AdminRoute>} />
-                              <Route path="/admin/liq-sim" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Liquidity Simulator..." />}><LiquiditySimulatorPage /></Suspense></AdminRoute>} />
-                              <Route path="/websocket-test" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
-                              <Route path="/websocket-dashboard" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
-                              <Route path="/amm-sim" element={<SuperAdminRoute><AmmSim /></SuperAdminRoute>} />
-                              <Route path="/superadmin/log-forwarder" element={<SuperAdminRoute><LogForwarderDebug /></SuperAdminRoute>} />
-                              
-                              {/* Utility Routes */}
-                              <Route path="/blinks/*" element={<BlinkResolver />} />
-                              <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
-                              <Route path="*" element={<NotFound />} />
-                              <Route path="/banned" element={<BannedUser />} />
-                              <Route path="/banned-ip" element={<BannedIP />} />
-                              <Route path="/maintenance" element={<Maintenance />} />
-                              <Route path="/examples/contest-chat" element={<Suspense fallback={<LoadingFallback variant="minimal" message="Loading Example..." />}><ContestChatExample /></Suspense>} />
-                            </Routes>
-                          </main>
-                          
-                          {/* Footer */}
-                          <Footer />
-                          
-                          {/* Additional Components */}
-                          <AchievementNotification />
-                          <InviteWelcomeModal />
-                          <BlinkResolver />
-                          <ToastContainer />
-                        </div>
+        {/* Routes */}
+        <Routes>
+          {/* Landing and Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/join" element={<PreserveQueryParamsRedirect to="/" />} />
+          <Route path="/tokens/legacy" element={<PreserveQueryParamsRedirect to="/tokens" />} />
+          
+          {/* Contest Routes */}
+          <Route
+            path="/contests"
+            element={<MaintenanceGuard><ContestBrowser /></MaintenanceGuard>}
+          />
+          <Route
+            path="/contests/:id"
+            element={<MaintenanceGuard><ContestDetails /></MaintenanceGuard>}
+          />
+          <Route
+            path="/contests/:id/live"
+            element={<MaintenanceGuard><ContestLobby /></MaintenanceGuard>}
+          />
+          <Route
+            path="/contests/:id/results"
+            element={<MaintenanceGuard><ContestResults /></MaintenanceGuard>}
+          />
+          
+          {/* Token Routes */}
+          <Route
+            path="/tokens"
+            element={<MaintenanceGuard><TokensPage /></MaintenanceGuard>}
+          />
+          
+          {/* Game Routes */}
+          <Route
+            path="/game/virtual-agent"
+            element={<MaintenanceGuard><VirtualAgentPage /></MaintenanceGuard>}
+          />
+          
+          {/* Profile Routes */}
+          <Route
+            path="/profile/:identifier"
+            element={<MaintenanceGuard><PublicProfile /></MaintenanceGuard>}
+          />
+          
+          {/* Auth Routes */}
+          <Route
+            path="/login"
+            element={<MaintenanceGuard><LoginPage /></MaintenanceGuard>}
+          />
+          
+          {/* Static Pages */}
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/blinks-demo" element={<BlinksDemo />} />
+          <Route path="/solana-demo" element={<SolanaBlockchainDemo />} />
+          
+          {/* Leaderboard Routes */}
+          <Route path="/leaderboards" element={<LeaderboardLanding />} />
+          <Route path="/leaderboard" element={<DegenLevelPage />} />
+          <Route path="/rankings/performance" element={<ContestPerformance />} />
+          <Route path="/rankings/global" element={<GlobalRankings />} />
+          
+          {/* Admin Routes */}
+          <Route
+            path="/admin/wallet-management"
+            element={<AdminRoute><WalletManagementPage /></AdminRoute>}
+          />
+          
+          {/* Authenticated Routes */}
+          <Route
+            path="/me"
+            element={<AuthenticatedRoute><MaintenanceGuard><PrivateProfilePage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/referrals"
+            element={<AuthenticatedRoute><MaintenanceGuard><ReferralPage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/notifications"
+            element={<AuthenticatedRoute><MaintenanceGuard><NotificationsPage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/my-contests"
+            element={<AuthenticatedRoute><MaintenanceGuard><MyContestsPage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/my-portfolios"
+            element={<AuthenticatedRoute><MaintenanceGuard><MyPortfoliosPage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/wallet"
+            element={<AuthenticatedRoute><MaintenanceGuard><WalletPage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/contest-credits"
+            element={<AuthenticatedRoute><MaintenanceGuard><ContestCreditsPage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/contests/:id/select-tokens"
+            element={<AuthenticatedRoute><MaintenanceGuard><TokenSelection /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          
+          {/* Admin Dashboard Routes */}
+          <Route path="/admin/skyduel" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading SkyDuel..." />}><SkyDuelPage /></Suspense></AdminRoute>} />
+          <Route path="/admin/system-reports" element={<AdminRoute><SystemReports /></AdminRoute>} />
+          <Route path="/admin/client-errors" element={<AdminRoute><ClientErrorsPage /></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/ip-ban" element={<AdminRoute><IpBanManagementPage /></AdminRoute>} />
+          <Route path="/admin/vanity-wallets" element={<AdminRoute><VanityWalletManagementPage /></AdminRoute>} />
+          <Route path="/admin/contest-management/regenerate-image/:contestId" element={<AdminRoute><div>Contest Image Generator Page</div></AdminRoute>} />
+          <Route path="/admin/contest-image-browser" element={<AdminRoute><ContestImageBrowserPage /></AdminRoute>} />
+          <Route path="/admin/chat-dashboard" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Chat Dashboard..." />}><AdminChatDashboard /></Suspense></AdminRoute>} />
+          <Route path="/connection-debugger" element={<AdminRoute><ConnectionDebugger /></AdminRoute>} />
+          <Route path="/websocket-hub" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading WebSocket Hub..." />}><WebSocketHub /></Suspense></AdminRoute>} />
+          
+          {/* SuperAdmin Routes */}
+          <Route path="/superadmin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+          <Route path="/superadmin/wallet-monitoring" element={<SuperAdminRoute><WalletMonitoring /></SuperAdminRoute>} />
+          <Route path="/superadmin/control-hub" element={<SuperAdminRoute><ControlPanelHub /></SuperAdminRoute>} />
+          <Route path="/superadmin/chat-dashboard" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback variant="full" message="Loading SuperAdmin Chat Dashboard..." />}><AdminChatDashboard /></Suspense></SuperAdminRoute>} />
+          <Route path="/superadmin/services" element={<SuperAdminRoute><ServiceControlPage /></SuperAdminRoute>} />
+          <Route path="/superadmin/switchboard" element={<SuperAdminRoute><ServiceSwitchboard /></SuperAdminRoute>} />
+          <Route path="/superadmin/circuit-breaker" element={<SuperAdminRoute><CircuitBreakerPage /></SuperAdminRoute>} />
+          <Route path="/superadmin/service-command-center" element={<SuperAdminRoute><ServiceCommandCenter /></SuperAdminRoute>} />
+          <Route path="/superadmin/websocket-monitor" element={<SuperAdminRoute><Navigate to="/superadmin/service-command-center" replace /></SuperAdminRoute>} />
+          <Route path="/api-playground" element={<SuperAdminRoute><ApiPlayground /></SuperAdminRoute>} />
+          <Route path="/wss-playground" element={<SuperAdminRoute><WssPlayground /></SuperAdminRoute>} />
+          <Route path="/admin/ai-testing" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading AI Testing..." />}><AiTesting /></Suspense></AdminRoute>} />
+          <Route path="/admin/wallet-monitoring" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Wallet Monitoring..." />}><WalletMonitoring /></Suspense></AdminRoute>} />
+          <Route path="/admin/liq-sim" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Liquidity Simulator..." />}><LiquiditySimulatorPage /></Suspense></AdminRoute>} />
+          <Route path="/websocket-test" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
+          <Route path="/websocket-dashboard" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
+          <Route path="/amm-sim" element={<SuperAdminRoute><AmmSim /></SuperAdminRoute>} />
+          <Route path="/superadmin/log-forwarder" element={<SuperAdminRoute><LogForwarderDebug /></SuperAdminRoute>} />
+          
+          {/* Utility Routes */}
+          <Route path="/blinks/*" element={<BlinkResolver />} />
+          <Route path="/websocket-api" element={<MaintenanceGuard><WebSocketAPIPage /></MaintenanceGuard>} />
+          <Route path="*" element={<NotFound />} />
+          <Route path="/banned" element={<BannedUser />} />
+          <Route path="/banned-ip" element={<BannedIP />} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/examples/contest-chat" element={<Suspense fallback={<LoadingFallback variant="minimal" message="Loading Example..." />}><ContestChatExample /></Suspense>} />
+        </Routes>
+      </main>
+      
+      <Footer />
+      
+      <AchievementNotification />
+      <InviteWelcomeModal />
+      <BlinkResolver />
+      <ToastContainer />
+    </div>
   );
 };

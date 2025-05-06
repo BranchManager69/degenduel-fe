@@ -14,6 +14,8 @@ coverage/
 
 client_logs/
 
+dd-rpc/
+
 # Documentation
 docs_drafts/
 CLAUDE.md
