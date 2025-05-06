@@ -66,6 +66,7 @@
     "@telegram-apps/bridge": "^2.3.2",
     "@types/date-fns": "^2.5.3",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@wallet-standard/react-core": "^1.0.1",
     "axios": "^1.9.0",
     "canvas-confetti": "^1.9.2",
     "chart.js": "^4.4.8",

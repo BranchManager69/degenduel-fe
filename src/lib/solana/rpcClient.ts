@@ -1,13 +1,17 @@
-import { createRpc, createSolanaRpcApi, type Rpc } from '@solana/rpc';
-import { type SolanaRpcMethods } from '@solana/rpc-spec';
+import { createRpc, createSolanaRpcApi, type Rpc, type SolanaRpcApi } from '@solana/rpc';
 import { createHttpTransport } from '@solana/rpc-transport-http';
 
 // SolanaRpcMethods from @solana/rpc should cover standard methods.
 // If you had custom RPC methods on your proxy not part of standard Solana JSON-RPC,
 // you would extend the RpcMethods generic type.
-type DegenDuelRpcMethods = SolanaRpcMethods;
+type DegenDuelRpcMethods = SolanaRpcApi;
 
 const solanaApi = createSolanaRpcApi();
+
+// DegenDuelCustomRpcHeaders interface might not be needed if we use the inline assertion pattern
+// interface DegenDuelCustomRpcHeaders {
+//   Authorization?: string;
+// }
 
 /**
  * Creates a Solana RPC client instance configured to communicate with a specific endpoint,
@@ -21,12 +25,15 @@ export function createDegenDuelRpcClient(
   endpoint: string,
   jwtToken: string | null
 ): Rpc<DegenDuelRpcMethods> {
-  const baseHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  
+  // As per research: conditionally create the headers object.
+  // Only include allowed custom headers. 'Authorization' is allowed.
+  // 'Content-Type', 'Accept', etc., are forbidden and handled by the transport.
+  const transportHeaders = jwtToken 
+    ? ({ Authorization: `Bearer ${jwtToken}` } as { Authorization: string }) // Type assertion on the literal
+    : undefined;
 
   if (jwtToken) {
-    baseHeaders['Authorization'] = `Bearer ${jwtToken}`;
     console.log(`[rpcClient] Creating RPC client for endpoint: ${endpoint} WITH DegenDuel JWT.`);
   } else {
     console.log(`[rpcClient] Creating RPC client for endpoint: ${endpoint} WITHOUT DegenDuel JWT.`);
@@ -34,9 +41,7 @@ export function createDegenDuelRpcClient(
 
   const transport = createHttpTransport({
     url: endpoint,
-    headers: baseHeaders, // createHttpTransport should accept Record<string, string>
-                          // but its internal type is complex. If this still errors,
-                          // we might need a more specific cast or to inspect its exact Headers type.
+    headers: transportHeaders, // Pass the conditionally defined object directly.
   });
 
   return createRpc({ api: solanaApi, transport });

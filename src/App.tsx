@@ -23,9 +23,8 @@ import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
 import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
-// NEW: @solana/kit related imports (actual paths might change after install)
-import { type Rpc } from '@solana/rpc'; // Assuming Rpc type is available
-import { type SolanaRpcMethods } from '@solana/rpc-core'; // Assuming SolanaRpcMethods type is available
+// NEW: @solana/kit related imports
+import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use SolanaRpcApi from @solana/rpc
 import { createDegenDuelRpcClient } from "./lib/solana/rpcClient"; // Our custom RPC client factory
 
 // Wallet providers
@@ -188,12 +187,13 @@ const FlagSetter: React.FC = () => {
 
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
 
-// Placeholder for RpcContext if we provide the client globally
+// RpcContext for our custom JWT-aware RPC client
 interface RpcContextType {
-  rpcClient: Rpc<SolanaRpcMethods> | null;
+  rpcClient: Rpc<SolanaRpcApi> | null;
   endpoint: string;
 }
-const RpcContext = createContext<RpcContextType | null>(null);
+// Export RpcContext so it can be imported by hooks
+export const RpcContext = createContext<RpcContextType | null>(null);
 export const useDegenDuelRpc = () => {
   const context = useContext(RpcContext);
   if (!context) throw new Error("useDegenDuelRpc must be used within an RpcProvider");
@@ -280,22 +280,15 @@ const AppProvidersAndContent: React.FC = () => {
   // and providing the rpcClientV2 via our custom context.
   return (
     <RpcContext.Provider value={{ rpcClient: rpcClientV2, endpoint: currentRpcEndpoint }}>
-      {/* Placeholder for @solana/react's main wallet state/provider system */}
-      {/* This might be where <SolanaReactProvider> or similar goes, */}
-      {/* consuming rpcClientV2 from context or being configured with it. */}
       <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
         <InviteSystemProvider>
           <AffiliateSystemProvider>
-            <UnifiedWebSocketProvider> 
-              {/* SolanaConnectionProvider will need to be refactored or removed. */}
-              {/* If kept, it should use useDegenDuelRpc() to get the rpcClientV2 */}
-              {/* <SolanaConnectionProvider>  <- Needs refactor/removal */}
-              <TokenDataProvider> { /* May also need refactor if it used old connection context */ }
+            <UnifiedWebSocketProvider>
+              <TokenDataProvider> { /* Review if TokenDataProvider needs direct rpcClient or relies on new wallet hooks */ }
                 <ToastProvider>
                   <AppContent />
                 </ToastProvider>
               </TokenDataProvider>
-              {/* </SolanaConnectionProvider> */}
             </UnifiedWebSocketProvider>
           </AffiliateSystemProvider>
         </InviteSystemProvider>
