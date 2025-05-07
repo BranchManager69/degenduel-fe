@@ -66,8 +66,6 @@ import LoadingFallback from "./components/shared/LoadingFallback";
 
 // Wallet adapter styles (if this is the old wallet adapter, we removed it)
 import "@solana/wallet-adapter-react-ui/styles.css";
-// Jupiverse Kit styles (we removed Jupiverse Kit from the project)
-import "jupiverse-kit/dist/index.css";
 // General styles
 import "./styles/color-schemes.css";
 
