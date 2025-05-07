@@ -10,12 +10,12 @@
  * @last-modified 2025-04-05
  */
 
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
 import useBiometricAuth from '../../hooks/auth/legacy/useBiometricAuth';
 import { Button } from '../ui/Button';
 import BiometricAuthButton from './BiometricAuthButton';
-import { ConnectWalletButton } from './ConnectWalletButton';
 import PrivyLoginButton from './PrivyLoginButton';
 import TwitterLoginButton from './TwitterLoginButton';
 
@@ -123,10 +123,8 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
               {/* Each login method gets its own button */}
               <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
                 <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
-                <ConnectWalletButton 
-                  className="w-full h-12 z-10 relative bg-transparent hover:bg-transparent font-cyber"
-                  compact={false}
-                  onClick={handleLoginClick}
+                <WalletMultiButton 
+                  className="w-full h-12 z-10 relative bg-transparent hover:bg-transparent font-cyber !rounded-md"
                 />
               </div>
               

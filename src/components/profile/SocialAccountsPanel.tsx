@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { FaCheck, FaTwitter, FaUnlink } from "react-icons/fa";
 
-import { useAuthContext } from "../../contexts/AuthContext";
+// import { useAuthContext } from "../../contexts/AuthContext"; // Legacy
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth"; // Use new hook
 import { formatDate } from "../../lib/utils";
 import TwitterLoginButton from "../auth/TwitterLoginButton";
 import { Button } from "../ui/Button";
@@ -27,7 +28,7 @@ interface SocialAccount {
  * Styled with cyberspace aesthetics to match the DegenDuel theme
  */
 const SocialAccountsPanel = () => {
-  const { user } = useAuthContext();
+  const { user } = useMigratedAuth(); // Changed to useMigratedAuth
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
 

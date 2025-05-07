@@ -1,11 +1,15 @@
+// src/components/layout/WalletBalanceTicker.tsx
+
 /**
  * Wallet Balance Ticker Component
  * 
- * Displays a real-time ticker with wallet balances in the header
+ * @description Displays a real-time ticker with wallet balances in the header
  * Uses the v69 Unified WebSocket System for live updates
  * 
- * @author Claude Code
+ * @author BranchManager69
+ * @version 1.9.0
  * @created 2025-04-28
+ * @updated 2025-05-07
  */
 
 import React, { useMemo } from "react";

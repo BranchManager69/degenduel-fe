@@ -3,16 +3,16 @@
 /**
  * BlinkButton component
  * 
- * This component is used to display the blink button
+ * @description This component is used to display the blink button
  * 
  * @author @BranchManager69
  * @version 1.9.0
  * @created 2025-04-30
- * @updated 2025-04-30
+ * @updated 2025-05-07
  */
 
 import React, { useEffect, useState } from 'react';
-import { useSolanaWallet } from '../../hooks/data/useSolanaWallet'; // Import the useSolanaWallet hook
+import { useSolanaKitWallet } from '../../hooks/wallet/useSolanaKitWallet'; // Import the useSolanaKitWallet hook
 
 // Define the BlinkMetadata interface
 interface BlinkMetadata {
@@ -41,7 +41,13 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
   onSuccess,
   onError
 }) => {
-  const { publicKey, connected, connecting, connect, signAndSendTransaction } = useSolanaWallet();
+  const { 
+    publicKey, 
+    isConnected,
+    isConnecting,
+    // connect, // No longer directly called here, wallet selection needed first
+    // signAndSendTransaction, // Needs refactor for pre-serialized transactions
+  } = useSolanaKitWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [metadata, setMetadata] = useState<BlinkMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -94,10 +100,11 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
     }
     
     // For transaction-based actions (like joining a contest)
-    if (!connected) {
+    if (!isConnected) {
       try {
         setIsLoading(true);
-        await connect();
+        console.warn("BlinkButton: Wallet not connected, connect() call skipped. User needs to connect via WalletMultiButton.");
+        setError('Please connect your wallet first.');
       } catch (err) {
         setError('Failed to connect wallet');
         onError?.(err as Error);
@@ -133,7 +140,8 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
 
       // Get the full response with all fields
       const data = await response.json();
-      const { transaction, message } = data;
+      // const { transaction, message } = data; // 'message' is unused
+      const { transaction } = data;
 
       // Log the portfolio details if present (useful for debugging)
       if (data.portfolio_summary) {
@@ -143,7 +151,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
 
       // Handle different transaction encoding formats
       // Newer backend returns base64, older code might return base58
-      let processedTransaction = transaction;
+      // let processedTransaction = transaction; // This variable is unused as the signing logic is commented
       
       // Check if transaction is base64 encoded (standard for real @solana/web3.js transactions)
       const isBase64 = /^[A-Za-z0-9+/=]+$/.test(transaction) && 
@@ -164,13 +172,19 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
 
       // Actually sign and send the transaction using the Solana wallet
       // Pass the message for better wallet UX if available
+      /* Commenting out due to type mismatch with useSolanaKitWallet.signAndSendTransaction
+         This needs a new approach: either Blink API changes or useSolanaKitWallet gets a method 
+         to sign/send pre-serialized transactions, or BlinkButton deserializes and rebuilds.
       const result = await signAndSendTransaction(
         processedTransaction, 
         message ? { message } : undefined
       );
+      */
+      // For now, let's throw an error indicating this is not implemented with the new hook
+      throw new Error("BlinkButton: signAndSendTransaction with pre-serialized tx not yet adapted for useSolanaKitWallet.");
       
       // Return the real signature
-      onSuccess?.(result.signature);
+      // onSuccess?.(result); // Changed from result.signature
     } catch (err) {
       console.error('Error executing blink:', err);
       setError((err as Error).message || 'Failed to execute action');
@@ -208,14 +222,14 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
   return (
     // Start of button component
     <button
-      className={`px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors ${isLoading || connecting ? 'opacity-75 cursor-not-allowed' : ''} ${className}`}
+      className={`px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors ${isLoading || isConnecting ? 'opacity-75 cursor-not-allowed' : ''} ${className}`}
       onClick={handleClick}
-      disabled={isLoading || connecting}
+      disabled={isLoading || isConnecting}
     >
       {/* Start of button label */}
-      {isLoading || connecting ? 
-        (connecting ? 'Connecting...' : 'Processing...') : 
-        (!connected ? 'Connect Wallet' : (label || metadata?.label || 'Execute'))}
+      {isLoading || isConnecting ?
+        (isConnecting ? 'Connecting...' : 'Processing...') :
+        (!isConnected ? 'Connect Wallet' : (label || metadata?.label || 'Execute'))}
     </button>
   );
 };

@@ -1,7 +1,8 @@
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import React, { useState } from 'react';
-import { BlinkButton, ShareBlinkButton, SolanaWalletConnector } from '../../../components/blinks';
+import { BlinkButton, ShareBlinkButton } from '../../../components/blinks';
 import { toast } from '../../../components/toast';
-import { useSolanaWallet } from '../../../hooks/data/useSolanaWallet';
+import { useSolanaKitWallet } from '../../../hooks/wallet/useSolanaKitWallet';
 
 const contestData = [
   {
@@ -42,7 +43,7 @@ const tokenData = [
 ];
 
 export const BlinksDemo: React.FC = () => {
-  const { connected, publicKey } = useSolanaWallet();
+  const { isConnected, publicKey } = useSolanaKitWallet();
   const [joinedContests, setJoinedContests] = useState<string[]>([]);
   const [activeBets, setActiveBets] = useState<{id: string, direction: string}[]>([]);
   
@@ -71,8 +72,8 @@ export const BlinksDemo: React.FC = () => {
       </div>
       
       <div className="max-w-md mx-auto mb-8">
-        <SolanaWalletConnector />
-        {connected && publicKey && (
+        <WalletMultiButton />
+        {isConnected && publicKey && (
           <div className="mt-4 p-3 bg-gray-800/80 border border-gray-700 rounded-md text-center">
             <p className="text-green-400 text-sm font-semibold">Connected with Solana wallet</p>
             <p className="text-gray-400 text-xs mt-1">Ready to execute Blinks</p>

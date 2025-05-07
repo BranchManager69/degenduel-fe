@@ -14,7 +14,8 @@
 
 import { Connection } from '@solana/web3.js';
 import React, { createContext, useContext, useMemo } from 'react';
-import { useAuth } from '../hooks/auth/legacy/useAuth';
+// import { useAuth } from '../hooks/auth/legacy/useAuth'; // Legacy
+import { useMigratedAuth } from '../hooks/auth/useMigratedAuth'; // Use new migrated hook
 import { useStore } from '../store/useStore';
 
 // Config
@@ -46,14 +47,16 @@ const SolanaConnectionContext = createContext<SolanaConnectionContextType>({
 
 // Provider component
 export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAdmin, isSuperAdmin } = useAuth();
-  const user = useStore(state => state.user);
+  // Use migrated auth hook
+  const { isAdmin, isSuperAdmin, user: authUser } = useMigratedAuth(); 
+  const storeUser = useStore(state => state.user);
+  const user = authUser || storeUser; // Prioritize user from auth hook
   
   // Determine which RPC endpoint to use based on user role
   const connectionInfo = useMemo(() => {
-    // Check for admin or superadmin roles
-    const isAdminUser = isAdmin();
-    const isSuperAdminUser = isSuperAdmin();
+    // isAdmin and isSuperAdmin from useMigratedAuth are booleans, directly use them.
+    const isAdminUser = isAdmin;
+    const isSuperAdminUser = isSuperAdmin;
     
     // Determine the tier based on user role
     let tier: 'public' | 'user' | 'admin' = 'public';

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { ToastBackground } from "./ToastBackground";
 import { ToastType } from "./ToastContext";
@@ -117,7 +117,7 @@ export const Toast: React.FC<ToastProps> = ({
 }) => {
   const [isExiting, setIsExiting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const config = typeConfig[type];
   const Icon = config.icon;
@@ -141,7 +141,11 @@ export const Toast: React.FC<ToastProps> = ({
 
     timerRef.current = setTimeout(tick, 10);
 
-    return () => timerRef.current && clearTimeout(timerRef.current);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
   }, [isPaused]);
 
   const handleClose = () => {

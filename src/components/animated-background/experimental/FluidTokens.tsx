@@ -8,11 +8,22 @@ const DIFFUSION = 0.98; // How quickly dye diffuses
 const VISCOSITY = 0.5; // Fluid viscosity
 const ITERATIONS = 4; // Physics solver iterations (higher = more accurate but slower)
 
+// Basic Particle type placeholder
+// interface Particle {
+//   // Define particle properties here, e.g.:
+//   // x: number;
+//   // y: number;
+//   // color: string;
+//   // size: number;
+//   // Add any other properties your particles will have
+//   [key: string]: any; // Allow any other properties for now
+// }
+
 export const FluidTokens: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { tokens, isConnected } = useTokenData();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
 
   // Fluid simulation data structures
   const fluidRef = useRef<{

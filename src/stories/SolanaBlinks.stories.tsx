@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; // Added for wallet connection UI
 import type { Meta, StoryObj } from '@storybook/react';
 import { motion } from 'framer-motion';
-import { 
-  BlinkButton, 
-  ShareBlinkButton, 
-  SolanaWalletConnector 
+import React, { useState } from 'react';
+import {
+  BlinkButton,
+  ShareBlinkButton,
 } from '../components/blinks';
 
 /**
@@ -249,13 +249,15 @@ export const WalletConnector: Story = {
     return (
       <div className="p-6 max-w-md mx-auto bg-gray-800 rounded-xl shadow-md flex flex-col items-center">
         <h3 className="text-xl font-medium text-white mb-4">Solana Wallet Connector</h3>
-        <SolanaWalletConnector variant="full" />
+        {/* <SolanaWalletConnector variant="full" /> */}
+        <WalletMultiButton /> {/* Replace with standard wallet button */}
         
         <div className="mt-6 border-t border-gray-700 pt-4 w-full">
           <h4 className="text-lg font-medium text-white mb-3">Minimal Variant</h4>
           <div className="flex justify-between items-center bg-gray-700 p-3 rounded-lg">
             <span className="text-gray-300">Connect your wallet:</span>
-            <SolanaWalletConnector variant="minimal" />
+            {/* <SolanaWalletConnector variant="minimal" /> */}
+            <WalletMultiButton /> {/* Replace with standard wallet button */}
           </div>
         </div>
       </div>
@@ -391,7 +393,8 @@ export const ContestPage: Story = {
       <div className="max-w-4xl mx-auto p-6 bg-gray-900 rounded-lg">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Available Contests</h2>
-          <SolanaWalletConnector variant="minimal" />
+          {/* <SolanaWalletConnector variant="minimal" /> */}
+          <WalletMultiButton /> {/* Replace with standard wallet button */}
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
@@ -590,7 +593,8 @@ export const TokenBetting: Story = {
       <div className="max-w-4xl mx-auto p-6 bg-gray-900 rounded-lg">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Token Betting</h2>
-          <SolanaWalletConnector variant="minimal" />
+          {/* <SolanaWalletConnector variant="minimal" /> */}
+          <WalletMultiButton /> {/* Replace with standard wallet button */}
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
@@ -857,7 +861,8 @@ export const WalletConnectionDemo: Story = {
             <h3 className="text-lg font-semibold text-white mb-4">Actual Implementation</h3>
             
             <div className="flex flex-col items-center justify-center space-y-6 h-64 border border-gray-700 rounded-lg bg-gray-900 p-4">
-              <SolanaWalletConnector />
+              {/* <SolanaWalletConnector /> */}
+              <WalletMultiButton /> {/* Replace with standard wallet button */}
               
               {/* Example Blink Button that requires wallet connection */}
               <div className="mt-4">
@@ -1018,7 +1023,8 @@ export const BlinksDashboard: Story = {
       <div className="max-w-6xl mx-auto p-6 bg-gray-900 rounded-lg">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Solana Blinks Dashboard</h2>
-          <SolanaWalletConnector variant="minimal" />
+          {/* <SolanaWalletConnector variant="minimal" /> */}
+          <WalletMultiButton /> {/* Replace with standard wallet button */}
         </div>
         
         {/* Tabs Navigation */}

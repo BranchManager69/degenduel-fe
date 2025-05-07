@@ -160,7 +160,7 @@ export const FAQ: React.FC = () => {
   };
 
   // Scroll to category section when sidebar item is clicked
-  const scrollToSection = (ref: React.RefObject<HTMLDivElement>, category: string) => {
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>, category: string) => {
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth' });
       setActiveCategory(category);

@@ -33,7 +33,7 @@ interface Particle {
 
 export const MarketBrain: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
   const [nodes, setNodes] = useState<MarketNode[]>([]);
   const [connections] = useState<Connection[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);

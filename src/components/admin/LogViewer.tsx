@@ -31,7 +31,7 @@ interface DateOption {
 
 interface CompactLogInfo {
   type: string;
-  summary: string | JSX.Element;
+  summary: string | React.JSX.Element;
   icon?: string;
   showInGroup?: boolean;
 }
@@ -235,9 +235,9 @@ export const LogViewer: React.FC = () => {
     }
   };
 
-  const renderJsonValue = (value: any, depth: number = 0): JSX.Element => {
+  const renderJsonValue = (value: any, depth: number = 0): React.JSX.Element => {
     if (typeof value === "string") {
-      return <span className="text-green-400">"{value}"</span>;
+      return <span className="text-green-400">\"{value}\"</span>;
     } else if (typeof value === "number") {
       return <span className="text-yellow-400">{value}</span>;
     } else if (typeof value === "boolean") {

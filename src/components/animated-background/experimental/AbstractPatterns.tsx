@@ -3,10 +3,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTokenData } from "../../../contexts/TokenDataContext";
 
 export const AbstractPatterns: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { tokens, isConnected } = useTokenData();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
 
   // Pattern generation parameters
   const patternsRef = useRef<{
@@ -39,9 +40,6 @@ export const AbstractPatterns: React.FC = () => {
     circles: [],
     triangles: [],
   });
-
-  // Last animation time for smooth updates
-  const lastTimeRef = useRef<number>(Date.now());
 
   // Initialize canvas and resize handler
   useEffect(() => {

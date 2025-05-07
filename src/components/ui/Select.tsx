@@ -15,7 +15,7 @@ export const Select = <T extends string>({
   onChange,
   options,
   className = "",
-}: SelectProps<T>): JSX.Element => {
+}: SelectProps<T>): React.JSX.Element => {
   return (
     <select
       value={value}

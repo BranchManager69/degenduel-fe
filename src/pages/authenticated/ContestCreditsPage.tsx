@@ -1,14 +1,14 @@
 // src/pages/authenticated/ContestCreditsPage.tsx
 
+import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
-import { useStore } from "../../store/useStore";
-import { useAuthContext } from "../../contexts/AuthContext";
 import { useWebSocketContext } from "../../contexts/WebSocketContext";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { MessageType, SOCKET_TYPES } from "../../hooks/websocket";
+import { useStore } from "../../store/useStore";
 
 // Define the contest credit interface
 interface ContestCredit {
@@ -35,8 +35,9 @@ interface CreditStats {
 }
 
 export const ContestCreditsPage: React.FC = () => {
-  const { user } = useStore();
-  const { isAuthenticated } = useAuthContext();
+  const storeUser = useStore(state => state.user);
+  const { user: authUser, isAuthenticated } = useMigratedAuth();
+  const user = authUser || storeUser;
   const ws = useWebSocketContext();
   
   const [credits, setCredits] = useState<ContestCredit[]>([]);
@@ -56,7 +57,7 @@ export const ContestCreditsPage: React.FC = () => {
 
   // Load user credits on component mount
   useEffect(() => {
-    if (!isAuthenticated() || !user) return;
+    if (!isAuthenticated || !user) return;
     
     // Setup WebSocket listener for credit updates
     const onCreditMessage = (message: any) => {
@@ -231,7 +232,7 @@ export const ContestCreditsPage: React.FC = () => {
   };
 
   // If not authenticated, show login prompt
-  if (!isAuthenticated() || !user) {
+  if (!isAuthenticated || !user) {
     return (
       <div className="flex flex-col min-h-screen">
         <motion.div

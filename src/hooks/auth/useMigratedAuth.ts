@@ -3,29 +3,26 @@
 /**
  * useMigratedAuth Hook
  * 
- * @description This hook serves as a bridge between the old and new authentication 
- * systems. It uses the feature flag system to determine which authentication hook 
- * to use. During migration, components can use this hook instead of directly 
- * importing either the old or new auth hooks. This allows for a smooth transition 
- * between the two systems.
+ * @description This hook serves as a bridge to the unified authentication system.
+ * Components can use this hook to interact with the new auth system.
  * 
  * @author BranchManager69
- * @version 2.0.0
+ * @version 2.1.0
  * @created 2025-05-05
- * @updated 2025-05-05
+ * @updated 2025-05-07 // Updated to solely use UnifiedAuth
  */
 
 import React from "react";
-import { getFeatureFlag } from "../../config/featureFlags";
+// import { getFeatureFlag } from "../../config/featureFlags"; // Removed
 import { useAuth as useUnifiedAuth } from "../../contexts/UnifiedAuthContext";
-import { useAuth as useLegacyAuth } from "./legacy/useAuth";
+// import { useAuth as useLegacyAuth } from "./legacy/useAuth"; // Removed
 
 // Create an interface that represents the normalized auth API
 // This way we ensure consistent behavior regardless of which system is used
 interface NormalizedAuthAPI {
   user: any | null;
   isLoading: boolean;
-  loading: boolean; // For backward compatibility
+  loading: boolean; // For backward compatibility (maps to isLoading)
   isAuthenticated: boolean;
   
   // Role properties (normalized to boolean values)
@@ -45,41 +42,39 @@ interface NormalizedAuthAPI {
 
 // Create a hook that returns a normalized auth API
 export function useMigratedAuth(): NormalizedAuthAPI {
-  // Check feature flag
-  const useUnifiedAuthFlag = getFeatureFlag("useUnifiedAuth");
-  
   // Log which auth system is being used (only on initial mount)
   React.useEffect(() => {
     console.log(
-      `%c[AUTH SYSTEM] ${useUnifiedAuthFlag ? 'UNIFIED AUTH' : 'LEGACY AUTH'} system is currently active`,
-      `color: white; background-color: ${useUnifiedAuthFlag ? '#4caf50' : '#f44336'}; padding: 4px 8px; border-radius: 4px; font-weight: bold;`
+      `%c[AUTH SYSTEM] UNIFIED AUTH system is currently active`,
+      `color: white; background-color: #4caf50; padding: 4px 8px; border-radius: 4px; font-weight: bold;`
     );
   }, []);
   
-  // Get the appropriate auth object based on the feature flag
-  const auth = useUnifiedAuthFlag ? useUnifiedAuth() : useLegacyAuth();
+  // Always use the Unified Auth system
+  const auth = useUnifiedAuth();
   
   // Create normalized auth API with consistent property types
+  // This normalization layer might still be useful if UnifiedAuthContext's useAuth hook
+  // doesn't perfectly match NormalizedAuthAPI, or for future flexibility.
   return {
     ...auth,
-    // Loading state - handle both auth systems
-    isLoading: 'isLoading' in auth ? auth.isLoading : (auth.loading || false),
-    loading: 'isLoading' in auth ? auth.isLoading : (auth.loading || false),
+    // Loading state - ensure 'loading' (legacy) maps to 'isLoading'
+    isLoading: auth.isLoading,
+    loading: auth.isLoading, // Backward compatibility
     
     // Authentication state - ensure it's a boolean
-    isAuthenticated: typeof auth.isAuthenticated === 'function' 
-      ? auth.isAuthenticated() 
-      : !!auth.isAuthenticated,
+    // Assuming auth.isAuthenticated from UnifiedAuthContext is already a boolean
+    isAuthenticated: !!auth.isAuthenticated, 
     
     // Role checks - ensure they're booleans
-    isAdmin: typeof auth.isAdmin === 'function' ? auth.isAdmin() : !!auth.isAdmin,
-    isSuperAdmin: typeof auth.isSuperAdmin === 'function' ? auth.isSuperAdmin() : !!auth.isSuperAdmin,
+    // Assuming auth.isAdmin & auth.isSuperAdmin from UnifiedAuthContext are already booleans
+    isAdmin: !!auth.isAdmin,
+    isSuperAdmin: !!auth.isSuperAdmin,
     
-    // Normalize method names between the two auth systems
-    checkAuth: auth.checkAuth || (() => Promise.resolve(true)),
-    getToken: ('getToken' in auth) ? auth.getToken : 
-              ('getAccessToken' in auth) ? auth.getAccessToken : 
-              (() => Promise.resolve(null)),
+    // Normalize method names between the two auth systems (if needed, though less relevant now)
+    // Assuming UnifiedAuthContext provides these methods directly or they are part of ...auth
+    checkAuth: auth.checkAuth || (() => Promise.resolve(true)), // Fallback if not present
+    getToken: auth.getToken || (() => Promise.resolve(null)),   // Fallback if not present
   };
 }
 

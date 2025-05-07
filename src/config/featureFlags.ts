@@ -19,7 +19,7 @@ export const featureFlags = {
    * When true, components will use the new UnifiedWebSocketContext
    * When false, components will use the old WebSocketContext
    */
-  useUnifiedWebSocket: false,
+  useUnifiedWebSocket: true,
 
   /**
    * Enable auth system debug logging
