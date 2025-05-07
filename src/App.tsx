@@ -6,10 +6,10 @@
  * @description This file contains the App component with the new unified authentication system.
  * It removes the nested auth providers and replaces them with a single UnifiedAuthProvider.
  * 
- * @author @BranchManager69
- * @version 2.0.0
+ * @author BranchManager69
+ * @version 2.0.1
  * @created 2025-05-05
- * @updated 2025-05-05
+ * @updated 2025-05-08
  */
 
 // React
@@ -18,9 +18,11 @@ import React, { createContext, lazy, Suspense, useContext, useEffect, useMemo, u
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
 // Auth providers
+// Privy
 import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 //import { toEthereumWalletConnectors } from "@privy-io/react-auth/ethereum";
+// Unified Auth Contexts
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
 import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
@@ -106,6 +108,7 @@ import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
 import { ContestResults } from "./pages/public/contests/ContestResultsPage";
+import ComingSoonPage from './pages/public/general/ComingSoonPage';
 import { Contact } from "./pages/public/general/Contact";
 import { FAQ } from "./pages/public/general/FAQ";
 import { HowItWorks } from "./pages/public/general/HowItWorks";
@@ -146,17 +149,23 @@ import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard";
 import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring";
 import { WssPlayground } from "./pages/superadmin/WssPlayground";
 
-// Lazy loaded components
-const AdminChatDashboard = lazy(
-  () => import("./pages/admin/AdminChatDashboard"),
-);
-const LiquiditySimulatorPage = lazy(
-  () => import("./pages/admin/LiquiditySimulatorPage"),
-);
-
 // Get Privy app ID
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
 console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
+
+// Config
+// Prelaunch mode
+import { ADMIN_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
+
+// Lazy loaded components
+// Admin Chat Dashboard
+const AdminChatDashboard = lazy(
+  () => import("./pages/admin/AdminChatDashboard"),
+);
+// Liquidity Simulator Page
+const LiquiditySimulatorPage = lazy(
+  () => import("./pages/admin/LiquiditySimulatorPage"),
+);
 
 // RpcContext for custom DegenDuel JWT-aware RPC client
 export interface RpcContextType {
@@ -173,13 +182,24 @@ export const useDegenDuelRpc = () => {
 // App entry
 export const App: React.FC = () => {
   useScrollbarVisibility();
+  
+  // Prelaunch Mode?
+  const searchParams = new URLSearchParams(window.location.search);
+  const hasAdminBypass = searchParams.get('bypass_prelaunch') === ADMIN_BYPASS_KEY;
+  const showComingSoon = PRELAUNCH_MODE && !hasAdminBypass;
+  if (PRELAUNCH_MODE) {
+    console.log(`[App.tsx] Prelaunch Mode Active. Bypass key present: ${hasAdminBypass}. Showing Coming Soon: ${showComingSoon}`);
+  }
+
   return (
-    <Router>
-      {/* UnifiedAuthProvider */}
-      <UnifiedAuthProvider>
-        {/* Providers and content */}
-        <AppProvidersAndContent />
-      </UnifiedAuthProvider>
+    <Router> 
+      {showComingSoon ? (
+        <ComingSoonPage />
+      ) : (
+        <UnifiedAuthProvider>
+          <AppProvidersAndContent />
+        </UnifiedAuthProvider>
+      )}
     </Router>
   );
 };

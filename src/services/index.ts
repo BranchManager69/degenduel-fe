@@ -1,16 +1,16 @@
+// src/services/index.ts
+
 /**
- * Services index file
+ * Auth Services Index
  * 
- * Centralizes exports from service files to help manage imports
+ * @description Centralizes exports from service files to help manage imports
  * and avoid case-sensitivity issues.
  * 
- * @updated 2025-05-05 - Updated for unified auth system
+ * @author BranchManager69
+ * @version 1.9.0
+ * @updated 2025-05-05 - Added unified auth system with fallback to legacy system
+ * @updated 2025-05-07 - Legacy auth system is TO BE REMOVED TODAY! Haven't started stripping it out yet.
  */
-
-// CASING NOTE: TypeScript on case-sensitive file systems will report 
-// errors if we import both './legacyAuthService' and './AuthService' directly.
-// To work around this, we need to use the fully qualified paths with extensions.
-// The error is: "File name differs from already included file name only in casing"
 
 // UNIFIED AUTH SYSTEM - PREFERRED EXPORTS
 // Export these as the primary/preferred auth system implementation

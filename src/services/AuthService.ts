@@ -1,32 +1,33 @@
 // src/services/AuthService.ts
 //
 // NOTE: There are multiple auth service files with case-sensitive differences:
-// - authService.ts (lowercase, deprecated)
-// - AuthService.ts (this file, uppercase, new unified system)
+// - authService.ts (lowercase, DEPRECATED)
+// - AuthService.ts (this file, uppercase, NEW UNIFIED AUTH SYSTEM - PREFERRED)
 //
 // To avoid confusion, use imports from services/index.ts which handles these differences.
 
 /**
  * AuthService.ts
  * 
- * Unified Authentication Service for DegenDuel
+ * @description Unified Authentication Service for DegenDuel
  * 
  * This service centralizes all authentication logic that was previously spread across multiple
  * services, hooks, and components. It provides a single interface for all authentication-related
  * operations and manages token storage, retrieval, and validation.
  * 
  * @author BranchManager69
- * @version 1.0.0
- * @created 2025-05-05
+ * @version 1.9.0
+ * @created 2025-05-05 - Added Unified auth system with fallback to legacy system
+ * @updated 2025-05-07 - Time to remove legacy auth system! Haven't started stripping it out yet.
  */
 
 import axios from 'axios';
-import { User } from '../types/user';
 import { authDebug } from '../config/config';
+import { User } from '../types/user';
 import { TokenManager, TokenType } from './TokenManager';
 
 // Auth method types
-export type AuthMethod = 'wallet' | 'privy' | 'twitter' | 'session';
+export type AuthMethod = 'wallet' | 'privy' | 'twitter' | 'session'; // where is Discord auth? Any others missing?
 
 // Authentication event types
 export enum AuthEventType {
@@ -761,4 +762,5 @@ export class AuthService {
 }
 
 // Export singleton instance
+// NOTE:  CONFUSING... LOWERCASE!? DIDN'T WE SAY THAT LOWERCASE INDICATES DEPRECATED!?
 export const authService = AuthService.getInstance();

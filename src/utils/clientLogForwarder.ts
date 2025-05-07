@@ -1,29 +1,38 @@
+// src/utils/clientLogForwarder.ts
+
 /**
  * Client Log Forwarder
  * 
- * This utility forwards client-side logs, warnings, and errors to the server.
+ * @description This utility forwards client-side logs, warnings, and errors to the server.
  * It uses both the WebSocket system and API fallback to ensure reliable delivery.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-01
+ * @updated 2025-05-07
  */
 
 /**
- * ✨ UNIFIED WEBSOCKET SYSTEM ✨
+ * ✨ USES DD SHARED TYPES ✨
  * This file uses DegenDuel shared types from the degenduel-shared package.
  * These types are the official standard for frontend-backend communication.
  */
 
-import { useStore } from "../store/useStore";
 import { MessageType } from "../hooks/websocket";
 import { clientLogService } from "../services/clientLogService";
+import { useStore } from "../store/useStore";
 
-// Customize these thresholds based on your needs
+// Client log forwarder thresholds
 const MAX_QUEUE_SIZE = 50;
-const BATCH_SEND_INTERVAL = 10000; // 10 seconds
+const BATCH_SEND_INTERVAL = 10 * 1000; // 10 seconds
 const ERROR_RETRY_COUNT = 3;
 const MAX_LOG_SIZE = 5000; // Truncate large logs
+const MESSAGE_CACHE_CLEANUP_INTERVAL = 60 * 1000; // 1 minute
+const MESSAGE_COOLDOWN = 5 * 1000; // 5 seconds between showing the same log message
+const MAX_REPEAT_COUNT = 3; // Show the message at most 3 times in the cooldown period
 
-// Debug verbosity flag - set to false to reduce log spam
-// You can toggle this manually whenever needed
-const VERBOSE_SERVER_LOGGING = false;
+// Debug verbosity flag
+const VERBOSE_SERVER_LOGGING = false; // Set to false to reduce log spam
 
 // Log levels
 export enum LogLevel {
@@ -54,13 +63,14 @@ interface MessageCacheEntry {
   count: number;
   lastTime: number;
 }
+
+// Message cache
 let messageCache: Map<string, MessageCacheEntry> = new Map();
-const MESSAGE_COOLDOWN = 5000; // 5 seconds between showing the same log message
-const MAX_REPEAT_COUNT = 3; // Show the message at most 3 times in the cooldown period
 
 // Check if a message should be rate limited
 const shouldRateLimit = (message: string): boolean => {
-  // Rate-limit noisy messages - expanded list to include Terminal/TerminalDataService errors
+  // Rate-limit noisy messages
+  //   - expanded list to include Terminal/TerminalDataService errors
   if (!message.includes('[Jupiter Wallet]') && 
       !message.includes('WebSocketContext:') && 
       !message.includes('WebSocketManager:') && 
@@ -74,22 +84,24 @@ const shouldRateLimit = (message: string): boolean => {
     return false;
   }
   
+  // Cache key
   const key = message.substring(0, 50); // Use first 50 chars as cache key
   const now = Date.now();
   const cacheEntry = messageCache.get(key);
   
+  // If we've shown this message too many times recently, suppress it
   if (cacheEntry) {
-    // If we've shown this message too many times recently, suppress it
+    // If it's been shown too many times recently, suppress it
     if (cacheEntry.count >= MAX_REPEAT_COUNT && now - cacheEntry.lastTime < MESSAGE_COOLDOWN) {
       return true; // Should be rate limited
     }
     
-    // More aggressive throttling for Terminal data errors
-    if (message.includes('Error fetching terminal data') && 
-        cacheEntry.count >= 2 && 
-        now - cacheEntry.lastTime < MESSAGE_COOLDOWN * 5) {
-      return true; // Rate limit more aggressively for terminal errors
-    }
+    //// More aggressive throttling for Terminal data errors
+    //if (message.includes('Error fetching terminal data') && 
+    //    cacheEntry.count >= 2 && 
+    //    now - cacheEntry.lastTime < MESSAGE_COOLDOWN * 5) {
+    //  return true; // Rate limit more aggressively for terminal errors
+    //}
     
     // Update count and time
     cacheEntry.count++;
@@ -111,7 +123,7 @@ setInterval(() => {
       messageCache.delete(key);
     }
   }
-}, 60000); // Clean up every minute
+}, MESSAGE_CACHE_CLEANUP_INTERVAL); // Clean up message cache every 1 minute
 
 // Queue to store logs
 let logQueue: LogEntry[] = [];
@@ -137,7 +149,9 @@ export const initializeClientLogForwarder = (): void => {
   sessionId = sessionStorage.getItem('logSessionId') || generateSessionId();
   sessionStorage.setItem('logSessionId', sessionId);
   
-  // Override console methods to capture logs
+  /**
+   * Replace console methods
+   */
   const originalConsole = {
     log: console.log,
     info: console.info,
@@ -145,7 +159,9 @@ export const initializeClientLogForwarder = (): void => {
     error: console.error
   };
 
-  // Replace console methods to capture logs
+  /* Log types */
+
+  // Debug logs
   console.log = (...args: any[]) => {
     // Rate limit noisy log messages
     if (args.length > 0) {
@@ -157,10 +173,11 @@ export const initializeClientLogForwarder = (): void => {
     }
     
     originalConsole.log(...args);
-    // Don't capture regular logs by default (would be too noisy)
+    // Don't capture debug logs by default (would be too noisy)
     // addToQueue(LogLevel.DEBUG, args);
   };
 
+  // Info logs
   console.info = (...args: any[]) => {
     // Rate limit noisy log messages
     if (args.length > 0) {
@@ -176,6 +193,7 @@ export const initializeClientLogForwarder = (): void => {
     // addToQueue(LogLevel.INFO, args);
   };
 
+  // Warnings
   console.warn = (...args: any[]) => {
     // Rate limit noisy log messages
     if (args.length > 0) {
@@ -221,6 +239,7 @@ export const initializeClientLogForwarder = (): void => {
     }
   };
 
+  // Errors
   console.error = (...args: any[]) => {
     // Rate limit noisy log messages
     if (args.length > 0) {
@@ -344,6 +363,7 @@ const addToQueue = (level: LogLevel, args: any[], context: Record<string, any> =
  * Extract stack trace from log arguments if available
  */
 const extractStackTrace = (args: any[]): string | undefined => {
+  // Extract stack trace from log arguments if available
   for (const arg of args) {
     if (arg instanceof Error && arg.stack) {
       return arg.stack;
@@ -460,8 +480,7 @@ const sendLogs = async (): Promise<void> => {
  */
 const sendLogsViaWebSocket = (logs: LogEntry[]): boolean => {
   try {
-    // Use WebSocketContext instead of requiring WebSocketManager
-    // This provides a stable, persistent connection for log forwarding
+    // WebSocketContext provides a stable, persistent connection for log forwarding
     const webSocketContext = (window as any).__DD_WEBSOCKET_CONTEXT;
     
     if (!webSocketContext || !webSocketContext.isConnected) {

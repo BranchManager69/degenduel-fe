@@ -6,15 +6,11 @@
 ┌───────────────────────────┐
 │      App Entry Points     │
 │  ┌────────────────────┐   │
-│  │     App.tsx        │◄──┼── Uses legacy contexts individually
-│  └────────────────────┘   │
-│  ┌────────────────────┐   │
-│  │  App.tsx   │◄──┼── Uses UnifiedAuthContext only
+│  │     App.tsx        │◄──┼── Uses UnifiedAuthContext primarily
 │  └────────────────────┘   │
 └───────────────────────────┘
-           │  │
-           │  │ 
-           ▼  ▼  
+           │
+           ▼  
 ┌────────────────────────────────────┐    ┌──────────────────────────┐
 │            Context Layer           │    │    Provider Integration   │
 │                                    │    │ ┌─────────────────────┐  │
@@ -22,44 +18,36 @@
 │  ┌─────────────────┐  ┌─────────────┐   │ │   (from SDK)        │  │
 │  │UnifiedAuthContext├─►UnifiedWebSocket│◄┼─┤                     │  │
 │  └─────────────────┘  │   Context    │   │ └─────────────────────┘  │
-│  ┌─────────────────┐  └─────────────┘   │ ┌─────────────────────┐  │
-│  │  AuthContext    │  ┌─────────────┐   │ │  WalletProvider     │  │
-│  └─────────────────┘  │ WebSocket   │   │ │  (Solana, etc.)     │  │
-│  ┌─────────────────┐  │  Context    │◄──┼─┤                     │  │
-│  │PrivyAuthContext │  └─────────────┘   │ └─────────────────────┘  │
-│  └─────────────────┘                    │                          │
-│  ┌─────────────────┐                    │                          │
-│  │TwitterAuthContext                    │                          │
-│  └─────────────────┘                    │                          │
+│                       └─────────────┘   │ ┌─────────────────────┐  │
+│  (Legacy - TBD/Removed)                 │ │  WalletProvider     │  │
+│  ┌─────────────────┐  (Legacy - TBD/Removed) │ │  (@solana/         │  │
+│  │PrivyAuthContext │  ┌─────────────┐   │ │   wallet-adapter-   │  │
+│  └─────────────────┘  │ WebSocket   │   │ │   react-ui)         │  │
+│                       │  Context    │◄──┼─┤                     │  │
+│                       └─────────────┘   │ └─────────────────────┘  │
 └────────────────────────────────────┘    └──────────────────────────┘
-           │  │
-           │  │
-           ▼  ▼
+           │
+           ▼
 ┌──────────────────────────┐
 │      Hook Layer          │
 │┌────────────────────────┐│
-││     useAuth.ts         ││◄─── Used directly by components (old)
+││  useMigratedAuth.ts    ││◄─── Primary auth hook, uses UnifiedAuthContext
 │└────────────────────────┘│
 │┌────────────────────────┐│
-││  useMigratedAuth.ts    ││◄─── Bridge between old and new (transition)
-│└────────────────────────┘│
-└──────────────────────────┘
-           │  │
-           │  │
-           ▼  ▼
-┌──────────────────────────┐
-│     Service Layer        │
-│┌────────────────────────┐│
-││   AuthService.ts       ││◄─── New unified service
-│└────────────────────────┘│
-│┌────────────────────────┐│
-││   authService.ts       ││◄─── Legacy service
-│└────────────────────────┘│
-│┌────────────────────────┐│
-││   TokenManager.ts      ││◄─── Used by both new and old services
+││ useSolanaKitWallet.ts  ││◄─── For Solana wallet operations
 │└────────────────────────┘│
 └──────────────────────────┘
            │
+           ▼
+┌──────────────────────────┐
+│     Service Layer        │
+│┌────────────────────────┐│
+││   AuthService.ts       ││◄─── Unified service
+│└────────────────────────┘│
+│┌────────────────────────┐│
+││   TokenManager.ts      ││◄─── Used by AuthService
+│└────────────────────────┘│
+└──────────────────────────┘
            │
            ▼
 ┌──────────────────────────┐
@@ -69,15 +57,11 @@
 │└────────────────────────┘│
 └──────────────────────────┘
            │
-           │
            ▼
 ┌──────────────────────────┐
 │      Type Definitions    │
 │┌────────────────────────┐│
-││     types/user.ts      ││◄─── New User type with required wallet_address
-│└────────────────────────┘│
-│┌────────────────────────┐│
-││     types/index.ts     ││◄─── Legacy User type
+││     types/user.ts      ││◄─── User type
 │└────────────────────────┘│
 └──────────────────────────┘
 ```
@@ -85,45 +69,35 @@
 ## Core Files
 
 1. **User Type Definitions**:
-   - `/src/types/user.ts` - Updated User interface with required wallet_address
-   - `/src/types/index.ts` - Contains the legacy User interface
+   - `/src/types/user.ts` - Main User interface
+   - `/src/types/index.ts` - Exports various types including legacy ones (review for cleanup)
 
 2. **Authentication Contexts**:
    - `/src/contexts/UnifiedAuthContext.tsx` - New unified auth context
-   - `/src/contexts/AuthContext.tsx` - Legacy auth context
-   - `/src/contexts/PrivyAuthContext.tsx` - Privy-specific auth context
-   - `/src/contexts/TwitterAuthContext.tsx` - Twitter-specific auth context
+   - `/src/contexts/PrivyAuthContext.tsx` - (Legacy - To Be Removed/Refactored)
 
 3. **WebSocket Contexts**:
-   - `/src/contexts/UnifiedWebSocketContext.tsx` - New unified WebSocket context (integrates with UnifiedAuthContext)
-   - `/src/contexts/WebSocketContext.tsx` - Legacy WebSocket context
+   - `/src/contexts/UnifiedWebSocketContext.tsx` - New unified WebSocket context
+   - `/src/contexts/WebSocketContext.tsx` - (Legacy - To Be Removed/Refactored)
 
 4. **Authentication Services**:
    - `/src/services/AuthService.ts` - New unified auth service
-   - `/src/services/authService.ts` - Legacy auth service
    - `/src/services/TokenManager.ts` - Handles token storage and management
 
 5. **Authentication Hooks**:
-   - `/src/hooks/useAuth.ts` - Legacy auth hook
-   - `/src/hooks/useMigratedAuth.ts` - Bridge between old and new auth systems
+   - `/src/hooks/auth/useMigratedAuth.ts` - Primary bridge to the unified auth system.
+   - `/src/hooks/wallet/useSolanaKitWallet.ts` - Hook for new Solana wallet interactions.
 
 6. **WebSocket Hooks**:
-   - `/src/hooks/websocket/useUnifiedWebSocket.ts` - Hook for the unified WebSocket system
-   - `/src/hooks/websocket/useWebSocket.ts` - Legacy WebSocket hook
-   - `/src/hooks/websocket/useWebSocketTopic.ts` - Topic-specific WebSocket hook
+   - `/src/hooks/websocket/useUnifiedWebSocket.ts` - Hook for the unified WebSocket system.
+   - `/src/hooks/websocket/topic-hooks/*` - Topic-specific WebSocket hooks.
 
 7. **Route Guards**:
-   - `/src/components/routes/AuthenticatedRoute.tsx` - Legacy route guard
-   - `/src/components/routes/AdminRoute.tsx` - Legacy admin route guard
-   - `/src/components/routes/SuperAdminRoute.tsx` - Legacy super admin route guard
-   - `/src/components/routes/AuthenticatedRoute.unified.tsx` - New route guard
-   - `/src/components/routes/AdminRoute.unified.tsx` - New admin route guard
-   - `/src/components/routes/SuperAdminRoute.unified.tsx` - New super admin route guard
+   - `/src/components/routes/AuthenticatedRoute.unified.tsx` (and similar for Admin, SuperAdmin) - New route guards.
 
 8. **Authentication API/Integration**:
-   - `/src/services/api/auth.ts` - Auth API endpoints
-   - `/src/App.tsx` - Contains the PrivyProvider setup
-   - `/src/App.tsx` - New app root with unified auth
+   - `/src/services/api/auth.ts` - Auth API endpoints integration.
+   - `/src/App.tsx` - Contains `UnifiedAuthProvider` and `WalletProvider` (from `@solana/wallet-adapter-react`).
 
 ## Data Flow
 

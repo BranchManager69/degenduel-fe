@@ -1,8 +1,14 @@
+// src/services/clientLogService.ts
+
 /**
  * Client Log Service
  * 
- * This service provides the API to forward client logs to the server.
- * It's designed to be backward compatible with the existing API structure.
+ * @description This service provides the API to forward client logs to the server.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-04-01
+ * @updated 2025-05-07
  */
 
 import { API_URL } from "../config/config";
@@ -32,6 +38,7 @@ export const clientLogService = {
    */
   sendLogs: async (logs: LogEntry[]): Promise<boolean> => {
     try {
+      // Send logs to the server client logs endpoint
       const response = await fetch(`${API_URL}/logs/client`, {
         method: 'POST',
         headers: {
@@ -40,7 +47,6 @@ export const clientLogService = {
         body: JSON.stringify({ logs }),
         credentials: 'include',
       });
-      
       return response.ok;
     } catch (error) {
       console.error('Error sending logs:', error);
@@ -58,14 +64,17 @@ export const clientLogService = {
     error: Error | string,
     context: Record<string, any> = {}
   ): Promise<boolean> => {
+    // Get error message and stack trace
     const errorMessage = error instanceof Error ? error.message : error;
     const stackTrace = error instanceof Error ? error.stack : undefined;
     
+    // Get user from local storage
     try {
       const user = window.localStorage.getItem('degenduel-storage')
         ? JSON.parse(window.localStorage.getItem('degenduel-storage') || '{}').state?.user
         : null;
       
+      // Create log entry
       const logEntry: LogEntry = {
         level: LogLevel.ERROR,
         message: errorMessage,
@@ -80,6 +89,7 @@ export const clientLogService = {
         tags: ['critical', 'high-priority']
       };
       
+      // Send log entry to the server
       return await clientLogService.sendLogs([logEntry]);
     } catch (innerError) {
       console.error('Failed to report critical error:', innerError);

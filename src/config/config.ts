@@ -4,7 +4,7 @@
  * Config
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 1.9.0 
  * @created 2025-01-01
  * @updated 2025-04-28
  */
@@ -47,6 +47,10 @@ export const authDebug = (context: string, message: string, data?: any) => {
     }
   }
 };
+
+/* Prelaunch Mode */
+export const PRELAUNCH_MODE = import.meta.env.VITE_PRELAUNCH_MODE === 'true';
+export const ADMIN_BYPASS_KEY = import.meta.env.VITE_ADMIN_BYPASS_KEY;
 
 /* Server */
 export const PORT_CONFIG = isDev
