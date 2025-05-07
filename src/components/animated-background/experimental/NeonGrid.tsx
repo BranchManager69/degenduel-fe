@@ -3,10 +3,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTokenData } from "../../../contexts/TokenDataContext";
 
 export const NeonGrid: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
   const { tokens, isConnected } = useTokenData();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const animationRef = useRef<number>();
 
   // Grid and token node configuration
   const gridRef = useRef<{
@@ -45,7 +46,6 @@ export const NeonGrid: React.FC = () => {
   });
 
   const glowFilterRef = useRef<string>(""); // CSS filter string for neon glow effect
-  const timeRef = useRef<number>(Date.now());
 
   // Initialize canvas and resize handler
   useEffect(() => {
@@ -64,8 +64,8 @@ export const NeonGrid: React.FC = () => {
 
     return () => {
       window.removeEventListener("resize", updateDimensions);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
   }, []);
@@ -299,8 +299,8 @@ export const NeonGrid: React.FC = () => {
     const animate = () => {
       // Calculate delta time for smooth animation
       const now = Date.now();
-      const deltaTime = (now - timeRef.current) / 1000;
-      timeRef.current = now;
+      const deltaTime = (now - lastTimeRef.current) / 1000;
+      lastTimeRef.current = now;
 
       // Clear canvas
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
@@ -392,16 +392,16 @@ export const NeonGrid: React.FC = () => {
       });
 
       // Continue animation loop
-      animationRef.current = requestAnimationFrame(animate);
+      animationFrameIdRef.current = requestAnimationFrame(animate);
     };
 
     // Start animation
-    animationRef.current = requestAnimationFrame(animate);
+    animationFrameIdRef.current = requestAnimationFrame(animate);
 
     // Cleanup
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
   }, [dimensions]);

@@ -38,7 +38,7 @@ export const AmbientMarketData: React.FC = () => {
   const prevTokensRef = useRef<{
     [symbol: string]: { price: string; volume24h: string };
   }>({});
-  const checkIntervalRef = useRef<ReturnType<typeof setTimeout>>();
+  const checkIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const checkForSignificantUpdates = () => {
     if (!tokens.length) return;

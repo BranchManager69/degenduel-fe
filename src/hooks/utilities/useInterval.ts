@@ -11,7 +11,7 @@ export function useInterval(
   delay: number | null,
   immediate: boolean = false
 ) {
-  const savedCallback = useRef<() => void>();
+  const savedCallback = useRef<(() => void) | null>(null);
 
   // Remember the latest callback
   useEffect(() => {

@@ -15,7 +15,7 @@ interface FeatureCardProps {
   title: string;
   description: string;
   extendedDescription?: string;
-  icon: JSX.Element; // Still accept icon for backward compatibility
+  icon: React.JSX.Element; // Still accept icon for backward compatibility
   imagePath?: string; // NEW: Path to feature illustration image 
   animation?: React.ReactNode;
   gradient?: string; // Compatibility with Features.tsx

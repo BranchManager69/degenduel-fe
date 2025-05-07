@@ -31,6 +31,15 @@ export const FAQ: React.FC = () => {
   const tocRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
 
+  // Helper function to get an array of refs guaranteed to have a current HTMLDivElement
+  const getValidHookRefs = (
+    refsList: React.RefObject<HTMLDivElement | null>[]
+  ): React.RefObject<HTMLDivElement>[] => {
+    return refsList.filter(
+      (ref): ref is React.RefObject<HTMLDivElement> => ref.current !== null
+    );
+  };
+
   // Categories hierarchy for the TOC
   const categoryStructure = [
     {
@@ -160,7 +169,7 @@ export const FAQ: React.FC = () => {
   };
 
   // Scroll to category section when sidebar item is clicked
-  const scrollToSection = (ref: React.RefObject<HTMLDivElement>, category: string) => {
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>, category: string) => {
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth' });
       setActiveCategory(category);

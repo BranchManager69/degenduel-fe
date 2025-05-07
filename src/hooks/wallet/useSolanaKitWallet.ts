@@ -1,5 +1,16 @@
 // src/hooks/wallet/useSolanaKitWallet.ts
 
+/**
+ * Solana Kit Wallet Hook
+ * 
+ * @description This file contains the useSolanaKitWallet hook, THE way to connect and disconnect from a Solana wallet.
+ *
+ * @author BranchManager69
+ * @version v2.0.1
+ * @created 2025-05-06
+ * @updated 2025-05-07
+ */
+
 import { type Address } from '@solana/addresses';
 import { useWalletAccountTransactionSendingSigner } from '@solana/react';
 import {
@@ -21,14 +32,13 @@ import {
   StandardConnect,
   StandardDisconnect
 } from '@wallet-standard/features';
-import bs58 from 'bs58';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-// ? i forget
 import {
   useWallets,
   type UiWallet,
   type UiWalletAccount,
 } from '@wallet-standard/react-core';
+import bs58 from 'bs58';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import console from 'console';
 import { useDegenDuelRpc, type RpcContextType } from '../../App';

@@ -3,10 +3,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTokenData } from "../../../contexts/TokenDataContext";
 
 export const GradientWaves: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
   const { tokens, isConnected } = useTokenData();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const animationRef = useRef<number>();
 
   // Gradient waves configuration
   const waveGroups = useRef<any[]>([]);
@@ -29,8 +29,8 @@ export const GradientWaves: React.FC = () => {
 
     return () => {
       window.removeEventListener("resize", updateDimensions);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
   }, []);
@@ -200,14 +200,14 @@ export const GradientWaves: React.FC = () => {
         ctx.fill();
       });
 
-      animationRef.current = requestAnimationFrame(animate);
+      animationFrameIdRef.current = requestAnimationFrame(animate);
     };
 
     animate();
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
   }, [dimensions]);

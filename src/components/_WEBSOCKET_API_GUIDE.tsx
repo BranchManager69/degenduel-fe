@@ -1,11 +1,10 @@
 // _WEBSOCKET_API_GUIDE.tsx
 // This is a React component that serves as both documentation and a demo for the WebSocket API
 // Import this component into your React application to test and understand the WebSocket API
+// (MIGHT BE OUTDATED)
 
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useRef, useState } from 'react';
-
-// Define types for component
 type MessageDirection = 'incoming' | 'outgoing';
 type MessageType = 'SUBSCRIBE' | 'UNSUBSCRIBE' | 'REQUEST' | 'COMMAND' | 'DATA' | 'ERROR' | 'SYSTEM' | 'ACKNOWLEDGMENT' | 'Unknown';
 
@@ -19,6 +18,7 @@ interface Message {
   topicName: string | null;
 }
 
+// Extremely outdated token data interface
 interface TokenData {
   symbol: string;
   price: number;
@@ -26,6 +26,7 @@ interface TokenData {
   [key: string]: any;
 }
 
+// Topic subscriptions (looks outdated)
 interface TopicSubscriptions {
   'market-data': boolean;
   'portfolio': boolean;
@@ -39,9 +40,9 @@ interface TopicSubscriptions {
   [key: string]: boolean;
 }
 
-// You can replace this with your actual authentication token handling
+// We can replace this with your actual authentication token handling
 const useAuthToken = (): string => {
-  // This is just a placeholder - replace with your actual auth token management
+  // This is just a placeholder - replace with our actual auth token management
   return localStorage.getItem('auth_token') || '';
 };
 
@@ -67,7 +68,7 @@ const WebSocketAPIGuide: React.FC = () => {
   "type": "REQUEST",
   "topic": "market-data",
   "action": "getToken",
-  "symbol": "BTC"
+  "symbol": "SOL"
 }`);
   
   const socketRef = useRef<WebSocket | null>(null);
@@ -191,6 +192,7 @@ const WebSocketAPIGuide: React.FC = () => {
     let messageType: MessageType = 'Unknown';
     let topicName: string | null = null;
     
+    // If the content is a string and includes '"type":', try to parse it
     if (typeof content === 'string' && content.includes('"type":')) {
       try {
         const parsed = JSON.parse(content);
@@ -204,6 +206,7 @@ const WebSocketAPIGuide: React.FC = () => {
       }
     }
     
+    // Create a new message
     const newMessage: Message = {
       id: Date.now(),
       content,
@@ -214,6 +217,7 @@ const WebSocketAPIGuide: React.FC = () => {
       topicName
     };
     
+    // Add the new message to the messages list
     setMessages(prev => [...prev, newMessage]);
   };
   
@@ -328,34 +332,54 @@ const WebSocketAPIGuide: React.FC = () => {
     }));
   };
   
-  // Render token list
-  const renderTokenList = (): JSX.Element => {
+  // Render sorted token list
+  const renderTokenList = (): React.JSX.Element => {
+    
+    // Sort tokens by symbol
     const sortedTokens = Object.values(tokens).sort((a, b) => 
       a.symbol.localeCompare(b.symbol)
     );
     
+    // Return the JSX
     return (
       <div className="max-h-96 overflow-y-auto mt-2">
+        {/* Sorted tokens list */}
         {sortedTokens.map(token => (
           <div key={token.symbol} className="flex items-center p-2 border-b border-gray-700/50 hover:bg-dark-300/30">
-            <div className="font-bold w-20 font-mono">{token.symbol}</div>
+
+            {/* Symbol */}
+            <div className="font-bold w-20 font-mono">
+              {token.symbol}
+            </div>
+
+            {/* Price */}
             <div className="text-right w-24 font-mono">
+              {/* if price is a number, format it to 2 decimal places, otherwise show N/A */}
               ${typeof token.price === 'number' 
                 ? token.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : 'N/A'}
             </div>
-            <div className={`text-right w-20 px-1 ml-2 font-mono ${(token.change24h || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+
+            {/* 24h Change */}
+            <div className={`text-right w-20 px-1 ml-2 font-mono ${(token.change24h || 0) >= 0 
+              ? 'text-green-400' 
+              : 'text-red-400'}`}>
+              {/* if change24h is a number, format it to 2 decimal places, otherwise show N/A */}
               {token.change24h 
-                ? `${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%` 
+                ? `${token.change24h >= 0 
+                  ? '+' 
+                  : ''}${token.change24h.toFixed(2)}%` 
                 : 'N/A'}
             </div>
+
           </div>
         ))}
       </div>
     );
+
   };
 
-  // Get connection status display
+  // Get websocket connection status display
   const getConnectionStatusDisplay = () => {
     switch (connectionStatus) {
       case 'connected': 
@@ -371,7 +395,7 @@ const WebSocketAPIGuide: React.FC = () => {
     }
   };
 
-  // Get message class based on type
+  // Get websocket message class based on type
   const getMessageClass = (message: Message) => {
     const baseClasses = "p-3 mb-2 rounded relative border-l-4";
     
