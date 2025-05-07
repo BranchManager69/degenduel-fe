@@ -3,16 +3,16 @@
 /**
  * BlinkButton component
  * 
- * This component is used to display the blink button
+ * @description This component is used to display the blink button
  * 
  * @author @BranchManager69
  * @version 1.9.0
  * @created 2025-04-30
- * @updated 2025-04-30
+ * @updated 2025-05-07
  */
 
 import React, { useEffect, useState } from 'react';
-import { useSolanaWallet } from '../../hooks/data/useSolanaWallet'; // Import the useSolanaWallet hook
+import { useSolanaKitWallet } from '../../hooks/wallet/useSolanaKitWallet'; // Import the useSolanaKitWallet hook
 
 // Define the BlinkMetadata interface
 interface BlinkMetadata {
@@ -41,7 +41,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
   onSuccess,
   onError
 }) => {
-  const { publicKey, connected, connecting, connect, signAndSendTransaction } = useSolanaWallet();
+  const { publicKey, connected, connecting, connect, signAndSendTransaction } = useSolanaKitWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [metadata, setMetadata] = useState<BlinkMetadata | null>(null);
   const [error, setError] = useState<string | null>(null);
