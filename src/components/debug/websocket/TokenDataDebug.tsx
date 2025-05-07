@@ -20,7 +20,6 @@ const TokenDataDebug: React.FC = () => {
   const { 
     tokens: standardizedTokens, // This is Token[] from the new hook, use its length for total
     tokensAsTokenData, // This is TokenData[] for compatibility with table rendering
-    allTokens: standardizedAllTokens, // This is Token[]
     isConnected, 
     connectionState,
     error, 
@@ -210,7 +209,7 @@ const TokenDataDebug: React.FC = () => {
           <h3 className="font-semibold text-brand-400">Token Data <span className="text-white">({tokensAsTokenData.length} tokens)</span></h3>
           <div className="flex items-center text-xs bg-black/30 px-2 py-1 rounded">
             <span className="text-gray-400 mr-2">Filtered:</span> 
-            <span className="text-brand-300 font-mono">{tokensAsTokenData.length}/{standardizedTokens.length}</span>
+            <span className="text-brand-300 font-mono">{tokensAsTokenData.length}/{standardizedTokens ? standardizedTokens.length : 0}</span>
           </div>
         </div>
         <div className="overflow-auto max-h-80 rounded">

@@ -1,58 +1,56 @@
 import * as React from 'react';
 import { ReactNode } from 'react';
-import { AuthContextType } from '../contexts/AuthContext';
+// import { AuthContextType } from '../contexts/AuthContext'; // Deleted context, commenting out import
 
 // Define type instead of importing to avoid import errors
-interface PrivyAuthContextType {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isPrivyLinked: boolean;
+// This mock AuthContextType might need to be updated to align with UnifiedAuthContextType if stores use it.
+interface MockAuthContextType {
   user: any | null;
-  login: () => void;
-  logout: () => void;
-  getAuthToken: () => Promise<string | null>;
-  linkPrivyToWallet: () => Promise<boolean>;
-  checkAuthStatus: () => Promise<void>;
+  loading: boolean;
+  error: Error | null;
+  isAuthenticated: () => boolean;
+  activeAuthMethod: string | null;
+  authMethods: Record<string, any>;
+  isWalletConnected: boolean;
+  walletAddress: string | undefined;
+  isConnecting: boolean;
+  isWalletAuth: () => boolean;
+  isPrivyAuth: () => boolean;
+  isTwitterAuth: () => boolean;
+  isPrivyLinked: () => boolean;
+  isTwitterLinked: () => boolean;
+  connectWallet: () => void;
+  disconnectWallet: () => void;
+  isSuperAdmin: () => boolean;
+  isAdmin: () => boolean;
+  isFullyConnected: () => boolean;
+  checkAuth: () => void;
+  getAccessToken: () => Promise<string | null>;
 }
 
 // Mock AuthContext
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<MockAuthContextType | undefined>(undefined); // Use local MockAuthContextType
 
-const mockAuthContext: AuthContextType = {
-  // User state
+const mockAuthContext: MockAuthContextType = {
   user: null,
   loading: false,
   error: null,
-  
-  // Unified auth state
   isAuthenticated: () => false,
   activeAuthMethod: null,
   authMethods: {},
-  
-  // Wallet connection state
   isWalletConnected: false,
   walletAddress: undefined,
   isConnecting: false,
-  
-  // Auth method checks
   isWalletAuth: () => false,
   isPrivyAuth: () => false,
   isTwitterAuth: () => false,
-  
-  // Auth method linking
   isPrivyLinked: () => false,
   isTwitterLinked: () => false,
-  
-  // Auth methods
   connectWallet: () => console.log('connectWallet called'),
   disconnectWallet: () => console.log('disconnectWallet called'),
-  
-  // Role checks
   isSuperAdmin: () => false,
   isAdmin: () => false,
   isFullyConnected: () => false,
-  
-  // Auth utilities
   checkAuth: () => console.log('checkAuth called'),
   getAccessToken: async () => null
 };
@@ -64,6 +62,19 @@ export const MockAuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+// Define PrivyAuthContextType locally for the mock provider
+interface PrivyAuthContextType {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isPrivyLinked: boolean;
+  user: any | null;
+  login: () => void;
+  logout: () => void;
+  getAuthToken: () => Promise<string | null>;
+  linkPrivyToWallet: () => Promise<boolean>;
+  checkAuthStatus: () => Promise<void>;
+}
 
 // Mock PrivyAuthContext
 const PrivyAuthContext = React.createContext<PrivyAuthContextType>({

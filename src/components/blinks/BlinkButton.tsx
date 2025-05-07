@@ -45,8 +45,8 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
     publicKey, 
     isConnected,
     isConnecting,
-    connect, 
-    signAndSendTransaction, 
+    // connect, // No longer directly called here, wallet selection needed first
+    // signAndSendTransaction, // Needs refactor for pre-serialized transactions
   } = useSolanaKitWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [metadata, setMetadata] = useState<BlinkMetadata | null>(null);
@@ -104,7 +104,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
       try {
         setIsLoading(true);
         console.warn("BlinkButton: Wallet not connected, connect() call skipped. User needs to connect via WalletMultiButton.");
-        setError('Please connect your wallet first using the main connect button.');
+        setError('Please connect your wallet first.');
       } catch (err) {
         setError('Failed to connect wallet');
         onError?.(err as Error);
@@ -140,7 +140,8 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
 
       // Get the full response with all fields
       const data = await response.json();
-      const { transaction, message } = data;
+      // const { transaction, message } = data; // 'message' is unused
+      const { transaction } = data;
 
       // Log the portfolio details if present (useful for debugging)
       if (data.portfolio_summary) {
@@ -150,7 +151,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
 
       // Handle different transaction encoding formats
       // Newer backend returns base64, older code might return base58
-      let processedTransaction = transaction;
+      // let processedTransaction = transaction; // This variable is unused as the signing logic is commented
       
       // Check if transaction is base64 encoded (standard for real @solana/web3.js transactions)
       const isBase64 = /^[A-Za-z0-9+/=]+$/.test(transaction) && 

@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import useSound from 'use-sound';
 import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
@@ -40,50 +39,50 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
     lastAttempt: new Date().toISOString()
   });
   
-  const [lastSoundTime, setLastSoundTime] = useState<Record<string, number>>({
-    up: 0,
-    down: 0,
-    rank: 0
-  });
+  // const [lastSoundTime, setLastSoundTime] = useState<Record<string, number>>({
+  //   up: 0,
+  //   down: 0,
+  //   rank: 0
+  // });
   
-  const SOUND_COOLDOWN = 3000;
-  const SIGNIFICANT_CHANGE_THRESHOLD = 2.5;
+  // const SOUND_COOLDOWN = 3000;
+  // const SIGNIFICANT_CHANGE_THRESHOLD = 2.5; 
   
-  const [playUpSound] = useSound('/assets/media/sounds/token-up.mp3', { 
-    volume: 0.3,
-    interrupt: true,
-    soundEnabled
-  });
+  // const [playUpSound] = useSound('/assets/media/sounds/token-up.mp3', { 
+  //   volume: 0.3,
+  //   interrupt: true,
+  //   soundEnabled
+  // });
   
-  const [playDownSound] = useSound('/assets/media/sounds/token-down.mp3', { 
-    volume: 0.3,
-    interrupt: true,
-    soundEnabled 
-  });
+  // const [playDownSound] = useSound('/assets/media/sounds/token-down.mp3', { 
+  //   volume: 0.3,
+  //   interrupt: true,
+  //   soundEnabled 
+  // });
   
-  const [playRankChangeSound] = useSound('/assets/media/sounds/rank-change.mp3', { 
-    volume: 0.4,
-    interrupt: true,
-    soundEnabled 
-  });
+  // const [playRankChangeSound] = useSound('/assets/media/sounds/rank-change.mp3', { 
+  //   volume: 0.4,
+  //   interrupt: true,
+  //   soundEnabled 
+  // });
   
-  const playThrottledSound = useCallback((
-    soundType: 'up' | 'down' | 'rank',
-    playFunction: () => void,
-    isSignificant: boolean = true
-  ) => {
-    const now = Date.now();
-    const lastPlayed = lastSoundTime[soundType];
-    const timeSinceLastSound = now - lastPlayed;
+  // const playThrottledSound = useCallback((
+  //   soundType: 'up' | 'down' | 'rank',
+  //   playFunction: () => void,
+  //   isSignificant: boolean = true
+  // ) => {
+  //   const now = Date.now();
+  //   const lastPlayed = lastSoundTime[soundType];
+  //   const timeSinceLastSound = now - lastPlayed;
     
-    if (timeSinceLastSound > SOUND_COOLDOWN && (isSignificant || soundType === 'rank')) {
-      playFunction();
-      setLastSoundTime(prev => ({
-        ...prev,
-        [soundType]: now
-      }));
-    }
-  }, [lastSoundTime]);
+  //   if (timeSinceLastSound > SOUND_COOLDOWN && (isSignificant || soundType === 'rank')) {
+  //     playFunction();
+  //     setLastSoundTime(prev => ({
+  //       ...prev,
+  //       [soundType]: now
+  //     }));
+  //   }
+  // }, [lastSoundTime]);
   
   const getTokenColor = useCallback((symbol: string): string => {
     const colors: Record<string, string> = {
