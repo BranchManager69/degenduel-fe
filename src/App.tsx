@@ -20,6 +20,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "r
 // Auth providers
 import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
+//import { toEthereumWalletConnectors } from "@privy-io/react-auth/ethereum";
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
 import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
@@ -30,7 +31,7 @@ import { createDegenDuelRpcClient } from "./lib/solana/rpcClient"; // Our custom
 // Wallet providers
 // We will remove WalletName and Commitment if they are confirmed to be unused after this change.
 
-// Other providers
+// Other providers of dubious quality:
 import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
 import { AffiliateSystemProvider } from "./hooks/social/legacy/useAffiliateSystem";
@@ -69,6 +70,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import "jupiverse-kit/dist/index.css";
 // General styles
 import "./styles/color-schemes.css";
+
 // Hooks and utils
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
@@ -154,9 +156,11 @@ const LiquiditySimulatorPage = lazy(
   () => import("./pages/admin/LiquiditySimulatorPage"),
 );
 
+// Get Privy app ID
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
+console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
 
-// RpcContext for our custom JWT-aware RPC client
+// RpcContext for custom DegenDuel JWT-aware RPC client
 export interface RpcContextType {
   rpcClient: Rpc<SolanaRpcApi> | null;
   endpoint: string;
@@ -171,10 +175,11 @@ export const useDegenDuelRpc = () => {
 // App entry
 export const App: React.FC = () => {
   useScrollbarVisibility();
-
   return (
     <Router>
+      {/* UnifiedAuthProvider */}
       <UnifiedAuthProvider>
+        {/* Providers and content */}
         <AppProvidersAndContent />
       </UnifiedAuthProvider>
     </Router>
@@ -185,9 +190,10 @@ export const App: React.FC = () => {
 const AppProvidersAndContent: React.FC = () => {
   const { user } = useMigratedAuth();
   const ddJwt = useMemo(() => (user as any)?.ddJwt || null, [user]);
-
+  // Set the current RPC endpoint based on auth state
   const [currentRpcEndpoint, setCurrentRpcEndpoint] = useState(() => `${window.location.origin}/api/solana-rpc/public`);
 
+  // Effect to set the RPC endpoint based on auth state
   useEffect(() => {
     if (ddJwt) {
       console.log('[App.tsx] User authenticated, setting user-tier DegenDuel RPC proxy for Kit client');
@@ -198,27 +204,55 @@ const AppProvidersAndContent: React.FC = () => {
     }
   }, [ddJwt]);
 
+  // Effect to create the DegenDuel RPC client
   const rpcClientV2 = useMemo(() => {
     return createDegenDuelRpcClient(currentRpcEndpoint, ddJwt);
   }, [currentRpcEndpoint, ddJwt]);
 
+  // Privy config
   const privyConfig: PrivyClientConfig = useMemo(() => ({
-    loginMethods: ['wallet', 'passkey'],
+    // Choose from available login methods to enable
+    loginMethods: [
+      "wallet",
+      "email",
+      "sms",
+      "google",
+      "twitter",
+      "discord",
+      "github",
+      //"linkedin",
+      //"spotify",
+      //"instagram",
+      //"tiktok",
+      "apple",
+      //"farcaster",
+      "telegram",
+      "passkey"
+    ],
+    // Appearance settings
     appearance: {
       theme: 'dark',
-      accentColor: '#5865F2',
+      accentColor: '#5a2b66',
       showWalletLoginFirst: false,
-      walletChainType: 'ethereum-and-solana',
+      walletChainType: 'solana-only', // (solana only)
     },
+    // Enforce embedded wallets (solana only)
     embeddedWallets: {
-      createOnLogin: 'users-without-wallets',
-      requireUserPasswordOnCreate: true
+      solana: {
+          createOnLogin: 'users-without-wallets',
+          //requireUserPasswordOnCreate: true // why???? idgaf
+      },
+      //ethereum: {
+      //  createOnLogin: 'users-without-wallets',
+      //},
     },
+    // Allow external wallets (solana)
     externalWallets: {
       solana: {
         connectors: toSolanaWalletConnectors({ shouldAutoConnect: false })
       }
     },
+    // Supported chains (solana)
     supportedChains: [
       {
         name: 'Solana',
@@ -231,7 +265,7 @@ const AppProvidersAndContent: React.FC = () => {
         }
       }
     ]
-  }), [user, currentRpcEndpoint]); // Added currentRpcEndpoint to privy dependencies
+  }), [user, currentRpcEndpoint]);
 
   // THIS IS WHERE @solana/react PROVIDER(S) WOULD GO
   // Your research will determine what this looks like.
@@ -278,18 +312,29 @@ const AppContent: React.FC = () => {
       {authUser && (authUser as any).is_superadmin && <ServiceDebugPanel />}
       {authUser && (authUser as any).is_superadmin && <GameDebugPanel />}
       
+      {/* Background Effects */}
       <BackgroundEffectsBoundary>
         <BackgroundEffects />
       </BackgroundEffectsBoundary>
+
+      {/* Header */}  
       <Header />
+
+      {/* Edge To Edge Ticker */}
       <EdgeToEdgeTicker />
-      {/* Use authUser here */}
+
+      {/* Wallet Balance Ticker */} 
       {authUser && <WalletBalanceTicker isCompact={true} />}
+
+      {/* Server Down Banner */}
       <ServerDownBanner />
       
+      {/* Main Content */}
       <main className="flex-1 pb-12">
+
         {/* Routes */}
         <Routes>
+
           {/* Landing and Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/join" element={<PreserveQueryParamsRedirect to="/" />} />
@@ -434,11 +479,16 @@ const AppContent: React.FC = () => {
         </Routes>
       </main>
       
+      {/* Footer */}
       <Footer />
       
+      {/* Achievement Notification */}
       <AchievementNotification />
+      {/* Invite Welcome Modal */}
       <InviteWelcomeModal />
+      {/* Blink Resolver */}
       <BlinkResolver />
+      {/* Toast Container */}
       <ToastContainer />
     </div>
   );

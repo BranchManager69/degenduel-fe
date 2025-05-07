@@ -9,7 +9,7 @@
  * @last-modified 2025-04-02
  */
 
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+// import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; // REMOVED
 import { useEffect, useState } from 'react';
 import { usePrivyAuth } from "../../contexts/PrivyAuthContext";
 import useBiometricAuth from "../../hooks/auth/legacy/useBiometricAuth";
@@ -127,11 +127,11 @@ const LoginOptions = () => {
               
               {/* Desktop view: Traditional multi-button display (hidden on mobile) */}
               <div className="hidden md:block space-y-4">
-                {/* Wallet login */}
-                <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
+                {/* Wallet login - REMOVED WalletMultiButton */}
+                {/* <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
                   <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-colors duration-300"></div>
                   <WalletMultiButton className="w-full h-12 bg-transparent hover:bg-transparent font-cyber !rounded-md" />
-                </div>
+                </div> */}
                 
                 <div className="relative">
                   <Divider>

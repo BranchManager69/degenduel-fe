@@ -108,11 +108,14 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     const checkInitialAuth = async () => {
       try {
         setStatus(prev => ({ ...prev, loading: true }));
+        
+        // Check auth state
         await authService.checkAuth();
         
-        // Get current user from service
+        // Get current user from auth service
         const user = authService.getUser();
         
+        // Set auth status
         setStatus({
           loading: false,
           isAuthenticated: !!user,
@@ -121,7 +124,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
           error: null
         });
         
-        // Update method statuses
+        // Update auth method statuses
         updateMethodStatuses(user);
       } catch (error) {
         setStatus({
@@ -178,7 +181,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     };
   }, []);
   
-  // Determine active auth method from user object
+  // Determine active auth method from user object (is this really the best way to do this?)
   const determineActiveMethod = (user: User): AuthMethod | null => {
     if (!user) return null;
     
@@ -187,7 +190,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       return user.auth_method as AuthMethod;
     }
     
-    // Otherwise infer from available data
+    // Otherwise infer from available data (???)
     if (user.wallet_address) return 'wallet';
     if (user.privy_id) return 'privy';
     if (user.twitter_id) return 'twitter';
@@ -225,7 +228,8 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   const isAdmin = () => {
     return authService.hasRole('admin');
   };
-  
+
+  // Check if user is superadmin
   const isSuperAdmin = () => {
     return authService.hasRole('superadmin');
   };

@@ -3,13 +3,15 @@
 /**
  * LoginOptionsButton.tsx
  * 
- * This file contains the LoginOptionsButton component, which is used to display the login options button.
+ * @abstractdescription This file contains the LoginOptionsButton component, which is used to display the login options button.
  * 
- * @author @BranchManager69
- * @last-modified 2025-04-02
+ * @author BranchManager69
+ * @version v1.9.0
+ * @created 2025-04-02
+ * @updated 2025-05-07
  */
 
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+// import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; // REMOVED
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
 import { FaWallet } from 'react-icons/fa';
@@ -44,9 +46,9 @@ const LoginOptionsButton: React.FC<LoginOptionsButtonProps> = ({
   };
 
   // Define classes based on the compact prop for WalletMultiButton
-  const walletButtonBaseClasses = "w-full justify-center !rounded-md font-cyber"; // Common classes
-  const walletButtonNormalClasses = "text-sm sm:text-base py-2 px-4 h-10 sm:h-12"; // Adjust height/padding as needed
-  const walletButtonCompactClasses = "text-xs sm:text-sm py-1 px-2 h-8 sm:h-10"; // Shorter, less padding
+  // const walletButtonBaseClasses = "w-full justify-center !rounded-md font-cyber"; // Common classes
+  // const walletButtonNormalClasses = "text-sm sm:text-base py-2 px-4 h-10 sm:h-12"; // Adjust height/padding as needed
+  // const walletButtonCompactClasses = "text-xs sm:text-sm py-1 px-2 h-8 sm:h-10"; // Shorter, less padding
 
   return (
     <div className="relative">
@@ -87,10 +89,10 @@ const LoginOptionsButton: React.FC<LoginOptionsButtonProps> = ({
               <div className="p-3 space-y-2">
                 <h3 className="text-sm font-medium text-gray-300 mb-1">Login Options</h3>
                 
-                {/* Wallet Connection */}
-                <WalletMultiButton 
+                {/* Wallet Connection - REMOVED WalletMultiButton */}
+                {/* <WalletMultiButton 
                   className={`${walletButtonBaseClasses} ${compact ? walletButtonCompactClasses : walletButtonNormalClasses}`}
-                />
+                /> */}
                 
                 {/* Twitter Login */}
                 <TwitterLoginButton 

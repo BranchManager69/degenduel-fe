@@ -1,4 +1,4 @@
-// src/hooks/wallet/useSolanaKitWallet.ts (Conceptual Shell)
+// src/hooks/wallet/useSolanaKitWallet.ts
 
 import { type Address } from '@solana/addresses';
 import { useWalletAccountTransactionSendingSigner } from '@solana/react';
@@ -7,9 +7,7 @@ import {
   signTransactionMessageWithSigners,
 } from '@solana/signers';
 import {
-  //getBase64EncodedWireTransaction,
   type ITransactionMessageWithFeePayer,
-  //type SignedTransactionMessage,
   type TransactionMessage,
   type TransactionMessageWithBlockhashLifetime,
   type TransactionMessageWithDurableNonceLifetime,
@@ -21,13 +19,11 @@ import {
 } from '@solana/transactions';
 import {
   StandardConnect,
-  StandardDisconnect,
-  type StandardConnectFeature,
-  type StandardDisconnectFeature,
+  StandardDisconnect
 } from '@wallet-standard/features';
 import bs58 from 'bs58';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-
+// ? i forget
 import {
   useWallets,
   type UiWallet,
@@ -56,6 +52,7 @@ export interface UseSolanaKitWalletHook {
   signAndSendTransaction: (getTransactionMessage: () => FullyPreparedTransactionMessage) => Promise<string>; // Now returns base58 string signature
 }
 
+// Function to use the SolanaKitWallet hook
 export function useSolanaKitWallet(): UseSolanaKitWalletHook {
   const rpcContext = useDegenDuelRpc(); 
   const { rpcClient, endpoint } = rpcContext as RpcContextType;
@@ -69,6 +66,7 @@ export function useSolanaKitWallet(): UseSolanaKitWalletHook {
   const [isConnectingLocal, setIsConnectingLocal] = useState(false);
   const [isDisconnectingLocal, setIsDisconnectingLocal] = useState(false);
 
+  // Effect to set the current account
   useEffect(() => {
     if (selectedWalletInternal && selectedWalletInternal.accounts.length > 0) {
       if (currentAccountInternal?.address !== selectedWalletInternal.accounts[0].address) {
@@ -84,15 +82,19 @@ export function useSolanaKitWallet(): UseSolanaKitWalletHook {
     }
   }, [selectedWalletInternal, selectedWalletInternal?.accounts, currentAccountInternal]);
 
+  // Effect to set the chain for the signer
   const chainForSigner = useMemo(() => {
     if (endpoint.includes('devnet')) return 'solana:devnet';
     if (endpoint.includes('testnet')) return 'solana:testnet';
     return 'solana:mainnet';
   }, [endpoint]);
 
+  // Effect to set the transaction signer
   const transactionSigner = currentAccountInternal ? useWalletAccountTransactionSendingSigner(currentAccountInternal, chainForSigner) : undefined;
 
+  // Effect to set the public key
   const publicKey = useMemo(() => currentAccountInternal?.address as Address | null ?? null, [currentAccountInternal]);
+  // Effect to set the connection status
   const isConnected = useMemo(() => !!currentAccountInternal && !!selectedWalletInternal, [currentAccountInternal, selectedWalletInternal]);
 
   // Connect
@@ -102,16 +104,19 @@ export function useSolanaKitWallet(): UseSolanaKitWalletHook {
     setIsConnectingLocal(true);
     // --- Attempt to connect to the wallet
     try {
-      const connectFeature = walletToConnect.features[StandardConnect] as StandardConnectFeature[typeof StandardConnect] | undefined;
-      if (!connectFeature?.connect) {
-        throw new Error('Wallet does not support standard:connect feature or feature is malformed.');
+      // Ensure the wallet supports the `standard:connect` feature before attempting to connect.
+      if (StandardConnect in walletToConnect.features) {
+        await walletToConnect.features[StandardConnect].connect();
+        setSelectedWalletInternal(walletToConnect);
+      } else {
+        throw new Error('Wallet does not support standard:connect feature.');
       }
-      await connectFeature.connect();
-      setSelectedWalletInternal(walletToConnect); 
     } catch (error) {
+      // If the connection fails, clear the selected wallet and update the local state to reflect that connection is complete
       console.error(`[useSolanaKitWallet] Failed to connect to ${walletToConnect.name}:`, error);
       setSelectedWalletInternal(null); 
     } finally {
+      // Update the local state to reflect that connection is complete
       setIsConnectingLocal(false);
     }
     // --- Connection attempt at the wallet is complete
@@ -119,23 +124,26 @@ export function useSolanaKitWallet(): UseSolanaKitWalletHook {
 
   // Disconnect
   const disconnect = useCallback(async () => { 
+    // If the disconnection is already in progress or the selected wallet is not available, return
     if (isDisconnectingLocal || !selectedWalletInternal) return;
     // Update local state to reflect that disconnection is in progress
     setIsDisconnectingLocal(true);
     // --- Attempt to disconnect from the wallet
     try {
-      const disconnectFeature = selectedWalletInternal.features[StandardDisconnect] as StandardDisconnectFeature[typeof StandardDisconnect] | undefined;
-      if (!disconnectFeature?.disconnect) {
-        console.warn('Wallet does not support standard:disconnect feature or feature is malformed, clearing local state.');
+      // Ensure the wallet supports the `standard:disconnect` feature before attempting to disconnect.
+      if (selectedWalletInternal && StandardDisconnect in selectedWalletInternal.features) {
+        await selectedWalletInternal.features[StandardDisconnect].disconnect();
         setSelectedWalletInternal(null);
       } else {
-        await disconnectFeature.disconnect();
-        setSelectedWalletInternal(null);
+        console.warn('Wallet does not support standard:disconnect feature or no wallet selected, clearing local state.');
+        setSelectedWalletInternal(null); // Ensure wallet is cleared if feature not present
       }
     } catch (error) {
+      // If the disconnection fails, clear the selected wallet and update the local state to reflect that disconnection is complete
       console.error("[useSolanaKitWallet] Failed to disconnect wallet:", error);
       setSelectedWalletInternal(null);
     } finally {
+      // Update the local state to reflect that disconnection is complete
       setIsDisconnectingLocal(false);
     }
     // --- Disconnect attempt at the wallet is complete
@@ -161,10 +169,13 @@ export function useSolanaKitWallet(): UseSolanaKitWalletHook {
       // Sign the transaction message
       const signedTxObject: Readonly<FullySignedTransaction & TransactionWithLifetime> = 
         await signTransactionMessageWithSigners(msgWithSigner);
-      // Get base64 encoded wire transaction
-      const wireTx = getBase64EncodedWireTransaction(signedTxObject);
+      // Get the base64 encoded wire transaction from the FullySignedTransaction
+      const base64WireTransaction = getBase64EncodedWireTransaction(signedTxObject);
       // Broadcast through the RPC client
-      const signature = await rpcClient.sendTransaction(wireTx, { encoding: 'base64' }).send();
+      const signature = await rpcClient.sendTransaction(
+        base64WireTransaction, 
+        { encoding: 'base64' } // Specify encoding as per YOU_WILL_ACCOMPLISH_SUCCESS.md (4b)
+      ).send();
       // Return the signature
       return typeof signature === 'string' ? signature : bs58.encode(signature);
     },
