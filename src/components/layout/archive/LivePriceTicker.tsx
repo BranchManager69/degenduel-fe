@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useTokenData } from "../../hooks/data/legacy/useTokenData";
-import { TokenData } from "../../types";
+import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
+import { TokenData } from "../../../types";
 
 interface Props {
   isCompact?: boolean;
@@ -16,7 +16,7 @@ export const LivePriceTicker: React.FC<Props> = ({
   significantChangeThreshold = 3,
   maxTokens = 15,
 }) => {
-  const { tokens, isConnected } = useTokenData("all");
+  const { tokensAsTokenData, isConnected } = useStandardizedTokenData("all");
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
@@ -24,10 +24,10 @@ export const LivePriceTicker: React.FC<Props> = ({
 
   // Process tokens for significant price changes
   useEffect(() => {
-    if (!tokens || tokens.length === 0) return;
+    if (!tokensAsTokenData || tokensAsTokenData.length === 0) return;
 
     // Filter for tokens with significant price changes
-    const filtered = tokens.filter(token => 
+    const filtered = tokensAsTokenData.filter(token => 
       Math.abs(parseFloat(token.change24h)) >= significantChangeThreshold
     );
     
@@ -38,7 +38,7 @@ export const LivePriceTicker: React.FC<Props> = ({
     
     // Take top N
     setSignificantChanges(sorted.slice(0, maxTokens));
-  }, [tokens, significantChangeThreshold, maxTokens]);
+  }, [tokensAsTokenData, significantChangeThreshold, maxTokens]);
 
   // Clone items for infinite scroll
   useEffect(() => {

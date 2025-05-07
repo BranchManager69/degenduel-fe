@@ -2,13 +2,14 @@
 // Data-related hooks
 
 // Export current data hooks
-export { useStandardizedTokenData } from './useStandardizedTokenData';
 export { useSolanaTokenData } from './useSolanaTokenData';
-export { useSolanaWallet } from './useSolanaWallet';
 export { useSolanaWalletData } from './useSolanaWalletData';
+export { useStandardizedTokenData } from './useStandardizedTokenData';
 
 // Legacy hooks (deprecated but maintained for compatibility)
 export { useTokenData } from './legacy/useTokenData';
 export { useUserContests } from './legacy/useUserContests';
+
+// export { useSolanaWallet } from './useSolanaWallet'; // Removed - old hook deleted
 
 // No type exports for now - we'll add these back if needed after fixing the hooks

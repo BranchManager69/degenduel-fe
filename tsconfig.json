@@ -41,7 +41,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "archive/incinerator/DEPRECATED_Logo3D.tsx"],
   "exclude": ["src/stories/archive/**/*", "archive/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

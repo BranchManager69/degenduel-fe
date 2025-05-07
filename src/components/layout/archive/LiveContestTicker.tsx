@@ -4,8 +4,8 @@ import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { useStore } from "../../store/useStore";
-import type { Contest } from "../../types/index";
+import { useStore } from "../../../store/useStore";
+import type { Contest } from "../../../types/index";
 
 interface Props {
   contests: Contest[];

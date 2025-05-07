@@ -1,7 +1,7 @@
 // src/contexts/TwitterAuthContext.tsx
 
 /**
- * DEPRECATED - This context is scheduled for removal in the next major update.
+ * DEPRECATED - This context is scheduled for complete removal, and it's probably ready now.
  * Please use the UnifiedAuthContext instead, which provides all Twitter functionality.
  * 
  * @author @BranchManager69

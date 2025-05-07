@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-import ThreeManager from "../../utils/three/ThreeManager";
+import ThreeManager from "../../src/utils/three/ThreeManager";
 
 interface Logo3DProps {
   isCompact?: boolean;
