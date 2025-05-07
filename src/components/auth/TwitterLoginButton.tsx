@@ -2,10 +2,9 @@ import React from "react";
 import { toast } from "react-hot-toast";
 import { FaTwitter } from "react-icons/fa";
 
-import { useAuthContext } from "../../contexts/AuthContext";
-import { useTwitterAuth } from "../../contexts/TwitterAuthContext";
-import { Button } from "../ui/Button";
 import { authDebug } from "../../config/config";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
+import { Button } from "../ui/Button";
 
 interface TwitterLoginButtonProps {
   linkMode?: boolean;
@@ -30,15 +29,18 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
   className = "",
   onClick
 }) => {
-  const { user } = useAuthContext();
   const { 
-    login, 
-    linkAccount, 
-    isTwitterLinked, 
-    isLoading 
-  } = useTwitterAuth();
+    user, 
+    isLoading, 
+    linkTwitter, 
+    loginWithTwitter,
+    authMethods 
+  } = useMigratedAuth();
   
   const [isLinking, setIsLinking] = React.useState(false);
+
+  // Determine if Twitter is linked from the authMethods
+  const isTwitterLinked = !!authMethods?.twitter?.linked;
 
   // Handle Twitter auth based on mode
   const handleTwitterAuth = async () => {
@@ -52,13 +54,15 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       authDebug('TwitterBtn', 'Starting account linking flow', { userId: user.id });
       setIsLinking(true);
       try {
-        const success = await linkAccount();
-        if (success) {
-          authDebug('TwitterBtn', 'Twitter account linked successfully');
-          toast.success("Twitter account linked successfully");
+        const redirectUrl = await linkTwitter();
+        if (redirectUrl) {
+          authDebug('TwitterBtn', 'Redirecting to Twitter for linking', { redirectUrl });
+          // Redirect to Twitter for linking, backend will handle callback
+          window.location.href = redirectUrl;
+          // Toast will be shown on callback by TwitterAuthContext or LoginPage
         } else {
-          authDebug('TwitterBtn', 'Failed to link Twitter account');
-          toast.error("Failed to link Twitter account");
+          authDebug('TwitterBtn', 'Failed to initiate Twitter linking - no redirect URL');
+          toast.error("Failed to initiate Twitter linking.");
         }
       } catch (error) {
         authDebug('TwitterBtn', 'Error linking Twitter account', { error });
@@ -70,7 +74,19 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
     } else {
       // Normal login flow
       authDebug('TwitterBtn', 'Starting Twitter login flow');
-      login();
+      if (loginWithTwitter) {
+        const redirectUrl = await loginWithTwitter();
+        if (redirectUrl) {
+          authDebug('TwitterBtn', 'Redirecting to Twitter for login', { redirectUrl });
+          window.location.href = redirectUrl;
+        } else {
+          authDebug('TwitterBtn', 'Failed to initiate Twitter login - no redirect URL');
+          toast.error("Failed to initiate Twitter login.");
+        }
+      } else {
+        console.error("loginWithTwitter is not available on useMigratedAuth");
+        toast.error("Twitter login is currently unavailable.");
+      }
     }
   };
 

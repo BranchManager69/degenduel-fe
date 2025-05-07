@@ -8,14 +8,14 @@
  * @author @BranchManager69
  * @version 1.9.0
  * @created 2025-04-30
- * @updated 2025-04-30
+ * @updated 2025-05-07
  */
 
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useSolanaWallet } from '../../hooks/data/useSolanaWallet';
+import { useSolanaKitWallet } from '../../hooks/wallet/useSolanaKitWallet';
 import { BlinkButton } from './BlinkButton';
-import { SolanaWalletConnector } from './SolanaWalletConnector';
 
 interface BlinkMetadata {
   title: string;
@@ -26,7 +26,7 @@ interface BlinkMetadata {
 export const BlinkResolver: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { connected } = useSolanaWallet();
+  const { isConnected } = useSolanaKitWallet();
   const [blinkUrl, setBlinkUrl] = useState<string | null>(null);
   const [params, setParams] = useState<Record<string, string>>({});
   const [metadata, setMetadata] = useState<BlinkMetadata | null>(null);
@@ -154,7 +154,7 @@ export const BlinkResolver: React.FC = () => {
               <p className="text-gray-400 mt-1">{metadata.description}</p>
             </div>
             
-            {connected ? (
+            {isConnected ? (
               <div className="space-y-4">
                 <BlinkButton 
                   blinkUrl={blinkUrl}
@@ -185,7 +185,8 @@ export const BlinkResolver: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <SolanaWalletConnector className="mb-4" />
+                <p className="text-center text-gray-300 mb-2">Please connect your wallet to proceed.</p>
+                <WalletMultiButton />
                 
                 <button
                   className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"

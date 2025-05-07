@@ -1,6 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { useTokenData } from '../../../hooks/data/legacy/useTokenData';
+// import { useTokenData } from '../../../hooks/data/legacy/useTokenData'; // Legacy
+import { useStandardizedTokenData } from '../../../hooks/data/useStandardizedTokenData'; // Use new hook and its TokenData type might be compatible or we use its tokensAsTokenData
 import { useWebSocketMonitor } from '../../../hooks/utilities/legacy/useWebSocketMonitor'; //   whats this?
+import { TokenData } from '../../../types'; // Import TokenData from types
 
 /**
  * Debug component for testing the TokenData WebSocket hook
@@ -16,26 +18,27 @@ const TokenDataDebug: React.FC = () => {
   
   // Use the token data hook - will connect to unified WebSocket
   const { 
-    tokens, 
-    allTokens,
+    tokens: standardizedTokens, // This is Token[] from the new hook, use its length for total
+    tokensAsTokenData, // This is TokenData[] for compatibility with table rendering
+    allTokens: standardizedAllTokens, // This is Token[]
     isConnected, 
     connectionState,
     error, 
     lastUpdate,
-    _refresh
-  } = useTokenData(filterSymbols.length > 0 ? filterSymbols : 'all');
+    refresh // Renamed from _refresh
+  } = useStandardizedTokenData(filterSymbols.length > 0 ? filterSymbols : 'all');
   
   // Enhanced refresh function with visual feedback
   const handleRefresh = useCallback(() => {
-    if (isConnected && _refresh) {
+    if (isConnected && refresh) { // Use refresh
       setIsRefreshing(true);
-      Promise.resolve(_refresh()).finally(() => {
+      Promise.resolve(refresh()).finally(() => { // Use refresh
         setTimeout(() => setIsRefreshing(false), 500);
       });
     } else {
       console.warn("Cannot refresh: WebSocket not connected");
     }
-  }, [isConnected, _refresh]);
+  }, [isConnected, refresh]);
   
   // Handle adding a symbol to filter
   const handleAddSymbol = () => {
@@ -204,10 +207,10 @@ const TokenDataDebug: React.FC = () => {
       {/* Token Data */}
       <div className="bg-black/30 backdrop-blur-sm rounded border border-gray-700">
         <div className="flex justify-between items-center p-3 border-b border-gray-700">
-          <h3 className="font-semibold text-brand-400">Token Data <span className="text-white">({tokens.length} tokens)</span></h3>
+          <h3 className="font-semibold text-brand-400">Token Data <span className="text-white">({tokensAsTokenData.length} tokens)</span></h3>
           <div className="flex items-center text-xs bg-black/30 px-2 py-1 rounded">
             <span className="text-gray-400 mr-2">Filtered:</span> 
-            <span className="text-brand-300 font-mono">{tokens.length}/{allTokens.length}</span>
+            <span className="text-brand-300 font-mono">{tokensAsTokenData.length}/{standardizedTokens.length}</span>
           </div>
         </div>
         <div className="overflow-auto max-h-80 rounded">
@@ -221,7 +224,7 @@ const TokenDataDebug: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {tokens.map(token => (
+              {tokensAsTokenData.map((token: TokenData) => (
                 <tr key={token.symbol} className="border-t border-gray-800 hover:bg-gray-800/50 transition-colors">
                   <td className="p-2 text-brand-300 font-mono">{token.symbol}</td>
                   <td className="p-2 truncate max-w-[150px]">{token.name}</td>
@@ -234,7 +237,7 @@ const TokenDataDebug: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {tokens.length === 0 && (
+              {tokensAsTokenData.length === 0 && (
                 <tr>
                   <td colSpan={4} className="p-6 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500 space-y-2">
@@ -243,11 +246,11 @@ const TokenDataDebug: React.FC = () => {
                       </svg>
                       <span>
                         {connectionState === 'connecting' ? 'Connecting to server...' :
-                         connectionState === 'connected' && tokens.length === 0 ? 'Connected, requesting token data...' :
-                         isConnected && tokens.length === 0 ? 'No tokens available' : 
+                         connectionState === 'connected' && tokensAsTokenData.length === 0 ? 'Connected, requesting token data...' :
+                         isConnected && tokensAsTokenData.length === 0 ? 'No tokens available' : 
                          'Waiting for connection...'}
                       </span>
-                      {isConnected && tokens.length === 0 && (
+                      {isConnected && tokensAsTokenData.length === 0 && (
                         <span className="text-xs">
                           Try refreshing or checking your filters
                           {wsMonitor.isAuthError ? ' (Operating in public data mode)' : ''}

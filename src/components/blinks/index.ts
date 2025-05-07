@@ -8,11 +8,11 @@
  * @author @BranchManager69
  * @version 1.9.0
  * @created 2025-04-30
- * @updated 2025-04-30
+ * @updated 2025-05-07
  */
 
 export * from './BlinkButton'; // the main button component
 export * from './BlinkResolver'; // the resolver component
 export * from './ShareBlinkButton'; // the share button component
-export * from './SolanaWalletConnector'; // the solana wallet connector component
+// export * from './SolanaWalletConnector'; // Deleted - the solana wallet connector component
 

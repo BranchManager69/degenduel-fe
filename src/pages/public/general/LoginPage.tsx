@@ -18,7 +18,8 @@ import LoginOptions from "../../../components/auth/LoginOptions";
 import WalletDebugger from "../../../components/auth/WalletDebugger";
 import Logo from "../../../components/ui/Logo";
 import { authDebug } from "../../../config/config";
-import { useAuthContext } from "../../../contexts/AuthContext";
+// import { useAuthContext } from "../../../contexts/AuthContext"; // Legacy
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth"; // Use new hook
 
 /**
  * Dedicated login page for DegenDuel
@@ -26,7 +27,7 @@ import { useAuthContext } from "../../../contexts/AuthContext";
  * Preserves original navigation target for post-authentication redirection
  */
 const LoginPage: React.FC = () => {
-  const { user } = useAuthContext();
+  const { user } = useMigratedAuth(); // Changed to useMigratedAuth
   const navigate = useNavigate();
   const location = useLocation();
   const [showDebugger, setShowDebugger] = useState(true);

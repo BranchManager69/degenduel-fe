@@ -15,7 +15,8 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { authDebug } from '../config/config';
-import { useAuth } from '../hooks/auth/legacy/useAuth';
+// import { useAuth } from '../hooks/auth/legacy/useAuth'; // Legacy
+import { useMigratedAuth } from '../hooks/auth/useMigratedAuth'; // Use new migrated hook
 import {
   ConnectionState,
   DDExtendedMessageType,
@@ -104,8 +105,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   // Get auth state from store and context
-  const user = useStore(state => state.user);
-  const authContext = useAuth();
+  const storeUser = useStore(state => state.user); // Renamed to avoid conflict with auth.user
+  const auth = useMigratedAuth(); // Use migrated hook
+  const user = auth.user || storeUser; // Prioritize user from auth hook
   
   // WebSocket connection state
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
@@ -138,12 +140,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Authentication state
   const authState = React.useMemo(() => ({
     isLoggedIn: !!user,
-    isAdmin: authContext.isAdmin?.() || false,
+    isAdmin: auth.isAdmin, // isAdmin is now a boolean property
     hasWsToken: !!user?.wsToken,
     hasJwt: !!user?.jwt,
     hasSessionToken: !!user?.session_token,
     canAuthenticate: !!user
-  }), [user?.wallet_address, user?.jwt, user?.wsToken, user?.session_token, authContext]);
+  }), [user, auth.isAdmin, auth.user]); // Added auth.user to dependencies
   
   // Initialize WebSocket tracking on mount
   useEffect(() => {
@@ -631,24 +633,24 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
     
-    if (!authState.isLoggedIn) {
+    // Use the 'user' variable which is already prioritized (auth.user || storeUser)
+    if (!user) { 
       authDebug('WebSocketContext', 'Cannot authenticate - User not logged in');
       return;
     }
     
-    // Get user state with tokens
-    const user = useStore.getState().user;
-    let wsToken = user?.wsToken;
-    let jwt = user?.jwt;
-    const sessionToken = user?.session_token;
+    const currentUser = user; // Use the already resolved user object
+    let wsToken = currentUser?.wsToken;
+    let jwt = currentUser?.jwt;
+    const sessionToken = currentUser?.session_token;
     
     // Detect if this is Twitter authentication
-    const isTwitterAuth = authContext.activeAuthMethod === 'twitter' || 
-                          authContext.isTwitterAuth?.() || 
-                          (authContext.authMethods?.twitter?.active === true); // Check using auth context methods
+    const isTwitterAuth = auth.activeAuthMethod === 'twitter' || 
+                          auth.isTwitterAuth?.() || 
+                          (auth.authMethods?.twitter?.active === true);
     
     // Force token refresh if needed
-    if ((forceRefresh || isTwitterAuth) && authContext.getAccessToken) {
+    if ((forceRefresh || isTwitterAuth) && auth.getToken) { 
       try {
         if (isTwitterAuth) {
           authDebug('WebSocketContext', 'Twitter auth detected, ensuring we have a WebSocket token');
@@ -656,14 +658,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           authDebug('WebSocketContext', 'Forcing token refresh before authentication');
         }
         
-        const newToken = await authContext.getAccessToken();
-        if (newToken && user) {
+        const newToken = await auth.getToken(); 
+        if (newToken && currentUser) {
           wsToken = newToken;
-          // Update the token in the store as well
           useStore.getState().setUser({
-            ...user,
+            ...currentUser,
             wsToken: newToken
-          } as any); // Type assertion to avoid TS error
+          } as any);
         }
       } catch (error) {
         authDebug('WebSocketContext', 'Token refresh failed', { error });
@@ -683,19 +684,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!authToken) {
       authDebug('WebSocketContext', 'No auth token available');
       
-      // If we should retry and can get a token, do so
-      if (retryOnFailure && authContext.getAccessToken) {
+      if (retryOnFailure && auth.getToken) { 
         authDebug('WebSocketContext', 'Attempting to get a fresh access token');
         try {
-          const token = await authContext.getAccessToken();
-          if (token && user) {
+          const token = await auth.getToken(); 
+          if (token && currentUser) {
             authDebug('WebSocketContext', 'Received new token, updating and retrying auth');
-            // Update the token in the store
             useStore.getState().setUser({
-              ...user,
+              ...currentUser,
               wsToken: token
-            } as any); // Type assertion to avoid TS error
-            // Retry authentication with the new token but don't allow further retries
+            } as any); 
             authenticate(false, false);
             return;
           }
@@ -780,7 +778,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         error: error instanceof Error ? error.message : String(error)
       });
     }
-  }, [authState.isLoggedIn, authContext]);
+  }, [authState.isLoggedIn, auth.activeAuthMethod, auth.isTwitterAuth, auth.authMethods, auth.getToken, user]);
   
   // Register a message listener
   /**
@@ -956,18 +954,17 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     // When user is logged in but doesn't have a WebSocket token, fetch one
     const fetchTokenIfNeeded = async () => {
-      if (authState.isLoggedIn && !authState.hasWsToken && authContext.getAccessToken) {
+      const currentUserForTokenFetch = auth.user || useStore.getState().user;
+      if (currentUserForTokenFetch && !(currentUserForTokenFetch as any).wsToken && auth.getToken) {
         try {
           authDebug('WebSocketContext', 'Requesting WebSocket token');
-          const token = await authContext.getAccessToken();
+          const token = await auth.getToken();
           if (token) {
             authDebug('WebSocketContext', 'Token received, updating user');
-            // Check if we have a valid user with required properties
-            if (user && user.wallet_address) {
-              // Use the store's setUser method with the correct typing
+            if (currentUserForTokenFetch && (currentUserForTokenFetch as any).wallet_address) {
               useStore.getState().setUser({
-                ...user,
-                wsToken: token // Store in dedicated wsToken field
+                ...currentUserForTokenFetch,
+                wsToken: token 
               });
             }
           }
@@ -978,7 +975,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
     
     fetchTokenIfNeeded();
-  }, [authState.isLoggedIn, authState.hasWsToken, authContext, user]);
+  }, [auth.user, auth.activeAuthMethod, auth.isTwitterAuth, auth.authMethods, auth.getToken, useStore.getState().user]);
   
   // Derive isConnected and isAuthenticated from connectionState
   /**

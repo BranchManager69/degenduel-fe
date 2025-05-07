@@ -7,7 +7,7 @@ export { useSolanaWalletData } from './useSolanaWalletData';
 export { useStandardizedTokenData } from './useStandardizedTokenData';
 
 // Legacy hooks (deprecated but maintained for compatibility)
-export { useTokenData } from './legacy/useTokenData';
+// export { useTokenData } from './legacy/useTokenData'; // Removed - legacy hook deleted
 export { useUserContests } from './legacy/useUserContests';
 
 // export { useSolanaWallet } from './useSolanaWallet'; // Removed - old hook deleted

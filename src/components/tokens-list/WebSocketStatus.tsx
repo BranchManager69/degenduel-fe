@@ -1,8 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useTokenData } from '../../hooks/data/legacy/useTokenData';
+// import { useTokenData } from '../../hooks/data/legacy/useTokenData'; // Legacy
+import { useStandardizedTokenData } from '../../hooks/data/useStandardizedTokenData'; // Corrected path
 
 export const WebSocketStatus: React.FC = () => {
-  const { isConnected, tokens, lastUpdate, error, connectionState } = useTokenData("all");
+  // Use the standardized hook
+  const { 
+    isConnected, 
+    tokens, // This is Token[] from useStandardizedTokenData
+    lastUpdate, 
+    error, 
+    connectionState 
+  } = useStandardizedTokenData("all");
+
   const [updateCount, setUpdateCount] = useState(0);
   const [lastSymbol, setLastSymbol] = useState<string | null>(null);
   const [isBlinking, setIsBlinking] = useState(false);

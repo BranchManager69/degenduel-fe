@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import useTokenData from "../../../hooks/data/legacy/useTokenData";
+import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { Token } from "../../../types";
 import { formatNumber } from "../../../utils/format";
 
@@ -14,63 +14,33 @@ export const TokensPreviewSection: React.FC<TokensPreviewSectionProps> = ({
   maxTokens = 6,
   initialLoading = false
 }) => {
+  // Use the standardized token data hook
+  // It provides topTokens sorted by marketCap and already in Token[] format
+  const {
+    topTokens, // Already sorted by marketCap and sliced by maxTopTokens (which defaults to 6)
+    isLoading: standardizedLoading,
+    error: standardizedError,
+  } = useStandardizedTokenData("all", "marketCap", {}, 5, maxTokens); // Pass maxTokens here for topTokens count
+
+  // Local state can now directly use data from the hook
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [loading, setLoading] = useState(initialLoading);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(initialLoading || standardizedLoading);
+  const [error, setError] = useState<string | null>(standardizedError);
   
-  // Use WebSocket-based token data hook
-  const { tokens: wsTokens } = useTokenData("all");
-  
-  // Process tokens when WebSocket data is available
   useEffect(() => {
-    try {
-      if (wsTokens && wsTokens.length > 0) {
-        setLoading(false);
-        
-        // Transform tokens to match our expected format
-        const transformedTokens = wsTokens.map((token: any) => ({
-          contractAddress: token.contractAddress || token.address,
-          name: token.name,
-          symbol: token.symbol,
-          price: token.price?.toString() || "0",
-          marketCap: token.marketCap?.toString() || "0",
-          volume24h: token.volume24h?.toString() || "0",
-          change24h: token.change24h?.toString() || "0",
-          // Ensure status field is present and valid
-          status: token.status || "active",
-          liquidity: {
-            usd: token.liquidity?.usd?.toString() || "0",
-            base: token.liquidity?.base?.toString() || "0",
-            quote: token.liquidity?.quote?.toString() || "0",
-          },
-          images: {
-            imageUrl: token.imageUrl || token.image,
-            headerImage: token.headerImage,
-            openGraphImage: token.openGraphImage,
-          },
-          socials: token.socials,
-          websites: token.websites,
-          // Include any optional fields that might be used elsewhere
-          changesJson: token.changesJson,
-          transactionsJson: token.transactionsJson,
-          baseToken: token.baseToken,
-          quoteToken: token.quoteToken
-        }));
-        
-        // Sort by market cap (descending) - explicitly typing as Token[]
-        const sortedTokens: Token[] = transformedTokens.sort(
-          (a, b) => Number(b.marketCap) - Number(a.marketCap)
-        );
-        
-        // Take only the top N tokens
-        setTokens(sortedTokens.slice(0, maxTokens));
-      }
-    } catch (err) {
-      console.error("Failed to process tokens:", err);
-      setError("Failed to process tokens data");
-      setLoading(false);
+    setLoading(standardizedLoading);
+  }, [standardizedLoading]);
+
+  useEffect(() => {
+    setError(standardizedError);
+  }, [standardizedError]);
+
+  useEffect(() => {
+    if (topTokens && topTokens.length > 0) {
+      setTokens(topTokens); // Directly use topTokens
+      setLoading(false); // Ensure loading is false once we have tokens
     }
-  }, [wsTokens, maxTokens]);
+  }, [topTokens]);
 
   // Helper function to get a color based on token symbol - for visual variety
   const getTokenColor = useCallback((symbol: string): string => {
