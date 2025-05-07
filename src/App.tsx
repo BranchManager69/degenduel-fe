@@ -28,8 +28,7 @@ import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use Sol
 import { createDegenDuelRpcClient } from "./lib/solana/rpcClient"; // Our custom RPC client factory
 
 // Wallet providers
-import { WalletName } from "@solana/wallet-adapter-base";
-import { Commitment } from "@solana/web3.js";
+// We will remove WalletName and Commitment if they are confirmed to be unused after this change.
 
 // Other providers
 import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
@@ -64,12 +63,15 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 
-// Hooks and utils
+// Wallet adapter styles (if this is the old wallet adapter, we removed it)
 import "@solana/wallet-adapter-react-ui/styles.css";
+// Jupiverse Kit styles (we removed Jupiverse Kit from the project)
 import "jupiverse-kit/dist/index.css";
+// General styles
+import "./styles/color-schemes.css";
+// Hooks and utils
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
-import "./styles/color-schemes.css";
 
 // Route components
 // Admin routes
@@ -104,10 +106,6 @@ import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage";
 import { ContestDetails } from "./pages/public/contests/ContestDetailPage";
 import { ContestLobby } from "./pages/public/contests/ContestLobbyPage";
 import { ContestResults } from "./pages/public/contests/ContestResultsPage";
-import { VirtualAgentPage } from "./pages/public/game/VirtualAgent";
-import { BannedIP } from "./pages/public/general/BannedIP";
-import { BannedUser } from "./pages/public/general/BannedUser";
-import { BlinksDemo } from "./pages/public/general/BlinksDemo";
 import { Contact } from "./pages/public/general/Contact";
 import { FAQ } from "./pages/public/general/FAQ";
 import { HowItWorks } from "./pages/public/general/HowItWorks";
@@ -116,7 +114,13 @@ import LoginPage from "./pages/public/general/LoginPage";
 import { Maintenance } from "./pages/public/general/Maintenance";
 import { NotFound } from "./pages/public/general/NotFound";
 import { PublicProfile } from "./pages/public/general/PublicProfile";
+// ???:
+import { BannedIP } from "./pages/public/general/BannedIP";
+import { BannedUser } from "./pages/public/general/BannedUser";
+import { BlinksDemo } from "./pages/public/general/BlinksDemo";
 import SolanaBlockchainDemo from "./pages/public/general/SolanaBlockchainDemo";
+// no true implementation yet:
+import { VirtualAgentPage } from "./pages/public/game/VirtualAgent";
 
 // Leaderboard routes
 import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings";
@@ -150,49 +154,13 @@ const LiquiditySimulatorPage = lazy(
   () => import("./pages/admin/LiquiditySimulatorPage"),
 );
 
-interface AppUwkConfig {
-  autoConnect: boolean;
-  env: 'mainnet-beta' | 'devnet';
-  metadata: {
-    name: string;
-    description: string;
-    url: string;
-    iconUrls: string[];
-  };
-  theme: 'dark' | 'light' | 'jupiter';
-  connectionConfig: {
-    endpoint: string;
-    commitment?: Commitment;
-  };
-  walletPrecedence?: WalletName[];
-  notificationCallback?: {
-      onConnect: (props: any) => void;
-      onConnecting: (props: any) => void;
-      onDisconnect: (props: any) => void;
-      onNotInstalled: (props: any) => void;
-  };
-  walletlistExplanation?: { href: string; };
-  walletAttachments?: Record<string, { attachment: React.ReactNode; }>;
-  walletModalAttachments?: { footer?: React.ReactNode; };
-}
-
-const FlagSetter: React.FC = () => {
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).__JUP_WALLET_PROVIDER_EXISTS = true;
-    }
-  }, []);
-  return null;
-};
-
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
 
 // RpcContext for our custom JWT-aware RPC client
-interface RpcContextType {
+export interface RpcContextType {
   rpcClient: Rpc<SolanaRpcApi> | null;
   endpoint: string;
 }
-// Export RpcContext so it can be imported by hooks
 export const RpcContext = createContext<RpcContextType | null>(null);
 export const useDegenDuelRpc = () => {
   const context = useContext(RpcContext);
