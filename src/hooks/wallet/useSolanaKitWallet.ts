@@ -105,8 +105,8 @@ export function useSolanaKitWallet(): UseSolanaKitWalletHook {
     // --- Attempt to connect to the wallet
     try {
       // Ensure the wallet supports the `standard:connect` feature before attempting to connect.
-      if (StandardConnect in walletToConnect.features) {
-        await walletToConnect.features[StandardConnect].connect();
+      if ((walletToConnect.features as Record<string, any>)[StandardConnect]) {
+        await (walletToConnect.features as Record<string, any>)[StandardConnect].connect();
         setSelectedWalletInternal(walletToConnect);
       } else {
         throw new Error('Wallet does not support standard:connect feature.');
@@ -131,8 +131,11 @@ export function useSolanaKitWallet(): UseSolanaKitWalletHook {
     // --- Attempt to disconnect from the wallet
     try {
       // Ensure the wallet supports the `standard:disconnect` feature before attempting to disconnect.
-      if (selectedWalletInternal && StandardDisconnect in selectedWalletInternal.features) {
-        await selectedWalletInternal.features[StandardDisconnect].disconnect();
+      if (
+        selectedWalletInternal &&
+        (selectedWalletInternal.features as Record<string, any>)[StandardDisconnect]
+      ) {
+        await (selectedWalletInternal.features as Record<string, any>)[StandardDisconnect].disconnect();
         setSelectedWalletInternal(null);
       } else {
         console.warn('Wallet does not support standard:disconnect feature or no wallet selected, clearing local state.');
