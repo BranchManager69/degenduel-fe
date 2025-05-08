@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
-import { useContestChatWebSocket } from "../../hooks/websocket/legacy/useContestChatWebSocket";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
+import { ChatMessage, useContestChat } from '../../hooks/websocket/topic-hooks/useContestChat';
 
 // Default profile picture URL
 const DEFAULT_PROFILE_PICTURE = "https://api.dicebear.com/7.x/avataaars/svg?seed=";
@@ -11,17 +12,6 @@ interface ContestChatProps {
   className?: string;
   onNewMessage?: () => void;
   adminType?: "admin" | "superadmin"; // Optional admin type for styling
-}
-
-interface ChatMessage {
-  messageId: string;
-  userId: string;
-  nickname: string;
-  text: string;
-  timestamp: string;
-  isAdmin?: boolean;
-  isAiAgent?: boolean;
-  profilePicture?: string;
 }
 
 interface AITip {
@@ -65,17 +55,15 @@ export const ContestChat: React.FC<ContestChatProps> = ({
   onNewMessage,
   adminType,
 }) => {
+  const { user } = useMigratedAuth();
   const {
-    participants,
-    messages: websocketMessages,
-    isRateLimited,
+    messages,
+    isLoading,
+    isConnected,
     error,
     sendMessage,
-    leaveRoom,
-    currentUserId
-  } = useContestChatWebSocket(contestId);
+  } = useContestChat(contestId);
   
-  // Local state to handle real messages + AI messages
   const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [showParticipants, setShowParticipants] = useState(false);
@@ -84,36 +72,32 @@ export const ContestChat: React.FC<ContestChatProps> = ({
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [hasSeenIntro, setHasSeenIntro] = useState(false);
   
-  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const aiAgentRef = useRef<HTMLDivElement>(null);
 
-  // Properly clean up when component unmounts
   useEffect(() => {
     return () => {
       console.log(`[ContestChat] Closing WebSocket for contest ${contestId}`);
-      leaveRoom();
     };
-  }, [contestId, leaveRoom]);
+  }, [contestId]);
 
-  // Combine websocket messages with AI agent messages
   useEffect(() => {
-    setAllMessages([...websocketMessages]);
+    setAllMessages([...messages]);
     
-    // Show AI intro message if not seen yet
-    if (websocketMessages.length > 0 && !hasSeenIntro) {
+    if (messages.length > 0 && !hasSeenIntro) {
       setTimeout(() => {
         const aiIntroMessage: ChatMessage = {
-          messageId: `ai-intro-${Date.now()}`,
-          userId: "ai-agent",
-          nickname: "DegenDuelAI",
-          text: "Hello traders! I'll be providing market insights and trading tips throughout this contest. Good luck!",
+          id: `ai-intro-${Date.now()}`,
+          contest_id: contestId,
+          user_id: "ai-agent",
+          username: "DegenDuelAI",
+          message: "Hello traders! I'll be providing market insights and trading tips throughout this contest. Good luck!",
           timestamp: new Date().toISOString(),
-          isAiAgent: true,
-          profilePicture: "/ai-assistant.png" // You'll need to add this image
+          is_system: true,
+          user_role: 'system'
         };
         
         setAllMessages(prev => [...prev, aiIntroMessage]);
@@ -121,20 +105,20 @@ export const ContestChat: React.FC<ContestChatProps> = ({
       }, 3000);
     }
     
-    // Periodically add AI tips
-    if (hasSeenIntro && websocketMessages.length > 3) {
-      const randomTipInterval = Math.floor(Math.random() * (120000 - 60000)) + 60000; // 1-2 minutes
+    if (hasSeenIntro && messages.length > 3) {
+      const randomTipInterval = Math.floor(Math.random() * (120000 - 60000)) + 60000;
       
       const tipTimer = setTimeout(() => {
         const randomTip = AI_TIPS[Math.floor(Math.random() * AI_TIPS.length)];
         const aiTipMessage: ChatMessage = {
-          messageId: `ai-tip-${Date.now()}`,
-          userId: "ai-agent",
-          nickname: "DegenDuelAI",
-          text: randomTip.text,
+          id: `ai-tip-${Date.now()}`,
+          contest_id: contestId,
+          user_id: "ai-agent",
+          username: "DegenDuelAI",
+          message: randomTip.text,
           timestamp: new Date().toISOString(),
-          isAiAgent: true,
-          profilePicture: "/ai-assistant.png"
+          is_system: true,
+          user_role: 'system'
         };
         
         setAllMessages(prev => [...prev, aiTipMessage]);
@@ -142,15 +126,13 @@ export const ContestChat: React.FC<ContestChatProps> = ({
       
       return () => clearTimeout(tipTimer);
     }
-  }, [websocketMessages, hasSeenIntro]);
+  }, [messages, hasSeenIntro, contestId]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
 
-    // Call onNewMessage if messages length increased and callback exists
     if (allMessages.length > prevMessagesLengthRef.current && onNewMessage) {
       onNewMessage();
     }
@@ -158,7 +140,12 @@ export const ContestChat: React.FC<ContestChatProps> = ({
     prevMessagesLengthRef.current = allMessages.length;
   }, [allMessages, onNewMessage]);
 
-  // Close emoji picker when clicking outside
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -169,7 +156,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
         setShowEmojiPicker(false);
       }
       
-      // Also hide AI panel when clicking outside
       if (
         showAiPanel &&
         aiAgentRef.current &&
@@ -183,45 +169,40 @@ export const ContestChat: React.FC<ContestChatProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showEmojiPicker, showAiPanel]);
 
-  // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Ctrl+Enter to send message
     if (e.ctrlKey && e.key === "Enter") {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (messageText.trim() && !isRateLimited && !isSending) {
+    if (messageText.trim() && isConnected && !isSending) {
       setIsSending(true);
-      sendMessage(messageText.trim());
-      setMessageText("");
-
-      // Reset sending state after a short delay
-      setTimeout(() => {
-        setIsSending(false);
-        // Focus the input after sending
+      const success = sendMessage(messageText.trim());
+      if (success) {
+        setMessageText("");
         if (messageInputRef.current) {
           messageInputRef.current.focus();
         }
+      } else {
+        console.error("Failed to send chat message");
+      }
+      setTimeout(() => {
+        setIsSending(false);
       }, 300);
     }
   };
 
-  // Handle emoji selection
   const handleEmojiSelect = (emoji: string) => {
     setMessageText((prev) => prev + emoji);
     setShowEmojiPicker(false);
-    // Focus the input after selecting emoji
     if (messageInputRef.current) {
       messageInputRef.current.focus();
     }
   };
 
-  // Format time for messages
   const formatTime = (timestamp: string) => {
     try {
       return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
@@ -230,70 +211,62 @@ export const ContestChat: React.FC<ContestChatProps> = ({
     }
   };
 
-  // Get profile picture URL
-  const getProfilePicture = (userId: string, profilePicture?: string) => {
-    return profilePicture || `${DEFAULT_PROFILE_PICTURE}${userId}`;
+  const getProfilePicture = (userId: string, username?: string) => {
+    const seed = username || userId || 'default';
+    if (userId === 'ai-agent') return "/ai-assistant.png";
+    return `${DEFAULT_PROFILE_PICTURE}${seed}`;
   };
 
-  // Get admin badge styling based on admin type
-  const getAdminBadgeStyle = (messageType?: "admin" | "superadmin" | "ai") => {
-    if (messageType === "superadmin" || adminType === "superadmin") {
-      return "bg-yellow-900/50 text-yellow-300 border border-yellow-700/30";
-    } else if (messageType === "admin" || adminType === "admin") {
-      return "bg-red-900/50 text-red-300 border border-red-700/30";
-    } else if (messageType === "ai") {
-      return "bg-cyber-900/50 text-cyber-300 border border-cyber-700/30";
-    } else {
-      return "bg-purple-900/50 text-purple-300";
-    }
+  const getAdminBadgeStyle = (role?: ChatMessage['user_role'], isAdmin?: boolean) => {
+    if (role === "superadmin") return "bg-yellow-900/50 text-yellow-300 border border-yellow-700/30";
+    if (role === "admin" || role === "moderator" || isAdmin) return "bg-red-900/50 text-red-300 border border-red-700/30";
+    if (role === "system") return "bg-cyber-900/50 text-cyber-300 border border-cyber-700/30";
+    return "bg-purple-900/50 text-purple-300";
   };
 
-  // Get message styling based on type
   const getMessageStyle = (message: ChatMessage) => {
-    if (message.isAiAgent) {
+    if (message.user_id === 'ai-agent' || message.is_system) {
       return "bg-cyber-900/20 border-l-2 border-cyber-500";
-    } else if (message.isAdmin && adminType === "superadmin") {
+    } else if (message.is_admin && message.user_role === "superadmin") {
       return "bg-yellow-900/20 border-l-2 border-yellow-500";
-    } else if (message.isAdmin) {
+    } else if (message.is_admin) {
       return "bg-red-900/20 border-l-2 border-red-500";
-    } else if (message.userId === currentUserId) {
+    } else if (message.user_id === user?.id) {
       return "bg-brand-900/20 border-l-2 border-brand-500";
     } else {
       return "bg-gray-800/50";
     }
   };
 
-  // Get text color based on user type
   const getTextColor = (message: ChatMessage) => {
-    if (message.isAiAgent) {
+    if (message.user_id === 'ai-agent' || message.is_system) {
       return "text-cyber-300";
-    } else if (message.isAdmin && adminType === "superadmin") {
+    } else if (message.is_admin && message.user_role === "superadmin") {
       return "text-yellow-400";
-    } else if (message.isAdmin) {
+    } else if (message.is_admin) {
       return "text-red-400";
-    } else if (message.userId === currentUserId) {
+    } else if (message.user_id === user?.id) {
       return "text-brand-400";
     } else {
       return "text-white";
     }
   };
 
-  // Get badge text
   const getBadgeText = (message: ChatMessage) => {
-    if (message.isAiAgent) {
-      return "AI AGENT";
-    } else if (message.isAdmin && adminType === "superadmin") {
+    if (message.user_id === 'ai-agent' || message.is_system) {
+      return "SYSTEM";
+    } else if (message.user_role === "superadmin") {
       return "Super Admin";
-    } else if (message.isAdmin) {
+    } else if (message.user_role === "admin" || message.user_role === "moderator" || message.is_admin) {
       return "Admin";
-    } else {
-      return "Admin";
+    } else if (message.user_id === user?.id) {
+      return "You";
     }
+    return null;
   };
 
-  // Generate AI-specific styling for message
   const getAiMessageEffects = (message: ChatMessage) => {
-    if (!message.isAiAgent) return "";
+    if (message.user_id !== 'ai-agent' && !message.is_system) return "";
     return "shadow-[0_0_10px_rgba(49,200,180,0.2)] bg-gradient-to-r from-cyber-900/30 to-cyber-800/10";
   };
 
@@ -301,7 +274,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
     <div
       className={`contest-chat flex flex-col h-full bg-gray-900 rounded-lg shadow-lg overflow-hidden ${className}`}
     >
-      {/* Header with room info */}
       <div className="chat-header bg-gray-800/90 p-3 border-b border-gray-700/80 flex justify-between items-center backdrop-blur-sm">
         <h3 className="text-lg font-bold text-white flex items-center">
           Contest Chat
@@ -312,7 +284,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
           />
         </h3>
         <div className="text-sm text-gray-400 flex items-center">
-          <span className="mr-2">{participants.length} online</span>
+          <span className="mr-2">{messages.length} online</span>
           {adminType && (
             <span
               className={`mr-2 px-2 py-0.5 rounded text-xs ${getAdminBadgeStyle(adminType as any)}`}
@@ -321,7 +293,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
             </span>
           )}
           
-          {/* AI Assistant button */}
           <button
             onClick={() => setShowAiPanel(!showAiPanel)}
             className={`mr-2 p-1 rounded transition-colors ${
@@ -337,7 +308,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
             </svg>
           </button>
           
-          {/* Participants toggle button */}
           <button
             onClick={() => setShowParticipants(!showParticipants)}
             className={`p-1 rounded transition-colors ${
@@ -366,7 +336,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* AI Assistant panel - conditionally shown */}
         <AnimatePresence>
           {showAiPanel && (
             <motion.div
@@ -435,7 +404,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Participants sidebar - conditionally shown */}
         <AnimatePresence>
           {showParticipants && (
             <motion.div 
@@ -449,7 +417,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                 Participants
               </h4>
               <div className="space-y-1">
-                {/* AI Agent always included */}
                 <div className="flex items-center p-2 rounded-md bg-cyber-900/20 border border-cyber-500/30">
                   <div className="w-6 h-6 rounded-full mr-2 relative overflow-hidden bg-cyber-800 flex items-center justify-center">
                     <img 
@@ -470,47 +437,44 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   <span className="ml-1 text-xs text-cyber-400">★</span>
                 </div>
                 
-                {/* Human participants */}
-                {participants.map((participant) => (
-                  <motion.div
-                    key={participant.userId}
-                    className="flex items-center p-2 rounded-md hover:bg-gray-700/50 transition-colors"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <img
-                      src={getProfilePicture(
-                        participant.userId,
-                        participant.profilePicture,
+                {Array.from(new Map(messages.map(m => [m.user_id, m])).values())
+                  .filter(p => p.user_id !== 'ai-agent' && !p.is_system)
+                  .map((participant) => (
+                    <motion.div
+                      key={participant.user_id}
+                      className="flex items-center p-2 rounded-md hover:bg-gray-700/50 transition-colors"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <img
+                        src={getProfilePicture(participant.user_id, participant.username)}
+                        alt={participant.username}
+                        className={`w-6 h-6 rounded-full mr-2 ${
+                          participant.is_admin ? "ring-1 ring-red-500" : ""
+                        }`}
+                      />
+                      <span className={`text-sm truncate ${
+                        participant.is_admin ? "text-red-400" : "text-gray-300"
+                      }`}>
+                        {participant.username}
+                      </span>
+                      {(participant.is_admin || participant.user_role === 'admin' || participant.user_role === 'moderator') && (
+                        <span className="ml-1 text-xs text-red-400">★</span>
                       )}
-                      alt={participant.nickname}
-                      className={`w-6 h-6 rounded-full mr-2 ${
-                        participant.isAdmin ? "ring-1 ring-red-500" : ""
-                      }`}
-                    />
-                    <span className={`text-sm truncate ${
-                      participant.isAdmin ? "text-red-400" : "text-gray-300"
-                    }`}>
-                      {participant.nickname}
-                    </span>
-                    {participant.isAdmin && (
-                      <span className="ml-1 text-xs text-red-400">★</span>
-                    )}
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Messages container */}
         <div
           className={`messages-container flex-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 ${
             showParticipants ? "w-2/3" : "w-full"
           }`}
         >
-          {allMessages.length === 0 ? (
+          {messages.length === 0 ? (
             <div className="text-center text-gray-500 my-8">
               <div className="mb-4">
                 <motion.svg
@@ -548,7 +512,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
               <AnimatePresence>
                 {allMessages.map((msg, index) => (
                   <motion.div
-                    key={msg.messageId}
+                    key={msg.id}
                     className={`message mb-4 rounded-lg p-3 transition-all duration-300 hover:shadow-md ${
                       getMessageStyle(msg)
                     } ${getAiMessageEffects(msg)}`}
@@ -556,31 +520,29 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ 
                       duration: 0.4,
-                      delay: index === allMessages.length - 1 ? 0 : 0
+                      delay: index === messages.length - 1 ? 0 : 0
                     }}
                   >
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mr-3 relative">
-                        {/* Profile picture with effects for special users */}
                         <div className="relative">
                           <img
-                            src={getProfilePicture(msg.userId, msg.profilePicture)}
-                            alt={msg.nickname}
+                            src={getProfilePicture(msg.user_id, msg.username)}
+                            alt={msg.username}
                             className={`w-8 h-8 rounded-full ${
-                              msg.isAiAgent
+                              msg.user_id === 'ai-agent' || msg.is_system
                                 ? "ring-2 ring-cyber-500"
-                                : msg.isAdmin && adminType === "superadmin"
+                                : msg.user_role === "superadmin"
                                   ? "ring-2 ring-yellow-500"
-                                  : msg.isAdmin
+                                  : msg.is_admin
                                     ? "ring-2 ring-red-500"
-                                    : msg.userId === currentUserId
+                                    : msg.user_id === user?.id
                                       ? "ring-2 ring-brand-500"
                                       : ""
                             }`}
                           />
                           
-                          {/* Animated effects for AI agent */}
-                          {msg.isAiAgent && (
+                          {(msg.user_id === 'ai-agent' || msg.is_system) && (
                             <motion.div
                               className="absolute inset-0 rounded-full border-2 border-cyber-400"
                               initial={{ scale: 1 }}
@@ -602,18 +564,12 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                           <span
                             className={`font-medium ${getTextColor(msg)}`}
                           >
-                            {msg.nickname}
+                            {msg.username}
                           </span>
-                          {(msg.isAdmin || msg.isAiAgent) && (
+                          {getBadgeText(msg) && (
                             <span
                               className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
-                                getAdminBadgeStyle(
-                                  msg.isAiAgent 
-                                    ? "ai" 
-                                    : msg.isAdmin && adminType === "superadmin" 
-                                      ? "superadmin" 
-                                      : "admin"
-                                )
+                                getAdminBadgeStyle(msg.user_role, msg.is_admin)
                               }`}
                             >
                               {getBadgeText(msg)}
@@ -624,17 +580,15 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                           </span>
                         </div>
                         <div className={`mt-1 text-gray-300 break-words relative ${
-                          msg.isAiAgent ? "pl-2 border-l-2 border-cyber-500/30" : ""
+                          (msg.user_id === 'ai-agent' || msg.is_system) ? "pl-2 border-l-2 border-cyber-500/30" : ""
                         }`}>
-                          {/* AI message typing animation */}
-                          {msg.isAiAgent && index === allMessages.length - 1 ? (
-                            <TypewriterText text={msg.text} speed={25} />
+                          {(msg.user_id === 'ai-agent' || msg.is_system) && index === messages.length - 1 ? (
+                            <TypewriterText text={msg.message ?? ''} speed={25} />
                           ) : (
-                            msg.text
+                            msg.message ?? ''
                           )}
                           
-                          {/* Subtle animated background for AI messages */}
-                          {msg.isAiAgent && (
+                          {(msg.user_id === 'ai-agent' || msg.is_system) && (
                             <motion.div 
                               className="absolute inset-0 bg-gradient-to-r from-cyber-500/5 to-cyber-500/0 rounded-r"
                               animate={{ 
@@ -656,7 +610,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
         </div>
       </div>
 
-      {/* Message input form */}
       <form
         onSubmit={handleSubmit}
         className="p-3 bg-gray-800/90 border-t border-gray-700/80 backdrop-blur-sm"
@@ -671,7 +624,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
             {error}
           </motion.div>
         )}
-        {isRateLimited && (
+        {isLoading && (
           <motion.div 
             className="mb-2 text-yellow-500 text-sm bg-yellow-900/20 p-2 rounded"
             initial={{ opacity: 0, height: 0 }}
@@ -696,10 +649,9 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   : "focus:ring-brand-500"
             } transition-all`}
             rows={2}
-            disabled={isRateLimited || isSending}
+            disabled={isLoading || isSending}
           />
 
-          {/* Emoji picker button */}
           <div className="absolute right-16 bottom-2">
             <button
               type="button"
@@ -723,7 +675,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
               </svg>
             </button>
 
-            {/* Enhanced emoji picker */}
             {showEmojiPicker && (
               <div
                 ref={emojiPickerRef}
@@ -757,7 +708,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   ))}
                 </div>
                 
-                {/* Trading-specific emojis */}
                 <div className="mt-2 pt-2 border-t border-gray-700">
                   <span className="text-xs text-gray-400 block mb-1">Trading</span>
                   <div className="grid grid-cols-8 gap-1">
@@ -784,7 +734,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
 
           <button
             type="submit"
-            disabled={!messageText.trim() || isRateLimited || isSending}
+            disabled={!messageText.trim() || isLoading || isSending}
             className={`absolute right-2 bottom-2 ${
               adminType === "superadmin"
                 ? "bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500"
@@ -793,7 +743,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   : "bg-gradient-to-r from-brand-600 to-cyber-600 hover:from-brand-500 hover:to-cyber-500"
             } text-white px-3 py-1 rounded transition-all duration-300 
               ${
-                !messageText.trim() || isRateLimited || isSending
+                !messageText.trim() || isLoading || isSending
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:shadow-md"
               }`}
@@ -835,7 +785,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
   );
 };
 
-// Typewriter text effect component for AI messages
 const TypewriterText: React.FC<{ text: string; speed: number }> = ({ text, speed }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);

@@ -8,7 +8,8 @@
 
 import { SYSTEM_SETTINGS as DEFAULT_SETTINGS } from "../config/config";
 
-const NODE_ENV = import.meta.env.VITE_NODE_ENV;
+// Remove unused NODE_ENV import
+// const NODE_ENV = import.meta.env.VITE_NODE_ENV;
 
 interface SystemSettings {
   background_scene?:
@@ -25,6 +26,9 @@ interface SystemSettings {
   [key: string]: any;
 }
 
+// Flag to track if the warning has been logged this session
+let hasLoggedBackgroundWarning = false;
+
 /**
  * Extracts background scene settings from system settings with failsafe handling
  * @param systemSettings System settings object from API or WebSocket
@@ -36,10 +40,11 @@ export function extractBackgroundSettings(
   // If no settings provided, use defaults
   if (!systemSettings) {
     // No background_scene found in global system settings
-    if (NODE_ENV === "development") {
-      console.log(
+    if (!hasLoggedBackgroundWarning) {
+      console.warn(
         "No background_scene in global system settings! Falling back to local default.",
       );
+      hasLoggedBackgroundWarning = true; // Set flag after logging
     }
     // Return local default background_scene settings
     return DEFAULT_SETTINGS.BACKGROUND_SCENE;

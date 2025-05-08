@@ -132,7 +132,6 @@ export * from './legacy/useCircuitBreakerSocket'; // DEPRECATED - use topic-hook
 export * from './legacy/useContestChatWebSocket'; // DEPRECATED - use topic-hooks/useContestChat instead
 export * from './legacy/useContestWebSocket'; // DEPRECATED - use topic-hooks/useContests instead
 // useMarketDataWebSocket removed - use topic-hooks/useMarketData instead
-export * from './legacy/useNotificationWebSocket'; // DEPRECATED - use topic-hooks/useNotifications instead
 export * from './legacy/usePortfolioWebSocket'; // DEPRECATED - use topic-hooks/usePortfolio instead
 export * from './legacy/useRPCBenchmarkWebSocket'; // DEPRECATED - use topic-hooks/useRPCBenchmark instead
 export * from './legacy/useServerStatusWebSocket'; // DEPRECATED - use topic-hooks/useServerStatus instead

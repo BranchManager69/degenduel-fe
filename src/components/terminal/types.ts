@@ -10,6 +10,8 @@
  * @author Branch Manager
  */
 
+import { AIMessage } from "../../services/ai"; // Import AIMessage
+
 // Size option for the Terminal component
 export type TerminalSize = 'contracted' | 'middle' | 'large';
 
@@ -52,7 +54,7 @@ export interface ContractDisplayProps {
 
 // Props for the TerminalConsole component
 export interface TerminalConsoleProps {
-  consoleOutput: ConsoleOutputItem[];
+  messages: AIMessage[];
   size: TerminalSize;
 }
 

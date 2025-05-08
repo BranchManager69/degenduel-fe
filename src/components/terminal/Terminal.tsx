@@ -40,7 +40,6 @@ import { DIDI_ASCII } from './utils/didiAscii';
 // Import utility functions
 import {
   getDidiMemoryState,
-  processDidiResponse,
   resetDidiMemory
 } from './utils/didiHelpers';
 
@@ -50,13 +49,12 @@ import {
   EASTER_EGG_CODE,
   getDiscoveredPatterns,
   getEasterEggProgress,
-  SECRET_COMMANDS,
-  storeHiddenMessage
+  SECRET_COMMANDS
 } from './utils/easterEggHandler';
 
 // Import types
 // import { clearInterval } from 'timers'; // REMOVE incorrect NodeJS import
-import { ConsoleOutputItem, TerminalProps, TerminalSize } from './types';
+import { TerminalProps, TerminalSize } from './types';
 
 /**
  * Terminal component
@@ -95,17 +93,14 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   };
   
   const [userInput, setUserInput] = useState('');
-  // Keep consoleOutput temporarily until TerminalConsole is refactored
-  const [consoleOutput, setConsoleOutput] = useState<ConsoleOutputItem[]>([]); 
   const [terminalMinimized, setTerminalMinimized] = useState(true);
   const [terminalExitComplete] = useState(false);
   
   const [easterEggActive, setEasterEggActive] = useState(false);
   const [glitchActive, setGlitchActive] = useState(false);
   const [easterEggActivated, setEasterEggActivated] = useState(false);
-  // Single, correct declaration for conversation history state
+  // This is now the single source for history display
   const [conversationHistory, setConversationHistory] = useState<AIMessage[]>([]); 
-  // Single, correct declaration for conversation ID state
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [sizeState, setSizeState] = useState<TerminalSize>(size);
   
@@ -145,14 +140,8 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     const isExtraSmall = window.innerWidth < 400;
     const asciiArt = isExtraSmall ? DIDI_ASCII.MOBILE : isMobile ? DIDI_ASCII.SHORT : DIDI_ASCII.LONG;
     setConversationHistory([
-      { role: 'assistant', content: asciiArt },
-      { role: 'system', content: "Type 'duel' for available commands" },
-    ]);
-    // Also set initial console output for now
-    setConsoleOutput([
-         <div key="ascii-art" className="text-mauve">{asciiArt}</div>,
-         " ",
-         <div key="help-text" className="text-gray-400">Type 'duel' for available commands</div>,
+      { role: 'assistant', content: asciiArt, tool_calls: undefined }, // Ensure AIMessage format
+      { role: 'system', content: "Type 'duel' for available commands", tool_calls: undefined },
     ]);
     return () => {
       // Reset error counters when component unmounts 
@@ -387,12 +376,11 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     
     const lowerCaseCommand = command.toLowerCase();
     let commandHandled = false;
-    let commandOutputMessage: AIMessage | null = null; // Use AIMessage for direct output
+    let commandOutputMessage: AIMessage | null = null; 
 
     // Handle special commands
     if (lowerCaseCommand === 'clear') {
       setConversationHistory([]); 
-      setConsoleOutput([]); // Clear console output too for now
       commandHandled = true;
     } else if (lowerCaseCommand === 'reset-didi') {
       resetDidiMemory();
@@ -429,77 +417,50 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     // If a special command produced output, add it to history 
     if (commandOutputMessage) {
         setConversationHistory(prev => [...prev, commandOutputMessage]);
-        // Set console output too for now
-        setConsoleOutput(prev => [...prev, `$ ${command}`, commandOutputMessage?.content ?? '']);
     }
 
     // If no special command was handled, send to AI
     if (!commandHandled) {
       try {
         const messagesToSendToService = [userMessage];
-        let finalResponseContent = ''; // Still needed if streaming to onCommandExecuted
+        let finalResponseContent = ''; 
         let wasToolCall = false;
         let toolCallInfo = '';
 
-        // Call AI service 
         const response = await aiService.chat(messagesToSendToService, { 
           context: 'terminal', 
           conversationId: conversationId,
-          streaming: true, // Keep streaming for immediate feedback if desired
+          streaming: true,
           onChunk: (chunk) => {
-            // Optional: Could update a *temporary* streaming message state here
-            // For simplicity now, we wait for the full response to update history
-            finalResponseContent += chunk; 
+            finalResponseContent += chunk;
           }
         });
 
         setConversationId(response.conversationId);
 
         const assistantMessage: AIMessage = { role: 'assistant', content: null, tool_calls: undefined };
-        let consoleDisplayContent: string | React.ReactNode = '';
 
-        // --- Handle Response Structure --- 
-        const hasToolCalls = response.tool_calls && response.tool_calls.length > 0;
-
-        if (hasToolCalls) {
+        if (response.tool_calls && response.tool_calls.length > 0) {
           wasToolCall = true;
-          // Now it's safe to access response.tool_calls
-          const toolCall = response.tool_calls![0]; // Use non-null assertion or keep check
+          const toolCall = response.tool_calls[0];
           toolCallInfo = `[Calling tool: ${toolCall.function.name}...]`; 
           assistantMessage.tool_calls = response.tool_calls;
-          consoleDisplayContent = toolCallInfo; 
         } else if (response.content !== null) {
-           // Handle text response 
-           finalResponseContent = response.content; // Assign here if not streaming, or use accumulated value
+           finalResponseContent = response.content;
            assistantMessage.content = finalResponseContent;
-           const processedResponse = processDidiResponse(finalResponseContent, command);
-           if (typeof processedResponse !== 'string') {
-               const didActivate = storeHiddenMessage(processedResponse.hidden);
-               if (didActivate) { setTimeout(() => activateDidiEasterEgg(), 500); }
-               assistantMessage.content = processedResponse.visible;
-           } else {
-               assistantMessage.content = processedResponse;
-           }
-           consoleDisplayContent = `[Didi] ${assistantMessage.content}`; 
         } else {
-            // Handle null content without tool call
-            assistantMessage.content = '';
-            consoleDisplayContent = `[Didi] Got it.`; 
+           assistantMessage.content = '';
         }
 
-        setConversationHistory(prev => [...prev, assistantMessage]);
-        setConsoleOutput(prev => [...prev, `$ ${command}`, consoleDisplayContent]);
+        setConversationHistory(prev => [...prev, assistantMessage]); 
 
         if (onCommandExecuted) {
-          // Pass accumulated streaming content for text, or tool info for tool call
           onCommandExecuted(command, wasToolCall ? toolCallInfo : finalResponseContent);
         }
 
       } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           setConversationHistory(prev => [...prev, { role: 'system', content: `Error: ${errorMessage}` }]); 
-          // Add error to console output (ensure command is prepended)
-          setConsoleOutput(prev => [...prev, `$ ${command}`, `[SYSTEM] Error: ${errorMessage}`]);
           console.error('Terminal AI error:', error);
       }
     }
@@ -629,9 +590,9 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
           {/* Terminal Content */}
           <div ref={terminalContentRef} className="relative">
             
-            {/* Pass consoleOutput for now */}
+            {/* Pass conversationHistory to TerminalConsole's 'messages' prop */}
             <TerminalConsole 
-              consoleOutput={consoleOutput} // Pass current state
+              messages={conversationHistory} // Pass the AIMessage array
               size={sizeState}
             />
             

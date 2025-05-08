@@ -83,9 +83,8 @@ export interface SignMessageOutput {
 export class AuthService {
   private user: User | null = null;
   private eventListeners: Map<AuthEventType, Set<(event: AuthEvent) => void>> = new Map();
-  
-  // Singleton instance
   private static instance: AuthService;
+  private isInitialized: boolean = false; // Flag to track initialization
   
   /**
    * Get the singleton instance of the AuthService
@@ -93,6 +92,8 @@ export class AuthService {
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
       AuthService.instance = new AuthService();
+      // Call initialization AFTER the instance is created and assigned
+      AuthService.instance.initialize(); 
     }
     return AuthService.instance;
   }
@@ -105,10 +106,19 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       // Create a debug function on window
       (window as any).debugAuth = () => this.debugState();
-      
-      // Handle any stored session
-      this.restoreSession();
     }
+  }
+  
+  /**
+   * New async initialization method
+   */
+  private async initialize() {
+    if (this.isInitialized || typeof window === 'undefined') return;
+    this.isInitialized = true; // Prevent double initialization
+    authDebug('AuthService', 'Initializing and restoring session...');
+    await this.restoreSession(); 
+    this.setupTokenRefreshHandlers();
+    authDebug('AuthService', 'Initialization complete.');
   }
   
   /**
@@ -132,18 +142,24 @@ export class AuthService {
    */
   private async restoreSession() {
     try {
-      // If we have valid tokens, try to restore session
-      if (tokenManagerService.getToken(TokenType.JWT)) {
-        authDebug('AuthService', 'Found stored JWT token, attempting to restore session');
-        const sessionResult = await this.checkAuth();
-        
-        if (sessionResult) {
-          authDebug('AuthService', 'Successfully restored session');
-        } else {
-          authDebug('AuthService', 'Failed to restore session, tokens may be invalid');
-          // Clear invalid tokens
-          tokenManagerService.clearAllTokens();
+      // Ensure tokenManagerService is ready before using it
+      if (tokenManagerService) { 
+        if (tokenManagerService.getToken(TokenType.JWT)) {
+          authDebug('AuthService', 'Found stored JWT token, attempting to restore session');
+          const sessionResult = await this.checkAuth();
+          
+          if (sessionResult) {
+            authDebug('AuthService', 'Successfully restored session');
+          } else {
+            authDebug('AuthService', 'Failed to restore session, tokens may be invalid');
+            // Clear invalid tokens
+            tokenManagerService.clearAllTokens();
+          }
         }
+      } else {
+        // This case should ideally not happen if imports are correct,
+        // but handle it defensively.
+        authDebug('AuthService', 'TokenManagerService not available during restoreSession');
       }
     } catch (error) {
       authDebug('AuthService', 'Error restoring session', {
@@ -699,6 +715,9 @@ export class AuthService {
       this.setUser(null);
     }
   }
+
+  // setupTokenRefreshHandlers remains the same (currently empty)
+  private setupTokenRefreshHandlers() { /* ... */ }
 }
 
 // Export singleton instance

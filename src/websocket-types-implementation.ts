@@ -89,6 +89,7 @@ export enum DDWebSocketActions {
   SYSTEM_ALERT = 'systemAlert',
   SYSTEM_NOTIFICATION = 'systemNotification',
   MAINTENANCE_STATUS = 'maintenanceStatus',
+  MAINTENANCE_MODE_UPDATE = 'maintenanceModeUpdate',
   
   // ========== WALLET topic actions ==========
   // Transaction-related actions
@@ -312,4 +313,18 @@ export interface DDWebSocketLaunchDataMessage extends DDWebSocketMessage {
   topic: DDWebSocketTopic.LAUNCH_EVENTS;
   action?: DDWebSocketActions.ADDRESS_REVEALED; // Action might be included
   data: DDWebSocketLaunchAddressRevealedPayload;
+}
+
+// Define payload for MAINTENANCE_MODE_UPDATE message
+export interface DDWebSocketMaintenanceModeUpdatePayload {
+  enabled: boolean;
+  timestamp?: string; // Optional timestamp from server
+}
+
+// Potentially extend DDWebSocketDataMessage or create specific type if needed
+export interface DDWebSocketSystemDataMessage extends DDWebSocketMessage {
+  type: DDWebSocketMessageType.DATA;
+  topic: DDWebSocketTopic.SYSTEM;
+  action?: DDWebSocketActions.MAINTENANCE_MODE_UPDATE | DDWebSocketActions.STATUS_UPDATE | string; // Allow known actions
+  data: DDWebSocketMaintenanceModeUpdatePayload | any; // Use specific payload or allow any
 }

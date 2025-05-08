@@ -11,9 +11,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
+import { DDExtendedMessageType } from '../types';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Chat data interfaces based on backend API documentation
 export interface ChatMessage {
@@ -26,7 +26,7 @@ export interface ChatMessage {
   is_system?: boolean;
   is_admin?: boolean;
   is_pinned?: boolean;
-  user_role?: 'user' | 'admin' | 'moderator' | 'system';
+  user_role?: 'user' | 'admin' | 'moderator' | 'system' | 'superadmin';
   reactions?: Record<string, number>;
 }
 
