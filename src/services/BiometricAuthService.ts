@@ -3,13 +3,17 @@
 /**
  * BiometricAuthService.ts
  * 
- * This file contains the BiometricAuthService class, which is used to handle WebAuthn operations for biometric authentication.
+ * @description This file contains the BiometricAuthService class, which is used to handle WebAuthn operations for biometric authentication.
  * 
  * @author @BranchManager69
- * @last-modified 2025-04-02
+ * @version 1.8.0
+ * @created 2025-04-02
+ * @updated 2025-04-02
  */
 
+// Auth verbosity
 import { authDebug } from '../config/config';
+// Biometric Auth API
 import {
   checkBiometricCredentialStatus,
   getBiometricAuthenticationOptions,
@@ -17,6 +21,7 @@ import {
   verifyBiometricAuthentication,
   verifyBiometricRegistration
 } from './api/auth';
+// Token Manager Service
 import { tokenManagerService, TokenType } from './tokenManagerService';
 
 /**

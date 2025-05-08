@@ -20,7 +20,8 @@ export enum DDWebSocketTopic {
   WALLET_BALANCE = 'wallet-balance',
   SKYDUEL = 'skyduel',
   TERMINAL = 'terminal',
-  LOGS = 'logs'
+  LOGS = 'logs',
+  LAUNCH_EVENTS = 'launch_events'
 }
 
 /**
@@ -198,6 +199,10 @@ export enum DDWebSocketActions {
   CREATE_VANITY_WALLET = 'createVanityWallet',
   CHECK_VANITY_POOL = 'checkVanityPool',
   
+  // ========== LAUNCH_EVENTS topic actions ==========
+  ADDRESS_REVEALED = 'addressRevealed',
+  GET_LAUNCH_STATUS = 'getLaunchStatus',
+  
   // ========== Subscription actions for all topics ==========
   SUBSCRIBE = 'subscribe',
   UNSUBSCRIBE = 'unsubscribe',
@@ -293,4 +298,18 @@ export interface DDWebSocketAcknowledgmentMessage extends DDWebSocketMessage {
 export interface DDWebSocketSystemMessage extends DDWebSocketMessage {
   type: DDWebSocketMessageType.SYSTEM;
   data: any;
+}
+
+// Define payload for the ADDRESS_REVEALED message
+export interface DDWebSocketLaunchAddressRevealedPayload {
+  contractAddress: string;
+  revealTime: string; // ISO timestamp of when reveal happened on server
+}
+
+// Extend DDWebSocketDataMessage potentially or create specific type
+export interface DDWebSocketLaunchDataMessage extends DDWebSocketMessage {
+  type: DDWebSocketMessageType.DATA;
+  topic: DDWebSocketTopic.LAUNCH_EVENTS;
+  action?: DDWebSocketActions.ADDRESS_REVEALED; // Action might be included
+  data: DDWebSocketLaunchAddressRevealedPayload;
 }

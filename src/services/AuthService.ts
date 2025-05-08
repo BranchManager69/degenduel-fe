@@ -16,18 +16,30 @@
  * operations and manages token storage, retrieval, and validation.
  * 
  * @author BranchManager69
- * @version 1.9.0
- * @created 2025-05-05 - Added Unified auth system with fallback to legacy system
- * @updated 2025-05-07 - Time to remove legacy auth system! Haven't started stripping it out yet.
+ * @version 1.9.1
+ * @created 2025-05-05 - Added Unified auth system
+ * @updated 2025-05-08 - Cleaned up legacy comments and refined types.
  */
 
-import axios from 'axios';
 import { authDebug } from '../config/config';
+import axiosInstance from '../lib/axiosInstance';
 import { User } from '../types/user';
 import { tokenManagerService, TokenType } from './index';
 
-// Auth method types
-export type AuthMethod = 'wallet' | 'privy' | 'twitter' | 'session'; // where is Discord auth? Any others missing?
+// Auth method types - EXPANDED based on Privy config
+export type AuthMethod = 
+  | 'wallet' 
+  | 'privy' 
+  | 'twitter' 
+  | 'session' 
+  | 'email' 
+  | 'sms' 
+  | 'google' 
+  | 'discord' 
+  | 'github' 
+  | 'apple' 
+  | 'telegram' 
+  | 'passkey'; 
 
 // Authentication event types
 export enum AuthEventType {
@@ -89,9 +101,6 @@ export class AuthService {
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    // Initialize token manager
-    this.setupTokenRefreshHandlers();
-    
     // Handle window events related to auth
     if (typeof window !== 'undefined') {
       // Create a debug function on window
@@ -116,13 +125,6 @@ export class AuthService {
     
     authDebug('AuthService', 'Current auth state', state);
     return state;
-  }
-  
-  /**
-   * Set up token refresh handlers
-   */
-  private setupTokenRefreshHandlers() {
-    // To be implemented once TokenManager refresh events are available
   }
   
   /**
@@ -271,13 +273,7 @@ export class AuthService {
     try {
       authDebug('AuthService', 'Checking authentication status');
       
-      const response = await axios.get('/api/auth/status', {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
+      const response = await axiosInstance.get('/auth/status');
       
       const isAuthenticated = response.data?.authenticated || false;
       const authMethods = response.data?.methods || {};
@@ -360,20 +356,19 @@ export class AuthService {
         
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       authDebug('AuthService', 'Error checking auth status', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error?.response?.data || error?.message || String(error)
       });
       
-      // Only clear user if we get a definitive 401 Unauthorized
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      // Check if it was specifically a 401 (which the interceptor couldn't refresh)
+      if (error?.response?.status === 401) {
         if (this.user) {
-          authDebug('AuthService', 'Received 401, clearing user');
-          this.setUser(null);
-          // Also clear tokens on definitive 401
-          tokenManagerService.clearAllTokens();
+          authDebug('AuthService', 'Received 401 on status check, clearing user');
+          // No need to call clearAllTokens here, as logout would have been triggered by interceptor
+          this.setUser(null); 
         }
-      }
+      } // Other errors (like network errors) don't automatically mean logout
       
       return false;
     }
@@ -386,10 +381,8 @@ export class AuthService {
    * @returns Promise that resolves to the token or null if not available
    */
   public async getToken(type: TokenType = TokenType.JWT): Promise<string | null> {
-    // First try to get from TokenManager
     let token = tokenManagerService.getToken(type);
     
-    // If we don't have a token but are authenticated, try to get one from the server
     if (!token && this.isAuthenticated()) {
       try {
         authDebug('AuthService', `No ${type} token found, requesting from server`);
@@ -399,32 +392,23 @@ export class AuthService {
           case TokenType.WS_TOKEN:
             endpoint = '/api/auth/ws-token';
             break;
-          case TokenType.REFRESH:
-            endpoint = '/api/auth/refresh-token';
-            break;
           case TokenType.JWT:
+          case TokenType.SESSION:
           default:
             endpoint = '/api/auth/token';
             break;
         }
         
-        // Add timestamp to prevent caching
         const timestamp = new Date().getTime();
         const url = `${endpoint}?_t=${timestamp}`;
         
-        const response = await axios.get(url, {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          withCredentials: true,
-          timeout: 5000 // 5 second timeout
-        });
+        const response = await axiosInstance.get(url, {
+          timeout: 5000 
+        }); 
         
         token = response.data.token;
         
         if (token) {
-          // Store token in TokenManager
           tokenManagerService.setToken(
             type,
             token,
@@ -432,45 +416,32 @@ export class AuthService {
             'server'
           );
           
-          // If we have a user, update their tokens as well
           if (this.user) {
             const updatedUser = { ...this.user };
-            
             switch (type) {
-              case TokenType.JWT:
-                updatedUser.jwt = token;
-                break;
-              case TokenType.WS_TOKEN:
-                updatedUser.wsToken = token;
-                break;
-              case TokenType.SESSION:
-                updatedUser.session_token = token;
-                break;
+              case TokenType.JWT: updatedUser.jwt = token; break;
+              case TokenType.WS_TOKEN: updatedUser.wsToken = token; break;
+              case TokenType.SESSION: updatedUser.session_token = token; break;
             }
-            
             this.user = updatedUser;
           }
           
-          // Dispatch token refreshed event
           this.dispatchEvent({
             type: AuthEventType.TOKEN_REFRESHED,
             token,
             tokenType: type
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         authDebug('AuthService', `Error getting ${type} token`, {
-          error: error instanceof Error ? error.message : String(error)
+           error: error?.response?.data || error?.message || String(error)
         });
-        
-        // Dispatch error event
         this.dispatchEvent({
           type: AuthEventType.AUTH_ERROR,
           error: error instanceof Error ? error : new Error(String(error))
         });
       }
     }
-    
     return token;
   }
   
@@ -488,10 +459,9 @@ export class AuthService {
     try {
       authDebug('AuthService', 'Starting wallet authentication', { walletAddress });
       
-      // Get nonce from backend
-      const nonceResponse = await axios.get('/api/auth/challenge', {
-        params: { wallet: walletAddress },
-        withCredentials: true
+      // Use the configured instance for challenge
+      const nonceResponse = await axiosInstance.get('/auth/challenge', { 
+        params: { wallet: walletAddress }
       });
       
       const nonce = nonceResponse.data.nonce || nonceResponse.data.challenge;
@@ -516,18 +486,15 @@ export class AuthService {
         signature = Array.from(signatureResult as unknown as Uint8Array);
       }
       
-      // Verify signature with backend
-      const authResponse = await axios.post('/api/auth/verify-wallet', {
+      // Use the configured instance for verification
+      const authResponse = await axiosInstance.post('/auth/verify-wallet', { 
         wallet: walletAddress,
         signature,
         message
       }, {
-        withCredentials: true,
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Debug': 'true',
-          'Origin': window.location.origin
+            'X-Debug': 'true', // Keep specific headers if needed
+             Origin: window.location.origin
         }
       });
       
@@ -561,19 +528,16 @@ export class AuthService {
       });
       
       return user;
-    } catch (error) {
+    } catch (error: any) {
       authDebug('AuthService', 'Wallet authentication failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error?.response?.data || error?.message || String(error),
         walletAddress
       });
-      
-      // Dispatch error event
       this.dispatchEvent({
         type: AuthEventType.AUTH_ERROR,
         error: error instanceof Error ? error : new Error(String(error)),
         method: 'wallet'
       });
-      
       throw error;
     }
   }
@@ -589,17 +553,11 @@ export class AuthService {
     try {
       authDebug('AuthService', 'Starting Privy authentication', { userId });
       
-      // Call verify endpoint
-      const response = await axios.post('/api/auth/verify-privy', {
+      // Use the configured instance
+      const response = await axiosInstance.post('/auth/verify-privy', { 
         token,
         userId
-      }, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      }); 
       
       const { user, token: jwtToken } = response.data;
       
@@ -640,19 +598,16 @@ export class AuthService {
       });
       
       return user;
-    } catch (error) {
+    } catch (error: any) {
       authDebug('AuthService', 'Privy authentication failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error?.response?.data || error?.message || String(error),
         userId
       });
-      
-      // Dispatch error event
       this.dispatchEvent({
         type: AuthEventType.AUTH_ERROR,
         error: error instanceof Error ? error : new Error(String(error)),
         method: 'privy'
       });
-      
       throw error;
     }
   }
@@ -668,16 +623,13 @@ export class AuthService {
     }
     
     try {
-      const response = await axios.get('/api/auth/twitter/link', {
-        withCredentials: true
-      });
-      
+      // Use the configured instance
+      const response = await axiosInstance.get('/api/auth/twitter/link'); 
       return response.data.redirectUrl;
-    } catch (error) {
+    } catch (error: any) { 
       authDebug('AuthService', 'Twitter linking failed', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error?.response?.data || error?.message || String(error)
       });
-      
       throw error;
     }
   }
@@ -695,11 +647,10 @@ export class AuthService {
     }
     
     try {
-      const response = await axios.post('/api/auth/privy/link', {
+      // Use the configured instance
+      const response = await axiosInstance.post('/api/auth/privy/link', { 
         token,
         userId
-      }, {
-        withCredentials: true
       });
       
       // Update user if returned
@@ -708,11 +659,10 @@ export class AuthService {
       }
       
       return true;
-    } catch (error) {
+    } catch (error: any) { 
       authDebug('AuthService', 'Privy linking failed', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error?.response?.data || error?.message || String(error)
       });
-      
       return false;
     }
   }
@@ -724,15 +674,8 @@ export class AuthService {
     try {
       authDebug('AuthService', 'Logging out user');
       
-      // Call logout endpoint to invalidate session
-      await axios.post('/api/auth/logout', {}, {
-        withCredentials: true
-      }).catch(err => {
-        // Log but don't fail on error
-        authDebug('AuthService', 'Error calling logout endpoint', {
-          error: err instanceof Error ? err.message : String(err)
-        });
-      });
+      // Use the configured instance
+      await axiosInstance.post('/api/auth/logout', {}); 
       
       // Clear all tokens
       tokenManagerService.clearAllTokens();
@@ -747,18 +690,16 @@ export class AuthService {
         user: previousUser
       });
       
-    } catch (error) {
+    } catch (error: any) {
       authDebug('AuthService', 'Error during logout', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error?.response?.data || error?.message || String(error)
       });
-      
-      // Still clear tokens and user even if API call fails
-      tokenManagerService.clearAllTokens();
+      // Still clear tokens/user even if API fails
+      tokenManagerService.clearAllTokens(); 
       this.setUser(null);
     }
   }
 }
 
 // Export singleton instance
-// NOTE:  CONFUSING... LOWERCASE!? DIDN'T WE SAY THAT LOWERCASE INDICATES DEPRECATED!?
 export const authService = AuthService.getInstance();

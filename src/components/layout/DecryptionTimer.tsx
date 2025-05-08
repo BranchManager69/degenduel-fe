@@ -10,74 +10,16 @@
 
 import { motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
-import { DecryptionTimerProps } from '../types';
-import { fetchTerminalData, useTerminalData } from '../../../services/terminalDataService';
+import { useLaunchEvent } from '../../hooks/websocket/topic-hooks/useLaunchEvent';
+import { DecryptionTimerProps } from '../terminal/types';
 
 /**
  * DecryptionTimer - Displays a countdown timer for the token launch
  */
 export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({ 
   targetDate = new Date('2025-03-15T18:00:00-05:00')
-  // contractAddress is now fetched from terminal data API
 }) => {
-  // Get real-time terminal data from WebSocket
-  const { 
-    terminalData
-  } = useTerminalData();
-  
-  // Combine WebSocket data with fallback to REST API
-  const [contractData, setContractData] = useState({
-    address: undefined as string | undefined,
-    isRevealed: false
-  });
-  
-  // Update contract data whenever WebSocket updates come in
-  useEffect(() => {
-    // The contract address is now only in the token.address field
-    // So we wait for terminalData.token to be available and use its address property
-    if (terminalData?.token?.address) {
-      setContractData({
-        address: terminalData.token.address,
-        isRevealed: true
-      });
-      
-      console.log('[DecryptionTimer] Contract data updated from WebSocket:', {
-        hasAddress: true,
-        address: terminalData.token.address
-      });
-    }
-  }, [terminalData]);
-  
-  // Fallback to REST API on initial load or if WebSocket is not connected
-  useEffect(() => {
-    const fetchContractInfo = async () => {
-      try {
-        console.log('[DecryptionTimer] Fetching contract data from terminal API (fallback)...');
-        const terminalData = await fetchTerminalData();
-        
-        setContractData(prevData => {
-          // Only update if we don't already have data from WebSocket
-          if (!prevData.address && !prevData.isRevealed && terminalData.token?.address) {
-            return {
-              address: terminalData.token.address,
-              isRevealed: true
-            };
-          }
-          return prevData;
-        });
-        
-        console.log('[DecryptionTimer] Contract data updated from REST API:', {
-          hasAddress: !!terminalData.token?.address,
-          address: terminalData.token?.address
-        });
-      } catch (error) {
-        console.error('[DecryptionTimer] Error fetching contract data:', error);
-      }
-    };
-    
-    // Fetch on initial mount as a fallback
-    fetchContractInfo();
-  }, []);
+  const { contractAddress: revealedAddress } = useLaunchEvent();
   
   const [timeRemaining, setTimeRemaining] = useState({
     days: 0,
@@ -86,9 +28,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
     seconds: 0
   });
   
-  // State to track urgency levels for visual effects
-  const [urgencyLevel, setUrgencyLevel] = useState(0); // 0: normal, 1: <60s, 2: <10s, 3: complete
-  const [revealTransition, setRevealTransition] = useState(false);
+  const [urgencyLevel, setUrgencyLevel] = useState(0);
   
   useEffect(() => {
     const calculateTimeRemaining = () => {
@@ -97,6 +37,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
       
       if (difference <= 0) {
         setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        setUrgencyLevel(3);
         return;
       }
       
@@ -107,22 +48,14 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
       
       setTimeRemaining({ days, hours, minutes, seconds });
       
-      // Set urgency level based on time remaining
       const totalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
       
-      if (totalSeconds === 0) {
-        setUrgencyLevel(3); // Complete
-        
-        // Start the reveal transition sequence
-        if (!revealTransition) {
-          setRevealTransition(true);
-        }
-      } else if (totalSeconds <= 10) {
-        setUrgencyLevel(2); // Critical (<10s)
+      if (totalSeconds <= 10) {
+        setUrgencyLevel(2);
       } else if (totalSeconds <= 60) {
-        setUrgencyLevel(1); // Warning (<60s)
+        setUrgencyLevel(1);
       } else {
-        setUrgencyLevel(0); // Normal
+        setUrgencyLevel(0);
       }
     };
     
@@ -130,48 +63,13 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
     const timer = setInterval(calculateTimeRemaining, 1000);
     
     return () => clearInterval(timer);
-  }, [targetDate, revealTransition]);
+  }, [targetDate]);
   
-  // Check if the countdown is complete
   const isComplete = timeRemaining.days === 0 && 
                    timeRemaining.hours === 0 && 
                    timeRemaining.minutes === 0 && 
                    timeRemaining.seconds === 0;
   
-  // Calculate if it's release time
-  // Note: We primarily use contractData.isRevealed from the API now instead of this
-  // We use a state variable for current time so it refreshes
-  const [now, setNow] = useState(new Date());
-  
-  // Update current time every second
-  useEffect(() => {
-    const timeInterval = setInterval(() => {
-      setNow(new Date());
-    }, 1000);
-    
-    return () => clearInterval(timeInterval);
-  }, []);
-  
-  const isPastReleaseTime = now >= targetDate;
-  
-  // If we're past the release time and don't have contract data yet, try to fetch it again
-  useEffect(() => {
-    if (isPastReleaseTime && !contractData.isRevealed) {
-      // Refresh contract data when the release time passes
-      (async () => {
-        try {
-          const terminalData = await fetchTerminalData();
-          setContractData({
-            address: terminalData.token?.address,
-            isRevealed: !!terminalData.token?.address
-          });
-        } catch (error) {
-          console.error('[DecryptionTimer] Error refreshing contract data after release time:', error);
-        }
-      })();
-    }
-  }, [isPastReleaseTime, contractData.isRevealed]);
-                   
   return (
     <motion.div 
       className="font-orbitron bg-black/30 border-2 border-green-500/60 rounded-xl shadow-lg shadow-green-900/20 overflow-hidden"
@@ -180,8 +78,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
         layout: { type: "spring", bounce: 0.2, duration: 0.8 }
       }}
     >
-      {isComplete ? (
-        // Modern, clean but stylish contract display
+      {isComplete && revealedAddress ? (
         <div className="py-4">
           <div className="text-2xl font-mono text-green-400 mb-6 flex items-center">
             <span className="inline-block h-3 w-3 bg-green-400 mr-3 rounded-full"></span>
@@ -190,20 +87,35 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
           </div>
           
           <div className="relative bg-black/60 border-2 border-green-500/50 rounded-md p-5 shadow-lg shadow-green-900/40">
-            {/* Subtle corner accents */}
             <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-green-400/80 -translate-x-1 -translate-y-1"></div>
             <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-green-400/80 translate-x-1 -translate-y-1"></div>
             <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-green-400/80 -translate-x-1 translate-y-1"></div>
             <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-400/80 translate-x-1 translate-y-1"></div>
             
-            {/* Address with subtle glow */}
             <div className="font-mono text-green-400 text-xl break-all tracking-wide p-2 text-shadow-sm shadow-green-500/50">
-              {contractData.isRevealed ? contractData.address : "Loading contract address..."}
+              {revealedAddress}
             </div>
             
-            {/* Status indicator */}
             <div className="mt-3 text-right text-green-300/90 text-xs font-mono">
               VERIFIED ✓
+            </div>
+          </div>
+        </div>
+      ) : isComplete && !revealedAddress ? (
+        <div className="py-4">
+          <div className="text-2xl font-mono text-yellow-400 mb-6 flex items-center">
+            <span className="inline-block h-3 w-3 bg-yellow-400 mr-3 rounded-full"></span>
+            VERIFYING CONTRACT...
+            <span className="inline-block h-3 w-3 bg-yellow-400 ml-3 rounded-full"></span>
+          </div>
+          
+          <div className="relative bg-black/60 border-2 border-yellow-500/50 rounded-md p-5 shadow-lg shadow-yellow-900/40">
+            <div className="font-mono text-yellow-400 text-xl break-all tracking-wide p-2 text-shadow-sm shadow-yellow-500/50">
+              Awaiting secure transmission...
+            </div>
+            
+            <div className="mt-3 text-right text-yellow-300/90 text-xs font-mono">
+              PENDING
             </div>
           </div>
         </div>
@@ -214,7 +126,6 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
           exit={{ opacity: 0 }}
           layoutId="terminal-content"
         >
-          {/* COUNTDOWN ACTIVE header */}
           <motion.div
             className="w-full bg-green-500/20 text-center py-2 px-3 border-b border-green-500/40 text-sm font-mono tracking-wider z-10"
             style={{ color: "#33ff66" }}
@@ -227,50 +138,47 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
             COUNTDOWN ACTIVE
           </motion.div>
           
-          {/* Countdown numbers container */}
           <div className="w-full px-8 py-6"
                style={{
                  backgroundColor: "rgba(0,0,0,0.2)",
                }}>
             <div className="grid grid-cols-4 gap-0 w-full">
-              {/* Helper function for getting text color based on urgency */}
               {(() => {
-                // Generate dynamic colors based on urgency level
                 const getTextColor = () => {
                   switch(urgencyLevel) {
-                    case 1: // Warning (<60s)
+                    case 1:
                       return "#ffcc00";
-                    case 2: // Critical (<10s)
+                    case 2:
                       return "#ff5050";
-                    case 3: // Complete
+                    case 3:
                       return "#33ff66";
-                    default: // Normal
-                      return "#33ff66"; // 24-style digital green
+                    default:
+                      return "#33ff66";
                   }
                 };
 
                 const getShadowColor = () => {
                   switch(urgencyLevel) {
-                    case 1: // Warning (<60s)
+                    case 1:
                       return "rgba(255, 204, 0, 0.7)";
-                    case 2: // Critical (<10s)
+                    case 2:
                       return "rgba(255, 50, 50, 0.7)";
-                    case 3: // Complete
+                    case 3:
                       return "rgba(51, 255, 102, 0.7)";
-                    default: // Normal
-                      return "rgba(51, 255, 102, 0.7)"; // 24-style digital green glow
+                    default:
+                      return "rgba(51, 255, 102, 0.7)";
                   }
                 };
                 
                 const getBorderColor = () => {
                   switch(urgencyLevel) {
-                    case 1: // Warning (<60s)
+                    case 1:
                       return "rgba(255, 204, 0, 0.3)";
-                    case 2: // Critical (<10s)
+                    case 2:
                       return "rgba(255, 50, 50, 0.3)";
-                    case 3: // Complete
+                    case 3:
                       return "rgba(51, 255, 102, 0.3)";
-                    default: // Normal
+                    default:
                       return "rgba(51, 255, 102, 0.3)";
                   }
                 };
@@ -281,7 +189,6 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                 
                 return (
                   <>
-                    {/* Days */}
                     <div className="flex flex-col items-center border-r px-2" 
                          style={{ borderColor: borderColor }}>
                       <motion.div 
@@ -313,7 +220,6 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                       </div>
                     </div>
                     
-                    {/* Hours */}
                     <div className="flex flex-col items-center border-r px-2" 
                          style={{ borderColor: borderColor }}>
                       <motion.div 
@@ -346,7 +252,6 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                       </div>
                     </div>
                     
-                    {/* Minutes */}
                     <div className="flex flex-col items-center border-r px-2" 
                          style={{ borderColor: borderColor }}>
                       <motion.div 
@@ -379,7 +284,6 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                       </div>
                     </div>
                     
-                    {/* Seconds */}
                     <div className="flex flex-col items-center px-2">
                       <motion.div 
                         className="text-5xl md:text-7xl lg:text-8xl font-mono tabular-nums text-center w-full"

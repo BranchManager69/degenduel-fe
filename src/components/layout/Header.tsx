@@ -23,40 +23,18 @@ export const Header: React.FC = () => {
     error,
     clearError,
     maintenanceMode,
-    setMaintenanceMode,
   } = useStore(state => ({ 
       disconnectWallet: state.disconnectWallet, 
       error: state.error, 
       clearError: state.clearError, 
       maintenanceMode: state.maintenanceMode, 
-      setMaintenanceMode: state.setMaintenanceMode
-      // Only select what's needed to avoid unnecessary re-renders
   })); 
   const { user, isAdmin, isAuthenticated } = useMigratedAuth(); 
   
   const { unreadCount } = useNotificationWebSocket();
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
-  const [isTransitioningToMaintenance, setIsTransitioningToMaintenance] =
-    useState(false);
 
   // No longer fetching contests here - EdgeToEdgeTicker now handles this
-
-  // Handle maintenance transitions
-  const handleMaintenanceTransition = () => {
-    if (!maintenanceMode && !isTransitioningToMaintenance) {
-      setIsTransitioningToMaintenance(true);
-      setMaintenanceMode(true);
-
-      // Use a fade-out animation and then transition
-      setTimeout(() => {
-        // Only reload if we're not an admin
-        if (!isAdmin) {
-          window.location.href = "/maintenance";
-        }
-        setIsTransitioningToMaintenance(false);
-      }, 1000);
-    }
-  };
 
   useEffect(() => {
     const checkMaintenance = async () => {
@@ -67,57 +45,40 @@ export const Header: React.FC = () => {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
         setLastMaintenanceCheck(now);
 
+        // Only update maintenanceMode state based on a SUCCESSFUL API response
         if (isInMaintenance !== maintenanceMode) {
-          // If transitioning out of maintenance mode
-          if (!isInMaintenance && maintenanceMode) {
-            try {
-              // No longer need to fetch contests here - EdgeToEdgeTicker will handle that
-              useStore.setState({ maintenanceMode: false }); // Use store setState directly
-            } catch (err) {
-              console.error(
-                "Failed during maintenance exit:",
-                err,
-              );
-              // Don't update maintenance mode if there was an error
-              return;
-            }
-          } else {
-            useStore.setState({ maintenanceMode: isInMaintenance }); // Use store setState directly
-          }
+          // Update Zustand state directly
+          useStore.setState({ maintenanceMode: isInMaintenance }); 
 
-          // Only reload for non-admin users entering maintenance mode
-          if (isInMaintenance && !isAdmin) {
+          // Only redirect non-admins if maintenance IS explicitly enabled
+          if (isInMaintenance && !isAdmin) { 
             setTimeout(() => {
               window.location.href = "/maintenance";
             }, 500);
           }
         }
       } catch (err: any) {
-        console.error("Failed to check maintenance mode:", err);
-        // Only set maintenance mode on 503 errors
-        if (err?.status === 503 || err?.message?.includes("503")) {
-          handleMaintenanceTransition();
+        // Log the error, but DO NOT trigger maintenance mode based on fetch failure
+        console.error("[Header] Failed to check maintenance mode:", err);
+        // REMOVE the logic that called handleMaintenanceTransition on 503
+        /*
+        if (!maintenanceMode && !isTransitioningToMaintenance && (err?.status === 503 || err?.message?.includes("503"))) {
+          console.log("[Header] Detected 503 error, initiating transition to maintenance state.");
+          handleMaintenanceTransition(); // DO NOT DO THIS
+        } else if (err?.status === 503 || err?.message?.includes("503")) {
+           console.warn("[Header] Still receiving 503 error while already in maintenance/transitioning state.");
         }
+        */
+        // Let other mechanisms (like ServerDownBanner potentially triggered by 
+        // persistent WebSocket failures or API interceptor errors) handle outage display.
       }
     };
 
     checkMaintenance();
     const interval = setInterval(checkMaintenance, 15000);
     return () => clearInterval(interval);
-  }, [lastMaintenanceCheck, maintenanceMode, isTransitioningToMaintenance]);
-
-  // Add transition overlay
-  useEffect(() => {
-    if (isTransitioningToMaintenance) {
-      document.body.style.opacity = "0.5";
-      document.body.style.transition = "opacity 0.5s ease-in-out";
-    } else {
-      document.body.style.opacity = "1";
-    }
-    return () => {
-      document.body.style.opacity = "1";
-    };
-  }, [isTransitioningToMaintenance]);
+    // Remove maintenanceMode/isTransitioningToMaintenance from dependencies if setMaintenanceMode is not called in catch
+  }, [lastMaintenanceCheck, isAdmin, maintenanceMode]); // Simplified dependencies
 
   // Error display
   useEffect(() => {
@@ -236,6 +197,7 @@ export const Header: React.FC = () => {
         )}
 
         {/* Add transition overlay */}
+        {/*
         {isTransitioningToMaintenance && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="text-white text-xl font-cyber animate-pulse">
@@ -243,6 +205,7 @@ export const Header: React.FC = () => {
             </div>
           </div>
         )}
+        */}
 
         <div className="relative max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-8">
           {/* Main header content */}

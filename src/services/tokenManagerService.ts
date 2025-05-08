@@ -10,16 +10,13 @@ import { authDebug } from '../config/config';
 import { useStore } from '../store/useStore';
 import { getWebSocketToken } from './api/auth';
 // import { TokenInfo } from '@/hooks/websocket'; // Remove unused/incorrect import
-import axios from 'axios'; // Need axios for the API call
-import { API_URL } from '../config/config'; // Need API_URL
-import { authService } from './AuthService'; // Import authService for potential logout on failure
 
 // Define token types (Rename back to TokenType, but ensure EXPORTED)
 export enum TokenType { // Renamed back and EXPORTED
   JWT = 'jwt',           // Standard JWT token  
   WS_TOKEN = 'wsToken',  // WebSocket-specific token
   SESSION = 'session_token', // Session token
-  REFRESH = 'refreshToken' // Refresh token
+  // REFRESH = 'refreshToken' // REMOVED
 }
 
 // Token information interface (Rename back to TokenInfo, but ensure EXPORTED)
@@ -61,11 +58,12 @@ class TokenManagerService {
             case TokenType.JWT: tokenValue = user?.jwt; break;
             case TokenType.WS_TOKEN: tokenValue = user?.wsToken; break;
             case TokenType.SESSION: tokenValue = user?.session_token; break;
-            case TokenType.REFRESH: tokenValue = user?.refreshToken; break;
+            // case TokenType.REFRESH: tokenValue = user?.refreshToken; break; // REMOVE THIS LINE
         }
 
         if (tokenValue) {
-            const expiresAt = this.estimateExpiration(tokenValue, type === TokenType.REFRESH ? 30 : 1);
+            // Estimate expiration (REFRESH defaultDays removed)
+            const expiresAt = this.estimateExpiration(tokenValue, 1);
             const expiresIn = expiresAt - Date.now();
             const timeLeft = expiresIn > 0 ? 
                 `${Math.floor(expiresIn / 60000)}m ${Math.floor((expiresIn % 60000) / 1000)}s` : 
@@ -149,7 +147,7 @@ class TokenManagerService {
         case TokenType.JWT: tokenValue = user.jwt; break;
         case TokenType.WS_TOKEN: tokenValue = user.wsToken; break;
         case TokenType.SESSION: tokenValue = user.session_token; break;
-        case TokenType.REFRESH: tokenValue = user.refreshToken; break;
+        // case TokenType.REFRESH: tokenValue = user.refreshToken; break; // REMOVE THIS LINE
         default: 
           authDebug('TokenManagerService', `getToken called with invalid type: ${type}`);
           return null;
@@ -157,7 +155,7 @@ class TokenManagerService {
 
     if (!tokenValue) return null;
 
-    const expiresAt = this.estimateExpiration(tokenValue, type === TokenType.REFRESH ? 30 : 1);
+    const expiresAt = this.estimateExpiration(tokenValue, 1); // Removed REFRESH specific day count
     const isExpired = expiresAt <= Date.now();
 
     if (isExpired) {
@@ -198,9 +196,7 @@ class TokenManagerService {
         case TokenType.SESSION:
             updatedUser.session_token = value;
             break;
-        case TokenType.REFRESH:
-            updatedUser.refreshToken = value;
-            break;
+        // case TokenType.REFRESH: updatedUser.refreshToken = value; break; // REMOVE THIS LINE
         default:
             authDebug('TokenManagerService', `Cannot set token, invalid type enum: ${type}`);
             return;
@@ -251,22 +247,10 @@ class TokenManagerService {
     let propertySetToUndefined = false;
 
     switch (type) {
-        case TokenType.JWT:
-            updatedUser.jwt = undefined;
-            propertySetToUndefined = true;
-            break;
-        case TokenType.WS_TOKEN:
-            updatedUser.wsToken = undefined;
-            propertySetToUndefined = true;
-            break;
-        case TokenType.SESSION:
-            updatedUser.session_token = undefined;
-            propertySetToUndefined = true;
-            break;
-        case TokenType.REFRESH:
-            updatedUser.refreshToken = undefined;
-            propertySetToUndefined = true;
-            break;
+        case TokenType.JWT: updatedUser.jwt = undefined; propertySetToUndefined = true; break;
+        case TokenType.WS_TOKEN: updatedUser.wsToken = undefined; propertySetToUndefined = true; break;
+        case TokenType.SESSION: updatedUser.session_token = undefined; propertySetToUndefined = true; break;
+        // case TokenType.REFRESH: updatedUser.refreshToken = undefined; propertySetToUndefined = true; break; // REMOVE THIS LINE
         default:
             authDebug('TokenManagerService', `Cannot remove token, invalid type enum: ${type}`);
             return;
@@ -300,7 +284,7 @@ class TokenManagerService {
         jwt: undefined,
         wsToken: undefined,
         session_token: undefined,
-        refreshToken: undefined,
+        // refreshToken: undefined, // REMOVED
     };
     setUser(updatedUser);
 
@@ -327,7 +311,9 @@ class TokenManagerService {
     try {
       authDebug('TokenManagerService', `Refreshing ${type} token`);
       
+      // Which token to refresh?
       switch (type) {
+        // (1) WebSocket Token
         case TokenType.WS_TOKEN:
           const wsToken = await getWebSocketToken();
           if (wsToken) {
@@ -346,67 +332,32 @@ class TokenManagerService {
             }
           }
           break;
-          
+
+        // (2) JWT Token
         case TokenType.JWT:
-          const currentRefreshToken = this.getToken(TokenType.REFRESH); 
-          if (currentRefreshToken) {
-            authDebug('TokenManagerService', 'Attempting JWT refresh using refresh token.');
-            try {
-              const response = await axios.post(`${API_URL}/auth/refresh`, 
-                { refreshToken: currentRefreshToken },
-                { withCredentials: true } // Send cookies
-              );
-
-              const newJwt = response.data?.accessToken; 
-              const newRefreshToken = response.data?.refreshToken; // Check if backend sends a new one
-
-              if (newJwt) {
-                const newJwtExpiry = this.estimateExpiration(newJwt);
-                this.setToken(TokenType.JWT, newJwt, newJwtExpiry, 'refresh');
-                authDebug('TokenManagerService', 'JWT successfully refreshed.');
-
-                if (newRefreshToken) {
-                    const newRefreshExpiry = this.estimateExpiration(newRefreshToken, 30); // Assume 30 days for refresh
-                    this.setToken(TokenType.REFRESH, newRefreshToken, newRefreshExpiry, 'refresh');
-                    authDebug('TokenManagerService', 'New refresh token received and stored.');
-                }
-              } else {
-                 throw new Error('No access token received from refresh endpoint');
-              }
-
-            } catch (refreshError) {
-                authDebug('TokenManagerService', 'JWT refresh failed', { refreshError });
-                // If refresh fails due to invalid token (401/403), clear tokens and potentially logout
-                if (axios.isAxiosError(refreshError) && (refreshError.response?.status === 401 || refreshError.response?.status === 403)) {
-                    authDebug('TokenManagerService', 'Refresh token invalid or expired. Clearing tokens and logging out.');
-                    // Use authService logout which clears all tokens internally
-                    authService.logout(); 
-                    // Optionally throw again to signal failure upwards if needed
-                    // throw new Error('Session expired. Please log in again.'); 
-                } else {
-                    // Handle other errors (e.g., network, server 500)
-                    // Log the error but don't necessarily logout immediately
-                    console.error('Unhandled error during token refresh:', refreshError);
-                }
-            }
-          } else {
-            authDebug('TokenManagerService', 'No refresh token available for JWT refresh, trying WebSocket token');
-            this.refreshToken(TokenType.WS_TOKEN).catch(err => 
-                authDebug('TokenManagerService', `Async WS refresh trigger failed`, err)
-            );
-          }
+           // JWT refresh is handled automatically by the HTTP client interceptor via HttpOnly cookies.
+           // This function should ideally not be called for JWT.
+           authDebug('TokenManagerService', 'JWT refresh called, but should be handled by interceptor.');
+           // We could potentially trigger a checkAuth here to sync state if needed, but usually not necessary.
+           // await authService.checkAuth(); 
           break;
-          
+
+        // (3) Session Token
         case TokenType.SESSION:
-          authDebug('TokenManagerService', 'Session token refresh not applicable');
+          authDebug('TokenManagerService', 'Session token refresh not applicable via this method.');
           break;
+        
+        // (4) Refresh Token
+        // REFRESH case is removed as TokenType.REFRESH enum is removed
           
+        // (5) Default
         default:
           authDebug('TokenManagerService', `No refresh strategy for ${type}`);
       }
     } catch (error) {
       authDebug('TokenManagerService', `Error refreshing ${type} token`, { error });
     } finally {
+      // Reset refresh in progress flag
       this.refreshInProgress.set(type, false);
     }
   }

@@ -5,7 +5,7 @@
  * This file is kept for backward compatibility and will be removed in a future update.
  */
 
-import { aiService, AIMessage } from '../services/ai';
+import { AIMessage, aiService } from '../services/ai';
 
 interface Message {
   role: string;
@@ -36,7 +36,7 @@ export const getChatResponse = async (messages: Message[]): Promise<string> => {
       context: 'trading'
     });
     
-    return response.content;
+    return response.content ?? '';
   } catch (error) {
     console.error('Error calling AI service:', error);
     return "Sorry, I'm degenning right now. Check with me again later.";

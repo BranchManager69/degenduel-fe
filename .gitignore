@@ -100,3 +100,6 @@ server/config/keys.json  # Example of sensitive API keys if applicable
 
 # Public files
 /public/
+
+# Build stats
+stats.html
