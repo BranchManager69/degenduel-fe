@@ -18,22 +18,22 @@ The Unified Authentication System is a complete redesign of DegenDuel's authenti
 
 This refactor addresses several issues with the original authentication implementation:
 - Circular dependencies between components
-- Multiple overlapping providers (AuthContext, PrivyAuthContext, TwitterAuthContext)
+- Multiple overlapping providers (AuthContext, PrivyAuthContext, TwitterAuthContext were legacy)
 - Repeated logic across multiple files
 - Direct store manipulations causing infinite render loops
 - Inconsistent API for authentication methods
 
 ## Key Features
 
-- **Single Authentication Service:** Centralized logic for all authentication operations
-- **Unified Context Provider:** One React context for all authentication state
-- **Integrated WebSocket Authentication:** WebSocket system that works seamlessly with auth
-- **Support for Multiple Auth Methods:** Wallet, Privy, and Twitter authentication
-- **Token Management:** Unified token handling for JWT, WebSocket, and session tokens
+- **Single Authentication Service:** Centralized logic for all authentication operations (`AuthService.ts`)
+- **Unified Context Provider:** One React context for all authentication state (`UnifiedAuthContext.tsx`)
+- **Integrated WebSocket Authentication:** WebSocket system that works seamlessly with auth (`UnifiedWebSocketContext.tsx`)
+- **Support for Multiple Auth Methods:** Wallet, Privy, and Twitter authentication (managed via `AuthService`)
+- **Token Management:** Unified token handling for JWT, WebSocket, and session tokens (`authTokenManagerService.ts`)
 - **Event-Based Architecture:** Subscribe to auth events for reactive components
 - **Consistent Error Handling:** Standardized error responses across the system
 - **Improved TypeScript Support:** Better type definitions and interfaces
-- **Comprehensive Testing:** Unit and integration tests for all components
+- **Comprehensive Testing:** Unit and integration tests for core unified components
 
 ## Core Components
 
@@ -62,7 +62,7 @@ await authService.logout();
 `UnifiedAuthContext` provides a React hook for components to access authentication state:
 
 ```typescript
-import { useAuth } from '../contexts/UnifiedAuthContext';
+import { useAuth } from '../contexts/UnifiedAuthContext'; // Corrected path for new components
 
 function MyComponent() {
   const { user, isLoading, isAuthenticated, loginWithWallet, logout } = useAuth();
@@ -76,7 +76,7 @@ function MyComponent() {
 `UnifiedWebSocketContext` provides WebSocket functionality with integrated auth:
 
 ```typescript
-import { useWebSocket } from '../contexts/UnifiedWebSocketContext';
+import { useWebSocket } from '../contexts/UnifiedWebSocketContext'; // Corrected path for new components
 
 function MyComponent() {
   const { isConnected, isAuthenticated, send, subscribe } = useWebSocket();
@@ -90,7 +90,7 @@ function MyComponent() {
 Updated route guards for protected routes:
 
 ```tsx
-import { AuthenticatedRoute } from '../components/routes/AuthenticatedRoute.unified';
+import { AuthenticatedRoute } from '../components/routes/AuthenticatedRoute.unified'; // Assuming this is the new path
 
 <Route element={<AuthenticatedRoute />}>
   <Route path="/protected" element={<ProtectedComponent />} />
@@ -99,187 +99,136 @@ import { AuthenticatedRoute } from '../components/routes/AuthenticatedRoute.unif
 
 ## Implementation Status
 
-We have successfully implemented the core components of the new unified authentication system:
+The core components of the new unified authentication system have been implemented and integrated:
 
-1. **Core Components Created:**
+1. **Core Components Created & Integrated:**
    - ✅ `AuthService.ts` - Central authentication service
    - ✅ `UnifiedAuthContext.tsx` - Unified authentication provider
    - ✅ `UnifiedWebSocketContext.tsx` - WebSocket provider integrated with auth
    - ✅ `App.tsx` - Reimplemented App component using the new system
-   - ✅ Unified route guards (`AuthenticatedRoute.unified.tsx`, `AdminRoute.unified.tsx`, `SuperAdminRoute.unified.tsx`)
+   - ✅ Unified route guards (e.g., `AuthenticatedRoute.unified.tsx`) are in place.
+   - ✅ `useMigratedAuth.ts` now exclusively uses `UnifiedAuthContext`.
 
-2. **Tests Created:**
-   - ✅ `AuthService.test.ts` - Tests for the auth service
-   - ✅ `UnifiedAuthContext.test.tsx` - Tests for the auth context
-   - ✅ `UnifiedWebSocketContext.test.tsx` - Tests for the WebSocket context
-   - ✅ `AuthenticatedRoute.unified.test.tsx` - Tests for the route guard
+2. **Legacy Systems Cleanup:**
+   - ✅ Deleted legacy `AuthContext.tsx`, `TwitterAuthContext.tsx`.
+   - ✅ Deleted legacy `useAuth.ts` (from `hooks/auth/legacy/`), `useJupiterWallet.ts`, `useSolanaWallet.ts`.
+   - ✅ Deleted legacy `ConnectWalletButton.tsx`, `SolanaWalletConnector.tsx`.
+   - ✅ Deleted legacy `useTokenData.ts` (from `hooks/data/legacy/`).
+   - 🟡 `PrivyAuthContext.tsx` and legacy `WebSocketContext.tsx` are deprecated and pending removal.
+   - 🟡 Several components consuming legacy hooks/contexts have been refactored (e.g., `TwitterLoginButton`, `LivePriceTicker`, `TokensPreviewSection`, `MarketStatsPanel`, `WebSocketStatus`, `SolanaConnectionContext`, `ContestCreditsPage`, `LoginPage`).
 
-3. **Remaining TypeScript Issues:**
-   - File casing conflict between `authService.ts` and `AuthService.ts`
-   - User type missing some properties (`auth_method`, `privy_id`, `twitter_id`)
-   - Test mocking issues that need to be updated
-   - Unused variables that should be removed
+3. **Remaining TypeScript/Build Issues & Tasks:**
+   - 🟡 Test mocking issues: `authFlow.test.tsx` commented out, needs update/removal. Storybook mocks (e.g., `src/stories/mockProviders.tsx`) may need updates for deleted contexts.
+   - 🟡 Review and potentially remove/refactor remaining files importing deleted modules (e.g., Blinks components, Privy-related components if `PrivyAuthContext` is removed).
+   - 🟡 Update `src/AUTH_SYSTEM_ARCHITECTURE.md` to reflect all changes.
+   - 🟡 Refactor Blinks functionality (`BlinkButton.tsx`, `BlinkResolver.tsx`) to fully utilize `useSolanaKitWallet.ts`.
 
 ## Migration Plan
 
-The migration is designed to be incremental, allowing for testing at each stage to minimize disruption to the application.
+The initial migration to the unified system is largely complete. The focus is now on cleaning up remaining legacy parts and ensuring full adoption.
 
-### Phase 1: Core Components & Testing (Current)
+### Phase 1 & 2: Core Components & Incremental Implementation (Largely Completed)
+- Core unified auth components are live.
+- `useMigratedAuth` acts as the primary auth hook, using the unified system.
+- Route guards have been updated.
+- Key login components and several other components have been migrated.
 
-1. **Fix TypeScript Issues**
-   - Resolve file casing conflicts
-   - Update User type definitions
-   - Fix test mocks
-   - Remove unused variables
+### Phase 3: Finalizing Integration & Cleanup (Current Focus)
+1. **Complete Removal of Deprecated Contexts/Hooks:**
+   - Remove `PrivyAuthContext.tsx` after ensuring its functionality is covered by `UnifiedAuthContext` or is no longer needed.
+   - Remove legacy `WebSocketContext.tsx` after ensuring all WebSocket interactions use `UnifiedWebSocketContext` or topic-specific hooks.
+   - Remove any remaining components solely dependent on these deleted legacy items.
+2. **Refactor Blinks:** Fully integrate `BlinkButton.tsx` and related components with `useSolanaKitWallet.ts`.
+3. **Update Tests and Storybook:**
+   - Rewrite or remove tests for legacy contexts (e.g., `authFlow.test.tsx`).
+   - Update Storybook mocks and stories to use the new unified auth system.
 
-2. **Setup Testing Environment**
-   - Create a feature flag system to toggle between old and new auth systems
-   - Implement a mechanism to run both systems in parallel for comparison
-
-### Phase 2: Incremental Implementation
-
-1. **Start with Route Guards**
-   - Replace existing route guards with the new unified versions
-   - Update route structure in App.tsx to use the Outlet pattern
-
-2. **Update Login Components**
-   - Update LoginPage.tsx to use the new auth system
-   - Update auth-related components in the components/auth/ directory
-
-3. **Component Migration Strategy**
-   - Start with non-critical components that use authentication
-   - Update imports from `useAuth` to the new unified hook
-   - Test components individually with the new system
-   - Gradually expand to more important components
-
-### Phase 3: Main Integration
-
-1. **Update App.tsx**
-   - Replace the multiple nested providers with the unified providers
-   - Keep fallback mechanisms in place during initial deployment
-
-2. **Complete Provider Migration**
-   - Replace all remaining references to the old authentication system
-   - Remove redundant context providers and hooks
-
-### Phase 4: Cleanup & Optimization
-
-1. **Code Cleanup**
-   - Remove deprecated authentication files and code
-   - Update documentation and comments to reflect the new system
-
-2. **Performance Optimization**
-   - Profile the new authentication system for performance issues
-   - Optimize render cycles and state updates
+### Phase 4: Cleanup & Optimization (Future)
+1. **Code Cleanup:**
+   - Remove any remaining deprecated files and code.
+   - Update all documentation and comments to reflect the final unified system.
+2. **Performance Optimization:**
+   - Profile the unified authentication system for performance.
+   - Optimize render cycles and state updates.
 
 ## Developer Guide
 
 ### Importing the Auth Hook
 
+Always use `useMigratedAuth` or directly `useAuth` from `UnifiedAuthContext`:
 ```typescript
-// Old System
-import { useAuth } from '../hooks/useAuth';
+// Recommended for most components:
+import { useMigratedAuth } from '../hooks/auth/useMigratedAuth'; // Or its direct export from hooks/auth
 
-// New System
+// Or directly if within a structure that ensures UnifiedAuthProvider is above:
 import { useAuth } from '../contexts/UnifiedAuthContext';
 ```
 
 ### Using Authentication State
 
 ```typescript
-// Old System
-const { user, loading, isAuthenticated } = useAuth();
-
-// New System
-const { user, isLoading, isAuthenticated } = useAuth();
+// Use with useMigratedAuth or useAuth from UnifiedAuthContext
+const { user, isLoading, isAuthenticated } = useAuth(); // or useMigratedAuth()
 ```
-
-> Note: The `loading` property has been renamed to `isLoading` for consistency, but the old property is still available for backward compatibility.
-
-### Authentication Methods
-
-```typescript
-// Both Systems (unchanged API)
-const { loginWithWallet, logout } = useAuth();
-
-// Log in with wallet
-await loginWithWallet(walletAddress, signMessage);
-
-// Log out
-await logout();
-```
+> Note: `isLoading` is the current property. `loading` is provided by `useMigratedAuth` for compatibility during transition but maps to `isLoading`.
 
 ### WebSocket Authentication
 
 ```typescript
-// Old System
-import { useWebSocket } from '../contexts/WebSocketContext';
-
 // New System
-import { useWebSocket } from '../contexts/UnifiedWebSocketContext';
+import { useWebSocket } from '../contexts/UnifiedWebSocketContext'; // Or topic-specific hooks
 ```
 
 ### Route Guards
 
 ```tsx
-// Old System
-<Route
-  path="/protected"
-  element={
-    <AuthenticatedRoute>
-      <ProtectedComponent />
-    </AuthenticatedRoute>
-  }
-/>
-
 // New System
+import { AuthenticatedRoute } from '../components/routes/AuthenticatedRoute.unified'; // Example
+
 <Route element={<AuthenticatedRoute />}>
   <Route path="/protected" element={<ProtectedComponent />} />
 </Route>
 ```
 
-### Migration Checklist
-
-For each component:
-
-1. Update the import from `../hooks/useAuth` to `../contexts/UnifiedAuthContext`
-2. Rename `loading` to `isLoading` if used
-3. If WebSocket functionality is used, update import to `../contexts/UnifiedWebSocketContext`
-4. For route guards, update to the new Outlet pattern
-5. If using token types, import `TokenType` from `../services/TokenManager`
-
-## File Structure
+## File Structure (Reflects Current State & Goals)
 
 ```
 src/
 ├── services/
 │   ├── AuthService.ts            // Central auth service
 │   ├── AuthService.test.ts       // Tests for auth service
-│   ├── TokenManager.ts           // Token management
+│   ├── authTokenManagerService.ts           // Token management
 │   └── index.ts                  // Service exports
 ├── contexts/
 │   ├── UnifiedAuthContext.tsx    // Auth context/provider
 │   ├── UnifiedAuthContext.test.tsx // Tests for auth context
 │   ├── UnifiedWebSocketContext.tsx // WebSocket integration
-│   └── UnifiedWebSocketContext.test.tsx // Tests for WebSocket context
+│   ├── UnifiedWebSocketContext.test.tsx // Tests for WebSocket context
+│   ├── SolanaConnectionContext.tsx // Uses useMigratedAuth
+│   └── (legacy - to be removed)
+│       ├── PrivyAuthContext.tsx    // Deprecated
+│       └── WebSocketContext.tsx    // Deprecated
 ├── components/
+│   ├── auth/                     // Auth related UI components, refactored or new
+│   │   └── LoginOptions.tsx      // Uses WalletMultiButton etc.
 │   └── routes/
 │       ├── AuthenticatedRoute.unified.tsx  // Protected route
-│       ├── AuthenticatedRoute.unified.test.tsx // Tests for route guard
 │       ├── AdminRoute.unified.tsx          // Admin route
 │       └── SuperAdminRoute.unified.tsx     // SuperAdmin route
-├── examples/
-│   └── AuthMigrationExample.tsx  // Example showing migration in practice
-└── App.tsx               // App with unified auth
+├── hooks/
+│   ├── auth/
+│   │   ├── useMigratedAuth.ts    // Primary auth hook for components
+│   │   └── index.ts
+│   └── wallet/
+│       └── useSolanaKitWallet.ts // Preferred Solana wallet hook
+└── App.tsx                       // App with unified auth & WS providers
 ```
 
-### Files to Replace/Update
-
-The authentication refactor affects multiple files throughout the codebase:
-
-- 🟢 **NEW Files**: 12 new files implementing the unified auth system
-- 🔴 **DELETE Files**: 8 files from the old auth system to be removed after migration
-- 🟡 **UPDATE Files**: 43+ files that need updating to use the new auth system
+### Files Status:
+- 🟢 **NEW/UNIFIED Files**: `AuthService.ts`, `UnifiedAuthContext.tsx`, `UnifiedWebSocketContext.tsx`, `useMigratedAuth.ts`, `useSolanaKitWallet.ts`, `AuthenticatedRoute.unified.tsx` (and similar for admin/superadmin).
+- 🔴 **DELETED Files (from old system)**: `AuthContext.tsx`, `TwitterAuthContext.tsx`, legacy `useAuth.ts`, `useJupiterWallet.ts`, `useSolanaWallet.ts` (from `hooks/data`), `ConnectWalletButton.tsx`, `SolanaWalletConnector.tsx`, legacy `useTokenData.ts`.
+- 🟡 **TO BE DELETED/REFACTORED**: `PrivyAuthContext.tsx`, legacy `WebSocketContext.tsx`, Blinks components, remaining Storybook/test mocks tied to deleted files.
+- 🟡 **UPDATED Files**: Many components now use `useMigratedAuth` or `useStandardizedTokenData`.
 
 ## Testing
 
@@ -289,15 +238,17 @@ Run the tests for the new authentication system:
 npm test -- src/services/AuthService.test.ts
 npm test -- src/contexts/UnifiedAuthContext.test.tsx
 npm test -- src/contexts/UnifiedWebSocketContext.test.tsx
-npm test -- src/components/routes/AuthenticatedRoute.unified.test.tsx
+# Add tests for unified route guards if available
 ```
+> Note: `authFlow.test.tsx` is currently commented out and needs refactoring/removal.
 
 ## Future Improvements
 
 - Add refresh token functionality
 - Improve error handling and recovery
-- Add more authentication methods
+- Add more authentication methods (if needed beyond current scope)
 - Enhance security features
+- Complete Blinks integration with `useSolanaKitWallet`.
 
 ---
 
@@ -314,7 +265,7 @@ npm test -- src/components/routes/AuthenticatedRoute.unified.test.tsx
    - Makes the system more maintainable and testable
 
 3. **Token Management:**
-   - Centralized in TokenManager
+   - Centralized in authTokenManagerService
    - Supports multiple token types (JWT, WebSocket, Session)
    - Handles token expiration and refresh
 

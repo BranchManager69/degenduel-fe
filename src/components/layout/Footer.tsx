@@ -4,15 +4,17 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
+import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
-import { MessageType, TopicType, useUnifiedWebSocket } from "../../hooks/websocket";
+import { MessageType, TopicType, WebSocketMessage } from "../../hooks/websocket";
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
   const { isAdmin, isAuthenticated } = useMigratedAuth();
-  // Use unified WebSocket for server status and system settings
+  // Use the correct hook from the context (takes no arguments)
+  const unifiedWs = useWebSocket();
   
   // Check for storybook mock status
   const initialStatus = typeof window !== 'undefined' && (window as any).serverStatusState
@@ -35,14 +37,10 @@ export const Footer: React.FC = () => {
     diagOptions: [] as string[],
   });
   
-  // Subscribe to unified WebSocket messages with the new format
-  const unifiedWs = useUnifiedWebSocket(
-    // The topic to subscribe to
-    'footer-status', 
-    // The message types to subscribe to
-    [MessageType.DATA, MessageType.SYSTEM], 
-    // The callback function to handle the message
-    (message) => {
+  // Register listener for WebSocket messages
+  useEffect(() => {
+    // Define the callback function with explicit type
+    const handleMessage = (message: WebSocketMessage | any) => { 
       // Handle different message types and topics
       if (message.type === MessageType.DATA && message.topic === TopicType.SYSTEM) {
         // System data (status updates)
@@ -66,21 +64,48 @@ export const Footer: React.FC = () => {
           diagOptions: message.data?.diagOptions || []
         });
       }
-    },
-    // Filter by system topic
-    [TopicType.SYSTEM] 
-  );
-  
-  // Subscribe to system topic on component mount
-  useEffect(() => {
-    if (unifiedWs.isConnected) {
-      // Subscribe to the system topic
-      unifiedWs.subscribe([TopicType.SYSTEM]);
-      console.log(`👑🤩👍🏻 <<==== Subscribed to ${[TopicType.SYSTEM]}`);
-    } else {
-      console.log(`💩😢👎🏻 <<==== NOT subscribed to ${[TopicType.SYSTEM]}`);
+    };
+
+    // Register the listener when the context is available
+    if (unifiedWs) {
+      const unregister = unifiedWs.registerListener(
+        'footer-status',                             // Listener ID
+        [MessageType.DATA, MessageType.SYSTEM],      // Types to listen for
+        handleMessage,                               // Callback function
+        [TopicType.SYSTEM]                           // Filter by system topic
+      );
+      return unregister; // Return the cleanup function provided by registerListener
     }
-  }, [unifiedWs.isConnected]);
+  }, [unifiedWs]); // Depend on the unifiedWs context object itself
+
+  // Subscribe to system topic when connection is ready
+  useEffect(() => {
+    let isSubscribed = false; // Track if we successfully subscribed in this effect run
+
+    // Check if the WebSocket is connected and ready for subscriptions
+    if (unifiedWs.connectionState === ConnectionState.CONNECTED || unifiedWs.connectionState === ConnectionState.AUTHENTICATED) {
+      console.log(`[Footer] WebSocket connected. Attempting to subscribe to: ${TopicType.SYSTEM}`);
+      const success = unifiedWs.subscribe([TopicType.SYSTEM]); // Attempt subscription
+      if (success) {
+          console.log(`👑🤩👍🏻 <<==== Subscribed to ${TopicType.SYSTEM}`);
+          isSubscribed = true;
+      } else {
+          console.error(`[Footer] Failed to send subscribe request for ${TopicType.SYSTEM}`);
+      }
+    } else {
+      console.log(`[Footer] WebSocket not ready for subscription. State: ${unifiedWs.connectionState}`);
+    }
+
+    // Return a cleanup function to unsubscribe when the component unmounts
+    return () => {
+      // Only unsubscribe if we actually subscribed successfully within this effect instance
+      if (isSubscribed) {
+        console.log(`[Footer] Cleaning up subscription to ${TopicType.SYSTEM}`);
+        unifiedWs.unsubscribe([TopicType.SYSTEM]);
+      }
+    };
+    // Depend on the connection state and subscribe/unsubscribe functions
+  }, [unifiedWs.connectionState, unifiedWs.subscribe, unifiedWs.unsubscribe]); 
   
   // Track combined WebSocket connection status
   const [combinedWsStatus, setCombinedWsStatus] = useState({
@@ -149,7 +174,8 @@ export const Footer: React.FC = () => {
         connected: isConnected ? "Connected" : "Disconnected",
         authenticated: unifiedWs.isAuthenticated ? "Yes" : "No",
         connectionState: unifiedWs.connectionState,
-        error: unifiedWs.error,
+        // Use the correct property name for connection error
+        error: unifiedWs.connectionError, 
         showLightningBolt: isConnected
       });
 
@@ -178,7 +204,7 @@ export const Footer: React.FC = () => {
         
     // End of ridiculous logging ------------------------------------------------------------
     
-  }, [unifiedWs.isConnected, unifiedWs.isAuthenticated, unifiedWs.connectionState, serverStatus.status]);
+  }, [unifiedWs.isConnected, unifiedWs.isAuthenticated, unifiedWs.connectionState, serverStatus.status, unifiedWs.connectionError]);
 
   // State to manage modal visibility
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -654,10 +680,10 @@ Last Check: ${new Date().toLocaleTimeString()}
                         <div>Connection State:</div>
                         <div className="font-mono">{unifiedWs.connectionState}</div>
                       </div>
-                      {unifiedWs.error && (
+                      {unifiedWs.connectionError && (
                         <div className="flex justify-between mt-1 text-red-400">
                           <div>Error:</div>
-                          <div className="font-mono truncate max-w-[200px]">{unifiedWs.error}</div>
+                          <div className="font-mono truncate max-w-[200px]">{unifiedWs.connectionError}</div>
                         </div>
                       )}
                     </div>

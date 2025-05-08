@@ -1,19 +1,22 @@
+// src/contexts/UnifiedWebSocketContext.tsx
+
 /**
  * UnifiedWebSocketContext.tsx
  * 
- * A WebSocket context wrapper that uses the new unified authentication system.
+ * @description A WebSocket context wrapper that uses the new unified authentication system.
  * This ensures that WebSocket authentication is properly integrated with the
  * new authentication service and doesn't rely on direct store access.
  * 
  * @author BranchManager69
- * @version 1.0.0
- * @created 2025-05-05
+ * @version 2.0.0
+ * @created 2025-04-14
+ * @updated 2025-05-07
  */
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { DDExtendedMessageType } from '../hooks/websocket/types';
 import { authDebug } from '../config/config';
-import { authService, AuthEventType, TokenType } from '../services';
+import { DDExtendedMessageType } from '../hooks/websocket/types';
+import { AuthEventType, authService, TokenType } from '../services';
 
 // Re-export the ConnectionState enum for components that need it
 export enum ConnectionState {

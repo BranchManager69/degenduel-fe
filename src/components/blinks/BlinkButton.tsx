@@ -45,8 +45,9 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
     publicKey, 
     isConnected,
     isConnecting,
-    // connect, // No longer directly called here, wallet selection needed first
-    // signAndSendTransaction, // Needs refactor for pre-serialized transactions
+    // connect, // Removed as BlinkButton will not initiate connection
+    // signAndSendTransaction, // Needs refactor for pre-serialized transactions -- OLD one removed
+    signAndSendBlinkTransaction // Use the new method
   } = useSolanaKitWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [metadata, setMetadata] = useState<BlinkMetadata | null>(null);
@@ -151,7 +152,7 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
 
       // Handle different transaction encoding formats
       // Newer backend returns base64, older code might return base58
-      // let processedTransaction = transaction; // This variable is unused as the signing logic is commented
+      let processedTransaction = transaction; 
       
       // Check if transaction is base64 encoded (standard for real @solana/web3.js transactions)
       const isBase64 = /^[A-Za-z0-9+/=]+$/.test(transaction) && 
@@ -171,20 +172,10 @@ export const BlinkButton: React.FC<BlinkButtonProps> = ({
       }
 
       // Actually sign and send the transaction using the Solana wallet
-      // Pass the message for better wallet UX if available
-      /* Commenting out due to type mismatch with useSolanaKitWallet.signAndSendTransaction
-         This needs a new approach: either Blink API changes or useSolanaKitWallet gets a method 
-         to sign/send pre-serialized transactions, or BlinkButton deserializes and rebuilds.
-      const result = await signAndSendTransaction(
-        processedTransaction, 
-        message ? { message } : undefined
-      );
-      */
-      // For now, let's throw an error indicating this is not implemented with the new hook
-      throw new Error("BlinkButton: signAndSendTransaction with pre-serialized tx not yet adapted for useSolanaKitWallet.");
+      const finalSignature = await signAndSendBlinkTransaction(processedTransaction);
       
       // Return the real signature
-      // onSuccess?.(result); // Changed from result.signature
+      onSuccess?.(finalSignature); 
     } catch (err) {
       console.error('Error executing blink:', err);
       setError((err as Error).message || 'Failed to execute action');

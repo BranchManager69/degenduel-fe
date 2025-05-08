@@ -39,6 +39,7 @@ export const HotTokensList: React.FC<HotTokensListProps> = ({
     lastAttempt: new Date().toISOString()
   });
   
+  // Commenting out unused sound-related constants and functions
   // const [lastSoundTime, setLastSoundTime] = useState<Record<string, number>>({
   //   up: 0,
   //   down: 0,

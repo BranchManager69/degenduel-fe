@@ -44,6 +44,7 @@ export interface User {
   jwt?: string;             // JWT token for API authentication
   wsToken?: string;         // WebSocket token for WebSocket authentication
   session_token?: string;   // Session token for maintaining session
+  refreshToken?: string;    // Refresh token for JWT renewal (added)
   
   // Timestamps
   created_at?: string;

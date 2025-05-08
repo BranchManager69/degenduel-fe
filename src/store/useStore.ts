@@ -978,11 +978,16 @@ export const useStore = create<State>()(
           }
           
           // 3. Clear all authentication tokens AFTER API call
-          console.log("[Wallet Debug] Clearing tokens from TokenManager");
-          // Import dynamically to avoid circular dependencies
-          const { TokenManager } = await import('../services/TokenManager');
-          if (TokenManager && typeof TokenManager.clearAllTokens === 'function') {
-            TokenManager.clearAllTokens();
+          console.log("[Wallet Debug] Clearing tokens from tokenManagerService");
+          try {
+            const { tokenManagerService } = await import('../services/tokenManagerService');
+            if (tokenManagerService && typeof tokenManagerService.clearAllTokens === 'function') {
+              tokenManagerService.clearAllTokens();
+            } else {
+              console.warn("[Wallet Debug] tokenManagerService or clearAllTokens not found after import.");
+            }
+          } catch (err) {
+            console.error("[Wallet Debug] Error dynamically importing or calling tokenManagerService.clearAllTokens:", err);
           }
 
           // 4. Clear local storage and cookies

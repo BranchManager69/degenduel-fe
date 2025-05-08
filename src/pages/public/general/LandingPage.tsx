@@ -35,10 +35,14 @@ import { ddApi } from "../../../services/dd-api";
 
 
 // Contract Address Service (deprecated)
-import {
-  getTimeRemainingUntilRelease, // ?
-  isReleaseTimePassed // deprecated
-} from '../../../services/contractAddressService';
+// import {
+//   getTimeRemainingUntilRelease, // Now from dateUtils.ts
+//   isReleaseTimePassed // Now from dateUtils.ts
+// } from '../../../services/contractAddressService'; // REMOVED IMPORT
+
+// Date Utilities (NEW IMPORT)
+import { getTimeRemainingUntilRelease, isReleaseTimePassed } from '../../../utils/dateUtils';
+
 // Release Date Service (Is this a synonym of contract address service?)
 import {
   FALLBACK_RELEASE_DATE, // ?

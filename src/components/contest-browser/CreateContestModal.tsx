@@ -1,10 +1,14 @@
-// src/components/contests/browser/CreateContestModal.tsx
+// src/components/contest-browser/CreateContestModal.tsx
 
 /**
+ * CreateContestModal.tsx
+ * 
+ * @description This component is responsible for displaying the CreateContestModal.
+ * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 1.9.1
  * @created 2025-02-14
- * @updated 2025-04-30 // Partial adaptation... This thing is old.
+ * @updated 2025-05-07
  */
 
 import React from "react";
@@ -35,12 +39,16 @@ interface CreateContestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  userRole: 'admin' | 'user';
+  availableCredits?: number;
 }
 
 export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  userRole,
+  availableCredits,
 }) => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -140,11 +148,30 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Credit Check for regular users
+    if (userRole === 'user') {
+      if (availableCredits === undefined || availableCredits < 1) {
+        const creditError = "You do not have enough credits to create a contest.";
+        setError(creditError);
+        toast.error(creditError, {
+          duration: 4000,
+          position: "bottom-right",
+          style: {
+            background: "#1a1a1a",
+            color: "#fff",
+            border: "1px solid #262626",
+          },
+        });
+        return;
+      }
+    }
+
     setLoading(true);
 
     let attempt = 0;
-    const maxAttempts = 5;
-
+    const maxAttempts = 3;
+    // Attempt to create the contest up to maxAttempts times
     while (attempt < maxAttempts) {
       try {
         const contestData: Partial<Contest> = {
@@ -202,6 +229,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           attempt: attempt + 1,
           maxAttempts,
           timestamp: new Date().toISOString(),
+          userRole,
         });
 
         const response = await ddApi.contests.create(contestData);
@@ -295,8 +323,22 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           timestamp: new Date().toISOString(),
         });
 
-        setError(errorMessage);
-        toast.error(`Failed to create contest: ${errorMessage}`, {
+        // Check if it's the specific 403 Insufficient Credits error
+        // We assume the fetch wrapper or ddApi might attach status to the error
+        let displayMessage = `Failed to create contest: ${errorMessage}`;
+        if ((err as any)?.status === 403 && errorMessage.includes('Insufficient Credits')) {
+            displayMessage = "Insufficient Credits: You do not have enough credits to create a new contest.";
+        } else if ((err as any)?.status === 403) {
+            // Handle other potential 403 errors if necessary
+            displayMessage = `Forbidden: ${errorMessage}`;
+        } else if ((err as any)?.status) {
+            // Handle other HTTP errors
+            displayMessage = `Error ${ (err as any).status }: ${errorMessage}`;
+        }
+        // Network errors or non-HTTP errors will use the default errorMessage
+
+        setError(displayMessage); // Set the potentially more specific error for UI state
+        toast.error(displayMessage, {
           duration: 4000,
           position: "bottom-right",
           style: {
@@ -390,6 +432,16 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
           <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {userRole === 'user' && (
+                <div className="p-3 bg-brand-900/30 border border-brand-500/30 rounded-md text-sm text-brand-300">
+                  {availableCredits !== undefined && availableCredits > 0 ? (
+                    <p>This will use 1 of your {availableCredits} available credit(s).</p>
+                  ) : (
+                    <p className="text-yellow-400">You currently have no contest credits. <a href="/contest-credits" className="underline hover:text-yellow-300">Get credits</a>.</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-6">
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">

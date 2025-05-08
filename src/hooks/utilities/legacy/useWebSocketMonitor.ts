@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useWebSocketContext } from "../../../contexts/WebSocketContext";
+// import { useWebSocketContext } from "../../../contexts/WebSocketContext"; // Old import
+import { ConnectionState as UnifiedConnectionState, useWebSocket } from "../../../contexts/UnifiedWebSocketContext"; // New import
 import { useStore } from "../../../store/useStore";
-import { ConnectionState } from "../../websocket/types";
+// import { ConnectionState } from "../../websocket/types"; // Old import, UnifiedConnectionState will be used or mapped
 import { useInterval } from "../useInterval";
 
 interface WebSocketMetrics {
@@ -87,7 +88,8 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
   const webSocketState = store.webSocket;
   
   // Get context connection state from unified WebSocket system
-  const webSocketContext = useWebSocketContext();
+  // const webSocketContext = useWebSocketContext(); // Old context
+  const unifiedWebSocket = useWebSocket(); // New context
   
   // Local state for UI monitoring
   const [messageCount, setMessageCount] = useState(0);
@@ -280,20 +282,38 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
   // Map the context connection state to our monitoring state
   const getContextConnectionState = () => {
     // Use the context connection state if available
-    if (webSocketContext) {
-      switch (webSocketContext.connectionState) {
-        case ConnectionState.CONNECTED:
+    // if (webSocketContext) { // Old context
+    //   switch (webSocketContext.connectionState) {
+    //     case ConnectionState.CONNECTED:
+    //       return "connected";
+    //     case ConnectionState.AUTHENTICATED:
+    //       return "authenticated";
+    //     case ConnectionState.CONNECTING:
+    //     case ConnectionState.AUTHENTICATING:
+    //       return "connecting";
+    //     case ConnectionState.RECONNECTING:
+    //       return "reconnecting";
+    //     case ConnectionState.ERROR:
+    //       return "error";
+    //     case ConnectionState.DISCONNECTED:
+    //     default:
+    //       return "disconnected";
+    //   }
+    // }
+    if (unifiedWebSocket) { // New context
+      switch (unifiedWebSocket.connectionState) {
+        case UnifiedConnectionState.CONNECTED:
           return "connected";
-        case ConnectionState.AUTHENTICATED:
+        case UnifiedConnectionState.AUTHENTICATED:
           return "authenticated";
-        case ConnectionState.CONNECTING:
-        case ConnectionState.AUTHENTICATING:
+        case UnifiedConnectionState.CONNECTING:
+        case UnifiedConnectionState.AUTHENTICATING:
           return "connecting";
-        case ConnectionState.RECONNECTING:
+        case UnifiedConnectionState.RECONNECTING:
           return "reconnecting";
-        case ConnectionState.ERROR:
+        case UnifiedConnectionState.ERROR:
           return "error";
-        case ConnectionState.DISCONNECTED:
+        case UnifiedConnectionState.DISCONNECTED:
         default:
           return "disconnected";
       }
@@ -312,8 +332,11 @@ export const useWebSocketMonitor = (): WebSocketMonitorData => {
   // Determine if authenticated based on the context
   const isAuthenticatedFromContext = () => {
     // First check the WebSocketContext
-    if (webSocketContext) {
-      return webSocketContext.isAuthenticated;
+    // if (webSocketContext) { // Old context
+    //  return webSocketContext.isAuthenticated;
+    // }
+    if (unifiedWebSocket) { // New context
+      return unifiedWebSocket.isAuthenticated;
     }
     
     // Then fall back to our tracked auth error state

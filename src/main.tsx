@@ -1,14 +1,28 @@
+// src/main.tsx
+
+/**
+ * Main Entry Point
+ * 
+ * @description Main entry point for the DegenDuel frontend application.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-01-01
+ * @updated 2025-05-08
+ */
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { App } from "./App";
 import { AppErrorBoundary } from "./components/shared/AppErrorBoundary";
 import "./index.css";
+
+// Client Log Forwarder
 import { initializeClientLogForwarder } from "./utils/clientLogForwarder";
+initializeClientLogForwarder(); // Initialize CLF
 
-// Initialize the client log forwarder to capture and send logs to the server
-initializeClientLogForwarder();
-
+// Render DegenDuel App
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <AppErrorBoundary>
