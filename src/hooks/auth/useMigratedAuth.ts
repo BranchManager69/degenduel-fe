@@ -13,14 +13,15 @@
  */
 
 import React from "react";
-// import { getFeatureFlag } from "../../config/featureFlags"; // Removed
 import { useAuth as useUnifiedAuth } from "../../contexts/UnifiedAuthContext";
-// import { useAuth as useLegacyAuth } from "./legacy/useAuth"; // Removed
+import { User } from "../../types/user";
+// import { TokenType } from "../../services/authTokenManagerService"; // Old direct import
+import { TokenType } from "../../services"; // Import from service index
 
 // Create an interface that represents the normalized auth API
 // This way we ensure consistent behavior regardless of which system is used
 interface NormalizedAuthAPI {
-  user: any | null;
+  user: User | null;
   isLoading: boolean;
   loading: boolean; // For backward compatibility (maps to isLoading)
   isAuthenticated: boolean;
@@ -36,7 +37,7 @@ interface NormalizedAuthAPI {
   
   // Other methods
   checkAuth: () => Promise<boolean> | void;  // Handle both return types properly
-  getToken: (type?: any) => Promise<string | null>;
+  getToken: (type?: TokenType) => Promise<string | null>;
   [key: string]: any; // Allow other properties
 }
 
@@ -53,28 +54,35 @@ export function useMigratedAuth(): NormalizedAuthAPI {
   // Always use the Unified Auth system
   const auth = useUnifiedAuth();
   
-  // Create normalized auth API with consistent property types
-  // This normalization layer might still be useful if UnifiedAuthContext's useAuth hook
-  // doesn't perfectly match NormalizedAuthAPI, or for future flexibility.
+  // Destructure the necessary parts from the auth context result
+  const {
+    // Get the functions explicitly
+    isAdmin: isAdminFunc, 
+    isSuperAdmin: isSuperAdminFunc,
+    // Get other states we need to normalize/pass through
+    isLoading: authIsLoading, 
+    isAuthenticated: authIsAuthenticated,
+    // Capture the rest of the properties to spread later
+    ...restAuth 
+  } = auth;
+  
+  // Create the normalized API return object
   return {
-    ...auth,
-    // Loading state - ensure 'loading' (legacy) maps to 'isLoading'
-    isLoading: auth.isLoading,
-    loading: auth.isLoading, // Backward compatibility
+    ...restAuth, // Spread the remaining properties from the context
     
-    // Authentication state - ensure it's a boolean
-    // Assuming auth.isAuthenticated from UnifiedAuthContext is already a boolean
-    isAuthenticated: !!auth.isAuthenticated, 
+    // Normalized loading state
+    isLoading: authIsLoading,
+    loading: authIsLoading, // Backward compatibility
     
-    // Role checks - ensure they're booleans
-    // Assuming auth.isAdmin & auth.isSuperAdmin from UnifiedAuthContext are already booleans
-    isAdmin: !!auth.isAdmin,
-    isSuperAdmin: !!auth.isSuperAdmin,
+    // Normalized authentication state (ensure boolean)
+    isAuthenticated: !!authIsAuthenticated, 
     
-    // Normalize method names between the two auth systems (if needed, though less relevant now)
-    // Assuming UnifiedAuthContext provides these methods directly or they are part of ...auth
-    checkAuth: auth.checkAuth || (() => Promise.resolve(true)), // Fallback if not present
-    getToken: auth.getToken || (() => Promise.resolve(null)),   // Fallback if not present
+    // Normalized role checks (call the original functions)
+    isAdmin: isAdminFunc(), 
+    isSuperAdmin: isSuperAdminFunc(),
+
+    // Fallbacks for checkAuth and getToken are handled by restAuth spread
+    // If they don't exist on auth context, they won't be in restAuth
   };
 }
 

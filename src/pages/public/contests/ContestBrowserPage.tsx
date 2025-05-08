@@ -471,6 +471,8 @@ export const ContestBrowser: React.FC = () => {
           <CreateContestModal
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
+            userRole="admin"
+            onSuccess={fetchContests}
           />
         </div>
       </div>

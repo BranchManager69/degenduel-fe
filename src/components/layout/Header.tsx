@@ -19,23 +19,21 @@ import { UserMenu } from "./user-menu/UserMenu";
 export const Header: React.FC = () => {
   const { isCompact } = useScrollHeader(50);
   const {
-    user,
     disconnectWallet,
     error,
     clearError,
     maintenanceMode,
     setMaintenanceMode,
-  } = useStore();
-  const { isAdmin, isAuthenticated } = useMigratedAuth();
+  } = useStore(state => ({ 
+      disconnectWallet: state.disconnectWallet, 
+      error: state.error, 
+      clearError: state.clearError, 
+      maintenanceMode: state.maintenanceMode, 
+      setMaintenanceMode: state.setMaintenanceMode
+      // Only select what's needed to avoid unnecessary re-renders
+  })); 
+  const { user, isAdmin, isAuthenticated } = useMigratedAuth(); 
   
-  // For debugging - check if we have a mismatch between store user and auth state
-  useEffect(() => {
-    if (user && !isAuthenticated) {
-      console.warn('[Header] User exists in store but isAuthenticated is false');
-    } else if (!user && isAuthenticated) {
-      console.warn('[Header] isAuthenticated is true but no user in store');
-    }
-  }, [user, isAuthenticated]);
   const { unreadCount } = useNotificationWebSocket();
   const [lastMaintenanceCheck, setLastMaintenanceCheck] = useState<number>(0);
   const [isTransitioningToMaintenance, setIsTransitioningToMaintenance] =
@@ -142,7 +140,7 @@ export const Header: React.FC = () => {
       let additionalHeight = 0;
       
       // Add banned user banner height if present
-      if (user?.is_banned) {
+      if ((user as any)?.is_banned) {
         additionalHeight += 2.5; // ~40px (py-2 + text + border)
       }
       
@@ -165,7 +163,7 @@ export const Header: React.FC = () => {
     return () => {
       window.removeEventListener('resize', updateHeaderHeight);
     };
-  }, [isCompact, user?.is_banned, maintenanceMode]);
+  }, [isCompact, (user as any)?.is_banned, maintenanceMode]);
 
   // Header - Fixed sticky positioning by removing wrapper div
   return (

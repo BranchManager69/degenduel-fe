@@ -35,9 +35,9 @@ The `AuthService` class in `src/services/AuthService.ts` provides a singleton se
 
 The `UnifiedAuthContext` in `src/contexts/UnifiedAuthContext.tsx` provides a React context that wraps the `AuthService` and makes it available to all components through the `useAuth` hook.
 
-### 3. TokenManager
+### 3. authTokenManagerService
 
-The `TokenManager` class in `src/services/TokenManager.ts` handles token storage, retrieval, and validation across different token types (JWT, WebSocket, Session).
+The `authTokenManagerService` class in `src/services/authTokenManagerService.ts` handles token storage, retrieval, and validation across different token types (JWT, WebSocket, Session).
 
 ### 4. Route Guards
 

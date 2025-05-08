@@ -2,6 +2,8 @@
  * useUnifiedWebSocket Hook
  * 
  * Provides access to the unified WebSocket system through a React hook
+ * 
+ * THIS COMMENT IS SUSPECTED TO BE OUTDATED:
  * This hook depends on the WebSocketManager component being mounted in the application
  */
 

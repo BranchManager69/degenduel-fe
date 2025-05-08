@@ -50,7 +50,7 @@ export const authDebug = (context: string, message: string, data?: any) => {
 
 /* Prelaunch Mode */
 export const PRELAUNCH_MODE = import.meta.env.VITE_PRELAUNCH_MODE === 'true';
-export const ADMIN_BYPASS_KEY = import.meta.env.VITE_ADMIN_BYPASS_KEY;
+export const PRELAUNCH_BYPASS_KEY = import.meta.env.VITE_PRELAUNCH_BYPASS_KEY;
 
 /* Server */
 export const PORT_CONFIG = isDev

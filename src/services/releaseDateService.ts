@@ -18,41 +18,63 @@ let cachedReleaseDate: Date | null = null;
  * @returns Promise that resolves to the release date
  */
 export const fetchReleaseDate = async (): Promise<Date> => {
-  // If we already have the date cached, return it
   if (cachedReleaseDate) {
+    console.log('[releaseDateService] Returning cached release date:', cachedReleaseDate.toISOString());
     return cachedReleaseDate;
   }
   
-  // Use relative URL to leverage Vite's proxy configuration
-  const endpoint = `/api/v1/release-date`;
+  const endpointPath = '/api/v1/release-date';
+  // Construct the full URL to be absolutely sure what's being called
+  const fullUrl = `${window.location.origin}${endpointPath}`;
+  
+  console.log(`[releaseDateService] Fetching release date. Full URL: ${fullUrl}`);
   
   try {
-    console.log(`Fetching release date from endpoint: ${endpoint}`);
+    const response = await fetch(fullUrl); // Use fullUrl here
     
-    const response = await fetch(endpoint);
+    console.log(`[releaseDateService] Response status: ${response.status} ${response.statusText}`);
     
     if (!response.ok) {
-      throw new Error(`Error fetching release date: ${response.statusText}`);
+      let errorPayload = 'No error payload or not JSON.';
+      try {
+        // Attempt to read the error payload as text first, then try JSON
+        const textPayload = await response.text();
+        errorPayload = textPayload; // Keep as text if JSON parsing fails
+        try {
+          const jsonPayload = JSON.parse(textPayload);
+          errorPayload = JSON.stringify(jsonPayload, null, 2); // Pretty print if JSON
+        } catch (jsonError) {
+          // console.log('[releaseDateService] Error response was not valid JSON.');
+        }
+      } catch (textError) {
+        console.error('[releaseDateService] Could not read error response text:', textError);
+      }
+      console.error(`[releaseDateService] Error response payload from ${fullUrl}:`, errorPayload);
+      throw new Error(`Error fetching release date: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
+    console.log('[releaseDateService] Response data:', data);
     
     if (data.success && data.releaseDate) {
-      // Convert string date to Date object
       const releaseDate = new Date(data.releaseDate);
-      
-      // Cache the result
       cachedReleaseDate = releaseDate;
-      
-      console.log(`Release date fetched: ${releaseDate.toISOString()}`);
+      console.log(`[releaseDateService] Release date fetched successfully: ${releaseDate.toISOString()}`);
       return releaseDate;
     } else {
-      console.warn('Release date not available from API, using fallback');
+      console.warn('[releaseDateService] Release date not available from API or data format incorrect, using fallback. API Response:', data);
       return FALLBACK_RELEASE_DATE;
     }
   } catch (error) {
-    console.error('Error fetching release date:', error);
-    console.log(`Using fallback release date: ${FALLBACK_RELEASE_DATE.toISOString()}`);
+    // Log the error object itself for more details if it's not the one we threw above
+    if (error instanceof Error && !error.message.startsWith('Error fetching release date:')) {
+        console.error('[releaseDateService] Network or other error during fetch:', error);
+    } else if (!(error instanceof Error)) {
+        console.error('[releaseDateService] Unknown error during fetch:', error);
+    }
+    // The specific throw with status is already logged, this console.error is for the catch block itself.
+    // console.error('[releaseDateService] Final error before returning fallback:', error);
+    console.log(`[releaseDateService] Using fallback release date due to error: ${FALLBACK_RELEASE_DATE.toISOString()}`);
     return FALLBACK_RELEASE_DATE;
   }
 };

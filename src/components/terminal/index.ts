@@ -1,3 +1,5 @@
+// src/components/terminal/index.ts
+
 /**
  * Terminal Component Exports
  * 
@@ -8,8 +10,20 @@
  * The terminal components are organized into modular components
  * for better maintainability and reusability.
  * 
- * @author Branch Manager
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-04-14
+ * @updated 2025-05-07
  */
+
+// Config
+import { config } from '../../config/config';
+const CONTRACT_ADDRESS_REAL = config.CONTRACT_ADDRESS.REAL;
+const CONTRACT_ADDRESS_FAKE = config.CONTRACT_ADDRESS.FAKE;
+const RELEASE_DATE_TOKEN_LAUNCH_DATETIME = config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME;
+const RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT = config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT;
+const RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL = config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL;
+const RELEASE_DATE_DISPLAY_LAUNCH_TIME = config.RELEASE_DATE.DISPLAY.LAUNCH_TIME;
 
 // Main Terminal component
 export { Terminal } from './Terminal';
@@ -43,12 +57,12 @@ export interface Config {
 
 // Create default configuration
 export const DEFAULT_CONFIG: Config = {
-  RELEASE_DATE: new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00'),
-  CONTRACT_ADDRESS: '0x1111111111111111111111111111111111111111',
+  RELEASE_DATE: RELEASE_DATE_TOKEN_LAUNCH_DATETIME,
+  CONTRACT_ADDRESS: CONTRACT_ADDRESS_REAL || CONTRACT_ADDRESS_FAKE || '0x0000000000000000000000000000000000000069',
   DISPLAY: {
-    DATE_SHORT: import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT || 'Dec 31, 2025',
-    DATE_FULL: import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL || 'December 31, 2025',
-    TIME: import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_TIME || '23:59:59',
+    DATE_SHORT: RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT,
+    DATE_FULL: RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL,
+    TIME: RELEASE_DATE_DISPLAY_LAUNCH_TIME,
   }
 };
 

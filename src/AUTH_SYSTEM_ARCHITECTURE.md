@@ -39,15 +39,15 @@
 └──────────────────────────┘
            │
            ▼
-┌──────────────────────────┐
-│     Service Layer        │
-│┌────────────────────────┐│
-││   AuthService.ts       ││◄─── Unified service
-│└────────────────────────┘│
-│┌────────────────────────┐│
-││   TokenManager.ts      ││◄─── Used by AuthService
-│└────────────────────────┘│
-└──────────────────────────┘
+┌────────────────────────────┐
+│     Service Layer          │
+│┌──────────────────────────┐│
+││   AuthService.ts         ││◄─── Unified service
+│└──────────────────────────┘│
+│┌──────────────────────────┐│
+││authTokenManagerService.ts││◄─── Used by AuthService
+│└──────────────────────────┘│
+└────────────────────────────┘
            │
            ▼
 ┌──────────────────────────┐
@@ -81,8 +81,8 @@
    - `/src/contexts/WebSocketContext.tsx` - (Legacy - To Be Removed/Refactored)
 
 4. **Authentication Services**:
-   - `/src/services/AuthService.ts` - New unified auth service
-   - `/src/services/TokenManager.ts` - Handles token storage and management
+   - `/src/services/AuthService.ts` - New unified auth service (double check this is still valid)
+   - `/src/services/authTokenManagerService.ts` - Handles token storage and management
 
 5. **Authentication Hooks**:
    - `/src/hooks/auth/useMigratedAuth.ts` - Primary bridge to the unified auth system.
@@ -148,7 +148,7 @@ Components are gradually moving from using the legacy system directly to the uni
 - Every user MUST have a wallet address (required property)
 - Privy creates/manages wallets for users who don't connect their own
 - Twitter/Discord can be linked only after wallet authentication
-- Authentication tokens are managed centrally through TokenManager
+- Authentication tokens are managed centrally through authTokenManagerService
 
 ## WebSocket Authentication Requirements
 

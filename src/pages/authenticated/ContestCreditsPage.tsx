@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
-import { useWebSocketContext } from "../../contexts/WebSocketContext";
+import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { MessageType, SOCKET_TYPES } from "../../hooks/websocket";
 import { useStore } from "../../store/useStore";
@@ -38,7 +38,7 @@ export const ContestCreditsPage: React.FC = () => {
   const storeUser = useStore(state => state.user);
   const { user: authUser, isAuthenticated } = useMigratedAuth();
   const user = authUser || storeUser;
-  const ws = useWebSocketContext();
+  const ws = useWebSocket();
   
   const [credits, setCredits] = useState<ContestCredit[]>([]);
   const [creditStats, setCreditStats] = useState<CreditStats>({
@@ -73,9 +73,9 @@ export const ContestCreditsPage: React.FC = () => {
     // Register WebSocket listener for user topic (credits)
     const unregister = ws.registerListener(
       "contest-credits-page",
-      [MessageType.DATA],
+      [MessageType.DATA as any],
       onCreditMessage,
-      [SOCKET_TYPES.NOTIFICATION] // Use notification topic for credit updates
+      [SOCKET_TYPES.NOTIFICATION]
     );
     
     // Initial data fetch

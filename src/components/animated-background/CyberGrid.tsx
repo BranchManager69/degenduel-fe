@@ -1,5 +1,5 @@
-// Background Component with Particles for React applications
-// Copy this entire file to your project
+// src/components/animated-background/CyberGrid.tsx
+
 
 import { motion } from 'framer-motion';
 

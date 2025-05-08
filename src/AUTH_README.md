@@ -29,7 +29,7 @@ This refactor addresses several issues with the original authentication implemen
 - **Unified Context Provider:** One React context for all authentication state (`UnifiedAuthContext.tsx`)
 - **Integrated WebSocket Authentication:** WebSocket system that works seamlessly with auth (`UnifiedWebSocketContext.tsx`)
 - **Support for Multiple Auth Methods:** Wallet, Privy, and Twitter authentication (managed via `AuthService`)
-- **Token Management:** Unified token handling for JWT, WebSocket, and session tokens (`TokenManager.ts`)
+- **Token Management:** Unified token handling for JWT, WebSocket, and session tokens (`authTokenManagerService.ts`)
 - **Event-Based Architecture:** Subscribe to auth events for reactive components
 - **Consistent Error Handling:** Standardized error responses across the system
 - **Improved TypeScript Support:** Better type definitions and interfaces
@@ -197,7 +197,7 @@ src/
 ├── services/
 │   ├── AuthService.ts            // Central auth service
 │   ├── AuthService.test.ts       // Tests for auth service
-│   ├── TokenManager.ts           // Token management
+│   ├── authTokenManagerService.ts           // Token management
 │   └── index.ts                  // Service exports
 ├── contexts/
 │   ├── UnifiedAuthContext.tsx    // Auth context/provider
@@ -265,7 +265,7 @@ npm test -- src/contexts/UnifiedWebSocketContext.test.tsx
    - Makes the system more maintainable and testable
 
 3. **Token Management:**
-   - Centralized in TokenManager
+   - Centralized in authTokenManagerService
    - Supports multiple token types (JWT, WebSocket, Session)
    - Handles token expiration and refresh
 

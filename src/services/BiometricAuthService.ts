@@ -17,7 +17,7 @@ import {
   verifyBiometricAuthentication,
   verifyBiometricRegistration
 } from './api/auth';
-import { TokenManager, TokenType } from './TokenManager';
+import { tokenManagerService, TokenType } from './tokenManagerService';
 
 /**
  * BiometricAuthService - Handles WebAuthn operations for biometric authentication
@@ -340,10 +340,10 @@ export class BiometricAuthService {
     
     // Store tokens in TokenManager if available
     if (response.token) {
-      TokenManager.setToken(
+      tokenManagerService.setToken(
         TokenType.JWT, 
         response.token, 
-        TokenManager.estimateExpiration(response.token), 
+        tokenManagerService.estimateExpiration(response.token), 
         'biometric'
       );
     }

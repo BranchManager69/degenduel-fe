@@ -5,11 +5,12 @@
  * 
  * @description This utility forwards client-side logs, warnings, and errors to the server.
  * It uses both the WebSocket system and API fallback to ensure reliable delivery.
+ * It also conditionally controls output to the user's browser console.
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 2.0.0
  * @created 2025-04-01
- * @updated 2025-05-07
+ * @updated 2025-05-08
  */
 
 /**
@@ -18,9 +19,18 @@
  * These types are the official standard for frontend-backend communication.
  */
 
+import { NODE_ENV } from "../config/config"; // Import environment status
 import { MessageType } from "../hooks/websocket";
 import { clientLogService } from "../services/clientLogService";
 import { useStore } from "../store/useStore";
+
+// Store original console methods before overriding
+const originalConsole = {
+  log: console.log,
+  info: console.info,
+  warn: console.warn,
+  error: console.error
+};
 
 // Client log forwarder thresholds
 const MAX_QUEUE_SIZE = 50;
@@ -31,8 +41,12 @@ const MESSAGE_CACHE_CLEANUP_INTERVAL = 60 * 1000; // 1 minute
 const MESSAGE_COOLDOWN = 5 * 1000; // 5 seconds between showing the same log message
 const MAX_REPEAT_COUNT = 3; // Show the message at most 3 times in the cooldown period
 
-// Debug verbosity flag
-const VERBOSE_SERVER_LOGGING = false; // Set to false to reduce log spam
+// Debug verbosity flag for *server* logging (forwarding)
+const VERBOSE_SERVER_LOGGING = false; // Set to false to reduce log spam sent to server
+
+// ** NEW **: Control flag for verbose (debug/info) output in the *client* console
+// Defaults to true in dev, false in prod. Can be overridden by remote setting.
+let enableVerboseClientConsole = (NODE_ENV === 'development');
 
 // Log levels
 export enum LogLevel {
@@ -145,148 +159,93 @@ const generateSessionId = (): string => {
  * Initialize the client log forwarder
  */
 export const initializeClientLogForwarder = (): void => {
-  // Create a unique session ID for this browser session
   sessionId = sessionStorage.getItem('logSessionId') || generateSessionId();
   sessionStorage.setItem('logSessionId', sessionId);
   
-  /**
-   * Replace console methods
-   */
-  const originalConsole = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    error: console.error
-  };
+  originalConsole.log(`[LogForwarder] Initializing. Default verbose client console output: ${enableVerboseClientConsole} (NODE_ENV: ${NODE_ENV})`);
 
-  /* Log types */
-
-  // Debug logs
+  // Override console methods
   console.log = (...args: any[]) => {
-    // Rate limit noisy log messages
     if (args.length > 0) {
       const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) {
-        // Skip showing this message due to rate limiting
-        return;
-      }
+      if (shouldRateLimit(message)) return;
     }
-    
-    originalConsole.log(...args);
-    // Don't capture debug logs by default (would be too noisy)
-    // addToQueue(LogLevel.DEBUG, args);
+    // *** Conditional output ***
+    if (enableVerboseClientConsole) {
+      originalConsole.log(...args);
+    }
+    // Forwarding logic (optional for debug level)
+    // if (VERBOSE_SERVER_LOGGING) addToQueue(LogLevel.DEBUG, args);
   };
 
-  // Info logs
   console.info = (...args: any[]) => {
-    // Rate limit noisy log messages
     if (args.length > 0) {
       const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) {
-        // Skip showing this message due to rate limiting
-        return;
-      }
+      if (shouldRateLimit(message)) return;
     }
-    
-    originalConsole.info(...args);
-    // Don't capture info logs by default (would be too noisy)
-    // addToQueue(LogLevel.INFO, args);
+    // *** Conditional output ***
+    if (enableVerboseClientConsole) {
+      originalConsole.info(...args);
+    }
+    // Forwarding logic (optional for info level)
+    // if (VERBOSE_SERVER_LOGGING) addToQueue(LogLevel.INFO, args);
   };
 
-  // Warnings
   console.warn = (...args: any[]) => {
-    // Rate limit noisy log messages
     if (args.length > 0) {
       const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) {
-        // Skip showing this message due to rate limiting
-        return;
-      }
+      if (shouldRateLimit(message)) return;
     }
-    
+    // *** Always output to console ***
     originalConsole.warn(...args);
-    
-    // Only send if verbose logging is enabled, or filter noisy warnings
-    if (VERBOSE_SERVER_LOGGING) {
-      // Send all warnings in verbose mode
+    // Forwarding logic (use existing filters)
+    // (Keeping existing logic which already filters some warnings before queuing)
+    const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' && 
+      !args[0].includes('App configuration has Solana wallet login enabled') &&
+      !args[0].includes('WalletContext without providing one') &&
+      !args[0].includes('Solana wallet connectors have been passed') &&
+      !args[0].includes('[Jupiter Wallet]') &&
+      !args[0].includes('UnifiedTicker: ') &&
+      !args[0].includes('[TokenData]') &&
+      !args[0].includes('WebSocketManager:') &&
+      !args[0].includes('WebSocketContext:') &&
+      !args[0].includes('[WebSocketContext]') &&
+      !args[0].includes('Cannot refresh tokens'));
+
+    if (forwardToServer) {
       addToQueue(LogLevel.WARN, args);
-    } else {
-      // In non-verbose mode, filter out common noise
-      if (args.length > 0) {
-        const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-        
-        // Skip common warnings that create lots of noise
-        if (message.includes('App configuration has Solana wallet login enabled') ||
-            message.includes('WalletContext without providing one') ||
-            message.includes('Solana wallet connectors have been passed') ||
-            message.includes('[Jupiter Wallet]') ||
-            message.includes('UnifiedTicker: ') ||
-            message.includes('[TokenData]') ||
-            message.includes('WebSocketManager:') ||
-            message.includes('WebSocketContext:') ||
-            message.includes('[WebSocketContext]') ||
-            message.includes('Cannot refresh tokens')) {
-          // Don't forward to server, but still visible in console (unless rate limited)
-          return;
-        }
-        
-        // Forward other warnings to server
-        addToQueue(LogLevel.WARN, args);
-      } else {
-        // If no message to check, just forward it
-        addToQueue(LogLevel.WARN, args);
-      }
     }
   };
 
-  // Errors
   console.error = (...args: any[]) => {
-    // Rate limit noisy log messages
     if (args.length > 0) {
       const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) {
-        // Skip showing this message due to rate limiting
-        return;
-      }
+      if (shouldRateLimit(message)) return;
     }
-    
+    // *** Always output to console ***
     originalConsole.error(...args);
-    
-    // Only send if verbose logging is enabled, or filter noisy errors
-    if (VERBOSE_SERVER_LOGGING) {
-      // Send all errors in verbose mode
+    // Forwarding logic (use existing filters)
+    // (Keeping existing logic which already filters some errors before queuing)
+     const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' && 
+      !args[0].includes('tried to read "publicKey" on a WalletContext') &&
+      !args[0].includes('tried to read "wallet" on a WalletContext') &&
+      !args[0].includes('tried to read "wallets" on a WalletContext') &&
+      !(args[0].includes('You have tried to read') && args[0].includes('WalletContext')) &&
+      !args[0].includes('[Jupiter Wallet]') &&
+      !args[0].includes('App configuration has Solana wallet login enabled') &&
+      !args[0].includes('WebSocketManager:') &&
+      !args[0].includes('WebSocketContext:') &&
+      !args[0].includes('[WebSocketContext]') &&
+      !args[0].includes('Solana wallet connectors have been passed'));
+
+    if (forwardToServer) {
       addToQueue(LogLevel.ERROR, args);
-    } else {
-      // In non-verbose mode, filter out common noise
-      if (args.length > 0) {
-        const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-        
-        // Skip common errors that create lots of noise
-        if (message.includes('tried to read "publicKey" on a WalletContext') ||
-            message.includes('tried to read "wallet" on a WalletContext') ||
-            message.includes('tried to read "wallets" on a WalletContext') ||
-            (message.includes('You have tried to read') && message.includes('WalletContext')) ||
-            message.includes('[Jupiter Wallet]') ||
-            message.includes('App configuration has Solana wallet login enabled') ||
-            message.includes('WebSocketManager:') ||
-            message.includes('WebSocketContext:') ||
-            message.includes('[WebSocketContext]') ||
-            message.includes('Solana wallet connectors have been passed')) {
-          // Don't forward to server, but still visible in console (unless rate limited)
-          return;
-        }
-        
-        // Forward other errors to server
-        addToQueue(LogLevel.ERROR, args);
-      } else {
-        // If no message to check, just forward it
-        addToQueue(LogLevel.ERROR, args);
-      }
     }
   };
 
   // Capture unhandled errors
   window.addEventListener('error', (event) => {
+    originalConsole.error('Unhandled error:', event.error || event.message);
     addToQueue(LogLevel.ERROR, [event.message], {
       filename: event.filename,
       lineno: event.lineno,
@@ -297,6 +256,7 @@ export const initializeClientLogForwarder = (): void => {
 
   // Capture unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
+    originalConsole.error('Unhandled promise rejection:', event.reason);
     addToQueue(LogLevel.ERROR, ['Unhandled Promise Rejection:', event.reason], {
       stack: event.reason?.stack
     });
@@ -309,6 +269,9 @@ export const initializeClientLogForwarder = (): void => {
   window.addEventListener('websocket-status', (event: any) => {
     isWebSocketConnected = event.detail?.connected || false;
   });
+
+  // Fetch remote setting asynchronously *after* overrides are in place
+  fetchRemoteLoggingSetting();
 };
 
 /**
@@ -354,8 +317,7 @@ const addToQueue = (level: LogLevel, args: any[], context: Record<string, any> =
       sendLogsNow();
     }
   } catch (err) {
-    // Fallback to original console to avoid infinite loop
-    originalConsoleError('Error in client log forwarder:', err);
+    originalConsole.error('[LogForwarder] Error adding log to queue:', err);
   }
 };
 
@@ -401,11 +363,6 @@ const formatLogMessage = (args: any[]): string => {
     }
   }).join(' ');
 };
-
-/**
- * Store for the original console methods
- */
-const originalConsoleError = console.error.bind(console);
 
 /**
  * Schedule batch sending of logs
@@ -465,11 +422,11 @@ const sendLogs = async (): Promise<void> => {
       if (retryCount >= ERROR_RETRY_COUNT) {
         logQueue = logQueue.slice(logsToSend.length);
         retryCount = 0;
-        originalConsoleError('Failed to send logs after maximum retries, dropping logs');
+        originalConsole.error('[LogForwarder] Failed to send logs after maximum retries, dropping logs');
       }
     }
   } catch (err) {
-    originalConsoleError('Error sending logs:', err);
+    originalConsole.error('[LogForwarder] Error during sendLogs:', err);
   } finally {
     isSending = false;
   }
@@ -500,11 +457,11 @@ const sendLogsViaWebSocket = (logs: LogEntry[]): boolean => {
         timestamp: new Date().toISOString()
       });
     } catch (err) {
-      console.warn("Error using WebSocketContext to send logs:", err);
+      originalConsole.warn("[LogForwarder] Error using WebSocketContext to send logs:", err);
       return false;
     }
   } catch (err) {
-    originalConsoleError('Error sending logs via WebSocket:', err);
+    originalConsole.error('[LogForwarder] Error sending logs via WebSocket:', err);
     return false;
   }
 };
@@ -516,7 +473,7 @@ const sendLogsViaApi = async (logs: LogEntry[]): Promise<boolean> => {
   try {
     return await clientLogService.sendLogs(logs);
   } catch (err) {
-    originalConsoleError('Error sending logs via API:', err);
+    originalConsole.error('[LogForwarder] Error sending logs via API:', err);
     return false;
   }
 };
@@ -540,3 +497,31 @@ export const clientLogger = {
   error: (message: string, context?: Record<string, any>) => log(LogLevel.ERROR, message, context),
   fatal: (message: string, context?: Record<string, any>) => log(LogLevel.FATAL, message, context),
 };
+
+// --- ** NEW **: Fetch Remote Setting --- //
+async function fetchRemoteLoggingSetting() {
+  const endpoint = '/api/v1/settings/client-logging-status'; // Stub endpoint
+  try {
+    // Use original console here to prevent loops if fetch itself logs errors
+    originalConsole.log(`[LogForwarder] Fetching remote client logging setting from ${endpoint}`);
+    const response = await fetch(endpoint);
+    if (response.ok) {
+      const data = await response.json();
+      // Assuming backend returns { "enableConsoleOutput": boolean }
+      const remoteSetting = !!data.enableConsoleOutput;
+      if (remoteSetting !== enableVerboseClientConsole) {
+        enableVerboseClientConsole = remoteSetting;
+        originalConsole.log(`[LogForwarder] Remote setting updated verbose client console output to: ${enableVerboseClientConsole}`);
+      } else {
+        originalConsole.log(`[LogForwarder] Remote setting matches current client console setting (${enableVerboseClientConsole}). No change needed.`);
+      }
+    } else {
+      // Endpoint exists but returned an error (e.g., 500) - keep default
+      originalConsole.warn(`[LogForwarder] Failed to fetch remote logging setting (Status: ${response.status}), using default: ${enableVerboseClientConsole}`);
+    }
+  } catch (error) {
+    // Network error or endpoint doesn't exist (e.g., 404 fetch might throw depending on browser/fetch setup)
+    // Keep default setting
+    originalConsole.warn(`[LogForwarder] Error fetching remote logging setting (Network error or 404?), using default: ${enableVerboseClientConsole}. Error:`, error);
+  }
+}

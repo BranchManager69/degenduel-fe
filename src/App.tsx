@@ -93,6 +93,7 @@ import WebSocketHub from "./pages/admin/WebSocketHub";
 // Authenticated routes
 import { ReferralPage } from "./pages/authenticated/AffiliatePage";
 import { ContestCreditsPage } from "./pages/authenticated/ContestCreditsPage";
+import { CreateContestPage } from "./pages/authenticated/CreateContestPage";
 import MyContestsPage from "./pages/authenticated/MyContestsPage";
 import MyPortfoliosPage from "./pages/authenticated/MyPortfoliosPage";
 import NotificationsPage from "./pages/authenticated/NotificationsPage";
@@ -155,7 +156,7 @@ console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
 
 // Config
 // Prelaunch mode
-import { ADMIN_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
+import { PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
 
 // Lazy loaded components
 // Admin Chat Dashboard
@@ -183,12 +184,19 @@ export const useDegenDuelRpc = () => {
 export const App: React.FC = () => {
   useScrollbarVisibility();
   
-  // Prelaunch Mode?
+  // Prelaunch Mode uses values from config/config.ts now
   const searchParams = new URLSearchParams(window.location.search);
-  const hasAdminBypass = searchParams.get('bypass_prelaunch') === ADMIN_BYPASS_KEY;
+  
+  // Log the expected bypass key for debugging
+  console.log('[App.tsx] Expected PRELAUNCH_BYPASS_KEY:', PRELAUNCH_BYPASS_KEY);
+  // Log the received bypass key from URL for debugging
+  console.log('[App.tsx] Received bypass from URL:', searchParams.get('bypass'));
+
+  const hasAdminBypass = searchParams.get('bypass') === PRELAUNCH_BYPASS_KEY;
   const showComingSoon = PRELAUNCH_MODE && !hasAdminBypass;
+
   if (PRELAUNCH_MODE) {
-    console.log(`[App.tsx] Prelaunch Mode Active. Bypass key present: ${hasAdminBypass}. Showing Coming Soon: ${showComingSoon}`);
+    console.log(`[App.tsx] Prelaunch Mode Active. Expected Key: ${PRELAUNCH_BYPASS_KEY}, Received Key: ${searchParams.get('bypass')}, Bypass active: ${hasAdminBypass}. Showing Coming Soon: ${showComingSoon}`);
   }
 
   return (
@@ -447,6 +455,10 @@ const AppContent: React.FC = () => {
           <Route
             path="/contest-credits"
             element={<AuthenticatedRoute><MaintenanceGuard><ContestCreditsPage /></MaintenanceGuard></AuthenticatedRoute>}
+          />
+          <Route
+            path="/contests/create"
+            element={<AuthenticatedRoute><MaintenanceGuard><CreateContestPage /></MaintenanceGuard></AuthenticatedRoute>}
           />
           <Route
             path="/contests/:id/select-tokens"

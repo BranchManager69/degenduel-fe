@@ -24,7 +24,7 @@
 import axios from 'axios';
 import { authDebug } from '../config/config';
 import { User } from '../types/user';
-import { TokenManager, TokenType } from './TokenManager';
+import { tokenManagerService, TokenType } from './index';
 
 // Auth method types
 export type AuthMethod = 'wallet' | 'privy' | 'twitter' | 'session'; // where is Discord auth? Any others missing?
@@ -109,10 +109,9 @@ export class AuthService {
     const state = {
       user: this.user,
       isAuthenticated: !!this.user,
-      availableTokens: TokenManager.getAllTokens(),
-      jwtToken: TokenManager.getToken(TokenType.JWT),
-      wsToken: TokenManager.getToken(TokenType.WS_TOKEN),
-      sessionToken: TokenManager.getToken(TokenType.SESSION)
+      jwtToken: tokenManagerService.getToken(TokenType.JWT),
+      wsToken: tokenManagerService.getToken(TokenType.WS_TOKEN),
+      sessionToken: tokenManagerService.getToken(TokenType.SESSION)
     };
     
     authDebug('AuthService', 'Current auth state', state);
@@ -131,12 +130,9 @@ export class AuthService {
    */
   private async restoreSession() {
     try {
-      // Sync tokens from any storage
-      TokenManager.syncFromStore();
-      
       // If we have valid tokens, try to restore session
-      if (TokenManager.getBestAvailableToken()) {
-        authDebug('AuthService', 'Found stored tokens, attempting to restore session');
+      if (tokenManagerService.getToken(TokenType.JWT)) {
+        authDebug('AuthService', 'Found stored JWT token, attempting to restore session');
         const sessionResult = await this.checkAuth();
         
         if (sessionResult) {
@@ -144,7 +140,7 @@ export class AuthService {
         } else {
           authDebug('AuthService', 'Failed to restore session, tokens may be invalid');
           // Clear invalid tokens
-          TokenManager.clearAllTokens();
+          tokenManagerService.clearAllTokens();
         }
       }
     } catch (error) {
@@ -327,28 +323,28 @@ export class AuthService {
         
         // Sync any tokens in the response with TokenManager
         if (user.jwt) {
-          TokenManager.setToken(
+          tokenManagerService.setToken(
             TokenType.JWT, 
             user.jwt, 
-            TokenManager.estimateExpiration(user.jwt),
+            tokenManagerService.estimateExpiration(user.jwt),
             activeMethod || 'server'
           );
         }
         
         if (user.wsToken) {
-          TokenManager.setToken(
+          tokenManagerService.setToken(
             TokenType.WS_TOKEN, 
             user.wsToken, 
-            TokenManager.estimateExpiration(user.wsToken),
+            tokenManagerService.estimateExpiration(user.wsToken),
             activeMethod || 'server'
           );
         }
         
         if (user.session_token) {
-          TokenManager.setToken(
+          tokenManagerService.setToken(
             TokenType.SESSION, 
             user.session_token, 
-            TokenManager.estimateExpiration(user.session_token, 30), // Session tokens usually last longer
+            tokenManagerService.estimateExpiration(user.session_token, 30), // Session tokens usually last longer
             activeMethod || 'server'
           );
         }
@@ -374,6 +370,8 @@ export class AuthService {
         if (this.user) {
           authDebug('AuthService', 'Received 401, clearing user');
           this.setUser(null);
+          // Also clear tokens on definitive 401
+          tokenManagerService.clearAllTokens();
         }
       }
       
@@ -389,7 +387,7 @@ export class AuthService {
    */
   public async getToken(type: TokenType = TokenType.JWT): Promise<string | null> {
     // First try to get from TokenManager
-    let token = TokenManager.getToken(type);
+    let token = tokenManagerService.getToken(type);
     
     // If we don't have a token but are authenticated, try to get one from the server
     if (!token && this.isAuthenticated()) {
@@ -427,10 +425,10 @@ export class AuthService {
         
         if (token) {
           // Store token in TokenManager
-          TokenManager.setToken(
+          tokenManagerService.setToken(
             type,
             token,
-            TokenManager.estimateExpiration(token),
+            tokenManagerService.estimateExpiration(token),
             'server'
           );
           
@@ -541,10 +539,10 @@ export class AuthService {
       
       // Store JWT token
       if (token) {
-        TokenManager.setToken(
+        tokenManagerService.setToken(
           TokenType.JWT,
           token,
-          TokenManager.estimateExpiration(token),
+          tokenManagerService.estimateExpiration(token),
           'wallet'
         );
       }
@@ -553,7 +551,7 @@ export class AuthService {
       this.setUser(user, 'wallet');
       
       // Request WebSocket token
-      TokenManager.refreshToken(TokenType.WS_TOKEN);
+      tokenManagerService.refreshToken(TokenType.WS_TOKEN);
       
       // Dispatch login event
       this.dispatchEvent({
@@ -620,10 +618,10 @@ export class AuthService {
       
       // Store JWT token
       if (jwtToken) {
-        TokenManager.setToken(
+        tokenManagerService.setToken(
           TokenType.JWT,
           jwtToken,
-          TokenManager.estimateExpiration(jwtToken),
+          tokenManagerService.estimateExpiration(jwtToken),
           'privy'
         );
       }
@@ -632,7 +630,7 @@ export class AuthService {
       this.setUser(user, 'privy');
       
       // Request WebSocket token
-      TokenManager.refreshToken(TokenType.WS_TOKEN);
+      tokenManagerService.refreshToken(TokenType.WS_TOKEN);
       
       // Dispatch login event
       this.dispatchEvent({
@@ -737,7 +735,7 @@ export class AuthService {
       });
       
       // Clear all tokens
-      TokenManager.clearAllTokens();
+      tokenManagerService.clearAllTokens();
       
       // Clear user
       const previousUser = this.user;
@@ -755,7 +753,7 @@ export class AuthService {
       });
       
       // Still clear tokens and user even if API call fails
-      TokenManager.clearAllTokens();
+      tokenManagerService.clearAllTokens();
       this.setUser(null);
     }
   }
