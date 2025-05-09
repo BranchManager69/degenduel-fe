@@ -10,14 +10,13 @@
  * @updated 2025-05-03
  */
 
+import { DDWebSocketActions } from '@branchmanager69/degenduel-shared/dist/types/websocket';
 import { useCallback, useEffect, useState } from 'react';
+import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { TerminalData } from '../../../services/terminalDataService';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
 import { DDExtendedMessageType } from '../types';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-// Import directly from the package's specific file
-import { DDWebSocketActions } from '@branchmanager69/degenduel-shared/dist/types/websocket';
 
 // Define the standard structure for terminal data updates from the server
 // Based on backend team's specification, this interface describes the message format from the backend
@@ -80,43 +79,25 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
  * Hook for accessing and managing terminal data with real-time updates
  */
 export function useTerminalData() {
-  // State for terminal data
   const [terminalData, setTerminalData] = useState<TerminalData>(DEFAULT_TERMINAL_DATA);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  // Message handler for WebSocket messages
+  const ws = useWebSocket(); // Use the context hook
+
   const handleMessage = useCallback((message: Partial<WebSocketTerminalMessage>) => {
     try {
-      console.log('[TerminalData WebSocket] Received message:', message);
-      
-      // Check if this is a valid terminal data message based on backend team's format
+      // console.log('[TerminalData WebSocket] Received message:', message); // Keep for debugging if needed
       if (message.type === DDExtendedMessageType.DATA && 
           message.topic === TopicType.TERMINAL && 
           message.subtype === 'terminal' && 
           message.action === DDWebSocketActions.TERMINAL_UPDATE && 
           message.data) {
-        
-        // Handle data from the server
         const terminalDataFromServer = message.data;
-        
-        // Use the data directly without trying to maintain compatibility with old fields
-        // The backend sends token.address for the contract address - this is the only source of truth
-        const processedData: Partial<TerminalData> = {
-          ...terminalDataFromServer
-        };
-        
-        // Update terminal data state
-        setTerminalData(prevData => ({
-          ...prevData,
-          ...processedData
-        }));
-        
-        // Update status and timestamp
-        setIsLoading(false);
+        const processedData: Partial<TerminalData> = { ...terminalDataFromServer };
+        setTerminalData(prevData => ({ ...prevData, ...processedData }));
+        if (isLoading) setIsLoading(false);
         setLastUpdate(new Date());
-        
-        // Log event for monitoring
         dispatchWebSocketEvent('terminal_data_update', {
           socketType: TopicType.TERMINAL,
           message: 'Received terminal data from WebSocket',
@@ -126,11 +107,7 @@ export function useTerminalData() {
           updatedFields: Object.keys(processedData)
         });
       }
-      
-      // Mark as not loading once we've processed any valid message
-      if (isLoading) {
-        setIsLoading(false);
-      }
+      if (isLoading && message.type === DDExtendedMessageType.DATA) setIsLoading(false); // Also set loading false on any DATA message for this hook if still loading
     } catch (err) {
       console.error('[TerminalData WebSocket] Error processing message:', err);
       dispatchWebSocketEvent('error', {
@@ -141,77 +118,75 @@ export function useTerminalData() {
     }
   }, [isLoading]);
 
-  // Connect to the unified WebSocket system
-  const ws = useUnifiedWebSocket(
-    'terminal-data-hook',
-    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
-    handleMessage,
-    [TopicType.TERMINAL, TopicType.SYSTEM] // System messages are always included for all hooks
-  );
-
-  // Subscribe to terminal data when the WebSocket is connected
+  // Effect for WebSocket listener registration
   useEffect(() => {
+    if (ws && ws.registerListener) {
+      const unregister = ws.registerListener(
+        'terminal-data-hook',
+        [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
+        handleMessage,
+        [TopicType.TERMINAL, TopicType.SYSTEM]
+      );
+      return unregister;
+    }
+  }, [ws, handleMessage]);
+
+  // Subscribe and request initial terminal data when WebSocket is connected
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | undefined;
+    // Terminal data is often public, so using ws.isConnected. Change to ws.isReadyForSecureInteraction if auth is required.
     if (ws.isConnected && isLoading) {
-      // Subscribe to terminal data topic
+      console.log('[useTerminalData] WebSocket connected. Subscribing and requesting terminal data.');
       ws.subscribe([TopicType.TERMINAL]);
-      
-      // Request initial terminal data using standardized action name
       ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
-      
       dispatchWebSocketEvent('terminal_data_subscribe', {
         socketType: TopicType.TERMINAL,
         message: 'Subscribing to terminal data',
         timestamp: new Date().toISOString()
       });
       
-      // Set a timeout to reset loading state if we don't get data
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (isLoading) {
           console.warn('[TerminalData WebSocket] Timed out waiting for data');
           setIsLoading(false);
         }
       }, 10000);
-      
-      return () => clearTimeout(timeoutId);
+    } else if (!ws.isConnected && isLoading) {
+      console.log('[useTerminalData] WebSocket not connected, deferring setup.');
     }
-  }, [ws.isConnected, isLoading, ws.subscribe, ws.request]);
+    return () => { if (timeoutId) clearTimeout(timeoutId); };
+  }, [ws.isConnected, ws.subscribe, ws.request, isLoading]);
 
-  // Force refresh function for terminal data
   const refreshTerminalData = useCallback(() => {
-    setIsLoading(true);
-    
-    if (ws.isConnected) {
-      // Request fresh terminal data using standardized action name
-      ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
-      
-      // Log event for monitoring
-      dispatchWebSocketEvent('terminal_data_refresh', {
-        socketType: TopicType.TERMINAL,
-        message: 'Refreshing terminal data',
-        timestamp: new Date().toISOString()
-      });
-      
-      // Set a timeout to reset loading state if we don't get data
-      setTimeout(() => {
-        if (isLoading) {
-          setIsLoading(false);
-        }
-      }, 10000);
-    } else {
+    // Use ws.isConnected for refresh as well, assuming public data.
+    if (!ws.isConnected) {
       console.warn('[TerminalData WebSocket] Cannot refresh - WebSocket not connected');
-      setIsLoading(false);
+      setIsLoading(false); // Ensure loading is set to false if we can't refresh
+      return;
     }
-  }, [ws.isConnected, ws.request, isLoading]);
+    setIsLoading(true);
+    ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
+    dispatchWebSocketEvent('terminal_data_refresh', {
+      socketType: TopicType.TERMINAL,
+      message: 'Refreshing terminal data',
+      timestamp: new Date().toISOString()
+    });
+    
+    const timeoutId = setTimeout(() => {
+      if (isLoading) setIsLoading(false);
+    }, 10000);
+    return () => clearTimeout(timeoutId); // Return cleanup for this timeout
 
-  // Return the terminal data and helper functions
+  }, [ws.isConnected, ws.request, isLoading]); // isLoading is a dependency
+
   return {
     terminalData,
     isLoading,
     isConnected: ws.isConnected,
-    error: ws.error,
+    isReadyForSecureInteraction: ws.isReadyForSecureInteraction, // Expose for potential conditional actions by consumer
+    error: ws.connectionError, // Use connectionError
     lastUpdate,
     refreshTerminalData,
-    // Contract address specific helpers (from token.address)
     contractAddress: terminalData.token?.address,
     contractAddressRevealed: !!terminalData.token?.address
   };

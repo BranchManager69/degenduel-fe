@@ -1,10 +1,19 @@
 // src/components/contest-detail/ContestDetailHeader.tsx
 
+/**
+ * Contest Detail Header Component
+ * 
+ * @description This component is used to display the contest detail header
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-02-14
+ * @updated 2025-05-08
+ */
+
 import React from "react";
 import { Link } from "react-router-dom";
-
 import { Contest } from "../../types";
-import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
 import { CountdownTimer } from "../ui/CountdownTimer";
 import { ShareContestButton } from "./ShareContestButton";
 
@@ -197,12 +206,7 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
         <div className="flex flex-col md:flex-row items-end gap-4">
           {/* Prize Distribution Badge */}
           <div className="flex-shrink-0">
-            <ContestDifficulty
-              prize_pool={contest.prize_pool}
-              participant_count={contest.participant_count}
-              max_participants={contest.max_participants}
-              isCancelled={contest.status === "cancelled"}
-            />
+            <div className="text-xs text-gray-500 italic">(Difficulty/Prize display TBD)</div>
           </div>
 
           {/* Desktop Action Button with Timer */}

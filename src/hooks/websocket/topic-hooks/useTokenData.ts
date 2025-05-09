@@ -33,7 +33,7 @@ const FALLBACK_TOKENS: Token[] = [
     name: "Solana",
     price: "420.69",
     marketCap: "420420069",
-    volume24h: "420420069",
+    volume24h: "420420069", 
     change24h: "42069.69",
     status: "active",
     contractAddress: "So11111111111111111111111111111111111111112",
@@ -41,6 +41,21 @@ const FALLBACK_TOKENS: Token[] = [
       usd: "69420000",
       base: "420000",
       quote: "69000",
+    }
+  },
+  {
+    symbol: "DUEL",
+    name: "DegenDuel",
+    price: "0.00005",
+    marketCap: "9500000",
+    volume24h: "7500000", 
+    change24h: "52.1",
+    status: "active",
+    contractAddress: "DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t",
+    liquidity: {
+      usd: "694200",
+      base: "42000",
+      quote: "6900",
     }
   },
 ];

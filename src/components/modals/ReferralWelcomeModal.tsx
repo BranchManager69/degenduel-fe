@@ -14,18 +14,18 @@ export const ReferralWelcomeModal: React.FC = () => {
     referrerProfile,
     referralRewards,
   } = useReferral();
-  const { isFullyConnected, user } = useMigratedAuth();
+  const { isAuthenticated, user } = useMigratedAuth();
   const { connectWallet, isConnecting } = useStore();
 
   // When user successfully connects and gets a profile, track conversion and close modal
   useEffect(() => {
-    if (isFullyConnected && user && referralCode) {
+    if (isAuthenticated && user && referralCode) {
       trackConversion().catch(console.error);
       setShowWelcomeModal(false);
       localStorage.setItem("has_seen_welcome", "true");
     }
   }, [
-    isFullyConnected,
+    isAuthenticated,
     user,
     referralCode,
     setShowWelcomeModal,
@@ -33,7 +33,7 @@ export const ReferralWelcomeModal: React.FC = () => {
   ]);
 
   const handleGetStarted = () => {
-    if (!isFullyConnected) {
+    if (!isAuthenticated) {
       // Connect wallet using store's connectWallet
       connectWallet().catch(console.error);
     } else {
@@ -187,7 +187,7 @@ export const ReferralWelcomeModal: React.FC = () => {
                         <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
                           {isConnecting
                             ? "CONNECTING..."
-                            : isFullyConnected
+                            : isAuthenticated
                               ? "EXPLORE DUELS"
                               : "CONNECT WALLET TO START"}
                         </span>

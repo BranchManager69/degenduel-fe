@@ -6,34 +6,77 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { VisualTester } from "../../../components/contest-lobby/VisualTester";
 import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
-import { FinalLeaderboard } from "../../../components/contest-results/FinalLeaderboard";
-import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
-import { TokenPerformance } from "../../../components/contest-results/TokenPerformance";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { formatCurrency } from "../../../lib/utils";
+import { ddApi } from "../../../services/dd-api";
+import { LeaderboardEntry as ApiLeaderboardEntry, ContestViewData, TokenHoldingPerformance } from "../../../types";
 
 // Contest Results page - enhanced with next-level UI and interactive features
 export const ContestResults: React.FC = () => {
-  // Use the navigate function to go back to the contests page
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id: contestIdFromParams } = useParams<{ id: string }>();
+  const { user: _ } = useMigratedAuth(); // Auth hook still needed but user not used directly
+
+  const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // UI state
   const [activeTab, setActiveTab] = useState<'results' | 'details' | 'chat'>('results');
   const [showCelebration, setShowCelebration] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [highlightedToken, setHighlightedToken] = useState<string | null>(null);
+  // Removed unused state: const [highlightedToken, setHighlightedToken] = useState<string | null>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
   
-  // Refs for element highlighting
   const headerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  
-  // User result state - would come from API in production
-  const userRank = 2; // Example placement
+
+  // Initial data fetch
+  useEffect(() => {
+    const contestId = contestIdFromParams ?? null;
+    if (!contestId) {
+      setError("Contest ID is missing.");
+      setIsLoading(false);
+      return;
+    }
+    const fetchContestResults = async () => {
+      setIsLoading(true); setError(null);
+      try {
+        const data = await ddApi.contests.getView(contestId);
+        setContestViewData(data);
+      } catch (err) { setError(err instanceof Error ? err.message : "Failed to load contest results."); }
+      finally { setIsLoading(false); }
+    };
+    fetchContestResults();
+  }, [contestIdFromParams]);
+
+  // WebSocket updates
+  const { 
+    contestViewData: wsUpdatedData, 
+    error: wsError 
+  } = useContestViewUpdates(contestIdFromParams ?? null, contestViewData);
+
+  // Effect to update page state when WebSocket pushes new data
+  useEffect(() => {
+    if (wsUpdatedData) {
+      setContestViewData(wsUpdatedData);
+    }
+  }, [wsUpdatedData]);
+
+  // Optional: Handle wsError
+  useEffect(() => {
+    if (wsError) {
+      console.warn("[ContestResults] WebSocket update error:", wsError);
+      // Potentially addToast here
+    }
+  }, [wsError]);
+
+  // UI state is now derived from contestViewData
+  // Removed unused state: const [userRank, setUserRank] = useState(2);
   
   // Handle celebration dismissal
   const handleCelebrationClose = () => {
@@ -67,11 +110,14 @@ export const ContestResults: React.FC = () => {
     }
   }, [animationComplete]);
   
+  /*
   // Random but consistent avatar generation for demo
   const getAvatarUrl = (username: string) => {
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
   };
-  
+  */
+
+  /*
   // Generate random performance data (in production, this would come from API)
   const generatePerformanceData = () => {
     const now = new Date();
@@ -108,85 +154,24 @@ export const ContestResults: React.FC = () => {
     
     return data;
   };
+  */
   
   // Contest data
   const contest = {
-    id,
+    id: contestIdFromParams,
     title: "Daily SOL Tournament",
     initialPortfolioValue: 1000,
     finalPortfolioValue: 1500, // Fixed to 1500 for a win for demo
   };
   
-  // Enhanced leaderboard with profile pictures
-  const leaderboardEntries = [
-    {
-      rank: 1,
-      username: "crypto_king",
-      finalValue: 12750,
-      totalReturn: 27.5,
-      prize: 500,
-      profilePicture: getAvatarUrl("crypto_king"),
-    },
-    {
-      rank: 2,
-      username: "moon_walker",
-      finalValue: 11800,
-      totalReturn: 18.0,
-      prize: 300,
-      profilePicture: getAvatarUrl("moon_walker"),
-      isCurrentUser: true, // For highlighting
-    },
-    {
-      rank: 3,
-      username: "hodl_master",
-      finalValue: 11200,
-      totalReturn: 12.0,
-      prize: 200,
-      profilePicture: getAvatarUrl("hodl_master"),
-    },
-    {
-      rank: 4,
-      username: "DegenDuelAI",
-      finalValue: 10500,
-      totalReturn: 5.0,
-      prize: 0,
-      profilePicture: "/ai-assistant.png",
-      isAiAgent: true,
-    },
-    {
-      rank: 5,
-      username: "degen_trader",
-      finalValue: 9800,
-      totalReturn: -2.0,
-      prize: 0,
-      profilePicture: getAvatarUrl("degen_trader"),
-    },
-  ];
+  // Removed unused data definitions
+  // Leaderboard entries are now directly used from contestViewData?.leaderboard in leaderboardEntriesForDisplay
   
-  // Performance data for the chart
-  const performanceData = generatePerformanceData();
+  // Removed unused performance data calculation
+  // const performanceData = generatePerformanceData();
   
-  // Token results with images
-  const tokenResults = [
-    {
-      symbol: "SOL",
-      name: "Solana",
-      initialValue: 600,
-      finalValue: 900,
-      change: 50,
-      contribution: 60,
-      image: "https://cryptologos.cc/logos/solana-sol-logo.png",
-    },
-    {
-      symbol: "JTO",
-      name: "Jito",
-      initialValue: 400,
-      finalValue: 600,
-      change: 50,
-      contribution: 40,
-      image: "https://cryptologos.cc/logos/jito-jto-logo.png",
-    },
-  ];
+  // Removed unused token results with images
+  // These are now derived directly from contestViewData
   
   // Handle new messages
   const handleNewMessage = () => {
@@ -195,27 +180,86 @@ export const ContestResults: React.FC = () => {
     }
   };
 
+  // --- Handle Tab Changes ---
+  const handleTabChange = (tab: 'results' | 'details' | 'chat') => {
+    setActiveTab(tab);
+    if (tab === 'chat') {
+      setUnreadMessages(0);
+    }
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  };
+
+  // --- Derived data based on contestViewData ---
+  const contestDetails = contestViewData?.contest;
+  // Add enhanced leaderboard entries with required properties for our display
+  const leaderboardEntriesForDisplay: (ApiLeaderboardEntry & {
+    finalValue: number;  // Calculate from portfolioValue string
+    totalReturn: number; // Calculate from performancePercentage string 
+    prize: number;       // Calculate from prizeAwarded string
+  })[] = (contestViewData?.leaderboard || []).map(entry => ({
+    ...entry,
+    finalValue: parseFloat(entry.portfolioValue),
+    totalReturn: parseFloat(entry.performancePercentage),
+    prize: entry.prizeAwarded ? parseFloat(entry.prizeAwarded) : 0
+  }));
+  
+  const currentUserPerformance = contestViewData?.currentUserPerformance;
+  const currentUserLeaderboardEntry = leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser);
+  const userRankForDisplay = currentUserPerformance?.rank;
+
+  // --- Loading and Error States --- 
+  if (isLoading) { return <div className="p-8 text-center">Loading contest results...</div>; }
+  if (error) { return <div className="p-8 text-center text-red-500">Error: {error}</div>; }
+  if (!contestViewData || !contestDetails) { return <div className="p-8 text-center">No contest data available.</div>; }
+
+  // --- Prepare data for chart display ---
+  const performanceChartData = currentUserPerformance?.historicalPerformance.map(dp => ({
+    timestamp: dp.timestamp,
+    value: parseFloat(dp.value),
+  })) || [];
+
+  // --- Token Results for Display (for details tab) ---
+  const tokenResultsForDisplay = currentUserPerformance?.tokens.map((apiToken: TokenHoldingPerformance) => ({
+    symbol: apiToken.symbol,
+    name: apiToken.name,
+    imageUrl: apiToken.imageUrl,
+    finalValue: parseFloat(apiToken.currentValueContribution), 
+    change: parseFloat(apiToken.performancePercentage),
+    contribution: parseFloat(apiToken.profitLossValueContribution),
+    quantityForDetail: parseFloat(apiToken.quantity), // For details tab
+    initialValueForDetail: parseFloat(apiToken.initialValueContribution), // For details tab
+    priceForDetail: (parseFloat(apiToken.currentValueContribution) / (parseFloat(apiToken.quantity) || 1)) || 0, // For details tab
+  })) || [];
+
+  // --- Render the Contest Results Page ---
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
       
       {/* Enhanced celebration overlay with custom handler */}
-      {showCelebration && (
+      {showCelebration && currentUserPerformance && (
         <CelebrationOverlay
-          initialValue={contest.initialPortfolioValue}
-          finalValue={contest.finalPortfolioValue}
+          initialValue={parseFloat(currentUserPerformance.initialPortfolioValue)}
+          finalValue={parseFloat(currentUserPerformance.portfolioValue)}
           onClose={handleCelebrationClose}
         />
       )}
 
-      {/* Content Section */}
+      {/* Content Section Parent Container */}
       <div className="relative z-10 flex-grow">
+        
+        {/* Content Section - Main Container */}
         <div className="container mx-auto px-4 py-4 lg:py-8">
+          
           {/* Enhanced Header Section with interactive elements */}
           <div 
             ref={headerRef}
             className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between relative overflow-hidden rounded-lg p-4 bg-dark-200/30 backdrop-blur-sm border border-dark-400/30"
           >
             <div>
+
+              {/* Contest Results Header */}
               <motion.h1 
                 className="text-3xl font-bold text-gray-100 group-hover:animate-glitch flex items-center"
                 initial={{ opacity: 0, y: -20 }}
@@ -232,23 +276,25 @@ export const ContestResults: React.FC = () => {
                   <Badge variant="destructive">ENDED</Badge>
                 </motion.div>
               </motion.h1>
-              
+
+              {/* Contest Name */}
               <motion.h2
                 className="text-xl text-gray-300 mt-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                {contest.title}
+                {contestDetails.name}
               </motion.h2>
               
+              {/* Contest Completion Date */}
               <motion.p 
                 className="text-gray-400 mt-2 italic"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
-                Contest completed on {new Date().toLocaleDateString()}
+                Contest completed on {new Date(contestDetails.endTime).toLocaleDateString()}
               </motion.p>
               
               {/* User result summary banner */}
@@ -258,19 +304,21 @@ export const ContestResults: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
+
+                {/* User Result Summary Banner */}
                 <div className="flex items-center">
                   <div className="flex flex-col">
                     <span className="text-brand-300 font-medium">
-                      Your Rank: <span className="text-white font-bold">{userRank}</span>
+                      Your Rank: <span className="text-white font-bold">{userRankForDisplay ?? 'N/A'}</span>
                     </span>
                     <span className="text-gray-400 text-sm">
-                      Final value: <span className="text-white font-mono">${leaderboardEntries[1].finalValue.toLocaleString()}</span>
+                      Final value: <span className="text-white font-mono">{currentUserPerformance ? formatCurrency(parseFloat(currentUserPerformance.portfolioValue)) : 'N/A'}</span>
                     </span>
                   </div>
                 </div>
                 
                 {/* Flexible Prize Indicator - Works with any payout structure */}
-                {(leaderboardEntries.find(entry => entry.isCurrentUser)?.prize || 0) > 0 && (
+                {(parseFloat(currentUserLeaderboardEntry?.prizeAwarded || "0") > 0) && (
                   <motion.div 
                     className="bg-yellow-900/30 px-3 py-2 rounded-md border border-yellow-500/30 flex items-center"
                     whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(234, 179, 8, 0.3)" }}
@@ -297,7 +345,7 @@ export const ContestResults: React.FC = () => {
                     >
                       {(() => {
                         // Get current user's rank (accounting for tied positions)
-                        const currentUser = leaderboardEntries.find(entry => entry.isCurrentUser);
+                        const currentUser = leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser);
                         const rank = currentUser?.rank || 0;
                         
                         // Different styled indicators based on rank
@@ -364,16 +412,22 @@ export const ContestResults: React.FC = () => {
                         );
                       })()}
                     </motion.div>
+
+                    {/* Prize Awarded Section */}
                     <div className="flex flex-col">
+
+                      {/* Prize Awarded Header */}
                       <span className="text-yellow-300 font-medium">Prize Awarded</span>
+                      
+                      {/* Prize Awarded */}
                       <span className="text-white font-mono text-base font-bold">
-                        ${leaderboardEntries.find(entry => entry.isCurrentUser)?.prize.toLocaleString()}
+                        {formatCurrency(parseFloat(currentUserLeaderboardEntry?.prizeAwarded || "0"))}
                       </span>
                       
                       {/* Show rank info for context */}
                       <span className="text-yellow-200/70 text-xs mt-0.5">
                         {(() => {
-                          const rank = leaderboardEntries.find(entry => entry.isCurrentUser)?.rank;
+                          const rank = leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser)?.rank;
                           // Handle special cases for 1st, 2nd, 3rd
                           if (rank === 1) return "1st Place";
                           if (rank === 2) return "2nd Place";
@@ -382,12 +436,15 @@ export const ContestResults: React.FC = () => {
                           return "Winner";
                         })()}
                       </span>
+
                     </div>
                   </motion.div>
                 )}
+                
               </motion.div>
             </div>
             
+            {/* Join New Contest Button */}
             <div className="mt-4 sm:mt-0 flex flex-col sm:items-end gap-3">
               <Button
                 onClick={() => navigate("/contests")}
@@ -422,12 +479,13 @@ export const ContestResults: React.FC = () => {
                 </svg>
               </button>
             </div>
+
           </div>
           
           {/* Tab Navigation */}
           <div className="hidden md:flex mb-6 border-b border-gray-700/50">
             <button
-              onClick={() => setActiveTab('results')}
+              onClick={() => handleTabChange('results')}
               className={`px-4 py-2 font-medium text-sm border-b-2 -mb-px ${
                 activeTab === 'results'
                   ? 'text-brand-400 border-brand-500'
@@ -437,7 +495,7 @@ export const ContestResults: React.FC = () => {
               Results & Performance
             </button>
             <button
-              onClick={() => setActiveTab('details')}
+              onClick={() => handleTabChange('details')}
               className={`px-4 py-2 font-medium text-sm border-b-2 -mb-px ${
                 activeTab === 'details'
                   ? 'text-brand-400 border-brand-500'
@@ -448,7 +506,7 @@ export const ContestResults: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                setActiveTab('chat');
+                handleTabChange('chat');
                 setUnreadMessages(0);
               }}
               className={`px-4 py-2 font-medium text-sm border-b-2 -mb-px flex items-center ${
@@ -477,7 +535,7 @@ export const ContestResults: React.FC = () => {
               >
                 <div className="flex flex-col bg-dark-200/80 backdrop-blur-md rounded-lg p-2 border border-gray-700/50">
                   <button
-                    onClick={() => {setActiveTab('results'); setMobileMenuOpen(false)}}
+                    onClick={() => {handleTabChange('results'); setMobileMenuOpen(false)}}
                     className={`px-3 py-2 rounded-md text-left ${
                       activeTab === 'results'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -487,7 +545,7 @@ export const ContestResults: React.FC = () => {
                     Results & Performance
                   </button>
                   <button
-                    onClick={() => {setActiveTab('details'); setMobileMenuOpen(false)}}
+                    onClick={() => {handleTabChange('details'); setMobileMenuOpen(false)}}
                     className={`px-3 py-2 rounded-md text-left ${
                       activeTab === 'details'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -498,7 +556,7 @@ export const ContestResults: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      setActiveTab('chat');
+                      handleTabChange('chat');
                       setMobileMenuOpen(false);
                       setUnreadMessages(0);
                     }}
@@ -529,351 +587,205 @@ export const ContestResults: React.FC = () => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
+
+              {/* Details Tab */}
               {activeTab === 'results' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 space-y-6">
-                    {/* Interactive Performance Chart Card with enhanced visuals */}
-                    <motion.div
-                      ref={contentRef}
-                      className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg overflow-hidden transition-all duration-500 group relative"
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      whileHover={{ 
-                        boxShadow: leaderboardEntries[1].totalReturn >= 0 
-                          ? "0 0 30px rgba(16, 185, 129, 0.2)"
-                          : "0 0 30px rgba(239, 68, 68, 0.2)",
-                        borderColor: leaderboardEntries[1].totalReturn >= 0 
-                          ? "rgba(16, 185, 129, 0.4)"
-                          : "rgba(239, 68, 68, 0.4)"
-                      }}
-                    >
-                      {/* Ambient gradient effects */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0"
-                        animate={{ 
-                          x: ['-100%', '100%'],
-                        }}
-                        transition={{ 
-                          repeat: Infinity,
-                          duration: 15,
-                          ease: 'linear',
-                        }}
-                      />
-                      
-                      {/* Header with interactive elements */}
-                      <div className="p-4 border-b border-dark-400/30 flex justify-between items-center">
-                        <div className="flex items-center space-x-2">
-                          <motion.h3 
-                            className="text-lg font-bold text-white flex items-center"
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                          >
-                            Portfolio Performance
-                            <motion.span 
-                              className="ml-2 text-xs px-2 py-0.5 rounded-full"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              style={{
-                                backgroundColor: leaderboardEntries[1].totalReturn >= 0 
-                                  ? "rgba(16, 185, 129, 0.2)" 
-                                  : "rgba(239, 68, 68, 0.2)",
-                                color: leaderboardEntries[1].totalReturn >= 0 
-                                  ? "#10b981" 
-                                  : "#ef4444",
-                                border: `1px solid ${leaderboardEntries[1].totalReturn >= 0 
-                                  ? "rgba(16, 185, 129, 0.4)" 
-                                  : "rgba(239, 68, 68, 0.4)"}`
-                              }}
-                            >
-                              {leaderboardEntries[1].totalReturn >= 0 ? "+" : ""}{leaderboardEntries[1].totalReturn.toFixed(2)}%
-                            </motion.span>
-                          </motion.h3>
+                  <div className="lg:col-span-2">
+                    {/* Performance Chart Section */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors mb-6">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Performance</h2>
+                        
+                        {/* Performance Chart */}
+                        <div className="h-64 bg-dark-300/50 rounded-lg p-4 mb-4">
+                          {/* Here we would render the actual chart using performanceChartData */}
+                          <div className="flex items-center justify-center h-full text-gray-400">
+                            {performanceChartData.length > 0 ? (
+                              <div className="w-full h-full flex flex-col">
+                                <div className="text-center text-sm mb-2">Portfolio Performance Over Time</div>
+                                <div className="flex-1 relative">
+                                  {/* Simple line visualization of the performance data */}
+                                  <div className="absolute inset-0 flex items-end">
+                                    {performanceChartData.map((dataPoint, index) => (
+                                      <div 
+                                        key={index}
+                                        className="w-full bg-brand-500 mx-0.5"
+                                        style={{ 
+                                          height: `${Math.max(10, Math.min(100, (dataPoint.value / 1200) * 100))}%`,
+                                          opacity: 0.7 + (index / performanceChartData.length) * 0.3
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <span>No performance data available</span>
+                            )}
+                          </div>
                         </div>
                         
-                        <motion.div 
-                          className="flex space-x-1 items-center"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          <span className="text-xs text-gray-400">24h change:</span>
-                          <span 
-                            className={`text-sm font-mono font-medium ${
-                              leaderboardEntries[1].totalReturn >= 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            {formatCurrency(leaderboardEntries[1].finalValue - contest.initialPortfolioValue)}
-                          </span>
-                        </motion.div>
-                      </div>
-
-                      {/* Interactive chart area */}
-                      <div className="p-6 relative">
-                        <PerformanceChart 
-                          data={performanceData} 
-                          interactive={true}
-                          highlightColor={
-                            leaderboardEntries[1].totalReturn >= 0 ? "#10b981" : "#ef4444"
-                          }
-                        />
-                        
-                        {/* Data hotspots - simulated key points in the chart */}
-                        <motion.div 
-                          className="absolute h-2 w-2 rounded-full" 
-                          style={{ 
-                            left: '30%', 
-                            top: '40%',
-                            backgroundColor: leaderboardEntries[1].totalReturn >= 0 ? "#10b981" : "#ef4444",
-                            boxShadow: `0 0 10px ${leaderboardEntries[1].totalReturn >= 0 ? "#10b981" : "#ef4444"}`
-                          }}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: [0, 1.5, 1] }}
-                          transition={{ delay: 1, duration: 1 }}
-                          whileHover={{ scale: 1.5 }}
-                        />
-                        
-                        <motion.div 
-                          className="absolute h-2 w-2 rounded-full" 
-                          style={{ 
-                            left: '75%', 
-                            top: '30%',
-                            backgroundColor: leaderboardEntries[1].totalReturn >= 0 ? "#10b981" : "#ef4444",
-                            boxShadow: `0 0 10px ${leaderboardEntries[1].totalReturn >= 0 ? "#10b981" : "#ef4444"}`
-                          }}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: [0, 1.5, 1] }}
-                          transition={{ delay: 1.5, duration: 1 }}
-                          whileHover={{ scale: 1.5 }}
-                        />
-                      </div>
-                    </motion.div>
-
-                    {/* Enhanced Leaderboard Card with interactive prize indicators */}
-                    <motion.div
-                      className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg overflow-hidden transition-all duration-500 group relative"
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      whileHover={{ 
-                        boxShadow: "0 0 30px rgba(139, 92, 246, 0.15)",
-                        borderColor: "rgba(139, 92, 246, 0.3)"
-                      }}
-                    >
-                      {/* Ambient gradient effects */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0"
-                        animate={{ 
-                          x: ['-100%', '100%'],
-                        }}
-                        transition={{ 
-                          repeat: Infinity,
-                          duration: 20,
-                          ease: 'linear',
-                        }}
-                      />
-                      
-                      {/* Header with prize pool visualization */}
-                      <div className="p-4 border-b border-dark-400/30">
-                        <div className="flex justify-between items-center mb-2">
-                          <motion.h3 
-                            className="text-lg font-bold text-white flex items-center"
-                            initial={{ x: -10, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                          >
-                            Final Rankings
-                            <motion.div
-                              className="ml-2 relative w-6 h-6"
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: 0.5, type: "spring" }}
-                            >
-                              {/* Trophy cup shape */}
-                              <motion.div
-                                className="absolute inset-0" 
-                                animate={{ rotate: [0, 5, -5, 0] }}
-                                transition={{ 
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  repeatDelay: 3
-                                }}
-                              >
-                                {/* Cup body */}
-                                <div className="absolute top-1/4 left-1/6 right-1/6 bottom-0 bg-gradient-to-b from-yellow-300 to-yellow-500 rounded-b-lg" />
-                                
-                                {/* Cup top rim */}
-                                <div className="absolute top-1/6 left-0 right-0 h-1/12 bg-yellow-300 rounded-t-sm" />
-                                
-                                {/* Cup handles */}
-                                <div className="absolute top-1/4 left-0 w-1/6 h-1/4 border-l-2 border-b-2 border-yellow-300 rounded-bl-full" />
-                                <div className="absolute top-1/4 right-0 w-1/6 h-1/4 border-r-2 border-b-2 border-yellow-300 rounded-br-full" />
-                                
-                                {/* Base */}
-                                <div className="absolute bottom-0 left-1/4 right-1/4 h-1/12 -mb-1 bg-yellow-600 rounded-sm" />
-                                
-                                {/* Shine effect */}
-                                <div className="absolute top-1/3 left-2/5 w-1/5 h-1/3 bg-yellow-200 opacity-50 rounded-full blur-[1px]" />
-                              </motion.div>
-                            </motion.div>
-                          </motion.h3>
-                          <motion.div
-                            className="text-xs px-2 py-1 rounded bg-yellow-900/30 border border-yellow-500/30 text-yellow-300"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", delay: 0.3 }}
-                          >
-                            Prize Pool: ${leaderboardEntries.reduce((sum, entry) => sum + entry.prize, 0).toLocaleString()}
-                          </motion.div>
-                        </div>
-                        
-                        {/* Prize distribution visualization */}
-                        <motion.div 
-                          className="relative h-2 bg-dark-300/70 rounded-full overflow-hidden mt-1"
-                          initial={{ width: 0 }}
-                          animate={{ width: "100%" }}
-                          transition={{ duration: 0.7, delay: 0.5 }}
-                        >
-                          {/* Visualize how prizes are distributed across ranks */}
-                          {leaderboardEntries.filter(e => e.prize > 0).map((entry, index) => {
-                            // Calculate percentage of total prize pool
-                            const totalPrize = leaderboardEntries.reduce((sum, e) => sum + e.prize, 0);
-                            const percentage = (entry.prize / totalPrize) * 100;
-                            const previousSum = leaderboardEntries
-                              .filter(e => e.prize > 0)
-                              .slice(0, index)
-                              .reduce((sum, e) => sum + e.prize, 0) / totalPrize * 100;
-                              
-                            return (
-                              <motion.div 
-                                key={entry.username}
-                                className={`absolute h-full ${index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-600' : 'bg-brand-500'}`}
-                                style={{ 
-                                  left: `${previousSum}%`, 
-                                  width: `${percentage}%`,
-                                  opacity: entry.isCurrentUser ? 1 : 0.7
-                                }}
-                                initial={{ scaleX: 0 }}
-                                animate={{ scaleX: 1 }}
-                                transition={{ duration: 0.5, delay: 0.8 + (index * 0.1) }}
-                              />
-                            );
-                          })}
-                        </motion.div>
-                      </div>
-                      
-                      <div className="p-4 relative">
-                        <FinalLeaderboard
-                          entries={leaderboardEntries}
-                          currentUserRank={userRank}
-                        />
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  {/* Enhanced Token Performance Cards with Interactive Elements */}
-                  <div className="space-y-4">
-                    <motion.h2 
-                      className="text-xl font-bold text-gray-100 mb-4 flex items-center"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      Token Performance
-                      <motion.span
-                        className="inline-block ml-2 text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-400/30"
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3, type: "spring" }}
-                      >
-                        {tokenResults.length} Tokens
-                      </motion.span>
-                    </motion.h2>
-                    
-                    <div className="space-y-4">
-                      {tokenResults.map((token, index) => (
-                        <motion.div
-                          key={token.symbol}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 + (index * 0.1) }}
-                          whileHover={{ scale: 1.02 }}
-                          onClick={() => setHighlightedToken(highlightedToken === token.symbol ? null : token.symbol)}
-                          className="cursor-pointer"
-                        >
-                          <motion.div
-                            className={`bg-dark-200/50 backdrop-blur-sm border rounded-lg overflow-hidden transition-all duration-300 ${
-                              highlightedToken === token.symbol 
-                                ? token.change >= 0
-                                  ? "border-green-500/50 shadow-lg shadow-green-500/10"
-                                  : "border-red-500/50 shadow-lg shadow-red-500/10"
-                                : "border-dark-300 hover:border-brand-400/20"
-                            }`}
-                            animate={{
-                              borderColor: highlightedToken === token.symbol
-                                ? token.change >= 0
-                                  ? "rgba(16, 185, 129, 0.5)"
-                                  : "rgba(239, 68, 68, 0.5)"
-                                : "rgba(32, 32, 48, 0.3)",
-                              boxShadow: highlightedToken === token.symbol
-                                ? token.change >= 0
-                                  ? "0 0 20px rgba(16, 185, 129, 0.2)"
-                                  : "0 0 20px rgba(239, 68, 68, 0.2)"
-                                : "none"
-                            }}
-                          >
-                            {/* Ambient background effects */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            
-                            {/* Value change indicator line on the left */}
-                            <div 
-                              className={`absolute left-0 top-0 bottom-0 w-1 ${
-                                token.change >= 0 ? "bg-green-500" : "bg-red-500"
-                              }`}
-                              style={{
-                                opacity: highlightedToken === token.symbol ? 0.8 : 0.3
-                              }}
-                            />
-                            
-                            {/* Main content */}
-                            <div className="p-5 relative">
-                              <TokenPerformance {...token} />
-                              
-                              {/* Bonus information that appears when highlighted */}
-                              <AnimatePresence>
-                                {highlightedToken === token.symbol && (
-                                  <motion.div 
-                                    className="mt-3 pt-3 border-t border-dark-400/30"
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                  >
-                                    <h4 className="text-sm font-semibold text-gray-300 mb-2">Performance Analysis</h4>
-                                    <div className="space-y-2">
-                                      <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400">Portfolio Contribution</span>
-                                        <span className="text-gray-300">{token.contribution}%</span>
-                                      </div>
-                                      <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400">Trading Volume</span>
-                                        <span className="text-gray-300">${(token.initialValue * 2.5).toLocaleString()}</span>
-                                      </div>
-                                      <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400">Profit/Loss</span>
-                                        <span className={token.change >= 0 ? "text-green-400" : "text-red-400"}>
-                                          {token.change >= 0 ? "+" : ""}{formatCurrency(token.finalValue - token.initialValue)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
+                        {/* Performance Metrics */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="bg-dark-300/50 rounded-lg p-3 text-center">
+                            <div className="text-gray-400 text-sm mb-1">Initial Value</div>
+                            <div className="text-white font-medium">
+                              {currentUserPerformance && formatCurrency(parseFloat(currentUserPerformance.initialPortfolioValue))}
                             </div>
-                          </motion.div>
-                        </motion.div>
-                      ))}
-                    </div>
+                          </div>
+                          <div className="bg-dark-300/50 rounded-lg p-3 text-center">
+                            <div className="text-gray-400 text-sm mb-1">Final Value</div>
+                            <div className="text-white font-medium">
+                              {currentUserPerformance && formatCurrency(parseFloat(currentUserPerformance.portfolioValue))}
+                            </div>
+                          </div>
+                          <div className="bg-dark-300/50 rounded-lg p-3 text-center">
+                            <div className="text-gray-400 text-sm mb-1">% Change</div>
+                            <div className={`font-medium ${currentUserPerformance && parseFloat(currentUserPerformance.portfolioValue) >= parseFloat(currentUserPerformance.initialPortfolioValue) ? 'text-green-400' : 'text-red-400'}`}>
+                              {currentUserPerformance && (
+                                ((parseFloat(currentUserPerformance.portfolioValue) / parseFloat(currentUserPerformance.initialPortfolioValue)) - 1) * 100
+                              ).toFixed(2)}%
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    {/* Leaderboard Section */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Final Leaderboard</h2>
+                        
+                        <div className="space-y-3">
+                          {leaderboardEntriesForDisplay.map((entry) => (
+                            <div 
+                              key={entry.username}
+                              className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+                                entry.isCurrentUser
+                                  ? 'bg-brand-500/20 border border-brand-500/30'
+                                  : entry.isAiAgent
+                                    ? 'bg-cyber-500/20 border border-cyber-400/30'
+                                    : 'bg-dark-300/50'
+                              }`}
+                            >
+                              <div className="flex items-center">
+                                <div className={`
+                                  w-8 h-8 rounded-full flex items-center justify-center font-mono
+                                  ${entry.rank === 1 ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' : 
+                                    entry.rank === 2 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40' : 
+                                    'bg-amber-600/20 text-amber-400 border border-amber-600/40'}
+                                `}>
+                                  {entry.rank}
+                                </div>
+                                <div className="flex flex-col ml-3">
+                                  <span className={`font-medium ${
+                                    entry.isAiAgent ? 'text-cyber-300' : 
+                                    entry.isCurrentUser ? 'text-brand-300' : 'text-gray-100'
+                                  }`}>
+                                    {entry.username}
+                                  </span>
+                                  <span className="text-xs text-gray-400">
+                                    ${entry.finalValue.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="font-medium">
+                                <span className={`${entry.totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {entry.totalReturn >= 0 ? '+' : ''}{entry.totalReturn.toFixed(2)}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                  
+                  {/* Sidebar */}
+                  <div className="space-y-6">
+                    {/* Your Stats */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Your Results</h2>
+                        
+                        <div className="space-y-4">
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Rank</span>
+                            <span className="text-white font-mono">{userRankForDisplay || 'N/A'}</span>
+                          </div>
+                          
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Final Value</span>
+                            <span className="text-white font-mono">
+                              {currentUserPerformance && formatCurrency(parseFloat(currentUserPerformance.portfolioValue))}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Return</span>
+                            <span className={`font-mono ${
+                              currentUserPerformance && 
+                              parseFloat(currentUserPerformance.portfolioValue) >= parseFloat(currentUserPerformance.initialPortfolioValue) 
+                                ? 'text-green-400' 
+                                : 'text-red-400'
+                            }`}>
+                              {currentUserPerformance && (
+                                ((parseFloat(currentUserPerformance.portfolioValue) / parseFloat(currentUserPerformance.initialPortfolioValue)) - 1) * 100
+                              ).toFixed(2)}%
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Prize</span>
+                            <span className="text-white font-mono">
+                              {formatCurrency(parseFloat(currentUserLeaderboardEntry?.prizeAwarded || "0"))}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between pb-2">
+                            <span className="text-gray-400">Tokens Held</span>
+                            <span className="text-white">
+                              {currentUserPerformance?.tokens.length || 0}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    {/* Top Tokens */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Top Performing Tokens</h2>
+                        
+                        <div className="space-y-3">
+                          {/* We use tokenResultsForDisplay here */}
+                          {tokenResultsForDisplay.slice(0, 3).map((token) => (
+                            <div 
+                              key={token.symbol}
+                              className="flex items-center justify-between py-2 px-3 rounded-lg bg-dark-300/50"
+                            >
+                              <div className="flex items-center">
+                                {token.imageUrl && (
+                                  <img 
+                                    src={token.imageUrl} 
+                                    alt={token.name} 
+                                    className="w-8 h-8 rounded-full mr-3" 
+                                  />
+                                )}
+                                <div>
+                                  <div className="font-medium text-white">{token.symbol}</div>
+                                  <div className="text-xs text-gray-400">{token.name}</div>
+                                </div>
+                              </div>
+                              <div className={`font-medium ${token.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {token.change >= 0 ? '+' : ''}{token.change.toFixed(2)}%
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
                   </div>
                 </div>
               )}
@@ -881,13 +793,22 @@ export const ContestResults: React.FC = () => {
               {activeTab === 'details' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
+
+                    {/* Portfolio Distribution Section Card */}
                     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      
+                      {/* Portfolio Distribution Section */}
                       <div className="p-6">
+
+                        {/* Portfolio Distribution Header */}
                         <h2 className="text-xl font-bold text-gray-100 mb-4">Portfolio Distribution</h2>
                         
                         {/* Portfolio Distribution Chart (placeholder circle chart) */}
                         <div className="aspect-square max-w-md mx-auto relative mb-8">
+                          
+                          {/* Portfolio Distribution Chart */}
                           <svg viewBox="0 0 100 100" className="w-full h-full">
+                            
                             {/* SOL segment (60%) */}
                             <motion.path
                               d="M 50 50 L 50 0 A 50 50 0 0 1 97.55 34.55 Z"
@@ -910,25 +831,36 @@ export const ContestResults: React.FC = () => {
                             <circle cx="50" cy="50" r="30" fill="#13151A" />
                             
                             <text x="50" y="45" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">Total Value</text>
-                            <text x="50" y="55" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">${leaderboardEntries[1].finalValue}</text>
+                            <text x="50" y="55" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">${leaderboardEntriesForDisplay[1].finalValue}</text>
                           </svg>
                           
                           {/* Legend */}
                           <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6">
+                            
+                            {/* SOL segment (60%) */}
                             <div className="flex items-center">
                               <div className="w-3 h-3 bg-[#9945FF] rounded-full mr-2"></div>
                               <span className="text-sm text-gray-300">SOL (60%)</span>
                             </div>
+
+                            {/* JTO segment (40%) */}
                             <div className="flex items-center">
                               <div className="w-3 h-3 bg-[#14F195] rounded-full mr-2"></div>
                               <span className="text-sm text-gray-300">JTO (40%)</span>
                             </div>
+
                           </div>
+
                         </div>
                         
                         {/* Trade History */}
-                        <h3 className="text-lg font-semibold text-gray-100 mb-2">Trade History</h3>
+                        <h3 className="text-lg font-semibold text-gray-100 mb-2">
+                          Trade History
+                        </h3>
+                        
+                        {/* Trade History Table */}
                         <div className="border border-gray-700 rounded-md overflow-hidden">
+                          
                           <table className="w-full">
                             <thead className="bg-dark-300">
                               <tr>
@@ -963,14 +895,23 @@ export const ContestResults: React.FC = () => {
                               </tr>
                             </tbody>
                           </table>
+
                         </div>
+
                       </div>
                     </Card>
                   </div>
-                  
+
+                  {/* Performance Stats Section Card */}
                   <div className="space-y-6">
+                    
+                    {/* Performance Stats Section Card */}
                     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      
+                      {/* Performance Stats Section Card */}
                       <div className="p-6">
+                        
+                        {/* Performance Stats Header */}
                         <h2 className="text-xl font-bold text-gray-100 mb-4">Performance Stats</h2>
                         
                         <div className="space-y-4">
@@ -979,44 +920,59 @@ export const ContestResults: React.FC = () => {
                             <span className="text-white font-mono">${contest.initialPortfolioValue.toLocaleString()}</span>
                           </div>
                           
+                          {/* Final Value */}
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Final Value</span>
-                            <span className="text-white font-mono">${leaderboardEntries[1].finalValue.toLocaleString()}</span>
+                            <span className="text-white font-mono">${leaderboardEntriesForDisplay[1].finalValue.toLocaleString()}</span>
                           </div>
-                          
+
+                          {/* Total Return */}
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Total Return</span>
-                            <span className={`font-mono ${leaderboardEntries[1].totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {leaderboardEntries[1].totalReturn >= 0 ? '+' : ''}{leaderboardEntries[1].totalReturn.toFixed(2)}%
+                            <span className={`font-mono ${leaderboardEntriesForDisplay[1].totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {leaderboardEntriesForDisplay[1].totalReturn >= 0 ? '+' : ''}{leaderboardEntriesForDisplay[1].totalReturn.toFixed(2)}%
                             </span>
                           </div>
-                          
+
+                          {/* Final Rank */}
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Final Rank</span>
-                            <span className="text-yellow-400 font-medium">{userRank} of {leaderboardEntries.length}</span>
+                            <span className="text-yellow-400 font-medium">{userRankForDisplay} of {leaderboardEntriesForDisplay.length}</span>
                           </div>
-                          
+
+                          {/* Prize */}
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Prize</span>
-                            <span className="text-white font-mono">${leaderboardEntries[1].prize}</span>
+                            <span className="text-white font-mono">${leaderboardEntriesForDisplay[1].prize}</span>
                           </div>
-                          
+
+                          {/* Duration */}
                           <div className="flex justify-between pb-2">
                             <span className="text-gray-400">Duration</span>
                             <span className="text-white">24 hours</span>
                           </div>
+
                         </div>
+
                       </div>
+
                     </Card>
                     
+                    {/* Contest Details Section Card */}
                     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      
+                      {/* Contest Details Section Card */}
                       <div className="p-6">
-                        <h2 className="text-xl font-bold text-gray-100 mb-4">Contest Details</h2>
+
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">
+                          Contest Details
+                        </h2>
                         
                         <div className="space-y-4">
+
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Name</span>
-                            <span className="text-white">{contest.title}</span>
+                            <span className="text-white">{contestDetails.name}</span>
                           </div>
                           
                           <div className="flex justify-between border-b border-gray-700 pb-2">
@@ -1031,22 +987,29 @@ export const ContestResults: React.FC = () => {
                           
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Total Participants</span>
-                            <span className="text-white">{leaderboardEntries.length}</span>
+                            <span className="text-white">{leaderboardEntriesForDisplay.length}</span>
                           </div>
                           
                           <div className="flex justify-between pb-2">
                             <span className="text-gray-400">Total Prize Pool</span>
                             <span className="text-white font-mono">$1,000</span>
                           </div>
+                          
                         </div>
+
                       </div>
+
                     </Card>
+
                   </div>
+
                 </div>
               )}
               
               {activeTab === 'chat' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Chat Section */}
                   <div className="lg:col-span-2">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -1055,24 +1018,27 @@ export const ContestResults: React.FC = () => {
                       className="bg-dark-200/10 backdrop-blur-sm rounded-lg border border-dark-300 overflow-hidden h-[600px]"
                     >
                       <ContestChat 
-                        contestId={id!} 
+                        contestId={contestIdFromParams!} 
                         onNewMessage={handleNewMessage} 
                       />
                     </motion.div>
                   </div>
-                  
+
+                  {/* Final Standings Section */}
                   <div>
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
+
+                      {/* Final Standings Section Card */}  
                       <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors mb-6">
                         <div className="p-6">
                           <h2 className="text-xl font-bold text-gray-100 mb-4">Final Standings</h2>
                           
                           <div className="space-y-3">
-                            {leaderboardEntries.slice(0, 3).map((entry) => (
+                            {leaderboardEntriesForDisplay.slice(0, 3).map((entry) => (
                               <div 
                                 key={entry.username}
                                 className={`flex items-center justify-between py-2 px-3 rounded-lg ${
@@ -1115,7 +1081,7 @@ export const ContestResults: React.FC = () => {
                           
                           {/* View full leaderboard button */}
                           <button
-                            onClick={() => setActiveTab('results')}
+                            onClick={() => handleTabChange('results')}
                             className="w-full mt-3 py-2 text-sm text-center text-brand-300 hover:text-brand-200 transition-colors"
                           >
                             View Full Leaderboard
@@ -1126,19 +1092,22 @@ export const ContestResults: React.FC = () => {
                       {/* Contest summary stats */}
                       <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
                         <div className="p-6">
+
+                          {/* Contest Summary Header */}
                           <h2 className="text-xl font-bold text-gray-100 mb-4">Contest Summary</h2>
-                          
+
+                          {/* Contest Summary Stats */}
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-gray-400">Your Return</span>
-                              <span className={`font-medium ${leaderboardEntries[1].totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {leaderboardEntries[1].totalReturn >= 0 ? '+' : ''}{leaderboardEntries[1].totalReturn.toFixed(2)}%
+                              <span className={`font-medium ${leaderboardEntriesForDisplay[1].totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {leaderboardEntriesForDisplay[1].totalReturn >= 0 ? '+' : ''}{leaderboardEntriesForDisplay[1].totalReturn.toFixed(2)}%
                               </span>
                             </div>
                             
                             <div className="flex items-center justify-between">
                               <span className="text-gray-400">Best Performer</span>
-                              <span className="text-green-400">+{leaderboardEntries[0].totalReturn.toFixed(2)}%</span>
+                              <span className="text-green-400">+{leaderboardEntriesForDisplay[0].totalReturn.toFixed(2)}%</span>
                             </div>
                             
                             <div className="flex items-center justify-between">
@@ -1148,17 +1117,20 @@ export const ContestResults: React.FC = () => {
                             
                             <div className="flex items-center justify-between">
                               <span className="text-gray-400">Your Prize</span>
-                              <span className="text-white font-mono">${leaderboardEntries[1].prize}</span>
+                              <span className="text-white font-mono">${leaderboardEntriesForDisplay[1].prize}</span>
                             </div>
                           </div>
                         </div>
                       </Card>
                     </motion.div>
                   </div>
+
                 </div>
               )}
+                
             </motion.div>
           </AnimatePresence>
+
         </div>
       </div>
       

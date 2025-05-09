@@ -1,17 +1,24 @@
 import React, { useState } from "react";
 
 import { useStore } from "../../../store/useStore";
+import { 
+  AlertSeverity, 
+  EnhancedAlert, 
+  ServiceNode, 
+  SkyDuelAlert, 
+  SkyDuelStoreState 
+} from "./types";
 
 export const AlertsPanel: React.FC = () => {
-  const { skyDuel, setSkyDuelSelectedNode } = useStore();
+  const { skyDuel, setSkyDuelSelectedNode } = useStore() as SkyDuelStoreState;
   const [showAll, setShowAll] = useState(false);
   const [filter, setFilter] = useState<
-    "all" | "critical" | "error" | "warning" | "info"
+    "all" | AlertSeverity
   >("all");
 
   // Collect all alerts from all nodes
-  const allAlerts = skyDuel.nodes.flatMap((node) =>
-    node.alerts.map((alert) => ({
+  const allAlerts: EnhancedAlert[] = skyDuel.nodes.flatMap((node: ServiceNode) =>
+    node.alerts.map((alert: SkyDuelAlert) => ({
       ...alert,
       nodeId: node.id,
       nodeName: node.name,
@@ -20,14 +27,15 @@ export const AlertsPanel: React.FC = () => {
   );
 
   // Filter alerts
-  const filteredAlerts = allAlerts.filter((alert) => {
+  const filteredAlerts = allAlerts.filter((alert: EnhancedAlert) => {
     if (filter === "all") return true;
     return alert.severity === filter;
   });
 
   // Sort alerts by timestamp (newest first)
   const sortedAlerts = [...filteredAlerts].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    (a: EnhancedAlert, b: EnhancedAlert) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   );
 
   // Limit number of alerts shown unless showAll is true
@@ -35,13 +43,13 @@ export const AlertsPanel: React.FC = () => {
 
   // Get count of alerts by severity
   const criticalCount = allAlerts.filter(
-    (a) => a.severity === "critical",
+    (a: EnhancedAlert) => a.severity === "critical",
   ).length;
-  const errorCount = allAlerts.filter((a) => a.severity === "error").length;
-  const warningCount = allAlerts.filter((a) => a.severity === "warning").length;
-  const infoCount = allAlerts.filter((a) => a.severity === "info").length;
+  const errorCount = allAlerts.filter((a: EnhancedAlert) => a.severity === "error").length;
+  const warningCount = allAlerts.filter((a: EnhancedAlert) => a.severity === "warning").length;
+  const infoCount = allAlerts.filter((a: EnhancedAlert) => a.severity === "info").length;
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: AlertSeverity | string): string => {
     switch (severity) {
       case "critical":
         return "text-red-500";
@@ -56,7 +64,7 @@ export const AlertsPanel: React.FC = () => {
     }
   };
 
-  const getSeverityBg = (severity: string) => {
+  const getSeverityBg = (severity: AlertSeverity | string): string => {
     switch (severity) {
       case "critical":
         return "bg-red-500/10 border-red-500/30";

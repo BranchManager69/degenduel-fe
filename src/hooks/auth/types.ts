@@ -1,6 +1,9 @@
 // src/hooks/auth/types.ts
 // Auth-related types shared across auth hooks
 
+// Export passkey and QR code auth types
+export * from './types/passkeys';
+
 // Basic user type 
 export interface User {
   id: string;

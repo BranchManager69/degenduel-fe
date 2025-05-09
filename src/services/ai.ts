@@ -3,74 +3,100 @@
 /**
  * AI Service
  *
- * @description Comprehensive AI service client for DegenDuel; supports both REST and WebSocket communication
- * 
- * NEW FEATURES:
- * - WebSocket support for STREAMING responses
- * - Support for STRUCTURED OUTPUT
- * - Automatic conversation history tracking
+ * @description Comprehensive AI service client for DegenDuel; uses REST API.
+ *
+ * AI Service uses only REST by design; no WebSocket.
+ *  
+ * FEATURES:
+ * - Support for Streaming REST responses
+ * - Support for Structured Output (via OpenAI functions/tools or response_format)
+ * - Automatic conversation history tracking (client-side cache)
  * - Improved error handling and retry logic
  * 
  * @author BranchManager69
- * @version 2.0.0
+ * @version 2.0.2 // Version bump
  * @created 2025-04-28
- * @updated 2025-05-03
+ * @updated 2025-05-08 // Refined Options interfaces based on OpenAI API
  */
 
 // Config
 import { API_URL } from '../config/config';
-const API_URL_BASE = API_URL; // Base URL for DegenDuel API; used by the AI Service
+const API_URL_BASE = API_URL;
 
-// Import auth and unified websocket services
+// Import auth service
 import { authService } from './index';
 
-// AI Message
+// --- Core Interfaces ---
+
 export interface AIMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
+  role: 'system' | 'user' | 'assistant' | 'tool'; // Added 'tool' role
+  content: string | null; // Allow content to be null for tool calls
+  tool_calls?: { 
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string; };
+  }[]; // Add tool_calls directly to the message for assistant tool requests
+  tool_call_id?: string; // For tool responses
+  name?: string; // For tool function name
 }
-// Base options that apply to all AI services
+
 export interface AIBaseOptions {
-  // Debug flag to log operations
   debug?: boolean;
+  user?: string; // Optional end-user identifier for OpenAI monitoring
 }
 
-// Chat-specific options
-// TODO: THESE ARE TOTALLY OUTDATED!!!!!!!!!!!!!!!!
+// --- Chat Interfaces & Options (Aligned with Chat Completions API) ---
+
 export interface ChatOptions extends AIBaseOptions {
-  // Custom conversation ID for tracking conversations
-  // WHAT?????????????????
-  conversationId?: string;
-  // Conversation context (determines system prompt)
-  context?: 'default' | 'trading' | 'terminal';
-  // Whether to use streaming responses
-  streaming?: boolean;
-  // Callback for handling streaming chunks
-  onChunk?: (chunk: string) => void;
+  conversationId?: string; // For client-side caching
+  context?: 'default' | 'trading' | 'terminal'; // DegenDuel specific context for backend prompt engineering
+  
+  // Standard OpenAI Chat Completion parameters (subset for frontend control)
+  model?: string; // e.g., 'gpt-4', 'gpt-3.5-turbo' - backend might override
+  temperature?: number | null; // 0.0 to 2.0
+  top_p?: number | null; // Nucleus sampling
+  max_tokens?: number | null; // Max tokens to generate
+  presence_penalty?: number | null; // -2.0 to 2.0
+  frequency_penalty?: number | null; // -2.0 to 2.0
+  stop?: string | string[] | null; // Stop sequences
+  response_format?: { type: "text" | "json_object" }; // Specify response format
+  seed?: number | null; // For reproducibility
+  tools?: any[]; // For function calling / tool use
+  tool_choice?: string | object; // Control tool usage
+  
+  // Streaming options (handled by client logic)
+  streaming?: boolean; // If true, use streaming endpoint
+  onChunk?: (chunk: string) => void; // Callback for streaming chunks
 }
 
-// Image generation options (future use)
-// TODO: THESE ARE TOTALLY OUTDATED!!!!!!!!!!!!!!!!
-export interface ImageOptions extends AIBaseOptions {
-  // Size of generated image
-  size?: '256x256' | '512x512' | '1024x1024';
-  // Number of images to generate
-  n?: number;
-  // Image generation quality
-  quality?: 'standard' | 'hd';
-}
-
-// Response from AI chat service
 export interface ChatResponse {
-  // The text response
-  content: string;
-  // Function that was called, if any
-  functionCalled?: string;
-  // Conversation tracking ID
+  content: string | null; // Content can be null if function/tool is called
+  functionCalled?: string; // Deprecated - check tool_calls instead
+  tool_calls?: { 
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string; };
+  }[];
   conversationId: string;
 }
 
-// Token data interface
+// --- Image Interfaces & Options (Aligned with Images API - DALL-E 3 focused) ---
+
+export interface ImageOptions extends AIBaseOptions {
+  model?: 'dall-e-3' | 'dall-e-2' | string; // Specify model
+  n?: number | null; // Number of images (1-10 for DALL-E 2, only 1 for DALL-E 3)
+  quality?: 'standard' | 'hd'; // Only for DALL-E 3
+  response_format?: 'url' | 'b64_json'; // Default: 'url'
+  size?: '256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792'; // Available sizes vary by model
+  style?: 'vivid' | 'natural'; // Only for DALL-E 3
+}
+
+export interface ImageResponse {
+  created: number;
+  data: { url?: string; b64_json?: string; revised_prompt?: string }[];
+}
+
+// --- Token Data Interface (Remains the same) ---
 export interface TokenData {
   symbol: string;
   name: string;
@@ -89,7 +115,7 @@ export interface TokenData {
   is_monitored?: boolean;
 }
 
-// AI service error types
+// --- Error Types (Remain the same) ---
 export enum AIErrorType {
   NETWORK = 'network',
   AUTHENTICATION = 'authentication',
@@ -113,16 +139,16 @@ export class AIServiceError extends Error {
   }
 }
 
+// TODO: Is the following correct?
 // No global state needed - using simple REST API approach
 
 /**
  * AI Service implementation
  * 
  * Provides an API client for the DegenDuel AI service
- * Uses REST API for all functionality
- *
- * NOTE: Previously contained a custom WebSocket implementation that has been
- * removed in favor of the UnifiedWebSocketContext system.
+ * 
+ * TODO: Is the following correct?
+ *   Uses REST API for all functionality
  */
 class AIService {
   private readonly API_AI_SVC_REST_URL = `${API_URL_BASE}/api/ai`;
@@ -188,6 +214,7 @@ class AIService {
     }
   }
   
+  // Uses the SHITTY, WOEFULLY OUTDATED, and ENTIRELY WORTHLESS OpenAI Chat Completions API (new standard: OpenAI Responses API. See https://platform.openai.com/docs/api-reference/responses)
   /**
    * Generate a chat completion using the REST API
    * 
@@ -254,6 +281,8 @@ class AIService {
     }
   }
   
+  // Uses the LATEST and GREATEST OpenAI Responses API
+  //   @see https://platform.openai.com/docs/api-reference/responses
   /**
    * Generate a streaming chat completion using the stream API
    * 
@@ -349,9 +378,7 @@ class AIService {
       );
     }
   }
-  
-  // WebSocket methods have been removed in favor of REST API only
-  
+    
   /**
    * Get token data directly without using natural language
    * 
@@ -452,6 +479,55 @@ class AIService {
       case 429: return AIErrorType.RATE_LIMIT;
       case 500: case 502: case 503: case 504: return AIErrorType.SERVER;
       default: return AIErrorType.UNKNOWN;
+    }
+  }
+
+  // --- ADD Image Generation Method --- 
+  /**
+   * Generate an image using the REST API
+   * 
+   * @param prompt Text description for the image
+   * @param options Configuration options based on OpenAI Images API
+   * @returns Promise with the image generation response
+   */
+  async generateImage(prompt: string, options: ImageOptions = {}): Promise<ImageResponse> {
+    try {
+      if (options.debug) {
+        console.log('AI Image Request:', { prompt, options });
+      }
+
+      const token = await authService.getToken();
+      const imageUrl = `${this.API_AI_SVC_REST_URL}/image`; // Assume endpoint
+
+      const response = await fetch(imageUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ prompt, ...options }), // Send prompt and options
+      });
+
+      if (!response.ok) {
+        throw await this.handleErrorResponse(response);
+      }
+
+      const data = await response.json();
+
+      if (options.debug) {
+        console.log('AI Image Response:', data);
+      }
+
+      return data as ImageResponse;
+    } catch (error) {
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+      console.error('AI Image Generation Error:', error);
+      throw new AIServiceError(
+        'Failed to generate image.',
+        AIErrorType.UNKNOWN
+      );
     }
   }
 }

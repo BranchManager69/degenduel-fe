@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
-import { ServiceNode } from "../../../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { useStore } from "../../../store/useStore";
+import { NodeStatus, NodeType, ServiceNode } from "./types";
 
 export const ServiceList: React.FC = () => {
   const { skyDuel, setSkyDuelSelectedNode } = useStore();
@@ -11,37 +11,47 @@ export const ServiceList: React.FC = () => {
   );
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  const getStatusLabel = (status: ServiceNode["status"]) => {
+  const getStatusLabel = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "Online";
       case "degraded":
         return "Degraded";
+      case "warning":
+        return "Warning";
       case "offline":
         return "Offline";
+      case "error":
+        return "Error";
       case "restarting":
         return "Restarting";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "Unknown";
     }
   };
 
-  const getStatusColor = (status: ServiceNode["status"]) => {
+  const getStatusColor = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "bg-emerald-500";
       case "degraded":
+      case "warning":
         return "bg-amber-500";
       case "offline":
+      case "error":
         return "bg-red-500";
       case "restarting":
         return "bg-blue-500";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "bg-gray-500";
     }
   };
 
-  const getTypeIcon = (type: ServiceNode["type"]) => {
+  const getTypeIcon = (type: NodeType) => {
     switch (type) {
       case "api":
         return "🔌";
@@ -53,7 +63,17 @@ export const ServiceList: React.FC = () => {
         return "🗄️";
       case "cache":
         return "⚡";
+      case "queue":
+        return "📦";
+      case "gateway":
+        return "🚪";
+      case "infrastructure":
+        return "🏗️";
+      case "service":
+        return "🛠️";
       default:
+        const _exhaustiveCheck: never = type;
+        console.warn(`Unknown node type: ${_exhaustiveCheck}`);
         return "📦";
     }
   };
@@ -67,17 +87,17 @@ export const ServiceList: React.FC = () => {
   };
 
   // Filter and sort nodes
-  const filteredNodes = skyDuel.nodes.filter((node) => {
+  const filteredNodes = skyDuel.nodes.filter((node: ServiceNode) => {
     if (!filter) return true;
     return (
       node.name.toLowerCase().includes(filter.toLowerCase()) ||
       node.id.toLowerCase().includes(filter.toLowerCase()) ||
-      node.type.toLowerCase().includes(filter.toLowerCase()) ||
+      (node.type as string).toLowerCase().includes(filter.toLowerCase()) ||
       getStatusLabel(node.status).toLowerCase().includes(filter.toLowerCase())
     );
   });
 
-  const sortedNodes = [...filteredNodes].sort((a, b) => {
+  const sortedNodes: ServiceNode[] = [...filteredNodes].sort((a, b) => {
     let comparison = 0;
 
     switch (sortBy) {
@@ -93,7 +113,7 @@ export const ServiceList: React.FC = () => {
         comparison = a.health - b.health;
         break;
       case "type":
-        comparison = a.type.localeCompare(b.type);
+        comparison = (a.type as string).localeCompare(b.type as string);
         break;
       default:
         comparison = 0;

@@ -9,8 +9,9 @@
  */
 
 import { motion } from 'framer-motion';
-import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { TerminalConsoleProps, ConsoleOutputItem } from '../types';
+import React, { useEffect, useRef, useState } from 'react';
+import { AIMessage } from '../../../services/ai';
+import { TerminalConsoleProps } from '../types';
 
 /**
  * TypeWriter - Creates a typewriter effect for text
@@ -149,7 +150,7 @@ const TypeWriter: React.FC<TypeWriterProps> = ({
  * TerminalConsole - Displays terminal output and handles scrolling behavior
  */
 export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
-  consoleOutput,
+  messages,
   size
 }) => {
   const consoleOutputRef = useRef<HTMLDivElement>(null);
@@ -164,13 +165,13 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
   
   // When a new message appears, scroll to bottom
   useEffect(() => {
-    if (consoleOutput.length > 0) {
+    if (messages.length > 0) {
       // Immediately scroll to bottom when new message appears
       if (consoleOutputRef.current) {
         consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
       }
     }
-  }, [consoleOutput.length]);
+  }, [messages.length]);
 
   // Enhanced scrollbar auto-hide effect specifically for console output
   const scrollbarAutoHide = (element: HTMLElement | null, timeout = 2000) => {
@@ -247,34 +248,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
       setTimeout(scrollTo, 200);
       setTimeout(scrollTo, 500); // Extra long timeout for slow devices
     }
-  }, [consoleOutput]);
-
-  // Calculate the number of lines to display
-  // Limit to a max of 10 lines for a clean, manageable chat
-  const displayedOutput = useMemo(() => {
-    if (consoleOutput.length <= 10) return consoleOutput;
-    return consoleOutput.slice(consoleOutput.length - 10);
-  }, [consoleOutput]);
-
-  // Calculate dynamic height based on content
-  // This helps create a smoother animation effect
-  useEffect(() => {
-    if (consoleOutputRef.current) {
-      // Set a minimum height to prevent jarring resizes
-      const baseHeight = size === 'contracted' ? 160 : size === 'middle' ? 240 : 320;
-      const lineHeight = 24; // Approximate height of each text line
-      const itemCount = Math.min(displayedOutput.length, 10);
-      
-      // Calculate appropriate height - with a min/max range
-      const calculatedHeight = Math.max(
-        baseHeight,
-        Math.min(itemCount * lineHeight, size === 'contracted' ? 240 : size === 'middle' ? 320 : 400)
-      );
-      
-      // Set the height with a smooth transition
-      consoleOutputRef.current.style.height = `${calculatedHeight}px`;
-    }
-  }, [displayedOutput.length, size]);
+  }, [messages]);
 
   return (
     <motion.div
@@ -300,16 +274,16 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
     >
       <div 
         ref={consoleOutputRef} 
-        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full`}
+        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full 
+                   ${size === 'contracted' ? 'h-40' : size === 'middle' ? 'h-60' : 'h-80'}` }
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
           background: 'rgba(0, 0, 0, 0.6)',
           boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)',
-          transition: 'height 0.3s ease-in-out', // Smooth height transition
         }}
       >
-        {consoleOutput.length === 0 ? (
+        {messages.length === 0 ? (
           // Initial State - Show welcome message
           <div className="text-mauve-light/90 text-xs py-1">
             <div className="relative font-mono text-[10px] sm:text-xs leading-tight mt-1 mb-4 text-center overflow-hidden">
@@ -360,63 +334,67 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
           </div>
         ) : (
           // Map console output when we have entries - only show last 10 lines max
-          displayedOutput.map((output: ConsoleOutputItem, i: number) => {
-            // Check the type of message to apply appropriate styling
-            const isUserInput = typeof output === 'string' && output.startsWith('$');
-            const isError = typeof output === 'string' && output.startsWith('Error:');
-            const isAI = typeof output === 'string' && output.startsWith('[Didi]');
+          messages.map((message: AIMessage, i: number) => {
+            let prefix = '';
+            let content = message.content ?? '';
+            let textClassName = 'text-gray-300'; // Default
+            let isLastMessage = i === messages.length - 1;
+            let useTypingEffect = false;
+
+            switch (message.role) {
+              case 'user':
+                prefix = '$ ';
+                textClassName = 'text-mauve';
+                break;
+              case 'assistant':
+                prefix = '[Didi] ';
+                textClassName = 'text-cyan-300';
+                // Check for tool calls
+                if (message.tool_calls && message.tool_calls.length > 0) {
+                    const toolCall = message.tool_calls[0];
+                    // Display tool call info instead of null content
+                    content = `[Calling tool: ${toolCall.function.name}...]`;
+                } else if (message.content !== null) {
+                    // Only use typewriter for last assistant text message
+                    useTypingEffect = isLastMessage;
+                    content = message.content; // Use the actual content
+                } else {
+                    content = ''; // Handle case where content is null and no tool call
+                }
+                break;
+              case 'system':
+                prefix = '[SYSTEM] ';
+                textClassName = 'text-gray-400 italic';
+                break;
+              case 'tool': // Added case for tool results
+                 prefix = '[TOOL_RESULT] ';
+                 textClassName = 'text-yellow-400';
+                 content = message.content ?? ''; // Tool results should have content
+                 break;
+            }
             
-            // Generate a stable, consistent key for each output item
-            const getStableKey = () => {
-              if (typeof output !== 'string') return `node-${i}`;
-              // For Didi responses, use the first 20 chars to create a more unique key
-              if (output.startsWith('[Didi]')) {
-                return `didi-${i}-${output.substr(7, 20).replace(/[^a-z0-9]/gi, '')}`;
-              }
-              // For other outputs, use a simpler key
-              return `output-${i}-${output.substr(0, 10).replace(/[^a-z0-9]/gi, '')}`;
-            };
-            
-            // Use framer-motion for smooth entry of new lines
+            const key = `msg-${i}-${message.role}-${message.content?.substring(0, 5)}`; // Create a reasonably stable key
+
             return (
               <motion.div 
-                key={getStableKey()}
+                key={key}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 0.3,
-                  ease: "easeOut" 
-                }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
                 className="pl-1 mb-1 whitespace-pre-wrap"
               >
-                {typeof output === 'string' ? (
-                  isAI ? (
-                    // Only apply typing effect to the newest message
-                    i === displayedOutput.length - 1 ? (
-                      <TypeWriter 
-                        text={output}
-                        speed={15} // Faster typing speed
-                        className="text-cyan-300"
-                        onComplete={handleTypingComplete}
-                      />
-                    ) : (
-                      // Display older AI messages immediately without animation
-                      <span className="text-cyan-300">{output}</span>
-                    )
-                  ) : (
-                    // Instant display for other text
-                    <span 
-                      className={
-                        isUserInput ? 'text-mauve' : 
-                        isError ? 'text-red-400' : 
-                        'text-green-300'
-                      }
-                    >
-                      {output}
-                    </span>
-                  )
+                {/* Render prefix directly */}
+                {prefix}
+                {/* Use TypeWriter only for the last assistant message, otherwise render content directly */}
+                {useTypingEffect ? (
+                  <TypeWriter 
+                    text={content}
+                    speed={15}
+                    className={textClassName}
+                    onComplete={handleTypingComplete}
+                  />
                 ) : (
-                  output
+                  <span className={textClassName}>{content}</span>
                 )}
               </motion.div>
             );

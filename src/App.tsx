@@ -65,6 +65,7 @@ import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
+import { Terminal } from "./components/terminal/Terminal";
 
 // Wallet adapter styles (if this is the old wallet adapter, we removed it)
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -156,9 +157,14 @@ console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
 
 // Config
 // Prelaunch mode
-import { PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
+import { config, PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
 
 // Lazy loaded components
+
+// Decryption Timer
+const DecryptionTimer = lazy(
+  () => import("./components/layout/DecryptionTimer"),
+);
 // Admin Chat Dashboard
 const AdminChatDashboard = lazy(
   () => import("./pages/admin/AdminChatDashboard"),
@@ -168,11 +174,11 @@ const LiquiditySimulatorPage = lazy(
   () => import("./pages/admin/LiquiditySimulatorPage"),
 );
 
-// RpcContext for custom DegenDuel JWT-aware RPC client
 export interface RpcContextType {
   rpcClient: Rpc<SolanaRpcApi> | null;
   endpoint: string;
 }
+// RpcContext for custom DegenDuel JWT-aware RPC client
 export const RpcContext = createContext<RpcContextType | null>(null);
 export const useDegenDuelRpc = () => {
   const context = useContext(RpcContext);
@@ -187,6 +193,7 @@ export const App: React.FC = () => {
   // Prelaunch Mode uses values from config/config.ts now
   const searchParams = new URLSearchParams(window.location.search);
   
+  /* PRELAUNCH BYPASS */
   // Log the expected bypass key for debugging
   console.log('[App.tsx] Expected PRELAUNCH_BYPASS_KEY:', PRELAUNCH_BYPASS_KEY);
   // Log the received bypass key from URL for debugging
@@ -195,15 +202,19 @@ export const App: React.FC = () => {
   const hasAdminBypass = searchParams.get('bypass') === PRELAUNCH_BYPASS_KEY;
   const showComingSoon = PRELAUNCH_MODE && !hasAdminBypass;
 
+  // Debug logging
   if (PRELAUNCH_MODE) {
     console.log(`[App.tsx] Prelaunch Mode Active. Expected Key: ${PRELAUNCH_BYPASS_KEY}, Received Key: ${searchParams.get('bypass')}, Bypass active: ${hasAdminBypass}. Showing Coming Soon: ${showComingSoon}`);
   }
 
+  // Return the app or Coming Soon page based on the bypass status
   return (
     <Router> 
       {showComingSoon ? (
+        // App access is blocked, so we show Coming Soon
         <ComingSoonPage />
       ) : (
+        // App access is granted, so we can wrap the app in the providers and display
         <UnifiedAuthProvider>
           <AppProvidersAndContent />
         </UnifiedAuthProvider>
@@ -212,14 +223,14 @@ export const App: React.FC = () => {
   );
 };
 
-// Component to house providers that depend on auth state and manage dynamic RPC client
+// Component to house providers that depend on auth state and manage dynamic DegenDuel RPC client
 const AppProvidersAndContent: React.FC = () => {
   const { user } = useMigratedAuth();
   const ddJwt = useMemo(() => (user as any)?.ddJwt || null, [user]);
-  // Set the current RPC endpoint based on auth state
+  // Set the current DegenDuel RPC endpoint based on auth state
   const [currentRpcEndpoint, setCurrentRpcEndpoint] = useState(() => `${window.location.origin}/api/solana-rpc/public`);
 
-  // Effect to set the RPC endpoint based on auth state
+  // Effect to set the DegenDuel RPC endpoint based on auth state
   useEffect(() => {
     if (ddJwt) {
       console.log('[App.tsx] User authenticated, setting user-tier DegenDuel RPC proxy for Kit client');
@@ -312,7 +323,7 @@ const AppProvidersAndContent: React.FC = () => {
         <InviteSystemProvider>
           <AffiliateSystemProvider>
             <UnifiedWebSocketProvider>
-              <TokenDataProvider> { /* Review if TokenDataProvider needs direct rpcClient or relies on new wallet hooks */ }
+              <TokenDataProvider>
                 <ToastProvider>
                   <AppContent />
                 </ToastProvider>
@@ -355,6 +366,9 @@ const AppContent: React.FC = () => {
       {/* Server Down Banner */}
       <ServerDownBanner />
       
+      {/* Decryption Timer */}
+      <DecryptionTimer />
+
       {/* Main Content */}
       <main className="flex-1 pb-12">
 
@@ -509,7 +523,28 @@ const AppContent: React.FC = () => {
         </Routes>
       </main>
       
-      {/* Footer */}
+      {/* --- Persistent Terminal Component --- */} 
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-[60] pointer-events-none" // High z-index, pointer-events-none on container
+      >
+        <div className="pointer-events-auto"> {/* Enable pointer events for the Terminal itself */} 
+          <Terminal 
+              // Construct the config prop explicitly matching TerminalProps
+              config={{
+                  RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
+                  CONTRACT_ADDRESS: config.CONTRACT_ADDRESS.REAL, // Pass the contract address
+                  DISPLAY: {
+                      DATE_SHORT: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT, // Map to DATE_SHORT
+                      DATE_FULL: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,   // Map to DATE_FULL
+                      TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME             // Map to TIME
+                  }
+              }}
+              size="contracted" // Start contracted?
+          />
+        </div>
+      </div>
+
+      {/* Footer (Ensure Terminal appears ABOVE the footer visually if Footer is also fixed/sticky) */}
       <Footer />
       
       {/* Achievement Notification */}

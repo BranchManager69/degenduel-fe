@@ -12,7 +12,7 @@ import { ParticlesEffect } from "./ParticlesEffect";
 import { TokenVerse } from "./TokenVerse";
 // experimental visualizations
 import { SYSTEM_SETTINGS } from "../../config/config";
-import { useSystemSettingsWebSocket } from "../../hooks/websocket/legacy/useSystemSettingsWebSocket";
+import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
 import { useStore } from "../../store/useStore";
 import { extractBackgroundSettings } from "../../utils/extractBackgroundSettings";
 // Brand New Backgrounds
@@ -40,7 +40,7 @@ type MixBlendMode =
 // BackgroundEffects is the main component that mixes and handles all the background effects
 export const BackgroundEffects: React.FC = () => {
   const { uiDebug } = useStore();
-  const { settings } = useSystemSettingsWebSocket();
+  const { settings } = useSystemSettings();
 
   // Get background settings, with fallback to defaults
   const backgroundSettings = extractBackgroundSettings(settings);

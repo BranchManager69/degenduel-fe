@@ -1,17 +1,23 @@
 import React from "react";
 
-import { ServiceNode } from "../../../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { useStore } from "../../../store/useStore";
+import {
+  NodeConnection,
+  NodeStatus,
+  ServiceNode,
+  SkyDuelAlert,
+  SkyDuelStoreState
+} from "./types";
 
 interface ServiceDetailsProps {
   nodeId: string;
 }
 
 export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
-  const { skyDuel } = useStore();
+  const { skyDuel } = useStore() as SkyDuelStoreState;
 
   // Find the selected node
-  const node = skyDuel.nodes.find((n) => n.id === nodeId);
+  const node = skyDuel.nodes.find((n: ServiceNode) => n.id === nodeId);
 
   if (!node) {
     return (
@@ -19,32 +25,44 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
     );
   }
 
-  const getStatusColor = (status: ServiceNode["status"]) => {
+  const getStatusColor = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "bg-emerald-500";
       case "degraded":
         return "bg-amber-500";
+      case "warning":
+        return "bg-amber-500";
       case "offline":
+        return "bg-red-500";
+      case "error":
         return "bg-red-500";
       case "restarting":
         return "bg-blue-500";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "bg-gray-500";
     }
   };
 
-  const getStatusLabel = (status: ServiceNode["status"]) => {
+  const getStatusLabel = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "Online";
       case "degraded":
         return "Degraded";
+      case "warning":
+        return "Warning";
       case "offline":
         return "Offline";
+      case "error":
+        return "Error";
       case "restarting":
         return "Restarting";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "Unknown";
     }
   };
@@ -72,21 +90,27 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
     return `${days} day${days > 1 ? "s" : ""} ${hours} hour${hours > 1 ? "s" : ""}`;
   };
 
+  // Define interface for connection objects with node information
+  interface ConnectionWithNode {
+    connection: NodeConnection;
+    node: ServiceNode | undefined;
+  }
+
   // Find connected services
-  const connectedTo = skyDuel.connections
-    .filter((conn) => conn.source === nodeId)
-    .map((conn) => {
-      const targetNode = skyDuel.nodes.find((n) => n.id === conn.target);
+  const connectedTo: ConnectionWithNode[] = skyDuel.connections
+    .filter((conn: NodeConnection) => conn.sourceId === nodeId)
+    .map((conn: NodeConnection) => {
+      const targetNode = skyDuel.nodes.find((n: ServiceNode) => n.id === conn.targetId);
       return {
         connection: conn,
         node: targetNode,
       };
     });
 
-  const connectedFrom = skyDuel.connections
-    .filter((conn) => conn.target === nodeId)
-    .map((conn) => {
-      const sourceNode = skyDuel.nodes.find((n) => n.id === conn.source);
+  const connectedFrom: ConnectionWithNode[] = skyDuel.connections
+    .filter((conn: NodeConnection) => conn.targetId === nodeId)
+    .map((conn: NodeConnection) => {
+      const sourceNode = skyDuel.nodes.find((n: ServiceNode) => n.id === conn.sourceId);
       return {
         connection: conn,
         node: sourceNode,
@@ -95,15 +119,17 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
 
   // Get connection status color
   const getConnectionStatusColor = (
-    status: "active" | "degraded" | "failed",
+    status: NodeConnection["status"],
   ) => {
     switch (status) {
       case "active":
         return "text-emerald-500";
       case "degraded":
         return "text-amber-500";
-      case "failed":
+      case "error":
         return "text-red-500";
+      case "inactive":
+        return "text-gray-500";
       default:
         return "text-gray-500";
     }
@@ -236,7 +262,7 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
             <div className="space-y-2">
               {connectedTo.map(({ connection, node }) => (
                 <div
-                  key={connection.target}
+                  key={connection.targetId}
                   className="flex items-center justify-between p-2 rounded bg-dark-700/50"
                 >
                   <div className="flex items-center">
@@ -246,11 +272,11 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
                       →
                     </span>
                     <span className="text-gray-300">
-                      {node?.name || connection.target}
+                      {node?.name || connection.targetId}
                     </span>
                   </div>
                   <div className="text-xs text-gray-400">
-                    {connection.latency}ms | {connection.throughput}/s
+                    {connection.metrics?.latency || 0}ms | {connection.metrics?.throughput || 0}/s
                   </div>
                 </div>
               ))}
@@ -264,7 +290,7 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
             <div className="space-y-2">
               {connectedFrom.map(({ connection, node }) => (
                 <div
-                  key={connection.source}
+                  key={connection.sourceId}
                   className="flex items-center justify-between p-2 rounded bg-dark-700/50"
                 >
                   <div className="flex items-center">
@@ -274,11 +300,11 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
                       ←
                     </span>
                     <span className="text-gray-300">
-                      {node?.name || connection.source}
+                      {node?.name || connection.sourceId}
                     </span>
                   </div>
                   <div className="text-xs text-gray-400">
-                    {connection.latency}ms | {connection.throughput}/s
+                    {connection.metrics?.latency || 0}ms | {connection.metrics?.throughput || 0}/s
                   </div>
                 </div>
               ))}
@@ -300,7 +326,7 @@ export const ServiceDetails: React.FC<ServiceDetailsProps> = ({ nodeId }) => {
             Alerts ({node.alerts.length})
           </h4>
           <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-            {node.alerts.map((alert) => (
+            {node.alerts.map((alert: SkyDuelAlert) => (
               <div
                 key={alert.id}
                 className={`p-2 rounded-lg text-sm ${

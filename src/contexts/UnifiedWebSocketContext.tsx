@@ -52,6 +52,7 @@ export interface UnifiedWebSocketContextType {
   // Connection state
   isConnected: boolean;
   isAuthenticated: boolean;
+  isReadyForSecureInteraction: boolean;
   connectionState: ConnectionState;
   connectionError: string | null;
   
@@ -216,23 +217,53 @@ export const UnifiedWebSocketProvider: React.FC<{
   const handleMessage = (event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data);
-      
-      // Handle system messages
+      authDebug('WebSocketContext', 'Raw message received:', message); // Log raw message
+
+      // Handle system messages like pong
       if (message.type === 'SYSTEM' && message.action === 'pong') {
-        // Reset heartbeat counter
         missedHeartbeatsRef.current = 0;
         return;
-      } else if (message.type === 'ACKNOWLEDGMENT' && message.message?.includes('authenticated')) {
-        // Authentication successful
-        setConnectionState(ConnectionState.AUTHENTICATED);
-        authDebug('WebSocketContext', 'WebSocket authentication successful');
+      }
+      // Handle explicit PONG type if backend sends it
+      if (message.type === DDExtendedMessageType.PONG) { // Assuming PONG is in DDExtendedMessageType
+        missedHeartbeatsRef.current = 0;
+        authDebug('WebSocketContext', 'Pong received');
         return;
       }
       
-      // Distribute message to listeners
+      // Handle successful authentication ACK from server
+      if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && message.message?.includes('authenticated')) {
+        setConnectionState(ConnectionState.AUTHENTICATED);
+        authDebug('WebSocketContext', 'WebSocket authentication successful via ACK');
+        return;
+      }
+
+      // Handle WebSocket Authentication Error (token_expired or other auth issues from WS message)
+      if (message.type === DDExtendedMessageType.ERROR && message.code === 4401 && message.reason === 'token_expired') {
+        authDebug('WebSocketContext', 'WebSocket auth error: Token expired (4401)', message);
+        // Even if WS token is bad, the main session might still be valid or renewable.
+        // Trigger a global auth check. If that also determines the session is invalid (e.g., main JWT also expired), `authService` should then handle the full logout.
+        // Do not set connectionState to ERROR here, as the connection itself might be fine.
+        // The key is that this specific WebSocket session is not AUTHENTICATED.
+        if (connectionState === ConnectionState.AUTHENTICATING || connectionState === ConnectionState.AUTHENTICATED) {
+          setConnectionState(ConnectionState.CONNECTED); // Revert to CONNECTED, not authenticated for secure topics
+        }
+        // Potentially dispatch an event that authService or UnifiedAuthContext can listen to, to trigger re-auth or logout.
+        // For now, let's call authService.checkAuth() which might lead to logout if main tokens are also bad.
+        authService.checkAuth().then(isValidSession => {
+          if (!isValidSession) {
+            authDebug('WebSocketContext', 'Global auth check failed after WS token expiry, full logout likely.');
+            // authService.logout(); // checkAuth should handle logout if necessary
+          }
+        });
+        // Do not distribute this specific error message further if it's just for WS auth status.
+        return; 
+      }
+      
+      // Distribute other messages to listeners
       distributeMessage(message);
     } catch (error) {
-      console.error('Error processing WebSocket message:', error);
+      console.error('Error processing WebSocket message:', error, 'Raw data:', event.data);
     }
   };
   
@@ -634,12 +665,14 @@ export const UnifiedWebSocketProvider: React.FC<{
   const isConnected = connectionState === ConnectionState.CONNECTED || 
                       connectionState === ConnectionState.AUTHENTICATED;
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
+  const isReadyForSecureInteraction = isAuthenticated;
   
   // Create context value
   const contextValue: UnifiedWebSocketContextType = {
     // Connection state
     isConnected,
     isAuthenticated,
+    isReadyForSecureInteraction,
     connectionState,
     connectionError,
     

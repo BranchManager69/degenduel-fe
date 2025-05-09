@@ -1,71 +1,60 @@
 import React from "react";
 
-import { ServiceNode } from "../../../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { useStore } from "../../../store/useStore";
+import { NodeStatus, ServiceNode } from "./types";
 
 export const ServiceCircuitView: React.FC = () => {
   const { skyDuel, setSkyDuelSelectedNode } = useStore();
 
-  const getStatusColor = (status: ServiceNode["status"]) => {
+  const getStatusColor = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
       case "degraded":
+      case "warning":
         return "bg-amber-500/10 border-amber-500/20 text-amber-400";
       case "offline":
+      case "error":
         return "bg-red-500/10 border-red-500/20 text-red-400";
       case "restarting":
         return "bg-blue-500/10 border-blue-500/20 text-blue-400";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "bg-gray-500/10 border-gray-500/20 text-gray-400";
     }
   };
 
   const getCircuitIcon = (node: ServiceNode) => {
-    // Determine circuit state based on error rate and status
-    if (node.status === "offline") return "✕"; // Definitely open
-    if (node.metrics.errorRate > 50) return "↻"; // Half-open
-    if (node.metrics.errorRate > 10) return "⚠"; // Warning
-    return "✓"; // Closed/healthy
+    if (node.status === "offline" || node.status === "error") return "✕";
+    if (node.metrics.errorRate > 50) return "↻";
+    if (node.metrics.errorRate > 10 || node.status === "warning" || node.status === "degraded") return "⚠";
+    return "✓";
   };
 
-  const getCircuitState = (node: ServiceNode) => {
-    if (node.status === "offline") return "open";
+  const getCircuitState = (node: ServiceNode): "open" | "half-open" | "degraded" | "closed" => {
+    if (node.status === "offline" || node.status === "error") return "open";
     if (node.metrics.errorRate > 50) return "half-open";
-    if (node.metrics.errorRate > 10) return "degraded";
+    if (node.metrics.errorRate > 10 || node.status === "warning" || node.status === "degraded" || node.status === "restarting") return "degraded";
     return "closed";
   };
 
-  // Calculate health threshold
   const getCircuitHealthProgress = (node: ServiceNode) => {
-    // Use error rate as inverse of health
-    return 100 - Math.min(100, node.metrics.errorRate * 2); // Scale for better visual
+    return 100 - Math.min(100, node.metrics.errorRate * 2);
   };
 
-  // Sort nodes by health (least healthy first)
-  const sortedNodes = [...skyDuel.nodes].sort((a, b) => {
-    // First by circuit state severity
-    const stateOrder = {
-      open: 0,
-      "half-open": 1,
-      degraded: 2,
-      closed: 3,
-    };
-
+  const sortedNodes: ServiceNode[] = [...skyDuel.nodes].sort((a, b) => {
+    const stateOrder = { open: 0, "half-open": 1, degraded: 2, closed: 3 };
     const aState = getCircuitState(a);
     const bState = getCircuitState(b);
-
     if (stateOrder[aState] !== stateOrder[bState]) {
       return stateOrder[aState] - stateOrder[bState];
     }
-
-    // Then by health (error rate)
     return b.metrics.errorRate - a.metrics.errorRate;
   });
 
   return (
     <div className="h-full overflow-auto">
-      {/* System Health Summary */}
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-gray-100 mb-3">
           Circuit Breaker Status
@@ -77,7 +66,9 @@ export const ServiceCircuitView: React.FC = () => {
               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
               : skyDuel.systemStatus.overall === "degraded"
                 ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                : "bg-red-500/10 border-red-500/20 text-red-400"
+                : skyDuel.systemStatus.overall === "critical"
+                  ? "bg-red-500/10 border-red-500/20 text-red-400"
+                  : "bg-gray-500/10 border-gray-500/20 text-gray-400"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -88,7 +79,9 @@ export const ServiceCircuitView: React.FC = () => {
                     ? "bg-emerald-500"
                     : skyDuel.systemStatus.overall === "degraded"
                       ? "bg-amber-500"
-                      : "bg-red-500"
+                      : skyDuel.systemStatus.overall === "critical"
+                        ? "bg-red-500"
+                        : "bg-gray-500"
                 }`}
               ></div>
               <span className="font-medium">
@@ -96,15 +89,12 @@ export const ServiceCircuitView: React.FC = () => {
               </span>
             </div>
             <span className="text-sm">
-              {skyDuel.nodes.filter((n) => n.status !== "online").length}{" "}
-              service
-              {skyDuel.nodes.filter((n) => n.status !== "online").length !== 1
-                ? "s"
-                : ""}{" "}
-              in degraded state
+              {skyDuel.nodes.filter((n) => n.status !== "online").length} service(s) in degraded state
             </span>
           </div>
-          <div className="text-sm mt-2">{skyDuel.systemStatus.message}</div>
+          <div className="text-xs mt-1 text-gray-400">
+             (Services: Online: {skyDuel.systemStatus.services.online}, Degraded: {skyDuel.systemStatus.services.degraded}, Offline: {skyDuel.systemStatus.services.offline})
+          </div>
         </div>
       </div>
 

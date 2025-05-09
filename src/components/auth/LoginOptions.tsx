@@ -12,8 +12,9 @@
 // import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; // REMOVED
 import { useEffect, useState } from 'react';
 import { usePrivyAuth } from "../../contexts/PrivyAuthContext";
-import useBiometricAuth from "../../hooks/auth/legacy/useBiometricAuth";
+import { useBiometricAuth } from "../../hooks/auth"; // Only useBiometricAuth
 import { useStore } from "../../store/useStore";
+import { Button } from "../ui/Button";
 import {
   Card,
   CardContent,
@@ -24,6 +25,7 @@ import {
 } from "../ui/Card";
 import { Divider } from "../ui/Divider";
 import BiometricAuthButton from "./BiometricAuthButton";
+import ConnectWalletButton from "./ConnectWalletButton";
 import ConsolidatedLoginButton from "./ConsolidatedLoginButton";
 import PrivyLoginButton from "./PrivyLoginButton";
 import TwitterLoginButton from "./TwitterLoginButton";
@@ -39,15 +41,27 @@ const LoginOptions = () => {
   const { isPrivyLinked, linkPrivyToWallet, isLoading: privyLoading } = usePrivyAuth();
   const { user } = useStore();
   const [isLinking, setIsLinking] = useState(false);
-  const { isAvailable, isRegistered } = useBiometricAuth();
+  const { 
+    isAvailable,
+    isRegistered,
+    authenticate,
+    error: biometricError
+  } = useBiometricAuth();
   const [showBiometricOption, setShowBiometricOption] = useState(false);
   
-  // Check if biometric auth is available and the user has a registered credential
   useEffect(() => {
     if (isAvailable && isRegistered) {
       setShowBiometricOption(true);
+    } else {
+      setShowBiometricOption(false);
     }
   }, [isAvailable, isRegistered]);
+  
+  useEffect(() => {
+    if (biometricError) {
+      console.warn("Biometric Auth Hook Error:", biometricError);
+    }
+  }, [biometricError]);
   
   // Function to handle linking Privy to wallet
   const handleLinkPrivy = async () => {
@@ -63,6 +77,16 @@ const LoginOptions = () => {
       console.error('Error linking Privy account:', error);
     } finally {
       setIsLinking(false);
+    }
+  };
+  
+  const handleBiometricAuth = async () => {
+    if (authenticate && isAvailable) {
+      try {
+        await authenticate(user?.id || "No user ID found");
+      } catch (err) {
+        console.error("Biometric auth failed during prompt:", err);
+      }
     }
   };
   
@@ -127,11 +151,14 @@ const LoginOptions = () => {
               
               {/* Desktop view: Traditional multi-button display (hidden on mobile) */}
               <div className="hidden md:block space-y-4">
-                {/* Wallet login - REMOVED WalletMultiButton */}
-                {/* <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
+                {/* Wallet Connect Button */}
+                <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
                   <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-colors duration-300"></div>
-                  <WalletMultiButton className="w-full h-12 bg-transparent hover:bg-transparent font-cyber !rounded-md" />
-                </div> */}
+                  <ConnectWalletButton 
+                    className="w-full h-12"
+                    size="lg"
+                  />
+                </div>
                 
                 <div className="relative">
                   <Divider>
@@ -173,6 +200,29 @@ const LoginOptions = () => {
                 <ConsolidatedLoginButton />
               </div>
             </div>
+          </>
+        )}
+
+        {showBiometricOption && (
+          <>
+            <div className="relative">
+              <Divider>
+                <span className="px-3 text-xs font-semibold text-gray-400 bg-dark-200 rounded-full">
+                  or continue with
+                </span>
+              </Divider>
+            </div>
+            <Button 
+              variant="outline"
+              className="w-full justify-center py-3 mt-2 text-sm border-dark-300 hover:bg-dark-400/50 space-x-2"
+              onClick={handleBiometricAuth}
+              disabled={!isAvailable}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.789-2.756 9.362m-3.612-3.612A9.006 9.006 0 012.884 12c0-1.033.167-2.024.473-2.955m17.213 0A9.006 9.006 0 0112 2.884c-1.033 0-2.024.167-2.955.473m12.322 8.643L12 17.75M3.937 9.362L12 6.25m0 0L20.063 9.362M12 6.25V3m0 3.25V1m0 0v2.25" />
+              </svg>
+              <span>Sign in with Passkey / Biometrics</span>
+            </Button>
           </>
         )}
       </CardContent>

@@ -126,20 +126,20 @@ export const WEBSOCKET_SYSTEM_DEPRECATED = true;
 
 // Legacy hooks (still exported for backward compatibility)
 // These will gradually be replaced with standardized topic-based hooks
-export * from './legacy/useAchievementWebSocket'; // DEPRECATED - use topic-hooks/useAchievements instead
-export * from './legacy/useAnalyticsWebSocket';
-export * from './legacy/useCircuitBreakerSocket'; // DEPRECATED - use topic-hooks/useCircuitBreaker instead
-export * from './legacy/useContestChatWebSocket'; // DEPRECATED - use topic-hooks/useContestChat instead
-export * from './legacy/useContestWebSocket'; // DEPRECATED - use topic-hooks/useContests instead
-// useMarketDataWebSocket removed - use topic-hooks/useMarketData instead
-export * from './legacy/useNotificationWebSocket'; // DEPRECATED - use topic-hooks/useNotifications instead
-export * from './legacy/usePortfolioWebSocket'; // DEPRECATED - use topic-hooks/usePortfolio instead
-export * from './legacy/useRPCBenchmarkWebSocket'; // DEPRECATED - use topic-hooks/useRPCBenchmark instead
-export * from './legacy/useServerStatusWebSocket'; // DEPRECATED - use topic-hooks/useServerStatus instead
-export * from './legacy/useServiceWebSocket'; // DEPRECATED - use topic-hooks/useService instead
-export * from './legacy/useSkyDuelWebSocket'; // DEPRECATED - use topic-hooks/useSkyDuel instead
-export * from './legacy/useSystemSettingsWebSocket'; // DEPRECATED - use topic-hooks/useSystemSettings instead
-// useTokenDataWebSocket removed - use topic-hooks/useTokenData instead
-export * from './legacy/useWalletWebSocket'; // DEPRECATED - use topic-hooks/useWallet instead
+// export * from './legacy/useAchievementWebSocket'; // DEPRECATED - REMOVE
+// export * from './legacy/useAnalyticsWebSocket'; // DEPRECATED - REMOVE
+// export * from './legacy/useContestChatWebSocket'; // DEPRECATED - REMOVE (also resolves ChatParticipant ambiguity)
+// export * from './legacy/useContestWebSocket'; // DEPRECATED - REMOVE
+
+// Keep other legacy exports if they are still valid and used, or remove them too if obsolete.
+// For now, only removing the ones that caused direct linter errors.
+export * from './legacy/useCircuitBreakerSocket';
+export * from './legacy/usePortfolioWebSocket';
+export * from './legacy/useRPCBenchmarkWebSocket';
+export * from './legacy/useServerStatusWebSocket';
+export * from './legacy/useServiceWebSocket';
+export * from './legacy/useSkyDuelWebSocket';
+export * from './legacy/useSystemSettingsWebSocket';
+export * from './legacy/useWalletWebSocket';
 export * from './legacy/useWebSocket';
 

@@ -7,6 +7,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
+import {
+  DDWebSocketActions,
+  DDWebSocketMaintenanceModeUpdatePayload,
+  DDWebSocketMessageType,
+  DDWebSocketTopic
+} from '../../../websocket-types-implementation'; // Import new types/actions
 import { SOCKET_TYPES, WEBSOCKET_ENDPOINT } from '../types';
 import useWebSocket from './useWebSocket';
 
@@ -42,7 +48,7 @@ export function useSystemSettingsWebSocket() {
   // Connect to the WebSocket using the standardized hook
   const { 
     status, 
-    data, 
+    data: incomingData, // Rename incoming data to avoid conflict with state name 
     error,
     send,
     connect,
@@ -89,26 +95,51 @@ export function useSystemSettingsWebSocket() {
 
   // Process messages from the WebSocket
   useEffect(() => {
-    if (!data) return;
+    if (!incomingData) return;
     
     try {
-      // Only process relevant messages
-      if (data.type === "SYSTEM_SETTINGS_UPDATE" && data.data) {
-        console.log("Received system settings update:", data.data);
-        setSettings(data.data);
+      // Assuming messages adhere to a structure with type, action, data
+      const message = incomingData as any; // Cast for easier access, refine if possible
+
+      // Handle full settings update
+      if (message.type === "SYSTEM_SETTINGS_UPDATE" && message.data) { // Check existing type string
+        console.log("Received system settings update:", message.data);
+        setSettings(message.data);
         setIsLoading(false);
         setLastUpdated(new Date());
         
         dispatchWebSocketEvent('system_settings_update', {
           socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
           message: 'System settings updated',
-          hasBackgroundScene: !!data.data.background_scene,
+          hasBackgroundScene: !!message.data.background_scene,
           timestamp: new Date().toISOString()
         });
-      } else if (data.type === "ERROR") {
+      } 
+      // Handle specific maintenance mode update
+      else if (message.type === DDWebSocketMessageType.DATA && 
+               message.topic === DDWebSocketTopic.SYSTEM && 
+               message.action === DDWebSocketActions.MAINTENANCE_MODE_UPDATE && 
+               message.data) 
+      { 
+        const payload = message.data as DDWebSocketMaintenanceModeUpdatePayload;
+        console.log('[useSystemSettingsWebSocket] Received MAINTENANCE_MODE_UPDATE:', payload);
+        // Update only the maintenanceMode part of the settings state
+        setSettings(prevSettings => ({
+          ...prevSettings, // Keep existing settings (like background)
+          maintenanceMode: payload.enabled // Update maintenanceMode
+        }));
+        setIsLoading(false); // Assume we are loaded if we get this specific update
+        setLastUpdated(new Date());
+        dispatchWebSocketEvent('maintenance_mode_update', {
+           socketType: SOCKET_TYPES.SYSTEM,
+           enabled: payload.enabled,
+           timestamp: new Date().toISOString()
+        });
+      }
+      else if (message.type === DDWebSocketMessageType.ERROR) { // Use Enum
         dispatchWebSocketEvent('error', {
-          socketType: SOCKET_TYPES.SYSTEM, // Changed from SYSTEM_SETTINGS to SYSTEM per v69 API
-          message: data.error || data.message || 'Unknown system settings error',
+          socketType: SOCKET_TYPES.SYSTEM,
+          message: message.error || message.message || 'Unknown system settings error',
           timestamp: new Date().toISOString()
         });
       }
@@ -120,7 +151,7 @@ export function useSystemSettingsWebSocket() {
         error: err instanceof Error ? err.message : String(err)
       });
     }
-  }, [data]);
+  }, [incomingData]);
   
   // Handle errors
   useEffect(() => {

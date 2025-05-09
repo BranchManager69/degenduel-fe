@@ -26,15 +26,19 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
   position = 'top-right',
   showByDefault = false
 }) => {
-  const { 
-    isAuthenticated, 
-    isWalletConnected,
-    isFullyConnected, 
-    activeAuthMethod, 
-    authMethods,
-    walletAddress,
-    user
+  const {
+    user,
+    isLoading,
+    isAuthenticated,
+    isAdmin,
+    isSuperAdmin,
+    activeMethod,
+    isWalletAuth,
+    isPrivyAuth,
+    isTwitterAuth,
   } = useMigratedAuth();
+
+  const walletAddress = user?.wallet_address;
 
   const [isVisible, setIsVisible] = React.useState(showByDefault);
   
@@ -92,11 +96,16 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
       </div>
       
       <div className="grid grid-cols-1 gap-1">
-        <p><span className="text-gray-400">Authenticated:</span> {isAuthenticated ? '✅' : '❌'}</p>
-        <p><span className="text-gray-400">Wallet Connected:</span> {isWalletConnected ? '✅' : '❌'}</p>
-        <p><span className="text-gray-400">Fully Connected:</span> {isFullyConnected ? '✅' : '❌'}</p>
-        <p><span className="text-gray-400">Active Method:</span> {activeAuthMethod || 'none'}</p>
-        <p><span className="text-gray-400">Wallet Address:</span> {walletAddress ? walletAddress.substring(0, 8) + '...' : 'none'}</p>
+        <p><span className="text-gray-400">Loading:</span> {isLoading ? "Yes" : "No"}</p>
+        <p><span className="text-gray-400">IsAuthenticated:</span> {isAuthenticated ? "Yes" : "No"}</p>
+        <p><span className="text-gray-400">User ID:</span> {user?.id || "N/A"}</p>
+        <p><span className="text-gray-400">Wallet Address:</span> {walletAddress || "N/A"}</p>
+        <p><span className="text-gray-400">Admin:</span> {isAdmin ? "Yes" : "No"}</p>
+        <p><span className="text-gray-400">SuperAdmin:</span> {isSuperAdmin ? "Yes" : "No"}</p>
+        <p><span className="text-gray-400">Active Method:</span> {activeMethod || "N/A"}</p>
+        <p><span className="text-gray-400">Is Wallet Auth Active:</span> {isWalletAuth() ? "Yes" : "No"}</p>
+        <p><span className="text-gray-400">Is Privy Auth Active:</span> {isPrivyAuth() ? "Yes" : "No"}</p>
+        <p><span className="text-gray-400">Is Twitter Auth Active:</span> {isTwitterAuth() ? "Yes" : "No"}</p>
         
         {user && (
           <div className="mt-2">
@@ -112,7 +121,11 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
         <div className="mt-2">
           <p className="text-gray-400 font-bold">Auth Methods:</p>
           <pre className="overflow-x-auto bg-gray-900/50 p-2 rounded mt-1 text-[10px] max-h-40 overflow-y-auto">
-            {JSON.stringify(authMethods, null, 2)}
+            {JSON.stringify({
+              wallet: isWalletAuth(),
+              privy: isPrivyAuth(),
+              twitter: isTwitterAuth(),
+            }, null, 2)}
           </pre>
         </div>
       </div>

@@ -20,7 +20,8 @@ export enum DDWebSocketTopic {
   WALLET_BALANCE = 'wallet-balance',
   SKYDUEL = 'skyduel',
   TERMINAL = 'terminal',
-  LOGS = 'logs'
+  LOGS = 'logs',
+  LAUNCH_EVENTS = 'launch_events'
 }
 
 /**
@@ -84,10 +85,12 @@ export enum DDWebSocketActions {
   // ========== SYSTEM topic actions ==========
   GET_STATUS = 'getStatus',
   GET_SETTINGS = 'getSettings',
-  STATUS_UPDATE = 'statusUpdate',  // Changed from status_update to follow camelCase pattern
+  STATUS_UPDATE = 'statusUpdate',
   SYSTEM_ALERT = 'systemAlert',
   SYSTEM_NOTIFICATION = 'systemNotification',
   MAINTENANCE_STATUS = 'maintenanceStatus',
+  MAINTENANCE_MODE_UPDATE = 'maintenanceModeUpdate',
+  SETTINGS_UPDATE = 'settingsUpdate',
   
   // ========== WALLET topic actions ==========
   // Transaction-related actions
@@ -164,6 +167,7 @@ export enum DDWebSocketActions {
   GET_NOTIFICATIONS = 'getNotifications',
   MARK_AS_READ = 'markAsRead',
   CLEAR_NOTIFICATIONS = 'clearNotifications',
+  MARK_ALL_AS_READ = 'markAllAsRead',
   
   // ========== SKYDUEL topic actions ==========
   GET_GAME_STATE = 'getGameState',
@@ -198,6 +202,10 @@ export enum DDWebSocketActions {
   CREATE_VANITY_WALLET = 'createVanityWallet',
   CHECK_VANITY_POOL = 'checkVanityPool',
   
+  // ========== LAUNCH_EVENTS topic actions ==========
+  ADDRESS_REVEALED = 'addressRevealed',
+  GET_LAUNCH_STATUS = 'getLaunchStatus',
+  
   // ========== Subscription actions for all topics ==========
   SUBSCRIBE = 'subscribe',
   UNSUBSCRIBE = 'unsubscribe',
@@ -208,7 +216,37 @@ export enum DDWebSocketActions {
   GET_BY_ID = 'getById',
   CREATE = 'create',
   UPDATE = 'update',
-  DELETE = 'delete'
+  DELETE = 'delete',
+  
+  // ========== CONTEST topic actions (continued, or new section for view updates) ==========
+  // From FE_WEBSOCKETS_CONTESTS.md for contest view updates
+  LEADERBOARD_UPDATE = 'leaderboardUpdate', // Standardized to camelCase value
+  PARTICIPANT_UPDATE = 'participantUpdate', // Standardized to camelCase value
+  
+  // Ensure NEW_MESSAGE is also here if used by chat, though chat uses its own hook
+  // For consistency, if action strings are shared, they should be in this central enum.
+  // The chat hook (useContestChat) might reference actions like GET_MESSAGES, SEND_MESSAGE etc.
+  // which are already in DDWebSocketActions.
+
+  // ADDED FOR CONTEST_CHAT in useContestChat - ensure these are sensible & match backend
+  // GET_MESSAGES = 'getMessages', // Already exists
+  // SEND_MESSAGE = 'sendMessage', // Already exists
+  // DELETE_MESSAGE = 'deleteMessage', // Already exists
+  // PIN_MESSAGE = 'pinMessage', // Already exists
+
+  // Add any other actions from FE_WEBSOCKETS_CONTESTS.md if they are distinct and needed
+  // For example, the doc mentions "NEW_MESSAGE" for chat, if that's a specific action string.
+  // For now, only adding the ones for the useContestViewUpdates hook.
+
+  // Ensure common actions like SUBSCRIBE, UNSUBSCRIBE, REFRESH, GET_ALL etc. are at the end or grouped logically
+  // SUBSCRIBE = 'subscribe', // Already exists
+  // UNSUBSCRIBE = 'unsubscribe', // Already exists
+  // REFRESH = 'refresh', // Already exists
+  // GET_ALL = 'getAll', // Already exists
+  // GET_BY_ID = 'getById', // Already exists
+  // CREATE = 'create', // Already exists
+  // UPDATE = 'update', // Already exists
+  // DELETE = 'delete' // Already exists
 }
 
 /**
@@ -293,4 +331,32 @@ export interface DDWebSocketAcknowledgmentMessage extends DDWebSocketMessage {
 export interface DDWebSocketSystemMessage extends DDWebSocketMessage {
   type: DDWebSocketMessageType.SYSTEM;
   data: any;
+}
+
+// Define payload for the ADDRESS_REVEALED message
+export interface DDWebSocketLaunchAddressRevealedPayload {
+  contractAddress: string;
+  revealTime: string; // ISO timestamp of when reveal happened on server
+}
+
+// Extend DDWebSocketDataMessage potentially or create specific type
+export interface DDWebSocketLaunchDataMessage extends DDWebSocketMessage {
+  type: DDWebSocketMessageType.DATA;
+  topic: DDWebSocketTopic.LAUNCH_EVENTS;
+  action?: DDWebSocketActions.ADDRESS_REVEALED; // Action might be included
+  data: DDWebSocketLaunchAddressRevealedPayload;
+}
+
+// Define payload for MAINTENANCE_MODE_UPDATE message
+export interface DDWebSocketMaintenanceModeUpdatePayload {
+  enabled: boolean;
+  timestamp?: string; // Optional timestamp from server
+}
+
+// Potentially extend DDWebSocketDataMessage or create specific type if needed
+export interface DDWebSocketSystemDataMessage extends DDWebSocketMessage {
+  type: DDWebSocketMessageType.DATA;
+  topic: DDWebSocketTopic.SYSTEM;
+  action?: DDWebSocketActions.MAINTENANCE_MODE_UPDATE | DDWebSocketActions.STATUS_UPDATE | string; // Allow known actions
+  data: DDWebSocketMaintenanceModeUpdatePayload | any; // Use specific payload or allow any
 }

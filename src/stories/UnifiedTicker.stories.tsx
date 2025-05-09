@@ -1,9 +1,9 @@
-import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { UnifiedTicker } from '../components/layout/UnifiedTicker';
 import { EdgeToEdgeTicker } from '../components/layout/EdgeToEdgeTicker';
-import { Contest, TokenData } from '../types';
+import { UnifiedTicker } from '../components/layout/UnifiedTicker';
+import { Contest, ContestSettings, TokenData } from '../types';
 
 /**
  * # UnifiedTicker Component 2.0 🚀
@@ -301,185 +301,51 @@ const TickerStoryWrapper: React.FC<any> = (props) => {
 
 // Helper function to calculate contest prize pool
 const calculatePrizePool = (entryFee: string, participantCount: number, maxParticipants: number, basePrize: string): string => {
-  return (parseFloat(basePrize) * (participantCount / maxParticipants) + 
-          (parseFloat(entryFee) * participantCount)).toFixed(2);
+  const currentParticipants = Math.min(participantCount, maxParticipants);
+  return (parseFloat(basePrize) * (currentParticipants / maxParticipants) + 
+          (parseFloat(entryFee) * currentParticipants)).toFixed(2);
 };
 
-// Generate mock contest data with diverse examples
+// Generate mock contest data with diverse examples - UPDATED
 const generateMockContests = (): Contest[] => {
-  return [
-    {
-      id: 1,
-      name: 'Moon Shot Masters',
-      description: 'Race to the moon with the hottest tokens',
-      entry_fee: '1.50',
-      prize_pool: '300.00',
-      current_prize_pool: calculatePrizePool('1.50', 120, 200, '300.00'),
-      start_time: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1 hour ago
-      end_time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      participant_count: 120,
-      status: 'active',
-      settings: {
-        difficulty: 'dolphin',
-        min_trades: 1,
-        token_types: ['all'],
-        rules: [{ id: '1', title: 'Rule 1', description: 'Description 1' }]
-      },
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-      min_participants: 10,
-      max_participants: 200,
-      contest_code: 'MSM001'
-    },
-    {
-      id: 2,
-      name: 'Diamond Hands Challenge',
-      description: 'Hold tight and show your diamond hands',
-      entry_fee: '0.50',
-      prize_pool: '100.00',
-      current_prize_pool: calculatePrizePool('0.50', 75, 100, '100.00'),
-      start_time: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
-      end_time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(), // 3 hours from now
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      participant_count: 75,
-      status: 'pending',
-      settings: {
-        difficulty: 'squid',
-        min_trades: 2,
-        token_types: ['defi', 'gaming'],
-        rules: [{ id: '1', title: 'Rule 1', description: 'Description 1' }]
-      },
-      created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      min_participants: 5,
-      max_participants: 100,
-      contest_code: 'DHS002'
-    },
-    {
-      id: 3,
-      name: 'Crypto Titans',
-      description: 'The ultimate battle of crypto giants',
-      entry_fee: '3.00',
-      prize_pool: '450.00',
-      current_prize_pool: '450.00', // Already full
-      start_time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      end_time: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), // 4 hours from now
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      participant_count: 50,
-      status: 'active',
-      settings: {
-        difficulty: 'whale',
-        min_trades: 3,
-        token_types: ['all'],
-        rules: [{ id: '1', title: 'Rule 1', description: 'Description 1' }]
-      },
-      created_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-      min_participants: 20,
-      max_participants: 50,
-      contest_code: 'CTT003'
-    },
-    {
-      id: 4,
-      name: 'Weekend Warriors',
-      description: 'Weekend trading competition for casual traders',
-      entry_fee: '1.00',
-      prize_pool: '100.00',
-      current_prize_pool: calculatePrizePool('1.00', 45, 50, '100.00'),
-      start_time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-      end_time: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      participant_count: 45,
-      status: 'completed',
-      settings: {
-        difficulty: 'tadpole',
-        min_trades: 1,
-        token_types: ['meme', 'gaming'],
-        rules: [{ id: '1', title: 'Rule 1', description: 'Description 1' }]
-      },
-      created_at: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-      min_participants: 10,
-      max_participants: 50,
-      contest_code: 'WW004'
-    },
-    {
-      id: 5,
-      name: 'NFT Showdown',
-      description: 'Contest focused only on NFT-related tokens',
-      entry_fee: '2.00',
-      prize_pool: '200.00',
-      current_prize_pool: calculatePrizePool('2.00', 25, 75, '200.00'),
-      start_time: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-      end_time: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours from now
-      allowed_buckets: [4, 5, 6], // NFT-specific buckets
-      participant_count: 25,
-      status: 'active',
-      settings: {
-        difficulty: 'squid',
-        min_trades: 2,
-        token_types: ['nft', 'gaming'],
-        rules: [
-          { id: '1', title: 'NFT Focus', description: 'Only NFT-related tokens allowed' },
-          { id: '2', title: 'Min Hold Time', description: 'Must hold tokens for at least 1 hour' }
-        ]
-      },
-      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-      min_participants: 15,
-      max_participants: 75,
-      contest_code: 'NFTS005'
-    },
-    {
-      id: 6,
-      name: 'Micro Duels',
-      description: 'Low-cost contest with partial SOL entry fee',
-      entry_fee: '0.25',
-      prize_pool: '25.00',
-      current_prize_pool: calculatePrizePool('0.25', 15, 50, '25.00'),
-      start_time: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), // 6 hours from now
-      end_time: new Date(Date.now() + 30 * 60 * 60 * 1000).toISOString(), // 30 hours from now
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      participant_count: 15,
-      status: 'pending',
-      settings: {
-        difficulty: 'guppy',
-        min_trades: 1,
-        token_types: ['all'],
-        rules: [{ id: '1', title: 'Low Stakes', description: 'Perfect for beginners' }]
-      },
-      created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-      min_participants: 5,
-      max_participants: 50,
-      contest_code: 'MICRO006'
-    },
-    {
-      id: 7,
-      name: 'Precision Traders',
-      description: 'Contest with non-standard entry fee',
-      entry_fee: '1.75',
-      prize_pool: '175.00',
-      current_prize_pool: calculatePrizePool('1.75', 28, 100, '175.00'),
-      start_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
-      end_time: new Date(Date.now() + 21 * 60 * 60 * 1000).toISOString(), // 21 hours from now
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      participant_count: 28,
-      status: 'active',
-      settings: {
-        difficulty: 'dolphin',
-        min_trades: 2,
-        token_types: ['defi', 'layer1'],
-        rules: [{ id: '1', title: 'Rule 1', description: 'Description 1' }]
-      },
-      created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      min_participants: 10,
-      max_participants: 100,
-      contest_code: 'PREC007'
-    }
+  // Define a base structure for readability if many contests are similar
+  const contestTemplates = [
+    { id: 1, name: 'Moon Shot Masters', desc: 'Race to the moon...', entry: '1.50', prize: '300.00', part: 120, maxP: 200, minP: 10, status: 'active', diff: 'dolphin', tokens: ['all'], code: 'MSM001', spv: "1000" },
+    { id: 2, name: 'Diamond Hands Challenge', desc: 'Hold tight...', entry: '0.50', prize: '100.00', part: 75, maxP: 100, minP: 5, status: 'pending', diff: 'squid', tokens: ['defi', 'gaming'], code: 'DHS002', spv: "500" },
+    { id: 3, name: 'Crypto Titans', desc: 'Ultimate battle...', entry: '3.00', prize: '450.00', part: 50, maxP: 50, minP: 20, status: 'active', diff: 'whale', tokens: ['all'], code: 'CTT003', spv: "2000" },
+    { id: 4, name: 'Weekend Warriors', desc: 'Casual trading...', entry: '1.00', prize: '100.00', part: 45, maxP: 50, minP: 10, status: 'completed', diff: 'tadpole', tokens: ['meme', 'gaming'], code: 'WW004', spv: "100" },
+    { id: 5, name: 'NFT Showdown', desc: 'NFT focus...', entry: '2.00', prize: '200.00', part: 25, maxP: 75, minP: 15, status: 'active', diff: 'squid', tokens: ['nft', 'gaming'], code: 'NFTS005', spv: "500" },
+    { id: 6, name: 'Micro Duels', desc: 'Low-cost...', entry: '0.25', prize: '25.00', part: 15, maxP: 50, minP: 5, status: 'pending', diff: 'guppy', tokens: ['all'], code: 'MICRO006', spv: "50" },
+    { id: 7, name: 'Precision Traders', desc: 'Non-standard fee...', entry: '1.75', prize: '175.00', part: 28, maxP: 100, minP: 10, status: 'active', diff: 'dolphin', tokens: ['defi', 'layer1'], code: 'PREC007', spv: "1000" },
   ];
+
+  return contestTemplates.map((c, index) => ({
+    id: c.id,
+    name: c.name,
+    description: c.desc,
+    entry_fee: c.entry,
+    prize_pool: c.prize,
+    current_prize_pool: calculatePrizePool(c.entry, c.part, c.maxP, c.prize),
+    start_time: new Date(Date.now() - (index % 3) * 60 * 60 * 1000).toISOString(),
+    end_time: new Date(Date.now() + (index + 1) * 2 * 60 * 60 * 1000).toISOString(),
+    allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    participant_count: c.part,
+    status: c.status as Contest['status'],
+    min_participants: c.minP, // Top-level (snake_case) for Contest type
+    max_participants: c.maxP, // Top-level (snake_case) for Contest type
+    settings: { // New ContestSettings structure
+      difficulty: c.diff,
+      tokenTypesAllowed: c.tokens,
+      startingPortfolioValue: c.spv,
+      minParticipants: c.minP, // camelCase for new ContestSettings
+      maxParticipants: c.maxP, // camelCase for new ContestSettings
+    } as ContestSettings,
+    created_at: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - (index + 1) * 12 * 60 * 60 * 1000).toISOString(),
+    contest_code: c.code,
+    is_participating: index % 2 === 0, 
+    image_url: `https://picsum.photos/seed/tickercontest${c.id}/600/400` 
+  }));
 };
 
 // Define component metadata for storybook

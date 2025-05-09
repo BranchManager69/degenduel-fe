@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { FaTwitter } from "react-icons/fa";
 
@@ -29,106 +29,74 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
   className = "",
   onClick
 }) => {
-  const { 
+  const {
     user, 
     isLoading, 
-    linkTwitter, 
-    loginWithTwitter,
-    authMethods 
+    linkTwitter,
+    isTwitterLinked,
   } = useMigratedAuth();
   
-  const [isLinking, setIsLinking] = React.useState(false);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const isMounted = useRef(true);
 
-  // Determine if Twitter is linked from the authMethods
-  const isTwitterLinked = !!authMethods?.twitter?.linked;
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
-  // Handle Twitter auth based on mode
+  const actualIsTwitterLinked = isTwitterLinked();
+
   const handleTwitterAuth = async () => {
     authDebug('TwitterBtn', 'Twitter button clicked', { linkMode, hasUser: !!user });
-    
-    // Call the external onClick handler if provided
     if (onClick) onClick();
     
-    if (linkMode && user) {
-      // Link existing account
-      authDebug('TwitterBtn', 'Starting account linking flow', { userId: user.id });
-      setIsLinking(true);
-      try {
-        const redirectUrl = await linkTwitter();
-        if (redirectUrl) {
-          authDebug('TwitterBtn', 'Redirecting to Twitter for linking', { redirectUrl });
-          // Redirect to Twitter for linking, backend will handle callback
-          window.location.href = redirectUrl;
-          // Toast will be shown on callback by TwitterAuthContext or LoginPage
-        } else {
-          authDebug('TwitterBtn', 'Failed to initiate Twitter linking - no redirect URL');
-          toast.error("Failed to initiate Twitter linking.");
-        }
-      } catch (error) {
-        authDebug('TwitterBtn', 'Error linking Twitter account', { error });
-        toast.error("An error occurred while linking your Twitter account");
-        console.error("[Twitter] Link error:", error);
-      } finally {
-        setIsLinking(false);
-      }
-    } else {
-      // Normal login flow
-      authDebug('TwitterBtn', 'Starting Twitter login flow');
-      if (loginWithTwitter) {
-        const redirectUrl = await loginWithTwitter();
-        if (redirectUrl) {
-          authDebug('TwitterBtn', 'Redirecting to Twitter for login', { redirectUrl });
-          window.location.href = redirectUrl;
-        } else {
-          authDebug('TwitterBtn', 'Failed to initiate Twitter login - no redirect URL');
-          toast.error("Failed to initiate Twitter login.");
-        }
+    setIsProcessing(true);
+    try {
+      const redirectUrl = await linkTwitter();
+      if (redirectUrl) {
+        authDebug('TwitterBtn', `Redirecting to Twitter for ${linkMode ? 'linking' : 'login'}`, { redirectUrl });
+        window.location.href = redirectUrl;
       } else {
-        console.error("loginWithTwitter is not available on useMigratedAuth");
-        toast.error("Twitter login is currently unavailable.");
+        const errorMsg = `Failed to initiate Twitter ${linkMode ? 'linking' : 'login'} - no redirect URL`;
+        authDebug('TwitterBtn', errorMsg);
+        toast.error(errorMsg);
+      }
+    } catch (error) {
+      const errorMsg = `An error occurred during Twitter ${linkMode ? 'linking' : 'login'}`;
+      authDebug('TwitterBtn', errorMsg, { error });
+      toast.error(errorMsg);
+      console.error("[Twitter] Auth error:", error);
+    } finally {
+      if (isMounted.current) {
+         setIsProcessing(false);
       }
     }
   };
 
-  // If in link mode, we need to be logged in
   if (linkMode && !user) {
     return null;
   }
   
-  // If in link mode and Twitter is already linked, don't show the button
-  if (linkMode && isTwitterLinked) {
+  if (linkMode && actualIsTwitterLinked) {
     return null;
   }
 
-  // Check URL parameters for Twitter auth status
   React.useEffect(() => {
-    // This is also handled by the TwitterAuthContext, but we show toasts here
     const urlParams = new URLSearchParams(window.location.search);
-    
     authDebug('TwitterBtn', 'Checking URL parameters in button component', { 
-      params: Object.fromEntries(urlParams.entries()),
-      linkMode,
-      hasUser: !!user
+      params: Object.fromEntries(urlParams.entries()), linkMode, hasUser: !!user
     });
-    
     if (!linkMode && !user && urlParams.get("twitter") === "pending") {
       authDebug('TwitterBtn', 'Found twitter=pending parameter, showing toast');
       toast.error("Please connect your wallet to complete Twitter linking");
     }
-    
     if (urlParams.get("twitter_linked") === "true") {
       authDebug('TwitterBtn', 'Found twitter_linked=true parameter, showing success toast');
       toast.success("Twitter account linked successfully!");
-      
-      // Check for stored redirect path - don't remove it, just check
       const storedRedirectPath = localStorage.getItem("auth_redirect_path");
-      authDebug('TwitterBtn', 'Checking for stored redirect path', { 
-        hasStoredPath: !!storedRedirectPath,
-        path: storedRedirectPath || 'none'
-      });
-      
-      // Remove the query parameter to prevent showing toast on refresh
-      // But don't remove the stored path - it will be used by LoginPage
+      authDebug('TwitterBtn', 'Checking for stored redirect path', { hasStoredPath: !!storedRedirectPath, path: storedRedirectPath || 'none' });
       const url = new URL(window.location.href);
       url.searchParams.delete("twitter_linked");
       window.history.replaceState({}, "", url);
@@ -142,9 +110,9 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       variant={linkMode ? "outline" : "secondary"}
       className={`flex items-center justify-center gap-2 ${className}`}
       aria-label={linkMode ? "Link Twitter Account" : "Login with Twitter"}
-      disabled={isLoading || isLinking}
+      disabled={isLoading || isProcessing}
     >
-      {isLoading || isLinking ? (
+      {isLoading || isProcessing ? (
         <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
       ) : (
         <FaTwitter className="text-[#1DA1F2]" />

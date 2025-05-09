@@ -1,12 +1,11 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
-import { ContestButton } from "./ContestButton";
-import { ContestDifficulty } from "./ContestDifficulty";
 import { formatCurrency } from "../../../lib/utils";
-import { ContestStatus, DifficultyLevel } from "../../../types/index";
+import { ContestStatus } from "../../../types/index";
 import { Card, CardHeader } from "../../ui/Card";
+import { ContestButton } from "./ContestButton";
 
 // DEPRECATED: This component is deprecated. Please use the ContestCard from /components/contest-browser/ instead.
 // See the ContestSection component for correct usage example.
@@ -22,7 +21,6 @@ interface ContestCardProps {
   participantCount: number;
   maxParticipants: number;
   status: ContestStatus;
-  difficulty: DifficultyLevel;
   contestCode: string;
   isParticipating: boolean;
 }
@@ -42,7 +40,6 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   participantCount,
   maxParticipants,
   status,
-  // Difficulty no longer used
   contestCode,
   isParticipating,
 }) => {
@@ -311,12 +308,16 @@ export const ContestCard: React.FC<ContestCardProps> = ({
 
             {/* Prize distribution indicator */}
             <div className="mt-2">
+              {/* Remove or replace this component as it likely depended on the removed difficulty prop/type */}
+              {/* 
               <ContestDifficulty 
                 prize_pool={prizePool.toString()} 
                 participant_count={participantCount} 
                 max_participants={maxParticipants}
                 isCancelled={status === "cancelled"} 
-              />
+              /> 
+              */}
+              <p className="text-xs text-gray-500 italic">(Difficulty display placeholder)</p>
             </div>
 
             {/* Enhanced ContestButton */}

@@ -1,5 +1,18 @@
 // src/pages/public/ContestBrowserPage.tsx
 
+/**
+ * Contest Browser Page
+ *    a.k.a. Contest Explorer
+ *    a.k.a. Duel Explorer
+ * 
+ * @description This page displays a list of contests and allows users to filter and sort them.
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-01-01
+ * @updated 2025-05-08
+ */
+
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
@@ -31,6 +44,7 @@ export const ContestBrowser: React.FC = () => {
   const [showCancelled, setShowCancelled] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+  // Fetch contests
   const fetchContests = async () => {
     try {
       setLoading(true);
@@ -68,6 +82,7 @@ export const ContestBrowser: React.FC = () => {
     }
   };
 
+  // Use effect to fetch contests and set up periodic maintenance check
   useEffect(() => {
     fetchContests();
 
@@ -177,6 +192,7 @@ export const ContestBrowser: React.FC = () => {
     showCancelled,
   ]);
 
+  // Loading state
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -194,6 +210,7 @@ export const ContestBrowser: React.FC = () => {
     );
   }
 
+  // Maintenance mode
   if (isMaintenanceMode) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -210,6 +227,7 @@ export const ContestBrowser: React.FC = () => {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -220,6 +238,7 @@ export const ContestBrowser: React.FC = () => {
     );
   }
 
+  // Contest browser page
   return (
     <div className="flex flex-col min-h-screen">
       {/* Auth Debug Panel */}

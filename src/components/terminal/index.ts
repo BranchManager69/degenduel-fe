@@ -30,7 +30,7 @@ export { Terminal } from './Terminal';
 export type { TerminalProps, TerminalSize } from './types';
 
 // Timer components
-export { DecryptionTimer } from './components/DecryptionTimer';
+export { DecryptionTimer } from '../layout/DecryptionTimer';
 export { TimeUnit } from './components/TimeUnit';
 
 // Console components

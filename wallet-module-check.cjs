@@ -1,6 +1,16 @@
 /**
  * Node.js script to check for multiple instances of @solana/wallet-adapter-react
  * Uses CommonJS format (.cjs) to work with require()
+ *  
+ * 
+ * 
+ * 
+ * 
+ * (No clue if this is up to date)
+ * 
+ * 
+ * 
+ * 
  */
 
 const path = require('path');

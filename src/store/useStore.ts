@@ -12,11 +12,12 @@
  * @last-modified 2025-04-02
  */
 
+import console from 'console';
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
+import { SkyDuelState } from "../components/admin/skyduel/types";
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { WebSocketState } from "../hooks/utilities/legacy/useWebSocketMonitor";
-import { ServiceConnection, ServiceNode } from "../hooks/websocket/legacy/useSkyDuelWebSocket";
 import { Contest, Token, User, WalletError } from "../types/index";
 
 interface WebSocketAlert {
@@ -87,22 +88,6 @@ interface DebugConfig {
   colorScheme?: ColorScheme;
   fontPreset?: keyof typeof FONT_PRESETS;
   customFonts?: FontConfig;
-}
-
-// Import SkyDuel types
-
-// SkyDuel system state
-interface SkyDuelState {
-  nodes: ServiceNode[];
-  connections: ServiceConnection[];
-  systemStatus: {
-    overall: "operational" | "degraded" | "outage";
-    timestamp: string;
-    message: string;
-  };
-  selectedNode: string | null;
-  viewMode: "graph" | "list" | "grid" | "circuit";
-  lastUpdated: string;
 }
 
 // Separate type for state data (without actions)
@@ -312,7 +297,7 @@ interface StateData {
 }
 
 // Full state type including actions
-interface State extends StateData {
+export interface State extends StateData {
   setUser: (user: User | null) => void;
   setContests: (contests: Contest[]) => void;
   setTokens: (tokens: Token[]) => void;
@@ -321,6 +306,8 @@ interface State extends StateData {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   setMaintenanceMode: (enabled: boolean) => void;
+  // SkyDuel actions
+  setSkyDuelSelectedNode: (nodeId: string | undefined) => void;
   setServiceState: (
     status: "online" | "offline" | "degraded",
     metrics: { uptime: number; latency: number; activeUsers: number },
@@ -329,15 +316,6 @@ interface State extends StateData {
     type: "info" | "warning" | "error",
     message: string,
   ) => void;
-  setSkyDuelState: (state: Partial<SkyDuelState>) => void;
-  updateSkyDuelNode: (nodeId: string, updates: Partial<ServiceNode>) => void;
-  updateSkyDuelConnection: (
-    sourceId: string,
-    targetId: string,
-    updates: Partial<ServiceConnection>,
-  ) => void;
-  setSkyDuelSelectedNode: (nodeId: string | null) => void;
-  setSkyDuelViewMode: (mode: SkyDuelState["viewMode"]) => void;
   setCircuitBreakerState: (state: StateData["circuitBreaker"]) => void;
   addCircuitAlert: (alert: {
     type: string;
@@ -509,6 +487,8 @@ interface State extends StateData {
   activateEasterEgg: () => void;
   updateWebSocketState: (newState: Partial<WebSocketState>) => void;
   setLandingPageAnimationDone: (done: boolean) => void;
+  setSkyDuelState: (skyDuelData: Partial<SkyDuelState>) => void;
+  setSkyDuelLayout: (layout: "graph" | "grid" | "list" | "circuit") => void;
 }
 
 type StorePersist = PersistOptions<
@@ -520,7 +500,6 @@ type StorePersist = PersistOptions<
     | "maintenanceMode"
     | "serviceState"
     | "serviceAlerts"
-    | "skyDuel"
     | "circuitBreaker"
     | "services"
     | "analytics"
@@ -530,6 +509,9 @@ type StorePersist = PersistOptions<
     | "webSocketAlerts"
     | "isEasterEggActive"
     | "landingPageAnimationDone"
+    | "contests"
+    | "tokens"
+    | "skyDuel"
   >
 >;
 
@@ -541,7 +523,6 @@ const persistConfig: StorePersist = {
     maintenanceMode: state.maintenanceMode,
     serviceState: state.serviceState,
     serviceAlerts: state.serviceAlerts,
-    skyDuel: state.skyDuel,
     circuitBreaker: state.circuitBreaker,
     services: state.services,
     analytics: state.analytics,
@@ -551,10 +532,51 @@ const persistConfig: StorePersist = {
     webSocketAlerts: state.webSocketAlerts,
     isEasterEggActive: state.isEasterEggActive,
     landingPageAnimationDone: state.landingPageAnimationDone,
-    // Add contests to persisted state for caching
     contests: state.contests,
     tokens: state.tokens,
+    skyDuel: state.skyDuel,
   }),
+  onRehydrateStorage: () => {
+    return async (state) => {
+      if (!state) {
+        // console.log("[STORE REHYDRATE] State is null on rehydrate start, skipping maintenance check."); // Optional: keep for debugging if needed
+        return;
+      }
+
+      // console.log("[STORE REHYDRATE] Starting onRehydrateStorage."); // Optional: keep for debugging
+
+      try {
+        if (typeof window !== 'undefined') {
+          // console.log("[STORE REHYDRATE] Fetching maintenance. Current window.location.origin:", window.location.origin, "API_URL used:", API_URL);
+        }
+        
+        const response = await fetch(`${API_URL}/admin/maintenance/status`, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (state.setMaintenanceMode && typeof state.setMaintenanceMode === 'function') {
+            if (data.enabled !== state.maintenanceMode) {
+              // console.warn(
+              //   "[STORE REHYDRATE] Maintenance mode state mismatch on init, syncing with backend. Backend:", data.enabled, "Store:", state.maintenanceMode
+              // );
+              state.setMaintenanceMode(data.enabled);
+            }
+          } else {
+            // console.warn("[STORE REHYDRATE] state.setMaintenanceMode is not available or not a function.");
+          }
+        } else {
+          // console.error(`[STORE REHYDRATE] Failed to fetch maintenance status on rehydrate: ${response.status} ${response.statusText}`);
+        }
+      } catch (error) {
+        // const errorMessage = error instanceof Error ? error.message : String(error);
+        // console.log(`[STORE REHYDRATE ERROR] Failed to verify maintenance mode on init: ${errorMessage}`, error); 
+        // SILENCE THIS CATCH BLOCK FOR NOW to avoid issues with console object being unavailable/broken by clientLogForwarder
+        // The error (e.g. CORS, server down) will still be visible in the network tab or as a general fetch failure if not caught elsewhere.
+      }
+    };
+  }
 };
 
 // Remove comment markers and implement retry logic
@@ -643,16 +665,19 @@ const getPhantomDeepLink = () => {
   return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
 };
 
-// Define initial WebSocket state compatible with the imported types
-const initialWebSocketState: WebSocketState = {
-  systemHealth: {
-    status: "operational",
-    activeConnections: 0,
-    messageRate: 0,
-    activeIncidents: 0,
-    lastUpdate: "2023-01-01T00:00:00.000Z"
+// Define initial state for SkyDuel
+const initialSkyDuelState: SkyDuelState = {
+  nodes: [],
+  connections: [],
+  systemStatus: {
+    overall: "operational",
+    services: { online: 0, offline: 0, degraded: 0 },
+    // message: "System operational", // Removed, not in Admin SkyDuelState type
+    // timestamp: new Date().toISOString(), // Removed, not in Admin SkyDuelState type
   },
-  services: []
+  lastUpdated: new Date().toISOString(),
+  selectedNode: undefined,
+  layout: "graph",
 };
 
 // Initial state
@@ -675,18 +700,6 @@ const initialState: StateData = {
   maintenanceMode: false,
   serviceState: null,
   serviceAlerts: [],
-  skyDuel: {
-    nodes: [],
-    connections: [],
-    systemStatus: {
-      overall: "operational",
-      timestamp: new Date().toISOString(),
-      message: "All systems operational",
-    },
-    selectedNode: null,
-    viewMode: "graph",
-    lastUpdated: new Date().toISOString(),
-  },
   circuitBreaker: {
     services: [],
   },
@@ -749,10 +762,20 @@ const initialState: StateData = {
       },
     },
   },
-  webSocket: initialWebSocketState,
+  webSocket: {
+    systemHealth: {
+      status: "operational",
+      activeConnections: 0,
+      messageRate: 0,
+      activeIncidents: 0,
+      lastUpdate: "2023-01-01T00:00:00.000Z"
+    },
+    services: []
+  },
   webSocketAlerts: [],
   isEasterEggActive: false,
   landingPageAnimationDone: false,
+  skyDuel: initialSkyDuelState,
 };
 
 // Create the store
@@ -1119,71 +1142,6 @@ export const useStore = create<State>()(
         }));
       },
       setServices: (services) => set({ services }),
-      // SkyDuel actions
-      setSkyDuelState: (state) =>
-        set((prevState) => ({
-          skyDuel: {
-            ...prevState.skyDuel,
-            ...state,
-            lastUpdated: new Date().toISOString(),
-          },
-        })),
-      updateSkyDuelNode: (nodeId, updates) =>
-        set((prevState) => {
-          const nodeIndex = prevState.skyDuel.nodes.findIndex(
-            (node) => node.id === nodeId,
-          );
-          if (nodeIndex === -1) return prevState;
-
-          const updatedNodes = [...prevState.skyDuel.nodes];
-          updatedNodes[nodeIndex] = {
-            ...updatedNodes[nodeIndex],
-            ...updates,
-          };
-
-          return {
-            skyDuel: {
-              ...prevState.skyDuel,
-              nodes: updatedNodes,
-              lastUpdated: new Date().toISOString(),
-            },
-          };
-        }),
-      updateSkyDuelConnection: (sourceId, targetId, updates) =>
-        set((prevState) => {
-          const connectionIndex = prevState.skyDuel.connections.findIndex(
-            (conn) => conn.source === sourceId && conn.target === targetId,
-          );
-          if (connectionIndex === -1) return prevState;
-
-          const updatedConnections = [...prevState.skyDuel.connections];
-          updatedConnections[connectionIndex] = {
-            ...updatedConnections[connectionIndex],
-            ...updates,
-          };
-
-          return {
-            skyDuel: {
-              ...prevState.skyDuel,
-              connections: updatedConnections,
-              lastUpdated: new Date().toISOString(),
-            },
-          };
-        }),
-      setSkyDuelSelectedNode: (nodeId) =>
-        set((prevState) => ({
-          skyDuel: {
-            ...prevState.skyDuel,
-            selectedNode: nodeId,
-          },
-        })),
-      setSkyDuelViewMode: (mode) =>
-        set((prevState) => ({
-          skyDuel: {
-            ...prevState.skyDuel,
-            viewMode: mode,
-          },
-        })),
       updatePortfolio: (data) => {
         // Implementation will update portfolio state
         console.log("Portfolio updated:", data);
@@ -1202,7 +1160,6 @@ export const useStore = create<State>()(
       },
       updateWebSocketState: (newState: Partial<WebSocketState>) =>
         set((prev) => ({
-          ...prev,
           webSocket: {
             ...prev.webSocket,
             ...newState,
@@ -1365,7 +1322,6 @@ export const useStore = create<State>()(
         })),
       setWebSocketState: (state) =>
         set((prev) => ({
-          ...prev,
           webSocket:
             typeof state === "function" ? state(prev.webSocket) : state,
         })),
@@ -1375,30 +1331,15 @@ export const useStore = create<State>()(
           webSocketAlerts: [...prev.webSocketAlerts, alert],
         })),
       setLandingPageAnimationDone: (done) => set({ landingPageAnimationDone: done }),
+      setSkyDuelState: (skyDuelData) => 
+        set((state) => ({ skyDuel: { ...state.skyDuel, ...skyDuelData }})),
+      setSkyDuelSelectedNode: (nodeId) => 
+        set((state) => ({ skyDuel: { ...state.skyDuel, selectedNode: nodeId }})),
+      setSkyDuelLayout: (layout) => 
+        set((state) => ({ skyDuel: { ...state.skyDuel, layout }})),
     }),
     {
       ...persistConfig,
-      onRehydrateStorage: () => async (state) => {
-        if (!state) return;
-
-        try {
-          const response = await fetch(`${API_URL}/admin/maintenance/status`, {
-            credentials: "include",
-          });
-
-          if (response.ok) {
-            const { enabled: backendStatus } = await response.json();
-            if (backendStatus !== state.maintenanceMode) {
-              console.warn(
-                "Maintenance mode state mismatch on init, syncing with backend",
-              );
-              state.setMaintenanceMode(backendStatus);
-            }
-          }
-        } catch (error) {
-          console.error("Failed to verify maintenance mode on init:", error);
-        }
-      },
     },
   ),
 );

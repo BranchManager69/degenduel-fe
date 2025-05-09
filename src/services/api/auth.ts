@@ -602,7 +602,7 @@ export const verifyBiometricRegistration = async (attestation: any): Promise<any
 export const getBiometricAuthenticationOptions = async (userId: string): Promise<any> => {
   try {
     const response = await axios.post(
-      `${API_URL}/auth/biometric/login-options`,
+      `${API_URL}/auth/biometric/auth-options`,
       { userId },
       {
         headers: {
@@ -641,7 +641,7 @@ export const getBiometricAuthenticationOptions = async (userId: string): Promise
 export const verifyBiometricAuthentication = async (assertion: any): Promise<any> => {
   try {
     const response = await axios.post(
-      `${API_URL}/auth/biometric/login-verify`,
+      `${API_URL}/auth/biometric/auth-verify`,
       assertion,
       {
         headers: {

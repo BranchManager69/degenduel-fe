@@ -15,7 +15,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CyberGrid } from '../../../components/animated-background/CyberGrid'; // Import CyberGrid
 import Logo from '../../../components/ui/Logo';
-import { FALLBACK_RELEASE_DATE, fetchReleaseDate } from '../../../services/releaseDateService';
+import { FALLBACK_RELEASE_DATE, getActiveReleaseDate } from '../../../services/releaseDateService';
 import { formatDuration, getTimeRemainingUntilRelease, isReleaseTimePassed } from '../../../utils/dateUtils';
 
 interface CountdownParts {
@@ -37,14 +37,16 @@ const ComingSoonPage: React.FC = () => {
     const loadReleaseDate = async () => {
       setIsLoading(true);
       try {
-        const date = await fetchReleaseDate();
-        setReleaseDate(date);
-        if (isReleaseTimePassed(date)) {
+        const activeDate = await getActiveReleaseDate();
+        const dateToUse = activeDate || FALLBACK_RELEASE_DATE;
+        setReleaseDate(dateToUse);
+
+        if (isReleaseTimePassed(dateToUse)) {
           setHasLaunched(true);
         }
       } catch (error) {
         console.error("Error fetching release date for Coming Soon page:", error);
-        // Fallback is already set in releaseDate state initialization
+        setReleaseDate(FALLBACK_RELEASE_DATE);
         if (isReleaseTimePassed(FALLBACK_RELEASE_DATE)) {
           setHasLaunched(true);
         }

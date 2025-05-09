@@ -26,13 +26,13 @@ import { Select } from "../ui/Select";
 import { Textarea } from "../ui/Textarea";
 
 // TODO: move to types/index.ts
-type ContestDifficulty =
-  | "guppy"
-  | "tadpole"
-  | "squid"
-  | "dolphin"
-  | "shark"
-  | "whale";
+// Removed: type ContestDifficulty =
+//   | "guppy"
+//   | "tadpole"
+//   | "squid"
+//   | "dolphin"
+//   | "shark"
+//   | "whale";
 
 // TODO: move to types/index.ts
 interface CreateContestModalProps {
@@ -87,14 +87,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     return fee * maxParticipants * (1 - DD_PLATFORM_FEE);
   };
 
-  const calculateCurrentPrizePool = (
-    entryFee: string,
-    currentParticipants: number,
-  ) => {
-    const fee = parseFloat(entryFee) || 0;
-    return Math.floor(fee * currentParticipants * (1 - DD_PLATFORM_FEE));
-  };
-
   const generateContestCode = (name: string, attempt = 0) => {
     // Get initials from words in the name
     const initials = name
@@ -114,9 +106,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   const [formData, setFormData] = React.useState({
     name: `Degen Dustup ${Math.floor(Math.random() * 100)}`,
     description: `May the best Degen win.`,
-    entry_fee: "0.01", // Default 0.01 SOL
-    prize_pool: "9.99",
-    current_prize_pool: "0.00", // = entry_fee * min_participants
+    entry_fee: "0.01",
     start_time: getNextHourDateTime(),
     end_time: new Date(
       new Date(getNextHourDateTime()).getTime() +
@@ -126,23 +116,14 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       .toISOString()
       .slice(0, 16),
     entry_deadline: getNextHourDateTime(),
-    participant_count: 0, // New contest
-    min_participants: 2, // Default 2
-    max_participants: 20, // Default 20
-    allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default All Buckets
+    min_participants: 2,
+    max_participants: 20,
+    allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     settings: {
-      difficulty: "shark" as ContestDifficulty,
-      min_trades: 1,
-      token_types: [],
-      rules: [
-        {
-          id: "1",
-          title: "Participation",
-          description:
-            "Democrats are strictly forbidden from playing DegenDuel at all times.",
-        },
-      ],
-    } as ContestSettings,
+      difficulty: "shark",
+      tokenTypesAllowed: [],
+      startingPortfolioValue: "1000",
+    } as Omit<ContestSettings, 'minParticipants' | 'maxParticipants'>,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,7 +155,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     // Attempt to create the contest up to maxAttempts times
     while (attempt < maxAttempts) {
       try {
-        const contestData: Partial<Contest> = {
+        const contestDataPayload: Partial<Contest> = {
           name: formData.name,
           description: formData.description,
           contest_code: generateContestCode(formData.name, attempt),
@@ -186,53 +167,29 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
               formData.max_participants,
             ),
           ),
-          current_prize_pool: String(
-            calculateCurrentPrizePool(
-              formData.entry_fee,
-              formData.min_participants,
-            ),
-          ),
           start_time: formData.start_time,
           end_time: formData.end_time,
           entry_deadline: formData.entry_deadline,
           allowed_buckets: formData.allowed_buckets,
-          participant_count: 0,
           min_participants: formData.min_participants,
           max_participants: formData.max_participants,
           settings: {
             difficulty: formData.settings.difficulty,
-            min_trades: formData.settings.min_trades,
-            token_types: formData.settings.token_types || [],
-            rules: [
-              {
-                id: "1",
-                title: "DegenDuel Rules",
-                description: "Be a good Degen.",
-              },
-              {
-                id: "2",
-                title: "Fair Play",
-                description: "No collusion is allowed. Don't do it.",
-              },
-              {
-                id: "3",
-                title: "No Hacking",
-                description: "Don't hack the game and take all the money.",
-              },
-            ],
+            tokenTypesAllowed: formData.settings.tokenTypesAllowed || [],
+            startingPortfolioValue: formData.settings.startingPortfolioValue || "1000",
           } as ContestSettings,
         };
 
         // Create the contest
         console.log("Creating contest...", {
-          contestData,
+          contestData: contestDataPayload,
           attempt: attempt + 1,
           maxAttempts,
           timestamp: new Date().toISOString(),
           userRole,
         });
 
-        const response = await ddApi.contests.create(contestData);
+        const response = await ddApi.contests.create(contestDataPayload);
 
         // Verify the response
         if (!response || !response.contest_code) {
@@ -246,7 +203,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           timestamp: new Date().toISOString(),
         });
 
-        if (response.contest_code === contestData.contest_code) {
+        if (response.contest_code === contestDataPayload.contest_code) {
           toast.success(
             `Contest ${
               response.name || response.contest_code
@@ -278,11 +235,11 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           break;
         } else {
           console.warn(
-            `Contest code mismatch. Expected: ${contestData.contest_code}, Got: ${response.contest_code}`,
+            `Contest code mismatch. Expected: ${contestDataPayload.contest_code}, Got: ${response.contest_code}`,
           );
           toast.error(
             `Failed to create contest ${
-              contestData.contest_code
+              contestDataPayload.contest_code
             }. Try again later (${attempt + 1}/${maxAttempts})`,
             {
               duration: 4000,
@@ -594,53 +551,42 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Contest Settings
                   </label>
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-dark-300 rounded-md border border-dark-400">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-dark-300 rounded-md border border-dark-400">
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">
                         Class
                       </label>
                       <Select
                         value={formData.settings.difficulty}
-                        onChange={(value: ContestDifficulty) =>
+                        onChange={(value: string) =>
                           setFormData((prev) => ({
                             ...prev,
                             settings: { ...prev.settings, difficulty: value },
                           }))
                         }
-                        options={
-                          [
-                            { value: "guppy", label: "Guppy" },
-                            { value: "tadpole", label: "Tadpole" },
-                            { value: "squid", label: "Squid" },
-                            { value: "dolphin", label: "Dolphin" },
-                            { value: "shark", label: "Shark" },
-                            { value: "whale", label: "Whale" },
-                          ] as const
-                        }
+                        options={[
+                          { value: "guppy", label: "Guppy" },
+                          { value: "tadpole", label: "Tadpole" },
+                          { value: "squid", label: "Squid" },
+                          { value: "dolphin", label: "Dolphin" },
+                          { value: "shark", label: "Shark" },
+                          { value: "whale", label: "Whale" },
+                        ]}
                         className="w-full text-gray-100 bg-dark-400 border-dark-500"
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">
-                        Min. Level
+                        Starting Portfolio Value (SOL)
                       </label>
-                      <Select
-                        value={String(formData.settings.min_trades)}
-                        onChange={(value) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            settings: {
-                              ...prev.settings,
-                              min_trades: parseInt(value, 10),
-                            },
-                          }))
-                        }
-                        options={Array.from({ length: 50 }, (_, i) => ({
-                          value: String(i + 1),
-                          label: `Level ${i + 1}`,
-                        }))}
+                      <Input
+                        type="text"
+                        name="settings.startingPortfolioValue"
+                        value={formData.settings.startingPortfolioValue}
+                        onChange={(e) => setFormData(prev => ({...prev, settings: {...prev.settings, startingPortfolioValue: e.target.value }}))}
                         className="w-full text-gray-100 bg-dark-400 border-dark-500"
+                        placeholder="e.g., 1000"
                       />
                     </div>
                   </div>

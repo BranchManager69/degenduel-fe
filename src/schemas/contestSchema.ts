@@ -12,25 +12,11 @@ const contestStatusSchema: z.ZodType<ContestStatus> = z.enum([
 
 // Use the existing ContestSettings type
 const contestSettingsSchema: z.ZodType<ContestSettings> = z.object({
-  difficulty: z.enum([
-    "guppy",
-    "tadpole",
-    "squid",
-    "dolphin",
-    "shark",
-    "whale",
-  ]),
-  min_trades: z.number(),
-  max_participants: z.number(),
-  min_participants: z.number(),
-  token_types: z.array(z.string()),
-  rules: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      description: z.string(),
-    }),
-  ),
+  difficulty: z.string(),
+  maxParticipants: z.number().nullable(),
+  minParticipants: z.number(),
+  tokenTypesAllowed: z.array(z.string()),
+  startingPortfolioValue: z.string(),
 });
 
 // Schema for form validation
@@ -58,10 +44,16 @@ export const createContestSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
   entry_fee: z.string(),
-  prize_pool: z.string(),
   start_time: z.string(),
   end_time: z.string(),
-  settings: contestSettingsSchema,
+  min_participants: z.number(),
+  max_participants: z.number().nullable(),
+  allowed_buckets: z.array(z.number()),
+  settings: z.object({
+    difficulty: z.string(),
+    tokenTypesAllowed: z.array(z.string()),
+    startingPortfolioValue: z.string(),
+  }),
 });
 
 export type CreateContestInput = z.infer<typeof createContestSchema>;

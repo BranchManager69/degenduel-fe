@@ -29,7 +29,9 @@ const originalConsole = {
   log: console.log,
   info: console.info,
   warn: console.warn,
-  error: console.error
+  error: console.error,
+  debug: console.debug,
+  trace: console.trace
 };
 
 // Client log forwarder thresholds
@@ -37,9 +39,6 @@ const MAX_QUEUE_SIZE = 50;
 const BATCH_SEND_INTERVAL = 10 * 1000; // 10 seconds
 const ERROR_RETRY_COUNT = 3;
 const MAX_LOG_SIZE = 5000; // Truncate large logs
-const MESSAGE_CACHE_CLEANUP_INTERVAL = 60 * 1000; // 1 minute
-const MESSAGE_COOLDOWN = 5 * 1000; // 5 seconds between showing the same log message
-const MAX_REPEAT_COUNT = 3; // Show the message at most 3 times in the cooldown period
 
 // Debug verbosity flag for *server* logging (forwarding)
 const VERBOSE_SERVER_LOGGING = false; // Set to false to reduce log spam sent to server
@@ -72,74 +71,6 @@ interface LogEntry {
   tags?: string[];
 }
 
-// Rate limiting for repeated logs
-interface MessageCacheEntry {
-  count: number;
-  lastTime: number;
-}
-
-// Message cache
-let messageCache: Map<string, MessageCacheEntry> = new Map();
-
-// Check if a message should be rate limited
-const shouldRateLimit = (message: string): boolean => {
-  // Rate-limit noisy messages
-  //   - expanded list to include Terminal/TerminalDataService errors
-  if (!message.includes('[Jupiter Wallet]') && 
-      !message.includes('WebSocketContext:') && 
-      !message.includes('WebSocketManager:') && 
-      !message.includes('WalletContext') &&
-      !message.includes('Cannot refresh tokens') &&
-      !message.includes('App configuration has Solana wallet login enabled') &&
-      !message.includes('[TerminalDataService]') &&
-      !message.includes('[Terminal]') &&
-      !message.includes('Error fetching terminal data') &&
-      !message.includes('[WebSocketContext]')) {
-    return false;
-  }
-  
-  // Cache key
-  const key = message.substring(0, 50); // Use first 50 chars as cache key
-  const now = Date.now();
-  const cacheEntry = messageCache.get(key);
-  
-  // If we've shown this message too many times recently, suppress it
-  if (cacheEntry) {
-    // If it's been shown too many times recently, suppress it
-    if (cacheEntry.count >= MAX_REPEAT_COUNT && now - cacheEntry.lastTime < MESSAGE_COOLDOWN) {
-      return true; // Should be rate limited
-    }
-    
-    //// More aggressive throttling for Terminal data errors
-    //if (message.includes('Error fetching terminal data') && 
-    //    cacheEntry.count >= 2 && 
-    //    now - cacheEntry.lastTime < MESSAGE_COOLDOWN * 5) {
-    //  return true; // Rate limit more aggressively for terminal errors
-    //}
-    
-    // Update count and time
-    cacheEntry.count++;
-    cacheEntry.lastTime = now;
-    messageCache.set(key, cacheEntry);
-  } else {
-    // First time seeing this message
-    messageCache.set(key, { count: 1, lastTime: now });
-  }
-  
-  return false; // Should not be rate limited
-};
-
-// Periodically clean up the message cache to prevent memory leaks
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of messageCache.entries()) {
-    if (now - entry.lastTime > MESSAGE_COOLDOWN * 2) {
-      messageCache.delete(key);
-    }
-  }
-}, MESSAGE_CACHE_CLEANUP_INTERVAL); // Clean up message cache every 1 minute
-
-// Queue to store logs
 let logQueue: LogEntry[] = [];
 let isSending = false;
 let retryCount = 0;
@@ -162,44 +93,28 @@ export const initializeClientLogForwarder = (): void => {
   sessionId = sessionStorage.getItem('logSessionId') || generateSessionId();
   sessionStorage.setItem('logSessionId', sessionId);
   
-  originalConsole.log(`[LogForwarder] Initializing. Default verbose client console output: ${enableVerboseClientConsole} (NODE_ENV: ${NODE_ENV})`);
+  // TEMP: To debug console corruption, let's NOT override for a moment
+  // originalConsole.log(`[LogForwarder] Initializing. Default verbose client console output: ${enableVerboseClientConsole} (NODE_ENV: ${NODE_ENV})`);
+  // originalConsole.log("[LogForwarder] CONSOLE OVERRIDE DISABLED FOR TEST");
+  // return; //  <---- !! TEMPORARILY DISABLE ALL CONSOLE OVERRIDES !!
 
-  // Override console methods
+  // If not returning above, proceed with overrides but with added safety
+  originalConsole.log(`[LogForwarder] Initializing with console overrides. Verbose client console: ${enableVerboseClientConsole}`);
+
   console.log = (...args: any[]) => {
-    if (args.length > 0) {
-      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) return;
-    }
-    // *** Conditional output ***
     if (enableVerboseClientConsole) {
-      originalConsole.log(...args);
+      try { originalConsole.log.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
     }
-    // Forwarding logic (optional for debug level)
-    // if (VERBOSE_SERVER_LOGGING) addToQueue(LogLevel.DEBUG, args);
   };
 
   console.info = (...args: any[]) => {
-    if (args.length > 0) {
-      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) return;
-    }
-    // *** Conditional output ***
     if (enableVerboseClientConsole) {
-      originalConsole.info(...args);
+      try { originalConsole.info.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
     }
-    // Forwarding logic (optional for info level)
-    // if (VERBOSE_SERVER_LOGGING) addToQueue(LogLevel.INFO, args);
   };
 
   console.warn = (...args: any[]) => {
-    if (args.length > 0) {
-      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) return;
-    }
-    // *** Always output to console ***
-    originalConsole.warn(...args);
-    // Forwarding logic (use existing filters)
-    // (Keeping existing logic which already filters some warnings before queuing)
+    try { originalConsole.warn.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
     const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' && 
       !args[0].includes('App configuration has Solana wallet login enabled') &&
       !args[0].includes('WalletContext without providing one') &&
@@ -218,15 +133,8 @@ export const initializeClientLogForwarder = (): void => {
   };
 
   console.error = (...args: any[]) => {
-    if (args.length > 0) {
-      const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
-      if (shouldRateLimit(message)) return;
-    }
-    // *** Always output to console ***
-    originalConsole.error(...args);
-    // Forwarding logic (use existing filters)
-    // (Keeping existing logic which already filters some errors before queuing)
-     const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' && 
+    try { originalConsole.error.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
+    const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' && 
       !args[0].includes('tried to read "publicKey" on a WalletContext') &&
       !args[0].includes('tried to read "wallet" on a WalletContext') &&
       !args[0].includes('tried to read "wallets" on a WalletContext') &&
@@ -245,7 +153,7 @@ export const initializeClientLogForwarder = (): void => {
 
   // Capture unhandled errors
   window.addEventListener('error', (event) => {
-    originalConsole.error('Unhandled error:', event.error || event.message);
+    try { originalConsole.error('Unhandled error:', event.error || event.message); } catch(e) {} // Guard this too
     addToQueue(LogLevel.ERROR, [event.message], {
       filename: event.filename,
       lineno: event.lineno,
@@ -256,7 +164,7 @@ export const initializeClientLogForwarder = (): void => {
 
   // Capture unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    originalConsole.error('Unhandled promise rejection:', event.reason);
+    try { originalConsole.error('Unhandled promise rejection:', event.reason); } catch(e) {} // Guard this too
     addToQueue(LogLevel.ERROR, ['Unhandled Promise Rejection:', event.reason], {
       stack: event.reason?.stack
     });

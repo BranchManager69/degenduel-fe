@@ -9,54 +9,38 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import type {
+  NodeConnection as AdminNodeConnection,
+  NodeMetrics as AdminNodeMetrics,
+  NodeStatus as AdminNodeStatus,
+  NodeType as AdminNodeType,
+  ServiceNode as AdminServiceNode,
+  SkyDuelAlert as AdminSkyDuelAlert,
+  SkyDuelState as AdminSkyDuelState
+} from '../../../components/admin/skyduel/types';
 import { useStore } from '../../../store/useStore';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { DDExtendedMessageType, isMessageType, SOCKET_TYPES, WEBSOCKET_ENDPOINT } from '../types';
 import useWebSocket from './useWebSocket';
 
 // SkyDuel service types
-export interface ServiceNode {
-  id: string;
-  name: string;
-  type: "api" | "worker" | "websocket" | "database" | "cache";
-  status: "online" | "offline" | "degraded" | "restarting";
-  health: number; // 0-100
-  uptime: number; // seconds
-  lastRestart: string | null;
-  metrics: {
-    cpu: number; // percentage
-    memory: number; // percentage
-    connections: number;
-    requestsPerMinute: number;
-    errorRate: number;
-  };
-  alerts: ServiceAlert[];
+export interface ServiceNode extends Omit<AdminServiceNode, 'type' | 'status' | 'metrics' | 'alerts'> {
+  type: AdminNodeType;
+  status: AdminNodeStatus;
+  metrics: AdminNodeMetrics;
+  alerts: AdminSkyDuelAlert[];
 }
 
-export interface ServiceAlert {
-  id: string;
-  severity: "info" | "warning" | "error" | "critical";
-  message: string;
-  timestamp: string;
-  acknowledged: boolean;
+export interface ServiceAlert extends AdminSkyDuelAlert {
+  // acknowledged?: boolean;
 }
 
-export interface ServiceConnection {
-  source: string;
-  target: string;
-  status: "active" | "degraded" | "failed";
-  latency: number; // milliseconds
-  throughput: number; // requests per second
-}
+export interface ServiceConnection extends AdminNodeConnection {}
 
-interface SkyDuelState {
+interface SkyDuelState extends Omit<AdminSkyDuelState, 'nodes' | 'connections' | 'systemStatus'> {
   nodes: ServiceNode[];
   connections: ServiceConnection[];
-  systemStatus: {
-    overall: "operational" | "degraded" | "outage";
-    timestamp: string;
-    message: string;
-  };
+  systemStatus: AdminSkyDuelState['systemStatus'];
 }
 
 // Message types from v69 Unified WebSocket System

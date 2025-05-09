@@ -28,42 +28,31 @@ const mapContestStatus = (status: string): any => {
   }
 };
 
-// Base contest object for all stories
+// Base contest object for all stories - UPDATED
 const baseContest: Contest = {
   id: 123,
   name: 'Ultimate Degen Showdown',
   description: 'Compete with other degens to build the ultimate crypto portfolio. The top performers win big prizes!',
   entry_fee: '50',
   prize_pool: '5000',
-  max_participants: 100,
+  // max_participants: 100, // Moved to settings
+  // min_participants: 10,  // Moved to settings
   participant_count: 42,
-  start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h in future
-  end_time: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 72h in future
+  start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), 
+  end_time: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), 
   settings: {
-    min_trades: 10,
-    max_participants: 100,
-    token_types: ['DeFi', 'Gaming', 'Meme', 'Layer1', 'Layer2'],
-    rules: [
-      {
-        id: '1',
-        title: 'Allocation Limits',
-        description: 'Maximum 30% allocation to any single token'
-      },
-      {
-        id: '2',
-        title: 'Portfolio Diversity',
-        description: 'Minimum 3 different tokens required in portfolio'
-      },
-      {
-        id: '3',
-        title: 'Trading Restrictions',
-        description: 'No portfolio modifications during the last 6 hours of the contest'
-      }
-    ],
-    difficulty: 'shark'
+    // min_trades: 10, // Removed
+    difficulty: 'shark', // Already string, fine
+    tokenTypesAllowed: ['DeFi', 'Gaming', 'Meme', 'Layer1', 'Layer2'], // Renamed
+    // rules: [/*...*/], // Removed
+    startingPortfolioValue: "10000", // Added
+    minParticipants: 10, // Added from top-level, camelCase
+    maxParticipants: 100, // Added from top-level, camelCase
   },
   status: 'pending',
-  min_participants: 10,
+  // These must remain top-level to satisfy the Contest type
+  min_participants: 10, 
+  max_participants: 100,
   allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -312,14 +301,16 @@ const MobileContestDetailPage: React.FC<MobileContestDetailPageProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           {/* Left Column - Contest Details */}
           <div className="space-y-6">
-            {/* Contest Rules */}
+            {/* Contest Rules - THIS SECTION NEEDS TO BE REMOVED OR UPDATED */}
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-gray-300">Rules</h2>
-              <ul className="list-disc list-inside text-gray-400 space-y-2">
+              {/* Remove this ul or change its data source if rules are now elsewhere */}
+              {/* <ul className="list-disc list-inside text-gray-400 space-y-2">
                 {contest.settings.rules.map((rule, index) => (
                   <li key={index}>{rule.title}</li>
                 ))}
-              </ul>
+              </ul> */}
+              <p className="text-gray-400 italic">Contest rules are being updated. Please check back later or refer to the main contest description.</p>
             </div>
             
             {/* Prize Structure */}

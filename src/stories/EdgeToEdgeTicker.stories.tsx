@@ -1,60 +1,56 @@
-import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { UnifiedTicker } from '../components/layout/UnifiedTicker';
-import { Contest } from '../types';
+import { Contest, ContestSettings } from '../types';
 
-// Create mock contest data
-const mockContests: Contest[] = [
-  {
-    id: 1,
-    name: 'Moon Shot Masters',
-    description: 'Race to the moon with the hottest tokens',
-    entry_fee: '1.50',
-    prize_pool: '300.00',
-    current_prize_pool: '200.00',
-    start_time: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    end_time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+// Helper function to calculate contest prize pool (ensure defined before use)
+const calculatePrizePool = (entryFee: string, participantCount: number, maxParticipants: number, basePrize: string): string => {
+  const currentParticipants = Math.min(participantCount, maxParticipants);
+  return (parseFloat(basePrize) * (currentParticipants / maxParticipants) + 
+          (parseFloat(entryFee) * currentParticipants)).toFixed(2);
+};
+
+// Generate mock contest data with diverse examples - UPDATED
+const generateMockContests = (): Contest[] => {
+  const contestsBase = [
+    { id: 1, name: 'Moon Shot Masters', desc: 'Race to the moon...', entry: '1.50', prize: '300.00', part: 120, maxP: 200, minP: 10, status: 'active', diff: 'dolphin', tokens: ['all'], code: 'MSM001', spv: "1000" },
+    { id: 2, name: 'Diamond Hands Showdown', desc: 'Hold tight...', entry: '0.50', prize: '100.00', part: 75, maxP: 100, minP: 5, status: 'pending', diff: 'squid', tokens: ['defi', 'gaming'], code: 'DHS002', spv: "500" },
+    { id: 3, name: 'Crypto Titans', desc: 'Ultimate battle...', entry: '3.00', prize: '450.00', part: 50, maxP: 50, minP: 20, status: 'active', diff: 'whale', tokens: ['all'], code: 'CTT003', spv: "2000" },
+    { id: 4, name: 'Weekend Warriors', desc: 'Casual trading...', entry: '1.00', prize: '100.00', part: 45, maxP: 50, minP: 10, status: 'completed', diff: 'tadpole', tokens: ['meme', 'gaming'], code: 'WW004', spv: "100" },
+    { id: 5, name: 'NFT Showdown', desc: 'NFT focus...', entry: '2.00', prize: '200.00', part: 25, maxP: 75, minP: 15, status: 'active', diff: 'squid', tokens: ['nft', 'gaming'], code: 'NFTS005', spv: "500" },
+    { id: 6, name: 'Micro Duels', desc: 'Low-cost...', entry: '0.25', prize: '25.00', part: 15, maxP: 50, minP: 5, status: 'pending', diff: 'guppy', tokens: ['all'], code: 'MICRO006', spv: "50" },
+    { id: 7, name: 'Precision Traders', desc: 'Non-standard fee...', entry: '1.75', prize: '175.00', part: 28, maxP: 100, minP: 10, status: 'active', diff: 'dolphin', tokens: ['defi', 'layer1'], code: 'PREC007', spv: "1000" },
+  ];
+
+  return contestsBase.map((c, index) => ({
+    id: c.id,
+    name: c.name,
+    description: c.desc,
+    entry_fee: c.entry,
+    prize_pool: c.prize,
+    current_prize_pool: calculatePrizePool(c.entry, c.part, c.maxP, c.prize),
+    start_time: new Date(Date.now() - (index % 3) * 60 * 60 * 1000).toISOString(),
+    end_time: new Date(Date.now() + (index + 1) * 2 * 60 * 60 * 1000).toISOString(),
     allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    participant_count: 120,
-    status: 'active',
-    settings: {
-      difficulty: 'dolphin',
-      min_trades: 1,
-      token_types: ['all'],
-      rules: [{ id: '1', title: 'Rule 1', description: 'Description 1' }]
-    },
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    min_participants: 10,
-    max_participants: 200,
-    contest_code: 'MSM001'
-  },
-  {
-    id: 2,
-    name: 'Diamond Hands Showdown',
-    description: 'Hold tight and show your diamond hands',
-    entry_fee: '0.50',
-    prize_pool: '100.00',
-    current_prize_pool: '50.00',
-    start_time: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    end_time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-    allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    participant_count: 75,
-    status: 'pending',
-    settings: {
-      difficulty: 'squid',
-      min_trades: 2,
-      token_types: ['defi', 'gaming'],
-      rules: [{ id: '1', title: 'Rule 1', description: 'Description 1' }]
-    },
-    created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    min_participants: 5,
-    max_participants: 100,
-    contest_code: 'DHS002'
-  }
-];
+    participant_count: c.part,
+    status: c.status as Contest['status'],
+    min_participants: c.minP, // Top-level (snake_case) for Contest type
+    max_participants: c.maxP, // Top-level (snake_case) for Contest type
+    settings: { // New ContestSettings structure
+      difficulty: c.diff,
+      tokenTypesAllowed: c.tokens,
+      startingPortfolioValue: c.spv,
+      minParticipants: c.minP, // camelCase for new ContestSettings
+      maxParticipants: c.maxP, // camelCase for new ContestSettings
+    } as ContestSettings,
+    created_at: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - (index + 1) * 12 * 60 * 60 * 1000).toISOString(),
+    contest_code: c.code,
+    is_participating: index % 2 === 0,
+    image_url: `https://picsum.photos/seed/contest${c.id}/1024/300`,
+  }));
+};
 
 // A simple wrapper component that renders the ticker in a full-width layout
 const EdgeToEdgeTicker: React.FC = () => {
@@ -365,7 +361,7 @@ const EdgeToEdgeTicker: React.FC = () => {
           borderBottom: '1px solid rgba(0, 225, 255, 0.05)'
         }} className="cyber-gradient-bg">
           <UnifiedTicker 
-            contests={mockContests}
+            contests={generateMockContests()}
             loading={false}
             isCompact={false}
             maxTokens={15}

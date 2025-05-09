@@ -645,14 +645,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const sessionToken = currentUser?.session_token;
     
     // Detect if this is Twitter authentication
-    const isTwitterAuth = auth.activeAuthMethod === 'twitter' || 
-                          auth.isTwitterAuth?.() || 
-                          (auth.authMethods?.twitter?.active === true);
+    const isTwitterAuthCheck = auth.activeMethod === 'twitter' || auth.isTwitterAuth();
     
     // Force token refresh if needed
-    if ((forceRefresh || isTwitterAuth) && auth.getToken) { 
+    if ((forceRefresh || isTwitterAuthCheck) && auth.getToken) { 
       try {
-        if (isTwitterAuth) {
+        if (isTwitterAuthCheck) {
           authDebug('WebSocketContext', 'Twitter auth detected, ensuring we have a WebSocket token');
         } else {
           authDebug('WebSocketContext', 'Forcing token refresh before authentication');
@@ -778,7 +776,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         error: error instanceof Error ? error.message : String(error)
       });
     }
-  }, [authState.isLoggedIn, auth.activeAuthMethod, auth.isTwitterAuth, auth.authMethods, auth.getToken, user]);
+  }, [user, auth.activeMethod, auth.isTwitterAuth, auth.getToken, authState.isLoggedIn]);
   
   // Register a message listener
   /**
@@ -952,7 +950,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
    * Adds an automatic token retrieval mechanism
    */
   useEffect(() => {
-    // When user is logged in but doesn't have a WebSocket token, fetch one
     const fetchTokenIfNeeded = async () => {
       const currentUserForTokenFetch = auth.user || useStore.getState().user;
       if (currentUserForTokenFetch && !(currentUserForTokenFetch as any).wsToken && auth.getToken) {
@@ -973,9 +970,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       }
     };
-    
     fetchTokenIfNeeded();
-  }, [auth.user, auth.activeAuthMethod, auth.isTwitterAuth, auth.authMethods, auth.getToken, useStore.getState().user]);
+  }, [auth.user, auth.getToken, useStore.getState().user]);
   
   // Derive isConnected and isAuthenticated from connectionState
   /**
