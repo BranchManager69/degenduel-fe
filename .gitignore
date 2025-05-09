@@ -16,6 +16,10 @@ client_logs/
 
 .collab/
 
+.debugging/
+
+archive/
+
 dd-rpc/
 
 # Documentation
@@ -103,3 +107,4 @@ server/config/keys.json  # Example of sensitive API keys if applicable
 
 # Build stats
 stats.html
+bundlesize.json
