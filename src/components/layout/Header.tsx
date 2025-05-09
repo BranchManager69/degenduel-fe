@@ -1,167 +1,146 @@
 // src/components/layout/Header.tsx
 
-import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef } from "react";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
-import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
-import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
-import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
-import { useStore } from "../../store/useStore";
-import LoginOptionsButton from "../auth/LoginOptionsButton";
-import Logo from "../ui/Logo";
-import { ContestsDropdown } from "./ContestsDropdown";
-import { MobileMenuButton } from "./MobileMenuButton";
-import { RankingsDropdown } from "./RankingsDropdown";
-import { TokensDropdown } from "./TokensDropdown";
-import { UserMenu } from "./user-menu/UserMenu";
+// import LoginOptionsButton from "../auth/LoginOptionsButton"; // TEMP
+// import Logo from "../ui/Logo"; // TEMP
+// import { ContestsDropdown } from "./ContestsDropdown"; // TEMP
+// import { MobileMenuButton } from "./MobileMenuButton"; // TEMP
+// import { RankingsDropdown } from "./RankingsDropdown"; // TEMP
+// import { TokensDropdown } from "./TokensDropdown"; // TEMP
+// import { UserMenu } from "./user-menu/UserMenu"; // TEMP
 
 export const Header: React.FC = () => {
-  const { isCompact } = useScrollHeader(50);
-  const {
-    disconnectWallet,
-    error: storeError,
-    clearError,
-  } = useStore(state => ({ 
-      disconnectWallet: state.disconnectWallet, 
-      error: state.error, 
-      clearError: state.clearError, 
-  })); 
+  // const { isCompact } = useScrollHeader(50); // TEMP
+  // const {
+  //   disconnectWallet,
+  //   error: storeError,
+  //   clearError,
+  // } = useStore(state => ({ 
+  //     disconnectWallet: state.disconnectWallet, 
+  //     error: state.error, 
+  //     clearError: state.clearError, 
+  // })); 
   const { user, isAdmin, isAuthenticated } = useMigratedAuth(); 
-  
-  const { unreadCount } = useNotifications();
-  const { settings } = useSystemSettings();
+  // const { unreadCount } = useNotifications(); // TEMP
+  // const { settings } = useSystemSettings(); // TEMP
   
   const isMounted = useRef(true);
   
-  const isMaintenanceMode = settings?.maintenanceMode || false;
-  const maintenanceMessage = settings?.maintenanceMessage;
+  // const isMaintenanceMode = settings?.maintenanceMode || false; // TEMP
+  // const maintenanceMessage = settings?.maintenanceMessage; // TEMP
 
   useEffect(() => {
     isMounted.current = true;
+    console.log("[Header] Mounted"); // TEMP Log
     return () => {
       isMounted.current = false;
+      console.log("[Header] Unmounted"); // TEMP Log
     };
   }, []);
 
+  // New useEffect to log auth state changes
   useEffect(() => {
-    const currentStoreValue = useStore.getState().maintenanceMode;
-    let redirectTimerId: number | undefined;
-    if (isMaintenanceMode !== currentStoreValue) {
-      console.log(`[Header] Syncing maintenanceMode to store: ${isMaintenanceMode}`);
-      if (isMounted.current) {
-        useStore.setState({ maintenanceMode: isMaintenanceMode });
-      }
+    console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdmin);
+  }, [user, isAuthenticated, isAdmin]);
 
-      if (isMaintenanceMode === true && !isAdmin) {
-        console.log("[Header] Maintenance mode activated, redirecting non-admin.");
-        redirectTimerId = window.setTimeout(() => {
-          if (isMounted.current) {
-            window.location.href = "/maintenance";
-          }
-        }, 500); 
-      }
-    }
-    return () => {
-      if (redirectTimerId) {
-        clearTimeout(redirectTimerId);
-      }
-    };
-  }, [isMaintenanceMode, isAdmin]);
+  // useEffect(() => {
+  //   const currentStoreValue = useStore.getState().maintenanceMode;
+  //   let redirectTimerId: number | undefined;
+  //   if (isMaintenanceMode !== currentStoreValue) {
+  //     console.log(`[Header] Syncing maintenanceMode to store: ${isMaintenanceMode}`);
+  //     if (isMounted.current) {
+  //       useStore.setState({ maintenanceMode: isMaintenanceMode });
+  //     }
 
-  useEffect(() => {
-    if (storeError) {
-      const timer = setTimeout(clearError, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [storeError, clearError]);
+  //     if (isMaintenanceMode === true && !isAdmin) {
+  //       console.log("[Header] Maintenance mode activated, redirecting non-admin.");
+  //       redirectTimerId = window.setTimeout(() => {
+  //         if (isMounted.current) {
+  //           window.location.href = "/maintenance";
+  //         }
+  //       }, 500); 
+  //     }
+  //   }
+  //   return () => {
+  //     if (redirectTimerId) {
+  //       clearTimeout(redirectTimerId);
+  //     }
+  //   };
+  // }, [isMaintenanceMode, isAdmin]); // TEMP
 
-  useEffect(() => {
-    const updateHeaderHeight = () => {
-      let baseHeight = isCompact 
-        ? (window.innerWidth >= 640 ? 3.5 : 3)
-        : (window.innerWidth >= 640 ? 4 : 3.5);
+  // useEffect(() => {
+  //   if (storeError) {
+  //     const timer = setTimeout(clearError, 5000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [storeError, clearError]); // TEMP
+
+  // useEffect(() => {
+  //   const updateHeaderHeight = () => {
+  //     let baseHeight = isCompact 
+  //       ? (window.innerWidth >= 640 ? 3.5 : 3)
+  //       : (window.innerWidth >= 640 ? 4 : 3.5);
       
-      let additionalHeight = 0;
+  //     let additionalHeight = 0;
       
-      if ((user as any)?.is_banned) {
-        additionalHeight += 2.5;
-      }
+  //     if (user?.banned) { 
+  //       additionalHeight += 2.5;
+  //     }
       
-      if (isMaintenanceMode) {
-        additionalHeight += 2;
-      }
+  //     if (isMaintenanceMode) {
+  //       additionalHeight += 2;
+  //     }
       
-      document.documentElement.style.setProperty('--header-height', `${baseHeight + additionalHeight}rem`);
-    };
+  //     document.documentElement.style.setProperty('--header-height', `${baseHeight + additionalHeight}rem`);
+  //   };
     
-    updateHeaderHeight();
+  //   updateHeaderHeight();
     
-    window.addEventListener('resize', updateHeaderHeight);
+  //   window.addEventListener('resize', updateHeaderHeight);
     
-    return () => {
-      window.removeEventListener('resize', updateHeaderHeight);
-    };
-  }, [isCompact, (user as any)?.is_banned, isMaintenanceMode]);
+  //   return () => {
+  //     window.removeEventListener('resize', updateHeaderHeight);
+  //   };
+  // }, [isCompact, user?.banned, isMaintenanceMode]); // TEMP
 
+  console.log("[Header] Rendering. User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdmin); // TEMP Log
+
+  // TEMP: Render minimal UI
+  return (
+    <header
+      className={`bg-dark-900 sticky top-0 z-50 h-16 flex items-center justify-center`}
+    >
+      <p className="text-white">
+        Header Test - User: {user ? user.id : 'Logged Out'} - Auth: {isAuthenticated ? 'Yes' : 'No'}
+      </p>
+      {/* {user?.banned && <p className="text-red-400">USER BANNED</p>} */}
+      {/* {isMaintenanceMode && <p className="text-yellow-400">MAINTENANCE MODE</p>} */}
+    </header>
+  );
+
+  // Original return statement commented out for testing
+  /*
   return (
     <header
       className={`bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16"}`}
       onClick={(e) => e.stopPropagation()}
     >
-        {user?.is_banned && (
+        {user?.banned && (
           <div className="bg-red-500/10 border-b border-red-500/20">
             <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <p className="text-red-400 text-sm text-center">
                 Uh-oh! You're been banned from DegenDuel. GG.
-                {user?.ban_reason ? `: ${user?.ban_reason}` : ""}
+                {user?.banned_reason ? `: ${user.banned_reason}` : ""} 
               </p>
             </div>
           </div>
         )}
 
         {isMaintenanceMode && (
-          <div className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-yellow-400/20 to-yellow-400/10" />
-
-            <div
-              className="absolute inset-0 animate-caution-flow-left"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(-45deg, transparent 0, transparent 10px, #fbbf24 10px, #fbbf24 20px, transparent 20px, transparent 30px)",
-                backgroundSize: "200% 200%",
-                opacity: 0.15,
-              }}
-            />
-
-            <div
-              className="absolute inset-0 animate-caution-flow-right"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(45deg, transparent 0, transparent 10px, #000 10px, #000 20px, transparent 20px, transparent 30px)",
-                backgroundSize: "200% 200%",
-                opacity: 0.1,
-              }}
-            />
-
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/5 to-transparent animate-shine-slow" />
-
-            <div className="relative py-1.5">
-              <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
-                <p className="hidden sm:flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">
-                  <span className="animate-pulse font-bold">&lt;!</span>
-                  <span>{maintenanceMessage || "DEGENDUEL MAINTENANCE IN PROGRESS"}</span>
-                  <span className="animate-pulse font-bold">!&gt;</span>
-                </p>
-                <p className="sm:hidden flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">
-                  <span className="animate-pulse font-bold">&lt;!</span>
-                  <span>MAINTENANCE</span>
-                  <span className="animate-pulse font-bold">!&gt;</span>
-                </p>
-              </div>
-            </div>
-          </div>
+          // ... maintenance banner JSX ...
         )}
 
         <div className="relative max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-8">
@@ -273,4 +252,5 @@ export const Header: React.FC = () => {
         </AnimatePresence>
       </header>
   );
+  */
 };

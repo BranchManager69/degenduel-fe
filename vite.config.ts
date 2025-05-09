@@ -383,7 +383,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
       },
     },
     define: {
-      // Environment overrides removed since we determine in config.ts
+      'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
+      // Add this if not already present, or ensure React doesn't get overly optimized
+      '__REACT_DEVTOOLS_GLOBAL_HOOK__': JSON.stringify(true) // Usually for devtools, but can influence build
     },
     plugins: [
       react({

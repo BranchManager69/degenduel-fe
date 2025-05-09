@@ -1,4 +1,4 @@
-// src/hooks/useMigratedAuth.ts
+// src/hooks/auth/useMigratedAuth.ts
 
 /**
  * useMigratedAuth Hook
@@ -16,29 +16,38 @@ import React from "react";
 import { useAuth as useUnifiedAuth } from "../../contexts/UnifiedAuthContext";
 import { User } from "../../types/user";
 // import { TokenType } from "../../services/authTokenManagerService"; // Old direct import
-import { TokenType } from "../../services"; // Import from service index
+import { AuthMethod, TokenType } from "../../services"; // Import from service index, ADDED AuthMethod
 
-// Create an interface that represents the normalized auth API
-// This way we ensure consistent behavior regardless of which system is used
+// Interface defining the consistent API provided by this hook
 interface NormalizedAuthAPI {
   user: User | null;
   isLoading: boolean;
   loading: boolean; // For backward compatibility (maps to isLoading)
-  isAuthenticated: boolean;
+  isAuthenticated: boolean; // Correctly a boolean
   
-  // Role properties (normalized to boolean values)
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
+  isAdmin: boolean; // Correctly a boolean
+  isSuperAdmin: boolean; // Correctly a boolean
   
-  // Auth method checks
+  // Auth method checks (these are functions on UnifiedAuthContextType)
   isWalletAuth: () => boolean;
   isPrivyAuth: () => boolean;
   isTwitterAuth: () => boolean;
   
-  // Other methods
-  checkAuth: () => Promise<boolean> | void;  // Handle both return types properly
+  // Other methods from UnifiedAuthContextType
+  checkAuth: () => Promise<boolean> | void;
   getToken: (type?: TokenType) => Promise<string | null>;
-  [key: string]: any; // Allow other properties
+  loginWithWallet: (walletAddress: string, signMessage: (message: Uint8Array) => Promise<any>) => Promise<User>;
+  loginWithPrivy: (token: string, userId: string) => Promise<User>;
+  logout: () => Promise<void>;
+  getAccessToken: () => Promise<string | null>; 
+  linkTwitter: () => Promise<string>;
+  linkPrivy: (token: string, userId: string) => Promise<boolean>;
+  isPrivyLinked: () => boolean;
+  isTwitterLinked: () => boolean;
+  
+  // Properties from UnifiedAuthContextType
+  activeMethod: AuthMethod | null;
+  error: Error | null;
 }
 
 // Create a hook that returns a normalized auth API
@@ -52,37 +61,34 @@ export function useMigratedAuth(): NormalizedAuthAPI {
   }, []);
   
   // Always use the Unified Auth system
-  const auth = useUnifiedAuth();
+  const authContextValue = useUnifiedAuth();
   
-  // Destructure the necessary parts from the auth context result
-  const {
-    // Get the functions explicitly
-    isAdmin: isAdminFunc, 
-    isSuperAdmin: isSuperAdminFunc,
-    // Get other states we need to normalize/pass through
-    isLoading: authIsLoading, 
-    isAuthenticated: authIsAuthenticated,
-    // Capture the rest of the properties to spread later
-    ...restAuth 
-  } = auth;
-  
-  // Create the normalized API return object
+  // Construct the normalized API object based on NormalizedAuthAPI interface
   return {
-    ...restAuth, // Spread the remaining properties from the context
-    
-    // Normalized loading state
-    isLoading: authIsLoading,
-    loading: authIsLoading, // Backward compatibility
-    
-    // Normalized authentication state (ensure boolean)
-    isAuthenticated: !!authIsAuthenticated, 
-    
-    // Normalized role checks (call the original functions)
-    isAdmin: isAdminFunc(), 
-    isSuperAdmin: isSuperAdminFunc(),
+    // Properties
+    user: authContextValue.user,
+    isLoading: authContextValue.isLoading,
+    loading: authContextValue.isLoading, // Backward compatibility
+    isAuthenticated: authContextValue.isAuthenticated(), // Call function to get boolean
+    isAdmin: authContextValue.isAdmin(), // Call function to get boolean
+    isSuperAdmin: authContextValue.isSuperAdmin(), // Call function to get boolean
+    activeMethod: authContextValue.activeMethod,
+    error: authContextValue.error,
 
-    // Fallbacks for checkAuth and getToken are handled by restAuth spread
-    // If they don't exist on auth context, they won't be in restAuth
+    // Methods (pass through directly)
+    isWalletAuth: authContextValue.isWalletAuth,
+    isPrivyAuth: authContextValue.isPrivyAuth,
+    isTwitterAuth: authContextValue.isTwitterAuth,
+    checkAuth: authContextValue.checkAuth,
+    getToken: authContextValue.getToken,
+    loginWithWallet: authContextValue.loginWithWallet,
+    loginWithPrivy: authContextValue.loginWithPrivy,
+    logout: authContextValue.logout,
+    getAccessToken: authContextValue.getAccessToken,
+    linkTwitter: authContextValue.linkTwitter,
+    linkPrivy: authContextValue.linkPrivy,
+    isPrivyLinked: authContextValue.isPrivyLinked,
+    isTwitterLinked: authContextValue.isTwitterLinked,
   };
 }
 

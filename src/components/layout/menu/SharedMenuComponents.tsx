@@ -14,7 +14,7 @@
  */
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaFingerprint } from "react-icons/fa";
 import { Link } from 'react-router-dom';
 import { config } from '../../../config/config';
@@ -91,16 +91,21 @@ export const BiometricAuthComponent: React.FC<{
   const { isAvailable, isRegistered, registerCredential } = useBiometricAuth();
   const [isLoading, setIsLoading] = useState(false);
   const user = useStore(state => state.user);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // Don't show if biometric auth is not available
   if (!isAvailable) return null;
   
-  // Handle registration for users who aren't registered yet
   const handleRegister = async () => {
     setIsLoading(true);
-    
     try {
-      // Register biometric credential with platform authenticator (Face ID, Touch ID, etc.)
       await registerCredential(
         userId, 
         user?.nickname || userId,
@@ -109,12 +114,9 @@ export const BiometricAuthComponent: React.FC<{
           nickname: user?.nickname || undefined
         }
       );
-      if (onClose) onClose();
-    } catch (err) {
-      console.error('Biometric auth error:', err);
-    } finally {
-      setIsLoading(false);
-    }
+      if (isMounted.current && onClose) onClose();
+    } catch (err) { console.error('Biometric auth error:', err); }
+    finally { if (isMounted.current) setIsLoading(false); }
   };
 
   return (

@@ -16,18 +16,18 @@ export const InviteWelcomeModal: React.FC = () => {
     inviterProfile,
     inviteRewards,
   } = useInviteSystem();
-  const { isFullyConnected, user } = useMigratedAuth();
+  const { isAuthenticated, user } = useMigratedAuth();
   const { connectWallet, isConnecting } = useStore();
 
   // When user successfully connects and gets a profile, track signup and close modal
   useEffect(() => {
-    if (isFullyConnected && user && inviteCode) {
+    if (isAuthenticated && user && inviteCode) {
       trackSignup().catch(console.error);
       setShowWelcomeModal(false);
       localStorage.setItem("has_seen_welcome", "true");
     }
   }, [
-    isFullyConnected,
+    isAuthenticated,
     user,
     inviteCode,
     setShowWelcomeModal,
@@ -35,7 +35,7 @@ export const InviteWelcomeModal: React.FC = () => {
   ]);
 
   const handleGetStarted = () => {
-    if (!isFullyConnected) {
+    if (!isAuthenticated) {
       // Connect wallet using store's connectWallet
       connectWallet().catch(console.error);
     } else {
@@ -189,7 +189,7 @@ export const InviteWelcomeModal: React.FC = () => {
                         <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
                           {isConnecting
                             ? "CONNECTING..."
-                            : isFullyConnected
+                            : isAuthenticated
                               ? "EXPLORE DUELS"
                               : "CONNECT WALLET TO START"}
                         </span>

@@ -61,7 +61,7 @@ export const LandingPage: React.FC = () => {
   const [contractAddress, setContractAddress] = useState<string>('');
   const [targetReleaseDate, setTargetReleaseDate] = useState<Date | null>(null);
   const [countdownDetails, setCountdownDetails] = useState<CountdownResponse | null>(null);
-  const [apiTokenAddress, setApiTokenAddress] = useState<string | null>(null);
+  const [apiTokenAddress] = useState<string | null>(null);
   const [isLoadingCountdown, setIsLoadingCountdown] = useState<boolean>(true);
   const [showContractReveal, setShowContractReveal] = useState<boolean>(false);
   const [showPumpFunButton, setShowPumpFunButton] = useState<boolean>(false);
@@ -79,31 +79,36 @@ export const LandingPage: React.FC = () => {
     contestApiResponse: null
   });
   
+  console.log("[LandingPage] Rendering. Current targetReleaseDate:", targetReleaseDate, "isLoadingCountdown:", isLoadingCountdown, "countdownDetails:", countdownDetails); // Log state
+
   // Fetch countdown data from backend when component mounts
   useEffect(() => {
     const loadCountdownDetails = async () => {
+      console.log("[LandingPage] loadCountdownDetails EFFECT RUNNING"); // Log effect run
       setIsLoadingCountdown(true);
       try {
         const data = await fetchCountdownData();
-        setCountdownDetails(data);
-        setApiTokenAddress(data.token_address || null);
-
+        console.log("[LandingPage] fetchCountdownData response:", data);
+        setCountdownDetails(data); // This will trigger re-render
+        
         if (data.enabled && data.end_time) {
           const newReleaseDate = new Date(data.end_time);
           if (!isNaN(newReleaseDate.getTime())) {
+            console.log("[LandingPage] Setting targetReleaseDate from API:", newReleaseDate);
             setTargetReleaseDate(newReleaseDate);
-            console.log(`[LandingPage] Countdown active. Target: ${formatReleaseDate(newReleaseDate)}. Message: ${data.message}`);
           } else {
-            console.warn("[LandingPage] Invalid end_time from countdown API, using fallback logic.");
-            setTargetReleaseDate(FALLBACK_RELEASE_DATE); // Or null to show no countdown
+            console.warn("[LandingPage] Invalid end_time from countdown API, setting targetReleaseDate to FALLBACK.");
+            setTargetReleaseDate(FALLBACK_RELEASE_DATE);
           }
         } else {
-          console.log("[LandingPage] Countdown not enabled by API or no end_time.");
-          setTargetReleaseDate(null); // No active countdown
+          console.log("[LandingPage] Countdown not enabled by API or no end_time, setting targetReleaseDate to null.");
+          setTargetReleaseDate(null);
         }
       } catch (error) {
-        console.error('[LandingPage] Error loading countdown details:', error);
-        setTargetReleaseDate(FALLBACK_RELEASE_DATE); // Fallback on error
+        console.error('[LandingPage] Error in loadCountdownDetails:', error);
+        console.log("[LandingPage] Setting targetReleaseDate to FALLBACK_RELEASE_DATE due to error.");
+        setTargetReleaseDate(FALLBACK_RELEASE_DATE);
+        // Also set countdownDetails to an error/disabled state to avoid inconsistencies
         setCountdownDetails({ enabled: false, title: "Countdown Error", message: "Could not load details." });
       } finally {
         setIsLoadingCountdown(false);
@@ -613,16 +618,24 @@ export const LandingPage: React.FC = () => {
 
               {/* Countdown Timer Component - uses new state */}
               <motion.div className="w-full max-w-lg mx-auto mb-8 relative z-20" /* variants={childVariants} */ >
+                {/* Logging for debugging rendering conditions */} 
+                {(() => { 
+                  if (isLoadingCountdown) console.log("[LandingPage] DecryptionTimer branch: isLoadingCountdown is true");
+                  else if (!(countdownDetails?.enabled && targetReleaseDate)) console.log("[LandingPage] DecryptionTimer branch: Not (countdownDetails?.enabled && targetReleaseDate). Details:", countdownDetails, "TargetDate:", targetReleaseDate);
+                  else console.log("[LandingPage] DecryptionTimer branch: Rendering DecryptionTimer. Details:", countdownDetails, "TargetDate:", targetReleaseDate);
+                  return null; 
+                })()}
+
                 {isLoadingCountdown ? (
                   <div>Loading countdown...</div>
                 ) : countdownDetails?.enabled && targetReleaseDate ? (
                   <>
+                    {/* {console.log("[LandingPage] Rendering DecryptionTimer with targetDate:", targetReleaseDate)} */}
+                    {/* The above log is now part of the IIFE block above */}
                     {countdownDetails.title && <h2 className="text-3xl font-bold text-purple-300 mb-2">{countdownDetails.title}</h2>}
                     {countdownDetails.message && <p className="text-lg text-gray-300 mb-4">{countdownDetails.message}</p>}
                     <DecryptionTimer
-                      targetDate={targetReleaseDate} // Pass the Date object
-                      contractAddress={websocketContractAddress || contractAddress} // Pass current contractAddress state
-                      // onComplete is now handled by setting showPumpFunButton
+                      targetDate={targetReleaseDate} 
                     />
                     {/* Button to link to pump.fun - NOW WITH APLOMB! */}
                     {showPumpFunButton && websocketContractAddress && (
@@ -661,8 +674,11 @@ export const LandingPage: React.FC = () => {
                     )}
                   </>
                 ) : (
-                  // Optional: Message if countdown is not enabled or date is not set
-                  <div className="text-xl text-gray-500 py-8">{(countdownDetails && !countdownDetails.enabled) ? (countdownDetails.message || "Launch details coming soon!") : "Loading launch details..."}</div>
+                  <div className="text-xl text-gray-500 py-8">
+                    {/* {console.log("[LandingPage] NOT Rendering DecryptionTimer. isLoadingCountdown:", isLoadingCountdown, "countdownDetails:", countdownDetails, "targetReleaseDate:", targetReleaseDate)} */}
+                    {/* The above log is now part of the IIFE block at the start of this section */}
+                    {(countdownDetails && !countdownDetails.enabled) ? (countdownDetails.message || "Launch details coming soon!") : "Loading launch details..."}
+                  </div>
                 )}
               </motion.div>
 

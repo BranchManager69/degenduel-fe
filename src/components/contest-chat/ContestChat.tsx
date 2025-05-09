@@ -82,7 +82,9 @@ export const ContestChat: React.FC<ContestChatProps> = ({
   onNewMessage,
   adminType,
 }) => {
-  const { userId: currentUserId, userRole: currentUserRole } = useMigratedAuth();
+  const { user } = useMigratedAuth();
+  const currentUserId = user?.id;
+  const currentUserRole = user?.role;
   const {
     messages,
     participants,

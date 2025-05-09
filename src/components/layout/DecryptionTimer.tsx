@@ -9,7 +9,7 @@
  */
 
 import { motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLaunchEvent } from '../../hooks/websocket/topic-hooks/useLaunchEvent';
 import { DecryptionTimerProps } from '../terminal/types';
 
@@ -20,7 +20,8 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
   targetDate = new Date('2025-03-15T18:00:00-05:00')
 }) => {
   const { contractAddress: revealedAddress } = useLaunchEvent();
-  
+  const calcFuncCreationCounter = useRef(0);
+
   const [timeRemaining, setTimeRemaining] = useState({
     days: 0,
     hours: 0,
@@ -30,40 +31,50 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
   
   const [urgencyLevel, setUrgencyLevel] = useState(0);
   
-  useEffect(() => {
-    const calculateTimeRemaining = () => {
-      const now = new Date();
-      const difference = targetDate.getTime() - now.getTime();
-      
-      if (difference <= 0) {
-        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        setUrgencyLevel(3);
-        return;
-      }
-      
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-      
-      setTimeRemaining({ days, hours, minutes, seconds });
-      
-      const totalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
-      
-      if (totalSeconds <= 10) {
-        setUrgencyLevel(2);
-      } else if (totalSeconds <= 60) {
-        setUrgencyLevel(1);
-      } else {
-        setUrgencyLevel(0);
-      }
-    };
+  const calculateTimeRemaining = useCallback(() => {
+    calcFuncCreationCounter.current += 1;
+
+    if (!(targetDate instanceof Date) || isNaN(targetDate.getTime())) {
+      setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      setUrgencyLevel(3);
+      return;
+    }
+
+    const now = new Date();
+    const difference = targetDate.getTime() - now.getTime();
     
+    if (difference <= 0) {
+      setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      setUrgencyLevel(3);
+      return;
+    }
+    
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+    
+    setTimeRemaining({ days, hours, minutes, seconds });
+    
+    const totalSeconds = days * 86400 + hours * 3600 + minutes * 60 + seconds;
+    
+    if (totalSeconds <= 10) {
+      setUrgencyLevel(2);
+    } else if (totalSeconds <= 60) {
+      setUrgencyLevel(1);
+    } else {
+      setUrgencyLevel(0);
+    }
+  }, [targetDate instanceof Date ? targetDate.getTime() : null, setTimeRemaining, setUrgencyLevel]);
+  
+  useEffect(() => {
     calculateTimeRemaining();
     const timer = setInterval(calculateTimeRemaining, 1000);
     
-    return () => clearInterval(timer);
-  }, [targetDate]);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [calculateTimeRemaining]);
   
   const isComplete = timeRemaining.days === 0 && 
                    timeRemaining.hours === 0 && 
