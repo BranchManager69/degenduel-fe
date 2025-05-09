@@ -35,7 +35,12 @@ import { ddApi } from "../../../services/dd-api";
 // Date Utilities
 import { getTimeRemainingUntilRelease, isReleaseTimePassed } from '../../../utils/dateUtils';
 // Release Date Service
-import { FALLBACK_RELEASE_DATE, fetchReleaseDate, formatReleaseDate } from '../../../services/releaseDateService';
+import {
+  CountdownResponse,
+  FALLBACK_RELEASE_DATE,
+  fetchCountdownData,
+  formatReleaseDate,
+} from '../../../services/releaseDateService';
 // Import PaginatedResponse from types
 import { PaginatedResponse } from '../../../types';
 // Zustand store
@@ -54,10 +59,14 @@ export const LandingPage: React.FC = () => {
   
   // Decryption Timer -- Contract address reveal countdown
   const [contractAddress, setContractAddress] = useState<string>('');
-  const [releaseDate, setReleaseDate] = useState<Date>(FALLBACK_RELEASE_DATE);
-  const [isLoadingReleaseDate, setIsLoadingReleaseDate] = useState<boolean>(true);
+  const [targetReleaseDate, setTargetReleaseDate] = useState<Date | null>(null);
+  const [countdownDetails, setCountdownDetails] = useState<CountdownResponse | null>(null);
+  const [apiTokenAddress, setApiTokenAddress] = useState<string | null>(null);
+  const [isLoadingCountdown, setIsLoadingCountdown] = useState<boolean>(true);
   const [showContractReveal, setShowContractReveal] = useState<boolean>(false);
+  const [showPumpFunButton, setShowPumpFunButton] = useState<boolean>(false);
   const countdownCheckerRef = useRef<number | null>(null);
+  const isMounted = useRef(true); // Add a ref to track mounted state
   
   // Debug state for contests section
   const [contestDebugInfo, setContestDebugInfo] = useState<{
@@ -70,32 +79,37 @@ export const LandingPage: React.FC = () => {
     contestApiResponse: null
   });
   
-  // Fetch release date from backend when component mounts (?)
+  // Fetch countdown data from backend when component mounts
   useEffect(() => {
-    // Fetch release date from backend
-    const fetchReleaseDateFromBackend = async () => {
+    const loadCountdownDetails = async () => {
+      setIsLoadingCountdown(true);
       try {
-        // Set loading state to true
-        setIsLoadingReleaseDate(true);
-        // Fetch release date from backend
-        const date = await fetchReleaseDate();
-        // Set release date
-        setReleaseDate(date);
-        // Log release date
-        console.log(`Release date set to: ${formatReleaseDate(date)}`);
+        const data = await fetchCountdownData();
+        setCountdownDetails(data);
+        setApiTokenAddress(data.token_address || null);
+
+        if (data.enabled && data.end_time) {
+          const newReleaseDate = new Date(data.end_time);
+          if (!isNaN(newReleaseDate.getTime())) {
+            setTargetReleaseDate(newReleaseDate);
+            console.log(`[LandingPage] Countdown active. Target: ${formatReleaseDate(newReleaseDate)}. Message: ${data.message}`);
+          } else {
+            console.warn("[LandingPage] Invalid end_time from countdown API, using fallback logic.");
+            setTargetReleaseDate(FALLBACK_RELEASE_DATE); // Or null to show no countdown
+          }
+        } else {
+          console.log("[LandingPage] Countdown not enabled by API or no end_time.");
+          setTargetReleaseDate(null); // No active countdown
+        }
       } catch (error) {
-        // Log error
-        console.error('Error fetching release date:', error);
-        // Set fallback date
-        setReleaseDate(FALLBACK_RELEASE_DATE);
-        // Log fallback date
-        console.log(`Using fallback date: ${formatReleaseDate(FALLBACK_RELEASE_DATE)}`);
+        console.error('[LandingPage] Error loading countdown details:', error);
+        setTargetReleaseDate(FALLBACK_RELEASE_DATE); // Fallback on error
+        setCountdownDetails({ enabled: false, title: "Countdown Error", message: "Could not load details." });
       } finally {
-        // Set loading state to false
-        setIsLoadingReleaseDate(false);
+        setIsLoadingCountdown(false);
       }
     };
-    fetchReleaseDateFromBackend();
+    loadCountdownDetails();
   }, []);
   
   // Get contract address from WebSocket-based Terminal data
@@ -123,55 +137,39 @@ export const LandingPage: React.FC = () => {
     }
   }, [terminalConnected, websocketContractAddress, websocketContractRevealed, showContractReveal]);
   
-  // Fallback check for release time - if WebSocket is not connected yet
+  // Fallback check for release time and handling completion/redirect
   useEffect(() => {
-    // Don't run this if WebSocket is already providing contract data
-    if (websocketContractAddress) {
-      return;
-    }
-    
-    // Don't set up the checker if we're still loading the release date
-    if (isLoadingReleaseDate) {
-      return;
-    }
-    
-    // Check if countdown has already ended
-    if (isReleaseTimePassed(releaseDate)) {
-      console.log(`[LandingPage] Release time already passed: ${formatReleaseDate(releaseDate)}`);
-      // Reveal the contract address
-      setShowContractReveal(true);
-    } else {
-      // Calculate time until release
-      const timeUntilRelease = getTimeRemainingUntilRelease(releaseDate);
-      const formattedDate = formatReleaseDate(releaseDate);
-      
-      // Log countdown info
-      console.log(`[LandingPage] Countdown to ${formattedDate} will end in ${timeUntilRelease}ms`);
-      
-      // Set a timeout to update reveal flag when countdown ends
-      countdownCheckerRef.current = window.setTimeout(() => {
-        console.log('[LandingPage] Countdown timer complete - showing address when available');
-        // Reveal the contract address when it becomes available
-        setShowContractReveal(true);
-      }, timeUntilRelease + 100); // Add 100ms buffer
-    }
-    
-    // Clean up timer on unmount
-    return () => {
-      if (countdownCheckerRef.current) {
-        clearTimeout(countdownCheckerRef.current);
-      }
-    };
-  }, [releaseDate, isLoadingReleaseDate, websocketContractAddress]);
+    if (websocketContractAddress) return; // WS has priority for reveal
+    if (isLoadingCountdown || !countdownDetails) return; // Wait for countdownDetails
 
-  // Terminal configuration (Using WebSocket when available)
+    if (!countdownDetails.enabled || !targetReleaseDate) {
+      setShowContractReveal(false); // If countdown is not enabled, don't proceed to reveal via timer
+      setShowPumpFunButton(false); // Also don't show button
+      if (countdownCheckerRef.current) clearTimeout(countdownCheckerRef.current);
+      return;
+    }
+
+    // Check if the release time has passed
+    if (isReleaseTimePassed(targetReleaseDate)) {
+      console.log(`[LandingPage] Target release time passed: ${formatReleaseDate(targetReleaseDate)}`);
+      setShowContractReveal(true);
+      setShowPumpFunButton(true); // Show the button instead of auto-redirecting
+    } else {
+      const timeUntilRelease = getTimeRemainingUntilRelease(targetReleaseDate);
+      countdownCheckerRef.current = window.setTimeout(() => {
+        console.log('[LandingPage] Countdown timer complete.');
+        setShowContractReveal(true);
+        setShowPumpFunButton(true); // Show the button instead of auto-redirecting
+      }, timeUntilRelease + 100);
+    }
+    return () => { if (countdownCheckerRef.current) clearTimeout(countdownCheckerRef.current); };
+  }, [targetReleaseDate, isLoadingCountdown, countdownDetails, websocketContractAddress]);
+
+  // Terminal configuration
   const terminalConfig = {
-    // Contract address for display in Terminal - prioritize WebSocket, then fallback to legacy
     CONTRACT_ADDRESS: websocketContractAddress || (showContractReveal ? globalConfig.CONTRACT_ADDRESS.REAL : contractAddress),
-    // Launch date for countdown timer 
-    RELEASE_DATE: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME || releaseDate,
-    // Format settings for display
-    DISPLAY: {
+    RELEASE_DATE: targetReleaseDate || globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME, 
+    DISPLAY: { // Corrected mapping
       DATE_SHORT: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
       DATE_FULL: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,
       TIME: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_TIME,
@@ -181,8 +179,8 @@ export const LandingPage: React.FC = () => {
   // Debug log for release date sources
   useEffect(() => {
     console.log('[LandingPage] Release date sources:', {
-      releaseDate,
-      releaseDateToISOString: releaseDate.toISOString(),
+      targetReleaseDate,
+      targetReleaseDateToISOString: targetReleaseDate?.toISOString(),
       globalConfigDate: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
       globalConfigDateToISOString: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME.toISOString(),
       fallbackDate: FALLBACK_RELEASE_DATE,
@@ -195,7 +193,7 @@ export const LandingPage: React.FC = () => {
         TIME: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_TIME,
       }
     });
-  }, [releaseDate, terminalConfig]);
+  }, [targetReleaseDate, terminalConfig]);
   
   // Use auth hook for proper admin status checks
   const { user, isAdmin } = useMigratedAuth();
@@ -214,23 +212,30 @@ export const LandingPage: React.FC = () => {
   // Update local and store maintenance mode when WebSocket provides updates
   useEffect(() => {
     if (systemSettingsConnected) {
-      // Log that we're receiving maintenance updates via WebSocket
-      // Use the derived isMaintenanceMode for logic
       console.log(`[LandingPage] System settings received: Maintenance: ${isMaintenanceModeActive}`);
       
-      // Update store state
-      if (useStore.getState().setMaintenanceMode) {
-        useStore.getState().setMaintenanceMode(isMaintenanceModeActive);
-      }
-      
-      if (isMaintenanceModeActive) {
-        const message = maintenanceMessageToDisplay || "DegenDuel is in Maintenance Mode. Please try again later.";
-        setError(message); // Use error state
-      } else if (error && error.includes("Maintenance Mode")) {
-        setError(null);
+      if (isMounted.current) { // Check if component is still mounted
+        if (useStore.getState().setMaintenanceMode) {
+          useStore.getState().setMaintenanceMode(isMaintenanceModeActive);
+        }
+        
+        if (isMaintenanceModeActive) {
+          const message = maintenanceMessageToDisplay || "DegenDuel is in Maintenance Mode. Please try again later.";
+          setError(message);
+        } else if (error && error.includes("Maintenance Mode")) {
+          setError(null);
+        }
       }
     }
-  }, [systemSettingsConnected, settings, setError]); // Depend on settings object
+  }, [systemSettingsConnected, settings, setError, isMaintenanceModeActive, maintenanceMessageToDisplay, error]); // Added dependencies from inside the effect
+
+  // Add cleanup function for the mounted ref
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Log system settings errors
   useEffect(() => {
@@ -606,23 +611,58 @@ export const LandingPage: React.FC = () => {
               {/* Call to action buttons - Now using the CtaSection component */}
               <CtaSection user={user} animationPhase={animationPhase} />
 
-              {/* Countdown Timer Component */}
-              <motion.div
-                className="w-full max-w-lg mx-auto mb-8 relative z-20"
-                variants={childVariants}
-              >
-                {isLoadingReleaseDate ? (
-                  <div className="flex items-center justify-center h-[120px]">
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-3 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                      <p className="text-md font-orbitron text-green-400">Loading countdown...</p>
-                    </div>
-                  </div>
+              {/* Countdown Timer Component - uses new state */}
+              <motion.div className="w-full max-w-lg mx-auto mb-8 relative z-20" /* variants={childVariants} */ >
+                {isLoadingCountdown ? (
+                  <div>Loading countdown...</div>
+                ) : countdownDetails?.enabled && targetReleaseDate ? (
+                  <>
+                    {countdownDetails.title && <h2 className="text-3xl font-bold text-purple-300 mb-2">{countdownDetails.title}</h2>}
+                    {countdownDetails.message && <p className="text-lg text-gray-300 mb-4">{countdownDetails.message}</p>}
+                    <DecryptionTimer
+                      targetDate={targetReleaseDate} // Pass the Date object
+                      contractAddress={websocketContractAddress || contractAddress} // Pass current contractAddress state
+                      // onComplete is now handled by setting showPumpFunButton
+                    />
+                    {/* Button to link to pump.fun - NOW WITH APLOMB! */}
+                    {showPumpFunButton && websocketContractAddress && (
+                      <motion.button
+                        initial={{ opacity: 0, y: 40, scale: 0.7 }}
+                        animate={{ 
+                          opacity: [0, 1, 0.6, 1], // Opacity stutters for a digital feel
+                          y: 0, 
+                          scale: 1 
+                        }}
+                        transition={{
+                          delay: 0.3,
+                          y: { type: "spring", stiffness: 180, damping: 15 },
+                          scale: { type: "spring", stiffness: 180, damping: 15 },
+                          opacity: { duration: 0.5, ease: "easeOut", times: [0, 0.25, 0.5, 1] } // Controls the stutter timing
+                        }}
+                        onClick={() => {
+                          const contractToUse = apiTokenAddress || websocketContractAddress; // Prioritize API, fallback to WS
+                          if (contractToUse) {
+                            const pumpFunUrl = `https://pump.fun/coin/${contractToUse}`;
+                            console.log("[LandingPage] Pump.fun button clicked. Opening with contract:", contractToUse, "URL:", pumpFunUrl);
+                            window.open(pumpFunUrl, '_blank');
+                          } else {
+                            console.error("[LandingPage] Pump.fun button clicked, but no contract address is available.");
+                          }
+                        }}
+                        className="mt-8 p-0 bg-gradient-to-r from-pink-500 via-purple-600 to-brand-500 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 inline-flex items-center justify-center aspect-square w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28" // Adjusted for image, made square
+                        aria-label="View on Pump.fun"
+                      >
+                        <img 
+                          src="/assets/media/logos/pump.png" 
+                          alt="View on Pump.fun" 
+                          className="h-10 w-auto sm:h-12 md:h-14 object-contain" // Control image size within button
+                        />
+                      </motion.button>
+                    )}
+                  </>
                 ) : (
-                  <DecryptionTimer
-                    targetDate={releaseDate}
-                    contractAddress={websocketContractAddress || contractAddress}
-                  />
+                  // Optional: Message if countdown is not enabled or date is not set
+                  <div className="text-xl text-gray-500 py-8">{(countdownDetails && !countdownDetails.enabled) ? (countdownDetails.message || "Launch details coming soon!") : "Loading launch details..."}</div>
                 )}
               </motion.div>
 
@@ -646,7 +686,7 @@ export const LandingPage: React.FC = () => {
                   console.log('Terminal animation completed');
                 }}
               >
-                {isLoadingReleaseDate ? (
+                {isLoadingCountdown ? (
                   <div className="flex items-center justify-center h-[300px]">
                     <div className="text-center">
                       <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>

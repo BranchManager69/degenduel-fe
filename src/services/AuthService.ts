@@ -24,7 +24,7 @@
 import { authDebug } from '../config/config';
 import axiosInstance from '../lib/axiosInstance';
 import { User } from '../types/user';
-import { tokenManagerService, TokenType } from './index';
+import { tokenManagerService, TokenType } from './tokenManagerService';
 
 // Auth method types - EXPANDED based on Privy config
 export type AuthMethod = 

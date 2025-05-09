@@ -167,6 +167,7 @@ export enum DDWebSocketActions {
   GET_NOTIFICATIONS = 'getNotifications',
   MARK_AS_READ = 'markAsRead',
   CLEAR_NOTIFICATIONS = 'clearNotifications',
+  MARK_ALL_AS_READ = 'markAllAsRead',
   
   // ========== SKYDUEL topic actions ==========
   GET_GAME_STATE = 'getGameState',

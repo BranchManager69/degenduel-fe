@@ -52,6 +52,7 @@ export interface UnifiedWebSocketContextType {
   // Connection state
   isConnected: boolean;
   isAuthenticated: boolean;
+  isReadyForSecureInteraction: boolean;
   connectionState: ConnectionState;
   connectionError: string | null;
   
@@ -634,12 +635,14 @@ export const UnifiedWebSocketProvider: React.FC<{
   const isConnected = connectionState === ConnectionState.CONNECTED || 
                       connectionState === ConnectionState.AUTHENTICATED;
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
+  const isReadyForSecureInteraction = isAuthenticated;
   
   // Create context value
   const contextValue: UnifiedWebSocketContextType = {
     // Connection state
     isConnected,
     isAuthenticated,
+    isReadyForSecureInteraction,
     connectionState,
     connectionError,
     

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
-import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketContext";
+import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { MessageType, TopicType, WebSocketMessage } from "../../hooks/websocket";
@@ -13,7 +13,6 @@ import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
   const { isAdmin, isAuthenticated } = useMigratedAuth();
-  // Use the correct hook from the context (takes no arguments)
   const unifiedWs = useWebSocket();
   
   // Check for storybook mock status
@@ -39,7 +38,6 @@ export const Footer: React.FC = () => {
   
   // Register listener for WebSocket messages
   useEffect(() => {
-    // Define the callback function with explicit type
     const handleMessage = (message: WebSocketMessage | any) => { 
       // Handle different message types and topics
       if (message.type === MessageType.DATA && message.topic === TopicType.SYSTEM) {
@@ -66,26 +64,22 @@ export const Footer: React.FC = () => {
       }
     };
 
-    // Register the listener when the context is available
-    if (unifiedWs) {
-      const unregister = unifiedWs.registerListener(
-        'footer-status',                             // Listener ID
-        [MessageType.DATA, MessageType.SYSTEM],      // Types to listen for
-        handleMessage,                               // Callback function
-        [TopicType.SYSTEM]                           // Filter by system topic
-      );
-      return unregister; // Return the cleanup function provided by registerListener
-    }
-  }, [unifiedWs]); // Depend on the unifiedWs context object itself
+    const unregister = unifiedWs.registerListener(
+      'footer-status',
+      [MessageType.DATA, MessageType.SYSTEM],
+      handleMessage,
+      [TopicType.SYSTEM]
+    );
+    return unregister;
+  }, [unifiedWs]);
 
   // Subscribe to system topic when connection is ready
   useEffect(() => {
-    let isSubscribed = false; // Track if we successfully subscribed in this effect run
+    let isSubscribed = false;
 
-    // Check if the WebSocket is connected and ready for subscriptions
-    if (unifiedWs.connectionState === ConnectionState.CONNECTED || unifiedWs.connectionState === ConnectionState.AUTHENTICATED) {
+    if (unifiedWs.isConnected) { 
       console.log(`[Footer] WebSocket connected. Attempting to subscribe to: ${TopicType.SYSTEM}`);
-      const success = unifiedWs.subscribe([TopicType.SYSTEM]); // Attempt subscription
+      const success = unifiedWs.subscribe([TopicType.SYSTEM]);
       if (success) {
           console.log(`👑🤩👍🏻 <<==== Subscribed to ${TopicType.SYSTEM}`);
           isSubscribed = true;
@@ -96,16 +90,13 @@ export const Footer: React.FC = () => {
       console.log(`[Footer] WebSocket not ready for subscription. State: ${unifiedWs.connectionState}`);
     }
 
-    // Return a cleanup function to unsubscribe when the component unmounts
     return () => {
-      // Only unsubscribe if we actually subscribed successfully within this effect instance
       if (isSubscribed) {
         console.log(`[Footer] Cleaning up subscription to ${TopicType.SYSTEM}`);
         unifiedWs.unsubscribe([TopicType.SYSTEM]);
       }
     };
-    // Depend on the connection state and subscribe/unsubscribe functions
-  }, [unifiedWs.connectionState, unifiedWs.subscribe, unifiedWs.unsubscribe]); 
+  }, [unifiedWs.isConnected, unifiedWs.subscribe, unifiedWs.unsubscribe, unifiedWs.connectionState]);
   
   // Track combined WebSocket connection status
   const [combinedWsStatus, setCombinedWsStatus] = useState({

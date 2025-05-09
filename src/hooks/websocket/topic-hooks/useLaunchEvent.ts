@@ -36,24 +36,23 @@ export const useLaunchEvent = () => {
     let unregister: (() => void) | null = null;
     let isSubscribed = false;
 
-    // Subscribe when connected
-    if (ws.isConnected) {
-      console.log('[useLaunchEvent] Subscribing to:', DDWebSocketTopic.LAUNCH_EVENTS);
-      // Register listener first
+    // Subscribe when WebSocket is connected (assuming LAUNCH_EVENTS is public)
+    if (ws.isConnected && ws.registerListener && ws.subscribe) {
+      console.log('[useLaunchEvent] WebSocket connected. Subscribing to:', DDWebSocketTopic.LAUNCH_EVENTS);
       unregister = ws.registerListener(
         'launch-event-listener', 
-        [DDExtendedMessageType.DATA], // Use extended type here
+        [DDExtendedMessageType.DATA],
         handleMessage,
-        [DDWebSocketTopic.LAUNCH_EVENTS] // Filter by topic
+        [DDWebSocketTopic.LAUNCH_EVENTS]
       );
-      // Attempt subscription
       isSubscribed = ws.subscribe([DDWebSocketTopic.LAUNCH_EVENTS]);
       if (!isSubscribed) {
           console.error('[useLaunchEvent] Failed to send subscribe request.');
-          // Unregister listener if subscribe call failed immediately
-          unregister?.();
+          unregister?.(); // Important: cleanup listener if subscribe fails
           unregister = null;
       }
+    } else if (!ws.isConnected) {
+      console.log('[useLaunchEvent] WebSocket not connected, deferring subscription to LAUNCH_EVENTS.');
     }
 
     // Cleanup function
@@ -61,7 +60,7 @@ export const useLaunchEvent = () => {
       // Unregister listener
       unregister?.();
       // Unsubscribe only if we successfully subscribed
-      if (isSubscribed && ws.isConnected) { // Check connection again on cleanup
+      if (isSubscribed && ws.isConnected && ws.unsubscribe) { // Check ws.isConnected and ws.unsubscribe on cleanup
         console.log('[useLaunchEvent] Unsubscribing from:', DDWebSocketTopic.LAUNCH_EVENTS);
         ws.unsubscribe([DDWebSocketTopic.LAUNCH_EVENTS]);
       }
@@ -70,5 +69,5 @@ export const useLaunchEvent = () => {
   // Re-run effect if WebSocket connection status changes or context object changes
   }, [ws.isConnected, ws.registerListener, ws.subscribe, ws.unsubscribe]); 
 
-  return { contractAddress, revealTime };
+  return { contractAddress, revealTime, isConnected: ws.isConnected }; // Expose connection status
 }; 

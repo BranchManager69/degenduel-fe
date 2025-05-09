@@ -18,11 +18,11 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { useStore } from '../../../store/useStore'; // For actions like setMaintenanceMode
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { DDWebSocketActions } from '../../../websocket-types-implementation';
 import { DDExtendedMessageType, DDWebSocketTopic } from '../index';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Placeholder types - these should be properly defined in src/types/settings.ts or similar
 interface FeatureFlag { name: string; enabled: boolean; [key: string]: any; }
@@ -75,6 +75,7 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null); 
 
   const { setMaintenanceMode /*, addServiceAlert */ } = useStore(); // Example store actions
+  const ws = useWebSocket(); // Use the context hook (takes no args)
 
   const handleMessage = useCallback((message: Partial<SystemSettingsWebSocketMessage>) => {
     if (message.type === DDExtendedMessageType.ERROR && message.error) {
@@ -93,12 +94,12 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
       const currentSettings = prevSettings || { ...DEFAULT_SETTINGS };
       let newSettings = { ...currentSettings };
 
-      if (action === DDWebSocketActions.GET_SETTINGS && data.settings) { // Response to initial fetch
+      if (action === DDWebSocketActions.GET_SETTINGS && data.settings) {
         newSettings = { ...currentSettings, ...data.settings };
-        setIsLoading(false);
+        if(isLoading) setIsLoading(false); // Set loading to false only if it was true
         dispatchWebSocketEvent('system_settings_loaded', { settings: newSettings });
-      } else if (action === DDWebSocketActions.SETTINGS_UPDATE) { // A general push update
-        if (subtype === 'settings' && data.settings) { // Full or partial settings object pushed
+      } else if (action === DDWebSocketActions.SETTINGS_UPDATE) {
+        if (subtype === 'settings' && data.settings) {
           newSettings = { ...currentSettings, ...data.settings };
         } else if (subtype === 'feature' && data.feature) {
           const feature = data.feature as FeatureFlag;
@@ -112,7 +113,7 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
           const idx = themes.findIndex(t => t.name === theme.name);
           if (idx >= 0) themes[idx] = theme; else themes.push(theme);
           newSettings.themes = themes;
-        } else if (subtype === 'notification' && data.notice) { // Add/update notice
+        } else if (subtype === 'notification' && data.notice) {
           const notice = data.notice as GlobalNotice;
           const notices = [...(newSettings.notices || [])];
           const idx = notices.findIndex(n => n.id === notice.id);
@@ -120,7 +121,7 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
           newSettings.notices = notices;
         }
         dispatchWebSocketEvent('system_settings_updated_push', { data });
-      } else if (subtype === 'notification' && action === 'remove' && data.noticeId) { // Specific remove action for notice
+      } else if (subtype === 'notification' && action === 'remove' && data.noticeId) {
          newSettings.notices = (newSettings.notices || []).filter(n => n.id !== data.noticeId);
          dispatchWebSocketEvent('system_settings_notice_removed', { noticeId: data.noticeId });
       }
@@ -132,34 +133,50 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
       setLastUpdate(new Date());
       return newSettings;
     });
-  }, [setMaintenanceMode]);
+  }, [setMaintenanceMode, isLoading]); // Added isLoading to dependency array
 
-  const ws = useUnifiedWebSocket(
-    'system-settings-hook',
-    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
-    handleMessage,
-    [DDWebSocketTopic.SYSTEM]
-  );
-
+  // Effect for WebSocket listener registration
   useEffect(() => {
-    if (ws.isConnected && isLoading) {
+    // Only register if the WebSocket context is available and handleMessage is stable
+    if (ws && ws.registerListener) {
+      const unregister = ws.registerListener(
+        'system-settings-hook', // Unique ID for this listener instance
+        [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
+        handleMessage,
+        [DDWebSocketTopic.SYSTEM]
+      );
+      return unregister; // Cleanup on unmount
+    }
+  }, [ws, handleMessage]); // Rerun if ws object or handleMessage changes
+
+  // Effect for initial data request
+  useEffect(() => {
+    // Gate initial data request by ws.isConnected (public data)
+    if (ws.isConnected && isLoading) { 
+      console.log('[useSystemSettings] WebSocket connected, requesting initial settings.');
       ws.request(DDWebSocketTopic.SYSTEM, DDWebSocketActions.GET_SETTINGS, settingsToWatch ? { settingsToWatch } : {});
       dispatchWebSocketEvent('system_settings_initial_request', { settingsToWatch });
+    } else if (!ws.isConnected && isLoading) {
+      console.log('[useSystemSettings] WebSocket not connected, deferring initial settings request.');
     }
   }, [ws.isConnected, ws.request, isLoading, settingsToWatch]);
 
   const updateSystemSettings = useCallback((newPartialSettings: Partial<SystemSettings>) => {
-    if (ws.isConnected) {
+    if (ws.isReadyForSecureInteraction) {
+      console.log('[useSystemSettings] WebSocket ready for secure interaction, attempting to update settings.');
       ws.request(DDWebSocketTopic.SYSTEM, DDWebSocketActions.UPDATE_SYSTEM_SETTINGS, newPartialSettings );
+    } else {
+      console.warn('[useSystemSettings] Cannot update settings - WebSocket not ready for secure interaction or not connected.');
     }
-  }, [ws.isConnected, ws.request]);
+  }, [ws.isReadyForSecureInteraction, ws.request]);
 
   return {
     settings,
-    isLoading: isLoading && !settings, // More accurate loading: true if loading and no settings yet
-    error: ws.error,
+    isLoading: isLoading && !settings,
+    error: ws.connectionError,
     updateSystemSettings,
     isConnected: ws.isConnected,
+    isReadyForSecureInteraction: ws.isReadyForSecureInteraction,
     lastSystemSettingsUpdate: lastUpdate
   };
 }

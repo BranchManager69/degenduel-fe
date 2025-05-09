@@ -31,7 +31,7 @@ import {
 } from '../menu/SharedMenuComponents';
 
 interface UserMenuProps {
-  user: User;
+  user: User | null;
   onDisconnect: () => void;
   isCompact?: boolean;
   unreadNotifications?: number;
@@ -208,19 +208,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   }, [isAdmin, isSuperAdmin, userLevel, getLevelColorScheme]);
 
   const displayName = useMemo(() => {
+    if (!user) return 'User';
     if (user.nickname) return user.nickname;
     const addr = user.wallet_address;
     return isCompact
       ? `${addr.slice(0, 4)}...${addr.slice(-4)}`
       : `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  }, [user.nickname, user.wallet_address, isCompact]);
+  }, [user, isCompact]);
 
   const profileImageUrl = useMemo(() => {
-    if (imageError || !user.profile_image?.url) {
+    if (!user || imageError || !user.profile_image?.url) {
       return "/assets/media/default/profile_pic.png";
     }
     return user.profile_image.thumbnail_url || user.profile_image.url;
-  }, [user.profile_image, imageError]);
+  }, [user, imageError]);
 
   const handleImageError = () => {
     setImageError(true);
@@ -239,6 +240,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   
   // Common menu item class for consistency
   const menuItemClass = `group flex items-center gap-2 px-4 py-2 text-sm transition-all duration-300 rounded-md`;
+
+  // If user is null, perhaps render a loading state or minimal menu, or rely on parent not to render UserMenu
+  // For now, the parent Header handles conditional rendering. These internal checks are for added safety.
+  if (!user) {
+    // This case should ideally not be reached if Header correctly unmounts UserMenu when user is null.
+    // However, if it is reached, returning null prevents further rendering errors within UserMenu.
+    // console.warn("[UserMenu] Rendered with null user prop. This shouldn't happen if Header is working correctly.");
+    return null; 
+  }
 
   return (
     <div className="flex items-center space-x-2">
@@ -416,11 +426,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                     <MenuDivider />
                     
                     {/* Use shared Biometric Authentication Component */}
-                    <BiometricAuthComponent 
-                      userId={user.wallet_address}
-                      menuItemClass={`${menuItemClass} text-blue-300 hover:text-blue-200 hover:bg-blue-500/20`}
-                      onClose={closeMenu}
-                    />
+                    {user.wallet_address && (
+                      <BiometricAuthComponent 
+                        userId={user.wallet_address}
+                        menuItemClass={`${menuItemClass} text-blue-300 hover:text-blue-200 hover:bg-blue-500/20`}
+                        onClose={closeMenu}
+                      />
+                    )}
 
                     {/* Add navigation sections from shared config */}
                     <MenuDivider />

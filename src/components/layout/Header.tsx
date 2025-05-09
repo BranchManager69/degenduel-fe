@@ -1,7 +1,7 @@
 // src/components/layout/Header.tsx
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
@@ -32,22 +32,41 @@ export const Header: React.FC = () => {
   const { unreadCount } = useNotifications();
   const { settings } = useSystemSettings();
   
+  const isMounted = useRef(true);
+  
   const isMaintenanceMode = settings?.maintenanceMode || false;
   const maintenanceMessage = settings?.maintenanceMessage;
 
   useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const currentStoreValue = useStore.getState().maintenanceMode;
+    let redirectTimerId: number | undefined;
     if (isMaintenanceMode !== currentStoreValue) {
       console.log(`[Header] Syncing maintenanceMode to store: ${isMaintenanceMode}`);
-      useStore.setState({ maintenanceMode: isMaintenanceMode });
+      if (isMounted.current) {
+        useStore.setState({ maintenanceMode: isMaintenanceMode });
+      }
 
       if (isMaintenanceMode === true && !isAdmin) {
         console.log("[Header] Maintenance mode activated, redirecting non-admin.");
-        setTimeout(() => {
-          window.location.href = "/maintenance";
+        redirectTimerId = window.setTimeout(() => {
+          if (isMounted.current) {
+            window.location.href = "/maintenance";
+          }
         }, 500); 
       }
     }
+    return () => {
+      if (redirectTimerId) {
+        clearTimeout(redirectTimerId);
+      }
+    };
   }, [isMaintenanceMode, isAdmin]);
 
   useEffect(() => {
@@ -96,7 +115,7 @@ export const Header: React.FC = () => {
             <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <p className="text-red-400 text-sm text-center">
                 Uh-oh! You're been banned from DegenDuel. GG.
-                {user.ban_reason ? `: ${user.ban_reason}` : ""}
+                {user?.ban_reason ? `: ${user?.ban_reason}` : ""}
               </p>
             </div>
           </div>

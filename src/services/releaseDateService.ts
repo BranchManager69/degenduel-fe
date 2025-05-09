@@ -17,32 +17,39 @@ export const FALLBACK_RELEASE_DATE = new Date(
   import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00'
 );
 
-// Cache for the fetched release date
-let cachedReleaseDate: Date | null = null;
+// Interface for the structured response from /api/status/countdown
+export interface CountdownResponse {
+  enabled: boolean;
+  end_time?: string;  // ISO Date string for the countdown target
+  title?: string;
+  message?: string;
+  redirect_url?: string | null;
+  token_address?: string; // Added new field from backend
+  // Potentially other fields the backend might send
+}
+
+// Cache for the fetched countdown data - consider reducing or removing for critical launches
+let cachedCountdownData: CountdownResponse | null = null;
+let cacheTime: number = 0;
+const CACHE_DURATION_MS = 30 * 1000; // Cache for 30 seconds to reduce rapid hits but allow reasonably fast updates
 
 /**
- * Fetch the release date from the backend
- * @returns Promise that resolves to the release date
+ * Fetch countdown data from the API
+ * @returns Promise resolving to CountdownResponse
  */
-export const fetchReleaseDate = async (): Promise<Date> => {
-  if (cachedReleaseDate) {
-    console.log('[releaseDateService] Returning cached release date:', cachedReleaseDate.toISOString());
-    return cachedReleaseDate;
+export const fetchCountdownData = async (): Promise<CountdownResponse> => {
+  const now = Date.now();
+  if (cachedCountdownData && (now - cacheTime < CACHE_DURATION_MS)) {
+    console.log('[releaseDateService] Returning cached countdown data.');
+    return cachedCountdownData;
   }
-  
-  // Countdown endpoint
-  const endpointPath = '/api/status/countdown' // DEPRECATED: '/api/v1/release-date';
 
-  // Construct the full URL to be absolutely sure what's being called
+  const endpointPath = '/api/status/countdown';
   const fullUrl = `${window.location.origin}${endpointPath}`;
-  
-  console.log(`[releaseDateService] Fetching release date. Full URL: ${fullUrl}`);
-  
+  console.log(`[releaseDateService] Fetching countdown data from: ${fullUrl}`);
+
   try {
-    const response = await fetch(fullUrl); // Use fullUrl here
-    
-    console.log(`[releaseDateService] Response status: ${response.status} ${response.statusText}`);
-    
+    const response = await fetch(fullUrl);
     if (!response.ok) {
       let errorPayload = 'No error payload or not JSON.';
       try {
@@ -59,33 +66,45 @@ export const fetchReleaseDate = async (): Promise<Date> => {
         console.error('[releaseDateService] Could not read error response text:', textError);
       }
       console.error(`[releaseDateService] Error response payload from ${fullUrl}:`, errorPayload);
-      throw new Error(`Error fetching release date: ${response.status} ${response.statusText}`);
+      throw new Error(`Error fetching countdown data: ${response.status} ${response.statusText}`);
     }
+    const data = await response.json() as CountdownResponse; // Assert the type
+    console.log('[releaseDateService] Countdown data fetched:', data);
     
-    // Parse the Countdown response as JSON
-    const data = await response.json();
-    console.log('[releaseDateService] Response data:', data);
-    
-    if (data.success && data.releaseDate) {
-      const releaseDate = new Date(data.releaseDate);
-      cachedReleaseDate = releaseDate;
-      console.log(`[releaseDateService] Release date fetched successfully: ${releaseDate.toISOString()}`);
-      return releaseDate;
-    } else {
-      console.warn('[releaseDateService] Release date not available from API or data format incorrect, using fallback. API Response:', data);
-      return FALLBACK_RELEASE_DATE;
-    }
+    cachedCountdownData = data;
+    cacheTime = now;
+    return data;
   } catch (error) {
-    // Log the error object itself for more details if it's not the one we threw above
-    if (error instanceof Error && !error.message.startsWith('Error fetching release date:')) {
-        console.error('[releaseDateService] Network or other error during fetch:', error);
-    } else if (!(error instanceof Error)) {
-        console.error('[releaseDateService] Unknown error during fetch:', error);
+    console.error('[releaseDateService] Error fetching countdown data, returning disabled default:', error);
+    return {
+      enabled: false, // Default to disabled on error
+      title: "Countdown Unavailable",
+      message: "Could not load countdown information. Please try again later."
+    };
+  }
+};
+
+/**
+ * Get the configured release date IF the countdown is enabled.
+ * @returns Promise resolving to the release Date object or null if not enabled/no date.
+ */
+export const getActiveReleaseDate = async (): Promise<Date | null> => {
+  try {
+    const data = await fetchCountdownData();
+    if (data.enabled && data.end_time) {
+      const releaseDate = new Date(data.end_time);
+      if (!isNaN(releaseDate.getTime())) {
+        return releaseDate;
+      }
+      console.warn('[releaseDateService] Invalid end_time received from API:', data.end_time);
     }
-    // The specific throw with status is already logged, this console.error is for the catch block itself.
-    // console.error('[releaseDateService] Final error before returning fallback:', error);
-    console.log(`[releaseDateService] Using fallback release date due to error: ${FALLBACK_RELEASE_DATE.toISOString()}`);
-    return FALLBACK_RELEASE_DATE;
+    if (!data.enabled) {
+      console.log('[releaseDateService] Countdown is not enabled via API.');
+    }
+    return null; // Return null if not enabled or date is invalid/missing
+  } catch (error) {
+    console.error('[releaseDateService] Error getting active release date:', error);
+    return null;
   }
 };
 
@@ -105,3 +124,5 @@ export const formatReleaseDate = (date: Date): string => {
     timeZoneName: 'short'
   });
 };
+
+// formatDate and getTimeRemaining (from example) can be used or your existing dateUtils

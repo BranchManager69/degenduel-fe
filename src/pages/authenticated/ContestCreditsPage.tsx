@@ -1,7 +1,7 @@
 // src/pages/authenticated/ContestCreditsPage.tsx
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -55,71 +55,24 @@ export const ContestCreditsPage: React.FC = () => {
     current: number;
   }>({ required: 1, current: 0 });
 
-  // Load user credits on component mount
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-    
-    // Setup WebSocket listener for credit updates
-    const onCreditMessage = (message: any) => {
-      if (message.type === 'credit_added' || message.type === 'credit_updated') {
-        // Refresh credits
-        fetchCredits();
-      } else if (message.type === 'credit_expiring') {
-        // Show warning without full refresh
-        fetchCreditStats();
-      }
-    };
-    
-    // Register WebSocket listener for user topic (credits)
-    const unregister = ws.registerListener(
-      "contest-credits-page",
-      [MessageType.DATA as any],
-      onCreditMessage,
-      [SOCKET_TYPES.NOTIFICATION]
-    );
-    
-    // Initial data fetch
-    fetchCredits();
-    fetchCreditRequirement();
-    
-    return () => {
-      unregister();
-    };
-  }, [isAuthenticated, user]);
-
-  // Fetch user's contest credits
-  const fetchCredits = async () => {
+  // Memoized fetchCredits and other fetch functions to stabilize dependencies
+  const fetchCredits = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/contests/credits', {
-        headers: {
-          'Authorization': `Bearer ${user?.jwt || user?.wsToken || ''}`
-        }
+        headers: { 'Authorization': `Bearer ${user?.jwt || user?.wsToken || ''}` }
       });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch credits: ${response.status}`);
-      }
-      
+      if (!response.ok) throw new Error(`Failed to fetch credits: ${response.status}`);
       const data = await response.json();
       if (data.success) {
         setCredits(data.data.credits || []);
-        setCreditStats({
-          total: data.data.total || 0,
-          used: data.data.used || 0,
-          unused: data.data.unused || 0,
-          expiring_soon: data.data.expiring_soon || 0,
-        });
+        setCreditStats({ total: data.data.total || 0, used: data.data.used || 0, unused: data.data.unused || 0, expiring_soon: data.data.expiring_soon || 0 });
       }
-    } catch (error) {
-      console.error("Error fetching credits:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch (error) { console.error("Error fetching credits:", error); }
+    finally { setLoading(false); }
+  }, [user?.jwt, user?.wsToken]);
 
-  // Fetch only credit stats (lighter operation)
-  const fetchCreditStats = async () => {
+  const fetchCreditStats = useCallback(async () => {
     try {
       const response = await fetch('/api/contests/credits?stats_only=true', {
         headers: {
@@ -143,10 +96,9 @@ export const ContestCreditsPage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching credit stats:", error);
     }
-  };
+  }, [user?.jwt, user?.wsToken]);
 
-  // Fetch credit requirement
-  const fetchCreditRequirement = async () => {
+  const fetchCreditRequirement = useCallback(async () => {
     try {
       const response = await fetch('/api/contests/check-credit-requirement', {
         headers: {
@@ -168,7 +120,57 @@ export const ContestCreditsPage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching credit requirement:", error);
     }
-  };
+  }, [user?.jwt, user?.wsToken]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setLoading(false); // Not authenticated, not loading credits
+      setCredits([]); // Clear credits if any
+      setCreditStats({ total: 0, used: 0, unused: 0, expiring_soon: 0 });
+      return;
+    }
+
+    let unregister: (() => void) | undefined;
+
+    // Wait for WebSocket to be ready for secure interactions
+    if (ws.isReadyForSecureInteraction && ws.registerListener) {
+      console.log('[ContestCreditsPage] WebSocket ready for secure interaction. Setting up listeners.');
+      const onCreditMessage = (message: any) => {
+        if (message.type === 'credit_added' || message.type === 'credit_updated') {
+          fetchCredits();
+        } else if (message.type === 'credit_expiring') {
+          fetchCreditStats();
+        }
+      };
+      
+      unregister = ws.registerListener(
+        "contest-credits-page",
+        [MessageType.DATA as any], // Consider using a more specific DDExtendedMessageType if available
+        onCreditMessage,
+        [SOCKET_TYPES.NOTIFICATION] // Assuming credit updates come via NOTIFICATION topic or similar user-specific topic
+      );
+      
+      // Initial data fetch now that we are authenticated and WS is ready
+      fetchCredits();
+      fetchCreditRequirement();
+    } else {
+      console.log('[ContestCreditsPage] Waiting for authenticated WebSocket or user session to fetch credits.');
+      // If not ready and not already loading, perhaps set loading until connection is ready?
+      // For now, data won't be fetched until ws.isReadyForSecureInteraction is true.
+      if(credits.length > 0 || creditStats.total > 0) { // If we had data and lost connection
+        setCredits([]);
+        setCreditStats({ total: 0, used: 0, unused: 0, expiring_soon: 0 });
+        setLoading(true); // Indicate we need to reload data once connection is back
+      }
+    }
+    
+    return () => {
+      if (unregister) {
+        unregister();
+      }
+    };
+  // Ensure all stable dependencies are listed. fetchCredits etc. are now memoized.
+  }, [isAuthenticated, user, ws.isReadyForSecureInteraction, ws.registerListener, fetchCredits, fetchCreditStats, fetchCreditRequirement, credits.length, creditStats.total]);
 
   // Purchase a new credit
   const purchaseCredit = async () => {

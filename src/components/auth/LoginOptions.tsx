@@ -25,6 +25,7 @@ import {
 } from "../ui/Card";
 import { Divider } from "../ui/Divider";
 import BiometricAuthButton from "./BiometricAuthButton";
+import ConnectWalletButton from "./ConnectWalletButton";
 import ConsolidatedLoginButton from "./ConsolidatedLoginButton";
 import PrivyLoginButton from "./PrivyLoginButton";
 import TwitterLoginButton from "./TwitterLoginButton";
@@ -150,11 +151,14 @@ const LoginOptions = () => {
               
               {/* Desktop view: Traditional multi-button display (hidden on mobile) */}
               <div className="hidden md:block space-y-4">
-                {/* Wallet login - REMOVED WalletMultiButton */}
-                {/* <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
+                {/* Wallet Connect Button */}
+                <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
                   <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-colors duration-300"></div>
-                  <WalletMultiButton className="w-full h-12 bg-transparent hover:bg-transparent font-cyber !rounded-md" />
-                </div> */}
+                  <ConnectWalletButton 
+                    className="w-full h-12"
+                    size="lg"
+                  />
+                </div>
                 
                 <div className="relative">
                   <Divider>
