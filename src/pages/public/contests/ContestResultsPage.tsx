@@ -19,7 +19,7 @@ import { LeaderboardEntry as ApiLeaderboardEntry, ContestViewData, TokenHoldingP
 export const ContestResults: React.FC = () => {
   const navigate = useNavigate();
   const { id: contestIdFromParams } = useParams<{ id: string }>();
-  const { user: currentUser } = useMigratedAuth();
+  const { user: _ } = useMigratedAuth(); // Auth hook still needed but user not used directly
 
   const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -29,7 +29,7 @@ export const ContestResults: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [highlightedToken, setHighlightedToken] = useState<string | null>(null);
+  // Removed unused state: const [highlightedToken, setHighlightedToken] = useState<string | null>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
   
   const headerRef = useRef<HTMLDivElement>(null);
@@ -75,8 +75,8 @@ export const ContestResults: React.FC = () => {
     }
   }, [wsError]);
 
-  // UI state
-  const [userRank, setUserRank] = useState(2); // Example placement
+  // UI state is now derived from contestViewData
+  // Removed unused state: const [userRank, setUserRank] = useState(2);
   
   // Handle celebration dismissal
   const handleCelebrationClose = () => {
@@ -164,33 +164,14 @@ export const ContestResults: React.FC = () => {
     finalPortfolioValue: 1500, // Fixed to 1500 for a win for demo
   };
   
-  // Enhanced leaderboard with profile pictures
-  const leaderboardEntries: ApiLeaderboardEntry[] = contestViewData?.leaderboard || [];
+  // Removed unused data definitions
+  // Leaderboard entries are now directly used from contestViewData?.leaderboard in leaderboardEntriesForDisplay
   
-  // Performance data for the chart
-  const performanceData = generatePerformanceData();
+  // Removed unused performance data calculation
+  // const performanceData = generatePerformanceData();
   
-  // Token results with images
-  const tokenResults = [
-    {
-      symbol: "SOL",
-      name: "Solana",
-      initialValue: 600,
-      finalValue: 900,
-      change: 50,
-      contribution: 60,
-      image: "https://cryptologos.cc/logos/solana-sol-logo.png",
-    },
-    {
-      symbol: "JTO",
-      name: "Jito",
-      initialValue: 400,
-      finalValue: 600,
-      change: 50,
-      contribution: 40,
-      image: "https://cryptologos.cc/logos/jito-jto-logo.png",
-    },
-  ];
+  // Removed unused token results with images
+  // These are now derived directly from contestViewData
   
   // Handle new messages
   const handleNewMessage = () => {
@@ -212,7 +193,18 @@ export const ContestResults: React.FC = () => {
 
   // --- Derived data based on contestViewData ---
   const contestDetails = contestViewData?.contest;
-  const leaderboardEntriesForDisplay: ApiLeaderboardEntry[] = contestViewData?.leaderboard || [];
+  // Add enhanced leaderboard entries with required properties for our display
+  const leaderboardEntriesForDisplay: (ApiLeaderboardEntry & {
+    finalValue: number;  // Calculate from portfolioValue string
+    totalReturn: number; // Calculate from performancePercentage string 
+    prize: number;       // Calculate from prizeAwarded string
+  })[] = (contestViewData?.leaderboard || []).map(entry => ({
+    ...entry,
+    finalValue: parseFloat(entry.portfolioValue),
+    totalReturn: parseFloat(entry.performancePercentage),
+    prize: entry.prizeAwarded ? parseFloat(entry.prizeAwarded) : 0
+  }));
+  
   const currentUserPerformance = contestViewData?.currentUserPerformance;
   const currentUserLeaderboardEntry = leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser);
   const userRankForDisplay = currentUserPerformance?.rank;
@@ -222,7 +214,7 @@ export const ContestResults: React.FC = () => {
   if (error) { return <div className="p-8 text-center text-red-500">Error: {error}</div>; }
   if (!contestViewData || !contestDetails) { return <div className="p-8 text-center">No contest data available.</div>; }
 
-  // --- Prepare data for child components (ensure correct property names and parsing) ---
+  // --- Prepare data for chart display ---
   const performanceChartData = currentUserPerformance?.historicalPerformance.map(dp => ({
     timestamp: dp.timestamp,
     value: parseFloat(dp.value),
@@ -597,6 +589,207 @@ export const ContestResults: React.FC = () => {
             >
 
               {/* Details Tab */}
+              {activeTab === 'results' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    {/* Performance Chart Section */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors mb-6">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Performance</h2>
+                        
+                        {/* Performance Chart */}
+                        <div className="h-64 bg-dark-300/50 rounded-lg p-4 mb-4">
+                          {/* Here we would render the actual chart using performanceChartData */}
+                          <div className="flex items-center justify-center h-full text-gray-400">
+                            {performanceChartData.length > 0 ? (
+                              <div className="w-full h-full flex flex-col">
+                                <div className="text-center text-sm mb-2">Portfolio Performance Over Time</div>
+                                <div className="flex-1 relative">
+                                  {/* Simple line visualization of the performance data */}
+                                  <div className="absolute inset-0 flex items-end">
+                                    {performanceChartData.map((dataPoint, index) => (
+                                      <div 
+                                        key={index}
+                                        className="w-full bg-brand-500 mx-0.5"
+                                        style={{ 
+                                          height: `${Math.max(10, Math.min(100, (dataPoint.value / 1200) * 100))}%`,
+                                          opacity: 0.7 + (index / performanceChartData.length) * 0.3
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <span>No performance data available</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Performance Metrics */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="bg-dark-300/50 rounded-lg p-3 text-center">
+                            <div className="text-gray-400 text-sm mb-1">Initial Value</div>
+                            <div className="text-white font-medium">
+                              {currentUserPerformance && formatCurrency(parseFloat(currentUserPerformance.initialPortfolioValue))}
+                            </div>
+                          </div>
+                          <div className="bg-dark-300/50 rounded-lg p-3 text-center">
+                            <div className="text-gray-400 text-sm mb-1">Final Value</div>
+                            <div className="text-white font-medium">
+                              {currentUserPerformance && formatCurrency(parseFloat(currentUserPerformance.portfolioValue))}
+                            </div>
+                          </div>
+                          <div className="bg-dark-300/50 rounded-lg p-3 text-center">
+                            <div className="text-gray-400 text-sm mb-1">% Change</div>
+                            <div className={`font-medium ${currentUserPerformance && parseFloat(currentUserPerformance.portfolioValue) >= parseFloat(currentUserPerformance.initialPortfolioValue) ? 'text-green-400' : 'text-red-400'}`}>
+                              {currentUserPerformance && (
+                                ((parseFloat(currentUserPerformance.portfolioValue) / parseFloat(currentUserPerformance.initialPortfolioValue)) - 1) * 100
+                              ).toFixed(2)}%
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    {/* Leaderboard Section */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Final Leaderboard</h2>
+                        
+                        <div className="space-y-3">
+                          {leaderboardEntriesForDisplay.map((entry) => (
+                            <div 
+                              key={entry.username}
+                              className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+                                entry.isCurrentUser
+                                  ? 'bg-brand-500/20 border border-brand-500/30'
+                                  : entry.isAiAgent
+                                    ? 'bg-cyber-500/20 border border-cyber-400/30'
+                                    : 'bg-dark-300/50'
+                              }`}
+                            >
+                              <div className="flex items-center">
+                                <div className={`
+                                  w-8 h-8 rounded-full flex items-center justify-center font-mono
+                                  ${entry.rank === 1 ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' : 
+                                    entry.rank === 2 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40' : 
+                                    'bg-amber-600/20 text-amber-400 border border-amber-600/40'}
+                                `}>
+                                  {entry.rank}
+                                </div>
+                                <div className="flex flex-col ml-3">
+                                  <span className={`font-medium ${
+                                    entry.isAiAgent ? 'text-cyber-300' : 
+                                    entry.isCurrentUser ? 'text-brand-300' : 'text-gray-100'
+                                  }`}>
+                                    {entry.username}
+                                  </span>
+                                  <span className="text-xs text-gray-400">
+                                    ${entry.finalValue.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="font-medium">
+                                <span className={`${entry.totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {entry.totalReturn >= 0 ? '+' : ''}{entry.totalReturn.toFixed(2)}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                  
+                  {/* Sidebar */}
+                  <div className="space-y-6">
+                    {/* Your Stats */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Your Results</h2>
+                        
+                        <div className="space-y-4">
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Rank</span>
+                            <span className="text-white font-mono">{userRankForDisplay || 'N/A'}</span>
+                          </div>
+                          
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Final Value</span>
+                            <span className="text-white font-mono">
+                              {currentUserPerformance && formatCurrency(parseFloat(currentUserPerformance.portfolioValue))}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Return</span>
+                            <span className={`font-mono ${
+                              currentUserPerformance && 
+                              parseFloat(currentUserPerformance.portfolioValue) >= parseFloat(currentUserPerformance.initialPortfolioValue) 
+                                ? 'text-green-400' 
+                                : 'text-red-400'
+                            }`}>
+                              {currentUserPerformance && (
+                                ((parseFloat(currentUserPerformance.portfolioValue) / parseFloat(currentUserPerformance.initialPortfolioValue)) - 1) * 100
+                              ).toFixed(2)}%
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between border-b border-gray-700 pb-2">
+                            <span className="text-gray-400">Prize</span>
+                            <span className="text-white font-mono">
+                              {formatCurrency(parseFloat(currentUserLeaderboardEntry?.prizeAwarded || "0"))}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between pb-2">
+                            <span className="text-gray-400">Tokens Held</span>
+                            <span className="text-white">
+                              {currentUserPerformance?.tokens.length || 0}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    {/* Top Tokens */}
+                    <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
+                      <div className="p-6">
+                        <h2 className="text-xl font-bold text-gray-100 mb-4">Top Performing Tokens</h2>
+                        
+                        <div className="space-y-3">
+                          {/* We use tokenResultsForDisplay here */}
+                          {tokenResultsForDisplay.slice(0, 3).map((token) => (
+                            <div 
+                              key={token.symbol}
+                              className="flex items-center justify-between py-2 px-3 rounded-lg bg-dark-300/50"
+                            >
+                              <div className="flex items-center">
+                                {token.imageUrl && (
+                                  <img 
+                                    src={token.imageUrl} 
+                                    alt={token.name} 
+                                    className="w-8 h-8 rounded-full mr-3" 
+                                  />
+                                )}
+                                <div>
+                                  <div className="font-medium text-white">{token.symbol}</div>
+                                  <div className="text-xs text-gray-400">{token.name}</div>
+                                </div>
+                              </div>
+                              <div className={`font-medium ${token.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {token.change >= 0 ? '+' : ''}{token.change.toFixed(2)}%
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              )}
+              
               {activeTab === 'details' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
