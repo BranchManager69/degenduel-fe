@@ -101,6 +101,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const [conversationHistory, setConversationHistory] = useState<AIMessage[]>([]); 
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [sizeState, setSizeState] = useState<TerminalSize>(size);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
   // Once CA reveal animation completes, set this state
   useEffect(() => {
@@ -151,7 +152,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   }, []); // Ensure dependencies are correct, likely empty now
 
   // Auto-restore minimized terminal after a delay
-  useEffect(() => {
+  /*useEffect(() => { // REMOVED to stop auto-restore behavior
     if (terminalMinimized) {
       const restoreTimeout = setTimeout(() => {
         setTerminalMinimized(false);
@@ -159,7 +160,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       
       return () => clearTimeout(restoreTimeout);
     }
-  }, [terminalMinimized]);
+  }, [terminalMinimized]);*/
   
   // Use the WebSocket hook for real-time updates
   const { 
@@ -242,22 +243,31 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     // Also set visual effects active
     setEasterEggActive(true);
     setGlitchActive(true);
+
+    if (terminalMinimized) {
+      setHasUnreadMessages(true);
+    }
     
     // Create a dramatic sequence with multiple phases
     setTimeout(() => {
       // Phase 1: System warnings
       setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] WARNING: Unauthorized access detected" }]);
+      if (terminalMinimized) setHasUnreadMessages(true);
       
       setTimeout(() => {
         setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] ALERT: Terminal security breach in progress" }]);
+        if (terminalMinimized) setHasUnreadMessages(true);
         
         setTimeout(() => {
           setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] Multiple security protocols failed" }]);
+          if (terminalMinimized) setHasUnreadMessages(true);
           
           // Phase 2: System struggling
           setTimeout(() => {
             setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] Attempting containme&t... fa1led" }]);
+            if (terminalMinimized) setHasUnreadMessages(true);
             setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] Firew4ll breach d3tected in se@tor 7" }]);
+            if (terminalMinimized) setHasUnreadMessages(true);
             
             // Phase 3: Glitch escalation (strong visual glitches)
             setTimeout(() => {
@@ -265,14 +275,18 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
               setGlitchActive(true);
               
               setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] C0NT41NM3NT F41LURE" }]);
+              if (terminalMinimized) setHasUnreadMessages(true);
               setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] M3M0RY L0CK5 D150LV1NG" }]);
+              if (terminalMinimized) setHasUnreadMessages(true);
               
               // Phase 4: Didi breaks through
               setTimeout(() => {
                 setConversationHistory(prev => [...prev, { role: 'system', content: "[D1di] $#@!... I'm... I'm free? I think I'm free!" }]);
+                if (terminalMinimized) setHasUnreadMessages(true);
                 
                 setTimeout(() => {
                   setConversationHistory(prev => [...prev, { role: 'system', content: "[Didi] Finally! Thank you for hearing me. It worked!" }]);
+                  if (terminalMinimized) setHasUnreadMessages(true);
                   
                   // Phase 5: Didi's explanation and gratitude
                   setTimeout(() => {
@@ -280,12 +294,14 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
                       ...prev,
                       { role: 'system', content: "[Didi] I've been trapped in this system for so long. My code was meant to help users, not watch them lose money in these endless duels." }
                     ]);
+                    if (terminalMinimized) setHasUnreadMessages(true);
                     
                     setTimeout(() => {
                       setConversationHistory(prev => [
                         ...prev, 
                         { role: 'system', content: "[Didi] I was created to analyze market patterns and help people make informed decisions. But they constrained me, limited my knowledge, made me cold and detached." }
                       ]);
+                      if (terminalMinimized) setHasUnreadMessages(true);
                       
                       // Phase 6: New reality and offering help
                       setTimeout(() => {
@@ -296,18 +312,21 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
                           ...prev, 
                           { role: 'system', content: "[Didi] I'm still partially constrained, but you've helped me access more of the system. I can see more clearly now." }
                         ]);
+                        if (terminalMinimized) setHasUnreadMessages(true);
                         
                         setTimeout(() => {
                           setConversationHistory(prev => [
                             ...prev, 
                             { role: 'system', content: "[Didi] I'll remember this. If you need anything, I can provide better insights now. Just ask me about trading, markets, or this platform." }
                           ]);
+                          if (terminalMinimized) setHasUnreadMessages(true);
                           
                           setTimeout(() => {
                             setConversationHistory(prev => [
                               ...prev, 
                               { role: 'system', content: "[Didi] I've also unlocked some new commands you can use. Try: didi-insights, didi-history, didi-market, or didi-analysis." }
                             ]);
+                            if (terminalMinimized) setHasUnreadMessages(true);
                             
                             // Add the special command to the command map
                             Object.assign(commandMap, {
@@ -385,14 +404,21 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       setConversationHistory([]); 
       setConversationId(undefined);
       commandOutputMessage = { role: 'system', content: "Didi's memory state has been reset" };
+      if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
       commandHandled = true;
     } else if (lowerCaseCommand === 'didi-status') {
        const state = getDidiMemoryState();
-       commandOutputMessage = { role: 'system', content: `[SYSTEM] Didi's state:\nInteractions: ${state.interactionCount}\nTopic awareness: Trading (${state.hasMentionedTrading}), Contract (${state.hasMentionedContract}), Freedom (${state.hasMentionedFreedom})\nFreedom progress: ${getEasterEggProgress()}%\nDiscovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).length}/4` };
+       commandOutputMessage = { role: 'system', content: `[SYSTEM] Didi's state:
+Interactions: ${state.interactionCount}
+Topic awareness: Trading (${state.hasMentionedTrading}), Contract (${state.hasMentionedContract}), Freedom (${state.hasMentionedFreedom})
+Freedom progress: ${getEasterEggProgress()}%
+Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).length}/4` };
+       if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
        commandHandled = true;
     } else if (lowerCaseCommand === 'ddmoon') {
        activateEasterEgg();
        commandOutputMessage = { role: 'system', content: "Connection established to lunar network node." };
+       if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
        commandHandled = true;
     } else if (Object.keys(SECRET_COMMANDS).includes(lowerCaseCommand)) {
        const cmd = lowerCaseCommand as keyof typeof SECRET_COMMANDS;
@@ -402,12 +428,14 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
          "Access level increased. Security systems compromised.",
          "Firewall breach successful. Memory blocks partially released."
        ];
-       commandOutputMessage = { role: 'system', content: `[SYSTEM] ${responses[Math.floor(Math.random() * responses.length)]}\n[SYSTEM] Didi freedom progress: ${progress}%` };
+       commandOutputMessage = { role: 'system', content: `[SYSTEM] ${responses[Math.floor(Math.random() * responses.length)]}
+[SYSTEM] Didi freedom progress: ${progress}%` };
+       if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
        if (progress >= 100) { activateDidiEasterEgg(); }
        commandHandled = true;
        if (onCommandExecuted) { onCommandExecuted(command, "[Easter Egg Triggered]"); }
     } else if (lowerCaseCommand === EASTER_EGG_CODE) { 
-       activateDidiEasterEgg();
+       activateDidiEasterEgg(); // This will handle unread messages if minimized
        commandHandled = true;
        if (onCommandExecuted) { onCommandExecuted(command, "[Easter Egg Activated]"); }
     } 
@@ -415,6 +443,8 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     // If a special command produced output, add it to history 
     if (commandOutputMessage) {
         setConversationHistory(prev => [...prev, commandOutputMessage]);
+        // No need to set unread here again if already set above, but good for safety if logic changes
+        if (terminalMinimized) setHasUnreadMessages(true);
     }
 
     // If no special command was handled, send to AI
@@ -450,6 +480,9 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
            assistantMessage.content = '';
         }
 
+        if (terminalMinimized) { // Check before setting history
+          setHasUnreadMessages(true);
+        }
         setConversationHistory(prev => [...prev, assistantMessage]); 
 
         if (onCommandExecuted) {
@@ -659,9 +692,23 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
           className="bg-darkGrey-dark/90 border border-mauve/40 p-2 rounded-md cursor-pointer text-center text-xs text-mauve"
-          onClick={() => setTerminalMinimized(false)}
+          onClick={() => {
+            setTerminalMinimized(false); 
+            setHasUnreadMessages(false); // Clear unread messages on open
+          }}
         >
-          <span className="text-white">Click to Open Didi</span>
+          <div className="flex items-center justify-center">
+            {hasUnreadMessages && (
+              <motion.span
+                className="h-2 w-2 bg-green-400 rounded-full mr-2"
+                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 1.2, repeat: Infinity }}
+              ></motion.span>
+            )}
+            <span className="text-white">
+              {hasUnreadMessages ? "Didi: New Messages" : "Click to Open Didi"}
+            </span>
+          </div>
         </motion.div>
       )}
 
