@@ -1,16 +1,14 @@
 // src/components/terminal/Terminal.tsx
 
 /**
- * Degen Terminal
+ * Didi Terminal
  * 
- * @description This component displays a countdown timer for the token launch.
- * It also includes a smooth release animation for the terminal.
- * AI conversation is built into the terminal.
+ * @description Speak to Didi through the Degen Terminal.
  * 
  * @author BranchManager69
- * @version 1.9.1
+ * @version 2.1.0
  * @created 2025-04-01
- * @updated 2025-05-08
+ * @updated 2025-05-09
  */
 
 // Global type declarations for the Terminal component

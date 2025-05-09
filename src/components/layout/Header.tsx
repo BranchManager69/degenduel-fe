@@ -3,6 +3,10 @@
 import React, { useEffect, useRef } from "react";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
+import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
+import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
+import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
+import { useStore } from "../../store/useStore";
 // import LoginOptionsButton from "../auth/LoginOptionsButton"; // TEMP
 // import Logo from "../ui/Logo"; // TEMP
 // import { ContestsDropdown } from "./ContestsDropdown"; // TEMP
@@ -12,35 +16,34 @@ import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 // import { UserMenu } from "./user-menu/UserMenu"; // TEMP
 
 export const Header: React.FC = () => {
-  // const { isCompact } = useScrollHeader(50); // TEMP
-  // const {
-  //   disconnectWallet,
-  //   error: storeError,
-  //   clearError,
-  // } = useStore(state => ({ 
-  //     disconnectWallet: state.disconnectWallet, 
-  //     error: state.error, 
-  //     clearError: state.clearError, 
-  // })); 
+  const { isCompact } = useScrollHeader(50); // Re-enabled
+  const {
+    // disconnectWallet, // Keep commented for now, only used in children or complex effects
+    error: storeError,
+    // clearError, // Keep commented for now, only used in an effect
+  } = useStore(state => ({ 
+      disconnectWallet: state.disconnectWallet, 
+      error: state.error, 
+      clearError: state.clearError, 
+  })); 
   const { user, isAdmin, isAuthenticated } = useMigratedAuth(); 
-  // const { unreadCount } = useNotifications(); // TEMP
-  // const { settings } = useSystemSettings(); // TEMP
+  const { unreadCount } = useNotifications(); // Re-enabled
+  const { settings } = useSystemSettings(); // Re-enabled
   
   const isMounted = useRef(true);
   
-  // const isMaintenanceMode = settings?.maintenanceMode || false; // TEMP
-  // const maintenanceMessage = settings?.maintenanceMessage; // TEMP
+  const isMaintenanceMode = settings?.maintenanceMode || false; // Re-enabled
+  // const maintenanceMessage = settings?.maintenanceMessage; // Keep commented, only used in banner
 
   useEffect(() => {
     isMounted.current = true;
-    console.log("[Header] Mounted"); // TEMP Log
+    console.log("[Header STEP 1] Mounted");
     return () => {
       isMounted.current = false;
-      console.log("[Header] Unmounted"); // TEMP Log
+      console.log("[Header STEP 1] Unmounted");
     };
   }, []);
 
-  // New useEffect to log auth state changes
   useEffect(() => {
     console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdmin);
   }, [user, isAuthenticated, isAdmin]);
@@ -105,18 +108,24 @@ export const Header: React.FC = () => {
   //   };
   // }, [isCompact, user?.banned, isMaintenanceMode]); // TEMP
 
-  console.log("[Header] Rendering. User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdmin); // TEMP Log
+  console.log("[Header STEP 1] Rendering. User:", user, "IsAuth:", isAuthenticated, "IsAdmin:", isAdmin, "Compact:", isCompact, "Unread:", unreadCount, "Settings:", settings);
 
-  // TEMP: Render minimal UI
   return (
     <header
-      className={`bg-dark-900 sticky top-0 z-50 h-16 flex items-center justify-center`}
+      className={`bg-dark-900 sticky top-0 z-50 h-16 flex flex-col items-center justify-center text-xs`}
     >
       <p className="text-white">
         Header Test - User: {user ? user.id : 'Logged Out'} - Auth: {isAuthenticated ? 'Yes' : 'No'}
       </p>
-      {/* {user?.banned && <p className="text-red-400">USER BANNED</p>} */}
-      {/* {isMaintenanceMode && <p className="text-yellow-400">MAINTENANCE MODE</p>} */}
+      <p className="text-white">
+        Compact: {isCompact ? 'Yes' : 'No'} - StoreError: {storeError?.message || 'None'}
+      </p>
+      <p className="text-white">
+        Unread: {unreadCount} - Maint: {isMaintenanceMode ? 'Yes' : 'No'}
+      </p>
+      <p className="text-white">
+        Settings Loaded: {settings ? 'Yes' : 'No'} - Notification Hook Error: {useNotifications().error || 'None'} - System Settings Hook Error: {useSystemSettings().error || 'None'}
+      </p>
     </header>
   );
 

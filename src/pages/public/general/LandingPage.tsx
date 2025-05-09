@@ -24,8 +24,8 @@ import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestLive } from "../../../lib/utils";
 import { Contest } from "../../../types";
-// Didi AI Terminal and Decryption Timer
-import { DecryptionTimer, Terminal } from '../../../components/terminal';
+// Decryption Timer
+import { DecryptionTimer } from '../../../components/terminal';
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
@@ -58,7 +58,6 @@ export const LandingPage: React.FC = () => {
   const [animationPhase, setAnimationPhase] = useState(0);
   
   // Decryption Timer -- Contract address reveal countdown
-  const [contractAddress, setContractAddress] = useState<string>('');
   const [targetReleaseDate, setTargetReleaseDate] = useState<Date | null>(null);
   const [countdownDetails, setCountdownDetails] = useState<CountdownResponse | null>(null);
   const [apiTokenAddress] = useState<string | null>(null);
@@ -130,8 +129,6 @@ export const LandingPage: React.FC = () => {
       if (websocketContractAddress) {
         console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}`);
         
-        // Update contract address state
-        setContractAddress(websocketContractAddress);
         
         // When a valid contract address is received, set reveal flag to true
         if (!showContractReveal && websocketContractRevealed) {
@@ -170,16 +167,6 @@ export const LandingPage: React.FC = () => {
     return () => { if (countdownCheckerRef.current) clearTimeout(countdownCheckerRef.current); };
   }, [targetReleaseDate, isLoadingCountdown, countdownDetails, websocketContractAddress]);
 
-  // Terminal configuration
-  const terminalConfig = {
-    CONTRACT_ADDRESS: websocketContractAddress || (showContractReveal ? globalConfig.CONTRACT_ADDRESS.REAL : contractAddress),
-    RELEASE_DATE: targetReleaseDate || globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME, 
-    DISPLAY: { // Corrected mapping
-      DATE_SHORT: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
-      DATE_FULL: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,
-      TIME: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_TIME,
-    }
-  };
   
   // Debug log for release date sources
   useEffect(() => {
@@ -190,15 +177,13 @@ export const LandingPage: React.FC = () => {
       globalConfigDateToISOString: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME.toISOString(),
       fallbackDate: FALLBACK_RELEASE_DATE,
       fallbackDateToISOString: FALLBACK_RELEASE_DATE.toISOString(),
-      configReleaseDate: terminalConfig.RELEASE_DATE,
-      configReleaseDateToISOString: terminalConfig.RELEASE_DATE.toISOString(),
       envVars: {
         DATE_SHORT: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
         DATE_FULL: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,
         TIME: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_TIME,
       }
     });
-  }, [targetReleaseDate, terminalConfig]);
+  }, [targetReleaseDate]);
   
   // Use auth hook for proper admin status checks
   const { user, isAdmin } = useMigratedAuth();
@@ -674,11 +659,8 @@ export const LandingPage: React.FC = () => {
                     )}
                   </>
                 ) : (
-                  <div className="text-xl text-gray-500 py-8">
-                    {/* {console.log("[LandingPage] NOT Rendering DecryptionTimer. isLoadingCountdown:", isLoadingCountdown, "countdownDetails:", countdownDetails, "targetReleaseDate:", targetReleaseDate)} */}
-                    {/* The above log is now part of the IIFE block at the start of this section */}
-                    {(countdownDetails && !countdownDetails.enabled) ? (countdownDetails.message || "Launch details coming soon!") : "Loading launch details..."}
-                  </div>
+                  /* Minimal fallback - just the timer with hardcoded date */
+                  <DecryptionTimer targetDate={FALLBACK_RELEASE_DATE} />
                 )}
               </motion.div>
 
@@ -694,44 +676,6 @@ export const LandingPage: React.FC = () => {
                 </p>
               </motion.div>
 
-              {/* Terminal Component */}
-              <motion.div
-                className="w-full max-w-3xl mx-auto mb-10 relative z-20"
-                variants={childVariants}
-                onAnimationComplete={() => {
-                  console.log('Terminal animation completed');
-                }}
-              >
-                {isLoadingCountdown ? (
-                  <div className="flex items-center justify-center h-[300px]">
-                    <div className="text-center">
-                      <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-xl font-orbitron text-purple-400">Loading terminal...</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-2xl sm:text-3xl font-bold text-purple-500">TERMINAL</h3>
-                      <motion.div
-                        animate={{ y: [0, -3, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="text-purple-400"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                      </motion.div>
-                    </div>
-                    
-                    <Terminal 
-                      config={terminalConfig} 
-                      onCommandExecuted={(command, response) => {
-                        console.log('Command executed:', command, 'Response:', response);
-                      }}
-                      size="middle"
-                    />
-                  </div>
-                )}
-              </motion.div>
               
               {/* Enhanced Features section - shown to all users */}
               {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (

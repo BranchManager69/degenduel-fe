@@ -286,108 +286,79 @@ export class AuthService {
    * @returns Promise that resolves to true if authenticated, false otherwise
    */
   public async checkAuth(): Promise<boolean> {
-    try {
-      authDebug('AuthService', 'Checking authentication status');
-      
-      const response = await axiosInstance.get('/auth/status');
-      
-      const isAuthenticated = response.data?.authenticated || false;
-      const authMethods = response.data?.methods || {};
-      
-      // Find active authentication method
-      let activeMethod: AuthMethod | null = null;
-      for (const [method, status] of Object.entries(authMethods)) {
-        if (status && (status as any).active) {
-          activeMethod = method as AuthMethod;
-          break;
+    let retryCount = 0;
+    const maxRetries = 2; // Example: Retry up to 2 times for server errors
+    const retryDelay = 1500; // Example: 1.5 seconds delay
+
+    while (retryCount <= maxRetries) {
+      try {
+        authDebug('AuthService', `Checking authentication status (attempt ${retryCount + 1})`);
+        const response = await axiosInstance.get('/auth/status');
+        const isAuthenticated = response.data?.authenticated || false;
+        const authMethods = response.data?.methods || {};
+        let activeMethod: AuthMethod | null = null;
+        for (const [method, status] of Object.entries(authMethods)) {
+          if (status && (status as any).active) {
+            activeMethod = method as AuthMethod;
+            break;
+          }
         }
-      }
-      
-      // Get user from active method or from response directly
-      const user = 
-        (activeMethod && authMethods[activeMethod]?.details) || 
-        response.data?.user || 
-        null;
-      
-      if (isAuthenticated && user) {
-        // Ensure user has a wallet address (required field)
-        if (!user.wallet_address) {
-          authDebug('AuthService', 'User from auth check missing wallet_address', { 
-            user_id: user.id 
-          });
-          // Don't throw here - log and return false to trigger a re-auth
+        const user = (activeMethod && authMethods[activeMethod]?.details) || response.data?.user || null;
+
+        if (isAuthenticated && user) {
+          if (!user.wallet_address) {
+            authDebug('AuthService', 'User from auth check missing wallet_address', { user_id: user.id });
+            if (this.user) this.setUser(null); // Clear user if data is invalid
+            return false; 
+          }
+          authDebug('AuthService', 'User is authenticated', { method: activeMethod, userId: user.id, wallet: user.wallet_address });
+          const currentUserId = this.user?.id;
+          if (currentUserId !== user.id || !this.user) {
+            this.setUser(user, activeMethod || undefined);
+          }
+          // Sync tokens (ensure tokenManagerService is used correctly here)
+          if (user.jwt) tokenManagerService.setToken(TokenType.JWT, user.jwt, tokenManagerService.estimateExpiration(user.jwt), activeMethod || 'server');
+          if (user.wsToken) tokenManagerService.setToken(TokenType.WS_TOKEN, user.wsToken, tokenManagerService.estimateExpiration(user.wsToken), activeMethod || 'server');
+          if (user.session_token) tokenManagerService.setToken(TokenType.SESSION, user.session_token, tokenManagerService.estimateExpiration(user.session_token, 30), activeMethod || 'server');
+          return true; // Successfully authenticated or confirmed existing session
+        } else {
+          authDebug('AuthService', 'User is not authenticated per /auth/status');
+          if (this.user) this.setUser(null); // Clear if previously logged in
           return false;
         }
-        
-        authDebug('AuthService', 'User is authenticated', {
-          method: activeMethod,
-          userId: user.id,
-          wallet: user.wallet_address
-        });
-        
-        // Update user but don't notify if it's the same user to avoid unnecessary updates
-        const currentUserId = this.user?.id;
-        const newUserId = user.id;
-        
-        if (currentUserId !== newUserId || !this.user) {
-          this.setUser(user, activeMethod || undefined);
+      } catch (error: any) {
+        const status = error?.response?.status;
+        authDebug('AuthService', 'Error checking auth status', { status, errorMsg: error?.response?.data || error?.message || String(error) });
+
+        if (status === 401 || status === 403) {
+          authDebug('AuthService', `Received ${status} on status check, definitive logout.`);
+          if (this.user) this.setUser(null);
+          tokenManagerService.clearAllTokens(); // Ensure tokens are cleared on 401/403
+          return false; // Definitive unauthenticated state
         }
         
-        // Sync any tokens in the response with TokenManager
-        if (user.jwt) {
-          tokenManagerService.setToken(
-            TokenType.JWT, 
-            user.jwt, 
-            tokenManagerService.estimateExpiration(user.jwt),
-            activeMethod || 'server'
-          );
+        // For 5xx server errors or network errors, retry with backoff
+        if (retryCount < maxRetries) {
+          retryCount++;
+          authDebug('AuthService', `Attempt ${retryCount}/${maxRetries+1} failed. Retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * retryCount)); // Incremental backoff
+          continue; // Continue to next iteration of the while loop
+        } else {
+          authDebug('AuthService', 'Max retries reached for /auth/status. Assuming indeterminate auth state, but not logging out yet unless tokens were already bad.');
+          // After max retries for server/network errors, don't immediately log out.
+          // Maintain current client-side auth state but signal that status is unknown/degraded.
+          // The caller or other parts of the system might decide to log out after prolonged inability to check status.
+          // For now, return current state (if user exists, assume valid until proven otherwise by a 401/403).
+          // However, if we had no user to begin with, then we are indeed not authenticated.
+          this.dispatchEvent({
+            type: AuthEventType.AUTH_ERROR,
+            error: new Error('Failed to verify auth status after multiple retries.'),
+          });
+          return !!this.user; // Return current known auth state
         }
-        
-        if (user.wsToken) {
-          tokenManagerService.setToken(
-            TokenType.WS_TOKEN, 
-            user.wsToken, 
-            tokenManagerService.estimateExpiration(user.wsToken),
-            activeMethod || 'server'
-          );
-        }
-        
-        if (user.session_token) {
-          tokenManagerService.setToken(
-            TokenType.SESSION, 
-            user.session_token, 
-            tokenManagerService.estimateExpiration(user.session_token, 30), // Session tokens usually last longer
-            activeMethod || 'server'
-          );
-        }
-        
-        return true;
-      } else {
-        authDebug('AuthService', 'User is not authenticated');
-        
-        // If we thought we were authenticated but server says no, clear user
-        if (this.user) {
-          this.setUser(null);
-        }
-        
-        return false;
       }
-    } catch (error: any) {
-      authDebug('AuthService', 'Error checking auth status', {
-        error: error?.response?.data || error?.message || String(error)
-      });
-      
-      // Check if it was specifically a 401 (which the interceptor couldn't refresh)
-      if (error?.response?.status === 401) {
-        if (this.user) {
-          authDebug('AuthService', 'Received 401 on status check, clearing user');
-          // No need to call clearAllTokens here, as logout would have been triggered by interceptor
-          this.setUser(null); 
-        }
-      } // Other errors (like network errors) don't automatically mean logout
-      
-      return false;
     }
+    return !!this.user; // Should not be reached if loop logic is correct, but as a fallback
   }
   
   /**
