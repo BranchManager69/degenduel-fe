@@ -5,14 +5,14 @@ index.ts:4 API_URL configuration in use: {environment: 'production', apiUrl: 'ht
 commands.ts:67 [Terminal Commands] Loading terminal data from server...
 useSolanaWalletData.ts:22 [Solana] DegenDuel RPC: https://degenduel.me/api/solana-rpc
 App.tsx:156 [DEBUG][App.tsx] PRIVY_APP_ID: cm7w4m1m2004klfyxqi3px03l
-clientLogForwarder.ts:165 [LogForwarder] Initializing. Default verbose client console output: false (NODE_ENV: production)
-clientLogForwarder.ts:506 [LogForwarder] Fetching remote client logging setting from /api/v1/settings/client-logging-status
+clientLogForwarder.ts:102 [LogForwarder] Initializing with console overrides. Verbose client console: false
+clientLogForwarder.ts:414 [LogForwarder] Fetching remote client logging setting from /api/v1/settings/client-logging-status
 hook.js:608 DEPRECATED: 'isAuthenticated()' is deprecated. Use 'isAuthenticated' instead. The function version is deprecated in favor of the boolean property.
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ deprecationWarning.ts:39
 qn @ useMigratedAuth.ts:72
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -26,7 +26,7 @@ hook.js:608 DEPRECATION TRACE: 'isAuthenticated()' call site
 overrideMethod @ hook.js:608
 (anonymous) @ deprecationWarning.ts:40
 qn @ useMigratedAuth.ts:72
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -38,10 +38,10 @@ wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151
 hook.js:608 DEPRECATED: 'isAdmin()' is deprecated. Use 'user?.is_admin' instead. Direct property access is recommended for performance reasons.
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ deprecationWarning.ts:39
 qn @ useMigratedAuth.ts:73
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -55,7 +55,7 @@ hook.js:608 DEPRECATION TRACE: 'isAdmin()' call site
 overrideMethod @ hook.js:608
 (anonymous) @ deprecationWarning.ts:40
 qn @ useMigratedAuth.ts:73
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -67,10 +67,10 @@ wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151
 hook.js:608 DEPRECATED: 'isSuperAdmin()' is deprecated. Use 'user?.is_superadmin' instead. Direct property access is recommended for performance reasons.
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ deprecationWarning.ts:39
 qn @ useMigratedAuth.ts:74
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -84,7 +84,7 @@ hook.js:608 DEPRECATION TRACE: 'isSuperAdmin()' call site
 overrideMethod @ hook.js:608
 (anonymous) @ deprecationWarning.ts:40
 qn @ useMigratedAuth.ts:74
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -96,9 +96,9 @@ wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151
 hook.js:608 No background_scene in global system settings! Falling back to local default.
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
-$Ct @ extractBackgroundSettings.ts:44
-CNe @ BackgroundEffects.tsx:46
+console.warn @ clientLogForwarder.ts:117
+CCt @ extractBackgroundSettings.ts:44
+kNe @ BackgroundEffects.tsx:46
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -108,43 +108,9 @@ c @ react-dom-client.production.js:10717
 Eu @ react-dom-client.production.js:10284
 wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151Understand this warning
-hook.js:608 Unhandled promise rejection: TypeError: St.log is not a function
-    at useStore.ts:546:15
-    at middleware.mjs:391:50
-    at middleware.mjs:277:20
-    at Object.then (middleware.mjs:283:38)
-    at E (middleware.mjs:390:8)
-    at middleware.mjs:429:13
-    at vS (vanilla.mjs:19:32)
-    at Ub (vanilla.mjs:22:52)
-    at yS (react.mjs:15:15)
-    at useStore.ts:786:39
+2hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
 overrideMethod @ hook.js:608
-(anonymous) @ clientLogForwarder.ts:259Understand this error
-useStore.ts:546 Uncaught (in promise) TypeError: St.log is not a function
-    at useStore.ts:546:15
-    at middleware.mjs:391:50
-    at middleware.mjs:277:20
-    at Object.then (middleware.mjs:283:38)
-    at E (middleware.mjs:390:8)
-    at middleware.mjs:429:13
-    at vS (vanilla.mjs:19:32)
-    at Ub (vanilla.mjs:22:52)
-    at yS (react.mjs:15:15)
-    at useStore.ts:786:39
-(anonymous) @ useStore.ts:546
-(anonymous) @ middleware.mjs:391
-(anonymous) @ middleware.mjs:277
-then @ middleware.mjs:283
-E @ middleware.mjs:390
-(anonymous) @ middleware.mjs:429
-vS @ vanilla.mjs:19
-Ub @ vanilla.mjs:22
-yS @ react.mjs:15
-(anonymous) @ useStore.ts:786Understand this error
-hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
-overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ useTerminalData.ts:163
 (anonymous) @ Terminal.tsx:199
 (anonymous) @ Terminal.tsx:205
@@ -243,112 +209,13 @@ Zo @ react-dom-client.production.js:11313
 Y @ scheduler.production.js:151Understand this warning
 hook.js:608 [LogForwarder] Failed to fetch remote logging setting (Status: 502), using default: false
 overrideMethod @ hook.js:608
-E6t @ clientLogForwarder.ts:520
-await in E6t
-j6t @ clientLogForwarder.ts:274
+j6t @ clientLogForwarder.ts:428
+await in j6t
+y6t @ clientLogForwarder.ts:182
 (anonymous) @ main.tsx:23Understand this warning
-hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+hook.js:608 [DD-API Error] contests.getAll: Error: Server is currently unavailable. Please try again later.: {message: 'Server is currently unavailable. Please try again later.', status: undefined, context: {…}, timestamp: '2025-05-09T19:54:47.566Z'}
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
-(anonymous) @ useTerminalData.ts:163
-(anonymous) @ Terminal.tsx:199
-(anonymous) @ Terminal.tsx:205
-xl @ react-dom-client.production.js:8292
-rh @ react-dom-client.production.js:9771
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9765
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9774
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9878
-In @ react-dom-client.production.js:9746
-rh @ react-dom-client.production.js:9782
-Zo @ react-dom-client.production.js:11313
-(anonymous) @ react-dom-client.production.js:11048
-Y @ scheduler.production.js:151Understand this warning
-hook.js:608 [DD-API Error] contests.getAll: Error: Server is currently unavailable. Please try again later.: {message: 'Server is currently unavailable. Please try again later.', status: undefined, context: {…}, timestamp: '2025-05-09T17:26:43.110Z'}
-overrideMethod @ hook.js:608
-console.error @ clientLogForwarder.ts:226
+console.error @ clientLogForwarder.ts:136
 Yo @ dd-api.ts:428
 getAll @ dd-api.ts:1303
 await in getAll
@@ -448,7 +315,7 @@ hook.js:608 EdgeToEdgeTicker: Failed to load contests: Error: Server is currentl
     at async Object.getAll (dd-api.ts:1204:26)
     at async c (EdgeToEdgeTicker.tsx:37:26)
 overrideMethod @ hook.js:608
-console.error @ clientLogForwarder.ts:226
+console.error @ clientLogForwarder.ts:136
 c @ EdgeToEdgeTicker.tsx:43
 await in c
 (anonymous) @ EdgeToEdgeTicker.tsx:49
@@ -541,9 +408,9 @@ rh @ react-dom-client.production.js:9782
 Zo @ react-dom-client.production.js:11313
 (anonymous) @ react-dom-client.production.js:11048
 Y @ scheduler.production.js:151Understand this error
-hook.js:608 [DD-API Error] contests.getAll: Error: Server is currently unavailable. Please try again later.: {message: 'Server is currently unavailable. Please try again later.', status: undefined, context: {…}, timestamp: '2025-05-09T17:26:43.112Z'}
+hook.js:608 [DD-API Error] contests.getAll: Error: Server is currently unavailable. Please try again later.: {message: 'Server is currently unavailable. Please try again later.', status: undefined, context: {…}, timestamp: '2025-05-09T19:54:47.570Z'}
 overrideMethod @ hook.js:608
-console.error @ clientLogForwarder.ts:226
+console.error @ clientLogForwarder.ts:136
 Yo @ dd-api.ts:428
 getAll @ dd-api.ts:1303
 await in getAll
@@ -653,7 +520,7 @@ hook.js:608 [LandingPage] Failed to load contests: Error: Server is currently un
     at async LandingPage.tsx:271:24
     at async LandingPage.tsx:441:9
 overrideMethod @ hook.js:608
-console.error @ clientLogForwarder.ts:226
+console.error @ clientLogForwarder.ts:136
 (anonymous) @ LandingPage.tsx:308
 await in (anonymous)
 (anonymous) @ LandingPage.tsx:441
@@ -784,7 +651,7 @@ hook.js:608 [releaseDateService] Error response payload from https://degenduel.m
             <div>
                Visit <a href="https://www.cloudflare.com/5xx-error-landing?utm_source=errorcode_502&utm_campaign=degenduel.me" target="_blank" rel="noopener noreferrer">cloudflare.com</a> for more information.
             </div>
-            <div class="mt-3">2025-05-09 17:26:41 UTC</div>
+            <div class="mt-3">2025-05-09 19:54:45 UTC</div>
         </header>
         <div class="my-8 bg-gradient-gray">
             <div class="w-240 lg:w-full mx-auto">
@@ -857,7 +724,7 @@ hook.js:608 [releaseDateService] Error response payload from https://degenduel.m
 
         <div class="cf-error-footer cf-wrapper w-240 lg:w-full py-10 sm:py-4 sm:px-8 mx-auto text-center sm:text-left border-solid border-0 border-t border-gray-300">
   <p class="text-13">
-    <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">93d2e73d2fe521cd</strong></span>
+    <span class="cf-footer-item sm:block sm:mb-1">Cloudflare Ray ID: <strong class="font-semibold">93d3c022aeae744a</strong></span>
     <span class="cf-footer-separator sm:hidden">&bull;</span>
     <span id="cf-footer-item-ip" class="cf-footer-item hidden sm:block sm:mb-1">
       Your IP:
@@ -878,9 +745,9 @@ hook.js:608 [releaseDateService] Error response payload from https://degenduel.m
 </html>
 
 overrideMethod @ hook.js:608
-console.error @ clientLogForwarder.ts:226
-$sr @ releaseDateService.ts:68
-await in $sr
+console.error @ clientLogForwarder.ts:136
+Csr @ releaseDateService.ts:68
+await in Csr
 (anonymous) @ LandingPage.tsx:89
 (anonymous) @ LandingPage.tsx:115
 xl @ react-dom-client.production.js:8292
@@ -981,12 +848,12 @@ Zo @ react-dom-client.production.js:11313
 (anonymous) @ react-dom-client.production.js:11048
 Y @ scheduler.production.js:151Understand this error
 hook.js:608 [releaseDateService] Error fetching countdown data, returning disabled default: Error: Error fetching countdown data: 502 
-    at $sr (releaseDateService.ts:69:13)
+    at Csr (releaseDateService.ts:69:13)
     at async LandingPage.tsx:89:22
 overrideMethod @ hook.js:608
-console.error @ clientLogForwarder.ts:226
-$sr @ releaseDateService.ts:78
-await in $sr
+console.error @ clientLogForwarder.ts:136
+Csr @ releaseDateService.ts:78
+await in Csr
 (anonymous) @ LandingPage.tsx:89
 (anonymous) @ LandingPage.tsx:115
 xl @ react-dom-client.production.js:8292
@@ -1088,7 +955,7 @@ Zo @ react-dom-client.production.js:11313
 Y @ scheduler.production.js:151Understand this error
 hook.js:608 [LandingPage] System Settings WebSocket error: Connection closed abnormally - server may be down or unreachable
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ LandingPage.tsx:233
 xl @ react-dom-client.production.js:8292
 rh @ react-dom-client.production.js:9771
@@ -1196,7 +1063,7 @@ Cx @ react-dom-client.production.js:11539
 (anonymous) @ react-dom-client.production.js:11643Understand this warning
 hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ useTerminalData.ts:163
 (anonymous) @ Terminal.tsx:199
 (anonymous) @ Terminal.tsx:205
@@ -1302,13 +1169,13 @@ Cx @ react-dom-client.production.js:11539
 (anonymous) @ react-dom-client.production.js:11643Understand this warning
 hook.js:608 [TerminalDataService] Fetch attempt failed, retrying in 1000ms...
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
-PSe @ terminalDataService.ts:339
-await in PSe
+console.warn @ clientLogForwarder.ts:117
+ASe @ terminalDataService.ts:339
+await in ASe
 (anonymous) @ terminalDataService.ts:249
 setTimeout
 (anonymous) @ terminalDataService.ts:236
-o9t @ terminalDataService.ts:229
+r9t @ terminalDataService.ts:229
 (anonymous) @ commands.ts:68
 (anonymous) @ commands.ts:75Understand this warning
 
@@ -1319,9 +1186,9 @@ o9t @ terminalDataService.ts:229
          Chrome is moving towards a new experience that allows users to choose to browse without third-party cookies.Understand this warning
 hook.js:608 The configured WalletConnect 'metadata.url':https://degenduel.me/ differs from the actual page url:https://degenduel.me. This is probably unintended and can lead to issues.
 overrideMethod @ hook.js:608
-console.warn @ clientLogForwarder.ts:200
-Vst @ index.es.js:1
-o2e @ index.es.js:1
+console.warn @ clientLogForwarder.ts:117
+Wst @ index.es.js:1
+i2e @ index.es.js:1
 init @ index.es.js:1
 createClient @ index.es.js:1
 initialize @ index.es.js:1
@@ -1330,6 +1197,74 @@ initialize @ index.es.js:1
 init @ index.es.js:1
 createProvider @ privy-provider-IxOtd5-t.mjs:1
 initialize @ privy-provider-IxOtd5-t.mjs:1
+addWalletConnector @ privy-provider-IxOtd5-t.mjs:1
+createEthereumWalletConnector @ privy-provider-IxOtd5-t.mjs:1
+initialize @ privy-provider-IxOtd5-t.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:27
+(anonymous) @ privy-provider-IxOtd5-t.mjs:27
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+hook.js:608 WalletConnect Core is already initialized. This is probably a mistake and can lead to unexpected behavior. Init() was called 2 times.
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:117
+getGlobalCore @ index.es.js:1
+bh @ index.es.js:1
+Ch @ index.es.js:1
+init @ index.es.js:1
+createClient @ index.es.js:1
+initialize @ index.es.js:1
+init @ index.es.js:1
+initializeUniversalAdapter @ appkit-base-client.js:996
+createUniversalProvider @ appkit-base-client.js:1039
+getUniversalProvider @ appkit-base-client.js:1046
+createUniversalProviderForAdapter @ appkit-base-client.js:696
+initChainAdapter @ appkit-base-client.js:619
+initChainAdapter @ appkit.js:339
+(anonymous) @ appkit-base-client.js:623
+initChainAdapters @ appkit-base-client.js:622
+initialize @ appkit-base-client.js:181
+RN @ appkit-base-client.js:167
+ep @ appkit.js:15
+ON @ index.js:8
+initialize @ privy-provider-IxOtd5-t.mjs:1
+await in initialize
 addWalletConnector @ privy-provider-IxOtd5-t.mjs:1
 createEthereumWalletConnector @ privy-provider-IxOtd5-t.mjs:1
 initialize @ privy-provider-IxOtd5-t.mjs:1
@@ -1383,13 +1318,13 @@ index.ts:4 API_URL configuration in use: {environment: 'production', apiUrl: 'ht
 commands.ts:67 [Terminal Commands] Loading terminal data from server...
 useSolanaWalletData.ts:22 [Solana] DegenDuel RPC: https://privy.degenduel.me/api/solana-rpc
 App.tsx:156 [DEBUG][App.tsx] PRIVY_APP_ID: cm7w4m1m2004klfyxqi3px03l
-clientLogForwarder.ts:165 [LogForwarder] Initializing. Default verbose client console output: false (NODE_ENV: production)
-clientLogForwarder.ts:506 [LogForwarder] Fetching remote client logging setting from /api/v1/settings/client-logging-status
-clientLogForwarder.ts:200 DEPRECATED: 'isAuthenticated()' is deprecated. Use 'isAuthenticated' instead. The function version is deprecated in favor of the boolean property.
-console.warn @ clientLogForwarder.ts:200
+clientLogForwarder.ts:102 [LogForwarder] Initializing with console overrides. Verbose client console: false
+clientLogForwarder.ts:414 [LogForwarder] Fetching remote client logging setting from /api/v1/settings/client-logging-status
+clientLogForwarder.ts:117 DEPRECATED: 'isAuthenticated()' is deprecated. Use 'isAuthenticated' instead. The function version is deprecated in favor of the boolean property.
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ deprecationWarning.ts:39
 qn @ useMigratedAuth.ts:72
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -1402,7 +1337,7 @@ Y @ scheduler.production.js:151Understand this warning
 deprecationWarning.ts:40 DEPRECATION TRACE: 'isAuthenticated()' call site
 (anonymous) @ deprecationWarning.ts:40
 qn @ useMigratedAuth.ts:72
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -1412,11 +1347,11 @@ c @ react-dom-client.production.js:10717
 Eu @ react-dom-client.production.js:10284
 wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151
-clientLogForwarder.ts:200 DEPRECATED: 'isAdmin()' is deprecated. Use 'user?.is_admin' instead. Direct property access is recommended for performance reasons.
-console.warn @ clientLogForwarder.ts:200
+clientLogForwarder.ts:117 DEPRECATED: 'isAdmin()' is deprecated. Use 'user?.is_admin' instead. Direct property access is recommended for performance reasons.
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ deprecationWarning.ts:39
 qn @ useMigratedAuth.ts:73
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -1429,7 +1364,7 @@ Y @ scheduler.production.js:151Understand this warning
 deprecationWarning.ts:40 DEPRECATION TRACE: 'isAdmin()' call site
 (anonymous) @ deprecationWarning.ts:40
 qn @ useMigratedAuth.ts:73
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -1439,11 +1374,11 @@ c @ react-dom-client.production.js:10717
 Eu @ react-dom-client.production.js:10284
 wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151
-clientLogForwarder.ts:200 DEPRECATED: 'isSuperAdmin()' is deprecated. Use 'user?.is_superadmin' instead. Direct property access is recommended for performance reasons.
-console.warn @ clientLogForwarder.ts:200
+clientLogForwarder.ts:117 DEPRECATED: 'isSuperAdmin()' is deprecated. Use 'user?.is_superadmin' instead. Direct property access is recommended for performance reasons.
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ deprecationWarning.ts:39
 qn @ useMigratedAuth.ts:74
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -1456,7 +1391,7 @@ Y @ scheduler.production.js:151Understand this warning
 deprecationWarning.ts:40 DEPRECATION TRACE: 'isSuperAdmin()' call site
 (anonymous) @ deprecationWarning.ts:40
 qn @ useMigratedAuth.ts:74
-Bhr @ App.tsx:228
+Ohr @ App.tsx:228
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -1466,10 +1401,10 @@ c @ react-dom-client.production.js:10717
 Eu @ react-dom-client.production.js:10284
 wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151
-clientLogForwarder.ts:200 No background_scene in global system settings! Falling back to local default.
-console.warn @ clientLogForwarder.ts:200
-$Ct @ extractBackgroundSettings.ts:44
-CNe @ BackgroundEffects.tsx:46
+clientLogForwarder.ts:117 No background_scene in global system settings! Falling back to local default.
+console.warn @ clientLogForwarder.ts:117
+CCt @ extractBackgroundSettings.ts:44
+kNe @ BackgroundEffects.tsx:46
 Ws @ react-dom-client.production.js:3502
 mu @ react-dom-client.production.js:6239
 yl @ react-dom-client.production.js:7243
@@ -1479,41 +1414,66 @@ c @ react-dom-client.production.js:10717
 Eu @ react-dom-client.production.js:10284
 wx @ react-dom-client.production.js:11626
 Y @ scheduler.production.js:151Understand this warning
-clientLogForwarder.ts:259 Unhandled promise rejection: TypeError: St.log is not a function
-    at useStore.ts:546:15
-    at middleware.mjs:391:50
-    at middleware.mjs:277:20
-    at Object.then (middleware.mjs:283:38)
-    at E (middleware.mjs:390:8)
-    at middleware.mjs:429:13
-    at vS (vanilla.mjs:19:32)
-    at Ub (vanilla.mjs:22:52)
-    at yS (react.mjs:15:15)
-    at useStore.ts:786:39
-(anonymous) @ clientLogForwarder.ts:259Understand this error
-useStore.ts:546 Uncaught (in promise) TypeError: St.log is not a function
-    at useStore.ts:546:15
-    at middleware.mjs:391:50
-    at middleware.mjs:277:20
-    at Object.then (middleware.mjs:283:38)
-    at E (middleware.mjs:390:8)
-    at middleware.mjs:429:13
-    at vS (vanilla.mjs:19:32)
-    at Ub (vanilla.mjs:22:52)
-    at yS (react.mjs:15:15)
-    at useStore.ts:786:39
-(anonymous) @ useStore.ts:546
-(anonymous) @ middleware.mjs:391
-(anonymous) @ middleware.mjs:277
-then @ middleware.mjs:283
-E @ middleware.mjs:390
-(anonymous) @ middleware.mjs:429
-vS @ vanilla.mjs:19
-Ub @ vanilla.mjs:22
-yS @ react.mjs:15
-(anonymous) @ useStore.ts:786Understand this error
-clientLogForwarder.ts:200 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
-console.warn @ clientLogForwarder.ts:200
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/admin/maintenance/status' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+hook.js:608 Origin https://degenduel.me not found on Allowlist - update configuration on cloud.reown.com
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:136
+open @ AlertController.js:26
+checkAllowedOrigins @ appkit-base-client.js:199
+await in checkAllowedOrigins
+initialize @ appkit-base-client.js:190
+await in initialize
+RN @ appkit-base-client.js:167
+ep @ appkit.js:15
+ON @ index.js:8
+initialize @ privy-provider-IxOtd5-t.mjs:1
+await in initialize
+addWalletConnector @ privy-provider-IxOtd5-t.mjs:1
+createEthereumWalletConnector @ privy-provider-IxOtd5-t.mjs:1
+initialize @ privy-provider-IxOtd5-t.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:27
+(anonymous) @ privy-provider-IxOtd5-t.mjs:27
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this error
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ useTerminalData.ts:163
 (anonymous) @ Terminal.tsx:199
 (anonymous) @ Terminal.tsx:205
@@ -1654,7 +1614,7 @@ rh @ react-dom-client.production.js:9782
 Zo @ react-dom-client.production.js:11313
 (anonymous) @ react-dom-client.production.js:11048
 Y @ scheduler.production.js:151Understand this error
-clientLogForwarder.ts:226 TypeError: Failed to fetch. Refused to connect because it violates the document's Content Security Policy.
+clientLogForwarder.ts:136 TypeError: Failed to fetch. Refused to connect because it violates the document's Content Security Policy.
     at privy-provider-IxOtd5-t.mjs:9:1523
     at privy-provider-IxOtd5-t.mjs:9:1788
     at xl (react-dom-client.production.js:8292:24)
@@ -1665,7 +1625,7 @@ clientLogForwarder.ts:226 TypeError: Failed to fetch. Refused to connect because
     at rh (react-dom-client.production.js:9765:7)
     at In (react-dom-client.production.js:9746:7)
     at rh (react-dom-client.production.js:9878:7)
-console.error @ clientLogForwarder.ts:226
+console.error @ clientLogForwarder.ts:136
 Promise.catch
 (anonymous) @ privy-provider-IxOtd5-t.mjs:9
 xl @ react-dom-client.production.js:8292
@@ -1750,13 +1710,13 @@ rh @ react-dom-client.production.js:9782
 Zo @ react-dom-client.production.js:11313
 (anonymous) @ react-dom-client.production.js:11048
 Y @ scheduler.production.js:151Understand this error
-clientLogForwarder.ts:520 [LogForwarder] Failed to fetch remote logging setting (Status: 502), using default: false
-E6t @ clientLogForwarder.ts:520
-await in E6t
-j6t @ clientLogForwarder.ts:274
+clientLogForwarder.ts:428 [LogForwarder] Failed to fetch remote logging setting (Status: 502), using default: false
+j6t @ clientLogForwarder.ts:428
+await in j6t
+y6t @ clientLogForwarder.ts:182
 (anonymous) @ main.tsx:23Understand this warning
-clientLogForwarder.ts:200 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
-console.warn @ clientLogForwarder.ts:200
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
 (anonymous) @ useTerminalData.ts:163
 (anonymous) @ Terminal.tsx:199
 (anonymous) @ Terminal.tsx:205
@@ -1853,25 +1813,9 @@ rh @ react-dom-client.production.js:9782
 Zo @ react-dom-client.production.js:11313
 (anonymous) @ react-dom-client.production.js:11048
 Y @ scheduler.production.js:151Understand this warning
-embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/logs/client' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
-clientLogForwarder.ts:226 Error sending logs: TypeError: Failed to fetch
-    at Object.sendLogs (clientLogService.ts:42:30)
-    at _6t (clientLogForwarder.ts:474:35)
-    at bNe (clientLogForwarder.ts:411:27)
-    at yNe (clientLogForwarder.ts:385:12)
-    at x2 (clientLogForwarder.ts:317:19)
-    at clientLogForwarder.ts:260:5
-console.error @ clientLogForwarder.ts:226
-sendLogs @ clientLogService.ts:52
-await in sendLogs
-_6t @ clientLogForwarder.ts:474
-bNe @ clientLogForwarder.ts:411
-yNe @ clientLogForwarder.ts:385
-x2 @ clientLogForwarder.ts:317
-(anonymous) @ clientLogForwarder.ts:260Understand this error
 embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/contests' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
-clientLogForwarder.ts:226 [DD-API Error] contests.getAll: TypeError: Failed to fetch: {message: 'Failed to fetch', status: undefined, context: {…}, timestamp: '2025-05-09T17:26:45.154Z'}
-console.error @ clientLogForwarder.ts:226
+clientLogForwarder.ts:136 [DD-API Error] contests.getAll: TypeError: Failed to fetch: {message: 'Failed to fetch', status: undefined, context: {…}, timestamp: '2025-05-09T19:54:49.474Z'}
+console.error @ clientLogForwarder.ts:136
 Yo @ dd-api.ts:428
 getAll @ dd-api.ts:1303
 await in getAll
@@ -1966,3 +1910,1718 @@ rh @ react-dom-client.production.js:9782
 Zo @ react-dom-client.production.js:11313
 (anonymous) @ react-dom-client.production.js:11048
 Y @ scheduler.production.js:151Understand this error
+clientLogForwarder.ts:136 EdgeToEdgeTicker: Failed to load contests: TypeError: Failed to fetch
+    at Object.fetch (dd-api.ts:352:30)
+    at Object.getAll (dd-api.ts:1204:36)
+    at c (EdgeToEdgeTicker.tsx:37:47)
+    at EdgeToEdgeTicker.tsx:49:19
+    at xl (react-dom-client.production.js:8292:24)
+    at rh (react-dom-client.production.js:9771:23)
+    at In (react-dom-client.production.js:9746:7)
+    at rh (react-dom-client.production.js:9878:7)
+    at In (react-dom-client.production.js:9746:7)
+    at rh (react-dom-client.production.js:9765:7)
+console.error @ clientLogForwarder.ts:136
+c @ EdgeToEdgeTicker.tsx:43
+await in c
+(anonymous) @ EdgeToEdgeTicker.tsx:49
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this error
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+Wo @ react-dom-client.production.js:11289
+Xe @ react-dom-client.production.js:11268
+ue @ react-dom-client.production.js:11071
+Lc @ react-dom-client.production.js:10490
+Eu @ react-dom-client.production.js:10419
+Ux @ react-dom-client.production.js:11634
+Kd @ react-dom-client.production.js:11505
+Cx @ react-dom-client.production.js:11539
+(anonymous) @ react-dom-client.production.js:11643Understand this warning
+embedded-wallets:1 Access to XMLHttpRequest at 'https://degenduel.me/api/auth/status' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/logs/client' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+clientLogForwarder.ts:136 Error sending logs: TypeError: Failed to fetch
+    at Object.sendLogs (clientLogService.ts:42:30)
+    at w6t (clientLogForwarder.ts:382:35)
+    at mNe (clientLogForwarder.ts:319:27)
+    at pNe (clientLogForwarder.ts:293:12)
+    at x2 (clientLogForwarder.ts:225:19)
+    at console.error (clientLogForwarder.ts:150:18)
+    at Yo (dd-api.ts:428:11)
+    at Object.getAll (dd-api.ts:1303:18)
+    at async c (EdgeToEdgeTicker.tsx:37:26)
+console.error @ clientLogForwarder.ts:136
+sendLogs @ clientLogService.ts:52
+await in sendLogs
+w6t @ clientLogForwarder.ts:382
+mNe @ clientLogForwarder.ts:319
+pNe @ clientLogForwarder.ts:293
+x2 @ clientLogForwarder.ts:225
+console.error @ clientLogForwarder.ts:150
+Yo @ dd-api.ts:428
+getAll @ dd-api.ts:1303
+await in getAll
+c @ EdgeToEdgeTicker.tsx:37
+(anonymous) @ EdgeToEdgeTicker.tsx:49
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this error
+fetch-retry.umd.js:75 Fetch API cannot load https://auth.privy.io/api/v1/apps/cm7w4m1m2004klfyxqi3px03l. Refused to connect because it violates the document's Content Security Policy.
+m @ fetch-retry.umd.js:75
+(anonymous) @ fetch-retry.umd.js:131
+setTimeout
+x @ fetch-retry.umd.js:130
+(anonymous) @ fetch-retry.umd.js:120
+Promise.catch
+m @ fetch-retry.umd.js:101
+(anonymous) @ fetch-retry.umd.js:135
+(anonymous) @ fetch-retry.umd.js:67
+fetch @ PrivyInternal.mjs:1
+await in fetch
+getAppConfig @ PrivyInternal.mjs:1
+_initialize @ PrivyInternal.mjs:1
+await in _initialize
+initialize @ Privy.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this error
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/terminal/terminal-data' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+clientLogForwarder.ts:117 [TerminalDataService] Fetch attempt failed, retrying in 1000ms...
+console.warn @ clientLogForwarder.ts:117
+ASe @ terminalDataService.ts:339
+await in ASe
+(anonymous) @ terminalDataService.ts:249
+setTimeout
+(anonymous) @ terminalDataService.ts:236
+r9t @ terminalDataService.ts:229
+(anonymous) @ commands.ts:68
+(anonymous) @ commands.ts:75Understand this warning
+embedded-wallets:1 Access to XMLHttpRequest at 'https://degenduel.me/api/auth/status' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+fetch-retry.umd.js:75 Fetch API cannot load https://auth.privy.io/api/v1/apps/cm7w4m1m2004klfyxqi3px03l. Refused to connect because it violates the document's Content Security Policy.
+m @ fetch-retry.umd.js:75
+(anonymous) @ fetch-retry.umd.js:131
+setTimeout
+x @ fetch-retry.umd.js:130
+(anonymous) @ fetch-retry.umd.js:120
+Promise.catch
+m @ fetch-retry.umd.js:101
+(anonymous) @ fetch-retry.umd.js:131
+setTimeout
+x @ fetch-retry.umd.js:130
+(anonymous) @ fetch-retry.umd.js:120
+Promise.catch
+m @ fetch-retry.umd.js:101
+(anonymous) @ fetch-retry.umd.js:135
+(anonymous) @ fetch-retry.umd.js:67
+fetch @ PrivyInternal.mjs:1
+await in fetch
+getAppConfig @ PrivyInternal.mjs:1
+_initialize @ PrivyInternal.mjs:1
+await in _initialize
+initialize @ Privy.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this error
+hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/terminal/terminal-data' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+2hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+Wo @ react-dom-client.production.js:11289
+Xe @ react-dom-client.production.js:11268
+ue @ react-dom-client.production.js:11071
+Lc @ react-dom-client.production.js:10490
+Eu @ react-dom-client.production.js:10419
+Ux @ react-dom-client.production.js:11634
+Kd @ react-dom-client.production.js:11505
+Cx @ react-dom-client.production.js:11539
+(anonymous) @ react-dom-client.production.js:11643Understand this warning
+hook.js:608 [TerminalDataService] Error fetching terminal data after multiple retries
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:136
+(anonymous) @ terminalDataService.ts:278
+setTimeout
+(anonymous) @ terminalDataService.ts:236
+r9t @ terminalDataService.ts:229
+(anonymous) @ commands.ts:68
+(anonymous) @ commands.ts:75Understand this error
+hook.js:608 [LogForwarder] Failed to send logs after maximum retries, dropping logs
+overrideMethod @ hook.js:608
+mNe @ clientLogForwarder.ts:333
+await in mNe
+pNe @ clientLogForwarder.ts:293
+x2 @ clientLogForwarder.ts:225
+console.error @ clientLogForwarder.ts:150
+(anonymous) @ terminalDataService.ts:278
+setTimeout
+(anonymous) @ terminalDataService.ts:236
+r9t @ terminalDataService.ts:229
+(anonymous) @ commands.ts:68
+(anonymous) @ commands.ts:75Understand this error
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+embedded-wallets:1 Access to XMLHttpRequest at 'https://degenduel.me/api/auth/status' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.Understand this error
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/terminal/terminal-data' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+fetch-retry.umd.js:75 Fetch API cannot load https://auth.privy.io/api/v1/apps/cm7w4m1m2004klfyxqi3px03l. Refused to connect because it violates the document's Content Security Policy.
+m @ fetch-retry.umd.js:75
+(anonymous) @ fetch-retry.umd.js:131
+setTimeout
+x @ fetch-retry.umd.js:130
+(anonymous) @ fetch-retry.umd.js:120
+Promise.catch
+m @ fetch-retry.umd.js:101
+(anonymous) @ fetch-retry.umd.js:131
+setTimeout
+x @ fetch-retry.umd.js:130
+(anonymous) @ fetch-retry.umd.js:120
+Promise.catch
+m @ fetch-retry.umd.js:101
+(anonymous) @ fetch-retry.umd.js:131
+setTimeout
+x @ fetch-retry.umd.js:130
+(anonymous) @ fetch-retry.umd.js:120
+Promise.catch
+m @ fetch-retry.umd.js:101
+(anonymous) @ fetch-retry.umd.js:135
+(anonymous) @ fetch-retry.umd.js:67
+fetch @ PrivyInternal.mjs:1
+await in fetch
+getAppConfig @ PrivyInternal.mjs:1
+_initialize @ PrivyInternal.mjs:1
+await in _initialize
+initialize @ Privy.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this error
+clientLogForwarder.ts:117 Error generating app config:  TypeError: Failed to fetch. Refused to connect because it violates the document's Content Security Policy.
+    at m (fetch-retry.umd.js:75:11)
+    at fetch-retry.umd.js:131:13
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+await in (anonymous)
+(anonymous) @ privy-provider-IxOtd5-t.mjs:1
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+Wo @ react-dom-client.production.js:11289
+Xe @ react-dom-client.production.js:11268
+ue @ react-dom-client.production.js:11071
+Lc @ react-dom-client.production.js:10490
+Eu @ react-dom-client.production.js:10419
+Ux @ react-dom-client.production.js:11634
+Kd @ react-dom-client.production.js:11505
+Cx @ react-dom-client.production.js:11539
+(anonymous) @ react-dom-client.production.js:11643Understand this warning
+hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+hook.js:608 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+Wo @ react-dom-client.production.js:11289
+Xe @ react-dom-client.production.js:11268
+ue @ react-dom-client.production.js:11071
+Lc @ react-dom-client.production.js:10490
+Eu @ react-dom-client.production.js:10419
+Ux @ react-dom-client.production.js:11634
+Kd @ react-dom-client.production.js:11505
+Cx @ react-dom-client.production.js:11539
+(anonymous) @ react-dom-client.production.js:11643Understand this warning
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/logs/client' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+clientLogForwarder.ts:136 Error sending logs: TypeError: Failed to fetch
+    at Object.sendLogs (clientLogService.ts:42:30)
+    at w6t (clientLogForwarder.ts:382:35)
+    at mNe (clientLogForwarder.ts:319:27)
+    at clientLogForwarder.ts:284:14
+console.error @ clientLogForwarder.ts:136
+sendLogs @ clientLogService.ts:52
+await in sendLogs
+w6t @ clientLogForwarder.ts:382
+mNe @ clientLogForwarder.ts:319
+(anonymous) @ clientLogForwarder.ts:284Understand this error
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/terminal/terminal-data' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+clientLogForwarder.ts:136 [TerminalDataService] Error fetching terminal data after multiple retries
+console.error @ clientLogForwarder.ts:136
+(anonymous) @ terminalDataService.ts:278Understand this error
+embedded-wallets:1 Access to fetch at 'https://degenduel.me/api/logs/client' from origin 'https://privy.degenduel.me' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.Understand this error
+clientLogForwarder.ts:136 Error sending logs: TypeError: Failed to fetch
+    at Object.sendLogs (clientLogService.ts:42:30)
+    at w6t (clientLogForwarder.ts:382:35)
+    at mNe (clientLogForwarder.ts:319:27)
+    at pNe (clientLogForwarder.ts:293:12)
+    at x2 (clientLogForwarder.ts:225:19)
+    at console.error (clientLogForwarder.ts:150:18)
+    at terminalDataService.ts:278:19
+console.error @ clientLogForwarder.ts:136
+sendLogs @ clientLogService.ts:52
+await in sendLogs
+w6t @ clientLogForwarder.ts:382
+mNe @ clientLogForwarder.ts:319
+pNe @ clientLogForwarder.ts:293
+x2 @ clientLogForwarder.ts:225
+console.error @ clientLogForwarder.ts:150
+(anonymous) @ terminalDataService.ts:278Understand this error
+clientLogForwarder.ts:333 [LogForwarder] Failed to send logs after maximum retries, dropping logs
+mNe @ clientLogForwarder.ts:333
+await in mNe
+pNe @ clientLogForwarder.ts:293
+x2 @ clientLogForwarder.ts:225
+console.error @ clientLogForwarder.ts:150
+(anonymous) @ terminalDataService.ts:278Understand this error
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+(anonymous) @ react-dom-client.production.js:11048
+Y @ scheduler.production.js:151Understand this warning
+clientLogForwarder.ts:117 [TerminalData WebSocket] Cannot refresh - WebSocket not connected
+console.warn @ clientLogForwarder.ts:117
+(anonymous) @ useTerminalData.ts:163
+(anonymous) @ Terminal.tsx:199
+(anonymous) @ Terminal.tsx:205
+xl @ react-dom-client.production.js:8292
+rh @ react-dom-client.production.js:9771
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9765
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9774
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9878
+In @ react-dom-client.production.js:9746
+rh @ react-dom-client.production.js:9782
+Zo @ react-dom-client.production.js:11313
+Wo @ react-dom-client.production.js:11289
+Xe @ react-dom-client.production.js:11268
+ue @ react-dom-client.production.js:11071
+Lc @ react-dom-client.production.js:10490
+Eu @ react-dom-client.production.js:10419
+Ux @ react-dom-client.production.js:11634
+Kd @ react-dom-client.production.js:11505
+Cx @ react-dom-client.production.js:11539
+(anonymous) @ react-dom-client.production.js:11643Understand this warning
