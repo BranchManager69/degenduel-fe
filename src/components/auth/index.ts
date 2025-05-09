@@ -9,10 +9,9 @@ export { default as BiometricCredentialManager } from './BiometricCredentialMana
 export { default as QRCodeAuth } from './QRCodeAuth';
 
 // Export login components
+export { default as ConsolidatedLoginButton } from './ConsolidatedLoginButton';
 export { default as LoginOptions } from './LoginOptions';
 export { default as LoginOptionsButton } from './LoginOptionsButton';
-export { default as ConsolidatedLoginButton } from './ConsolidatedLoginButton';
-export { default as InviteCodeInput } from './InviteCodeInput';
 export { default as WalletDebugger } from './WalletDebugger';
 
 // Export Twitter login components
@@ -26,3 +25,7 @@ export { default as TwitterLoginButtonMock } from './TwitterLoginButton.mock';
 
 // Export Privy components
 export { default as PrivyLoginButton } from './PrivyLoginButton';
+
+// Corrected export for InviteCodeInput (originally ReferralCodeInput)
+export { ReferralCodeInput as InviteCodeInput } from './InviteCodeInput';
+

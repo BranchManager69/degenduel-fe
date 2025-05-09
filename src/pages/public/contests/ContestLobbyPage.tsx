@@ -1,5 +1,16 @@
 // src/pages/public/contests/ContestLobbyPage.tsx
 
+/**
+ * Contest Lobby Page
+ * 
+ * @description This page displays the lobby for a contest, including a leaderboard, portfolio performance, and chat functionality.
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-01-01
+ * @updated 2025-05-08
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -21,7 +32,7 @@ import { ContestViewData } from "../../../types";
 // Contest Lobby page
 export const ContestLobby: React.FC = () => {
   const { id: contestIdFromParams } = useParams<{ id: string }>();
-  const { user: currentUser } = useMigratedAuth();
+  useMigratedAuth();
 
   const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -61,7 +72,6 @@ export const ContestLobby: React.FC = () => {
   // WebSocket updates
   const { 
     contestViewData: wsUpdatedData, 
-    isConnected: wsIsConnected, 
     error: wsError 
   } = useContestViewUpdates(contestIdFromParams ?? null, contestViewData);
 
@@ -361,7 +371,7 @@ export const ContestLobby: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
                     {currentUserPerformance && <PortfolioPerformance {...portfolioDataForDisplay} />}
-                    <Leaderboard entries={leaderboardEntries} currentUserRank={currentUserPerformance?.rank} />
+                    <Leaderboard entries={leaderboardEntries} />
                   </div>
                   <div className="space-y-6">
                     {currentUserPerformance?.tokens.map((token, index) => (
@@ -423,11 +433,7 @@ export const ContestLobby: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Leaderboard 
-                        entries={leaderboardEntries} 
-                        currentUserRank={currentUserPerformance?.rank}
-                        className="mb-6" 
-                      />
+                      <Leaderboard entries={leaderboardEntries} className="mb-6" />
                       <div className="hidden lg:block"><TestSkipButton contestId={contestIdFromParams!} /></div>
                     </motion.div>
                   </div>
@@ -453,11 +459,7 @@ export const ContestLobby: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Leaderboard 
-                        entries={leaderboardEntries} 
-                        currentUserRank={currentUserPerformance?.rank}
-                        className="mb-6" 
-                      />
+                      <Leaderboard entries={leaderboardEntries} className="mb-6" />
                       
                       {/* Only show on desktop */}
                       <div className="hidden lg:block">

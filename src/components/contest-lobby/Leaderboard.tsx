@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { formatCurrency } from "../../lib/utils";
 import { Badge } from "../ui/Badge";
-import { Card, CardContent, CardContent, CardHeader } from "../ui/Card";
+import { Card, CardContent, CardHeader } from "../ui/Card";
 
 // Align with the API's LeaderboardEntry structure from src/types/index.ts
 interface LeaderboardEntry {
@@ -18,13 +18,11 @@ interface LeaderboardEntry {
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[];
-  currentUserRank?: number | null; // Allow null
   className?: string;
 }
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({
   entries: initialEntries,
-  currentUserRank,
   className = "",
 }) => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries);

@@ -1,17 +1,26 @@
 // src/pages/public/contests/ContestDetailPage.tsx
 
-// Removed Aptos wallet dependency
-import { useAuth } from "../../../hooks/useAuth"; // Use our auth hook instead
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+/**
+ * Contest Detail Page
+ * 
+ * @description This file contains the ContestDetailPage component, which displays detailed information about a contest.
+ * It includes a countdown timer, prize structure, participants list, and other details.
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-01-01
+ * @updated 2025-05-08
+ */
+
 import { motion } from "framer-motion";
-import { ContestRules } from "../../../components/contest-detail/ContestRules";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
 import { Card } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
-import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
-import { useAuth } from "../../../hooks/useAuth";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import {
   formatCurrency,
   isContestLive,
@@ -52,9 +61,7 @@ export const ContestDetails: React.FC = () => {
   const [contest, setContest] = useState<Contest | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  // Removed Aptos wallet
-  // const { account, connected, connect, wallet } = useWallet();
-  const { isFullyConnected, walletAddress } = useAuth();
+  const { user, isAuthenticated } = useMigratedAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   
@@ -71,8 +78,8 @@ export const ContestDetails: React.FC = () => {
 
   // Add a computed state for wallet connection
   const isWalletConnected = React.useMemo(() => {
-    return !!walletAddress;
-  }, [walletAddress]);
+    return isAuthenticated && !!user?.wallet_address;
+  }, [isAuthenticated, user]);
 
   // Determine contestDisplayStatus - Similar to what ContestCard does
   const getDisplayStatus = React.useMemo(() => {
@@ -95,11 +102,11 @@ export const ContestDetails: React.FC = () => {
 
   useEffect(() => {
     console.log("Wallet State:", {
-      isConnected: isFullyConnected,
-      walletAddress,
+      isConnected: isAuthenticated,
+      walletAddress: user?.wallet_address,
       timestamp: new Date().toISOString(),
     });
-  }, []);
+  }, [isAuthenticated, user?.wallet_address]);
 
   const fetchContest = async () => {
     if (!id) return;
@@ -218,7 +225,7 @@ export const ContestDetails: React.FC = () => {
     }, 30000); // Check for maintenance mode every 30 secs
 
     return () => clearInterval(maintenanceCheckInterval);
-  }, [id, walletAddress]);
+  }, [id, user]);
 
   // Mouse move handler for parallax effect (desktop only)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -262,8 +269,8 @@ export const ContestDetails: React.FC = () => {
   const handleJoinContest = () => {
     console.log("Duel Action Button Clicked - Initial State:", {
       isWalletConnected,
-      isFullyConnected,
-      walletAddress,
+      isConnected: isAuthenticated,
+      walletAddress: user?.wallet_address,
       isParticipating,
       contestId: contest?.id,
       timestamp: new Date().toISOString(),
@@ -286,11 +293,11 @@ export const ContestDetails: React.FC = () => {
     const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
 
     // Not connected to wallet - need to connect first
-    if (!isFullyConnected) {
+    if (!isAuthenticated) {
       console.log("Wallet Connection Check Failed:", {
         isWalletConnected,
-        isFullyConnected,
-        walletAddress,
+        isConnected: isAuthenticated,
+        walletAddress: user?.wallet_address,
         timestamp: new Date().toISOString(),
       });
 
@@ -338,7 +345,7 @@ export const ContestDetails: React.FC = () => {
       // Contest is upcoming, allow joining
       console.log("Navigating to portfolio token selection page:", {
         contestId: contest.id,
-        userAddress: walletAddress,
+        userAddress: user?.wallet_address,
         timestamp: new Date().toISOString(),
       });
       navigate(`/contests/${contest.id}/select-tokens`);
@@ -649,7 +656,7 @@ export const ContestDetails: React.FC = () => {
                   <div className="flex gap-2">
                     {/* Twitter/X Share Button */}
                     <a
-                      href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${walletAddress ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${walletAddress.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
+                      href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${user?.wallet_address ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${user.wallet_address.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-3 py-1.5 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300 text-sm"
@@ -809,6 +816,7 @@ export const ContestDetails: React.FC = () => {
                 </summary>
 
                 <div className="relative overflow-hidden transition-all duration-300">
+                  {/* Placeholder for where rules were displayed:
                   {contest?.settings?.rules &&
                   contest.settings.rules.length > 0 ? (
                     <ContestRules rules={contest.settings.rules} />
@@ -818,6 +826,7 @@ export const ContestDetails: React.FC = () => {
                       for himself.
                     </p>
                   )}
+                  */}
                 </div>
               </details>
 
@@ -828,18 +837,25 @@ export const ContestDetails: React.FC = () => {
                     Token Whitelist
                   </h3>
                   <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                    {contest?.settings?.token_types &&
-                    contest.settings.token_types.length > 0
-                      ? "Restricted"
-                      : "Unrestricted"}
+                    {/* Placeholder for where token types were displayed, assuming it's adjusted:
+                    {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
+                      <div className="mt-2 space-x-2">
+                        {contest.settings.tokenTypesAllowed.map((tokenType: string) => (
+                          <Badge key={tokenType} variant="secondary">{tokenType.toUpperCase()}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Any token type allowed.</p>
+                    )}
+                    */}
                   </span>
                 </summary>
 
                 <div className="relative overflow-hidden transition-all duration-300">
-                  {contest?.settings?.token_types &&
-                  contest.settings.token_types.length > 0 ? (
+                  {/* Placeholder for where token types were displayed, assuming it's adjusted:
+                  {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                      {contest.settings.token_types.map((token: string) => (
+                      {contest.settings.tokenTypesAllowed.map((token: string) => (
                         <span
                           key={token}
                           className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
@@ -874,6 +890,7 @@ export const ContestDetails: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  */}
                 </div>
               </details>
             </div>
@@ -882,7 +899,7 @@ export const ContestDetails: React.FC = () => {
             <div className="flex gap-2 mb-8 md:hidden">
               {/* Twitter/X Share Button */}
               <a
-                href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${walletAddress ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${walletAddress.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
+                href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${user?.wallet_address ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${user.wallet_address.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300"
@@ -943,6 +960,7 @@ export const ContestDetails: React.FC = () => {
                   </div>
 
                   <div className="relative overflow-hidden transition-all duration-300">
+                    {/* Placeholder for where rules were displayed:
                     {contest?.settings?.rules &&
                     contest.settings.rules.length > 0 ? (
                       <ContestRules rules={contest.settings.rules} />
@@ -952,6 +970,7 @@ export const ContestDetails: React.FC = () => {
                         for himself.
                       </p>
                     )}
+                    */}
                   </div>
                 </div>
 
@@ -962,18 +981,25 @@ export const ContestDetails: React.FC = () => {
                       Token Whitelist
                     </h3>
                     <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                      {contest?.settings?.token_types &&
-                      contest.settings.token_types.length > 0
-                        ? "Restricted"
-                        : "Unrestricted"}
+                      {/* Placeholder for where token types were displayed, assuming it's adjusted:
+                      {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
+                        <div className="mt-2 space-x-2">
+                          {contest.settings.tokenTypesAllowed.map((tokenType: string) => (
+                            <Badge key={tokenType} variant="secondary">{tokenType.toUpperCase()}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span>Any</span>
+                      )}
+                      */}
                     </span>
                   </div>
 
                   <div className="relative overflow-hidden transition-all duration-300">
-                    {contest?.settings?.token_types &&
-                    contest.settings.token_types.length > 0 ? (
+                    {/* Placeholder for where token types were displayed, assuming it's adjusted:
+                    {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {contest.settings.token_types.map((token: string) => (
+                        {contest.settings.tokenTypesAllowed.map((token: string) => (
                           <span
                             key={token}
                             className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
@@ -1008,6 +1034,7 @@ export const ContestDetails: React.FC = () => {
                         </div>
                       </div>
                     )}
+                    */}
                   </div>
                 </div>
               </div>

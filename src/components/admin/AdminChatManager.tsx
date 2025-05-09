@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 import { useUserContests } from "../../hooks/data/legacy/useUserContests";
-import { FloatingContestChat } from "../contest-chat/FloatingContestChat";
 
 // Define ContestStatus type based on UserContest
 type ContestStatus = "upcoming" | "active" | "completed";
@@ -18,12 +17,6 @@ export const AdminChatManager: React.FC<AdminChatManagerProps> = () => {
     "all",
   );
   const [showActiveOnly, setShowActiveOnly] = useState(true);
-  const [activeContestId, setActiveContestId] = useState<string | null>(null);
-
-  // Position management for floating chats
-  const [chatPositions, setChatPositions] = useState<
-    Record<string, { x: number; y: number }>
-  >({});
 
   // Filter contests based on search term and status
   const filteredContests = contests.filter((contest) => {
@@ -43,50 +36,6 @@ export const AdminChatManager: React.FC<AdminChatManagerProps> = () => {
         ? prev.filter((id) => id !== contestId)
         : [...prev, contestId],
     );
-
-    // Initialize position for new chat if not already set
-    if (!chatPositions[contestId]) {
-      setChatPositions((prev) => ({
-        ...prev,
-        [contestId]: {
-          x: 20 + Object.keys(prev).length * 30,
-          y: 20 + Object.keys(prev).length * 30,
-        },
-      }));
-    }
-
-    // Set as active if it's being added
-    if (!selectedContests.includes(contestId)) {
-      setActiveContestId(contestId);
-    }
-  };
-
-  // Update chat position - currently unused but keeping for future functionality
-  // const updateChatPosition = (contestId: string, x: number, y: number) => {
-  //   setChatPositions((prev) => ({
-  //     ...prev,
-  //     [contestId]: { x, y },
-  //   }));
-  // };
-
-  // Close a chat
-  const closeChat = (contestId: string) => {
-    setSelectedContests((prev) => prev.filter((id) => id !== contestId));
-
-    // If the closed chat was active, set a new active chat
-    if (activeContestId === contestId) {
-      const remainingContests = selectedContests.filter(
-        (id) => id !== contestId,
-      );
-      setActiveContestId(
-        remainingContests.length > 0 ? remainingContests[0] : null,
-      );
-    }
-  };
-
-  // Calculate position for each chat
-  const getPositionIndex = (contestId: string) => {
-    return selectedContests.indexOf(contestId);
   };
 
   return (
@@ -251,33 +200,18 @@ export const AdminChatManager: React.FC<AdminChatManagerProps> = () => {
         </div>
       )}
 
-      {/* Floating Chat Windows */}
-      {selectedContests.map((contestId) => {
-        const contest = contests.find((c) => c.contestId === contestId);
-        if (!contest) return null;
-
-        return (
-          <div
-            key={contestId}
-            style={{
-              position: "fixed",
-              bottom: "0",
-              right: `${getPositionIndex(contestId) * 320 + 20}px`,
-              zIndex: 1000,
-            }}
-            className="admin-floating-chat"
-          >
-            <FloatingContestChat
-              contest={contest}
-              onClose={() => closeChat(contestId)}
-              position={getPositionIndex(contestId)}
-              isActive={activeContestId === contestId}
-              onActivate={() => setActiveContestId(contestId)}
-              adminType="admin" // Add this prop to indicate it's an admin
-            />
-          </div>
-        );
-      })}
+      {filteredContests.length > 0 && selectedContests.length > 0 && (
+        <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-red-700/30">
+          <h3 className="text-lg font-semibold text-red-400">Monitoring Contests:</h3>
+          <ul className="list-disc list-inside text-gray-300">
+            {selectedContests.map(id => {
+              const c = contests.find(co => co.contestId === id);
+              return <li key={id}>{c ? c.name : id}</li>;
+            })}
+          </ul>
+          <p className="text-xs text-gray-500 mt-2">Admin chat view has been simplified. Full chat monitoring UI TBD.</p>
+        </div>
+      )}
     </div>
   );
 };

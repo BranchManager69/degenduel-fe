@@ -2,10 +2,11 @@
 
 /**
  * Landing Page
+ * 
  * @description This is the landing page for the DegenDuel website.
  * 
  * @author BranchManager69
- * @version 2.0.0
+ * @version 2.1.0
  * @created 2025-01-01
  * @updated 2025-05-05
  */
@@ -23,58 +24,42 @@ import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestLive } from "../../../lib/utils";
 import { Contest } from "../../../types";
-// Terminal components
+// Didi AI Terminal and Decryption Timer
 import { DecryptionTimer, Terminal } from '../../../components/terminal';
-//// import { processTerminalChat } from '../../../services/mockTerminalService';
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
 import { useTerminalData } from "../../../hooks/websocket/topic-hooks/useTerminalData";
 // DD API
 import { ddApi } from "../../../services/dd-api";
-
-
-// Contract Address Service (deprecated)
-// import {
-//   getTimeRemainingUntilRelease, // Now from dateUtils.ts
-//   isReleaseTimePassed // Now from dateUtils.ts
-// } from '../../../services/contractAddressService'; // REMOVED IMPORT
-
-// Date Utilities (NEW IMPORT)
+// Date Utilities
 import { getTimeRemainingUntilRelease, isReleaseTimePassed } from '../../../utils/dateUtils';
-
-// Release Date Service (Is this a synonym of contract address service?)
-import {
-  FALLBACK_RELEASE_DATE, // ?
-  fetchReleaseDate, // ?
-  formatReleaseDate // ?
-} from '../../../services/releaseDateService';
+// Release Date Service
+import { FALLBACK_RELEASE_DATE, fetchReleaseDate, formatReleaseDate } from '../../../services/releaseDateService';
+// Import PaginatedResponse from types
+import { PaginatedResponse } from '../../../types';
+// Zustand store
+import { useStore } from "../../../store/useStore"; // Ensure useStore is imported
 
 // Config
 import { config as globalConfig } from '../../../config/config';
 
-// Import PaginatedResponse from types
-import { PaginatedResponse } from '../../../types';
-
-import { useStore } from "../../../store/useStore"; // Ensure useStore is imported
-
-// Landing Page component
+// Landing Page
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0);
   
-  // Contract address polling and management
+  // Decryption Timer -- Contract address reveal countdown
   const [contractAddress, setContractAddress] = useState<string>('');
   const [releaseDate, setReleaseDate] = useState<Date>(FALLBACK_RELEASE_DATE);
   const [isLoadingReleaseDate, setIsLoadingReleaseDate] = useState<boolean>(true);
   const [showContractReveal, setShowContractReveal] = useState<boolean>(false);
   const countdownCheckerRef = useRef<number | null>(null);
   
-  // Debug state for contests section (?)
+  // Debug state for contests section
   const [contestDebugInfo, setContestDebugInfo] = useState<{
     lastFetchAttempt: string;
     errorDetails: string | null;
@@ -217,35 +202,42 @@ export const LandingPage: React.FC = () => {
   
   // Use WebSocket hook for system settings (including maintenance mode)
   const { 
-    isMaintenanceMode: wsMaintenanceMode, 
-    maintenanceMessage,
-    isConnected: systemConnected
+    settings, // Destructure the settings object
+    isConnected: systemSettingsConnected,
+    error: systemSettingsError // Capture error from system settings hook
   } = useSystemSettings();
   
+  // Derived maintenance state from settings hook
+  const isMaintenanceModeActive = settings?.maintenanceMode || false;
+  const maintenanceMessageToDisplay = settings?.maintenanceMessage || "DegenDuel is in Maintenance Mode. Please try again later.";
+
   // Update local and store maintenance mode when WebSocket provides updates
   useEffect(() => {
-    if (systemConnected && wsMaintenanceMode !== undefined) {
+    if (systemSettingsConnected) {
       // Log that we're receiving maintenance updates via WebSocket
-      console.log(`[LandingPage] WebSocket maintenance mode update received: ${wsMaintenanceMode}`);
-      
-      // Update local state
-      setIsMaintenanceMode(wsMaintenanceMode);
+      // Use the derived isMaintenanceMode for logic
+      console.log(`[LandingPage] System settings received: Maintenance: ${isMaintenanceModeActive}`);
       
       // Update store state
       if (useStore.getState().setMaintenanceMode) {
-        useStore.getState().setMaintenanceMode(wsMaintenanceMode);
+        useStore.getState().setMaintenanceMode(isMaintenanceModeActive);
       }
       
-      // Set error message if in maintenance mode
-      if (wsMaintenanceMode) {
-        const message = maintenanceMessage || "DegenDuel is in Maintenance Mode. Please try again later.";
-        setError(message);
+      if (isMaintenanceModeActive) {
+        const message = maintenanceMessageToDisplay || "DegenDuel is in Maintenance Mode. Please try again later.";
+        setError(message); // Use error state
       } else if (error && error.includes("Maintenance Mode")) {
-        // Clear the error if we're no longer in maintenance mode and the error was about maintenance
         setError(null);
       }
     }
-  }, [systemConnected, wsMaintenanceMode, maintenanceMessage, error]);
+  }, [systemSettingsConnected, settings, setError]); // Depend on settings object
+
+  // Log system settings errors
+  useEffect(() => {
+    if (systemSettingsError) {
+        console.warn("[LandingPage] System Settings WebSocket error:", systemSettingsError);
+    }
+  }, [systemSettingsError]);
   
   // Log user status for debugging
   useEffect(() => {
@@ -273,19 +265,14 @@ export const LandingPage: React.FC = () => {
       lastFetchAttempt: new Date().toISOString()
     }));
     
+    // Use derived isMaintenanceModeActive from settings hook
+    if (isMaintenanceModeActive) {
+      console.log("[LandingPage] Maintenance mode active, contest fetch aborted by retryContestFetch.");
+      setLoading(false);
+      return;
+    }
+    
     try {
-      // First check maintenance mode
-      const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-      setIsMaintenanceMode(isInMaintenance);
-      
-      // If in maintenance mode, don't fetch contests
-      if (isInMaintenance) {
-        setError("DegenDuel is in Maintenance Mode. Please try again later.");
-        setLoading(false);
-        return;
-      }
-      
-      // If not in maintenance mode, fetch contests with detailed logging
       const response = await ddApi.contests.getAll();
       console.log("[LandingPage] Contests:", response);
       
@@ -335,16 +322,16 @@ export const LandingPage: React.FC = () => {
         errorDetails
       }));
       
-      if (err instanceof Error && err.message.includes("503")) {
-        setIsMaintenanceMode(true);
-        setError("DegenDuel is in Maintenance Mode. Please try again later.");
+      if (!(err instanceof Error && err.message.includes("503"))) { // 503 might be maintenance from API layer
+         setError(`Failed to load contests: ${err instanceof Error ? err.message : String(err)}`);
       } else {
-        setError(`Failed to load contests: ${err instanceof Error ? err.message : String(err)}`);
+        // Do not set the error message if it's a maintenance message (handled above)
+        //setError(maintenanceMessageToDisplay);
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isMaintenanceModeActive, maintenanceMessageToDisplay]);
 
   // Define animation variants for Framer Motion
   const landingPageVariants = {
@@ -460,42 +447,27 @@ export const LandingPage: React.FC = () => {
       };
       fetchContests();
     }
-
-    // Initial maintenance check (will only run once)
-    const checkInitialMaintenanceStatus = async () => {
-      try {
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        // Update Zustand store directly if available, otherwise use local state
-        if (useStore.getState().setMaintenanceMode) {
-          useStore.getState().setMaintenanceMode(isInMaintenance);
-        } else {
-          setIsMaintenanceMode(isInMaintenance);
-        }
-
-        if (isInMaintenance) {
-          setError("DegenDuel is in Maintenance Mode. Please try again later.");
-        }
-      } catch (err) {
-        console.error(`Failed to check initial maintenance status: ${err}`);
-      }
-    };
-    checkInitialMaintenanceStatus();
-
-    // No cleanup needed as we're not setting up any interval
   }, [retryContestFetch]); // Depend on retryContestFetch
 
+  // Landing Page JSX
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden">
 
       {/* Landing Page Content Section */}
       <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>
+        
+        {/* Landing Page Container */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          
+          {/* Landing Page Content */}
           <div className="text-center space-y-4">
             
             {/* Title Section */}
             <div className="flex flex-col items-center justify-center">
               
+
               {/* (does this ALL exist within the Title Section!? ) */}
+
 
               {/* Admin debug button - visible even when HeroTitle is hidden */}
               {isAdmin && (
@@ -842,7 +814,7 @@ export const LandingPage: React.FC = () => {
                 variants={secondaryVariants}
               >
                 {/* Maintenance mode */}
-                {isMaintenanceMode ? (
+                {isMaintenanceModeActive ? (
                   <div className="relative">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                       <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
@@ -851,7 +823,7 @@ export const LandingPage: React.FC = () => {
                           
                           {/* Maintenance mode message */}
                           <span>
-                            DegenDuel is in Maintenance Mode. Please try again later.
+                            {maintenanceMessageToDisplay}
                           </span>
                           
                           {/* Maintenance mode icon */}
@@ -974,8 +946,14 @@ export const LandingPage: React.FC = () => {
 
             </div>
 
+
+            {/* Test moving the non-header content HERE */}
+
+
           </div>
+
         </div>
+
       </section>
 
     </div>

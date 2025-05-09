@@ -12,8 +12,9 @@
 // import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; // REMOVED
 import { useEffect, useState } from 'react';
 import { usePrivyAuth } from "../../contexts/PrivyAuthContext";
-import { useBiometricAuth, useQRCodeAuth } from "../../hooks/auth";
+import { useBiometricAuth } from "../../hooks/auth"; // Only useBiometricAuth
 import { useStore } from "../../store/useStore";
+import { Button } from "../ui/Button";
 import {
   Card,
   CardContent,
@@ -27,7 +28,6 @@ import BiometricAuthButton from "./BiometricAuthButton";
 import ConsolidatedLoginButton from "./ConsolidatedLoginButton";
 import PrivyLoginButton from "./PrivyLoginButton";
 import TwitterLoginButton from "./TwitterLoginButton";
-import QRCodeAuth from "./QRCodeAuth";
 
 /**
  * Login Options Component
@@ -40,16 +40,27 @@ const LoginOptions = () => {
   const { isPrivyLinked, linkPrivyToWallet, isLoading: privyLoading } = usePrivyAuth();
   const { user } = useStore();
   const [isLinking, setIsLinking] = useState(false);
-  const { isAvailable, isRegistered } = useBiometricAuth();
+  const { 
+    isAvailable,
+    isRegistered,
+    authenticate,
+    error: biometricError
+  } = useBiometricAuth();
   const [showBiometricOption, setShowBiometricOption] = useState(false);
-  const [showQRCodeAuth, setShowQRCodeAuth] = useState(false);
   
-  // Check if biometric auth is available and the user has a registered credential
   useEffect(() => {
     if (isAvailable && isRegistered) {
       setShowBiometricOption(true);
+    } else {
+      setShowBiometricOption(false);
     }
   }, [isAvailable, isRegistered]);
+  
+  useEffect(() => {
+    if (biometricError) {
+      console.warn("Biometric Auth Hook Error:", biometricError);
+    }
+  }, [biometricError]);
   
   // Function to handle linking Privy to wallet
   const handleLinkPrivy = async () => {
@@ -65,6 +76,16 @@ const LoginOptions = () => {
       console.error('Error linking Privy account:', error);
     } finally {
       setIsLinking(false);
+    }
+  };
+  
+  const handleBiometricAuth = async () => {
+    if (authenticate && isAvailable) {
+      try {
+        await authenticate(user?.id || "No user ID found");
+      } catch (err) {
+        console.error("Biometric auth failed during prompt:", err);
+      }
     }
   };
   
@@ -158,20 +179,6 @@ const LoginOptions = () => {
                     </div>
                   )}
                   
-                  {/* QR Code Auth Button - toggles QR code interface */}
-                  <div className="relative p-0.5 bg-gradient-to-r from-green-500/40 to-green-600/80 rounded-md group overflow-hidden shadow-md">
-                    <div className="absolute inset-0 bg-green-500/10 group-hover:bg-green-500/20 transition-colors duration-300"></div>
-                    <button
-                      onClick={() => setShowQRCodeAuth(!showQRCodeAuth)}
-                      className="w-full h-12 flex items-center justify-center text-white font-semibold"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm2 2V5h1v1H5zM3 13a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zm2 2v-1h1v1H5zM13 3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3zm1 2v1h1V5h-1zM13 12a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1h-3zm1 2v1h1v-1h-1z" clipRule="evenodd" />
-                      </svg>
-                      Login with QR Code
-                    </button>
-                  </div>
-                  
                   <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
                     <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
                     <TwitterLoginButton className="w-full h-12" />
@@ -188,29 +195,30 @@ const LoginOptions = () => {
               <div className="md:hidden">
                 <ConsolidatedLoginButton />
               </div>
-              
-              {/* QR Code Auth interface - only shown when toggled */}
-              {showQRCodeAuth && (
-                <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-lg font-semibold text-white">Sign in with QR Code</h3>
-                    <button
-                      onClick={() => setShowQRCodeAuth(false)}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <QRCodeAuth
-                    onSuccess={() => {
-                      setShowQRCodeAuth(false);
-                    }}
-                  />
-                </div>
-              )}
             </div>
+          </>
+        )}
+
+        {showBiometricOption && (
+          <>
+            <div className="relative">
+              <Divider>
+                <span className="px-3 text-xs font-semibold text-gray-400 bg-dark-200 rounded-full">
+                  or continue with
+                </span>
+              </Divider>
+            </div>
+            <Button 
+              variant="outline"
+              className="w-full justify-center py-3 mt-2 text-sm border-dark-300 hover:bg-dark-400/50 space-x-2"
+              onClick={handleBiometricAuth}
+              disabled={!isAvailable}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.789-2.756 9.362m-3.612-3.612A9.006 9.006 0 012.884 12c0-1.033.167-2.024.473-2.955m17.213 0A9.006 9.006 0 0112 2.884c-1.033 0-2.024.167-2.955.473m12.322 8.643L12 17.75M3.937 9.362L12 6.25m0 0L20.063 9.362M12 6.25V3m0 3.25V1m0 0v2.25" />
+              </svg>
+              <span>Sign in with Passkey / Biometrics</span>
+            </Button>
           </>
         )}
       </CardContent>

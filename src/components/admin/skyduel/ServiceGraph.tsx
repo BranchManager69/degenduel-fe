@@ -3,30 +3,45 @@ import ReactFlow, {
   Background,
   Controls,
   Edge,
+  MarkerType,
   Node,
   NodeTypes,
-  useNodesState,
   useEdgesState,
-  MarkerType,
+  useNodesState,
 } from "reactflow";
 
 import "reactflow/dist/style.css";
-import { ServiceNode } from '../../../hooks/websocket/legacy/useSkyDuelWebSocket';
 import { useStore } from "../../../store/useStore";
+import {
+  NodeConnection,
+  NodeStatus,
+  ServiceNode,
+  SkyDuelStoreState
+} from './types';
 
-// Custom node component
-const ServiceNodeComponent: React.FC<{ data: any }> = ({ data }) => {
-  const getStatusColor = (status: ServiceNode["status"]) => {
+// Custom node component for service visualization
+interface ServiceNodeData extends ServiceNode {
+  label: string;
+  selected: boolean;
+  health: number;
+}
+
+const ServiceNodeComponent: React.FC<{ data: ServiceNodeData }> = ({ data }) => {
+  const getStatusColor = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "bg-emerald-500";
       case "degraded":
+      case "warning":
         return "bg-amber-500";
       case "offline":
+      case "error":
         return "bg-red-500";
       case "restarting":
         return "bg-blue-500";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "bg-gray-500";
     }
   };
@@ -75,7 +90,7 @@ const nodeTypes: NodeTypes = {
 
 // Main ServiceGraph component
 export const ServiceGraph: React.FC = () => {
-  const { skyDuel, setSkyDuelSelectedNode } = useStore();
+  const { skyDuel, setSkyDuelSelectedNode } = useStore() as SkyDuelStoreState;
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -84,7 +99,7 @@ export const ServiceGraph: React.FC = () => {
     if (!skyDuel.nodes.length) return;
 
     // Create nodes
-    const graphNodes: Node[] = skyDuel.nodes.map((node) => ({
+    const graphNodes: Node[] = skyDuel.nodes.map((node: ServiceNode) => ({
       id: node.id,
       type: "serviceNode",
       position: {
@@ -100,10 +115,10 @@ export const ServiceGraph: React.FC = () => {
     }));
 
     // Create edges
-    const graphEdges: Edge[] = skyDuel.connections.map((conn) => {
-      let edgeStyle: any = {};
+    const graphEdges: Edge[] = skyDuel.connections.map((conn: NodeConnection) => {
+      let edgeStyle: Record<string, string> = {};
       const markerType = MarkerType.Arrow;
-      let lineStyle = "default";
+      let lineStyle: string = "default";
 
       switch (conn.status) {
         case "active":
@@ -113,7 +128,7 @@ export const ServiceGraph: React.FC = () => {
           edgeStyle = { stroke: "#f59e0b" }; // Amber-500
           lineStyle = "step";
           break;
-        case "failed":
+        case "error":
           edgeStyle = { stroke: "#ef4444" }; // Red-500
           lineStyle = "straight";
           break;
@@ -122,16 +137,16 @@ export const ServiceGraph: React.FC = () => {
       }
 
       return {
-        id: `${conn.source}-${conn.target}`,
-        source: conn.source,
-        target: conn.target,
+        id: `${conn.sourceId}-${conn.targetId}`,
+        source: conn.sourceId,
+        target: conn.targetId,
         markerEnd: { type: markerType },
         type: lineStyle,
         animated: conn.status === "active",
         style: edgeStyle,
         data: {
-          latency: conn.latency,
-          throughput: conn.throughput,
+          latency: conn.metrics?.latency || 0,
+          throughput: conn.metrics?.throughput || 0,
           status: conn.status,
         },
       };
@@ -149,7 +164,7 @@ export const ServiceGraph: React.FC = () => {
 
   // Handle node click to show details
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
+    (_: React.MouseEvent, node: Node<ServiceNodeData>) => {
       setSkyDuelSelectedNode(node.id);
     },
     [setSkyDuelSelectedNode],

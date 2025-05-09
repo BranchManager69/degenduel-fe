@@ -14,22 +14,22 @@
 
 // Re-export user types
 export type {
-    LegacyUser, User
+  LegacyUser, User
 } from "./user";
 
 // Re-export admin types
 export type {
-    VanityWallet, VanityWalletBatchCreateParams, VanityWalletBatchCreateResponse,
-    VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
+  VanityWallet, VanityWalletBatchCreateParams, VanityWalletBatchCreateResponse,
+  VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
 } from "./admin";
 
 // Re-export leaderboard types
 export type {
-    ContestPerformanceEntry,
-    ContestPerformanceResponse,
-    GlobalRankingEntry,
-    GlobalRankingsResponse,
-    TimeFrame
+  ContestPerformanceEntry,
+  ContestPerformanceResponse,
+  GlobalRankingEntry,
+  GlobalRankingsResponse,
+  TimeFrame
 } from "./leaderboard";
 
 // ------------------------------------------------------------------------------------------------
@@ -88,8 +88,7 @@ export interface Contest {
   status: ContestStatus;
   cancelled_at?: string;
   cancellation_reason?: string;
-  // settings: ContestSettings; // Temporarily comment out or update if needed to avoid conflicts before full refactor
-  settings: any; // Use 'any' temporarily to avoid immediate conflict, needs proper typing later
+  settings: ContestSettings;
   created_at: string;
   updated_at: string;
   min_participants: number;

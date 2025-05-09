@@ -22,7 +22,7 @@ import {
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { UserContest } from "../../services/contestService";
-import { Contest } from "../../types";
+import { Contest, ContestSettings, ContestStatus } from "../../types";
 
 export const MyContestsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -40,34 +40,45 @@ export const MyContestsPage: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Transform UserContest to Contest format for ContestCard
   const transformToContestFormat = (userContest: UserContest): Contest => {
     const now = new Date().toISOString();
+    
+    // Define default settings based on the new ContestSettings type
+    const defaultSettingsData: ContestSettings = {
+      difficulty: "guppy", // Default difficulty
+      maxParticipants: 100,   // Default max participants for settings
+      minParticipants: 2,     // Default min participants for settings
+      tokenTypesAllowed: ["all"], // Default allowed token types
+      startingPortfolioValue: "1000", // Default starting portfolio value
+    };
+
     return {
-      id: parseInt(userContest.contestId) || 0, // Convert to number
-      name: userContest.name,
-      status:
-        userContest.status === "upcoming" ? "pending" : userContest.status,
-      start_time: userContest.startTime,
-      end_time: userContest.endTime,
-      participant_count: userContest.participantCount,
-      is_participating: true, // By definition, all contests here are ones the user is participating in
-      prize_pool: "", // We don't have this info in UserContest
-      entry_fee: "", // We don't have this info in UserContest
-      max_participants: 20, // Standard default value
-      min_participants: 2, // Standard default value of 2 players minimum
-      description: "", // We don't have this info in UserContest
-      contest_code: "", // We don't have this info in UserContest
-      created_at: now,
-      updated_at: now,
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Standard default - all buckets allowed
-      settings: {
-        difficulty: "guppy", // Default to guppy as it's a valid DifficultyLevel
-        min_trades: 1, // Standard minimum trades
-        token_types: [],
-        rules: [],
-      },
-    } as Contest;
+      id: parseInt(userContest.contestId) || Date.now(),
+      name: userContest.name || "Contest Name Unavailable",
+      description: "View contest details for more information.", // Default description
+      entry_fee: "0", // Default entry fee (UserContest lacks this)
+      prize_pool: "0", // Default prize pool (UserContest lacks this)
+      current_prize_pool: "0", // Default
+      start_time: userContest.startTime || now,
+      end_time: userContest.endTime || now,
+      entry_deadline: now, // Default entry deadline (UserContest lacks this)
+      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default buckets
+      participant_count: userContest.participantCount || 0,
+      last_entry_time: undefined, // Default (UserContest lacks this)
+      status: (userContest.status === "upcoming" ? "pending" : userContest.status) as ContestStatus || "pending",
+      cancelled_at: undefined, // Default
+      cancellation_reason: undefined, // Default
+      settings: defaultSettingsData, // Use the structured default settings
+      created_at: now, // Default
+      updated_at: now, // Default
+      // Top-level min/max participants required by Contest type
+      min_participants: defaultSettingsData.minParticipants, 
+      max_participants: defaultSettingsData.maxParticipants === null ? 0 : defaultSettingsData.maxParticipants,
+      is_participating: true, // Explicitly true for "My Contests"
+      contest_code: `MYCON-${parseInt(userContest.contestId) || Date.now()}`,
+      image_url: undefined, // Default
+      participants: [], // Default to empty array (UserContest lacks this)
+    };
   };
 
   // Group contests by status and filter by search term

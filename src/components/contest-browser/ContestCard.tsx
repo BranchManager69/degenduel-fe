@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 
 import { formatCurrency } from "../../lib/utils";
 import { Contest, ContestStatus } from "../../types/index";
-import { ContestButton } from "../landing/contests-preview/ContestButton";
-import { ContestDifficulty } from "../landing/contests-preview/ContestDifficulty";
-import { CountdownTimer } from "../ui/CountdownTimer";
 import { LoadingSpinner } from "../common/LoadingSpinner";
+import { ContestButton } from "../landing/contests-preview/ContestButton";
+import { CountdownTimer } from "../ui/CountdownTimer";
 import { ShareContestButton } from "./ShareContestButton";
 
 interface ContestCardProps {
@@ -502,15 +501,14 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           <p className="text-[10px] text-gray-500">{contest.contest_code}</p>
         </div>
 
-        {/* Prize distribution as an expandable drawer at bottom
-            Note: ContestDifficulty is misnamed - it actually displays prize distribution.
-            This component shows the 69/20/11 split for prizes. See GitHub issue for renaming task. */}
-        <ContestDifficulty
+        {/* Prize distribution / Difficulty - REMOVED ContestDifficulty component */}
+        {/* <ContestDifficulty
           prize_pool={contest.prize_pool}
           participant_count={contest.participant_count}
           max_participants={contest.max_participants}
           isCancelled={displayStatus === "cancelled"}
-        />
+        /> */}
+        <div className="mt-2 text-xs text-gray-500 italic">(Detailed prize/difficulty display TBD)</div>
       </div>
     </div>
   );

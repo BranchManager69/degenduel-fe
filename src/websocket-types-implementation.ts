@@ -85,11 +85,12 @@ export enum DDWebSocketActions {
   // ========== SYSTEM topic actions ==========
   GET_STATUS = 'getStatus',
   GET_SETTINGS = 'getSettings',
-  STATUS_UPDATE = 'statusUpdate',  // Changed from status_update to follow camelCase pattern
+  STATUS_UPDATE = 'statusUpdate',
   SYSTEM_ALERT = 'systemAlert',
   SYSTEM_NOTIFICATION = 'systemNotification',
   MAINTENANCE_STATUS = 'maintenanceStatus',
   MAINTENANCE_MODE_UPDATE = 'maintenanceModeUpdate',
+  SETTINGS_UPDATE = 'settingsUpdate',
   
   // ========== WALLET topic actions ==========
   // Transaction-related actions

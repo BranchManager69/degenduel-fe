@@ -1,8 +1,15 @@
+// src/services/releaseDateService.ts
+
 /**
  * Release Date Service
  * 
- * This service handles fetching the release date from the backend
+ * @description This service handles fetching the release date from the backend
  * with a fallback to the date defined in environment variables.
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-04-14
+ * @updated 2025-05-08
  */
 
 // Fallback release date from environment variables or default to December 31st, 11:59 PM Eastern
@@ -23,7 +30,9 @@ export const fetchReleaseDate = async (): Promise<Date> => {
     return cachedReleaseDate;
   }
   
-  const endpointPath = '/api/v1/release-date';
+  // Countdown endpoint
+  const endpointPath = '/api/status/countdown' // DEPRECATED: '/api/v1/release-date';
+
   // Construct the full URL to be absolutely sure what's being called
   const fullUrl = `${window.location.origin}${endpointPath}`;
   
@@ -53,6 +62,7 @@ export const fetchReleaseDate = async (): Promise<Date> => {
       throw new Error(`Error fetching release date: ${response.status} ${response.statusText}`);
     }
     
+    // Parse the Countdown response as JSON
     const data = await response.json();
     console.log('[releaseDateService] Response data:', data);
     

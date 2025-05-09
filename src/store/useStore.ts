@@ -15,6 +15,7 @@
 import console from 'console';
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
+import { SkyDuelState } from "../components/admin/skyduel/types";
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { WebSocketState } from "../hooks/utilities/legacy/useWebSocketMonitor";
 import { Contest, Token, User, WalletError } from "../types/index";
@@ -100,6 +101,8 @@ interface StateData {
   maintenanceMode: boolean;
   serviceState: ServiceState | null;
   serviceAlerts: ServiceAlert[];
+  // SkyDuel state
+  skyDuel: SkyDuelState;
   circuitBreaker: {
     services: Array<{
       name: string;
@@ -294,7 +297,7 @@ interface StateData {
 }
 
 // Full state type including actions
-interface State extends StateData {
+export interface State extends StateData {
   setUser: (user: User | null) => void;
   setContests: (contests: Contest[]) => void;
   setTokens: (tokens: Token[]) => void;
@@ -303,6 +306,8 @@ interface State extends StateData {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   setMaintenanceMode: (enabled: boolean) => void;
+  // SkyDuel actions
+  setSkyDuelSelectedNode: (nodeId: string | undefined) => void;
   setServiceState: (
     status: "online" | "offline" | "degraded",
     metrics: { uptime: number; latency: number; activeUsers: number },
@@ -482,6 +487,8 @@ interface State extends StateData {
   activateEasterEgg: () => void;
   updateWebSocketState: (newState: Partial<WebSocketState>) => void;
   setLandingPageAnimationDone: (done: boolean) => void;
+  setSkyDuelState: (skyDuelData: Partial<SkyDuelState>) => void;
+  setSkyDuelLayout: (layout: "graph" | "grid" | "list" | "circuit") => void;
 }
 
 type StorePersist = PersistOptions<
@@ -504,6 +511,7 @@ type StorePersist = PersistOptions<
     | "landingPageAnimationDone"
     | "contests"
     | "tokens"
+    | "skyDuel"
   >
 >;
 
@@ -526,6 +534,7 @@ const persistConfig: StorePersist = {
     landingPageAnimationDone: state.landingPageAnimationDone,
     contests: state.contests,
     tokens: state.tokens,
+    skyDuel: state.skyDuel,
   }),
 };
 
@@ -613,6 +622,21 @@ const getPhantomDeepLink = () => {
   const url = window.location.href;
   // You can customize this URL structure based on your needs
   return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
+};
+
+// Define initial state for SkyDuel
+const initialSkyDuelState: SkyDuelState = {
+  nodes: [],
+  connections: [],
+  systemStatus: {
+    overall: "operational",
+    services: { online: 0, offline: 0, degraded: 0 },
+    // message: "System operational", // Removed, not in Admin SkyDuelState type
+    // timestamp: new Date().toISOString(), // Removed, not in Admin SkyDuelState type
+  },
+  lastUpdated: new Date().toISOString(),
+  selectedNode: undefined,
+  layout: "graph",
 };
 
 // Initial state
@@ -710,6 +734,7 @@ const initialState: StateData = {
   webSocketAlerts: [],
   isEasterEggActive: false,
   landingPageAnimationDone: false,
+  skyDuel: initialSkyDuelState,
 };
 
 // Create the store
@@ -1265,6 +1290,12 @@ export const useStore = create<State>()(
           webSocketAlerts: [...prev.webSocketAlerts, alert],
         })),
       setLandingPageAnimationDone: (done) => set({ landingPageAnimationDone: done }),
+      setSkyDuelState: (skyDuelData) => 
+        set((state) => ({ skyDuel: { ...state.skyDuel, ...skyDuelData }})),
+      setSkyDuelSelectedNode: (nodeId) => 
+        set((state) => ({ skyDuel: { ...state.skyDuel, selectedNode: nodeId }})),
+      setSkyDuelLayout: (layout) => 
+        set((state) => ({ skyDuel: { ...state.skyDuel, layout }})),
     }),
     {
       ...persistConfig,

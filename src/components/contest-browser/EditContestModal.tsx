@@ -9,7 +9,7 @@ import {
   contestFormSchema,
   type ContestFormData,
 } from "../../schemas/contestSchema";
-import { Contest } from "../../types/index";
+import { Contest, ContestSettings } from "../../types/index";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { MultiSelect } from "../ui/MultiSelect";
@@ -42,34 +42,29 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
   } = useForm<ContestFormData>({
     resolver: zodResolver(contestFormSchema),
     defaultValues: {
-      name: contest?.name,
-      description: contest?.description,
-      entry_fee: contest?.entry_fee,
-      prize_pool: contest?.prize_pool,
-      current_prize_pool: contest?.current_prize_pool,
-      start_time: contest?.start_time,
-      end_time: contest?.end_time,
-      entry_deadline: getNextHourDateTime(),
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      name: contest?.name || "",
+      description: contest?.description || "",
+      entry_fee: contest?.entry_fee || "0.01",
+      prize_pool: contest?.prize_pool || "0",
+      current_prize_pool: contest?.current_prize_pool || "0",
+      start_time: contest?.start_time || getNextHourDateTime(),
+      end_time: contest?.end_time || getNextHourDateTime(2),
+      entry_deadline: contest?.entry_deadline || getNextHourDateTime(),
+      allowed_buckets: contest?.allowed_buckets || [1, 2, 3, 4, 5, 6, 7, 8, 9],
       participant_count: contest?.participant_count || 0,
-      status: contest?.status,
+      status: contest?.status || "pending",
       settings: {
-        difficulty: contest?.settings.difficulty,
-        min_trades: contest?.settings.min_trades,
-        min_participants: 2,
-        max_participants: 100,
-        token_types: contest?.settings.token_types,
-        rules: contest?.settings.rules.map((rule) => ({
-          id: typeof rule === "string" ? crypto.randomUUID() : rule.id,
-          title: typeof rule === "string" ? "Rule" : rule.title,
-          description: typeof rule === "string" ? rule : rule.description,
-        })),
+        difficulty: contest?.settings.difficulty || "shark",
+        minParticipants: contest?.settings.minParticipants || 2,
+        maxParticipants: contest?.settings.maxParticipants ?? null,
+        tokenTypesAllowed: contest?.settings.tokenTypesAllowed || [],
+        startingPortfolioValue: contest?.settings.startingPortfolioValue || "1000",
       },
     },
   });
 
   const entryFee = watch("entry_fee");
-  const maxParticipants = watch("settings.max_participants");
+  const maxParticipantsForm = watch("settings.maxParticipants");
 
   React.useEffect(() => {
     if (contest) {
@@ -84,19 +79,13 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
         entry_deadline: contest.entry_deadline,
         allowed_buckets: contest.allowed_buckets,
         participant_count: contest.participant_count,
-        last_entry_time: contest.last_entry_time,
         status: contest.status,
-        cancelled_at: contest.cancelled_at,
-        cancellation_reason: contest.cancellation_reason,
         settings: {
           difficulty: contest.settings.difficulty,
-          min_trades: contest.settings.min_trades,
-          token_types: contest.settings.token_types,
-          rules: contest.settings.rules.map((rule) => ({
-            id: typeof rule === "string" ? crypto.randomUUID() : rule.id,
-            title: typeof rule === "string" ? "Rule" : rule.title,
-            description: typeof rule === "string" ? rule : rule.description,
-          })),
+          minParticipants: contest.settings.minParticipants || 2,
+          maxParticipants: contest.settings.maxParticipants ?? null,
+          tokenTypesAllowed: contest.settings.tokenTypesAllowed || [],
+          startingPortfolioValue: contest.settings.startingPortfolioValue || "1000",
         },
       });
     }
@@ -107,7 +96,28 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
 
     try {
       setLoading(true);
-      await onSave(contest.id, data);
+      const settingsPayload: ContestSettings = {
+        difficulty: data.settings.difficulty,
+        maxParticipants: data.settings.maxParticipants,
+        minParticipants: data.settings.minParticipants,
+        tokenTypesAllowed: data.settings.tokenTypesAllowed || [],
+        startingPortfolioValue: data.settings.startingPortfolioValue,
+      };
+
+      const saveData: Partial<Contest> = {
+        name: data.name,
+        description: data.description,
+        entry_fee: data.entry_fee,
+        prize_pool: data.prize_pool,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        entry_deadline: data.entry_deadline,
+        allowed_buckets: data.allowed_buckets,
+        status: data.status,
+        settings: settingsPayload,
+      };
+
+      await onSave(contest.id, saveData);
       onClose();
     } catch (error) {
       console.error("Failed to save contest:", error);
@@ -130,7 +140,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !contest) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-50">
@@ -220,44 +230,45 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
               />
 
               <Controller
-                name="settings.min_participants"
+                name="settings.minParticipants"
                 control={control}
                 render={({
                   field,
                 }: {
                   field: ControllerRenderProps<
                     ContestFormData,
-                    "settings.min_participants"
+                    "settings.minParticipants"
                   >;
                 }) => (
                   <FormField
                     label="Min Participants"
-                    error={errors.settings?.min_participants?.message}
+                    error={errors.settings?.minParticipants?.message}
                   >
                     <Input
                       {...field}
                       type="number"
                       min={2}
                       className="w-full"
+                      onChange={e => field.onChange(parseInt(e.target.value,10) || 0)}
                     />
                   </FormField>
                 )}
               />
 
               <Controller
-                name="settings.max_participants"
+                name="settings.maxParticipants"
                 control={control}
                 render={({
                   field,
                 }: {
                   field: ControllerRenderProps<
                     ContestFormData,
-                    "settings.max_participants"
+                    "settings.maxParticipants"
                   >;
                 }) => (
                   <FormField
                     label="Max Participants"
-                    error={errors.settings?.max_participants?.message}
+                    error={errors.settings?.maxParticipants?.message}
                   >
                     <Input
                       {...field}
@@ -265,6 +276,8 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
                       min={2}
                       max={1000}
                       className="w-full"
+                      onChange={e => field.onChange(e.target.value === '' ? null : parseInt(e.target.value,10) || 0)}
+                      value={field.value ?? ''}
                     />
                   </FormField>
                 )}
@@ -302,7 +315,7 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
                   <Input
                     type="text"
                     value={`${
-                      Number(entryFee) * Number(maxParticipants) * 0.9
+                      Number(entryFee) * Number(maxParticipantsForm) * 0.9
                     } SOL`}
                     className="w-full"
                     disabled
@@ -460,25 +473,25 @@ export const EditContestModal: React.FC<EditContestModalProps> = ({
               />
 
               <Controller
-                name="settings.min_trades"
+                name="settings.startingPortfolioValue"
                 control={control}
                 render={({
                   field,
                 }: {
                   field: ControllerRenderProps<
                     ContestFormData,
-                    "settings.min_trades"
+                    "settings.startingPortfolioValue"
                   >;
                 }) => (
                   <FormField
-                    label="Min Trades"
-                    error={errors.settings?.min_trades?.message}
+                    label="Starting Portfolio Value (SOL)"
+                    error={errors.settings?.startingPortfolioValue?.message}
                   >
                     <Input
                       {...field}
-                      type="number"
-                      min={1}
+                      type="text"
                       className="w-full"
+                      placeholder="e.g., 1000"
                     />
                   </FormField>
                 )}

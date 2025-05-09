@@ -1,36 +1,31 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { ContestCard } from '../components/contest-browser/ContestCard';
 import { BrowserRouter } from 'react-router-dom';
+import { ContestCard } from '../components/contest-browser/ContestCard';
 
-// Mock contest data
+// Mock contest data - UPDATED
 const mockContest = {
   id: 123,
   name: "Weekly Trading Competition",
   description: "Join our weekly trading competition and test your skills against other traders. Pick the best performing tokens and win big prizes!",
   entry_fee: "25",
   prize_pool: "2500",
-  start_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days in future
-  end_time: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(), // 9 days in future
+  start_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+  end_time: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
   participant_count: 42,
+  min_participants: 10,
   max_participants: 100,
   status: "pending" as const,
   settings: {
-    difficulty: "dolphin" as const,
-    min_trades: 3,
-    token_types: ["crypto"],
-    rules: [
-      {
-        id: "rule1",
-        title: "Rule 1",
-        description: "Basic rules apply"
-      }
-    ]
+    difficulty: "dolphin",
+    tokenTypesAllowed: ["crypto"],
+    startingPortfolioValue: "10000",
+    minParticipants: 10,
+    maxParticipants: 100,
   },
   contest_code: "W33K-TR4D1NG",
   is_participating: false,
   created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
   updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  min_participants: 10,
   allowed_buckets: [1, 2, 3],
   image_url: "https://picsum.photos/seed/degen1/1024"
 };
@@ -40,10 +35,9 @@ const mockActiveContest = {
   ...mockContest,
   id: 124,
   name: "LIVE Crypto Showdown",
-  start_time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-  end_time: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days in future
+  start_time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  end_time: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
   participant_count: 78,
-  max_participants: 100,
   status: "active" as const,
   contest_code: "L1V3-SH0WD0WN",
   image_url: "https://picsum.photos/seed/degen2/1024"
@@ -55,10 +49,9 @@ const mockCompletedContest = {
   id: 125,
   name: "Crypto Masters Finals",
   description: "The finals are over! Check the results to see who took home the grand prize.",
-  start_time: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
-  end_time: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+  start_time: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+  end_time: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   participant_count: 100,
-  max_participants: 100,
   status: "completed" as const,
   contest_code: "M4ST3R-F1N4L",
   image_url: "https://picsum.photos/seed/degen3/1024"

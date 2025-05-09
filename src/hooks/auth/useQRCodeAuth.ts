@@ -10,14 +10,14 @@
  * @created 2025-05-09
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { 
-  generateQRCode, 
-  pollQRCodeStatus, 
-  completeQRCodeAuth, 
-  cancelQRCodeAuth 
-} from '../../services/api/qrAuth';
+import { useCallback, useEffect, useState } from 'react';
 import { authDebug } from '../../config/config';
+import {
+  cancelQRCodeAuth,
+  completeQRCodeAuth,
+  generateQRCode,
+  pollQRCodeStatus
+} from '../../services/api/qrAuth';
 
 interface UseQRCodeAuthProps {
   autoGenerate?: boolean;
@@ -33,7 +33,7 @@ interface UseQRCodeAuthReturn {
   status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'expired' | 'idle';
   error: string | null;
   isLoading: boolean;
-  generate: () => Promise<void>;
+  generate: () => Promise<string | null>;
   cancel: () => Promise<void>;
 }
 

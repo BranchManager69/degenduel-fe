@@ -1,42 +1,50 @@
 import React from "react";
 
-import { ServiceNode } from '../../../hooks/websocket/legacy/useSkyDuelWebSocket';
 import { useStore } from "../../../store/useStore";
+import { NodeStatus, NodeType, ServiceNode } from "./types";
 
 export const ServiceGrid: React.FC = () => {
   const { skyDuel, setSkyDuelSelectedNode } = useStore();
 
-  const getStatusColor = (status: ServiceNode["status"]) => {
+  const getStatusColor = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "border-emerald-500 bg-emerald-500/10";
       case "degraded":
+      case "warning":
         return "border-amber-500 bg-amber-500/10";
       case "offline":
+      case "error":
         return "border-red-500 bg-red-500/10";
       case "restarting":
         return "border-blue-500 bg-blue-500/10";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "border-gray-500 bg-gray-500/10";
     }
   };
 
-  const getStatusDot = (status: ServiceNode["status"]) => {
+  const getStatusDot = (status: NodeStatus) => {
     switch (status) {
       case "online":
         return "bg-emerald-500";
       case "degraded":
+      case "warning":
         return "bg-amber-500";
       case "offline":
+      case "error":
         return "bg-red-500";
       case "restarting":
         return "bg-blue-500";
       default:
+        const _exhaustiveCheck: never = status;
+        console.warn(`Unknown node status: ${_exhaustiveCheck}`);
         return "bg-gray-500";
     }
   };
 
-  const getNodeTypeIcon = (type: ServiceNode["type"]) => {
+  const getNodeTypeIcon = (type: NodeType) => {
     switch (type) {
       case "api":
         return "🔌";
@@ -48,24 +56,33 @@ export const ServiceGrid: React.FC = () => {
         return "🗄️";
       case "cache":
         return "⚡";
+      case "queue":
+        return "📦";
+      case "gateway":
+        return "🚪";
+      case "infrastructure":
+        return "🏗️";
+      case "service":
+        return "🛠️";
       default:
+        const _exhaustiveCheck: never = type;
+        console.warn(`Unknown node type: ${_exhaustiveCheck}`);
         return "📦";
     }
   };
 
-  // Group nodes by type
   const groupedNodes = skyDuel.nodes.reduce(
     (acc, node) => {
-      if (!acc[node.type]) {
-        acc[node.type] = [];
+      const nodeTypeKey = node.type as string;
+      if (!acc[nodeTypeKey]) {
+        acc[nodeTypeKey] = [];
       }
-      acc[node.type].push(node);
+      acc[nodeTypeKey].push(node);
       return acc;
     },
-    {} as Record<string, ServiceNode[]>,
+    {} as Record<string, ServiceNode[]>
   );
 
-  // Format uptime to human-readable format
   const formatUptime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
@@ -75,17 +92,17 @@ export const ServiceGrid: React.FC = () => {
 
   return (
     <div className="h-full overflow-auto">
-      {Object.entries(groupedNodes).map(([type, nodes]) => (
+      {Object.entries(groupedNodes).map(([type, nodesOfType]) => (
         <div key={type} className="mb-6">
           <h3 className="text-lg font-semibold text-brand-100 mb-3 flex items-center">
             <span className="mr-2">
-              {getNodeTypeIcon(type as ServiceNode["type"])}
+              {getNodeTypeIcon(type as NodeType)}
             </span>
             {type.charAt(0).toUpperCase() + type.slice(1)} Services
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {nodes.map((node) => (
+            {nodesOfType.map((node) => (
               <div
                 key={node.id}
                 className={`rounded-lg border ${getStatusColor(node.status)} p-4 transition-all hover:scale-[1.02] cursor-pointer ${

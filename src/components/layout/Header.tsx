@@ -30,10 +30,11 @@ export const Header: React.FC = () => {
   const { user, isAdmin, isAuthenticated } = useMigratedAuth(); 
   
   const { unreadCount } = useNotifications();
-  const { 
-      isMaintenanceMode, 
-  } = useSystemSettings();
+  const { settings } = useSystemSettings();
   
+  const isMaintenanceMode = settings?.maintenanceMode || false;
+  const maintenanceMessage = settings?.maintenanceMessage;
+
   useEffect(() => {
     const currentStoreValue = useStore.getState().maintenanceMode;
     if (isMaintenanceMode !== currentStoreValue) {
@@ -131,7 +132,7 @@ export const Header: React.FC = () => {
               <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
                 <p className="hidden sm:flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">
                   <span className="animate-pulse font-bold">&lt;!</span>
-                  <span>DEGENDUEL MAINTENANCE IN PROGRESS</span>
+                  <span>{maintenanceMessage || "DEGENDUEL MAINTENANCE IN PROGRESS"}</span>
                   <span className="animate-pulse font-bold">!&gt;</span>
                 </p>
                 <p className="sm:hidden flex items-center justify-center gap-2 text-yellow-400 text-sm font-bold tracking-wider uppercase whitespace-nowrap">

@@ -1,3 +1,8 @@
+// src/hooks/websocket/topic-hooks/useContestViewUpdates.ts
+
+// TODO: IMPLEMENT THIS ASAP
+// FOR THE PAGES CONTEST LOBBY, CONTEST RESULTS, CONTEST BROWSER, and CONTEST DETAIL
+
 import { useCallback, useEffect, useState } from 'react';
 import { ContestDetails, ContestViewData, CurrentUserPerformance, LeaderboardEntry } from '../../../types'; // Ensure all necessary sub-types are imported
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
