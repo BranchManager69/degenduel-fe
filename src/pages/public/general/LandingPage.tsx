@@ -665,6 +665,8 @@ export const LandingPage: React.FC = () => {
               </motion.div>
 
               {/* Platform Features Section */}
+              {/* (moved to components/landing/features-list/Features.tsx) */}
+              {/*
               <motion.div
                 className="text-center mb-10"
                 variants={childVariants}
@@ -675,7 +677,7 @@ export const LandingPage: React.FC = () => {
                   Experience the future of competitive token trading
                 </p>
               </motion.div>
-
+              */}
               
               {/* Enhanced Features section - shown to all users */}
               {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (

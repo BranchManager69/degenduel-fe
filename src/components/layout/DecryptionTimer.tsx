@@ -9,7 +9,7 @@
  */
 
 import { motion } from 'framer-motion';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLaunchEvent } from '../../hooks/websocket/topic-hooks/useLaunchEvent';
 import { DecryptionTimerProps } from '../terminal/types';
 
@@ -20,8 +20,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
   targetDate = new Date('2025-03-15T18:00:00-05:00')
 }) => {
   const { contractAddress: revealedAddress } = useLaunchEvent();
-  const calcFuncCreationCounter = useRef(0);
-
+  
   const [timeRemaining, setTimeRemaining] = useState({
     days: 0,
     hours: 0,
@@ -32,8 +31,6 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
   const [urgencyLevel, setUrgencyLevel] = useState(0);
   
   const calculateTimeRemaining = useCallback(() => {
-    calcFuncCreationCounter.current += 1;
-
     if (!(targetDate instanceof Date) || isNaN(targetDate.getTime())) {
       setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       setUrgencyLevel(3);

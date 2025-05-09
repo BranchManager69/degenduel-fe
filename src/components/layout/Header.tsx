@@ -16,31 +16,25 @@ import { useStore } from "../../store/useStore";
 // import { UserMenu } from "./user-menu/UserMenu"; // TEMP
 
 export const Header: React.FC = () => {
-  const { isCompact } = useScrollHeader(50); // Re-enabled
-  const {
-    // disconnectWallet, // Keep commented for now, only used in children or complex effects
-    error: storeError,
-    // clearError, // Keep commented for now, only used in an effect
-  } = useStore(state => ({ 
-      disconnectWallet: state.disconnectWallet, 
-      error: state.error, 
-      clearError: state.clearError, 
-  })); 
+  const { isCompact } = useScrollHeader(50);
+  
+  // Select only the error message string, or null. This is more stable for dependencies.
+  const storeErrorMessage = useStore(state => state.error?.message || null);
+  const clearStoreError = useStore(state => state.clearError);
+  
   const { user, isAdmin, isAuthenticated } = useMigratedAuth(); 
-  const { unreadCount } = useNotifications(); // Re-enabled
-  const { settings } = useSystemSettings(); // Re-enabled
+  const { unreadCount, error: notificationsError } = useNotifications(); 
+  const { settings, error: systemSettingsError } = useSystemSettings(); 
   
   const isMounted = useRef(true);
-  
-  const isMaintenanceMode = settings?.maintenanceMode || false; // Re-enabled
-  // const maintenanceMessage = settings?.maintenanceMessage; // Keep commented, only used in banner
+  const isMaintenanceMode = settings?.maintenanceMode || false;
 
   useEffect(() => {
     isMounted.current = true;
-    console.log("[Header STEP 1] Mounted");
+    console.log("[Header STEP 2] Mounted");
     return () => {
       isMounted.current = false;
-      console.log("[Header STEP 1] Unmounted");
+      console.log("[Header STEP 2] Unmounted");
     };
   }, []);
 
@@ -48,83 +42,39 @@ export const Header: React.FC = () => {
     console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdmin);
   }, [user, isAuthenticated, isAdmin]);
 
-  // useEffect(() => {
-  //   const currentStoreValue = useStore.getState().maintenanceMode;
-  //   let redirectTimerId: number | undefined;
-  //   if (isMaintenanceMode !== currentStoreValue) {
-  //     console.log(`[Header] Syncing maintenanceMode to store: ${isMaintenanceMode}`);
-  //     if (isMounted.current) {
-  //       useStore.setState({ maintenanceMode: isMaintenanceMode });
-  //     }
+  // Re-enable the effect for clearing storeError, but guarded
+  useEffect(() => {
+    if (storeErrorMessage && clearStoreError) {
+      console.log("[Header] Store error detected, will clear in 5s:", storeErrorMessage);
+      const timer = setTimeout(() => {
+        if (isMounted.current) {
+          console.log("[Header] Clearing store error.");
+          clearStoreError();
+        }
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [storeErrorMessage, clearStoreError]); // Depends on the message string and clear function
 
-  //     if (isMaintenanceMode === true && !isAdmin) {
-  //       console.log("[Header] Maintenance mode activated, redirecting non-admin.");
-  //       redirectTimerId = window.setTimeout(() => {
-  //         if (isMounted.current) {
-  //           window.location.href = "/maintenance";
-  //         }
-  //       }, 500); 
-  //     }
-  //   }
-  //   return () => {
-  //     if (redirectTimerId) {
-  //       clearTimeout(redirectTimerId);
-  //     }
-  //   };
-  // }, [isMaintenanceMode, isAdmin]); // TEMP
+  // Other effects (maintenance sync, header height) remain commented out for now
 
-  // useEffect(() => {
-  //   if (storeError) {
-  //     const timer = setTimeout(clearError, 5000);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [storeError, clearError]); // TEMP
-
-  // useEffect(() => {
-  //   const updateHeaderHeight = () => {
-  //     let baseHeight = isCompact 
-  //       ? (window.innerWidth >= 640 ? 3.5 : 3)
-  //       : (window.innerWidth >= 640 ? 4 : 3.5);
-      
-  //     let additionalHeight = 0;
-      
-  //     if (user?.banned) { 
-  //       additionalHeight += 2.5;
-  //     }
-      
-  //     if (isMaintenanceMode) {
-  //       additionalHeight += 2;
-  //     }
-      
-  //     document.documentElement.style.setProperty('--header-height', `${baseHeight + additionalHeight}rem`);
-  //   };
-    
-  //   updateHeaderHeight();
-    
-  //   window.addEventListener('resize', updateHeaderHeight);
-    
-  //   return () => {
-  //     window.removeEventListener('resize', updateHeaderHeight);
-  //   };
-  // }, [isCompact, user?.banned, isMaintenanceMode]); // TEMP
-
-  console.log("[Header STEP 1] Rendering. User:", user, "IsAuth:", isAuthenticated, "IsAdmin:", isAdmin, "Compact:", isCompact, "Unread:", unreadCount, "Settings:", settings);
+  console.log("[Header STEP 2] Rendering. User:", user, "IsAuth:", isAuthenticated, "Maint:", isMaintenanceMode, "StoreErr:", storeErrorMessage);
 
   return (
     <header
-      className={`bg-dark-900 sticky top-0 z-50 h-16 flex flex-col items-center justify-center text-xs`}
+      className={`bg-dark-900 sticky top-0 z-50 h-auto p-2 flex flex-col items-center justify-center text-xs`}
     >
       <p className="text-white">
         Header Test - User: {user ? user.id : 'Logged Out'} - Auth: {isAuthenticated ? 'Yes' : 'No'}
       </p>
       <p className="text-white">
-        Compact: {isCompact ? 'Yes' : 'No'} - StoreError: {storeError?.message || 'None'}
+        Compact: {isCompact ? 'Yes' : 'No'} - Store Msg: {storeErrorMessage || 'None'}
       </p>
       <p className="text-white">
         Unread: {unreadCount} - Maint: {isMaintenanceMode ? 'Yes' : 'No'}
       </p>
       <p className="text-white">
-        Settings Loaded: {settings ? 'Yes' : 'No'} - Notification Hook Error: {useNotifications().error || 'None'} - System Settings Hook Error: {useSystemSettings().error || 'None'}
+        Settings Loaded: {settings ? 'Yes' : 'No'} - Notif Hook Err: {notificationsError || 'None'} - SysSettings Hook Err: {systemSettingsError || 'None'}
       </p>
     </header>
   );
@@ -246,7 +196,7 @@ export const Header: React.FC = () => {
         </div>
 
         <AnimatePresence>
-          {storeError && (
+          {storeErrorMessage && (
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -254,7 +204,7 @@ export const Header: React.FC = () => {
               className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full z-50"
             >
               <div className="bg-red-500/10 border border-red-500/20 rounded-b-lg px-4 py-2">
-                <p className="text-red-400 text-sm">{storeError.toString()}</p>
+                <p className="text-red-400 text-sm">{storeErrorMessage}</p>
               </div>
             </motion.div>
           )}

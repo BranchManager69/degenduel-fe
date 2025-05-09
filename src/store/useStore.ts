@@ -536,6 +536,47 @@ const persistConfig: StorePersist = {
     tokens: state.tokens,
     skyDuel: state.skyDuel,
   }),
+  onRehydrateStorage: () => {
+    return async (state) => {
+      if (!state) {
+        // console.log("[STORE REHYDRATE] State is null on rehydrate start, skipping maintenance check."); // Optional: keep for debugging if needed
+        return;
+      }
+
+      // console.log("[STORE REHYDRATE] Starting onRehydrateStorage."); // Optional: keep for debugging
+
+      try {
+        if (typeof window !== 'undefined') {
+          // console.log("[STORE REHYDRATE] Fetching maintenance. Current window.location.origin:", window.location.origin, "API_URL used:", API_URL);
+        }
+        
+        const response = await fetch(`${API_URL}/admin/maintenance/status`, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (state.setMaintenanceMode && typeof state.setMaintenanceMode === 'function') {
+            if (data.enabled !== state.maintenanceMode) {
+              // console.warn(
+              //   "[STORE REHYDRATE] Maintenance mode state mismatch on init, syncing with backend. Backend:", data.enabled, "Store:", state.maintenanceMode
+              // );
+              state.setMaintenanceMode(data.enabled);
+            }
+          } else {
+            // console.warn("[STORE REHYDRATE] state.setMaintenanceMode is not available or not a function.");
+          }
+        } else {
+          // console.error(`[STORE REHYDRATE] Failed to fetch maintenance status on rehydrate: ${response.status} ${response.statusText}`);
+        }
+      } catch (error) {
+        // const errorMessage = error instanceof Error ? error.message : String(error);
+        // console.log(`[STORE REHYDRATE ERROR] Failed to verify maintenance mode on init: ${errorMessage}`, error); 
+        // SILENCE THIS CATCH BLOCK FOR NOW to avoid issues with console object being unavailable/broken by clientLogForwarder
+        // The error (e.g. CORS, server down) will still be visible in the network tab or as a general fetch failure if not caught elsewhere.
+      }
+    };
+  }
 };
 
 // Remove comment markers and implement retry logic
@@ -1299,27 +1340,6 @@ export const useStore = create<State>()(
     }),
     {
       ...persistConfig,
-      onRehydrateStorage: () => async (state) => {
-        if (!state) return;
-
-        try {
-          const response = await fetch(`${API_URL}/admin/maintenance/status`, {
-            credentials: "include",
-          });
-
-          if (response.ok) {
-            const { enabled: backendStatus } = await response.json();
-            if (backendStatus !== state.maintenanceMode) {
-              console.warn(
-                "Maintenance mode state mismatch on init, syncing with backend",
-              );
-              state.setMaintenanceMode(backendStatus);
-            }
-          }
-        } catch (error) {
-          console.error("Failed to verify maintenance mode on init:", error);
-        }
-      },
     },
   ),
 );
