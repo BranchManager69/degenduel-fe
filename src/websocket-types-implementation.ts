@@ -214,7 +214,37 @@ export enum DDWebSocketActions {
   GET_BY_ID = 'getById',
   CREATE = 'create',
   UPDATE = 'update',
-  DELETE = 'delete'
+  DELETE = 'delete',
+  
+  // ========== CONTEST topic actions (continued, or new section for view updates) ==========
+  // From FE_WEBSOCKETS_CONTESTS.md for contest view updates
+  LEADERBOARD_UPDATE = 'leaderboardUpdate', // Standardized to camelCase value
+  PARTICIPANT_UPDATE = 'participantUpdate', // Standardized to camelCase value
+  
+  // Ensure NEW_MESSAGE is also here if used by chat, though chat uses its own hook
+  // For consistency, if action strings are shared, they should be in this central enum.
+  // The chat hook (useContestChat) might reference actions like GET_MESSAGES, SEND_MESSAGE etc.
+  // which are already in DDWebSocketActions.
+
+  // ADDED FOR CONTEST_CHAT in useContestChat - ensure these are sensible & match backend
+  // GET_MESSAGES = 'getMessages', // Already exists
+  // SEND_MESSAGE = 'sendMessage', // Already exists
+  // DELETE_MESSAGE = 'deleteMessage', // Already exists
+  // PIN_MESSAGE = 'pinMessage', // Already exists
+
+  // Add any other actions from FE_WEBSOCKETS_CONTESTS.md if they are distinct and needed
+  // For example, the doc mentions "NEW_MESSAGE" for chat, if that's a specific action string.
+  // For now, only adding the ones for the useContestViewUpdates hook.
+
+  // Ensure common actions like SUBSCRIBE, UNSUBSCRIBE, REFRESH, GET_ALL etc. are at the end or grouped logically
+  // SUBSCRIBE = 'subscribe', // Already exists
+  // UNSUBSCRIBE = 'unsubscribe', // Already exists
+  // REFRESH = 'refresh', // Already exists
+  // GET_ALL = 'getAll', // Already exists
+  // GET_BY_ID = 'getById', // Already exists
+  // CREATE = 'create', // Already exists
+  // UPDATE = 'update', // Already exists
+  // DELETE = 'delete' // Already exists
 }
 
 /**

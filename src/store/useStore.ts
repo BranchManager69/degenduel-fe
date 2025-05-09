@@ -12,12 +12,12 @@
  * @last-modified 2025-04-02
  */
 
+import console from 'console';
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
 import { WebSocketState } from "../hooks/utilities/legacy/useWebSocketMonitor";
 import { Contest, Token, User, WalletError } from "../types/index";
-import console from 'console';
 
 interface WebSocketAlert {
   type: "error" | "warning" | "info";

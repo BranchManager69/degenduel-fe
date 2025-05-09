@@ -1,10 +1,25 @@
+// src/components/contest-chat/ContestChat.tsx
+
+/**
+ * Contest Chat
+ * 
+ * @description A component that displays a chat interface for a contest.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-02-14
+ * @updated 2025-05-08
+ */
+
 import { formatDistanceToNow } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
+import { useCustomToast } from "../../components/toast";
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
-import { ChatMessage, useContestChat } from '../../hooks/websocket/topic-hooks/useContestChat';
+import { ChatMessage, ChatParticipant, useContestChat } from '../../hooks/websocket/topic-hooks/useContestChat';
+import { ChatInput } from './ChatInput';
 
-// Default profile picture URL
+// Default contest chat profile picture URL
 const DEFAULT_PROFILE_PICTURE = "https://api.dicebear.com/7.x/avataaars/svg?seed=";
 
 interface ContestChatProps {
@@ -49,33 +64,42 @@ const AI_TIPS: AITip[] = [
   }
 ];
 
+// Configuration for sender badges based on role or type
+const badgeConfig = {
+  system: { text: "SYSTEM", style: "bg-cyber-800 text-cyber-300 border border-cyber-700" },
+  'ai-agent': { text: "AI AGENT", style: "bg-cyber-800 text-cyber-300 border border-cyber-700" },
+  superadmin: { text: "Super Admin", style: "bg-yellow-800 text-yellow-300 border border-yellow-700" },
+  admin: { text: "Admin", style: "bg-red-800 text-red-300 border border-red-700" },
+  moderator: { text: "Admin", style: "bg-red-800 text-red-300 border border-red-700" }, // Moderator gets Admin badge for now
+  // Add future titles/levels here, e.g.:
+  // 'elite-degen': { text: "Elite Degen", style: "bg-purple-800 text-purple-300 border border-purple-700" }
+};
+type BadgeRole = keyof typeof badgeConfig;
+
 export const ContestChat: React.FC<ContestChatProps> = ({
   contestId,
   className = "",
   onNewMessage,
   adminType,
 }) => {
-  const { user } = useMigratedAuth();
+  const { userId: currentUserId, userRole: currentUserRole } = useMigratedAuth();
   const {
     messages,
+    participants,
     isLoading,
     isConnected,
-    error,
     sendMessage,
+    pinMessage,
+    deleteMessage,
   } = useContestChat(contestId);
   
-  const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
-  const [messageText, setMessageText] = useState("");
+  const { addToast } = useCustomToast();
   const [showParticipants, setShowParticipants] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [showAiPanel, setShowAiPanel] = useState(false);
-  const [hasSeenIntro, setHasSeenIntro] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
-  const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const aiAgentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,60 +109,11 @@ export const ContestChat: React.FC<ContestChatProps> = ({
   }, [contestId]);
 
   useEffect(() => {
-    setAllMessages([...messages]);
-    
-    if (messages.length > 0 && !hasSeenIntro) {
-      setTimeout(() => {
-        const aiIntroMessage: ChatMessage = {
-          id: `ai-intro-${Date.now()}`,
-          contest_id: contestId,
-          user_id: "ai-agent",
-          username: "DegenDuelAI",
-          message: "Hello traders! I'll be providing market insights and trading tips throughout this contest. Good luck!",
-          timestamp: new Date().toISOString(),
-          is_system: true,
-          user_role: 'system'
-        };
-        
-        setAllMessages(prev => [...prev, aiIntroMessage]);
-        setHasSeenIntro(true);
-      }, 3000);
+    if (messages.length > prevMessagesLengthRef.current) {
+      onNewMessage?.();
     }
-    
-    if (hasSeenIntro && messages.length > 3) {
-      const randomTipInterval = Math.floor(Math.random() * (120000 - 60000)) + 60000;
-      
-      const tipTimer = setTimeout(() => {
-        const randomTip = AI_TIPS[Math.floor(Math.random() * AI_TIPS.length)];
-        const aiTipMessage: ChatMessage = {
-          id: `ai-tip-${Date.now()}`,
-          contest_id: contestId,
-          user_id: "ai-agent",
-          username: "DegenDuelAI",
-          message: randomTip.text,
-          timestamp: new Date().toISOString(),
-          is_system: true,
-          user_role: 'system'
-        };
-        
-        setAllMessages(prev => [...prev, aiTipMessage]);
-      }, randomTipInterval);
-      
-      return () => clearTimeout(tipTimer);
-    }
-  }, [messages, hasSeenIntro, contestId]);
-
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-
-    if (allMessages.length > prevMessagesLengthRef.current && onNewMessage) {
-      onNewMessage();
-    }
-
-    prevMessagesLengthRef.current = allMessages.length;
-  }, [allMessages, onNewMessage]);
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages.length, onNewMessage]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -148,14 +123,6 @@ export const ContestChat: React.FC<ContestChatProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        showEmojiPicker &&
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(e.target as Node)
-      ) {
-        setShowEmojiPicker(false);
-      }
-      
       if (
         showAiPanel &&
         aiAgentRef.current &&
@@ -167,47 +134,14 @@ export const ContestChat: React.FC<ContestChatProps> = ({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showEmojiPicker, showAiPanel]);
+  }, [showAiPanel]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.ctrlKey && e.key === "Enter") {
-      e.preventDefault();
-      handleSubmit(e);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (messageText.trim() && isConnected && !isSending) {
-      setIsSending(true);
-      const success = sendMessage(messageText.trim());
-      if (success) {
-        setMessageText("");
-        if (messageInputRef.current) {
-          messageInputRef.current.focus();
-        }
-      } else {
-        console.error("Failed to send chat message");
-      }
-      setTimeout(() => {
-        setIsSending(false);
-      }, 300);
-    }
-  };
-
-  const handleEmojiSelect = (emoji: string) => {
-    setMessageText((prev) => prev + emoji);
-    setShowEmojiPicker(false);
-    if (messageInputRef.current) {
-      messageInputRef.current.focus();
-    }
-  };
-
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: string): string => {
     try {
       return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
     } catch (e) {
-      return "just now";
+      console.warn("Failed to format timestamp:", timestamp, e);
+      return "a moment ago"; // Fallback
     }
   };
 
@@ -231,43 +165,80 @@ export const ContestChat: React.FC<ContestChatProps> = ({
       return "bg-yellow-900/20 border-l-2 border-yellow-500";
     } else if (message.is_admin) {
       return "bg-red-900/20 border-l-2 border-red-500";
-    } else if (message.user_id === user?.id) {
+    } else if (message.user_id === currentUserId) {
       return "bg-brand-900/20 border-l-2 border-brand-500";
     } else {
       return "bg-gray-800/50";
     }
   };
 
-  const getTextColor = (message: ChatMessage) => {
-    if (message.user_id === 'ai-agent' || message.is_system) {
-      return "text-cyber-300";
-    } else if (message.is_admin && message.user_role === "superadmin") {
-      return "text-yellow-400";
-    } else if (message.is_admin) {
-      return "text-red-400";
-    } else if (message.user_id === user?.id) {
-      return "text-brand-400";
-    } else {
-      return "text-white";
-    }
-  };
-
-  const getBadgeText = (message: ChatMessage) => {
-    if (message.user_id === 'ai-agent' || message.is_system) {
-      return "SYSTEM";
-    } else if (message.user_role === "superadmin") {
-      return "Super Admin";
-    } else if (message.user_role === "admin" || message.user_role === "moderator" || message.is_admin) {
-      return "Admin";
-    } else if (message.user_id === user?.id) {
-      return "You";
-    }
-    return null;
-  };
-
   const getAiMessageEffects = (message: ChatMessage) => {
     if (message.user_id !== 'ai-agent' && !message.is_system) return "";
     return "shadow-[0_0_10px_rgba(49,200,180,0.2)] bg-gradient-to-r from-cyber-900/30 to-cyber-800/10";
+  };
+
+  const getMessageSenderBadge = (message: ChatMessage): { text: string; style: string } | null => {
+    let role: BadgeRole | null = null;
+
+    if (message.is_system) role = 'system';
+    else if (message.user_id === 'ai-agent') role = 'ai-agent';
+    else if (message.user_role && badgeConfig[message.user_role as BadgeRole]) {
+      role = message.user_role as BadgeRole;
+    }
+    // TODO: Add logic for custom titles like "Elite Degen" when data is available
+    // else if (message.user_title && badgeConfig[message.user_title as BadgeRole]) {
+    //   role = message.user_title as BadgeRole;
+    // }
+
+    return role ? badgeConfig[role] : null;
+  };
+
+  const handleSendMessageInput = (msgText: string) => {
+    if (msgText.trim()) {
+      if (!isConnected) {
+        addToast("error", "Not connected to chat. Cannot send message.", "Chat Error");
+        return;
+      }
+      
+      setIsSendingMessage(true);
+      const sent = sendMessage(msgText.trim());
+      if (!sent) {
+        addToast("error", "Failed to send message. Please try again.", "Chat Error");
+      }
+      setIsSendingMessage(false);
+    }
+  };
+
+  const handlePinMessage = (message: ChatMessage) => {
+    const currentlyPinned = !!message.is_pinned;
+    const targetPinState = !currentlyPinned;
+    const actionText = targetPinState ? "pin" : "unpin";
+    
+    console.log(`[Admin Action] Attempting to ${actionText} message: ${message.id}`);
+    if (!pinMessage) {
+      addToast("error", "Pin/Unpin function not available.", "Chat Error");
+      return;
+    }
+    const success = pinMessage(message.id, targetPinState); 
+    if (success) {
+      addToast("info", `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} request sent.`, "Chat Admin");
+    } else {
+      addToast("error", `Failed to send ${actionText} request.`, "Chat Admin");
+    }
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    console.log(`[Admin Action] Attempting to delete message: ${messageId}`);
+    if (!deleteMessage) {
+      addToast("error", "Delete function not available.", "Chat Error");
+      return;
+    }
+    const success = deleteMessage(messageId);
+    if (success) {
+      addToast("info", "Delete request sent.", "Chat Admin");
+    } else {
+      addToast("error", "Failed to send delete request.", "Chat Admin");
+    }
   };
 
   return (
@@ -284,7 +255,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
           />
         </h3>
         <div className="text-sm text-gray-400 flex items-center">
-          <span className="mr-2">{messages.length} online</span>
+          <span className="mr-2">{participants.length} Participants</span>
           {adminType && (
             <span
               className={`mr-2 px-2 py-0.5 rounded text-xs ${getAdminBadgeStyle(adminType as any)}`}
@@ -437,33 +408,33 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   <span className="ml-1 text-xs text-cyber-400">★</span>
                 </div>
                 
-                {Array.from(new Map(messages.map(m => [m.user_id, m])).values())
-                  .filter(p => p.user_id !== 'ai-agent' && !p.is_system)
-                  .map((participant) => (
-                    <motion.div
-                      key={participant.user_id}
-                      className="flex items-center p-2 rounded-md hover:bg-gray-700/50 transition-colors"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <img
-                        src={getProfilePicture(participant.user_id, participant.username)}
-                        alt={participant.username}
-                        className={`w-6 h-6 rounded-full mr-2 ${
-                          participant.is_admin ? "ring-1 ring-red-500" : ""
-                        }`}
-                      />
-                      <span className={`text-sm truncate ${
-                        participant.is_admin ? "text-red-400" : "text-gray-300"
-                      }`}>
-                        {participant.username}
-                      </span>
-                      {(participant.is_admin || participant.user_role === 'admin' || participant.user_role === 'moderator') && (
-                        <span className="ml-1 text-xs text-red-400">★</span>
-                      )}
-                    </motion.div>
-                  ))}
+                {participants.map((participant: ChatParticipant) => (
+                  <motion.div
+                    key={participant.user_id}
+                    className="flex items-center p-2 rounded-md hover:bg-gray-700/50 transition-colors"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <img
+                      src={getProfilePicture(participant.user_id, participant.username)}
+                      alt={participant.username}
+                      className={`w-6 h-6 rounded-full mr-2 ${
+                        (participant.role === 'admin' || participant.role === 'superadmin') ? "ring-1 ring-red-500" : ""
+                      }`}
+                    />
+                    <span className={`text-sm truncate ${
+                      (participant.role === 'admin' || participant.role === 'superadmin') ? "text-red-400" : "text-gray-300"
+                    }`}>
+                      {participant.username}
+                    </span>
+                    {(participant.role === 'admin' || participant.role === 'moderator' || participant.role === 'superadmin') && (
+                      <span className="ml-1 text-xs text-red-400">★</span>
+                    )}
+                  </motion.div>
+                ))}
+                {isLoading && participants.length === 0 && <div className="text-xs text-gray-500">Loading...</div>}
+                {!isLoading && participants.length === 0 && <div className="text-xs text-gray-500">No participants</div>}
               </div>
             </motion.div>
           )}
@@ -510,99 +481,81 @@ export const ContestChat: React.FC<ContestChatProps> = ({
           ) : (
             <>
               <AnimatePresence>
-                {allMessages.map((msg, index) => (
-                  <motion.div
-                    key={msg.id}
-                    className={`message mb-4 rounded-lg p-3 transition-all duration-300 hover:shadow-md ${
-                      getMessageStyle(msg)
-                    } ${getAiMessageEffects(msg)}`}
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ 
-                      duration: 0.4,
-                      delay: index === messages.length - 1 ? 0 : 0
-                    }}
-                  >
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 mr-3 relative">
-                        <div className="relative">
-                          <img
-                            src={getProfilePicture(msg.user_id, msg.username)}
-                            alt={msg.username}
-                            className={`w-8 h-8 rounded-full ${
-                              msg.user_id === 'ai-agent' || msg.is_system
-                                ? "ring-2 ring-cyber-500"
-                                : msg.user_role === "superadmin"
-                                  ? "ring-2 ring-yellow-500"
-                                  : msg.is_admin
-                                    ? "ring-2 ring-red-500"
-                                    : msg.user_id === user?.id
-                                      ? "ring-2 ring-brand-500"
-                                      : ""
-                            }`}
-                          />
-                          
-                          {(msg.user_id === 'ai-agent' || msg.is_system) && (
-                            <motion.div
-                              className="absolute inset-0 rounded-full border-2 border-cyber-400"
-                              initial={{ scale: 1 }}
-                              animate={{ 
-                                scale: [1, 1.2, 1],
-                                opacity: [1, 0, 1]
-                              }}
-                              transition={{ 
-                                duration: 2,
-                                repeat: 1,
-                                repeatType: "reverse"
-                              }}
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <span
-                            className={`font-medium ${getTextColor(msg)}`}
-                          >
-                            {msg.username}
-                          </span>
-                          {getBadgeText(msg) && (
-                            <span
-                              className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
-                                getAdminBadgeStyle(msg.user_role, msg.is_admin)
-                              }`}
-                            >
-                              {getBadgeText(msg)}
+                {messages.map((msg, index) => {
+                  const senderBadge = getMessageSenderBadge(msg);
+                  const isAdminMessage = msg.user_role === 'admin' || msg.user_role === 'superadmin' || msg.user_role === 'moderator';
+                  const isCurrentUserMsg = msg.user_id === currentUserId;
+
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      className={`message mb-3 p-3 rounded-lg transition-all duration-300 hover:shadow-md ${
+                        getMessageStyle(msg)
+                      } ${getAiMessageEffects(msg)}`}
+                      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.4, delay: index === messages.length - 1 ? 0 : 0 }}
+                    >
+                      <div className="flex items-start">
+                        <img
+                          src={msg.profile_picture || getProfilePicture(msg.user_id, msg.username)}
+                          alt={msg.username}
+                          className={`w-8 h-8 rounded-full mr-3 flex-shrink-0 ${
+                            isAdminMessage ? "ring-2 ring-red-500/70" : ""
+                          } ${msg.user_id === 'ai-agent' ? "ring-2 ring-cyber-500/70" : ""}`}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center mb-1">
+                            <span className={`font-semibold text-sm ${
+                              msg.user_id === 'ai-agent' || msg.is_system ? 'text-cyber-300' :
+                              isAdminMessage ? 'text-red-400' :
+                              isCurrentUserMsg ? 'text-brand-400' : 'text-gray-200'
+                            }`}>
+                              {msg.username}
                             </span>
-                          )}
-                          <span className="ml-2 text-xs text-gray-500">
-                            {formatTime(msg.timestamp)}
-                          </span>
-                        </div>
-                        <div className={`mt-1 text-gray-300 break-words relative ${
-                          (msg.user_id === 'ai-agent' || msg.is_system) ? "pl-2 border-l-2 border-cyber-500/30" : ""
-                        }`}>
-                          {(msg.user_id === 'ai-agent' || msg.is_system) && index === messages.length - 1 ? (
-                            <TypewriterText text={msg.message ?? ''} speed={25} />
-                          ) : (
-                            msg.message ?? ''
-                          )}
-                          
-                          {(msg.user_id === 'ai-agent' || msg.is_system) && (
-                            <motion.div 
-                              className="absolute inset-0 bg-gradient-to-r from-cyber-500/5 to-cyber-500/0 rounded-r"
-                              animate={{ 
-                                opacity: [0.1, 0.3, 0.1],
-                                x: [0, 5, 0]
-                              }}
-                              transition={{ duration: 3, repeat: Infinity }}
-                            />
-                          )}
+                            {senderBadge && (
+                              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full font-medium ${senderBadge.style}`}>
+                                {senderBadge.text}
+                              </span>
+                            )}
+                            <span className="ml-auto text-xs text-gray-500 hover:text-gray-400 transition-colors pl-2">
+                              {formatTime(msg.timestamp)}
+                            </span>
+                          </div>
+                          <div className={`text-sm leading-relaxed ${
+                             msg.user_id === 'ai-agent' || msg.is_system ? "text-gray-300 pl-1" : "text-gray-100"
+                          }`}>
+                            {(msg.user_id === 'ai-agent' || msg.is_system) && index === messages.length - 1 ? (
+                              <TypewriterText text={msg.message ?? ''} speed={25} />
+                            ) : (
+                              msg.message ?? ''
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                      {(currentUserRole === 'admin' || currentUserRole === 'superadmin') && !isCurrentUserMsg && !msg.is_system && (
+                        <div className="mt-2 pt-2 border-t border-gray-700/50 flex justify-end space-x-2">
+                          <button 
+                            onClick={() => handlePinMessage(msg)}
+                            className="text-xs text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50 disabled:hover:text-gray-400"
+                            disabled={!isConnected || !pinMessage}
+                            title={msg.is_pinned ? "Unpin Message" : "Pin Message"}
+                          >
+                            {msg.is_pinned ? "Unpin" : "Pin"}
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="text-xs text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50 disabled:hover:text-gray-400"
+                            disabled={!isConnected || !deleteMessage}
+                            title="Delete Message"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
               <div ref={messagesEndRef} />
             </>
@@ -610,177 +563,10 @@ export const ContestChat: React.FC<ContestChatProps> = ({
         </div>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="p-3 bg-gray-800/90 border-t border-gray-700/80 backdrop-blur-sm"
-      >
-        {error && (
-          <motion.div 
-            className="mb-2 text-red-500 text-sm bg-red-900/20 p-2 rounded"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            {error}
-          </motion.div>
-        )}
-        {isLoading && (
-          <motion.div 
-            className="mb-2 text-yellow-500 text-sm bg-yellow-900/20 p-2 rounded"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            Please wait a moment before sending another message.
-          </motion.div>
-        )}
-        <div className="relative">
-          <textarea
-            ref={messageInputRef}
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className={`w-full bg-gray-700 text-white rounded-md px-3 py-2 pr-24 resize-none focus:outline-none focus:ring-2 ${
-              adminType === "superadmin" 
-                ? "focus:ring-yellow-500" 
-                : adminType === "admin" 
-                  ? "focus:ring-red-500" 
-                  : "focus:ring-brand-500"
-            } transition-all`}
-            rows={2}
-            disabled={isLoading || isSending}
-          />
-
-          <div className="absolute right-16 bottom-2">
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="text-gray-400 hover:text-white p-1 rounded transition-colors"
-              title="Add emoji"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </button>
-
-            {showEmojiPicker && (
-              <div
-                ref={emojiPickerRef}
-                className="absolute bottom-10 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-3 w-64 z-10"
-              >
-                <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-700">
-                  <span className="text-xs text-gray-400">Quick Emojis</span>
-                  <button 
-                    className="text-xs text-gray-400 hover:text-white"
-                    onClick={() => setShowEmojiPicker(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="grid grid-cols-8 gap-1">
-                  {[
-                    "😀", "😂", "😊", "😍", "🤔", "😎", "👍", "👏",
-                    "🎉", "🔥", "❤️", "👋", "🙏", "🤝", "💪", "🚀",
-                    "✅", "⭐", "💰", "💎", "🌙", "📈", "📉", "🤑"
-                  ].map((emoji) => (
-                    <motion.button
-                      key={emoji}
-                      type="button"
-                      onClick={() => handleEmojiSelect(emoji)}
-                      className="text-xl p-1 hover:bg-gray-700 rounded transition-colors"
-                      whileHover={{ scale: 1.2 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {emoji}
-                    </motion.button>
-                  ))}
-                </div>
-                
-                <div className="mt-2 pt-2 border-t border-gray-700">
-                  <span className="text-xs text-gray-400 block mb-1">Trading</span>
-                  <div className="grid grid-cols-8 gap-1">
-                    {[
-                      "📈", "📉", "💸", "💰", "💵", "💴", "💶", "💷",
-                      "🪙", "💎", "⏰", "⚡", "🔍", "🏆", "🥇", "🚀"
-                    ].map((emoji) => (
-                      <motion.button
-                        key={`trading-${emoji}`}
-                        type="button"
-                        onClick={() => handleEmojiSelect(emoji)}
-                        className="text-xl p-1 hover:bg-gray-700 rounded transition-colors"
-                        whileHover={{ scale: 1.2 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        {emoji}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={!messageText.trim() || isLoading || isSending}
-            className={`absolute right-2 bottom-2 ${
-              adminType === "superadmin"
-                ? "bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500"
-                : adminType === "admin"
-                  ? "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400"
-                  : "bg-gradient-to-r from-brand-600 to-cyber-600 hover:from-brand-500 hover:to-cyber-500"
-            } text-white px-3 py-1 rounded transition-all duration-300 
-              ${
-                !messageText.trim() || isLoading || isSending
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:shadow-md"
-              }`}
-          >
-            {isSending ? (
-              <span className="flex items-center">
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Sending
-              </span>
-            ) : (
-              <span className="flex items-center">
-                Send
-                <span className="ml-1 text-xs opacity-70">(Ctrl+Enter)</span>
-              </span>
-            )}
-          </button>
-        </div>
-      </form>
+      <ChatInput 
+        onSendMessage={handleSendMessageInput} 
+        disabled={isSendingMessage || !isConnected || isLoading}
+      />
     </div>
   );
 };

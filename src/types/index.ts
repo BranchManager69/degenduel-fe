@@ -14,22 +14,22 @@
 
 // Re-export user types
 export type {
-  LegacyUser, User
+    LegacyUser, User
 } from "./user";
 
 // Re-export admin types
 export type {
-  VanityWallet, VanityWalletBatchCreateParams, VanityWalletBatchCreateResponse,
-  VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
+    VanityWallet, VanityWalletBatchCreateParams, VanityWalletBatchCreateResponse,
+    VanityWalletCancelResponse, VanityWalletCreateParams, VanityWalletCreateResponse, VanityWalletListParams, VanityWalletListResponse, VanityWalletStatus
 } from "./admin";
 
 // Re-export leaderboard types
 export type {
-  ContestPerformanceEntry,
-  ContestPerformanceResponse,
-  GlobalRankingEntry,
-  GlobalRankingsResponse,
-  TimeFrame
+    ContestPerformanceEntry,
+    ContestPerformanceResponse,
+    GlobalRankingEntry,
+    GlobalRankingsResponse,
+    TimeFrame
 } from "./leaderboard";
 
 // ------------------------------------------------------------------------------------------------
@@ -43,36 +43,35 @@ export type ContestStatus =
   | "completed" 
   | "cancelled";
 
-// Contest Difficulty Levels
-// [REPURPOSED / NOT USED]
-export type DifficultyLevel =
-  | "guppy"
-  | "tadpole"
-  | "squid"
-  | "dolphin"
-  | "shark"
-  | "whale";
+// Contest Difficulty Levels - REMOVED as new API uses string
+// export type DifficultyLevel =
+//   | "guppy"
+//   | "tadpole"
+//   | "squid"
+//   | "dolphin"
+//   | "shark"
+//   | "whale";
 
 
 // ------------------------------------------------------------------------------------------------
 
 /* Interfaces */
 
-// Contest Settings (Verify!)
-export interface ContestSettings {
-  difficulty: DifficultyLevel;
-  min_trades: number;
-  max_participants?: number;
-  min_participants?: number;
-  token_types: string[];
-  rules: Array<{
-    id: string;
-    title: string;
-    description: string;
-  }>;
-}
+// Contest Settings (Verify!) - REMOVED as it conflicts with new API definition
+// export interface ContestSettings {
+//   difficulty: DifficultyLevel;
+//   min_trades: number;
+//   max_participants?: number;
+//   min_participants?: number;
+//   token_types: string[];
+//   rules: Array<{
+//     id: string;
+//     title: string;
+//     description: string;
+//   }>;
+// }
 
-// Contest Types (Verify!)
+// Contest Types (Verify!) - Keep this base Contest type for now, might need merging/updating later
 export interface Contest {
   id: number;
   name: string;
@@ -89,7 +88,8 @@ export interface Contest {
   status: ContestStatus;
   cancelled_at?: string;
   cancellation_reason?: string;
-  settings: ContestSettings;
+  // settings: ContestSettings; // Temporarily comment out or update if needed to avoid conflicts before full refactor
+  settings: any; // Use 'any' temporarily to avoid immediate conflict, needs proper typing later
   created_at: string;
   updated_at: string;
   min_participants: number;
@@ -388,3 +388,82 @@ export interface ContestPortfolio {  // Used for database representation of cont
   created_at: string;
 } 
 */
+
+// ======= Types for Unified Contest View Endpoint =======
+
+// This ContestSettings definition is the one aligned with the new API
+export interface ContestSettings {
+  difficulty: string; // e.g., "guppy"
+  maxParticipants: number | null;
+  minParticipants: number;
+  tokenTypesAllowed: string[]; // e.g., ["SPL"]
+  startingPortfolioValue: string; // e.g., "10000"
+}
+
+// This ContestDetails definition is the one aligned with the new API
+export interface ContestDetails {
+  id: string; 
+  name: string;
+  description: string;
+  status: "pending" | "active" | "completed" | "cancelled";
+  startTime: string; 
+  endTime: string; 
+  entryFee: string; 
+  prizePool: string; 
+  currency: string; 
+  participantCount: number;
+  settings: ContestSettings; // Uses the new ContestSettings definition above
+  isCurrentUserParticipating: boolean;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string; // Wallet address
+  username: string;
+  profilePictureUrl: string | null;
+  portfolioValue: string; // Decimal string (8 places)
+  performancePercentage: string; // Decimal string (2 places)
+  isCurrentUser: boolean;
+  isAiAgent: boolean;
+  prizeAwarded: string | null; // Decimal string (8 places)
+}
+
+export interface HistoricalDataPoint {
+  timestamp: string; // ISO8601DateTimeString
+  value: string; // Decimal string (8 places)
+}
+
+export interface TokenHoldingPerformance {
+  symbol: string;
+  name: string;
+  imageUrl: string | null;
+  weight: number; // Percentage
+  quantity: string; // Decimal string (8 places)
+  initialValueContribution: string; // Decimal string (8 places)
+  currentValueContribution: string; // Decimal string (8 places)
+  performancePercentage: string; // Decimal string (2 places)
+  profitLossValueContribution: string; // Decimal string (8 places)
+}
+
+export interface CurrentUserPerformance {
+  rank: number | null;
+  portfolioValue: string; // Decimal string (8 places)
+  initialPortfolioValue: string; // Decimal string (8 places)
+  performancePercentage: string; // Decimal string (2 places)
+  historicalPerformance: HistoricalDataPoint[];
+  tokens: TokenHoldingPerformance[];
+}
+
+export interface ContestViewData {
+  contest: ContestDetails;
+  leaderboard: LeaderboardEntry[];
+  currentUserPerformance: CurrentUserPerformance | null; // Null if user not participating
+}
+
+export interface UnifiedContestViewApiResponse {
+  success: boolean;
+  data: ContestViewData;
+  error?: string; // Include optional error field
+}
+
+// ======= End of Unified Contest View Types =======

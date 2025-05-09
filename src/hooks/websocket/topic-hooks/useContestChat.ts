@@ -11,8 +11,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
+import { DDWebSocketActions } from '../../../websocket-types-implementation';
 import { TopicType } from '../index';
-import { DDExtendedMessageType } from '../types';
+import { DDExtendedMessageType, WebSocketMessage } from '../types';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Chat data interfaces based on backend API documentation
@@ -27,34 +28,26 @@ export interface ChatMessage {
   is_admin?: boolean;
   is_pinned?: boolean;
   user_role?: 'user' | 'admin' | 'moderator' | 'system' | 'superadmin';
+  profile_picture?: string;
   reactions?: Record<string, number>;
+}
+
+// Add interface for Participant data (based on backend plan)
+export interface ChatParticipant {
+  user_id: string;
+  username: string;
+  role?: string; // Or more specific roles
+  // Add other fields if backend provides them (e.g., avatar)
 }
 
 // Default state
 const DEFAULT_STATE = {
   messages: [] as ChatMessage[],
+  participants: [] as ChatParticipant[],
   pinnedMessages: [] as ChatMessage[],
   isLoading: true,
   lastMessageTime: null as Date | null
 };
-
-// Define the standard structure for chat updates from the server
-// Following the exact format from the backend team
-interface WebSocketChatMessage {
-  type: string; // 'DATA'
-  topic: string; // 'contest-chat'
-  subtype?: string; // 'message', 'pin', 'delete', etc.
-  action?: string; // 'add', 'update', 'delete', etc.
-  data: {
-    message?: ChatMessage;
-    messages?: ChatMessage[];
-    contest_id?: string;
-    message_id?: string;
-    pinned?: boolean;
-    deleted?: boolean;
-  };
-  timestamp: string;
-}
 
 /**
  * Hook for accessing and managing contest chat with real-time updates
@@ -68,32 +61,68 @@ export function useContestChat(contestId: string) {
   const [error, setError] = useState<string | null>(null);
 
   // Message handler for WebSocket messages
-  const handleMessage = useCallback((message: Partial<WebSocketChatMessage>) => {
+  const handleMessage = useCallback((message: WebSocketMessage) => {
     try {
       // Process only messages for the contest-chat topic
-      if (message.type === 'DATA' && message.topic === 'contest-chat' && message.data) {
+      if (message.type === DDExtendedMessageType.DATA && message.topic === TopicType.CONTEST_CHAT && message.data) {
         const data = message.data;
+        const action = message.action;
         
-        // Handle initial messages load
-        if (message.action === 'load' && Array.isArray(data.messages)) {
+        // Type guard or assertion for data structure expected by contest-chat
+        interface ContestChatData {
+          message?: ChatMessage;
+          messages?: ChatMessage[];
+          participants?: ChatParticipant[];
+          contest_id?: string;
+          message_id?: string;
+          pinned?: boolean;
+          deleted?: boolean;
+        }
+
+        if (typeof data !== 'object' || data === null) {
+          console.warn('[ContestChat WebSocket] Received non-object data:', data);
+          return;
+        }
+        
+        const chatData = data as ContestChatData;
+
+        // Handle initial messages AND participants load
+        if (action === DDWebSocketActions.GET_MESSAGES && Array.isArray(chatData.messages)) {
           setState(prev => ({
             ...prev,
-            messages: data.messages || [],
-            pinnedMessages: (data.messages || []).filter(m => m.is_pinned),
+            messages: chatData.messages || [],
+            participants: chatData.participants || [],
+            pinnedMessages: (chatData.messages || []).filter(m => m.is_pinned),
             isLoading: false,
             lastMessageTime: new Date()
           }));
           
           dispatchWebSocketEvent('contest_chat_loaded', {
             socketType: TopicType.CONTEST_CHAT,
-            message: `Loaded ${data.messages?.length || 0} chat messages for contest ${contestId}`,
+            message: `Loaded ${chatData.messages?.length || 0} chat messages and ${chatData.participants?.length || 0} participants for contest ${contestId}`,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        // Handle potential separate participant list update (if backend sends them)
+        else if (action === 'participants_update' && Array.isArray(chatData.participants)) {
+          setState(prev => ({
+            ...prev,
+            participants: chatData.participants || [],
+            lastMessageTime: new Date()
+          }));
+          
+          dispatchWebSocketEvent('contest_chat_participants_update', {
+            socketType: TopicType.CONTEST_CHAT,
+            message: `Participants updated for contest ${contestId}`,
+            participantCount: chatData.participants?.length || 0,
             timestamp: new Date().toISOString()
           });
         }
         
         // Handle new message
-        else if (message.action === 'add' && data.message) {
-          const newMessage = data.message;
+        else if (action === DDWebSocketActions.SEND_MESSAGE && chatData.message) {
+          const newMessage = chatData.message;
           
           setState(prev => {
             // Add new message to the list
@@ -117,14 +146,14 @@ export function useContestChat(contestId: string) {
             socketType: TopicType.CONTEST_CHAT,
             message: `New chat message in contest ${contestId}`,
             timestamp: new Date().toISOString(),
-            isAdmin: data.message.is_admin,
-            isSystem: data.message.is_system
+            isAdmin: chatData.message.is_admin,
+            isSystem: chatData.message.is_system
           });
         }
         
         // Handle message update (e.g., pinning/unpinning)
-        else if (message.action === 'update' && data.message) {
-          const updatedMessage = data.message;
+        else if (action === DDWebSocketActions.PIN_MESSAGE && chatData.message) {
+          const updatedMessage = chatData.message;
           
           setState(prev => {
             // Update message in the list
@@ -154,11 +183,11 @@ export function useContestChat(contestId: string) {
         }
         
         // Handle message deletion
-        else if (message.action === 'delete' && data.message_id) {
+        else if (action === DDWebSocketActions.DELETE_MESSAGE && chatData.message_id) {
           setState(prev => {
             // Remove message from lists
-            const updatedMessages = prev.messages.filter(msg => msg.id !== data.message_id);
-            const updatedPinned = prev.pinnedMessages.filter(msg => msg.id !== data.message_id);
+            const updatedMessages = prev.messages.filter(msg => msg.id !== chatData.message_id);
+            const updatedPinned = prev.pinnedMessages.filter(msg => msg.id !== chatData.message_id);
             
             return {
               ...prev,
@@ -208,7 +237,7 @@ export function useContestChat(contestId: string) {
       ws.subscribe([TopicType.CONTEST_CHAT]);
       
       // Request initial chat messages
-      ws.request(TopicType.CONTEST_CHAT, 'GET_MESSAGES', { contestId });
+      ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.GET_MESSAGES, { contestId });
       
       dispatchWebSocketEvent('contest_chat_subscribe', {
         socketType: TopicType.CONTEST_CHAT,
@@ -235,7 +264,7 @@ export function useContestChat(contestId: string) {
       return false;
     }
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, 'SEND_MESSAGE', { 
+    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.SEND_MESSAGE, { 
       contestId, 
       message 
     });
@@ -259,7 +288,7 @@ export function useContestChat(contestId: string) {
       return false;
     }
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, 'PIN_MESSAGE', { 
+    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.PIN_MESSAGE, { 
       contestId, 
       messageId,
       pinned
@@ -283,7 +312,7 @@ export function useContestChat(contestId: string) {
       return false;
     }
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, 'DELETE_MESSAGE', { 
+    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.DELETE_MESSAGE, { 
       contestId, 
       messageId 
     });
@@ -306,9 +335,9 @@ export function useContestChat(contestId: string) {
       return false;
     }
     
-    setState(prev => ({ ...prev, isLoading: true }));
+    setState(prev => ({ ...prev, isLoading: true, messages: [], participants: [], pinnedMessages: [] }));
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, 'GET_MESSAGES', { contestId });
+    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.GET_MESSAGES, { contestId });
     
     if (requestSent) {
       dispatchWebSocketEvent('contest_chat_refresh', {
@@ -327,6 +356,7 @@ export function useContestChat(contestId: string) {
   // Return chat data and helper functions
   return {
     messages: state.messages,
+    participants: state.participants,
     pinnedMessages: state.pinnedMessages,
     isLoading: state.isLoading,
     isConnected,

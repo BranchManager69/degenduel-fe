@@ -12,7 +12,7 @@
 // import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; // REMOVED
 import { useEffect, useState } from 'react';
 import { usePrivyAuth } from "../../contexts/PrivyAuthContext";
-import useBiometricAuth from "../../hooks/auth/legacy/useBiometricAuth";
+import { useBiometricAuth, useQRCodeAuth } from "../../hooks/auth";
 import { useStore } from "../../store/useStore";
 import {
   Card,
@@ -27,6 +27,7 @@ import BiometricAuthButton from "./BiometricAuthButton";
 import ConsolidatedLoginButton from "./ConsolidatedLoginButton";
 import PrivyLoginButton from "./PrivyLoginButton";
 import TwitterLoginButton from "./TwitterLoginButton";
+import QRCodeAuth from "./QRCodeAuth";
 
 /**
  * Login Options Component
@@ -41,6 +42,7 @@ const LoginOptions = () => {
   const [isLinking, setIsLinking] = useState(false);
   const { isAvailable, isRegistered } = useBiometricAuth();
   const [showBiometricOption, setShowBiometricOption] = useState(false);
+  const [showQRCodeAuth, setShowQRCodeAuth] = useState(false);
   
   // Check if biometric auth is available and the user has a registered credential
   useEffect(() => {
@@ -156,6 +158,20 @@ const LoginOptions = () => {
                     </div>
                   )}
                   
+                  {/* QR Code Auth Button - toggles QR code interface */}
+                  <div className="relative p-0.5 bg-gradient-to-r from-green-500/40 to-green-600/80 rounded-md group overflow-hidden shadow-md">
+                    <div className="absolute inset-0 bg-green-500/10 group-hover:bg-green-500/20 transition-colors duration-300"></div>
+                    <button
+                      onClick={() => setShowQRCodeAuth(!showQRCodeAuth)}
+                      className="w-full h-12 flex items-center justify-center text-white font-semibold"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm2 2V5h1v1H5zM3 13a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zm2 2v-1h1v1H5zM13 3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3zm1 2v1h1V5h-1zM13 12a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1h-3zm1 2v1h1v-1h-1z" clipRule="evenodd" />
+                      </svg>
+                      Login with QR Code
+                    </button>
+                  </div>
+                  
                   <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
                     <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
                     <TwitterLoginButton className="w-full h-12" />
@@ -172,6 +188,28 @@ const LoginOptions = () => {
               <div className="md:hidden">
                 <ConsolidatedLoginButton />
               </div>
+              
+              {/* QR Code Auth interface - only shown when toggled */}
+              {showQRCodeAuth && (
+                <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-semibold text-white">Sign in with QR Code</h3>
+                    <button
+                      onClick={() => setShowQRCodeAuth(false)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <QRCodeAuth
+                    onSuccess={() => {
+                      setShowQRCodeAuth(false);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </>
         )}

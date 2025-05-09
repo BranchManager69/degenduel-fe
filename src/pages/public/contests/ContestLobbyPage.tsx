@@ -12,210 +12,96 @@ import { TokenPerformance } from "../../../components/contest-lobby/TokenPerform
 import { VisualTester } from "../../../components/contest-lobby/VisualTester";
 import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
 import { Badge } from "../../../components/ui/Badge";
-import { formatCurrency, isContestLive } from "../../../lib/utils";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
+import { formatCurrency } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
-import { Contest as BaseContest } from "../../../types";
+import { ContestViewData } from "../../../types";
 
 // Contest Lobby page
 export const ContestLobby: React.FC = () => {
-  // Get the contest ID from the URL
-  const { id } = useParams();
+  const { id: contestIdFromParams } = useParams<{ id: string }>();
+  const { user: currentUser } = useMigratedAuth();
+
+  const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [realContest, setRealContest] = useState<BaseContest | null>(null);
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   
-  // UI state
-  const [showChat, setShowChat] = useState(false);
-  const [unreadMessages, setUnreadMessages] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'chat'>('overview');
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Refs for animations
   const contentRef = useRef<HTMLDivElement>(null);
-  
-  // Random but consistent avatar generation
-  const getAvatarUrl = (username: string) => {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-  };
-  
-  // Sample performance data (placeholder)
-  const generatePerformanceData = () => {
-    const now = new Date();
-    const data = [];
-    // Generate 24 hours of data
-    for (let i = 0; i < 24; i++) {
-      const timestamp = new Date(now.getTime() - (23 - i) * 3600000).toISOString();
-      const value = 1000 + i * 20 + Math.random() * 50;
-      data.push({ timestamp, value });
-    }
-    return data;
-  };
-  
-  const performanceData = generatePerformanceData();
 
-  // Fetch contest data from API
+  // Initial data fetch via REST
   useEffect(() => {
-    const fetchContest = async () => {
-      if (!id) return;
+    const contestId = contestIdFromParams ?? null;
+    if (!contestId) {
+      setError("Contest ID is missing.");
+      setIsLoading(false);
+      return;
+    }
 
+    const fetchContestView = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        setIsLoading(true);
-
-        // First check maintenance mode
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        setIsMaintenanceMode(isInMaintenance);
-
-        // If in maintenance mode, don't fetch contest
-        if (isInMaintenance) {
-          setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
-          );
-          return;
-        }
-
-        const data = await ddApi.contests.getById(id);
-        console.log("Contest data (lobby):", data);
-        setRealContest(data);
+        const data = await ddApi.contests.getView(contestId);
+        setContestViewData(data);
       } catch (err) {
-        console.error("Failed to fetch contest:", err);
-        // Check if the error is a 503 (maintenance mode)
-        if (err instanceof Error && err.message.includes("503")) {
-          setIsMaintenanceMode(true);
-          setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
-          );
-        } else {
-          setError("Failed to load contest details.");
-        }
+        console.error("Failed to fetch contest view:", err);
+        setError(err instanceof Error ? err.message : "Failed to load contest details.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchContest();
-  }, [id]);
+    fetchContestView();
+  }, [contestIdFromParams]);
 
-  // Derived contest data with proper types
-  const contest = {
-    id,
-    title: realContest?.name || "Loading Contest...",
-    difficulty: (realContest?.settings?.difficulty || "guppy") as
-      | "guppy"
-      | "tadpole"
-      | "squid"
-      | "dolphin"
-      | "shark"
-      | "whale",
-    prizePool: Number(realContest?.prize_pool || 0),
-    endTime: realContest
-      ? new Date(realContest.end_time)
-      : new Date(Date.now() + 3600000),
-  };
-  
-  // Enhanced leaderboard entries with AI agent
-  const leaderboardEntries = [
-    {
-      rank: 1,
-      username: "DebugManager69",
-      portfolioValue: 69420,
-      change24h: 420.7,
-      profilePicture: getAvatarUrl("DebugManager69"),
-    },
-    {
-      rank: 2,
-      username: "DegenDuelAI",
-      portfolioValue: 42069,
-      change24h: 69.4,
-      isAiAgent: true,
-      profilePicture: "/ai-assistant.png",
-    },
-    {
-      rank: 3,
-      username: "realDonaldTrump",
-      portfolioValue: 15100,
-      change24h: 12.3,
-      profilePicture: getAvatarUrl("realDonaldTrump"),
-    },
-    {
-      rank: 4,
-      username: "iEatAss_sn1p3z",
-      portfolioValue: 12300,
-      change24h: 8.7,
-      profilePicture: getAvatarUrl("iEatAss_sn1p3z"),
-    },
-    {
-      rank: 5,
-      username: "YoWhoFknJ33T3D",
-      portfolioValue: 6900,
-      change24h: -5.2,
-      profilePicture: getAvatarUrl("YoWhoFknJ33T3D"),
-    },
-    {
-      rank: 6,
-      username: "sol_survivor",
-      portfolioValue: 4200,
-      change24h: -8.1,
-      profilePicture: getAvatarUrl("sol_survivor"),
-    },
-  ];
-  
-  // Enhanced portfolio data with token images
-  const portfolioData = {
-    tokens: [
-      {
-        token: {
-          name: "Solana",
-          symbol: "SOL",
-          price: 105.25,
-          image: "https://cryptologos.cc/logos/solana-sol-logo.png",
-        },
-        amount: 10,
-        initialValue: 1000,
-        currentValue: 1052.5,
-      },
-      {
-        token: {
-          name: "Bonk",
-          symbol: "BONK",
-          price: 0.00001875,
-          image: "https://cryptologos.cc/logos/bonk-bonk-logo.png",
-        },
-        amount: 26666666.67,
-        initialValue: 500,
-        currentValue: 500,
-      },
-      {
-        token: {
-          name: "Jito",
-          symbol: "JTO",
-          price: 3.25,
-          image: "https://cryptologos.cc/logos/jito-jto-logo.png",
-        },
-        amount: 150,
-        initialValue: 500,
-        currentValue: 487.5,
-      },
-    ],
-    totalValue: 2040,
-    totalChange: 2.00,
-  };
-  
-  // Toggle chat visibility
-  const toggleChat = () => {
-    setShowChat(!showChat);
-    if (!showChat) {
-      setUnreadMessages(0);
+  // WebSocket updates
+  const { 
+    contestViewData: wsUpdatedData, 
+    isConnected: wsIsConnected, 
+    error: wsError 
+  } = useContestViewUpdates(contestIdFromParams ?? null, contestViewData);
+
+  // Effect to update page state when WebSocket pushes new data
+  useEffect(() => {
+    if (wsUpdatedData) {
+      setContestViewData(wsUpdatedData);
     }
-  };
-  
-  // Handle new messages
+  }, [wsUpdatedData]);
+
+  // Optional: Handle wsError if needed, e.g., show a toast or a connection status indicator
+  useEffect(() => {
+    if (wsError) {
+      console.warn("[ContestLobbyPage] WebSocket update error:", wsError);
+      // Example: addToast('error', `Live updates error: ${wsError}`, 'WebSocket Error');
+    }
+  }, [wsError]);
+
   const handleNewMessage = () => {
-    if (!showChat) {
+    if (activeTab !== 'chat') {
       setUnreadMessages(prev => prev + 1);
     }
   };
-  
+
+  const handleTabChange = (tab: 'overview' | 'performance' | 'chat') => {
+    setActiveTab(tab);
+    if (tab === 'chat') {
+      setUnreadMessages(0);
+    }
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  };
+
+  // --- Derived data based on contestViewData ---
+  const contestDetails = contestViewData?.contest;
+  const leaderboardEntries = contestViewData?.leaderboard || [];
+  const currentUserPerformance = contestViewData?.currentUserPerformance;
+
+  // --- Loading and Error States --- 
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -238,25 +124,6 @@ export const ContestLobby: React.FC = () => {
     );
   }
 
-  if (isMaintenanceMode) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-            <div className="flex items-center justify-center gap-2 text-yellow-400">
-              <span className="animate-pulse">⚠</span>
-              <span>
-                DegenDuel is undergoing scheduled maintenance ⚙️ Try again
-                later.
-              </span>
-              <span className="animate-pulse">⚠</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -269,10 +136,39 @@ export const ContestLobby: React.FC = () => {
     );
   }
 
+  if (!contestViewData || !contestDetails) {
+    return (
+      <div className="flex flex-col min-h-screen items-center justify-center">
+        <p className="text-xl text-gray-400">Contest data not found or still loading.</p>
+      </div>
+    );
+  }
+
+  // --- Prepare data for child components ---
+  const portfolioDataForDisplay = {
+    tokens: currentUserPerformance?.tokens.map(token => ({
+      token: {
+        name: token.name,
+        symbol: token.symbol,
+        price: parseFloat(token.currentValueContribution) / parseFloat(token.quantity), // Approximate current price
+        image: token.imageUrl,
+      },
+      amount: parseFloat(token.quantity),
+      initialValue: parseFloat(token.initialValueContribution),
+      currentValue: parseFloat(token.currentValueContribution),
+    })) || [],
+    totalValue: currentUserPerformance ? parseFloat(currentUserPerformance.portfolioValue) : 0,
+    totalChange: currentUserPerformance ? parseFloat(currentUserPerformance.performancePercentage) : 0,
+  };
+
+  const performanceChartData = currentUserPerformance?.historicalPerformance.map(dp => ({
+    timestamp: dp.timestamp,
+    value: parseFloat(dp.value),
+  })) || [];
+
+  // --- Render Logic --- 
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
-
-      {/* Content Section */}
       <div className="relative z-10 flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
           {/* Header Section with Mobile Toggle */}
@@ -291,29 +187,27 @@ export const ContestLobby: React.FC = () => {
                   Contests
                 </Link>
                 <span className="mx-2">›</span>
-                <span className="text-gray-300">{contest.title}</span>
+                <span className="text-gray-300">{contestDetails.name}</span>
               </div>
 
               {/* Contest Title */}
               <h1 className="text-3xl font-bold text-gray-100 mb-2 flex items-center">
-                {contest.title}
+                {contestDetails.name}
                 <motion.div
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                   className="ml-3"
                 >
-                  {realContest && (
-                    <Badge 
-                      variant={isContestLive(realContest) ? "success" : new Date() < new Date(realContest.start_time) ? "secondary" : "destructive"}
-                    >
-                      {isContestLive(realContest)
-                        ? "LIVE NOW"
-                        : new Date() < new Date(realContest.start_time)
-                          ? "UPCOMING"
-                          : "ENDED"}
-                    </Badge>
-                  )}
+                  <Badge 
+                    variant={contestDetails.status === 'active' ? "success" : new Date() < new Date(contestDetails.startTime) ? "secondary" : "destructive"}
+                  >
+                    {contestDetails.status === 'active'
+                      ? "LIVE NOW"
+                      : new Date() < new Date(contestDetails.startTime)
+                        ? "UPCOMING"
+                        : contestDetails.status.toUpperCase()}
+                  </Badge>
                 </motion.div>
               </h1>
               
@@ -323,7 +217,7 @@ export const ContestLobby: React.FC = () => {
                   <span className="text-gray-400 mr-2">
                     Prize Pool:{" "}
                     <span className="text-brand-400 font-mono">
-                      {formatCurrency(contest.prizePool)}
+                      {formatCurrency(parseFloat(contestDetails.prizePool))}
                     </span>
                   </span>
                 </div>
@@ -331,7 +225,7 @@ export const ContestLobby: React.FC = () => {
                 {/* Desktop Tabs */}
                 <div className="hidden md:flex items-center border-l border-gray-700 pl-2 ml-2">
                   <button
-                    onClick={() => setActiveTab('overview')}
+                    onClick={() => handleTabChange('overview')}
                     className={`px-3 py-1 rounded-md text-sm ${
                       activeTab === 'overview'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -341,7 +235,7 @@ export const ContestLobby: React.FC = () => {
                     Overview
                   </button>
                   <button
-                    onClick={() => setActiveTab('performance')}
+                    onClick={() => handleTabChange('performance')}
                     className={`px-3 py-1 rounded-md text-sm ${
                       activeTab === 'performance'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -351,7 +245,7 @@ export const ContestLobby: React.FC = () => {
                     Performance
                   </button>
                   <button
-                    onClick={() => {setActiveTab('chat'); toggleChat()}}
+                    onClick={() => handleTabChange('chat')}
                     className={`px-3 py-1 rounded-md text-sm flex items-center ${
                       activeTab === 'chat'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -374,13 +268,7 @@ export const ContestLobby: React.FC = () => {
               <div className="relative group mr-4">
                 <div className="text-right mb-1">
                   <span className="text-sm text-gray-400">
-                    {realContest && (
-                      isContestLive(realContest)
-                        ? "Contest Ends In:"
-                        : new Date() < new Date(realContest.start_time)
-                          ? "Contest Starts In:"
-                          : "Contest Ended On:"
-                    )}
+                    {contestDetails.status === 'active' ? "Contest Ends In:" : new Date() < new Date(contestDetails.startTime) ? "Contest Starts In:" : "Contest Ended On:"}
                   </span>
                 </div>
                 
@@ -390,13 +278,8 @@ export const ContestLobby: React.FC = () => {
                   transition={{ delay: 0.2, duration: 0.5 }}
                 >
                   <ContestTimer
-                    endTime={contest.endTime}
-                    showDate={
-                      !!(
-                        realContest &&
-                        new Date() > new Date(realContest.end_time)
-                      )
-                    }
+                    endTime={new Date(contestDetails.endTime)}
+                    showDate={new Date() > new Date(contestDetails.endTime)}
                   />
                 </motion.div>
               </div>
@@ -424,7 +307,7 @@ export const ContestLobby: React.FC = () => {
               >
                 <div className="flex flex-col bg-dark-200/80 backdrop-blur-md rounded-lg p-2 border border-gray-700/50">
                   <button
-                    onClick={() => {setActiveTab('overview'); setMobileMenuOpen(false)}}
+                    onClick={() => handleTabChange('overview')}
                     className={`px-3 py-2 rounded-md text-left ${
                       activeTab === 'overview'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -434,7 +317,7 @@ export const ContestLobby: React.FC = () => {
                     Overview
                   </button>
                   <button
-                    onClick={() => {setActiveTab('performance'); setMobileMenuOpen(false)}}
+                    onClick={() => handleTabChange('performance')}
                     className={`px-3 py-2 rounded-md text-left ${
                       activeTab === 'performance'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -444,7 +327,7 @@ export const ContestLobby: React.FC = () => {
                     Performance
                   </button>
                   <button
-                    onClick={() => {setActiveTab('chat'); setMobileMenuOpen(false); toggleChat()}}
+                    onClick={() => handleTabChange('chat')}
                     className={`px-3 py-2 rounded-md text-left flex items-center ${
                       activeTab === 'chat'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -458,7 +341,7 @@ export const ContestLobby: React.FC = () => {
                       </span>
                     )}
                   </button>
-                  <TestSkipButton contestId={id!} />
+                  <TestSkipButton contestId={contestIdFromParams!} />
                 </div>
               </motion.div>
             )}
@@ -477,47 +360,32 @@ export const ContestLobby: React.FC = () => {
               {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
-                    {/* Portfolio Performance */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      className="relative group overflow-hidden rounded-lg"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <PortfolioPerformance {...portfolioData} />
-                    </motion.div>
-
-                    {/* Leaderboard */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="relative group overflow-hidden rounded-lg"
-                    >
-                      <Leaderboard entries={leaderboardEntries} currentUserRank={2} />
-                    </motion.div>
+                    {currentUserPerformance && <PortfolioPerformance {...portfolioDataForDisplay} />}
+                    <Leaderboard entries={leaderboardEntries} currentUserRank={currentUserPerformance?.rank} />
                   </div>
-
-                  {/* Token Performance Cards Column */}
                   <div className="space-y-6">
-                    {portfolioData.tokens.map((tokenData, index) => (
+                    {currentUserPerformance?.tokens.map((token, index) => (
                       <motion.div
-                        key={tokenData.token.symbol}
+                        key={token.symbol}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 + (index * 0.1) }}
                         className="relative group overflow-hidden rounded-lg"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <TokenPerformance {...tokenData} />
+                        <TokenPerformance 
+                          token={{
+                            name: token.name,
+                            symbol: token.symbol,
+                            price: parseFloat(token.currentValueContribution) / parseFloat(token.quantity), // Approx price
+                            imageUrl: token.imageUrl 
+                          }}
+                          amount={parseFloat(token.quantity)}
+                          initialValue={parseFloat(token.initialValueContribution)}
+                          currentValue={parseFloat(token.currentValueContribution)}
+                        />
                       </motion.div>
                     ))}
-                    
-                    {/* Only show on desktop */}
-                    <div className="hidden lg:block">
-                      <TestSkipButton contestId={id!} />
-                    </div>
+                    <div className="hidden lg:block"><TestSkipButton contestId={contestIdFromParams!} /></div>
                   </div>
                 </div>
               )}
@@ -531,7 +399,21 @@ export const ContestLobby: React.FC = () => {
                       transition={{ delay: 0.1 }}
                       className="bg-dark-200/50 backdrop-blur-sm p-4 rounded-lg border border-dark-300"
                     >
-                      <PerformanceChart data={performanceData} />
+                      {currentUserPerformance && performanceChartData.length > 0 ? (
+                        <PerformanceChart 
+                          data={performanceChartData} 
+                          interactive={true}
+                          highlightColor={
+                            (currentUserPerformance?.performancePercentage && parseFloat(currentUserPerformance.performancePercentage) >= 0) 
+                              ? "#10b981"
+                              : "#ef4444"
+                          }
+                        />
+                      ) : (
+                        <div className="text-center py-10 text-gray-500">
+                          <p>Performance data is not yet available or still loading.</p>
+                        </div>
+                      )}
                     </motion.div>
                   </div>
                   
@@ -543,14 +425,10 @@ export const ContestLobby: React.FC = () => {
                     >
                       <Leaderboard 
                         entries={leaderboardEntries} 
-                        currentUserRank={2}
+                        currentUserRank={currentUserPerformance?.rank}
                         className="mb-6" 
                       />
-                      
-                      {/* Only show on desktop */}
-                      <div className="hidden lg:block">
-                        <TestSkipButton contestId={id!} />
-                      </div>
+                      <div className="hidden lg:block"><TestSkipButton contestId={contestIdFromParams!} /></div>
                     </motion.div>
                   </div>
                 </div>
@@ -565,7 +443,7 @@ export const ContestLobby: React.FC = () => {
                       transition={{ delay: 0.1 }}
                       className="bg-dark-200/10 backdrop-blur-sm rounded-lg border border-dark-300 overflow-hidden h-[600px]"
                     >
-                      <ContestChat contestId={id!} onNewMessage={handleNewMessage} />
+                      {contestIdFromParams && <ContestChat contestId={contestIdFromParams} onNewMessage={handleNewMessage} />}
                     </motion.div>
                   </div>
                   
@@ -577,13 +455,13 @@ export const ContestLobby: React.FC = () => {
                     >
                       <Leaderboard 
                         entries={leaderboardEntries} 
-                        currentUserRank={2}
+                        currentUserRank={currentUserPerformance?.rank}
                         className="mb-6" 
                       />
                       
                       {/* Only show on desktop */}
                       <div className="hidden lg:block">
-                        <TestSkipButton contestId={id!} />
+                        <TestSkipButton contestId={contestIdFromParams!} />
                       </div>
                     </motion.div>
                   </div>
@@ -599,10 +477,7 @@ export const ContestLobby: React.FC = () => {
         {activeTab !== 'chat' && (
           <motion.button
             className="md:hidden fixed bottom-6 right-6 bg-brand-500 text-white rounded-full p-3 shadow-lg z-20 flex items-center justify-center"
-            onClick={() => {
-              setActiveTab('chat');
-              toggleChat();
-            }}
+            onClick={() => handleTabChange('chat')}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}

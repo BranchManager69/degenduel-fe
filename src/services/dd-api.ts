@@ -21,11 +21,13 @@ import { useStore } from "../store/useStore";
 import {
   BaseActivity as Activity,
   Contest,
+  ContestViewData,
   PlatformStats,
   PortfolioResponse,
   Token,
   Transaction,
-  User,
+  UnifiedContestViewApiResponse,
+  User
 } from "../types/index";
 import type {
   ContestPerformanceResponse,
@@ -424,11 +426,9 @@ const logError = (
   context?: Record<string, any>,
 ) => {
   console.error(`[DD-API Error] ${endpoint}:`, {
-    message: error.message,
-    status: error.status,
-    statusText: error.statusText,
+    message: error?.message,
+    status: error?.status,
     context,
-    stack: error.stack,
     timestamp: new Date().toISOString(),
   });
 };
@@ -1210,18 +1210,43 @@ export const ddApi = {
         // Apply sorting if options are provided
         if (sortOptions) {
           contests.sort((a, b) => {
-            let aValue = a[sortOptions.field];
-            let bValue = b[sortOptions.field];
+            const field = sortOptions.field;
+            let aValue: string | number;
+            let bValue: string | number;
 
-            if (typeof aValue === "string" && !isNaN(Number(aValue))) {
-              aValue = Number(aValue);
-              bValue = Number(bValue);
+            switch (field) {
+              case "participant_count":
+                aValue = a.participant_count;
+                bValue = b.participant_count;
+                break;
+              case "entry_fee":
+                aValue = parseFloat(a.entry_fee); 
+                bValue = parseFloat(b.entry_fee);
+                break;
+              case "prize_pool":
+                aValue = parseFloat(a.prize_pool);
+                bValue = parseFloat(b.prize_pool);
+                break;
+              case "start_time":
+                aValue = new Date(a.start_time).getTime();
+                bValue = new Date(b.start_time).getTime();
+                break;
+              default:
+                // Exhaustive check for SortField, should not reach here
+                // const _exhaustiveCheck: never = field;
+                return 0;
+            }
+
+            // Handle potential NaN from parseFloat, default to 0 for comparison
+            if (field === "entry_fee" || field === "prize_pool") {
+                if (isNaN(aValue as number)) aValue = 0;
+                if (isNaN(bValue as number)) bValue = 0;
             }
 
             if (sortOptions.direction === "asc") {
-              return aValue > bValue ? 1 : -1;
+              return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
             } else {
-              return aValue < bValue ? 1 : -1;
+              return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
             }
           });
         } else {
@@ -1666,6 +1691,41 @@ export const ddApi = {
         throw error instanceof Error ? error : new Error('Failed to generate AI portfolio');
       }
     },
+
+    // --- NEW: Get Unified Contest View ---
+    getView: async (contestId: string): Promise<ContestViewData> => {
+      const user = useStore.getState().user;
+      const api = createApiClient();
+      
+      try {
+        const response = await api.fetch(`/contests/${contestId}/view`, {
+          headers: {
+            "Cache-Control": "no-cache",
+          },
+        });
+
+        // The API wrapper should handle non-OK responses by throwing an error
+        const result: UnifiedContestViewApiResponse = await response.json();
+
+        if (!result.success || !result.data) {
+          console.error("Failed to fetch unified contest view:", result.error || "API did not return success=true or data missing");
+          throw new Error(result.error || "Failed to retrieve contest data");
+        }
+
+        // TODO: Potentially add caching layer here if needed later
+
+        return result.data; // Return only the data part
+        
+      } catch (error: any) {
+        logError(`contests.getView failed for contest ${contestId}`, error, {
+          contestId,
+          userWallet: user?.wallet_address,
+        });
+        // Rethrow or handle specific errors (e.g., 404 Not Found)
+        throw error;
+      }
+    },
+    // --- End of NEW method ---
   },
 
   // Portfolio endpoints

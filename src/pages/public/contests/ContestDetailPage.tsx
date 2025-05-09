@@ -1,37 +1,17 @@
-// src/pages/public/ContestDetailPage.tsx
+// src/pages/public/contests/ContestDetailPage.tsx
 
-/**
- * NEEDS:
- *   = Refactoring
- *   = To use the new design (see ./ContestDetailPage.tsx.new)
- *     (This file is the old design)
- *   = Connect via useWallet hook (the one in websocket/topic-hooks/useWallet.ts)
- * 
- * 
- 
-  useWallet.ts (in websocket/topic-hooks):
-    - This is part of your WebSocket system and connects to your backend services
-    - It handles real-time updates about wallet balances, transactions, and settings
-  through your server
-    - It doesn't directly connect to the user's browser wallet extension
-    - Instead, it receives wallet data that's already been processed by your backend
-    - Used for displaying wallet information, transaction history, and receiving
-  updates
-
- */
-
-// No longer using Aptos wallet
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ContestDetailHeader } from "../../../components/contest-detail/ContestDetailHeader";
+// Removed Aptos wallet dependency
+import { useAuth } from "../../../hooks/useAuth"; // Use our auth hook instead
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ContestRules } from "../../../components/contest-detail/ContestRules";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
-import AuthDebugPanel from "../../../components/debug/AuthDebugPanel";
-import { Card, CardContent } from "../../../components/ui/Card";
+import { Card } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
-// PortfolioPreviewModal has been moved for future use in MyPortfoliosPage
-import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
+import { useAuth } from "../../../hooks/useAuth";
 import {
   formatCurrency,
   isContestLive,
@@ -66,47 +46,60 @@ type Contest = Omit<BaseContest, "participants"> & {
   max_prize_pool: number;
 };
 
-
-// Using Solana Actions pattern, we don't need this anymore as 
-// transaction results will be handled by the wallet
-
-// Note: We're intentionally not defining showErrorMessage outside
-// the component as it needs access to the setError state function
-
-// Note: We're intentionally not defining showPortfolioPreview outside
-// the component as it needs access to state functions
-
 export const ContestDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [contest, setContest] = useState<Contest | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const { 
-    isFullyConnected, 
-    walletAddress, 
-    isWalletConnected,
-    isAuthenticated,
-    activeAuthMethod,
-    authMethods
-  } = useMigratedAuth();
+  // Removed Aptos wallet
+  // const { account, connected, connect, wallet } = useWallet();
+  const { isFullyConnected, walletAddress } = useAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   
-  // We've removed the portfolio modal in favor of using the standard Solana Actions pattern
+  // Image loading states
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
+  // Mouse position tracking for parallax effect
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  
+  // Ref to the header element for tracking relative mouse position
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Add a computed state for wallet connection
+  const isWalletConnected = React.useMemo(() => {
+    return !!walletAddress;
+  }, [walletAddress]);
+
+  // Determine contestDisplayStatus - Similar to what ContestCard does
+  const getDisplayStatus = React.useMemo(() => {
+    if (!contest) return "pending"; // Default to pending if no contest loaded
+    
+    // Contest is cancelled - highest priority status
+    if (contest.status === "cancelled") return "cancelled";
+    
+    const now = new Date();
+    const startTime = new Date(contest.start_time);
+    const endTime = new Date(contest.end_time);
+    
+    const hasStarted = now >= startTime;
+    const hasEnded = now >= endTime;
+    
+    if (hasEnded) return "completed";
+    if (hasStarted) return "active";
+    return "pending";
+  }, [contest]);
 
   useEffect(() => {
-    console.log("Wallet State Changed:", {
-      connected: isWalletConnected,
-      authenticated: isAuthenticated,
-      activeMethod: activeAuthMethod,
-      methods: authMethods,
+    console.log("Wallet State:", {
+      isConnected: isFullyConnected,
       walletAddress,
       timestamp: new Date().toISOString(),
     });
-  }, [isWalletConnected, walletAddress, isAuthenticated, activeAuthMethod, authMethods]);
-  
-  // We're using the AuthDebugPanel component now, which has its own visibility logic
+  }, []);
 
   const fetchContest = async () => {
     if (!id) return;
@@ -227,6 +220,29 @@ export const ContestDetails: React.FC = () => {
     return () => clearInterval(maintenanceCheckInterval);
   }, [id, walletAddress]);
 
+  // Mouse move handler for parallax effect (desktop only)
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!headerRef.current) return;
+    
+    // Get card dimensions and position
+    const rect = headerRef.current.getBoundingClientRect();
+    
+    // Calculate mouse position relative to card center (values from -0.5 to 0.5)
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    
+    // Update mouse position state
+    setMousePosition({ x, y });
+  };
+  
+  // Mouse enter/leave handlers
+  const handleMouseEnter = () => setIsHovering(true);
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    // Reset to center position when not hovering
+    setMousePosition({ x: 0, y: 0 });
+  };
+
   const handleCountdownComplete = () => {
     if (!contest) return;
 
@@ -269,37 +285,35 @@ export const ContestDetails: React.FC = () => {
     // Get contest status for logic branching
     const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
 
-    // If it's a completed contest, anyone can view results regardless of wallet connection
-    if (contestStatus === "ended") {
-      console.log("Navigating to contest results page");
-      navigate(`/contests/${contest.id}/results`);
-      return;
-    }
-    
-    // If it's a live contest and user is not participating, they can view as spectator
-    if (contestStatus === "live" && !isParticipating) {
-      console.log("Navigating to contest lobby page as spectator");
-      navigate(`/contests/${contest.id}/lobby`);
-      return;
-    }
-    
-    // Check if wallet is connected only when trying to participate
-    if (!isWalletConnected) {
-      // Just show error message - don't try to force wallet connection
-      setError("Please connect your wallet to participate in this contest");
-      // We should use our authentication system to prompt for login
-      // (handled by global auth state, no need to call connect directly)
+    // Not connected to wallet - need to connect first
+    if (!isFullyConnected) {
+      console.log("Wallet Connection Check Failed:", {
+        isWalletConnected,
+        isFullyConnected,
+        walletAddress,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Removed Aptos wallet connection logic
+      {
+        setError("Please connect your wallet to participate.");
+      }
       return;
     }
 
     // User is already participating - determine where to navigate based on contest status
     if (isParticipating) {
-      if (contestStatus === "live") {
+      if (contestStatus === "ended") {
+        // Navigate to results page for completed contests
+        console.log("Navigating to contest results page");
+        navigate(`/contests/${contest.id}/results`);
+        return;
+      } else if (contestStatus === "live") {
         // Navigate to lobby/live view for active contests
-        console.log("Navigating to contest lobby page as participant");
+        console.log("Navigating to contest lobby page");
         navigate(`/contests/${contest.id}/lobby`);
         return;
-      } else if (contestStatus === "upcoming") {
+      } else {
         // For upcoming contests, allow portfolio modification
         console.log(
           "Navigating to portfolio token selection page for modification",
@@ -307,63 +321,116 @@ export const ContestDetails: React.FC = () => {
         navigate(`/contests/${contest.id}/select-tokens`);
         return;
       }
-      // Note: "ended" case is already handled above
     }
 
-    // User is not participating and wants to join an upcoming contest
-    if (contestStatus === "live") {
-      // Contest is in progress, can't join - already handled by spectator view above
+    // User is not participating
+    if (contestStatus === "ended") {
+      // Contest is over, can't join
+      setError("This contest has ended and is no longer accepting entries.");
+      return;
+    } else if (contestStatus === "live") {
+      // Contest is in progress, can't join
       setError(
         "This contest is already in progress and not accepting new entries.",
       );
       return;
-    } else if (contestStatus === "upcoming") {
-      // Check for Solana Actions support for AI portfolio selection
-      // @ts-ignore - window.solana is injected by the Solana Wallet adapter
-      const hasSolanaActions = window.solana && typeof window.solana.action === 'function';
-      
-      if (hasSolanaActions) {
-        // The button has data-solana-action attributes, so we should allow
-        // the native Solana Actions flow to proceed without interruption
-        // This is the key part of implementing the standard pattern - we don't
-        // prevent default or interfere with the normal action handling
-        return;
-      } else {
-        // For browsers/wallets without Solana Actions support, provide a fallback
-        // by redirecting to the manual selection page
-        console.log("Solana Actions not supported, navigating to manual selection:", {
-          contestId: contest.id,
-          userAddress: walletAddress,
-          timestamp: new Date().toISOString(),
-        });
-        navigate(`/contests/${contest.id}/select-tokens`);
-      }
+    } else {
+      // Contest is upcoming, allow joining
+      console.log("Navigating to portfolio token selection page:", {
+        contestId: contest.id,
+        userAddress: walletAddress,
+        timestamp: new Date().toISOString(),
+      });
+      navigate(`/contests/${contest.id}/select-tokens`);
       return;
     }
-    
-    // Fallback error message if we somehow reach here
-    setError("Something went wrong. Please try again later.");
   };
 
+  // Button label based on wallet connection and contest status
+  const getButtonLabel = () => {
+    const displayStatus = getDisplayStatus;
+    
+    // Not connected - always show connect wallet
+    if (!isWalletConnected) {
+      return "Connect Wallet to Enter";
+    }
+
+    // Connected and participating
+    if (isParticipating) {
+      if (displayStatus === "completed") {
+        return "View Results";
+      } else if (displayStatus === "active") {
+        return "View Live Contest";
+      } else if (displayStatus === "cancelled") {
+        return "View Details";
+      } else {
+        return "Modify Portfolio";
+      }
+    }
+
+    // Connected but not participating
+    if (displayStatus === "completed" || displayStatus === "active") {
+      return displayStatus === "completed" ? "Contest Ended" : "Contest in Progress";
+    } else if (displayStatus === "cancelled") {
+      return "View Details";
+    } else {
+      return "Select Your Portfolio";
+    }
+  };
+
+  // Button is disabled in these cases
+  const isButtonDisabled = () => {
+    const displayStatus = getDisplayStatus;
+    return (
+      !isWalletConnected ||
+      (!isParticipating && 
+        (displayStatus === "completed" || 
+         displayStatus === "active"))
+    );
+  };
+
+  // Loading skeleton UI
   if (isLoading)
     return (
       <div className="flex flex-col min-h-screen">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Skeleton loading for header with image placeholder */}
+          <div className="relative h-64 sm:h-80 rounded-lg overflow-hidden bg-dark-300 animate-pulse mb-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-dark-300/80 to-dark-400/80" />
+            <div className="absolute inset-0 flex flex-col justify-end p-6">
+              <div className="h-4 bg-dark-200 rounded w-24 mb-3"></div>
+              <div className="h-8 bg-dark-200 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-dark-200 rounded w-2/3"></div>
+            </div>
+          </div>
+          
+          {/* Skeleton stats grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(2)].map((_, i) => (
               <Card
                 key={i}
                 className="bg-dark-200/50 backdrop-blur-sm border-dark-300 relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
-                <CardContent className="p-6 relative">
+                <div className="p-6 relative">
                   <div className="animate-pulse space-y-2">
                     <div className="h-4 bg-dark-300 rounded w-1/2"></div>
                     <div className="h-6 bg-dark-300 rounded w-3/4"></div>
                   </div>
-                </CardContent>
+                </div>
               </Card>
             ))}
+          </div>
+          
+          {/* Skeleton main content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="lg:col-span-2">
+              <div className="bg-dark-200/50 backdrop-blur-sm border-dark-300 rounded-lg animate-pulse h-64"></div>
+            </div>
+            <div className="space-y-8">
+              <div className="bg-dark-200/50 backdrop-blur-sm border-dark-300 rounded-lg animate-pulse h-48"></div>
+              <div className="bg-dark-200/50 backdrop-blur-sm border-dark-300 rounded-lg animate-pulse h-48"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -403,38 +470,279 @@ export const ContestDetails: React.FC = () => {
     );
   }
 
-  // We've removed portfolio confirmation in favor of using the standard Solana Actions pattern
+  // Variable for the display status (pending, active, completed, cancelled)
+  const displayStatus = getDisplayStatus;
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Reusable Auth Debug Panel */}
-      <AuthDebugPanel position="floating" />
+      {/* Breadcrumb navigation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <div className="flex items-center text-sm text-gray-400">
+          <Link to="/" className="hover:text-brand-400 transition-colors">
+            Home
+          </Link>
+          <span className="mx-2">›</span>
+          <Link to="/contests" className="hover:text-brand-400 transition-colors">
+            Contests
+          </Link>
+          <span className="mx-2">›</span>
+          <span className="text-gray-300">{contest.name}</span>
+        </div>
+      </div>
 
       {/* Content Section */}
       <div className="relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <ContestDetailHeader
-            contest={contest}
-            isParticipating={isParticipating}
-            isWalletConnected={isWalletConnected}
-            onJoinContest={handleJoinContest}
-            onCountdownComplete={handleCountdownComplete}
-            isContestLive={isContestLive}
-          />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          {/* Contest Banner with Image */}
+          <div 
+            ref={headerRef}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className="relative overflow-hidden rounded-lg mb-8"
+          >
+            {/* Contest Image with Parallax Effect */}
+            {contest.image_url && (
+              <div className="absolute inset-0 overflow-hidden">
+                {/* Loading state */}
+                {!imageLoaded && !imageError && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-dark-300/70 z-10">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                )}
+                
+                {/* Background image with parallax */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.6 }}
+                  transition={{ duration: 0.8 }}
+                  className="absolute inset-0"
+                >
+                  <motion.div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      transform: isHovering ? 
+                        `scale(1.05) translateX(${mousePosition.x * 5}px) translateY(${mousePosition.y * 5}px)` : 
+                        "scale(1.02)",
+                      transition: "transform 0.3s ease-out"
+                    }}
+                  >
+                    <img
+                      src={contest.image_url}
+                      alt={contest.name}
+                      onLoad={() => setImageLoaded(true)}
+                      onError={() => setImageError(true)}
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+                  
+                  {/* Gradient overlay for text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-dark-200 via-dark-200/90 to-dark-200/60" />
+                </motion.div>
+              </div>
+            )}
+            
+            {/* If no image or image error, show gradient background */}
+            {(!contest.image_url || imageError) && (
+              <div className="absolute inset-0 bg-gradient-to-br from-dark-200/80 to-dark-300/80" />
+            )}
+            
+            {/* Banner Content */}
+            <div className="relative z-10 p-4 sm:p-6 md:p-8 min-h-[280px] flex flex-col justify-end">
+              {/* Status Badge - Top Right */}
+              <div className="absolute top-4 right-4">
+                {/* Different badge styles based on contest status */}
+                {displayStatus === "active" && (
+                  <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-green-500/30 group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-brand-500/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-green-500/30 via-brand-500/30 to-green-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
+                        <span className="relative rounded-full w-2 h-2 bg-green-400"></span>
+                      </span>
+                      <span className="text-xs font-bold text-green-400 uppercase tracking-wide font-cyber">LIVE</span>
+                    </div>
+                  </div>
+                )}
+                
+                {displayStatus === "pending" && (
+                  <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-blue-500/30 group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-brand-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-blue-500/30 via-brand-500/30 to-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
+                      <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-xs font-bold text-blue-400 uppercase tracking-wide font-cyber">SOON</span>
+                    </div>
+                  </div>
+                )}
+                
+                {displayStatus === "completed" && (
+                  <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-gray-500/30 group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-gray-500/20 via-brand-500/20 to-gray-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-gray-500/30 via-brand-500/30 to-gray-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wide font-cyber">ENDED</span>
+                    </div>
+                  </div>
+                )}
+                
+                {displayStatus === "cancelled" && (
+                  <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-red-500/30 group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 via-brand-500/20 to-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-red-500/30 via-brand-500/30 to-red-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
+                      <svg className="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span className="text-xs font-bold text-red-400 uppercase tracking-wide font-cyber">CANCELLED</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Contest Title and Description */}
+              <div className="space-y-3 max-w-3xl">
+                <h1 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x">
+                  {contest.name}
+                </h1>
+                <p className="text-base sm:text-lg text-gray-300">
+                  {contest.description}
+                </p>
+                
+                {/* Countdown Timer with status indicator */}
+                <div className="flex items-center gap-3 mt-4">
+                  <span className="text-sm text-gray-400">
+                    {displayStatus === "active" ? "Ends in:" : 
+                    displayStatus === "pending" ? "Starts in:" : 
+                    displayStatus === "cancelled" ? "Cancelled:" : "Ended:"}
+                  </span>
+                  
+                  {displayStatus === "cancelled" ? (
+                    <span className="line-through text-red-400 text-lg font-medium italic">
+                      {new Date(contest.end_time).toLocaleDateString()}
+                    </span>
+                  ) : displayStatus !== "completed" ? (
+                    <div className="text-xl font-bold text-brand-400 animate-pulse">
+                      <CountdownTimer
+                        targetDate={displayStatus === "active" ? contest.end_time : contest.start_time}
+                        onComplete={handleCountdownComplete}
+                        showSeconds={true}
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-xl font-bold text-gray-500">
+                      {new Date(contest.end_time).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Share Button - Desktop Only */}
+                <div className="hidden md:flex mt-4 items-center gap-3">
+                  <span className="text-sm text-gray-400">Share:</span>
+                  <div className="flex gap-2">
+                    {/* Twitter/X Share Button */}
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${walletAddress ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${walletAddress.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300 text-sm"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                      <span className="font-medium">Share</span>
+                    </a>
+                    
+                    {/* Copy Link Button */}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        // You could add a toast notification here
+                        alert("Link copied to clipboard!");
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-dark-300/80 hover:bg-dark-300 text-gray-300 hover:text-white rounded-md transition-colors duration-300 text-sm"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="font-medium">Copy Link</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Cancellation Overlay */}
+              {displayStatus === "cancelled" && (
+                <motion.div 
+                  className="absolute inset-0 flex items-center justify-center z-10"
+                  initial={{ opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="relative bg-red-900/30 border-2 border-red-500/40 rounded py-2 px-4 backdrop-blur-sm shadow-lg max-w-[95%]">
+                    <div className="flex flex-col items-center gap-1 relative z-10">
+                      <div className="flex items-center gap-1.5">
+                        <motion.svg 
+                          className="w-4 h-4 text-red-400" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                          animate={{ scale: [1, 1.15, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatType: "loop" }}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </motion.svg>
+                        <span className="text-sm font-bold text-red-400 uppercase">Contest Cancelled</span>
+                      </div>
+                      <motion.div 
+                        className="text-xs text-red-300 italic"
+                        initial={{ opacity: 0.8 }}
+                        animate={{ opacity: [0.8, 1, 0.8] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                      >
+                        <span className="font-semibold mr-1 uppercase">REASON:</span>
+                        {contest.cancellation_reason || "Unexpected issues with the contest"}
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
 
-          {/* Enhanced Stats Grid with Cyberpunk Theme */}
+          {/* Entry Fee and Prize Pool Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {/* Entry Fee Card */}
-            <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300 overflow-hidden">
+            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30 hover:border-brand-400/50"} transition-all duration-300 overflow-hidden`}>
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="p-6 relative">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mb-2">
+                  <span className={`text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400 group-hover:text-brand-300"} transition-colors mb-2`}>
                     Entry Fee
                   </span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
+                    <span className={`text-3xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x"}`}>
                       {formatCurrency(Number(contest.entry_fee))}
                     </span>
                     <span className="text-sm text-gray-400">per entry</span>
@@ -447,21 +755,21 @@ export const ContestDetails: React.FC = () => {
             </div>
 
             {/* Prize Pool Card */}
-            <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 hover:border-brand-400/50 transition-all duration-300 overflow-hidden">
+            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30 hover:border-brand-400/50"} transition-all duration-300 overflow-hidden`}>
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="p-6 relative">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-400 group-hover:text-brand-300 transition-colors mb-2">
+                  <span className={`text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400 group-hover:text-brand-300"} transition-colors mb-2`}>
                     Estimated Prize Pool
                   </span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x">
+                    <span className={`text-3xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x"}`}>
                       {formatCurrency(Number(contest?.max_prize_pool || 0))}
                     </span>
                     <div className="flex items-center gap-1">
                       <div className="w-20 h-1 bg-dark-300 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-300"
+                          className={`h-full ${displayStatus === "cancelled" ? "bg-gray-500/50" : "bg-gradient-to-r from-brand-400 to-brand-600"} transition-all duration-300`}
                           style={{
                             width: `${
                               (contest.participant_count /
@@ -484,14 +792,146 @@ export const ContestDetails: React.FC = () => {
             </div>
           </div>
 
+          {/* Rules & Tokens Section - Mobile Accordions */}
+          <div className="mb-8 md:hidden">
+            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6 mb-4`}>
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              {/* Rules Section - Expandable/Collapsible */}
+              <details className="mb-4">
+                <summary className="flex items-center justify-between mb-4 cursor-pointer">
+                  <h3 className="text-xl font-bold text-gray-100">
+                    Rules of the Duel
+                  </h3>
+                  <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
+                    Info Only
+                  </span>
+                </summary>
+
+                <div className="relative overflow-hidden transition-all duration-300">
+                  {contest?.settings?.rules &&
+                  contest.settings.rules.length > 0 ? (
+                    <ContestRules rules={contest.settings.rules} />
+                  ) : (
+                    <p className="text-gray-400">
+                      No rules in this duel; anything goes. It's every degen
+                      for himself.
+                    </p>
+                  )}
+                </div>
+              </details>
+
+              {/* Token Whitelist Section - Expandable/Collapsible */}
+              <details>
+                <summary className="flex items-center justify-between mb-4 cursor-pointer">
+                  <h3 className="text-xl font-bold text-gray-100">
+                    Token Whitelist
+                  </h3>
+                  <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
+                    {contest?.settings?.token_types &&
+                    contest.settings.token_types.length > 0
+                      ? "Restricted"
+                      : "Unrestricted"}
+                  </span>
+                </summary>
+
+                <div className="relative overflow-hidden transition-all duration-300">
+                  {contest?.settings?.token_types &&
+                  contest.settings.token_types.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {contest.settings.token_types.map((token: string) => (
+                        <span
+                          key={token}
+                          className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
+                        >
+                          {token}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-gray-400">
+                        <span className="text-brand-400">
+                          Selection Restrictions:
+                        </span>{" "}
+                        None (all tokens available)
+                      </p>
+                      <p className="text-gray-400">
+                        <span className="text-brand-400">
+                          Allocation Limits:
+                        </span>{" "}
+                        Standard portfolio rules apply
+                      </p>
+                      <p className="text-gray-400">
+                        <span className="text-brand-400">
+                          Token Categories:
+                        </span>{" "}
+                        All categories permitted
+                      </p>
+                      <div className="mt-2 text-xs text-gray-500 bg-dark-300/50 p-2 rounded">
+                        This contest allows you to select from all available
+                        tokens in the market.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </details>
+            </div>
+            
+            {/* Mobile share buttons */}
+            <div className="flex gap-2 mb-8 md:hidden">
+              {/* Twitter/X Share Button */}
+              <a
+                href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${walletAddress ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${walletAddress.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300"
+              >
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                <span className="font-medium">Share on X</span>
+              </a>
+
+              {/* Copy Link Button */}
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  // You could add a toast notification here
+                  alert("Link copied to clipboard!");
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-dark-300/80 hover:bg-dark-300 text-gray-300 hover:text-white rounded-md transition-colors duration-300"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="font-medium">Copy Link</span>
+              </button>
+            </div>
+          </div>
+
           {/* Enhanced Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            {/* Left Column - Rules and Tokens in Parent Container */}
-            <div className="lg:col-span-2">
-              <div className="group relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 p-6">
+            {/* Left Column - Rules and Tokens in Parent Container (Desktop Only) */}
+            <div className="lg:col-span-2 hidden md:block">
+              <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                {/* Rules Section - Expandable/Collapsible */}
+                {/* Rules Section */}
                 <div className="mb-8">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-gray-100">
@@ -515,7 +955,7 @@ export const ContestDetails: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Token Whitelist Section - Expandable/Collapsible */}
+                {/* Token Whitelist Section */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-gray-100">
@@ -570,67 +1010,6 @@ export const ContestDetails: React.FC = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Social Sharing Section */}
-                <div className="mt-8 pt-8 border-t border-dark-300/50">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h3 className="text-xl font-bold text-gray-100">
-                      Share this Duel
-                    </h3>
-
-                    <div className="flex items-center gap-3">
-                      {/* Twitter/X Share Button */}
-                      <a
-                        href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${walletAddress ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${walletAddress.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                        </svg>
-                        <span className="font-medium">Share</span>
-                      </a>
-
-                      {/* Copy Link Button */}
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(window.location.href);
-                          // You could add a toast notification here
-                          alert("Link copied to clipboard!");
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-dark-300/80 hover:bg-dark-300 text-gray-300 hover:text-white rounded-md transition-colors duration-300"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <span className="font-medium">Copy Link</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {walletAddress && (
-                    <div className="mt-3 text-sm text-gray-400">
-                      <span className="text-brand-400">💰 Tip:</span> Sharing
-                      with your referral code can earn you rewards if new users
-                      join!
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
 
@@ -661,7 +1040,7 @@ export const ContestDetails: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+                    <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"}`}>
                       <div className="p-6">
                         <h3 className="text-xl font-bold text-gray-100 mb-4">
                           Duelers
@@ -669,15 +1048,12 @@ export const ContestDetails: React.FC = () => {
                         <p className="text-gray-400">
                           No duelers have entered yet.
                         </p>
-                        {!isParticipating && contest.status === "pending" && (
+                        {!isParticipating && displayStatus === "pending" && (
                           <div className="mt-4">
                             <button
                               onClick={handleJoinContest}
                               disabled={!isWalletConnected}
-                              data-solana-action="true"
-                              data-action-title="Join Contest with AI Portfolio"
-                              data-action-url={`https://degenduel.me/api/blinks/join-contest?contest_id=${contest.id}`}
-                              className={`px-4 py-2 ${!isWalletConnected ? 'bg-dark-300/50 text-gray-500 cursor-not-allowed' : 'bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300'} rounded-md transition-colors duration-300 flex items-center gap-2`}
+                              className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
                             >
                               <svg
                                 className="w-5 h-5"
@@ -692,7 +1068,7 @@ export const ContestDetails: React.FC = () => {
                                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                                 />
                               </svg>
-                              <span>Join with AI Portfolio</span>
+                              <span>Be the First to Join</span>
                             </button>
                           </div>
                         )}
@@ -700,22 +1076,18 @@ export const ContestDetails: React.FC = () => {
                     </div>
                   )
                 ) : (
-                  <div className="relative bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30">
+                  <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"}`}>
                     <div className="p-6">
                       <h3 className="text-xl font-bold text-gray-100 mb-4">
                         Duelers
                       </h3>
                       <p className="text-gray-400">No duelers yet.</p>
-                      {!isParticipating && contest.status === "pending" && (
+                      {!isParticipating && displayStatus === "pending" && (
                         <div className="mt-4">
                           <button
                             onClick={handleJoinContest}
                             disabled={!isWalletConnected}
-                            data-solana-action="true"
-                            data-action-title="Join Contest with AI Portfolio"
-                            data-action-url={`https://degenduel.me/api/blinks/join-contest?contest_id=${contest.id}`}
-                            data-action-message="Join this contest with an AI-selected portfolio of trending tokens"
-                            className={`px-4 py-2 ${!isWalletConnected ? 'bg-dark-300/50 text-gray-500 cursor-not-allowed' : 'bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300'} rounded-md transition-colors duration-300 flex items-center gap-2`}
+                            className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
                           >
                             <svg
                               className="w-5 h-5"
@@ -730,7 +1102,7 @@ export const ContestDetails: React.FC = () => {
                                 d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                               />
                             </svg>
-                            <span>Join with AI Portfolio</span>
+                            <span>Be the First to Join</span>
                           </button>
                         </div>
                       )}
@@ -742,173 +1114,35 @@ export const ContestDetails: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Floating Action Button */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent z-20">
+        {/* Mobile Floating Action Button - With Safe Distance from Footer */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent z-20" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 60px)' }}>
           <div className="max-w-md mx-auto">
-            {/* Determine the contest's current state */}
-            {(() => {
-              const now = new Date();
-              const startTime = new Date(contest.start_time);
-              const endTime = new Date(contest.end_time);
-
-              const hasStarted = now >= startTime;
-              const hasEnded = now >= endTime;
-
-              // Contest status for UI display
-              const contestStatus = hasEnded
-                ? "ended"
-                : hasStarted
-                  ? "live"
-                  : "upcoming";
-
-              // Not connected to wallet - still allow viewing but show connection CTA for entering
-              if (!isWalletConnected) {
-                if (contestStatus === "ended") {
-                  // For ended contests, anyone can view results
-                  return (
-                    <button
-                      onClick={handleJoinContest}
-                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-gray-500/20 bg-gray-500/20 text-gray-300 font-bold"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                      <span className="relative flex items-center justify-center gap-2">
-                        <span className="font-medium">View Results</span>
-                      </span>
-                    </button>
-                  );
-                } else if (contestStatus === "live") {
-                  // For live contests, anyone can view as spectator
-                  return (
-                    <button
-                      onClick={handleJoinContest}
-                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-green-500/20 bg-green-500/20 text-green-400 font-bold"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                      <span className="relative flex items-center justify-center gap-2">
-                        <span className="font-medium">View Live Contest</span>
-                      </span>
-                    </button>
-                  );
-                } else {
-                  // For upcoming contests, show connect wallet CTA
-                  return (
-                    <button
-                      onClick={handleJoinContest}
-                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold animate-pulse-slow"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                      <span className="relative flex items-center justify-center gap-2">
-                        <span className="font-medium">Connect Wallet</span>
-                        <span>to Enter</span>
-                      </span>
-                    </button>
-                  );
-                }
-              }
-
-              // Connected and participating
-              if (isParticipating) {
-                if (contestStatus === "ended") {
-                  return (
-                    <button
-                      onClick={handleJoinContest}
-                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-gray-500/20 bg-gray-500/20 text-gray-300 font-bold"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                      <span className="relative flex items-center justify-center gap-2">
-                        <span className="font-medium">View Results</span>
-                      </span>
-                    </button>
-                  );
-                } else if (contestStatus === "live") {
-                  return (
-                    <button
-                      onClick={handleJoinContest}
-                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-green-500/20 bg-green-500/20 text-green-400 font-bold"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                      <span className="relative flex items-center justify-center gap-2">
-                        <span className="font-medium">View Live Contest</span>
-                        <span>
-                          Ends in{" "}
-                          <CountdownTimer
-                            targetDate={contest.end_time}
-                            onComplete={handleCountdownComplete}
-                            showSeconds={true}
-                          />
-                        </span>
-                      </span>
-                    </button>
-                  );
-                } else {
-                  return (
-                    <button
-                      onClick={handleJoinContest}
-                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-dark-300/90 backdrop-blur-sm"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                      <span className="relative flex items-center justify-center gap-2">
-                        <span className="font-medium">Modify Portfolio</span>
-                        <span className="text-brand-400">
-                          Starts in{" "}
-                          <CountdownTimer
-                            targetDate={contest.start_time}
-                            onComplete={handleCountdownComplete}
-                            showSeconds={true}
-                          />
-                        </span>
-                      </span>
-                    </button>
-                  );
-                }
-              }
-
-              // Connected but not participating
-              if (contestStatus === "ended") {
-                return (
-                  <button
-                    disabled={true}
-                    className="w-full relative group overflow-hidden text-sm py-4 bg-dark-300/50 text-gray-400 font-bold cursor-not-allowed opacity-80"
-                  >
-                    <span className="relative flex items-center justify-center gap-2">
-                      <span className="font-medium">Contest Ended</span>
-                    </span>
-                  </button>
-                );
-              } else if (contestStatus === "live") {
-                return (
-                  <button
-                    disabled={true}
-                    className="w-full relative group overflow-hidden text-sm py-4 bg-dark-300/50 text-gray-400 font-bold cursor-not-allowed opacity-80"
-                  >
-                    <span className="relative flex items-center justify-center gap-2">
-                      <span className="font-medium">Contest in Progress</span>
-                    </span>
-                  </button>
-                );
-              } else {
-                return (
-                  <button
-                    onClick={handleJoinContest}
-                    className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <span className="font-medium">Select Your Portfolio</span>
-                      <span>
-                        Starts in{" "}
-                        <CountdownTimer
-                          targetDate={contest.start_time}
-                          onComplete={handleCountdownComplete}
-                          showSeconds={true}
-                        />
-                      </span>
-                    </span>
-                  </button>
-                );
-              }
-            })()}
-
+            {/* Mobile Action Button */}
+            <button
+              onClick={handleJoinContest}
+              disabled={isButtonDisabled()}
+              className={`
+                w-full relative group overflow-hidden text-sm py-4 shadow-lg 
+                ${displayStatus === "cancelled" 
+                  ? "bg-red-900/10 shadow-red-500/20 border-red-500/30 text-red-400" 
+                  : displayStatus === "active" 
+                    ? (isParticipating ? "bg-green-500/20 shadow-green-500/20 border-green-500/30 text-green-400" : "bg-dark-300/50 text-gray-400 cursor-not-allowed")
+                    : displayStatus === "completed"
+                      ? (isParticipating ? "bg-gray-500/20 shadow-gray-500/20 border-gray-500/30 text-gray-300" : "bg-dark-300/50 text-gray-400 cursor-not-allowed")
+                      : (isParticipating ? "bg-dark-300/90 shadow-brand-500/20 border-brand-400/50 text-brand-400" : "bg-gradient-to-r from-brand-500 to-brand-600 shadow-brand-500/20 text-white")
+                }`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+              <span className="relative flex items-center justify-center gap-2">
+                <span className="font-medium">{getButtonLabel()}</span>
+                {!isButtonDisabled() && (
+                  <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                )}
+              </span>
+            </button>
+            
             {error && (
               <div className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
                 {error}
@@ -919,316 +1153,140 @@ export const ContestDetails: React.FC = () => {
 
         {/* Floating Action Button (FAB) on desktop */}
         <div className="hidden md:block fixed top-24 md:top-32 right-6 md:right-10 z-40">
-          {/* Determine the contest's current state */}
-          {(() => {
-            const now = new Date();
-            const startTime = new Date(contest.start_time);
-            const endTime = new Date(contest.end_time);
-
-            const hasStarted = now >= startTime;
-            const hasEnded = now >= endTime;
-
-            // Contest status for UI display
-            const contestStatus = hasEnded
-              ? "ended"
-              : hasStarted
-                ? "live"
-                : "upcoming";
-
-            // Not connected to wallet - But we'll still show appropriate buttons based on state
-            if (!isWalletConnected) {
-              if (contestStatus === "ended") {
-                // For ended contests, anyone can view results
-                return (
-                  <button
-                    onClick={handleJoinContest}
-                    className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-gray-500/20 bg-gray-500/20 text-gray-300 font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-500/20"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                        />
-                      </svg>
-                      <span>View Results</span>
-                      <svg
-                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 5l7 7m0 0l-7 7m7-7H3"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                );
-              } else if (contestStatus === "live") {
-                // For live contests, anyone can view as spectator
-                return (
-                  <button
-                    onClick={handleJoinContest}
-                    className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-green-500/30 bg-green-500/20 text-green-400 font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-green-500/20"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                      <span>Spectate Live</span>
-                      <svg
-                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 5l7 7m0 0l-7 7m7-7H3"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                );
-              } else {
-                // For upcoming contests, indicate wallet connection is needed to join
-                return (
-                  <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-brand-400 to-cyan-400 rounded-lg blur opacity-75 group-hover:opacity-100 animate-pulse-slow"></div>
-                    <button
-                      onClick={handleJoinContest}
-                      className="relative flex items-center gap-2 px-6 md:px-8 py-4 md:py-5 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-white/10 shadow-2xl"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                        />
-                      </svg>
-                      <span>Connect to Enter</span>
-                    </button>
-                  </div>
-                );
-              }
-            }
-
-            // Connected and participating
-            if (isParticipating) {
-              if (contestStatus === "ended") {
-                return (
-                  <button
-                    onClick={handleJoinContest}
-                    className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-gray-500/20 bg-gray-500/20 text-gray-300 font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-500/20"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                        />
-                      </svg>
-                      <span>View Results</span>
-                      <svg
-                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 5l7 7m0 0l-7 7m7-7H3"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                );
-              } else if (contestStatus === "live") {
-                return (
-                  <button
-                    onClick={handleJoinContest}
-                    className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-green-500/30 bg-green-500/20 text-green-400 font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-green-500/20"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span>View Live Contest</span>
-                      <svg
-                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 5l7 7m0 0l-7 7m7-7H3"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                );
-              } else {
-                return (
-                  <button
-                    onClick={handleJoinContest}
-                    className="relative group overflow-hidden px-6 md:px-8 py-4 md:py-5 shadow-xl shadow-brand-500/30 bg-gradient-to-r from-brand-400 to-brand-500 text-white font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-white/10"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                      <span>Modify Portfolio</span>
-                      <svg
-                        className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 5l7 7m0 0l-7 7m7-7H3"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                );
-              }
-            }
-
-            // Connected but not participating
-            if (contestStatus === "ended" || contestStatus === "live") {
-              // No button for ended or live contests if not participating
-              return null;
-            } else {
-              return (
-                <div className="relative group">
-                  {/* Animated glow effect */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-brand-400 to-cyan-400 rounded-lg blur opacity-75 group-hover:opacity-100 animate-pulse-slow"></div>
-                  <button
-                    onClick={handleJoinContest}
-                    className="relative flex items-center gap-2 px-6 md:px-8 py-4 md:py-5 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300 border-2 border-white/10 shadow-2xl"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 mr-2 animate-bounce-slow"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    <span>Join with AI Portfolio</span>
-                    <svg
-                      className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M14 5l7 7m0 0l-7 7m7-7H3"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              );
-            }
-          })()}
+          <div className="relative group">
+            {/* Animated glow effect for certain states */}
+            {!isButtonDisabled() && displayStatus !== "cancelled" && (
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-400 to-cyan-400 rounded-lg blur opacity-75 group-hover:opacity-100 animate-pulse-slow"></div>
+            )}
+            
+            <button
+              onClick={handleJoinContest}
+              disabled={isButtonDisabled()}
+              className={`
+                relative flex items-center gap-2 px-6 md:px-8 py-4 md:py-5 
+                ${displayStatus === "cancelled" 
+                  ? "bg-red-900/10 border-2 border-red-500/30 text-red-400" 
+                  : displayStatus === "active" 
+                    ? (isParticipating 
+                        ? "bg-green-500/20 border-2 border-green-500/30 text-green-400" 
+                        : "bg-dark-300/50 border-2 border-gray-500/20 text-gray-400 cursor-not-allowed")
+                    : displayStatus === "completed"
+                      ? (isParticipating 
+                          ? "bg-gray-500/20 border-2 border-gray-500/30 text-gray-300" 
+                          : "bg-dark-300/50 border-2 border-gray-500/20 text-gray-400 cursor-not-allowed")
+                      : (isParticipating 
+                          ? "bg-dark-300/90 border-2 border-brand-400/30 text-brand-400" 
+                          : "bg-gradient-to-r from-brand-500 to-brand-600 border-2 border-white/10 text-white shadow-2xl")
+                }
+                font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300`}
+            >
+              {/* Icon based on state */}
+              {displayStatus === "active" && isParticipating ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : displayStatus === "completed" && isParticipating ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+              ) : displayStatus === "pending" && isParticipating ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              ) : displayStatus === "cancelled" ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : displayStatus === "pending" && !isButtonDisabled() ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2 animate-bounce-slow"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              ) : null}
+              
+              <span>{getButtonLabel()}</span>
+              
+              {!isButtonDisabled() && (
+                <svg
+                  className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default ContestDetails;
