@@ -640,44 +640,12 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
               glitchActive={glitchActive}
             />
             
-            {/* System status - Styled to match the mockup */}
+            {/* System status bar section - commented out as requested */}
             <div className="mt-3 space-y-1">
-              {/* System Status */}
-              <motion.div 
-                className="text-sm font-mono px-3 py-1.5 bg-black/40 rounded w-full flex items-center"
-                style={{ color: "#33ff66" }}
-                animate={{ opacity: [0.9, 1, 0.9] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                <span style={{ opacity: 0.7 }} className="mr-2">// </span>
-                <span className="mr-1">SYSTEM STATUS:</span> 
-                <span className="font-bold">ONLINE</span>
-                <motion.span 
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 1.2, repeat: Infinity }}
-                  style={{ marginLeft: 4 }}
-                  className="h-3 w-3"
-                >
-                  _
-                </motion.span>
-              </motion.div>
-              
-              {/* Solana Connection */}
-              <motion.div 
-                className="text-sm font-mono px-3 py-1.5 bg-black/40 rounded w-full flex items-center"
-                style={{ color: "#33ff66" }}
-                animate={{ opacity: [0.9, 1, 0.9] }}
-                transition={{ duration: 3, repeat: Infinity, delay: 0.3 }}
-              >
-                <span style={{ opacity: 0.7 }} className="mr-2">// </span>
-                <span className="mr-1">SOLANA CONNECTION:</span> 
-                <span className="font-bold">ACTIVE</span>
-              </motion.div>
-              
               {/* Command prompt */}
               <div className="text-lg font-mono px-3 py-2 text-white flex items-center">
                 <span className="mr-2">ASK DIDI:</span>
-                <motion.span 
+                <motion.span
                   animate={{ opacity: [0, 1, 0] }}
                   transition={{ duration: 0.8, repeat: Infinity }}
                   className="h-5 w-2 inline-block bg-purple-500"
@@ -690,30 +658,75 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
         </motion.div>
       )}
       
-      {/* Terminal Minimized State */}
+      {/* Terminal Minimized State - Enhanced Futuristic Design */}
       {terminalMinimized && (
         <motion.div
           key="terminal-minimized"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-darkGrey-dark/90 border border-mauve/40 p-2 rounded-md cursor-pointer text-center text-xs text-mauve fixed bottom-4 left-1/2 -translate-x-1/2 w-auto min-w-[200px] shadow-xl"
-          onClick={() => {
-            setTerminalMinimized(false); 
-            setHasUnreadMessages(false); 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            boxShadow: [
+              "0 0 10px rgba(157, 78, 221, 0.4)",
+              "0 0 15px rgba(157, 78, 221, 0.6)",
+              "0 0 10px rgba(157, 78, 221, 0.4)"
+            ]
           }}
+          transition={{
+            duration: 0.4,
+            boxShadow: { duration: 3, repeat: Infinity }
+          }}
+          className="bg-black/80 backdrop-blur-sm border border-mauve/50 p-3 rounded-lg cursor-pointer text-center text-mauve fixed bottom-6 right-6 z-50 overflow-hidden"
+          onClick={() => {
+            setTerminalMinimized(false);
+            setHasUnreadMessages(false);
+          }}
+          style={{ width: '60px', height: '60px' }}
         >
-          <div className="flex items-center justify-center">
-            {hasUnreadMessages && (
-              <motion.span
-                className="h-2 w-2 bg-green-400 rounded-full mr-2"
-                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 1.2, repeat: Infinity }}
-              ></motion.span>
-            )}
-            <span className="text-white">
-              {hasUnreadMessages ? "Didi: New Messages" : "DegenDuel Terminal"}
-            </span>
+          {/* Animated Didi Icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <motion.div
+              className="w-8 h-8 relative flex items-center justify-center"
+              animate={{ rotate: hasUnreadMessages ? [0, 15, 0, -15, 0] : 0 }}
+              transition={{ duration: 2, repeat: hasUnreadMessages ? Infinity : 0, repeatType: "mirror" }}
+            >
+              {/* Central Core */}
+              <motion.div
+                className="absolute w-5 h-5 bg-gradient-to-br from-purple-600 to-blue-500 rounded-full"
+                animate={{
+                  scale: [0.8, 1, 0.8],
+                  opacity: [0.7, 1, 0.7]
+                }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+
+              {/* Orbital Rings */}
+              <motion.div
+                className="absolute w-8 h-8 border border-mauve/60 rounded-full"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              />
+
+              <motion.div
+                className="absolute w-7 h-7 border border-cyan-400/40 rounded-full"
+                animate={{ rotate: -360 }}
+                transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+              />
+            </motion.div>
+          </div>
+
+          {/* Notification Indicator */}
+          {hasUnreadMessages && (
+            <motion.div
+              className="absolute top-2 right-2 h-2 w-2 bg-green-400 rounded-full"
+              animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
+          )}
+
+          {/* Hover tooltip - only visible on hover */}
+          <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap px-3 py-1 bg-black/90 rounded border border-mauve/30 text-white text-xs pointer-events-none">
+            {hasUnreadMessages ? "Didi: New Messages" : "Open Terminal"}
           </div>
         </motion.div>
       )}
