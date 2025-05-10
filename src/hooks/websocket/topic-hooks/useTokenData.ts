@@ -238,7 +238,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
     error: ws.error,
     lastUpdate,
     refresh,
-    // No close function since unified system manages connections
+    isLoading,
     close: () => {
       // No-op function kept for interface compatibility
       dispatchWebSocketEvent('token_data_close', {

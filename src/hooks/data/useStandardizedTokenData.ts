@@ -161,38 +161,27 @@ export function useStandardizedTokenData(
   maxHotTokens: number = 5,
   maxTopTokens: number = 6
 ): UseStandardizedTokenDataReturn {
-  // Use the base token data hook
   const { 
     tokens,
     isConnected,
     error: wsError,
     lastUpdate,
-    refresh
+    refresh,
+    isLoading: underlyingIsLoading
   } = useTokenData(tokensToSubscribe);
   
-  // Local state
-  const [isLoading, setIsLoading] = useState(true);
   const [sortMethod, setSortMethod] = useState<TokenSortMethod>(initialSortMethod);
   const [filter, setFilter] = useState<TokenFilter>(initialFilter);
   const [connectionState, setConnectionState] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Set connection state based on isConnected
   useEffect(() => {
     setConnectionState(isConnected ? 'connected' : 'disconnected');
   }, [isConnected]);
   
-  // Update error state
   useEffect(() => {
     setError(wsError);
   }, [wsError]);
-  
-  // Update loading state
-  useEffect(() => {
-    if (tokens.length > 0) {
-      setIsLoading(false);
-    }
-  }, [tokens]);
   
   // Apply filters
   const filteredTokens = useMemo(() => {
@@ -386,7 +375,7 @@ export function useStandardizedTokenData(
 
   return {
     tokens,
-    isLoading,
+    isLoading: underlyingIsLoading,
     error,
     connectionState,
     isConnected,

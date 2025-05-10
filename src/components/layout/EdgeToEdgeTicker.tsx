@@ -1,17 +1,19 @@
 // src/components/layout/EdgeToEdgeTicker.tsx
 
-import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { UnifiedTicker } from './UnifiedTicker';
+import React, { useEffect, useState } from 'react';
+import { useScrollHeader } from '../../hooks/ui/useScrollHeader';
 import { isContestLive } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import type { Contest } from '../../types';
+import { UnifiedTicker } from './UnifiedTicker';
 
 interface EdgeToEdgeTickerProps {
   contests?: Contest[];
   loading?: boolean;
   isCompact?: boolean;
   maxTokens?: number;
+  storeError?: string | null;
 }
 
 /**
@@ -20,12 +22,25 @@ interface EdgeToEdgeTickerProps {
  * across the screen with animations, gradients, and visual effects.
  * It manages its own data fetching and state independent of the Header.
  */
-export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = ({
-  contests: initialContests,
-  loading: initialLoading = true,
-  isCompact = false,
-  maxTokens = 15,
-}) => {
+export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
+  const {
+    contests: initialContests,
+    loading: initialLoading = true,
+    isCompact: compactOverrideProp,
+    maxTokens = 15,
+    storeError,
+  } = props;
+
+  // Use header scroll state to sync with header compact mode by default
+  const { isCompact: isCompactFromHook } = useScrollHeader(50);
+
+  // Determine the final compact state.
+  // If compactOverrideProp is explicitly provided (true or false), use it.
+  // Otherwise, fall back to the hook-derived value.
+  const finalIsCompact = typeof compactOverrideProp === 'boolean'
+    ? compactOverrideProp
+    : isCompactFromHook;
+
   // Local state for contests and loading
   const [activeContests, setActiveContests] = useState<Contest[]>(initialContests || []);
   const [loading, setLoading] = useState(initialLoading);
@@ -49,9 +64,13 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = ({
     fetchContests();
     const interval = setInterval(fetchContests, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [initialContests]);
+
+  // Dynamically adjust top position based on header compact state
+  const topPosition = finalIsCompact ? 'top-12 sm:top-14' : 'top-14 sm:top-16';
+
   return (
-    <div className="sticky top-[var(--header-height)] z-40 w-full overflow-hidden transition-[top] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]">
+    <div className={`sticky ${topPosition} z-40 w-full overflow-hidden transition-[top] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}>
       {/* Dark base layer with slightly increased opacity for better readability */}
       <div className="absolute inset-0 bg-dark-200/70 backdrop-blur-sm" />
 
@@ -139,16 +158,17 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = ({
 
       {/* Content container */}
       <div
-        className={`relative transition-all duration-200 ease-out ${
-          isCompact ? "h-6" : "h-8"
+        className={`relative transition-[height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          finalIsCompact ? 'h-10' : 'h-16 sm:h-20'
         }`}
       >
         {/* Core UnifiedTicker component */}
         <UnifiedTicker 
           contests={activeContests}
           loading={loading}
-          isCompact={isCompact}
+          isCompact={finalIsCompact}
           maxTokens={maxTokens}
+          storeError={storeError}
         />
       </div>
 

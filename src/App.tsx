@@ -75,6 +75,7 @@ import "./styles/color-schemes.css";
 // Hooks and utils
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
+import { useStore } from "./store/useStore";
 
 // Route components
 // Admin routes
@@ -351,8 +352,8 @@ const AppProvidersAndContent: React.FC = () => {
 
 // This component can safely use auth hooks because it renders after all providers
 const AppContent: React.FC = () => {
-  const { user: authUser } = useMigratedAuth(); 
-  // const location = useLocation(); // No longer used here as Terminal always renders
+  const { user: authUser } = useMigratedAuth();
+  const storeErrorMessage = useStore(state => state.error?.message || null);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -368,7 +369,7 @@ const AppContent: React.FC = () => {
       </BackgroundEffectsBoundary>
 
       <Header />
-      <EdgeToEdgeTicker />
+      <EdgeToEdgeTicker storeError={storeErrorMessage} />
       {authUser && <WalletBalanceTicker isCompact={true} />}
       <ServerDownBanner />
       

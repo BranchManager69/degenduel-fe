@@ -21,7 +21,8 @@ import { AuthDebugPanel } from "../../../components/debug";
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
 // import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle"; // No longer using HeroTitle
-import IntroLogo from "../../../components/logo"; // Import the new IntroLogo
+// import IntroLogo from "../../../components/logo/IntroLogo"; // Original logo (no longer used)
+import EnhancedIntroLogo from "../../../components/logo/EnhancedIntroLogo"; // Enhanced, more dramatic logo
 import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestLive } from "../../../lib/utils";
 import { Contest } from "../../../types";
@@ -525,21 +526,114 @@ export const LandingPage: React.FC = () => {
                 </div>
               )}
               
-              {/* New IntroLogo Placement */}
-              {/* Consider if FEATURE_FLAGS.SHOW_HERO_TITLE should apply or if always shown */}
-              <div className="w-full my-4 md:my-8 flex justify-center items-center">
-                <IntroLogo /> 
+              {/* Enhanced Hero Section with IntroLogo and animated background */}
+              <div className="relative w-full my-4 md:my-8">
+                {/* Visual effects layer - positioned behind content */}
+                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                  {/* Subtle grid overlay */}
+                  <div
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                      backgroundImage: 'linear-gradient(to right, rgba(153, 51, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(153, 51, 255, 0.03) 1px, transparent 1px)',
+                      backgroundSize: '24px 24px'
+                    }}
+                  />
+
+                  {/* Deep ambient glow spots */}
+                  <motion.div
+                    className="absolute top-1/4 -left-1/4 w-full h-full rounded-full blur-3xl"
+                    style={{
+                      background: 'radial-gradient(circle, rgba(153, 51, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
+                    }}
+                    animate={{
+                      opacity: [0.5, 0.7, 0.5],
+                      scale: [1, 1.1, 1]
+                    }}
+                    transition={{
+                      duration: 15,
+                      repeat: Infinity,
+                      repeatType: "mirror"
+                    }}
+                  />
+
+                  <motion.div
+                    className="absolute bottom-1/3 -right-1/4 w-full h-full rounded-full blur-3xl"
+                    style={{
+                      background: 'radial-gradient(circle, rgba(0, 225, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
+                    }}
+                    animate={{
+                      opacity: [0.5, 0.7, 0.5],
+                      scale: [1, 1.1, 1]
+                    }}
+                    transition={{
+                      duration: 18,
+                      repeat: Infinity,
+                      repeatType: "mirror",
+                      delay: 3
+                    }}
+                  />
+
+                  {/* Elegant data flow lines */}
+                  <div className="absolute inset-0">
+                    <motion.div
+                      className="h-[0.5px] w-[30%] bg-gradient-to-r from-transparent via-brand-400/15 to-transparent absolute transform -rotate-[30deg]"
+                      animate={{ x: ["-100%", "200%"] }}
+                      transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                      style={{ top: '35%', left: '0%' }}
+                    />
+                    <motion.div
+                      className="h-[0.5px] w-[40%] bg-gradient-to-r from-transparent via-cyber-400/10 to-transparent absolute transform rotate-[15deg]"
+                      animate={{ x: ["-100%", "200%"] }}
+                      transition={{ duration: 18, repeat: Infinity, ease: "linear", delay: 3 }}
+                      style={{ top: '60%', left: '0%' }}
+                    />
+                  </div>
+
+                  {/* High-quality particle effect */}
+                  <div className="absolute inset-0">
+                    {Array(8).fill(null).map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute rounded-full"
+                        style={{
+                          width: Math.random() * 3 + 1 + 'px',
+                          height: Math.random() * 3 + 1 + 'px',
+                          backgroundColor: i % 2 === 0 ? 'rgba(153, 51, 255, 0.4)' : 'rgba(0, 225, 255, 0.4)',
+                          top: `${Math.random() * 100}%`,
+                          left: `${Math.random() * 100}%`,
+                          boxShadow: `0 0 4px ${i % 2 === 0 ? 'rgba(153, 51, 255, 0.4)' : 'rgba(0, 225, 255, 0.4)'}`
+                        }}
+                        animate={{
+                          opacity: [0.4, 0.8, 0.4],
+                          scale: [1, 1.2, 1],
+                          y: [0, -30, 0]
+                        }}
+                        transition={{
+                          duration: Math.random() * 5 + 5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: Math.random() * 5
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Enhanced IntroLogo with dramatic animations - Use 'standard' mode when animation already seen */}
+                <div className="relative z-10 flex justify-center items-center">
+                  <EnhancedIntroLogo mode={animationDone ? 'standard' : 'epic'} />
+                </div>
               </div>
-              
+
               {/* Main content container using variants */}
-              <motion.div 
+              <motion.div
                 className="landing-content"
                 initial={animationDone ? "visible" : "hidden"}
                 animate="visible"
                 variants={landingPageVariants}
               >
-              
-              {/* Common tagline for all users */}
+
+              {/* Enhanced tagline with secondary line */}
               <motion.div
                 className="mt-8 mb-6"
                 variants={childVariants}
@@ -559,11 +653,11 @@ export const LandingPage: React.FC = () => {
                   style={{
                     backgroundImage: `
                       linear-gradient(
-                        to right, 
-                        #b266ff, #9933ff, #6600cc, #9933ff, 
+                        to right,
+                        #b266ff, #9933ff, #6600cc, #9933ff,
                         #b266ff 50%, #9933ff 50%,
-                        #b266ff 55%, #9933ff 55%, 
-                        #ddbcff 56%, #ffffff 58%, 
+                        #b266ff 55%, #9933ff 55%,
+                        #ddbcff 56%, #ffffff 58%,
                         #ddbcff 60%, #9933ff 62%,
                         #b266ff 70%
                       )
@@ -580,6 +674,11 @@ export const LandingPage: React.FC = () => {
                     High-Stakes Trading Competitions on Solana
                   </h2>
                 </motion.div>
+
+                {/* New secondary line with value proposition */}
+                <p className="text-sm sm:text-base text-gray-300/80 font-medium mt-2">
+                  Win big. Trade like a degen. No liquidations.
+                </p>
               </motion.div>
 
               {/* Call to action buttons - Now using the CtaSection component */}
@@ -688,6 +787,10 @@ export const LandingPage: React.FC = () => {
                             ),
                         );
                         return (
+
+                          // Something is causing this to reload every ~5 seconds
+                          // TODO: Figure out why and fix it
+
                           <React.Suspense fallback={<div>Loading features...</div>}>
                             <Features />
                           </React.Suspense>
