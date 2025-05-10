@@ -20,7 +20,8 @@ import { motion } from "framer-motion";
 import { AuthDebugPanel } from "../../../components/debug";
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
-import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
+// import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle"; // No longer using HeroTitle
+import IntroLogo from "../../../components/logo"; // Import the new IntroLogo
 import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestLive } from "../../../lib/utils";
 import { Contest } from "../../../types";
@@ -47,6 +48,9 @@ import { PaginatedResponse } from '../../../types';
 import { useStore } from "../../../store/useStore"; // Ensure useStore is imported
 
 // Config
+// Import new MarketTickerGrid component (replacing the three token display components)
+import { MarketTickerGrid } from "../../../components/landing/market-ticker";
+import { LazyLoad } from "../../../components/shared/LazyLoad"; // Added import
 import { config as globalConfig } from '../../../config/config';
 
 // Landing Page
@@ -457,17 +461,12 @@ export const LandingPage: React.FC = () => {
           {/* Landing Page Content */}
           <div className="text-center space-y-4">
             
-            {/* Title Section */}
-            <div className="flex flex-col items-center justify-center">
+            {/* Title Section - Now featuring IntroLogo */}
+            <div className="flex flex-col items-center justify-center mb-8 md:mb-12">
               
-
-              {/* (does this ALL exist within the Title Section!? ) */}
-
-
               {/* Admin debug button - visible even when HeroTitle is hidden */}
               {isAdmin && (
-                <div className="flex justify-end mb-2">
-                  {/* Debug button - visible even when HeroTitle is hidden */}
+                <div className="flex justify-end mb-2 w-full max-w-4xl">
                   <button
                     className="bg-black/50 text-white text-xs p-1 rounded-md"
                     onClick={() => setDebugMode(!debugMode)}
@@ -526,26 +525,11 @@ export const LandingPage: React.FC = () => {
                 </div>
               )}
               
-              {/* HeroTitle component with better Terminal coordination - conditionally rendered based on feature flag */}
-              {FEATURE_FLAGS.SHOW_HERO_TITLE && (
-                <>
-                  {/* HeroTitle component with better Terminal coordination - conditionally rendered based on feature flag */}
-                  <div className="w-full h-[15vh] relative overflow-visible z-10">
-                    <HeroTitle 
-                      onComplete={() => {
-                        // When HeroTitle animation is complete, we could trigger Terminal actions
-                        console.log('HeroTitle animation completed');
-                      }} 
-                      debugMode={debugMode}
-                      setDebugMode={setDebugMode}
-                    />
-                  </div>
-
-                  {/* Spacing between hero and terminal - only shown when HeroTitle is visible */}
-                  <div className="h-[8vh] min-h-[40px] w-full">
-                  </div>
-                </>
-              )}
+              {/* New IntroLogo Placement */}
+              {/* Consider if FEATURE_FLAGS.SHOW_HERO_TITLE should apply or if always shown */}
+              <div className="w-full my-4 md:my-8 flex justify-center items-center">
+                <IntroLogo /> 
+              </div>
               
               {/* Main content container using variants */}
               <motion.div 
@@ -715,101 +699,23 @@ export const LandingPage: React.FC = () => {
                 </motion.div>
               )}
               
-              {/* Market Overview Panel - shown to all users */}
-              <motion.div
-                className="w-full mt-8 mb-4"
-                variants={secondaryVariants}
-              >
-                {/* Market Overview Panel */}
-                {(() => {
-
-                  // Lazy-load the StandardizedMarketStatsPanel component
-                  const MarketStatsPanel = React.lazy(() => 
-                    import("../../../components/landing/market-stats").then(module => ({ 
-                      default: module.StandardizedMarketStatsPanel
-                    }))
-                  );
-
-                  // Return the MarketStatsPanel component
-                  return (
-                    <React.Suspense 
-                      fallback={
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                          <div className="h-32 bg-dark-300/20 rounded-xl animate-pulse"></div>
-                        </div>
-                      }
-                    >
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <MarketStatsPanel />
-                      </div>
-                    </React.Suspense>
-                  );
-
-                })()}
-              </motion.div>
-              
-              {/* Elite Hot Tokens List - shown to all users with consistent token count */}
-              <motion.div
-                className="w-full mt-8 mb-6"
-                variants={secondaryVariants}
-              >
-                {(() => {
-               
-                  // Lazy-load the StandardizedHotTokensList component
-                  const HotTokensList = React.lazy(() => 
-                    import("../../../components/landing/hot-tokens").then(module => ({ 
-                      default: module.StandardizedHotTokensList
-                    }))
-                  );
-                  
-                  // Return the HotTokensList component
-                  return (
-                    <React.Suspense 
-                      fallback={
-                        <div className="py-10 flex justify-center">
-                          <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                        </div>
-                      }
-                    >
-                      {/* Display the HotTokensList component */}
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <HotTokensList maxTokens={5} />
-                      </div>
-                    </React.Suspense>
-                  );
-
-                })()}
-              </motion.div>
-              
-              {/* Top Tokens Display - shown to all users with consistent token count */}
-              <motion.div
-                className="w-full mt-8"
-                variants={secondaryVariants}
-              >
-                {(() => {
-               
-                  // Lazy-load the TokensPreviewSection component
-                  const TokensPreviewSection = React.lazy(() => 
-                    import("../../../components/landing/tokens-preview").then(module => ({ 
-                      default: module.TokensPreviewSection 
-                    }))
-                  );
-                  
-                  // Return the TokensPreviewSection component
-                  return (
-                    <React.Suspense 
-                      fallback={
-                        <div className="py-10 flex justify-center">
-                          <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                        </div>
-                      }
-                    >
-                      {/* Display the TokensPreviewSection component */}
-                      <TokensPreviewSection maxTokens={6} />                      
-                    </React.Suspense>
-                  );
-                })()}
-              </motion.div>
+              {/* NYSE-Style Market Ticker Grid - Replaces all previous token displays */}
+              <LazyLoad>
+                <motion.div
+                  className="w-full mt-8 mb-6"
+                  variants={secondaryVariants}
+                >
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <MarketTickerGrid
+                      maxTokens={12}
+                      title="DegenDuel • Market Data"
+                      subtitle="Real-time NYSE-style market feed"
+                      reorderInterval={8000}
+                      showBillboard={true}
+                    />
+                  </div>
+                </motion.div>
+              </LazyLoad>
               
               {/* Contest sections - shown to all users */}
               <motion.div

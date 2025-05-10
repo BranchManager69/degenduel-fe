@@ -513,7 +513,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         max: maxReconnectAttempts
       });
       setConnectionState(ConnectionState.ERROR);
-      setConnectionError(`Maximum reconnection attempts (${maxReconnectAttempts}) reached`);
+      setConnectionError(`Having trouble connecting...`);
+      //setConnectionError(`Maximum reconnection attempts (${maxReconnectAttempts}) reached`);
       return;
     }
     

@@ -356,7 +356,7 @@ export const useBaseWebSocket = (config: WebSocketConfig) => {
         closeReason,
       });
       
-      console.error(`[WebSocket:${config.socketType}] Maximum reconnection attempts (${reconnectAttempts.current}) reached. No further reconnection attempts will be made.`);
+      console.error(`[WebSocket:${config.socketType}] Maximum reconnection attempts (${reconnectAttempts.current}) reached. No further DegenDuel reconnection attempts will be made.`);
       return;
     }
     

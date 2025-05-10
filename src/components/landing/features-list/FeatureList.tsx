@@ -242,7 +242,7 @@ const upcomingFeatures = [
   
   // 8 - Rep System
   {
-    title: "Rep System",
+    title: "Degen Reputation System",
     description: "Build your profile and reputation through competitions, achievements, and community contribution for exclusive platform benefits.",
     extendedDescription: 
       "DegenDuel's Rep System tracks your progress and accomplishments across the platform. Earn achievement badges, ranking points, and reputation scores through competition performance, referrals, and community contributions.\n\nHigher reputation levels unlock exclusive benefits including fee discounts, early access to new features, private competitions, and enhanced profit-sharing tiers through the reflections system.",

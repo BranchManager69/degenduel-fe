@@ -33,7 +33,6 @@ import { commandMap } from './commands';
 import { TerminalConsole } from './components/TerminalConsole';
 import { TerminalInput } from './components/TerminalInput';
 import './Terminal.css';
-import { DIDI_ASCII } from './utils/didiAscii';
 
 // Import utility functions
 import {
@@ -135,21 +134,24 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
 
   // useEffect for initial messages (populates conversationHistory)
   useEffect(() => {
-    const isMobile = window.innerWidth < 768;
-    const isExtraSmall = window.innerWidth < 400;
-    const asciiArt = isExtraSmall ? DIDI_ASCII.MOBILE : isMobile ? DIDI_ASCII.SHORT : DIDI_ASCII.LONG;
+    // ASCII Art and its selection logic REMOVED
+    // const isMobile = window.innerWidth < 768;
+    // const isExtraSmall = window.innerWidth < 400;
+    // const asciiArt = isExtraSmall ? DIDI_ASCII.MOBILE : isMobile ? DIDI_ASCII.SHORT : DIDI_ASCII.LONG;
+    
+    // Set initial messages without ASCII art
     setConversationHistory([
-      { role: 'assistant', content: asciiArt, tool_calls: undefined }, // Ensure AIMessage format
+      // { role: 'assistant', content: asciiArt, tool_calls: undefined }, // REMOVED ASCII ART LINE
       { role: 'system', content: "Type 'duel' for available commands", tool_calls: undefined },
+      // Optionally, add a new sleek welcome message here if desired later:
+      // { role: 'assistant', content: "DegenDuel Terminal v6.9 Online", type: 'info' } // Example
     ]);
     return () => {
-      // Reset error counters when component unmounts 
-      // to prevent persistence between sessions
       window.terminalDataErrorCount = 0;
       window.terminalDataWarningShown = false;
       window.terminalRefreshCount = 0;
     };
-  }, []); // Ensure dependencies are correct, likely empty now
+  }, []); // Dependency array remains empty for one-time setup
 
   // Auto-restore minimized terminal after a delay
   /*useEffect(() => { // REMOVED to stop auto-restore behavior
@@ -497,6 +499,9 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
     }
   };
 
+  // ADD THIS LOG:
+  console.log("[Terminal] Rendering state - Minimized:", terminalMinimized, "Current Size:", sizeState, "Passed Prop Size:", size, "HasUnread:", hasUnreadMessages);
+
   return (
     <div className={`terminal-container ${getContainerClasses()} w-full mx-auto transition-all duration-300 ease-in-out`}>
       
@@ -688,13 +693,14 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
       {/* Terminal Minimized State */}
       {terminalMinimized && (
         <motion.div
+          key="terminal-minimized"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="bg-darkGrey-dark/90 border border-mauve/40 p-2 rounded-md cursor-pointer text-center text-xs text-mauve"
+          className="bg-darkGrey-dark/90 border border-mauve/40 p-2 rounded-md cursor-pointer text-center text-xs text-mauve fixed bottom-4 left-1/2 -translate-x-1/2 w-auto min-w-[200px] shadow-xl"
           onClick={() => {
             setTerminalMinimized(false); 
-            setHasUnreadMessages(false); // Clear unread messages on open
+            setHasUnreadMessages(false); 
           }}
         >
           <div className="flex items-center justify-center">
@@ -706,7 +712,7 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
               ></motion.span>
             )}
             <span className="text-white">
-              {hasUnreadMessages ? "Didi: New Messages" : "Click to Open Didi"}
+              {hasUnreadMessages ? "Didi: New Messages" : "DegenDuel Terminal"}
             </span>
           </div>
         </motion.div>

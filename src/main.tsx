@@ -11,7 +11,6 @@
  * @updated 2025-05-08
  */
 
-import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { App } from "./App";
@@ -24,9 +23,10 @@ initializeClientLogForwarder(); // Initialize CLF
 
 // Render DegenDuel App
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+  //<React.StrictMode> // Disabled to prevent double-mounting which was
+  // causing Privy’s iframe initialisation race and “cannot dequeue” errors.
     <AppErrorBoundary>
       <App />
     </AppErrorBoundary>
-  </React.StrictMode>,
+  //</React.StrictMode>
 );

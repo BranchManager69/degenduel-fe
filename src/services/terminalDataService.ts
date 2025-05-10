@@ -353,57 +353,31 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
  * @returns Formatted command map
  */
 export const formatTerminalCommands = (data: TerminalData): Record<string, string> => {
-  // Start with built-in commands
   const commands: Record<string, string> = {
-    help: `Available commands: help, status, info, contract, stats, roadmap, tokenomics, launch-details, token, analytics, clear, banner
-AI: Type any question to speak with the AI assistant.`,
+    help: `Available commands: help, status, info, contract, stats, roadmap, tokenomics, launch-details, token, analytics, clear, banner\nAI: Type any question to speak with the AI assistant.`,
     clear: "",
     banner: `
-  _____  ______ _____ ______ _   _     _____  _    _ ______ _      
- |  __ \\|  ____/ ____|  ____| \\ | |   |  __ \\| |  | |  ____| |     
- | |  | | |__ | |  __| |__  |  \\| |   | |  | | |  | | |__  | |     
- | |  | |  __|| | |_ |  __| | . \` |   | |  | | |  | |  __| | |     
- | |__| | |___| |__| | |____| |\\  |   | |__| | |__| | |____| |____ 
- |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|
- 
- - ${data.platformDescription} -
- 
+========================================
+ D E G E N D U E L   T E R M I N A L 
+               v6.9
+========================================
+ - ${data.platformDescription || "Welcome to DegenDuel"} -
  Type 'help' for available commands
 `
   };
   
-  // Status command - rely on server for system status
-  // Check if we have systemStatus data
+  // Status command
   if (data.systemStatus) {
-    commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━
-
-${Object.entries(data.systemStatus || {}).map(([key, value]) => {
-  // Each status item comes from server with its icon
-  return `• ${key}: ${value}`;
-}).join('\n')}
-
-${data.platformStatus}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━\n\n${Object.entries(data.systemStatus || {}).map(([key, value]) => {
+      return `• ${key}: ${value}`;
+    }).join('\n')}\n\n${data.platformStatus}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   } else {
-    // Fallback if no systemStatus provided
-    commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━
-
-${data.platformStatus}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━\n\n${data.platformStatus}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   }
   
   // Info command
-  commands.info = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} PLATFORM ━━━━━━━━━━━━━━━━
-
-${data.platformDescription}
-
-${data.features && data.features.length > 0 ? 
-  `Key features:
-${data.features.map(feature => `• ${feature}`).join('\n')}` : ''}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  commands.info = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} PLATFORM ━━━━━━━━━━━━━━━━\n\n${data.platformDescription}\n\n${data.features && data.features.length > 0 ? 
+    `Key features:\n${data.features.map(feature => `• ${feature}`).join('\n')}` : ''}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   
   // Stats command
   commands.stats = `━━━━━━━━━━━━━━━━━ PLATFORM STATS ━━━━━━━━━━━━━━━━━
