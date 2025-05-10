@@ -80,20 +80,37 @@ export interface ChatResponse {
   conversationId: string;
 }
 
-// --- Image Interfaces & Options (Aligned with Images API - DALL-E 3 focused) ---
+// --- Profile Image Interfaces & Options ---
+
+export interface ImageStyle {
+  id: string;
+  name: string;
+  description: string;
+}
 
 export interface ImageOptions extends AIBaseOptions {
-  model?: 'dall-e-3' | 'dall-e-2' | string; // Specify model
-  n?: number | null; // Number of images (1-10 for DALL-E 2, only 1 for DALL-E 3)
-  quality?: 'standard' | 'hd'; // Only for DALL-E 3
-  response_format?: 'url' | 'b64_json'; // Default: 'url'
-  size?: '256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792'; // Available sizes vary by model
-  style?: 'vivid' | 'natural'; // Only for DALL-E 3
+  style?: string; // Style ID (e.g., 'cyberpunk', 'pixelart', etc.)
+  forceRegenerate?: boolean; // Force regeneration even if image exists
+  sourceImages?: string[]; // Optional source images to use
+  tokenAddresses?: string[]; // Optional token addresses to incorporate
+  prompt?: string; // Custom prompt (for test endpoint)
+  quality?: 'low' | 'medium' | 'high'; // Image quality
+  size?: '512x512' | '1024x1024'; // Image size
 }
 
 export interface ImageResponse {
-  created: number;
-  data: { url?: string; b64_json?: string; revised_prompt?: string }[];
+  success: boolean;
+  imageUrl?: string;
+  message?: string;
+  result?: {
+    url: string;
+    type: string;
+    model: string;
+    quality: string;
+    size: string;
+    generated_at: string;
+    metadata: Record<string, any>;
+  };
 }
 
 // --- Token Data Interface (Remains the same) ---
@@ -482,22 +499,57 @@ class AIService {
     }
   }
 
-  // --- ADD Image Generation Method --- 
+  // --- Profile Image Methods ---
   /**
-   * Generate an image using the REST API
-   * 
-   * @param prompt Text description for the image
-   * @param options Configuration options based on OpenAI Images API
+   * Get available image styles
+   *
+   * @returns Promise with available image styles
+   */
+  async getImageStyles(): Promise<ImageStyle[]> {
+    try {
+      const token = await authService.getToken();
+      const stylesUrl = `${API_URL_BASE}/api/profile-image/styles`;
+
+      const response = await fetch(stylesUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw await this.handleErrorResponse(response);
+      }
+
+      const data = await response.json();
+      return data.styles;
+    } catch (error) {
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+      console.error('Failed to get image styles:', error);
+      throw new AIServiceError(
+        'Failed to get image styles.',
+        AIErrorType.NETWORK
+      );
+    }
+  }
+
+  /**
+   * Generate a profile image for a user
+   *
+   * @param walletAddress User's wallet address
+   * @param options Configuration options for image generation
    * @returns Promise with the image generation response
    */
-  async generateImage(prompt: string, options: ImageOptions = {}): Promise<ImageResponse> {
+  async generateUserImage(walletAddress: string, options: ImageOptions = {}): Promise<ImageResponse> {
     try {
       if (options.debug) {
-        console.log('AI Image Request:', { prompt, options });
+        console.log('Profile Image Request:', { walletAddress, options });
       }
 
       const token = await authService.getToken();
-      const imageUrl = `${this.API_AI_SVC_REST_URL}/image`; // Assume endpoint
+      const imageUrl = `${API_URL_BASE}/api/profile-image/generate/${walletAddress}`;
 
       const response = await fetch(imageUrl, {
         method: 'POST',
@@ -505,7 +557,12 @@ class AIService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ prompt, ...options }), // Send prompt and options
+        body: JSON.stringify({
+          style: options.style || 'default',
+          forceRegenerate: options.forceRegenerate || false,
+          sourceImages: options.sourceImages || [],
+          tokenAddresses: options.tokenAddresses || []
+        }),
       });
 
       if (!response.ok) {
@@ -515,17 +572,70 @@ class AIService {
       const data = await response.json();
 
       if (options.debug) {
-        console.log('AI Image Response:', data);
+        console.log('Profile Image Response:', data);
       }
 
-      return data as ImageResponse;
+      return data;
     } catch (error) {
       if (error instanceof AIServiceError) {
         throw error;
       }
-      console.error('AI Image Generation Error:', error);
+      console.error('Profile Image Generation Error:', error);
       throw new AIServiceError(
-        'Failed to generate image.',
+        'Failed to generate profile image.',
+        AIErrorType.UNKNOWN
+      );
+    }
+  }
+
+  /**
+   * Generate a test image without user association
+   *
+   * @param prompt Text description for the image
+   * @param options Configuration options for image generation
+   * @returns Promise with the test image generation response
+   */
+  async generateTestImage(prompt: string, options: ImageOptions = {}): Promise<ImageResponse> {
+    try {
+      if (options.debug) {
+        console.log('Test Image Request:', { prompt, options });
+      }
+
+      const token = await authService.getToken();
+      const imageUrl = `${API_URL_BASE}/api/profile-image/test`;
+
+      const response = await fetch(imageUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          prompt,
+          style: options.style || 'default',
+          quality: options.quality || 'medium',
+          size: options.size || '1024x1024'
+        }),
+      });
+
+      if (!response.ok) {
+        throw await this.handleErrorResponse(response);
+      }
+
+      const data = await response.json();
+
+      if (options.debug) {
+        console.log('Test Image Response:', data);
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+      console.error('Test Image Generation Error:', error);
+      throw new AIServiceError(
+        'Failed to generate test image.',
         AIErrorType.UNKNOWN
       );
     }
@@ -534,9 +644,12 @@ class AIService {
 
 /**
  * Create and export a singleton AI Service instance
- * 
+ *
  * This service now exclusively uses REST API for all operations
  * WebSocket functionality was previously removed in favor of the unified WebSocket system
+ *
+ * Image generation now uses proper /api/profile-image/* endpoints
+ * NO BACKWARD COMPATIBILITY - breaking changes are intentional
  */
 export const aiService = new AIService();
 

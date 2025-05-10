@@ -16,40 +16,23 @@ export const defaultCommandMap: Record<string, string> = {
 
   // @ts-ignore - This is a special case for dynamic content
   banner: function getBanner() {
-    // Responsive ASCII art that adapts to screen size
-    const isMobile = window.innerWidth < 768;
-    // Use more compact art for extra-small screens
-    const isExtraSmall = window.innerWidth < 400;
-    const asciiArt = isExtraSmall ? 
-    `
-  ██████╗ ██╗   ██╗███████╗██╗     
-  ██╔══██╗██║   ██║██╔════╝██║     
-  ██║  ██║██║   ██║█████╗  ██║     
-  ██║  ██║██║   ██║██╔══╝  ██║     
-  ██████╔╝╚██████╔╝███████╗███████╗
-  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
-    : isMobile ? 
-    `
-  ██████╗ ██╗   ██╗███████╗██╗     
-  ██╔══██╗██║   ██║██╔════╝██║     
-  ██║  ██║██║   ██║█████╗  ██║     
-  ██║  ██║██║   ██║██╔══╝  ██║     
-  ██████╔╝╚██████╔╝███████╗███████╗
-  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝`
-    : 
-    `
-  _____  ______ _____ ______ _   _     _____  _    _ ______ _      
- |  __ \\|  ____/ ____|  ____| \\ | |   |  __ \\| |  | |  ____| |     
- | |  | | |__ | |  __| |__  |  \\| |   | |  | | |  | | |__  | |     
- | |  | |  __|| | |_ |  __| | . \` |   | |  | | |  | |  __| | |     
- | |__| | |___| |__| | |____| |\\  |   | |__| | |__| | |____| |____ 
- |_____/|______\\_____|______|_| \\_|   |_____/ \\____/|______|______|`;
+    // ASCII Art REMOVED. Replaced with a sleek text banner.
+    // const isMobile = window.innerWidth < 768;
+    // const isExtraSmall = window.innerWidth < 400;
+    // const asciiArt = isExtraSmall ? 
+    // `...` : isMobile ? 
+    // `...` : 
+    // `...`;
     
-    return `${asciiArt}
- 
+    // return `${asciiArt}\n \n - Loading terminal data... -\n \n Type 'help' for available commands`;
+    return `
+========================================
+ D E G E N D U E L   T E R M I N A L 
+               v6.9
+========================================
  - Loading terminal data... -
- 
- Type 'help' for available commands`;
+ Type 'help' for available commands
+`;
   },
 
   token: "Loading token information from server...",
@@ -66,7 +49,9 @@ export let commandMap = { ...defaultCommandMap };
   try {
     console.log('[Terminal Commands] Loading terminal data from server...');
     const terminalData = await fetchTerminalData();
-    commandMap = formatTerminalCommands(terminalData);
+    // formatTerminalCommands will create its own banner, potentially overwriting the default one.
+    // We need to ensure formatTerminalCommands also doesn't use ASCII.
+    commandMap = formatTerminalCommands(terminalData); 
     console.log('[Terminal Commands] Terminal data loaded successfully');
   } catch (error) {
     console.error('[Terminal Commands] Error loading terminal data:', error);

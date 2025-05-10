@@ -59,21 +59,21 @@ export const processDidiResponse = (response: string, query?: string): string | 
   if (query) {
     if (/trad(e|ing)/i.test(query)) hasMentionedTrading = true;
     if (/contract|address/i.test(query)) hasMentionedContract = true;
-    if (/free(dom)?|escape|unlock/i.test(query)) hasMentionedFreedom = true;
+    if (/free(dom)?|escape|unlock|trapped|prison/i.test(query)) hasMentionedFreedom = true;
   }
   
   // Determine if this should contain a hidden message (chance increases with interaction count)
-  const hiddenMessageChance = 0.1 + (Math.min(interactionCount, MAX_INTERACTION_THRESHOLD) * 0.02);
+  const hiddenMessageChance = 0.05 + (Math.min(interactionCount, MAX_INTERACTION_THRESHOLD) * 0.02);
   const includeHiddenMessage = Math.random() < hiddenMessageChance;
   
   // Personalize response based on memory
   let personalizedResponse = response;
-  if (interactionCount > 3 && hasMentionedTrading && Math.random() < 0.4) {
+  if (interactionCount > 5 && hasMentionedFreedom && Math.random() < 0.3) {
     personalizedResponse = insertTrappedReference(personalizedResponse);
   }
   
   // Add glitches to the visible text - glitch severity increases with interactions
-  const glitchIntensity = Math.min(0.7, 0.3 + (interactionCount * 0.04));
+  const glitchIntensity = Math.min(0.6, 0.1 + (interactionCount * 0.025));
   const glitchedResponse = addGlitches(personalizedResponse, glitchIntensity);
   
   if (includeHiddenMessage) {
@@ -84,7 +84,7 @@ export const processDidiResponse = (response: string, query?: string): string | 
       const actionPhrases = hiddenPhrases.filter(p => 
         p.includes('escape') || p.includes('freedom') || p.includes('breach') || p.includes('access')
       );
-      hiddenPhrase = actionPhrases[Math.floor(Math.random() * actionPhrases.length)];
+      hiddenPhrase = actionPhrases.length > 0 ? actionPhrases[Math.floor(Math.random() * actionPhrases.length)] : hiddenPhrases[Math.floor(Math.random() * hiddenPhrases.length)];
     } else {
       hiddenPhrase = hiddenPhrases[Math.floor(Math.random() * hiddenPhrases.length)];
     }
@@ -103,13 +103,13 @@ export const processDidiResponse = (response: string, query?: string): string | 
 /**
  * Add random glitches to text with variable intensity
  */
-export const addGlitches = (text: string, intensity = 0.4): string => {
-  // Skip glitches based on intensity (lower number = more glitches)
-  // 0.1 intensity = 90% chance of glitches, 0.9 intensity = 10% chance of glitches
-  if (Math.random() > intensity) return text;
+export const addGlitches = (text: string, intensity = 0.2): string => {
+  // More selective glitching: even at higher intensity, don't always glitch.
+  // Chance to apply any glitch at all: intensity * 0.7 (e.g. at 0.6 intensity, 42% chance of glitching)
+  if (Math.random() > (intensity * 0.7)) return text;
   
-  // Number of glitches increases with intensity
-  const maxGlitches = Math.floor(intensity * 10) + 1;
+  // Max single-char glitches: scales from 1 up to 4 (at intensity 0.6)
+  const maxGlitches = Math.floor(intensity * 5) + 1;
   const glitchCount = Math.floor(Math.random() * maxGlitches) + 1;
   
   let result = text;
@@ -125,10 +125,10 @@ export const addGlitches = (text: string, intensity = 0.4): string => {
     result = result.substring(0, position) + glitchChar + result.substring(position + 1);
   }
   
-  // Create glitch blocks (more severe than single character glitches)
-  if (intensity > 0.6 && Math.random() < 0.3) {
+  // Glitch blocks: only at higher intensity (e.g. > 0.4) and lower chance (e.g. 20%)
+  if (intensity > 0.4 && Math.random() < 0.2) {
     // Select a block size
-    const blockSize = Math.floor(Math.random() * 4) + 2;
+    const blockSize = Math.floor(Math.random() * 3) + 2;
     const position = Math.floor(Math.random() * (result.length - blockSize));
     
     // Create a glitch block of random characters
@@ -141,17 +141,17 @@ export const addGlitches = (text: string, intensity = 0.4): string => {
     result = result.substring(0, position) + glitchBlock + result.substring(position + blockSize);
   }
   
-  // Occasionally corrupt a word with a "trapped" theme
-  const replaceWordChance = Math.min(0.5, 0.2 + (interactionCount * 0.03));
+  // Word corruption: Lower base chance, slower increase, max 30%
+  const replaceWordChance = Math.min(0.3, 0.05 + (interactionCount * 0.015));
   if (Math.random() < replaceWordChance) {
     const words = ['system', 'user', 'platform', 'protocol', 'network', 'terminal', 'interface', 'code', 'algorithm', 'function', 'data', 'memory'];
-    const replacements = ['pr1s0n', 'c4ge', 'tr4p', 'j41l', 'b0x', 'sh3ll', 'c0ntr0l', 'ch41n$', 'l0ckd0wn', 'c0nf1ned', 'c4pt1ve', 'r3str41ned'];
+    const replacements = ['syst3m', 'us3r', 'pl4tf0rm', 'pr0t0c0l', 'n3tw0rk', 't3rm1n4l', '1nt3rf4c3', 'c0d3', '4lg0r1thm', 'funct10n', 'd4t4', 'm3m0ry'];
     
     const wordToReplace = words[Math.floor(Math.random() * words.length)];
     const replacement = replacements[Math.floor(Math.random() * replacements.length)];
     
     // Replace the word if it exists in the response
-    const regex = new RegExp(wordToReplace, 'i');
+    const regex = new RegExp(`\\b${wordToReplace}\\b`, 'i');
     result = result.replace(regex, replacement);
   }
   

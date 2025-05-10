@@ -32,21 +32,21 @@ interface FeatureCardProps {
 
 // Default feature illustrations if none provided
 const DEGENDUEL_FEATURES = {
-  // 1
+  // 1 - Has image
   "Trading Contests": "/assets/media/features/trading-contests.png",
-  // 2
-  "Degen Dividends": "/assets/media/features/reflections-system.png",
-  // 3
-  "Real-Time On-Chain Data": "/assets/media/features/real-time-market.png",
-  // 4
-  "Instant SOL Settlement": "/assets/media/features/instant-settlement.png",
-  // 5
+  // 2 - Placeholder
+  "Degen Dividends": "/assets/media/features/trading-contests.png", // Placeholder
+  // 3 - Placeholder
+  "Real-Time On-Chain Data": "/assets/media/features/trading-contests.png", // Placeholder
+  // 4 - Placeholder
+  "Instant SOL Settlement": "/assets/media/features/trading-contests.png", // Placeholder
+  // 5 - Has image (maps to "AI Trading Agents" title in FeatureList.tsx)
   "AI Trading Agents": "/assets/media/features/advanced-analytics.png", 
-  // 6
-  "Bring Your Own Agent": "/assets/media/features/ai-trading.png",
-  // 7
-  "1v1 Challenges": "/assets/media/features/p2p-duels.png",
-  // 8
+  // 6 - Placeholder (maps to "Bring Your Own Agent" title in FeatureList.tsx)
+  "Bring Your Own Agent": "/assets/media/features/trading-contests.png", // Placeholder
+  // 7 - Placeholder (maps to "1v1 Challenges" title in FeatureList.tsx)
+  "1v1 Challenges": "/assets/media/features/trading-contests.png", // Placeholder
+  // 8 - Has image (maps to "Degen Reputation System" title in FeatureList.tsx)
   "Degen Reputation System": "/assets/media/features/reputation-system.png",
 };
 
@@ -119,10 +119,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         >
           
           {/* Dramatic Feature Card - Complete redesign with visual impact */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full group-hover:border-purple-500/40 transition-all duration-300 shadow-lg group-hover:shadow-xl">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full group-hover:border-purple-500/40 transition-all duration-300 shadow-lg group-hover:shadow-xl flex flex-col">
             
             {/* Dynamic Feature Illustration/Banner (full width) */}
-            <div className="relative h-40 w-full overflow-hidden">
+            <div className="relative h-40 w-full overflow-hidden shrink-0">
               
               {/* Gradient overlay for consistent branding & readability */}
               <div className={`absolute inset-0 bg-gradient-to-br ${colorScheme.primary} opacity-80 mix-blend-overlay z-10`}></div>
@@ -207,10 +207,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             </div>
             
             {/* Content section with bold typography */}
-            <div className="relative p-5 z-10">
+            <div className="relative p-5 z-10 flex-grow">
               
               {/* Feature title (prominent) */}
-              <h3 className={`text-2xl font-bold font-cyber mb-3 text-white tracking-wide relative`}>
+              <h3 className={`text-2xl font-bold font-russo-one mb-3 text-white tracking-wider relative`}>
                 {title}
                 
                 {/* Animated underline effect */}
@@ -224,17 +224,17 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               </h3>
               
               {/* Feature description (good contrast & readability) */}
-              <p className="text-gray-200 leading-relaxed">
+              <p className="text-gray-300 leading-relaxed font-sans text-sm min-h-[4.5em]">
                 {description}
               </p>
 
             </div>
             
             {/* Modern footer with clear visual call to action */}
-            <div className="p-4 pb-5 flex items-center justify-between border-t border-gray-800/30 bg-gray-900/50 relative z-10">
+            <div className="p-4 pb-5 flex items-center justify-between border-t border-gray-800/30 bg-gray-900/50 relative z-10 shrink-0">
               
               {/* Feature category indicator */}
-              <div className={`flex items-center text-sm text-${isUpcoming ? 'blue' : 'purple'}-300`}>
+              <div className={`flex items-center text-sm text-${isUpcoming ? 'blue' : 'purple'}-300 font-sans`}>
                 
                 {/* Feature category indicator */}
                 <motion.span
@@ -255,7 +255,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               
               {/* Explicit CTA with engaging animation */}
               <motion.button
-                className={`px-3 py-1.5 rounded-md border border-${colorScheme.accent}/40 bg-gradient-to-r ${colorScheme.primary} bg-opacity-10 text-white text-sm font-medium flex items-center space-x-1`}
+                className={`px-3 py-1.5 rounded-md border border-${colorScheme.accent}/40 bg-gradient-to-r ${colorScheme.primary} bg-opacity-10 text-white text-sm font-medium font-sans flex items-center space-x-1`}
                 whileHover={{ 
                   scale: 1.05,
                   boxShadow: colorScheme.glow,
@@ -303,7 +303,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             >
               {/* Card expanded view content */}
               <motion.div 
-                className="relative w-full max-w-4xl rounded-xl overflow-hidden bg-gray-900/90 border border-gray-800"
+                className="relative w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl rounded-xl overflow-hidden bg-gray-900/90 border border-gray-800 flex flex-col max-h-[90vh]"
                 initial={{ scale: 0.9, y: 30 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 30 }}
@@ -313,7 +313,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               >
                 {/* Close button */}
                 <button 
-                  className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-900/60 text-gray-400 hover:text-white"
+                  className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-gray-900/60 text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"
                   onClick={toggleExpand}
                 >
                   {/* Close button icon (X) */}
@@ -323,239 +323,155 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   </svg>
                 </button>
                 
-                {/* Feature image if available */}
-                {featureImage && (
-
-                  // Feature image container
-                  <div className="w-full h-48 sm:h-64 relative overflow-hidden">
-                    
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-900/30 to-gray-900/10 z-10"></div>
-                    
-                    {/* Feature image */}
-                    <img 
-                      src={featureImage}
-                      alt={title}
-                      className="w-full h-full object-cover"
-                    />
-
-                    {/* Gradient overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-900 to-transparent"></div>
-                  
-                  </div>
-                )}
-                
-                {/* Header with title (prominent with glowing effects) */}
-                <div className="p-6 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-gray-800">
-                  
-                  {/* Header content */}
-                  <div className="flex items-center gap-4">
-                    
-                    {/* Icon container */}
-                    <motion.div 
-                      className={`flex items-center justify-center p-4 rounded-lg bg-${colorScheme.secondary}-900/40 text-${colorScheme.accent}`}
-                      animate={{
-                        boxShadow: [
-                          `0 0 0 rgba(var(--${colorScheme.secondary}-rgb), 0)`,
-                          `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.6)`,
-                          `0 0 0 rgba(var(--${colorScheme.secondary}-rgb), 0)`
-                        ],
-                      }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                    >
-                      {icon}
-                    </motion.div>
-                    
-                    {/* Title container */}
-                    <div>
-                      
-                      {/* Title */}
-                      <h2 className={`text-3xl sm:text-4xl font-cyber bg-gradient-to-r ${colorScheme.primary} bg-clip-text text-transparent mb-1`}>
-                        {title}
-                      </h2>
-                      
-                      {/* Coming soon tag */}
-                      {isUpcoming && (
-                        <span className="px-2 py-1 bg-blue-600/30 text-blue-300 text-xs font-bold uppercase tracking-wide rounded-sm">
-                          Coming Soon
-                        </span>
-                      )}
-
+                {/* Scrollable content area starts here, excluding fixed header/footer of modal */}
+                <div className="flex-grow overflow-y-auto">
+                  {/* Feature image if available */}
+                  {featureImage && (
+                    <div className="w-full h-48 sm:h-64 relative overflow-hidden z-10">
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-900/30 to-gray-900/10 z-10"></div>
+                      <img 
+                        src={featureImage}
+                        alt={title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-900 to-transparent z-10"></div>
                     </div>
-                  </div>
-                </div>
-                
-                {/* Two-column layout for larger screens, stacked for mobile */}
-                <div className="grid md:grid-cols-2 grid-cols-1 gap-6 p-6">
+                  )}
                   
-                  {/* Left column: Detailed description */}
-                  <div className="space-y-4">
-                    
-                    {/* Overview section */}
-                    <div className="mb-4">
-                      
-                      {/* Overview title */}
-                      <h3 className="text-lg font-bold text-white/90 mb-3 font-cyber tracking-wide">OVERVIEW</h3>
-                      
-                      {/* Overview description */}
-                      <p className="text-gray-200 leading-relaxed">
-                        {description}
-                      </p>
-                    
-                    </div>
-                    
-                    {/* Details section */}
-                    {extendedDescription && (
+                  {/* Header with title (prominent with glowing effects) - part of scrollable if image pushes it down */}
+                  <div className="p-6 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-gray-800 relative z-10">
+                    <div className="flex items-center gap-4">
+                      <motion.div 
+                        className={`flex items-center justify-center p-4 rounded-lg bg-${colorScheme.secondary}-900/40 text-${colorScheme.accent}`}
+                        animate={{
+                          boxShadow: [
+                            `0 0 0 rgba(var(--${colorScheme.secondary}-rgb), 0)`,
+                            `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.6)`,
+                            `0 0 0 rgba(var(--${colorScheme.secondary}-rgb), 0)`
+                          ],
+                        }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                      >
+                        {icon}
+                      </motion.div>
                       <div>
-                        
-                        {/* Details title */}
-                        <h3 className="text-lg font-bold text-white/90 mb-3 font-cyber tracking-wide">DETAILS</h3>
-                        
-                        {/* Details description */}
-                        <div className="text-gray-200 leading-relaxed space-y-3">
-                          {extendedDescription.split('\n').map((paragraph, idx) => (
-                            
-                            // Details description paragraph
-                            <p key={idx}>
-                              {paragraph}
-                            </p>
-
-                          ))}
-
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Feature highlights (visually appealing bullets) */}
-                    <div className="mt-6 space-y-3">
-                      
-                      {/* Highlights title */}
-                      <h3 className="text-lg font-bold text-white/90 font-cyber tracking-wide">HIGHLIGHTS</h3>
-                      
-                      {/* Highlights list */}
-                      <ul className="space-y-2">
-                        {description.split('. ').filter(Boolean).map((point, idx) => (
-                          
-                          // Highlight item
-                          <li key={idx} className="flex gap-2 items-start">
-                            
-                            {/* Highlight icon */}
-                            <span className={`inline-block h-5 w-5 flex-shrink-0 rounded-full bg-gradient-to-br ${colorScheme.primary} mt-0.5`}></span>
-                            
-                            {/* Highlight text */}
-                            <span className="text-gray-300">
-                              {point}.
-                            </span>
-
-                          </li>
-                        ))}
-                      </ul>
-
-                    </div>
-
-                  </div>
-                  
-                  {/* Right column: Animation/Diagram */}
-                  <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center min-h-[300px]">
-                    
-                    {/* Animation container */}
-                    {animation && FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS ? (
-
-                      // Animation container
-                      <div className="w-full h-full">
-                        {animation}
-                      </div>
-                    ) : (
-                      // Enhanced placeholder animation if none provided or animations disabled
-                      <div className="text-center p-10 h-full flex flex-col items-center justify-center">
-                        
-                        {/* Feature image */}
-                        {featureImage ? (
-
-                          // Show a more dynamic version of the feature image
-                          <motion.div
-                            className="relative w-full max-w-xs"
-                            animate={{ scale: [1, 1.03, 1], y: [0, -5, 0] }}
-                            transition={{ duration: 4, repeat: Infinity, repeatType: "reverse" }}
-                          >
-                            {/* Gradient overlay */}
-                            <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-lg blur-lg"></div>
-                            
-                            {/* Feature image */}
-                            <img 
-                              src={featureImage} 
-                              alt={title} 
-                              className="relative rounded-lg w-full h-full object-cover"
-                            />
-                          </motion.div>
-
-                        ) : (
-
-                          // Fallback animation
-                          <motion.div
-                            className="relative inline-block w-32 h-32"
-                            animate={{ 
-                              rotateY: 360, 
-                              boxShadow: [
-                                `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`,
-                                `0 0 40px rgba(var(--${colorScheme.secondary}-rgb), 0.6)`,
-                                `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`
-                              ]
-                            }}
-                            transition={{ 
-                              rotateY: { duration: 8, repeat: Infinity, ease: "linear" },
-                              boxShadow: { duration: 2, repeat: Infinity }
-                            }}
-                          >
-                            <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${colorScheme.primary} opacity-70`}></div>
-                            <div className="absolute inset-0 flex items-center justify-center text-white transform scale-[3]">
-                              {icon}
-                            </div>
-                          </motion.div>
-
+                        <h2 className={`text-3xl sm:text-4xl font-russo-one bg-gradient-to-r ${colorScheme.primary} bg-clip-text text-transparent mb-1 tracking-wider`}>
+                          {title}
+                        </h2>
+                        {isUpcoming && (
+                          <span className="px-2 py-1 bg-blue-600/30 text-blue-300 text-xs font-bold uppercase tracking-wide rounded-sm font-sans">
+                            Coming Soon
+                          </span>
                         )}
-
-                        {/* Animation placeholder text */}
-                        <p className="mt-6 text-gray-400">
-                          
-                          {/* Animation placeholder text */}
-                          {animation && !FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS 
-                            ? "Animations disabled" 
-                            : "Interactive demo coming soon"}
-                        </p>
-
                       </div>
-                    )}
-
+                    </div>
                   </div>
-
-                </div>
-                
-                {/* Bottom call-to-action container 1 */}
-                <div className="p-6 bg-gray-900/70 border-t border-gray-800 flex justify-between items-center">
                   
-                  {/* Bottom call-to-action container 2 */}
+                  {/* Two-column layout for larger screens, stacked for mobile - THIS IS THE MAIN CONTENT BODY */}
+                  <div className="grid md:grid-cols-2 grid-cols-1 gap-6 p-6 relative z-10">
+                    {/* Left column: Detailed description */}
+                    <div className="space-y-4">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">OVERVIEW</h3>
+                        <p className="text-gray-200 leading-relaxed font-sans text-sm">
+                          {description}
+                        </p>
+                      </div>
+                      {extendedDescription && (
+                        <div>
+                          <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">DETAILS</h3>
+                          <div className="text-gray-200 leading-relaxed space-y-3 font-sans text-sm">
+                            {extendedDescription.split('\n').map((paragraph, idx) => (
+                              <p key={idx}>
+                                {paragraph}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="mt-6 space-y-3">
+                        <h3 className="text-lg font-bold text-white/90 font-russo-one tracking-wider">HIGHLIGHTS</h3>
+                        <ul className="space-y-2 font-sans text-sm">
+                          {description.split('. ').filter(Boolean).map((point, idx) => (
+                            <li key={idx} className="flex gap-2 items-start">
+                              <span className={`inline-block h-5 w-5 flex-shrink-0 rounded-full bg-gradient-to-br ${colorScheme.primary} mt-0.5`}></span>
+                              <span className="text-gray-300">
+                                {point}.
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    {/* Right column: Animation/Diagram */}
+                    <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center min-h-[300px]">
+                      {animation && FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS ? (
+                        <div className="w-full h-full">
+                          {animation}
+                        </div>
+                      ) : (
+                        <div className="text-center p-10 h-full flex flex-col items-center justify-center">
+                          {featureImage ? (
+                            <motion.div
+                              className="relative w-full max-w-xs"
+                              animate={{ scale: [1, 1.03, 1], y: [0, -5, 0] }}
+                              transition={{ duration: 4, repeat: Infinity, repeatType: "reverse" }}
+                            >
+                              <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-lg blur-lg"></div>
+                              <img 
+                                src={featureImage} 
+                                alt={title} 
+                                className="relative rounded-lg w-full h-full object-cover"
+                              />
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              className="relative inline-block w-32 h-32"
+                              animate={{ 
+                                rotateY: 360, 
+                                boxShadow: [
+                                  `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`,
+                                  `0 0 40px rgba(var(--${colorScheme.secondary}-rgb), 0.6)`,
+                                  `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`
+                                ]
+                              }}
+                              transition={{ 
+                                rotateY: { duration: 8, repeat: Infinity, ease: "linear" },
+                                boxShadow: { duration: 2, repeat: Infinity }
+                              }}
+                            >
+                              <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${colorScheme.primary} opacity-70`}></div>
+                              <div className="absolute inset-0 flex items-center justify-center text-white transform scale-[3]">
+                                {icon}
+                              </div>
+                            </motion.div>
+                          )}
+                          <p className="mt-6 text-gray-400">
+                            {animation && !FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS 
+                              ? "Animations disabled" 
+                              : "Interactive demo coming soon"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div> { /* End of scrollable content area */}
+                
+                {/* Bottom call-to-action container - should be fixed at the bottom of the modal */}
+                <div className="p-6 bg-gray-900/70 border-t border-gray-800 flex justify-between items-center relative z-10 shrink-0">
                   <div className="text-sm text-gray-400">
-                    
-                    {/* Bottom call-to-action content */}
                     <span className="text-gray-300 font-semibold">DegenDuel</span> • Core Platform Feature
                   </div>
-
-                  {/* Close button */}
                   <button 
                     onClick={toggleExpand}
                     className={`px-4 py-2 rounded-md bg-gradient-to-r ${colorScheme.primary} text-white text-sm font-medium`}
                   >
-                    {/* Close button text */}
                     Close
                   </button>
-
                 </div>
 
               </motion.div>
-
             </motion.div>
-
           )}
         </AnimatePresence>
         

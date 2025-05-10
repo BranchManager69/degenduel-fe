@@ -17,10 +17,11 @@ export default {
         heading: ["var(--font-heading, 'Clash Display')", "sans-serif"],
         body: ["var(--font-body, 'Inter')", "system-ui", "sans-serif"],
         mono: ["var(--font-mono, 'JetBrains Mono')", "monospace"],
+        'fira-code': ['"Fira Code"', 'monospace'],
+        'digital-7': ['"Digital-7 Mono"', 'monospace'],
         numbers: ["var(--font-numbers, 'DM Mono')", "monospace"],
         accent: ["var(--font-accent, 'Plus Jakarta Sans')", "sans-serif"],
         pressStart: ["'Press Start 2P'", "cursive"],
-        orbitron: ["'Orbitron'", "sans-serif"],
       },
       colors: {
         brand: {

@@ -395,7 +395,8 @@ export const UnifiedWebSocketProvider: React.FC<{
         max: maxReconnectAttempts
       });
       setConnectionState(ConnectionState.ERROR);
-      setConnectionError(`Maximum reconnection attempts (${maxReconnectAttempts}) reached`);
+      setConnectionError(`Having trouble connecting...`);
+      //setConnectionError(`Maximum reconnection attempts (${maxReconnectAttempts}) reached`);
       return;
     }
     
