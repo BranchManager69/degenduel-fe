@@ -1,0 +1,160 @@
+[Config] Release date from environment variables: 
+{env_var: '2025-05-13T14:00:00-04:00', parsed_date: Tue May 13 2025 14:00:00 GMT-0400 (Eastern Daylight Time), display_full: 'May 13, 2025', display_short: 'May 13, 2025', display_time: '14:00:00'}
+config.ts:218 ⚔️ DegenDuel client configuration successful:
+config.ts:220 Using: 
+{environment: 'development', apiUrl: 'https://dev.degenduel.me/api', wsUrl: 'wss://dev.degenduel.me', port: '3005', hostname: 'dev.degenduel.me', …}
+config.ts:43 [AuthDebug:AuthService] 22:41:16.180 Initializing and restoring session...
+index.ts:4 API_URL configuration in use: 
+{environment: 'development', apiUrl: 'https://dev.degenduel.me/api'}
+wsMonitor.ts:45 [WSMonitor] WebSocket connection tracking initialized
+wsMonitor.ts:56 [WSMonitor] WebSocket connection attempt tracking initialized
+wsMonitor.ts:65 [WSMonitor] WebSocket error tracking initialized
+wsMonitor.ts:74 [WSMonitor] WebSocket suspension tracking initialized
+commands.ts:50 [Terminal Commands] Loading terminal data from server...
+App.tsx:154 [DEBUG][App.tsx] PRIVY_APP_ID: cm7w4m1m2004klfyxqi3px03l
+clientLogForwarder.ts:102 [LogForwarder] Initializing with console overrides. Verbose client console: true
+clientLogForwarder.ts:414 [LogForwarder] Fetching remote client logging setting from /api/v1/settings/client-logging-status
+clientLogForwarder.ts:106 [AuthDebug:AuthService] 22:41:16.189 Initialization complete.
+clientLogForwarder.ts:106 [App.tsx] Expected PRELAUNCH_BYPASS_KEY: beta
+clientLogForwarder.ts:106 [App.tsx] Received bypass from URL: null
+hook.js:608 DEPRECATED: 'isAuthenticated()' is deprecated. Use 'isAuthenticated' instead. The function version is deprecated in favor of the boolean property.
+hook.js:608 DEPRECATION TRACE: 'isAuthenticated()' call site
+overrideMethod	@	hook.js:608
+wrapped	@	deprecationWarning.ts:40
+useMigratedAuth	@	useMigratedAuth.ts:72
+AppProvidersAndContent	@	App.tsx:290
+react-stack-bottom-frame	@	react-dom-client.development.js:23863
+renderWithHooks	@	react-dom-client.development.js:5529
+updateFunctionComponent	@	react-dom-client.development.js:8897
+beginWork	@	react-dom-client.development.js:10522
+runWithFiberInDEV	@	react-dom-client.development.js:1519
+performUnitOfWork	@	react-dom-client.development.js:15132
+workLoopSync	@	react-dom-client.development.js:14956
+renderRootSync	@	react-dom-client.development.js:14936
+performWorkOnRoot	@	react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask	@	react-dom-client.development.js:16216
+performWorkUntilDeadline	@	scheduler.development.js:45
+<AppProvidersAndContent>		
+reactJsxRuntime_development.jsx	@	react-jsx-runtime.development.js:339
+App	@	App.tsx:281
+react-stack-bottom-frame	@	react-dom-client.development.js:23863
+renderWithHooks	@	react-dom-client.development.js:5529
+updateFunctionComponent	@	react-dom-client.development.js:8897
+beginWork	@	react-dom-client.development.js:10522
+runWithFiberInDEV	@	react-dom-client.development.js:1519
+performUnitOfWork	@	react-dom-client.development.js:15132
+workLoopSync	@	react-dom-client.development.js:14956
+renderRootSync	@	react-dom-client.development.js:14936
+performWorkOnRoot	@	react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask	@	react-dom-client.development.js:16216
+performWorkUntilDeadline	@	scheduler.development.js:45
+<App>		
+reactJsxRuntime_development.jsx	@	react-jsx-runtime.development.js:339
+(anonymous)	@	main.tsx:29
+hook.js:608 DEPRECATED: 'isAdmin()' is deprecated. Use 'user?.is_admin' instead. Direct property access is recommended for performance reasons.
+hook.js:608 DEPRECATION TRACE: 'isAdmin()' call site
+overrideMethod	@	hook.js:608
+wrapped	@	deprecationWarning.ts:40
+useMigratedAuth	@	useMigratedAuth.ts:73
+AppProvidersAndContent	@	App.tsx:290
+react-stack-bottom-frame	@	react-dom-client.development.js:23863
+renderWithHooks	@	react-dom-client.development.js:5529
+updateFunctionComponent	@	react-dom-client.development.js:8897
+beginWork	@	react-dom-client.development.js:10522
+runWithFiberInDEV	@	react-dom-client.development.js:1519
+performUnitOfWork	@	react-dom-client.development.js:15132
+workLoopSync	@	react-dom-client.development.js:14956
+renderRootSync	@	react-dom-client.development.js:14936
+performWorkOnRoot	@	react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask	@	react-dom-client.development.js:16216
+performWorkUntilDeadline	@	scheduler.development.js:45
+<AppProvidersAndContent>		
+reactJsxRuntime_development.jsx	@	react-jsx-runtime.development.js:339
+App	@	App.tsx:281
+react-stack-bottom-frame	@	react-dom-client.development.js:23863
+renderWithHooks	@	react-dom-client.development.js:5529
+updateFunctionComponent	@	react-dom-client.development.js:8897
+beginWork	@	react-dom-client.development.js:10522
+runWithFiberInDEV	@	react-dom-client.development.js:1519
+performUnitOfWork	@	react-dom-client.development.js:15132
+workLoopSync	@	react-dom-client.development.js:14956
+renderRootSync	@	react-dom-client.development.js:14936
+performWorkOnRoot	@	react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask	@	react-dom-client.development.js:16216
+performWorkUntilDeadline	@	scheduler.development.js:45
+<App>		
+reactJsxRuntime_development.jsx	@	react-jsx-runtime.development.js:339
+(anonymous)	@	main.tsx:29
+hook.js:608 DEPRECATED: 'isSuperAdmin()' is deprecated. Use 'user?.is_superadmin' instead. Direct property access is recommended for performance reasons.
+hook.js:608 DEPRECATION TRACE: 'isSuperAdmin()' call site
+overrideMethod	@	hook.js:608
+wrapped	@	deprecationWarning.ts:40
+useMigratedAuth	@	useMigratedAuth.ts:74
+AppProvidersAndContent	@	App.tsx:290
+react-stack-bottom-frame	@	react-dom-client.development.js:23863
+renderWithHooks	@	react-dom-client.development.js:5529
+updateFunctionComponent	@	react-dom-client.development.js:8897
+beginWork	@	react-dom-client.development.js:10522
+runWithFiberInDEV	@	react-dom-client.development.js:1519
+performUnitOfWork	@	react-dom-client.development.js:15132
+workLoopSync	@	react-dom-client.development.js:14956
+renderRootSync	@	react-dom-client.development.js:14936
+performWorkOnRoot	@	react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask	@	react-dom-client.development.js:16216
+performWorkUntilDeadline	@	scheduler.development.js:45
+<AppProvidersAndContent>		
+reactJsxRuntime_development.jsx	@	react-jsx-runtime.development.js:339
+App	@	App.tsx:281
+react-stack-bottom-frame	@	react-dom-client.development.js:23863
+renderWithHooks	@	react-dom-client.development.js:5529
+updateFunctionComponent	@	react-dom-client.development.js:8897
+beginWork	@	react-dom-client.development.js:10522
+runWithFiberInDEV	@	react-dom-client.development.js:1519
+performUnitOfWork	@	react-dom-client.development.js:15132
+workLoopSync	@	react-dom-client.development.js:14956
+renderRootSync	@	react-dom-client.development.js:14936
+performWorkOnRoot	@	react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask	@	react-dom-client.development.js:16216
+performWorkUntilDeadline	@	scheduler.development.js:45
+<App>		
+reactJsxRuntime_development.jsx	@	react-jsx-runtime.development.js:339
+(anonymous)	@	main.tsx:29
+clientLogForwarder.ts:106 [rpcClient] Creating RPC client for endpoint: https://dev.degenduel.me/api/solana-rpc/public WITHOUT DegenDuel JWT.
+hook.js:608 No background_scene in global system settings! Falling back to local default.
+clientLogForwarder.ts:106 PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:106 [Header STEP 4 - Error Banners Relocated] Rendering. User: null IsAuth: false IsAdmin: false Compact: false StoreError: No
+clientLogForwarder.ts:106 [App.tsx] Expected PRELAUNCH_BYPASS_KEY: beta
+clientLogForwarder.ts:106 [App.tsx] Received bypass from URL: null
+clientLogForwarder.ts:106 [rpcClient] Creating RPC client for endpoint: https://dev.degenduel.me/api/solana-rpc/public WITHOUT DegenDuel JWT.
+clientLogForwarder.ts:106 PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:106 [Header STEP 4 - Error Banners Relocated] Rendering. User: null IsAuth: false IsAdmin: false Compact: false StoreError: No
+hook.js:608 TypeError: console$1.log is not a function
+    at UnifiedTicker.tsx:60:13
+    at mountMemo (react-dom-client.development.js:6603:23)
+    at Object.useMemo (react-dom-client.development.js:22924:18)
+    at exports.useMemo (react.development.js:1209:34)
+    at UnifiedTicker (UnifiedTicker.tsx:58:28)
+    at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
+    at renderWithHooks (react-dom-client.development.js:5529:22)
+    at updateFunctionComponent (react-dom-client.development.js:8897:19)
+    at beginWork (react-dom-client.development.js:10522:18)
+    at runWithFiberInDEV (react-dom-client.development.js:1519:30)
+
+The above error occurred in the <UnifiedTicker> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.
+hook.js:608 [AppErrorBoundary] TypeError: console$1.log is not a function
+    at UnifiedTicker.tsx:60:13
+    at mountMemo (react-dom-client.development.js:6603:23)
+    at Object.useMemo (react-dom-client.development.js:22924:18)
+    at exports.useMemo (react.development.js:1209:34)
+    at UnifiedTicker (UnifiedTicker.tsx:58:28)
+    at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
+    at renderWithHooks (react-dom-client.development.js:5529:22)
+    at updateFunctionComponent (react-dom-client.development.js:8897:19)
+    at beginWork (react-dom-client.development.js:10522:18)
+    at runWithFiberInDEV (react-dom-client.development.js:1519:30) 
+{componentStack: '\n    at UnifiedTicker (https://dev.degenduel.me/as…ttps://dev.degenduel.me/assets/index.js:133818:5)'}
+hook.js:608 [LogForwarder] Failed to fetch remote logging setting (Status: 404), using default: true
+hook.js:608 [TerminalDataService] Terminal data not available from API, using default
+clientLogForwarder.ts:106 [Terminal Commands] Terminal data loaded successfully

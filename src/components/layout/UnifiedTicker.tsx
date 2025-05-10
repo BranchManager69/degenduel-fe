@@ -1,476 +1,565 @@
 // src/components/layout/UnifiedTicker.tsx
 
-import { formatDistanceToNow } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { AlertTriangle, Loader2, RefreshCw, Settings, TrendingUp, WifiOff } from "lucide-react";
+import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../store/useStore";
-import type { Contest, TokenData } from "../../types";
+import type { Contest, Token } from "../../types";
 
 interface Props {
   contests: Contest[];
   loading: boolean;
   isCompact?: boolean;
   maxTokens?: number;
+  storeError?: string | null;
+  systemError?: string | null;
 }
 
+//const SCROLL_SPEED_PX_PER_SECOND = 30; // Adjusted speed
+const HOVER_PAUSE_DELAY_MS = 100; // Small delay before hover-pause engages
+const INTERACTION_RESUME_DELAY_MS = 3000; // 3 seconds
+
 export const UnifiedTicker: React.FC<Props> = ({
-  contests,
-  loading,
+  contests: initialContests = [],
+  loading: contestsLoadingProp = true,
   isCompact = false,
   maxTokens = 8,
+  storeError,
+  systemError,
 }) => {
   const { maintenanceMode } = useStore();
-  const { tokensAsTokenData, isConnected, error, refresh: doRefresh } = useStandardizedTokenData("all");
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const {
+    tokens: standardizedTokens,
+    isLoading: tokensAreLoading,
+    refresh: refreshTokenData,
+    isConnected: isDataConnected,
+  } = useStandardizedTokenData("all");
+  const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
   const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("all");
-  const [significantChanges, setSignificantChanges] = useState<TokenData[]>([]);
-  const [containerWidth, setContainerWidth] = useState<number>(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStartX, setDragStartX] = useState(0);
-  const [dragScrollLeft, setDragScrollLeft] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [connectionAttempts, setConnectionAttempts] = useState(0);
 
-  // Sort contests: active first, then pending
-  const sortedContests = [...contests].sort((a, b) => {
-    const statusOrder = { active: 0, pending: 1, completed: 2, cancelled: 3 };
-    return statusOrder[a.status] - statusOrder[b.status];
-  });
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const scrollableContentRef = useRef<HTMLDivElement>(null);
+  const translateXRef = useRef<number>(0);
+  const animationFrameIdRef = useRef<number | null>(null);
+  const isInteractingRef = useRef<boolean>(false);
+  const isHoverPausedRef = useRef<boolean>(false);
+  const resumeTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverPauseTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const dragStartXRef = useRef<number>(0);
+  const scrollStartTranslateXRef = useRef<number>(0);
+  const lastTimestampRef = useRef<number>(0);
+  const actualContentWidthRef = useRef<number>(0);
+  const [measurementNonce, setMeasurementNonce] = useState(0);
 
-  // Process tokens without filtering for changes - show all tokens
+  const isOverallLoading = useMemo(() => {
+    const overall = contestsLoadingProp || tokensAreLoading;
+    return overall;
+  }, [contestsLoadingProp, tokensAreLoading]);
+
   useEffect(() => {
-    // Add more debugging to diagnose connection issues
-    console.log(`UnifiedTicker DEBUG: 
-      - isConnected: ${isConnected}
-      - Connection state: ${error ? 'ERROR' : 'OK'}
-      - Error: ${error || 'None'} 
-      - Tokens received: ${tokensAsTokenData ? tokensAsTokenData.length : 0}
-      - Connection attempts: ${connectionAttempts}
-    `);
+    console.log(`UnifiedTicker: PROP contestsLoadingProp changed to: ${contestsLoadingProp}`);
+  }, [contestsLoadingProp]);
 
-    if (!tokensAsTokenData || tokensAsTokenData.length === 0) return;
-
-    console.log(`UnifiedTicker: Processing ${tokensAsTokenData.length} tokens`);
-    
-    // Sort by absolute change percentage (highest first) but don't filter
-    // This ensures we always show tokens regardless of change percentage
-    const sorted = [...tokensAsTokenData].sort((a, b) => 
-      Math.abs(parseFloat(b.change24h || '0')) - Math.abs(parseFloat(a.change24h || '0'))
-    );
-    
-    // Take top N tokens based on maxTokens parameter
-    const tokensToShow = sorted.slice(0, maxTokens);
-    console.log(`UnifiedTicker: Showing ${tokensToShow.length} tokens`);
-    
-    // Force update the ticker data
-    setSignificantChanges(tokensToShow);
-    
-    // Force animation reset when token data changes
-    if (containerRef.current && !isMobileView) {
-      // Brief reset of animation to ensure it restarts properly
-      const currentAnimation = containerRef.current.style.animation;
-      containerRef.current.style.animation = 'none';
-      
-      // Force reflow
-      void containerRef.current.offsetWidth;
-      
-      // Restore animation
-      setTimeout(() => {
-        if (containerRef.current) {
-          containerRef.current.style.animation = currentAnimation || getAnimationSpeed();
-        }
-      }, 50);
-    }
-    
-  }, [tokensAsTokenData, maxTokens, isConnected, error, connectionAttempts]);
-  
-  // Manually trigger token data refresh when WebSocket is connected
   useEffect(() => {
-    // Only try to refresh when we're actually connected
-    if (isConnected && doRefresh) {
-      console.log("UnifiedTicker: WebSocket connected, refreshing token data");
-      doRefresh();
-      
-      // Set up interval for periodic refresh every 30 seconds
-      const intervalId = setInterval(() => {
-        if (doRefresh) {
-          console.log("UnifiedTicker: Periodic token data refresh");
-          doRefresh();
-        }
-      }, 30000);
-      
-      // Clean up interval on unmount
+    console.log(`UnifiedTicker: HOOK tokensAreLoading changed to: ${tokensAreLoading}`);
+  }, [tokensAreLoading]);
+
+  useEffect(() => {
+    setCurrentContests(initialContests);
+  }, [initialContests]);
+
+  useEffect(() => {
+    if (isDataConnected && refreshTokenData) {
+      refreshTokenData();
+      const intervalId = setInterval(() => { if (refreshTokenData) refreshTokenData(); }, 30000);
       return () => clearInterval(intervalId);
     }
-  }, [isConnected, doRefresh]);
+  }, [isDataConnected, refreshTokenData]);
 
-  // Handle container resize
   useEffect(() => {
     const updateWidth = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
+      if (viewportRef.current) {
+        const newWidth = viewportRef.current.offsetWidth;
+        if (newWidth > 0 && newWidth !== viewportWidth) {
+          setViewportWidth(newWidth);
+        }
       }
     };
-
+    if (!viewportRef.current) {
+      const timerId = setTimeout(updateWidth, 50);
+      return () => clearTimeout(timerId);
+    }
     updateWidth();
-    
-    // Create a ResizeObserver to detect container size changes
-    const resizeObserver = new ResizeObserver(updateWidth);
-    
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
+    const observer = new ResizeObserver(updateWidth);
+    if (viewportRef.current) {
+        observer.observe(viewportRef.current);
     }
-    
     return () => {
-      if (containerRef.current) {
-        resizeObserver.unobserve(containerRef.current);
+      if (viewportRef.current) {
+        observer.unobserve(viewportRef.current);
       }
+      observer.disconnect();
     };
-  }, []);
+  }, [viewportWidth]);
 
-  // Decide whether to use scroll or animation based on container width
-  const isMobileView = containerWidth < 640;
-  
-  // Debug helper to track content width changes and ensure continuous animation
-  useEffect(() => {
-    if (contentRef.current) {
-      const contentWidth = contentRef.current.offsetWidth;
-      console.log(`UnifiedTicker: Content width is ${contentWidth}px (Container width: ${containerWidth}px)`);
-      
-      // If content is narrower than container, we need different animation strategy
-      const needsSpecialAnimation = contentWidth > 0 && contentWidth < containerWidth * 0.9;
-      
-      if (needsSpecialAnimation && containerRef.current && !isMobileView) {
-        console.log("UnifiedTicker: Content is narrower than container - needs special animation");
-        
-        // Add multiple clones to fill the space
-        if (contentRef.current && containerRef.current) {
-          // Remove existing clones first
-          const existingClones = containerRef.current.querySelectorAll(".clone");
-          existingClones.forEach(clone => clone.remove());
-          
-          // Calculate how many clones we need (at least 4 to ensure continuous flow)
-          const clonesNeeded = Math.max(4, Math.ceil((containerWidth * 2) / contentWidth));
-          console.log(`UnifiedTicker: Creating ${clonesNeeded} clones to fill space`);
-          
-          // Create multiple clones
-          for (let i = 0; i < clonesNeeded; i++) {
-            const clone = contentRef.current.cloneNode(true) as HTMLDivElement;
-            clone.classList.add("clone");
-            containerRef.current.appendChild(clone);
-          }
-        }
-      }
-    }
-    
-    // Set up animation monitoring to ensure continuous movement
-    if (containerRef.current && !isMobileView) {
-      // Animation monitoring - restart animation if it stops
-      let animationObserver: number;
-      let lastPosition = -1;
-      let stuckCounter = 0;
-      
-      const checkAnimationProgress = () => {
-        if (containerRef.current && !isPaused) {
-          // Get computed transform to check if animation is actually moving
-          const style = window.getComputedStyle(containerRef.current);
-          const transform = style.getPropertyValue('transform');
-          const matrix = new DOMMatrix(transform);
-          const currentX = matrix.m41; // The X translation component
-          
-          // Check if position has changed
-          if (lastPosition === currentX) {
-            stuckCounter++;
-            console.log(`UnifiedTicker: Animation may be stuck (${stuckCounter})`);
-            
-            // If position hasn't changed for several checks, restart the animation
-            if (stuckCounter > 3) {
-              console.log("UnifiedTicker: Restarting stuck animation");
-              
-              // Briefly remove animation
-              const currentAnimation = containerRef.current.style.animation;
-              containerRef.current.style.animation = 'none';
-              
-              // Force reflow
-              void containerRef.current.offsetWidth;
-              
-              // Restore animation
-              setTimeout(() => {
-                if (containerRef.current) {
-                  containerRef.current.style.animation = currentAnimation || getAnimationSpeed();
-                  console.log("UnifiedTicker: Animation restarted");
-                }
-              }, 50);
-              
-              stuckCounter = 0;
-            }
-          } else {
-            // Position has changed, reset stuck counter
-            stuckCounter = 0;
-          }
-          
-          lastPosition = currentX;
-        }
-      };
-      
-      // Check every second if animation is still moving
-      animationObserver = window.setInterval(checkAnimationProgress, 1000);
-      
-      return () => {
-        clearInterval(animationObserver);
-      };
-    }
-  }, [containerWidth, sortedContests, significantChanges, activeTab, isPaused]);
-  
-  // Handle manual refresh for both contest and token data
-  const handleManualRefresh = () => {
-    console.log("UnifiedTicker: Manual refresh requested");
-    setIsRefreshing(true);
-    setConnectionAttempts(prev => prev + 1);
-    
-    // Refresh token data
-    if (doRefresh) {
-      doRefresh();
-    }
-    
-    // Set a timeout to reset refresh state
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 2000);
-  };
-
-  // Handle manual scrolling on mobile
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStartX(e.pageX - (containerRef.current?.offsetLeft || 0));
-    setDragScrollLeft(containerRef.current?.scrollLeft || 0);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    setDragStartX(e.touches[0].pageX - (containerRef.current?.offsetLeft || 0));
-    setDragScrollLeft(containerRef.current?.scrollLeft || 0);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    
-    const x = e.pageX - (containerRef.current?.offsetLeft || 0);
-    const walk = (x - dragStartX) * 2; // Scroll speed multiplier
-    
-    if (containerRef.current) {
-      containerRef.current.scrollLeft = dragScrollLeft - walk;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    
-    const x = e.touches[0].pageX - (containerRef.current?.offsetLeft || 0);
-    const walk = (x - dragStartX) * 2;
-    
-    if (containerRef.current) {
-      containerRef.current.scrollLeft = dragScrollLeft - walk;
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Setup scrolling vs. animation based on screen size
-  useEffect(() => {
-    console.log("UnifiedTicker: Setting up animation mode based on screen size");
-    
-    // Exit early if refs aren't ready
-    if (!containerRef.current || !contentRef.current) {
-      console.log("UnifiedTicker: Refs not ready yet");
+  const animateScroll = useCallback((timestamp: number) => {
+    if (!scrollableContentRef.current || isInteractingRef.current || isHoverPausedRef.current) {
+      animationFrameIdRef.current = null; 
       return;
     }
 
-    if (isMobileView) {
-      console.log("UnifiedTicker: Setting up MOBILE scrolling mode");
-      
-      // For mobile: Use horizontal scroll
-      // Remove any existing clones and animation
-      const existingClones = containerRef.current.querySelectorAll(".clone");
-      existingClones.forEach((clone) => clone.remove());
-      containerRef.current.style.animation = 'none';
+    if (lastTimestampRef.current === 0) {
+      lastTimestampRef.current = timestamp;
+    }
+    const deltaTime = timestamp - lastTimestampRef.current;
+    lastTimestampRef.current = timestamp;
 
-      // Add scroll snap
-      containerRef.current.className = containerRef.current.className
-        .replace(/ticker-animation/g, '')
-        .trim() + ' overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar';
-      
-      // Add snap points to children
-      Array.from(contentRef.current.children).forEach(child => {
-        (child as HTMLElement).classList.add('snap-start');
-      });
+    const scrollSpeed = 0.03; // pixels per millisecond
+    let newTranslateX = translateXRef.current - scrollSpeed * deltaTime;
+
+    if (actualContentWidthRef.current > 0 && Math.abs(newTranslateX) >= actualContentWidthRef.current) {
+      console.log(`UnifiedTicker: Resetting scroll. current: ${newTranslateX}, reset to: ${newTranslateX + actualContentWidthRef.current}`);
+      newTranslateX += actualContentWidthRef.current; 
+    }
+    
+    translateXRef.current = newTranslateX;
+    scrollableContentRef.current.style.transform = `translateX(${newTranslateX}px)`;
+
+    animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+  }, []);
+
+  const handleManualRefresh = useCallback(async () => {
+    console.log("UnifiedTicker: Manual refresh triggered.");
+    setIsRefreshing(true);
+    try {
+      await refreshTokenData();
+    } catch (error) {
+      console.error("UnifiedTicker: Error during manual refresh:", error);
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+        console.log("UnifiedTicker: Manual refresh complete.");
+        lastTimestampRef.current = 0;
+        setMeasurementNonce(prev => prev + 1);
+      }, 500);
+    }
+  }, [refreshTokenData]);
+
+  const significantChanges = useMemo(() => {
+    if (!standardizedTokens) return [];
+    return (standardizedTokens as Token[])
+      .filter(
+        (token: Token): token is Token =>
+          token.change24h !== undefined &&
+          token.price !== undefined &&
+          (Math.abs(parseFloat(token.change24h)) > 0.05 || (parseFloat(token.volume24h) || 0) > 10000)
+      )
+      .sort((a: Token, b: Token) => (parseFloat(b.volume24h) || 0) - (parseFloat(a.volume24h) || 0))
+      .slice(0, maxTokens);
+  }, [standardizedTokens, maxTokens]);
+  
+  const sortedContests = useMemo(() => {
+    if (!currentContests) return [];
+    return [...currentContests].sort(
+      (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    );
+  }, [currentContests]);
+
+  const originalTickerItems = useMemo(() => {
+    let items: ReactElement[] = [];
+    const showError = !!storeError;
+    const showSystemError = !!systemError;
+
+    if (showError || showSystemError) return [];
+
+    const contestItems =
+      activeTab === "all" || activeTab === "contests"
+        ? sortedContests.map((contest, index) => {
+            if (contest.id === 0 || contest.id === null || contest.id === undefined) {
+              console.warn(`UnifiedTicker: Problematic contest.id found! ID: '${contest.id}', Name: ${contest.name}, Index: ${index}`);
+            }
+            const contestKey = contest.id ? `contest-${contest.id}` : `contest-idx-${index}`;
+            return (
+              <div
+                key={contestKey}
+                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-brand-500/10 border border-brand-500/20 cursor-pointer hover:bg-brand-500/20 transition-colors"
+              >
+                <TrendingUp className="w-3 h-3 mr-1.5 text-brand-400" />
+                <span className="text-xs font-medium text-brand-300">
+                  {contest.name}
+                </span>
+                <span className="text-xs text-gray-400 ml-1.5">
+                  | {new Date(contest.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            );
+          })
+        : [];
+
+    const tokenItems =
+      activeTab === "all" || activeTab === "tokens"
+        ? significantChanges.map((token, index) => {
+            if (token.contractAddress === "" || token.contractAddress === null || token.contractAddress === undefined) {
+              console.warn(`UnifiedTicker: Problematic token.contractAddress found! Address: '${token.contractAddress}', Symbol: ${token.symbol}, Index: ${index}`);
+            }
+            const tokenKey = token.contractAddress ? `token-${token.contractAddress}` : `token-sym-${token.symbol}-${significantChanges.indexOf(token)}`;
+            const change24hNum = parseFloat(token.change24h);
+            const logoUrl = token.images?.imageUrl || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
+
+            return (
+              <div
+                key={tokenKey}
+                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-cyber-500/10 border border-cyber-500/20 cursor-pointer hover:bg-cyber-500/20 transition-colors"
+              >
+                <img src={logoUrl} alt={token.symbol} className="w-3.5 h-3.5 mr-1.5 rounded-full object-cover" />
+                <span className="text-xs font-medium text-cyber-300">
+                  {token.symbol}
+                </span>
+                <span className={`text-xs ml-1.5 ${change24hNum >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {change24hNum >= 0 ? '+' : ''}{(change24hNum * 100).toFixed(2)}%
+                </span>
+              </div>
+            );
+          })
+        : [];
+    
+    if (activeTab === "all") {
+        items = contestItems.concat(tokenItems);
+    } else if (activeTab === "contests") {
+        items = contestItems;
     } else {
-      console.log("UnifiedTicker: Setting up DESKTOP animation mode");
-      
-      // For desktop: Use animation
-      // Remove scroll properties
-      containerRef.current.className = containerRef.current.className
-        .replace(/overflow-x-auto/g, '')
-        .replace(/snap-x/g, '')
-        .replace(/snap-mandatory/g, '')
-        .replace(/scroll-smooth/g, '')
-        .replace(/hide-scrollbar/g, '')
-        .trim() + ' ticker-animation';
-      
-      // Remove snap points from children
-      Array.from(contentRef.current.children).forEach(child => {
-        (child as HTMLElement).classList.remove('snap-start');
-      });
+        items = tokenItems;
+    }
+    
+    if (items.length === 0 && !isOverallLoading && !showError && !showSystemError) {
+        const message = !isDataConnected ? "WEBSOCKET OFFLINE" : 
+                        activeTab === "contests" ? "NO ACTIVE DUELS" :
+                        activeTab === "tokens" ? "NO SIGNIFICANT TOKEN MOVEMENT" :
+                        "NO DATA AVAILABLE";
+        const icon = !isDataConnected ? <WifiOff className="w-3 h-3 mr-1.5 text-orange-400" /> : 
+                     <AlertTriangle className="w-3 h-3 mr-1.5 text-yellow-400" />;
+        items.push(
+            <div key="no-data-ticker" className="flex items-center justify-center px-4 py-2 h-full w-full text-center"> {/* This key is fine */}
+                {icon}
+                <span className="text-xs font-medium text-gray-400">{message}</span>
+            </div>
+        );
+    }
+    return items;
+  }, [activeTab, sortedContests, significantChanges, storeError, systemError, isOverallLoading, isDataConnected]);
 
-      // Remove any existing clones first
-      const existingClones = containerRef.current.querySelectorAll(".clone");
-      existingClones.forEach((clone) => clone.remove());
+  // Effect to measure the actual content width AFTER original items are rendered
+  useLayoutEffect(() => {
+    console.log(`UnifiedTicker: MEASUREMENT EFFECT RUNNING. isOverallLoading: ${isOverallLoading}, originalTickerItems.length: ${originalTickerItems.length}, viewportWidth: ${viewportWidth}, scrollableContentRef.current exists: ${!!scrollableContentRef.current}`);
 
-      // Clone items to create seamless loop only if we have content
-      const content = contentRef.current;
-      
-      // Log content dimensions before cloning
-      console.log(`UnifiedTicker: Content dimensions before cloning - Width: ${content.offsetWidth}px, Children: ${content.children.length}`);
-      
-      // Only clone if we have visible content
-      if (content.offsetWidth > 0 && content.children.length > 0) {
-        // Create multiple clones to ensure continuous animation
-        const contentWidth = content.offsetWidth;
-        const containerWidth = containerRef.current.offsetWidth;
-        
-        // We need at least 2x the container width for seamless animation
-        const clonesNeeded = Math.max(2, Math.ceil((containerWidth * 2) / contentWidth));
-        
-        console.log(`UnifiedTicker: Creating ${clonesNeeded} clones to ensure smooth animation`);
-        
-        for (let i = 0; i < clonesNeeded; i++) {
-          const clone = content.cloneNode(true) as HTMLDivElement;
-          clone.classList.add("clone"); // Add class to identify clones
-          containerRef.current.appendChild(clone);
+    // Only attempt to measure if not loading, and the main scrollable area is rendered
+    if (!isOverallLoading && scrollableContentRef.current && viewportWidth > 0) {
+      if (originalTickerItems.length > 0) {
+        if (originalTickerItems.length === 1 && originalTickerItems[0]?.key === "no-data-ticker") {
+          if (actualContentWidthRef.current !== 0) {
+            console.log(`UnifiedTicker: MEASUREMENT - Only 'no-data-ticker'. Resetting ACW from ${actualContentWidthRef.current} to 0.`);
+            actualContentWidthRef.current = 0;
+            setMeasurementNonce(prev => prev + 1);
+          } else {
+            console.log(`UnifiedTicker: MEASUREMENT - Only 'no-data-ticker'. ACW already 0.`);
+          }
+          return;
         }
-        
-        console.log("UnifiedTicker: Content cloned successfully");
-      } else {
-        console.log("UnifiedTicker: Content not ready for cloning yet (zero width or no children)");
+        const originalTransform = scrollableContentRef.current.style.transform;
+        scrollableContentRef.current.style.transform = 'translateX(0px)';
+        const newActualContentWidth = scrollableContentRef.current.scrollWidth;
+        scrollableContentRef.current.style.transform = originalTransform; 
+        if (newActualContentWidth > 0) {
+          if (actualContentWidthRef.current !== newActualContentWidth) {
+            console.log(`UnifiedTicker: MEASURING ACW. Old: ${actualContentWidthRef.current}, New: ${newActualContentWidth}, VPW: ${viewportWidth}`);
+            actualContentWidthRef.current = newActualContentWidth;
+            setMeasurementNonce(prev => prev + 1);
+          } else {
+            console.log(`UnifiedTicker: MEASURED ACW. No change from ${actualContentWidthRef.current}. VPW: ${viewportWidth}`);
+          }
+        } else {
+          console.log(`UnifiedTicker: MEASURED ACW resulted in 0. Actual items may be hidden or zero-width. VPW: ${viewportWidth}`);
+        }
+      } else { 
+        if (actualContentWidthRef.current !== 0) {
+            console.log(`UnifiedTicker: MEASUREMENT - No items (and not loading). Resetting ACW from ${actualContentWidthRef.current} to 0.`);
+            actualContentWidthRef.current = 0;
+            setMeasurementNonce(prev => prev + 1);
+        } else {
+            console.log(`UnifiedTicker: MEASUREMENT - No items (and not loading). ACW already 0.`);
+        }
       }
-      
-      // Ensure animation is properly set
-      const currentAnimation = containerRef.current.style.animation;
-      if (!currentAnimation || currentAnimation === 'none') {
-        containerRef.current.style.animation = getAnimationSpeed();
-        console.log(`UnifiedTicker: Animation set to ${getAnimationSpeed()}`);
-      }
+    } else {
+        console.log(`UnifiedTicker: MEASUREMENT - Conditions not met (isOverallLoading: ${isOverallLoading}, scrollableRef: ${!!scrollableContentRef.current}, viewportWidth: ${viewportWidth}).`);
     }
+  }, [originalTickerItems, viewportWidth, isOverallLoading]);
 
-    return () => {
-      // Cleanup clones when component unmounts or deps change
-      if (containerRef.current) {
-        const clones = containerRef.current.querySelectorAll(".clone");
-        clones.forEach((clone) => clone.remove());
-      }
-    };
-  }, [sortedContests, significantChanges, maintenanceMode, activeTab, isMobileView]);
+  const clonedItems = useMemo(() => {
+    console.log(`UnifiedTicker: PASS 2 - Recalculating clonedItems. Measured ACW: ${actualContentWidthRef.current}, VPW: ${viewportWidth}, Nonce: ${measurementNonce}`);
+    if (!originalTickerItems.length || viewportWidth === 0) {
+      console.log("UnifiedTicker: PASS 2 - No original items or no viewport width, returning original items.");
+      return originalTickerItems; 
+    }
+    if (originalTickerItems.length === 1 && originalTickerItems[0]?.key === "no-data-ticker") {
+        console.log("UnifiedTicker: PASS 2 - Only 'no-data-ticker', returning it directly without cloning.");
+        return originalTickerItems;
+    }
+    if (actualContentWidthRef.current === 0 && originalTickerItems.length > 0) {
+        console.log("UnifiedTicker: PASS 2 - ACW is 0 for actual content, returning originals, awaiting measurement effect.");
+        return originalTickerItems;
+    }
+    const itemsToRender = [originalTickerItems];
+    let currentRenderWidth = actualContentWidthRef.current;
+    if (actualContentWidthRef.current > 0 && originalTickerItems.length > 0) {
+        let numClones = 0;
+        const baseKey = "clone"; 
+        if (actualContentWidthRef.current < viewportWidth * 1.5) { 
+            while (currentRenderWidth < viewportWidth * 2.5 && numClones < 10) {
+                itemsToRender.push(originalTickerItems.map((item, index) => {
+                    const originalKey = item.key || `orig-idx-${index}`; 
+                    return React.cloneElement(item, { key: `${baseKey}-${numClones}-${originalKey}` });
+                }));
+                currentRenderWidth += actualContentWidthRef.current;
+                numClones++;
+            }
+        } else { 
+            itemsToRender.push(originalTickerItems.map((item, index) => {
+              const originalKey = item.key || `orig-idx-${index}`; 
+              return React.cloneElement(item, { key: `${baseKey}-0-${originalKey}` });
+            }));
+            numClones = 1;
+        }
+        console.log(`UnifiedTicker: PASS 2 - Cloned content ${numClones} times.`);
+    } else {
+        console.log("UnifiedTicker: PASS 2 - ACW is 0 or no original items, skipping cloning.");
+    }
+    return itemsToRender.flat();
+  }, [originalTickerItems, viewportWidth, measurementNonce]);
+  
+  const handleInteractionStart = useCallback((clientX: number) => {
+    if (resumeTimeoutIdRef.current) clearTimeout(resumeTimeoutIdRef.current);
+    if (hoverPauseTimeoutIdRef.current) clearTimeout(hoverPauseTimeoutIdRef.current);
+    isHoverPausedRef.current = false;
+    isInteractingRef.current = true;
+    dragStartXRef.current = clientX;
+    scrollStartTranslateXRef.current = translateXRef.current;
+    if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current);
+    animationFrameIdRef.current = null;
+    if (scrollableContentRef.current) scrollableContentRef.current.style.cursor = 'grabbing';
+  }, []);
 
-  // Make the ticker run faster or slower based on active tab and content amount
-  const getAnimationSpeed = () => {
-    if (isMobileView) return 'none'; // No animation on mobile
-    
-    // Get a reference to the content and container for width calculations
-    const content = contentRef.current;
-    const container = containerRef.current;
-    
-    if (!content || !container) {
-      // Default fallback animation if refs aren't available
-      return 'ticker 30s linear infinite';
+  const handleInteractionMove = useCallback((clientX: number) => {
+    if (!isInteractingRef.current || !scrollableContentRef.current) return;
+    const deltaX = clientX - dragStartXRef.current;
+    let newTranslateX = scrollStartTranslateXRef.current + deltaX;
+    translateXRef.current = newTranslateX;
+    scrollableContentRef.current.style.transform = `translateX(${newTranslateX}px)`;
+  }, []);
+
+  const handleInteractionEnd = useCallback(() => {
+    if (!isInteractingRef.current) return;
+    isInteractingRef.current = false;
+    if (scrollableContentRef.current) scrollableContentRef.current.style.cursor = 'grab';
+    if (resumeTimeoutIdRef.current) clearTimeout(resumeTimeoutIdRef.current);
+    resumeTimeoutIdRef.current = setTimeout(() => {
+      lastTimestampRef.current = 0;
+      if (!animationFrameIdRef.current && !isHoverPausedRef.current && scrollableContentRef.current && actualContentWidthRef.current > viewportWidth) {
+        animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+      }
+    }, INTERACTION_RESUME_DELAY_MS);
+  }, [animateScroll, viewportWidth]);
+
+  const handleMouseEnter = useCallback(() => {
+    if (isInteractingRef.current) return; 
+    if (hoverPauseTimeoutIdRef.current) clearTimeout(hoverPauseTimeoutIdRef.current);
+    hoverPauseTimeoutIdRef.current = setTimeout(() => {
+        if (isInteractingRef.current) return; 
+        isHoverPausedRef.current = true;
+        if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+    }, HOVER_PAUSE_DELAY_MS);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverPauseTimeoutIdRef.current) clearTimeout(hoverPauseTimeoutIdRef.current);
+    if (isInteractingRef.current) return; 
+    if (isHoverPausedRef.current) {
+        isHoverPausedRef.current = false;
+        lastTimestampRef.current = 0;
+        if (!animationFrameIdRef.current && scrollableContentRef.current && actualContentWidthRef.current > viewportWidth) {
+            animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+        }
     }
-    
-    // Calculate the optimal animation duration based on content width
-    const contentWidth = content.offsetWidth;
-    
-    // Pixels per second - adjust this value to change the base speed
-    // Lower = faster, Higher = slower
-    const pixelsPerSecond = 80; 
-    
-    // Calculate how long it should take to scroll the content (in seconds)
-    // We use the full content width as the distance to travel
-    let duration = contentWidth / pixelsPerSecond;
-    
-    // Ensure the duration is reasonable (not too fast or too slow)
-    duration = Math.max(15, Math.min(60, duration));
-    
-    // Determine if we have enough content based on active tab
-    if (activeTab === "contests" && sortedContests.length < 3) {
-      // Slow down for very few items
-      duration = 40;
-    } else if (activeTab === "tokens" && significantChanges.length < 3) {
-      // Slow down for very few items
-      duration = 40;
-    }
-    
-    console.log(`UnifiedTicker: Animation duration set to ${duration}s (Content width: ${contentWidth}px)`);
-    
-    // Return the animation with the calculated duration
-    return `ticker ${duration}s linear infinite`;
+  }, [animateScroll, viewportWidth]);
+
+  const onMouseDown = (e: React.MouseEvent) => handleInteractionStart(e.clientX);
+  const onMouseMove = (e: React.MouseEvent) => handleInteractionMove(e.clientX);
+  const onMouseUpOrLeave = () => { 
+    if(isInteractingRef.current) handleInteractionEnd();
   };
+  const onTouchStart = (e: React.TouchEvent) => handleInteractionStart(e.touches[0].clientX);
+  const onTouchMove = (e: React.TouchEvent) => { e.preventDefault(); handleInteractionMove(e.touches[0].clientX);};
+  const onTouchEnd = () => handleInteractionEnd();
 
-  // Glow effect for tab buttons
   const tabButtonVariants = {
-    active: {
-      opacity: 1,
-      scale: 1,
-      boxShadow: [
-        "0 0 0px rgba(153, 51, 255, 0.5)",
-        "0 0 5px rgba(153, 51, 255, 0.5)",
-        "0 0 3px rgba(153, 51, 255, 0.5)",
-      ],
-      transition: {
-        boxShadow: {
-          repeat: Infinity,
-          repeatType: "reverse" as const,
-          duration: 2,
-        },
-      },
-    },
-    inactive: {
-      opacity: 0.7,
-      scale: 0.95,
-      boxShadow: "0 0 0px rgba(153, 51, 255, 0)",
-    },
+    active: { scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 20 } },
+    inactive: { scale: 1 },
   };
+
+  const renderTickerContentArea = () => {
+    console.log(`UnifiedTicker: renderTickerContentArea CALLED. isOverallLoading: ${isOverallLoading}, ContestsLoading: ${contestsLoadingProp}, TokensLoading: ${tokensAreLoading}, scrollableContentRef.current exists: ${!!scrollableContentRef.current}, originalTickerItems.length: ${originalTickerItems.length}`);
+
+    const showError = !!storeError;
+    const showSystemError = !!systemError;
+
+    if (showError) {
+      return (
+        <div className="flex items-center justify-center px-4 py-2 h-full w-full bg-red-500/10 text-red-300" ref={viewportRef}>
+          <AlertTriangle className="w-4 h-4 mr-2 text-red-400" />
+          <span className="text-xs font-medium">{storeError}</span>
+        </div>
+      );
+    }
+    if (showSystemError) {
+      return (
+        <div className="flex items-center justify-center px-4 py-2 h-full w-full bg-orange-500/10 text-orange-300" ref={viewportRef}>
+          <Settings className="w-4 h-4 mr-2 text-orange-400" />
+          <span className="text-xs font-medium">{systemError}</span>
+        </div>
+      );
+    }
+    
+    if (isOverallLoading && originalTickerItems.length === 0) {
+      console.log("UnifiedTicker: renderTickerContentArea - RENDERING LOADING STATE");
+      return (
+        <div className="flex items-center justify-center w-full overflow-hidden h-full" ref={viewportRef}>
+          <div className={`flex items-center justify-center px-4 py-2 h-full w-full`}>
+            <Loader2 className="w-4 h-4 mr-2 text-blue-400 animate-spin" />
+            <span className="text-xs font-mono text-blue-400">LOADING INITIAL DATA...</span>
+          </div>
+        </div>
+      );
+    }
+
+    console.log("UnifiedTicker: renderTickerContentArea - RENDERING MAIN CONTENT AREA (where scrollableContentRef should be set)");
+    return (
+      <div
+        ref={viewportRef}
+        className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing"
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUpOrLeave}
+        onMouseLeave={() => { 
+          onMouseUpOrLeave(); 
+          handleMouseLeave(); 
+        }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onMouseEnter={handleMouseEnter}
+      >
+        <div
+          ref={scrollableContentRef}
+          className={`inline-flex items-center h-full flex-nowrap ${isCompact ? "text-xs" : "text-sm"}`}
+          style={{ willChange: "transform", transform: `translateX(${translateXRef.current}px)` }}
+        >
+          {(() => {
+            clonedItems.forEach((item, index) => {
+              if (item === null || item === undefined) {
+                console.error(`UnifiedTicker: Found null or undefined item in clonedItems at index ${index}!`, "Full clonedItems snapshot:", clonedItems.map(ci => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
+              } else if (typeof item !== 'object' || !React.isValidElement(item)) {
+                console.error(`UnifiedTicker: Found non-element in clonedItems at index ${index}! Item:`, item, "Full clonedItems snapshot:", clonedItems.map(ci => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
+              } else if (item.key === "" || item.key === null || item.key === undefined) {
+                console.error(`UnifiedTicker: Rendering item with problematic key! Index: ${index}, Key: '${item.key}', Item Type: ${item.type?.toString()}`, "Full clonedItems snapshot:", clonedItems.map(ci => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
+              }
+            });
+            return clonedItems.map((item) => item);
+          })()}
+        </div>
+      </div>
+    );
+  };
+
+  const floatingTabs = (
+    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex space-x-0.5">
+      <AnimatePresence>
+        <motion.button
+          key="tab-all"
+          onClick={() => setActiveTab("all")}
+          initial="inactive"
+          animate={activeTab === "all" ? "active" : "inactive"}
+          variants={tabButtonVariants}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
+            activeTab === "all"
+              ? "bg-gradient-to-r from-brand-400/20 to-cyber-400/20 text-brand-400 shadow-brand"
+              : "text-gray-400 hover:text-gray-300"
+          }`}
+        >
+          ALL
+        </motion.button>
+        <motion.button
+          key="tab-contests"
+          onClick={() => setActiveTab("contests")}
+          initial="inactive"
+          animate={activeTab === "contests" ? "active" : "inactive"}
+          variants={tabButtonVariants}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
+            activeTab === "contests"
+              ? "bg-brand-400/20 text-brand-400 shadow-brand"
+              : "text-gray-400 hover:text-gray-300"
+          }`}
+        >
+          DUELS
+        </motion.button>
+        <motion.button
+          key="tab-tokens"
+          onClick={() => setActiveTab("tokens")}
+          initial="inactive"
+          animate={activeTab === "tokens" ? "active" : "inactive"}
+          variants={tabButtonVariants}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
+            activeTab === "tokens"
+              ? "bg-cyber-400/20 text-cyber-400 shadow-cyber"
+              : "text-gray-400 hover:text-gray-300"
+          }`}
+        >
+          PRICES
+        </motion.button>
+        <button 
+          key="tab-refresh"
+          onClick={handleManualRefresh}
+          className="ml-1 bg-dark-400/30 hover:bg-dark-400/40 border border-blue-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-blue-300"
+          disabled={isRefreshing || (isOverallLoading && originalTickerItems.length === 0)}
+          title="Refresh data"
+        >
+          <span className={`${(isRefreshing || (isOverallLoading && originalTickerItems.length === 0)) ? 'hidden' : 'inline-block'}`}><RefreshCw size={10}/></span>
+          <span className={`${(isRefreshing || (isOverallLoading && originalTickerItems.length === 0)) ? 'inline-block animate-spin' : 'hidden'}`}><Loader2 size={10}/></span>
+        </button>
+      </AnimatePresence>
+    </div>
+  );
+
+  const currentHeightClass = storeError || systemError ? isCompact ? "h-10" : "h-12" : isCompact ? "h-10 sm:h-10" : "h-12 sm:h-12";
 
   if (maintenanceMode) {
     return (
-      <div className="bg-dark-200/60 backdrop-blur-sm border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative w-full">
+      <div className="bg-dark-200/60 backdrop-blur-sm border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative w-full h-full">
         <div
-          ref={containerRef}
-          className={`inline-flex items-center w-full ${!isMobileView ? 'ticker-animation' : 'overflow-x-auto hide-scrollbar'}`}
-          style={{
-            animation: isMobileView ? 'none' : "ticker 30s linear infinite",
-            animationPlayState: isPaused ? "paused" : "running",
-            maxHeight: isCompact ? "1.5rem" : "2rem",
-          }}
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => {
-            setIsPaused(false);
-            if (isMobileView) handleMouseUp();
-          }}
-          onMouseDown={isMobileView ? handleMouseDown : undefined}
-          onMouseMove={isMobileView ? handleMouseMove : undefined}
-          onMouseUp={isMobileView ? handleMouseUp : undefined}
-          onTouchStart={isMobileView ? handleTouchStart : undefined}
-          onTouchMove={isMobileView ? handleTouchMove : undefined}
-          onTouchEnd={isMobileView ? handleMouseUp : undefined}
+          ref={viewportRef}
+          className={`inline-flex items-center w-full h-full`}
         >
           <div
-            ref={contentRef}
-            className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 ${isCompact ? 'h-6' : 'h-8'}`}
+            ref={scrollableContentRef}
+            className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 h-full`}
           >
             <div className="inline-flex items-center space-x-4 text-sm">
               <span className="text-yellow-400 font-mono">
@@ -500,668 +589,29 @@ export const UnifiedTicker: React.FC<Props> = ({
     );
   }
 
-  if (loading) {
-    return (
-      <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300">
-        <div className={`animate-pulse bg-dark-300/50 ${isCompact ? 'h-6' : 'h-8'}`} />
-      </div>
-    );
-  }
-
-  // No content - Add better logging and connection indicator
-  if (sortedContests.length === 0 && significantChanges.length === 0) {
-    console.log(`UnifiedTicker: No content available. Contests: ${contests.length}, Tokens loaded: ${tokensAsTokenData?.length || 0}, WebSocket connected: ${isConnected}`);
-    
-    // No need for authentication check since we're showing connection status
-    
-    // Show connection diagnostics first - preserve error visibility for debugging
-    if (error || (tokensAsTokenData?.length === 0 && !isConnected)) {
-      return (
-        <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
-          <div
-            ref={containerRef}
-            className={`flex items-center justify-center w-full overflow-hidden`}
-            style={{
-              maxHeight: isCompact ? "1.5rem" : "2rem",
-            }}
-          >
-            <div
-              ref={contentRef}
-              className={`flex items-center justify-center px-4 flex-shrink-0 ${isCompact ? 'h-6' : 'h-8'} w-full`}
-            >
-              <div className="flex items-center space-x-4 text-sm">
-                {error ? (
-                  <>
-                    <span className="font-mono text-red-400">
-                      <span className="animate-ping inline-block h-2 w-2 rounded-full bg-red-500 opacity-75 mr-2"></span>
-                      CONNECTION ERROR
-                    </span>
-                    <button 
-                      onClick={handleManualRefresh}
-                      className="ml-2 bg-red-900/30 hover:bg-red-800/30
-                        border border-red-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-red-300"
-                      title="Retry connection"
-                    >
-                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-0.5'}`}>↻</span>
-                      <span className={`${isRefreshing ? 'inline-block mr-0.5 animate-spin' : 'hidden'}`}>◌</span>
-                      RETRY
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-mono text-amber-500">
-                      <span className="animate-ping inline-block h-2 w-2 rounded-full bg-amber-500 opacity-75 mr-2"></span>
-                      CONNECTING
-                      {connectionAttempts > 0 ? ` (${connectionAttempts + 1})` : ''}
-                    </span>
-                    <button 
-                      onClick={handleManualRefresh}
-                      className="ml-2 bg-dark-400/30 hover:bg-dark-400/40
-                        border border-brand-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-brand-300"
-                      disabled={isRefreshing}
-                      title="Refresh data"
-                    >
-                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-0.5'}`}>↻</span>
-                      <span className={`${isRefreshing ? 'inline-block mr-0.5 animate-spin' : 'hidden'}`}>◌</span>
-                      SYNC
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    // This should never be reached now, but keep it for safety
-    if (false) {
-      return (
-        <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
-          <div
-            ref={containerRef}
-            className={`flex items-center justify-center w-full overflow-hidden`}
-            style={{
-              maxHeight: isCompact ? "1.5rem" : "2rem",
-            }}
-          >
-            <div
-              ref={contentRef}
-              className={`flex items-center justify-center px-4 flex-shrink-0 ${isCompact ? 'h-6' : 'h-8'} w-full`}
-            >
-              <div className="flex items-center space-x-4 text-sm">
-                {error ? (
-                  <>
-                    <span className="font-mono text-red-400">
-                      <span className="animate-ping inline-block h-2 w-2 rounded-full bg-red-500 opacity-75 mr-2"></span>
-                      CONNECTION ERROR
-                    </span>
-                    <button 
-                      onClick={handleManualRefresh}
-                      className="ml-2 bg-red-900/30 hover:bg-red-800/30
-                        border border-red-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-red-300"
-                      title="Retry connection"
-                    >
-                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-0.5'}`}>↻</span>
-                      <span className={`${isRefreshing ? 'inline-block mr-0.5 animate-spin' : 'hidden'}`}>◌</span>
-                      RETRY
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-mono text-amber-500">
-                      <span className="animate-ping inline-block h-2 w-2 rounded-full bg-amber-500 opacity-75 mr-2"></span>
-                      CONNECTING
-                      {connectionAttempts > 0 ? ` (${connectionAttempts + 1})` : ''}
-                    </span>
-                    <button 
-                      onClick={handleManualRefresh}
-                      className="ml-2 bg-dark-400/30 hover:bg-dark-400/40
-                        border border-brand-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-brand-300"
-                      disabled={isRefreshing}
-                      title="Refresh data"
-                    >
-                      <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-0.5'}`}>↻</span>
-                      <span className={`${isRefreshing ? 'inline-block mr-0.5 animate-spin' : 'hidden'}`}>◌</span>
-                      SYNC
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    // If we're waiting for data but connected, show simple loading state
-    if (tokensAsTokenData?.length === 0) {
-      return (
-        <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
-          <div className="flex items-center justify-center w-full overflow-hidden" ref={containerRef}>
-            <div className={`flex items-center justify-center px-4 py-2 ${isCompact ? 'h-6' : 'h-8'} w-full`} ref={contentRef}>
-              <div className="flex items-center space-x-4 text-sm">
-                <span className="font-mono text-blue-400">
-                  <span className="animate-pulse inline-block h-2 w-2 rounded-full bg-blue-500 opacity-75 mr-2"></span>
-                  LOADING DATA
-                </span>
-                <button 
-                  onClick={handleManualRefresh}
-                  className="ml-2 bg-dark-400/30 hover:bg-dark-400/40
-                    border border-blue-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-blue-300"
-                  disabled={isRefreshing}
-                  title="Refresh data"
-                >
-                  <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-0.5'}`}>↻</span>
-                  <span className={`${isRefreshing ? 'inline-block mr-0.5 animate-spin' : 'hidden'}`}>◌</span>
-                  REFRESH
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    // If we're connected but have no real data, show this message
-    return (
-      <div className="bg-dark-200/60 backdrop-blur-sm border-y border-dark-300 overflow-hidden whitespace-nowrap relative w-full">
-        <div
-          ref={containerRef}
-          className="flex items-center justify-center w-full"
-          style={{
-            maxHeight: isCompact ? "1.5rem" : "2rem",
-          }}
-        >
-          <div
-            ref={contentRef}
-            className={`flex items-center justify-center px-4 flex-shrink-0 ${isCompact ? 'h-6' : 'h-8'} w-full`}
-          >
-            <div className="flex items-center space-x-4 text-sm">
-              <span className="text-gray-400">No featured duels or significant price movements at the moment.</span>
-              <span className="text-gray-500">•</span>
-              <span className="text-gray-400">Check back soon for updates</span>
-              <button 
-                onClick={handleManualRefresh}
-                className="ml-2 bg-dark-400/30 hover:bg-dark-400/40
-                  border border-purple-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-purple-300"
-                disabled={isRefreshing}
-                title="Refresh data"
-              >
-                <span className={`${isRefreshing ? 'hidden' : 'inline-block mr-0.5'}`}>↻</span>
-                <span className={`${isRefreshing ? 'inline-block mr-0.5 animate-spin' : 'hidden'}`}>◌</span>
-                REFRESH
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Floating tab UI with motion animation
-  const floatingTabs = (
-    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex space-x-0.5">
-      <AnimatePresence>
-        <motion.button
-          onClick={() => setActiveTab("all")}
-          initial="inactive"
-          animate={activeTab === "all" ? "active" : "inactive"}
-          variants={tabButtonVariants}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
-            activeTab === "all"
-              ? "bg-gradient-to-r from-brand-400/20 to-cyber-400/20 text-brand-400 shadow-brand"
-              : "text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          ALL
-        </motion.button>
-        <motion.button
-          onClick={() => setActiveTab("contests")}
-          initial="inactive"
-          animate={activeTab === "contests" ? "active" : "inactive"}
-          variants={tabButtonVariants}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
-            activeTab === "contests"
-              ? "bg-brand-400/20 text-brand-400 shadow-brand"
-              : "text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          DUELS
-        </motion.button>
-        <motion.button
-          onClick={() => setActiveTab("tokens")}
-          initial="inactive"
-          animate={activeTab === "tokens" ? "active" : "inactive"}
-          variants={tabButtonVariants}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
-            activeTab === "tokens"
-              ? "bg-cyber-400/20 text-cyber-400 shadow-cyber"
-              : "text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          PRICES
-        </motion.button>
-      </AnimatePresence>
-    </div>
-  );
-
-  // Unified Ticker (edge-to-edge) with modern design
   return (
-    <div className="relative w-full overflow-hidden block">
-      {/* Dark base layer with slightly increased opacity for better readability */}
-      <div className="absolute inset-0 bg-dark-200/70 backdrop-blur-sm" />
-
-      {/* Animated gradient background - different for each tab */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: activeTab === "all" || activeTab === "contests" ? 0.5 : 0,
-          }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0 bg-gradient-to-br from-brand-900/40 via-brand-500/20 to-brand-900/40"
-        />
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: activeTab === "all" || activeTab === "tokens" ? 0.5 : 0,
-          }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0 bg-gradient-to-br from-cyber-900/40 via-cyber-500/20 to-cyber-900/40"
-        />
-        
-        {/* Moving light beam effect */}
-        <motion.div
-          initial={{ x: "-100%" }}
-          animate={{ x: "200%" }}
-          transition={{ 
-            repeat: Infinity, 
-            duration: 5,
-            ease: "linear",
-          }}
-          className="absolute inset-y-0 w-1/4 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-        />
-        
-        {/* Data particles for cyber feel */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(153,0,255,0.05),transparent_30%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(0,225,255,0.05),transparent_30%)]" />
+    <div 
+        id="unified-ticker-parent-for-measurement" 
+        className={`relative w-full group/ticker bg-dark-200/60 backdrop-blur-sm border-y border-dark-300/50 ${currentHeightClass}`}
+    >
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/20 via-brand-500/10 to-brand-900/20 opacity-30 animate-gradientX" style={{ animationDuration: "10s" }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-cyber-900/20 via-cyber-500/10 to-cyber-900/20 opacity-30 animate-gradientX" style={{ animationDelay: "-5s", animationDuration: "10s" }} />
+        <div className="absolute inset-y-0 w-1/4 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-scan-slow opacity-50" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(153,0,255,0.03),transparent_20%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(0,225,255,0.03),transparent_20%)]" />
       </div>
-
-      {/* Animated scan effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: activeTab === "all" || activeTab === "contests" ? 0.3 : 0 
-          }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(99,102,241,0.05)_50%,transparent_100%)] animate-scan-fast"
-        />
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ 
-            opacity: activeTab === "all" || activeTab === "tokens" ? 0.3 : 0 
-          }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(0,225,255,0.05)_50%,transparent_100%)] animate-scan-fast"
-        />
-        
-        <div 
-          className="absolute inset-x-0 h-1/2 bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-cyber-scan" 
-          style={{ animationDuration: "3s" }}
-        />
-      </div>
-
-      {/* Glowing borders with gradient that changes based on tab */}
-      <motion.div 
-        className="absolute inset-x-0 top-0"
-        initial={{ boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
-        animate={{ 
-          boxShadow: activeTab === "tokens" 
-            ? "0 1px 6px rgba(0, 225, 255, 0.3)" 
-            : activeTab === "contests" 
-              ? "0 1px 6px rgba(153, 51, 255, 0.3)"
-              : "0 1px 6px rgba(153, 51, 255, 0.2)"
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div 
-          className="h-[1px] bg-gradient-to-r from-transparent to-transparent"
-          animate={{ 
-            backgroundImage: activeTab === "tokens" 
-              ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" 
-              : activeTab === "contests" 
-                ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)"
-                : "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.3), rgba(0, 225, 255, 0.3), transparent)"
-          }}
-          transition={{ duration: 0.5 }}
-        />
+      <motion.div  className="absolute inset-x-0 top-0 pointer-events-none" animate={{ boxShadow: storeError ? "0 1px 6px rgba(239, 68, 68, 0.4)" : systemError ? "0 1px 6px rgba(249, 115, 22, 0.4)" : activeTab === "tokens" ? "0 1px 6px rgba(0, 225, 255, 0.3)" :  activeTab === "contests" ? "0 1px 6px rgba(153, 51, 255, 0.3)" :"0 1px 6px rgba(100, 100, 150, 0.2)" }} >
+        <motion.div className="h-[1px] bg-gradient-to-r from-transparent to-transparent" animate={{ backgroundImage: storeError ? "linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)" : systemError ? "linear-gradient(to right, transparent, rgba(249, 115, 22, 0.5), transparent)" : activeTab === "tokens" ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" :  activeTab === "contests" ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)" : "linear-gradient(to right, transparent, rgba(100,100,150,0.3), rgba(100,100,150,0.3), transparent)"}} />
+      </motion.div>
+      <motion.div className="absolute inset-x-0 bottom-0 pointer-events-none" animate={{ boxShadow: storeError ? "0 -1px 6px rgba(239, 68, 68, 0.4)" : systemError ? "0 -1px 6px rgba(249, 115, 22, 0.4)" : activeTab === "tokens" ? "0 -1px 6px rgba(0, 225, 255, 0.3)" : activeTab === "contests" ? "0 -1px 6px rgba(153, 51, 255, 0.3)" : "0 -1px 6px rgba(100, 100, 150, 0.2)" }} >
+        <motion.div className="h-[1px] bg-gradient-to-r from-transparent to-transparent" animate={{ backgroundImage: storeError ? "linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)" : systemError ? "linear-gradient(to right, transparent, rgba(249, 115, 22, 0.5), transparent)" : activeTab === "tokens" ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" :  activeTab === "contests" ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)" : "linear-gradient(to right, transparent, rgba(100,100,150,0.3), rgba(100,100,150,0.3), transparent)"}} />
       </motion.div>
       
-      <motion.div 
-        className="absolute inset-x-0 bottom-0"
-        initial={{ boxShadow: "0 0 0px rgba(0, 0, 0, 0)" }}
-        animate={{ 
-          boxShadow: activeTab === "tokens" 
-            ? "0 -1px 6px rgba(0, 225, 255, 0.3)" 
-            : activeTab === "contests" 
-              ? "0 -1px 6px rgba(153, 51, 255, 0.3)"
-              : "0 -1px 6px rgba(153, 51, 255, 0.2)"
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div 
-          className="h-[1px] bg-gradient-to-r from-transparent to-transparent"
-          animate={{ 
-            backgroundImage: activeTab === "tokens" 
-              ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" 
-              : activeTab === "contests" 
-                ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)"
-                : "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.3), rgba(0, 225, 255, 0.3), transparent)"
-          }}
-          transition={{ duration: 0.5 }}
-        />
-      </motion.div>
+      {(!storeError && !systemError && (originalTickerItems.length > 0 || isOverallLoading)) && floatingTabs}
+      
+      {renderTickerContentArea()}
 
-      {/* Tab buttons only shown when we have both contests and tokens */}
-      {(sortedContests.length > 0 && significantChanges.length > 0) && floatingTabs}
-
-      {/* Content container */}
-      <div
-        className={`relative transition-all duration-200 ease-out ${
-          isCompact ? "h-6" : "h-8"
-        }`}
-      >
-        <div className="h-full overflow-hidden whitespace-nowrap">
-          {/* Mobile hint (shows on small screens) */}
-          {isMobileView && (
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-dark-300/70 backdrop-blur-sm text-[10px] text-gray-400 px-1.5 py-0.5 rounded-sm z-10 pointer-events-none">
-              Swipe ↔
-            </div>
-          )}
-          
-          {/* Parent Container */}
-          <div
-            ref={containerRef}
-            className={`inline-flex items-center w-full ${!isMobileView ? 'ticker-animation' : 'overflow-x-auto hide-scrollbar'}`}
-            style={{
-              animation: getAnimationSpeed(),
-              animationPlayState: isPaused ? "paused" : "running",
-              scrollBehavior: "smooth",
-              position: "relative", // Ensure positioned context for proper animation
-              overflow: isMobileView ? "auto" : "hidden", // Important for animation containment
-              willChange: "transform", // Performance optimization
-            }}
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => {
-              setIsPaused(false);
-              if (isMobileView) handleMouseUp();
-            }}
-            onMouseDown={isMobileView ? handleMouseDown : undefined}
-            onMouseMove={isMobileView ? handleMouseMove : undefined}
-            onMouseUp={isMobileView ? handleMouseUp : undefined}
-            onTouchStart={isMobileView ? handleTouchStart : undefined}
-            onTouchMove={isMobileView ? handleTouchMove : undefined}
-            onTouchEnd={isMobileView ? handleMouseUp : undefined}
-          >
-            {/* Content Container */}
-            <div
-              ref={contentRef}
-              className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 transition-all duration-200 ease-out min-w-max
-                ${isCompact ? "text-xs" : "text-sm"}`}
-            >
-              {/* Show content based on active tab */}
-              {(activeTab === "all" || activeTab === "contests") && sortedContests.map((contest) => (
-                <Link
-                  key={contest.id}
-                  to={`/contests/${contest.id}`}
-                  className={`group/item relative inline-flex items-center space-x-2 hover:bg-dark-300/50 px-2 py-1 rounded transition-all duration-300 ${
-                    contest.status === "cancelled"
-                      ? "line-through opacity-60"
-                      : ""
-                  } ${isMobileView ? 'snap-start min-w-max' : ''}`}
-                  title={contest.description}
-                >
-                  {/* Hover background effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 animate-data-stream rounded" />
-
-                  {/* Status-based Contest Indicator */}
-                  {contest.status === "active" ? (
-                    <span className="inline-flex items-center text-green-400 group-hover/item:text-green-300 space-x-1.5 transition-colors">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                      </span>
-                      <span className="font-bold animate-pulse group-hover/item:text-green-300 transition-colors">
-                        LIVE NOW
-                      </span>
-                    </span>
-                  ) : contest.status === "pending" ? (
-                    <span className="inline-flex items-center text-cyber-400 group-hover/item:text-cyber-300 space-x-1.5 transition-colors">
-                      <span className="relative flex h-2 w-2">
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-cyber-500 animate-pulse" />
-                      </span>
-                      <span className="font-bold group-hover/item:text-cyber-300 transition-colors">
-                        OPEN
-                      </span>
-                    </span>
-                  ) : contest.status === "completed" ? (
-                    <span className="text-green-400/50 group-hover/item:text-green-300 font-medium transition-colors">
-                      ENDED
-                    </span>
-                  ) : (
-                    <span className="text-red-400/50 group-hover/item:text-red-300 font-medium transition-colors">
-                      CANCELLED
-                    </span>
-                  )}
-
-                  {/* Contest Name */}
-                  <span
-                    className={`font-medium transition-colors ${
-                      contest.status === "active"
-                        ? "text-gray-300 group-hover/item:text-gray-200"
-                        : contest.status === "pending"
-                          ? "text-gray-300 group-hover/item:text-gray-200"
-                          : contest.status === "completed"
-                            ? "text-green-300/50 group-hover/item:text-green-200"
-                            : "text-red-300/50 group-hover/item:text-red-200"
-                    }`}
-                  >
-                    {contest.name}
-                  </span>
-
-                  {/* Solana amounts with gradient text */}
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={`text-sm bg-gradient-to-r ${
-                        contest.status === "active"
-                          ? "from-cyber-400 to-brand-400"
-                          : contest.status === "pending"
-                            ? "from-green-400 to-brand-400"
-                            : contest.status === "completed"
-                              ? "from-green-600/50 to-brand-400/50"
-                              : "from-red-400/50 to-brand-400/50"
-                      } bg-clip-text text-transparent group-hover/item:animate-gradientX`}
-                    >
-                      {Number(contest.entry_fee)} SOL
-                    </span>
-                  </div>
-
-                  {/* Integrated Progress Bar with Entry Count */}
-                  <div className="flex flex-col items-center gap-0.5 ml-2">
-                    {/* Entry Count */}
-                    <div className="text-[10px] text-gray-400 group-hover/item:text-gray-300 transition-colors">
-                      {contest.participant_count}/{contest.max_participants}
-                    </div>
-                    {/* Enhanced Progress Bar */}
-                    <div className="relative h-1 w-16 bg-dark-300/50 rounded-full overflow-hidden group/progress">
-                      {/* Background Pulse Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-scan-fast" />
-                      {/* Progress Fill */}
-                      <div
-                        className={`absolute left-0 top-0 bottom-0 rounded-full transition-all duration-500 ${
-                          contest.status === "active"
-                            ? "bg-gradient-to-r from-cyber-400 to-brand-400"
-                            : contest.status === "pending"
-                              ? "bg-gradient-to-r from-green-400 to-brand-400"
-                              : contest.status === "completed"
-                                ? "bg-gradient-to-r from-green-600/50 to-brand-400/50"
-                                : "bg-gradient-to-r from-red-400/50 to-brand-400/50"
-                        }`}
-                        style={{
-                          width: `${
-                            (contest.participant_count /
-                              contest.max_participants) *
-                            100
-                          }%`,
-                        }}
-                      >
-                        {/* Shine Effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine" />
-                      </div>
-                      {/* Hover Glow Effect */}
-                      <div className="absolute inset-0 opacity-0 group-hover/progress:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 blur-sm" />
-                    </div>
-                  </div>
-
-                  {/* Time Info with enhanced styling */}
-                  {(contest.status === "active" ||
-                    contest.status === "pending" ||
-                    contest.status === "cancelled" ||
-                    contest.status === "completed") && (
-                    <span
-                      className={`text-sm ${
-                        contest.status === "active"
-                          ? "text-gray-500 group-hover/item:text-gray-400"
-                          : "text-gray-500 group-hover/item:text-gray-400"
-                      } transition-colors`}
-                    >
-                      {/* Handle different status cases */}
-                      {contest.status === "active" && (
-                        <>
-                          Ends{" "}
-                          {contest.end_time
-                            ? formatDistanceToNow(
-                                new Date(contest.end_time),
-                                {
-                                  addSuffix: true,
-                                },
-                              )
-                            : "N/A"}
-                        </>
-                      )}
-                      {contest.status === "pending" && (
-                        <>
-                          Starts{" "}
-                          {contest.start_time
-                            ? new Date(contest.start_time) < new Date()
-                              ? "soon"
-                              : formatDistanceToNow(
-                                  new Date(contest.start_time),
-                                  {
-                                    addSuffix: true,
-                                  },
-                                )
-                            : "N/A"}
-                        </>
-                      )}
-                      {contest.status === "cancelled" && (
-                        <>
-                          Cancelled{" "}
-                          {formatDistanceToNow(
-                            new Date(
-                              contest.cancelled_at || contest.end_time,
-                            ),
-                            { addSuffix: true },
-                          )}
-                        </>
-                      )}
-                      {contest.status === "completed" && (
-                        <>
-                          Ended{" "}
-                          {formatDistanceToNow(new Date(contest.end_time), {
-                            addSuffix: true,
-                          })}
-                        </>
-                      )}
-                    </span>
-                  )}
-                </Link>
-              ))}
-
-              {/* Token price updates */}
-              {(activeTab === "all" || activeTab === "tokens") && significantChanges.map(token => (
-                <Link
-                  key={token.symbol}
-                  to={`/tokens?symbol=${token.symbol}`}
-                  className={`group/item relative inline-flex items-center space-x-2 hover:bg-dark-300/50 px-2 py-1 rounded transition-all duration-300 ${isMobileView ? 'snap-start min-w-max' : ''}`}
-                  title={`${token.name} (${token.symbol})`}
-                >
-                  {/* Hover background effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyber-400/0 via-cyber-400/5 to-cyber-400/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 animate-data-stream rounded" />
-                  
-                  {/* Token Symbol */}
-                  <span className="font-mono text-cyber-400 group-hover/item:text-cyber-300 font-medium transition-colors">
-                    {token.symbol}
-                  </span>
-                  
-                  {/* Token Price */}
-                  <span className="font-medium text-gray-300 group-hover/item:text-gray-200 transition-colors">
-                    ${parseFloat(token.price).toFixed(4)}
-                  </span>
-                  
-                  {/* Percentage Change */}
-                  <span 
-                    className={`flex items-center space-x-1 transition-colors
-                      ${parseFloat(token.change24h) > 0 
-                        ? 'text-green-400 group-hover/item:text-green-300' 
-                        : 'text-red-400 group-hover/item:text-red-300'}`}
-                  >
-                    {/* Trend Arrow */}
-                    <span className="font-bold">
-                      {parseFloat(token.change24h) > 0 ? '▲' : '▼'}
-                    </span>
-                    
-                    {/* Percentage Value */}
-                    <span className={`
-                      ${Math.abs(parseFloat(token.change24h)) > 20 ? 'animate-pulse font-bold' : ''}
-                    `}>
-                      {Math.abs(parseFloat(token.change24h)).toFixed(2)}%
-                    </span>
-                  </span>
-                  
-                  {/* Volume Indicator (optional) */}
-                  {parseFloat(token.volume24h) > 1000000 && (
-                    <div className="px-1.5 py-0.5 bg-dark-300/70 rounded-sm text-xs font-mono text-gray-400">
-                      V:${(parseFloat(token.volume24h) / 1000000).toFixed(1)}M
-                    </div>
-                  )}
-                </Link>
-              ))}
-
-              {/* Category divider for "all" view */}
-              {activeTab === "all" && sortedContests.length > 0 && significantChanges.length > 0 && (
-                <div className={`inline-flex items-center gap-2 ${isMobileView ? 'snap-start min-w-max' : ''}`}>
-                  <span className="h-4 w-0.5 bg-gradient-to-b from-brand-400/50 to-cyber-400/50 rounded-full" />
-                  <span className="text-xs font-mono text-gray-500">MARKET</span>
-                  <span className="h-4 w-0.5 bg-gradient-to-b from-cyber-400/50 to-brand-400/50 rounded-full" />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Add custom styles for scrollbar hiding */}
       <style dangerouslySetInnerHTML={{
         __html: `
         .hide-scrollbar {
@@ -1181,7 +631,6 @@ export const UnifiedTicker: React.FC<Props> = ({
           width: 100% !important;
           will-change: transform !important;
         }
-        /* Shadow effects */
         .shadow-brand {
           box-shadow: 0 0 5px rgba(153, 51, 255, 0.3);
         }
@@ -1189,7 +638,6 @@ export const UnifiedTicker: React.FC<Props> = ({
           box-shadow: 0 0 5px rgba(0, 225, 255, 0.3);
         }
         
-        /* Animation debugging */
         .ticker-debug {
           position: relative;
         }
@@ -1206,7 +654,6 @@ export const UnifiedTicker: React.FC<Props> = ({
           border-radius: 4px;
           z-index: 1000;
         }
-        /* Additional animations */
         @keyframes gradientX {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
@@ -1217,7 +664,6 @@ export const UnifiedTicker: React.FC<Props> = ({
           background-size: 200% auto;
         }
         
-        /* Explicit ticker animation */
         @keyframes ticker {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
@@ -1225,12 +671,10 @@ export const UnifiedTicker: React.FC<Props> = ({
         `
       }} />
       
-      {/* Debug information to help understand what's wrong */}
       <div className="debug-info hidden absolute bottom-full left-0 mb-1 p-2 bg-dark-800 text-xs text-white z-50 opacity-80 rounded">
-        <div>Size: {containerWidth}px (Mobile: {isMobileView ? 'Yes' : 'No'})</div>
+        <div>Size: {viewportWidth}px</div>
         <div>Contests: {sortedContests.length}, Tokens: {significantChanges.length}</div>
-        <div>WebSocket: {isConnected ? 'Connected' : 'Disconnected'}</div>
-        <div>Animation: {getAnimationSpeed()}</div>
+        <div>WebSocket: {isDataConnected ? 'Connected' : 'Disconnected'}</div>
       </div>
     </div>
   );

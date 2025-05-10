@@ -1,6 +1,8 @@
 /**
  * Unified WebSocket Topic Hook
  * 
+ * ONLY USED BY LIQ SIM RIGHT NOW? WHY? MUST BE WRONG??
+ * 
  * This hook provides a way to interact with a specific topic on the unified WebSocket.
  * It abstracts the details of the WebSocket connection and provides a simple interface
  * for subscribing to topics and making requests.

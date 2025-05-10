@@ -1,24 +1,47 @@
 // src/components/layout/Header.tsx
 
+/**
+ * Header Component
+ * 
+ * @description This component is the main header for the application.
+ * It displays the logo, user menu, and login button.
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-01-01
+ * @updated 2025-05-10
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef } from "react";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
+import { useStore } from "../../store/useStore";
+
+// STEP 3: Re-enable Logo import
+// import IntroLogo from "../logo/index"; // Keep the full IntroLogo for now, maybe it's used elsewhere
+// import Logo from "../ui/Logo"; // REMOVE old logo import
+import MiniLogo from "../logo/MiniLogo"; // Add MiniLogo import
+import NanoLogo from "../logo/NanoLogo"; // Add NanoLogo import
+
+// STEP ???: Re-enable dropdowns
+// import { ContestsDropdown } from "./ContestsDropdown"; // TEMP
+// import { RankingsDropdown } from "./RankingsDropdown"; // TEMP
+// import { TokensDropdown } from "./TokensDropdown"; // TEMP
+
+// STEP ???: Re-enable user menus (desktop and mobile)
+// import { UserMenu } from "./user-menu/UserMenu"; // TEMP
+// import { MobileMenuButton } from "./MobileMenuButton"; // TEMP
+
 // Error-related hooks are no longer used directly in Header for banners
 // import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications"; 
 // import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
-import { useStore } from "../../store/useStore";
-import Logo from "../ui/Logo"; // STEP 3: Re-enable Logo import
-// import { ContestsDropdown } from "./ContestsDropdown"; // TEMP
-// import { MobileMenuButton } from "./MobileMenuButton"; // TEMP
-// import { RankingsDropdown } from "./RankingsDropdown"; // TEMP
-// import { TokensDropdown } from "./TokensDropdown"; // TEMP
-// import { UserMenu } from "./user-menu/UserMenu"; // TEMP
 
 export const Header: React.FC = () => {
   const { isCompact } = useScrollHeader(50);
   
+  // Get the store error message and clear the error
   const storeErrorMessage = useStore(state => state.error?.message || null);
   const clearStoreError = useStore(state => state.clearError);
   
@@ -30,6 +53,7 @@ export const Header: React.FC = () => {
   
   const isMounted = useRef(true);
 
+  // Log the component mount and unmount
   useEffect(() => {
     isMounted.current = true;
     console.log("[Header STEP 2] Mounted");
@@ -39,6 +63,7 @@ export const Header: React.FC = () => {
     };
   }, []);
 
+  // Log the user, isAuthenticated, and isAdmin when they change
   useEffect(() => {
     console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdmin);
   }, [user, isAuthenticated, isAdmin]);
@@ -47,12 +72,15 @@ export const Header: React.FC = () => {
   useEffect(() => {
     if (storeErrorMessage && clearStoreError) {
       console.log("[Header] Store error detected, will clear in 5s:", storeErrorMessage);
+      // Clear the store error after 5 seconds
       const timer = setTimeout(() => {
+        // Check if the component is still mounted
         if (isMounted.current) {
           console.log("[Header] Clearing store error.");
           clearStoreError();
         }
       }, 5000);
+      // Clear the timer when the component unmounts
       return () => clearTimeout(timer);
     }
   }, [storeErrorMessage, clearStoreError]); // Depends on the message string and clear function
@@ -65,38 +93,53 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className={`bg-dark-200/30 backdrop-blur-lg sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}`}
+      className={`sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}
+      ${isCompact ? 'bg-transparent backdrop-blur-none' : 'bg-dark-200/30 backdrop-blur-lg'}
+      `}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Error Banners Container REMOVED from here */}
       
-      {/* Banned User Banner */}
+      {/* Banned User Banner (unsure if this needs to be removed also?)) */}
       {user?.banned && (
+
+        // Banned User Banner Container
         <div className="bg-red-500/10 border-b border-red-500/20">
+
+          {/* Banned User Banner Content */}
           <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2">
             <p className="text-red-400 text-sm text-center">
               Uh-oh! You've been banned from DegenDuel. GG.
               {user?.banned_reason ? `: ${user.banned_reason}` : ""} 
             </p>
           </div>
+
         </div>
+
       )}
 
       {/* Maintenance Mode Banner - uses settings, so useSystemSettings hook might need to be restored if this is re-enabled fully */}
       {/* For now, assuming settings might come from a different source or this banner logic will be refined */}
       {/* {settings && typeof settings.maintenance_mode === 'object' && settings.maintenance_mode?.enabled && !isAdmin && ( ... )} */}
 
-      {/* Main Header Content */}
+      {/* Main Header Container */}
       <div className="relative max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-8">
+        
+        {/* Header Content */}
         <div
           className={`relative flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}`}
         >
+          {/* Logo (OLD IMAGE BASED -- CHANGE TO OUR NEW COMPONENT!) */}
           <div className="flex items-center">
-            <Logo />
+            {/* <Logo /> */}
+            {/* <IntroLogo /> */} {/* Keep IntroLogo for now if it is used elsewhere */}
+            {isCompact ? <NanoLogo /> : <MiniLogo />} {/* Use NanoLogo when compact, MiniLogo otherwise */}
           </div>
 
+          {/* Spacer */}
           <div className="flex-1"></div> 
 
+          {/* User Menu */}
           <div
             className={`flex items-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
             ${
@@ -105,42 +148,36 @@ export const Header: React.FC = () => {
                 : "gap-2 sm:gap-3 md:gap-4"
             }`}
           >
+
+            {/* User Menu (Desktop) */}
             <div className="hidden md:block">
               <AnimatePresence mode="wait">
                 {isAuthenticated && user ? (
                   <motion.div key="user-menu-ph">
-                    <div className="w-8 h-8 bg-green-500/30 rounded-full text-xs flex items-center justify-center text-green-300">U</div>
+                    {/* <div className="w-8 h-8 bg-green-500/30 rounded-full text-xs flex items-center justify-center text-green-300">U</div> */} {/* REMOVE placeholder */}
+                    {/* Add actual UserMenu component here when ready */}
                   </motion.div>
                 ) : (
                   <motion.div key="login-btn-ph">
-                     <div className="w-24 h-8 bg-purple-500/30 rounded text-xs flex items-center justify-center text-purple-300">Connect</div>
+                     {/* <div className="w-24 h-8 bg-purple-500/30 rounded text-xs flex items-center justify-center text-purple-300">Connect</div> */} {/* REMOVE placeholder */}
+                     {/* Add actual Connect/Login button here when ready */}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-            
+
+            {/* Mobile Menu Button */}
             <div className="md:hidden">
-              <div className="w-8 h-8 bg-gray-500/30 rounded text-xs flex items-center justify-center text-gray-300">M</div>
+              {/* <div className="w-8 h-8 bg-gray-500/30 rounded text-xs flex items-center justify-center text-gray-300">M</div> */} {/* REMOVE placeholder */}
+              {/* Add actual MobileMenuButton component here when ready */}
             </div>
+
           </div>
+
         </div>
+        
       </div>
 
-      {/* Store Error Message Toast */}
-      <AnimatePresence>
-        {storeErrorMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full z-50"
-          >
-            <div className="bg-red-500/10 border border-red-500/20 rounded-b-lg px-4 py-2">
-              <p className="text-red-400 text-sm">{storeErrorMessage}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
   );
 };
