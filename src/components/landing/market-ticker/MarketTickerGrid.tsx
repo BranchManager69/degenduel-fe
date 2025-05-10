@@ -85,7 +85,7 @@ const TokenRow: React.FC<{
       }`}
       onClick={onSelect}
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
     >
       {/* Rank */}
@@ -119,7 +119,7 @@ const TokenRow: React.FC<{
         'text-white'
       }`}>
         <div className="flex items-center">
-          <span>${formatNumber(token.price, token.price < 0.01 ? 8 : 6)}</span>
+          <span>${formatNumber(token.price, Number(token.price) < 0.01 ? 8 : 6)}</span>
           
           {/* Price change indicator arrow */}
           {priceChangeState !== 0 && (
@@ -283,9 +283,9 @@ export const MarketTickerGrid: React.FC<MarketTickerGridProps> = ({
     isLoading,
     error,
     isConnected,
-    connectionState,
-    refresh,
-    lastUpdate
+    // connectionState not used
+    refresh
+    // lastUpdate not used
   } = useStandardizedTokenData("all", "marketCap", {}, 5, maxTokens);
   
   // State
