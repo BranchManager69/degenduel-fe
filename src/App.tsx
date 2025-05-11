@@ -13,7 +13,8 @@
  */
 
 // React
-import React, { createContext, lazy, Suspense, useContext, useEffect, useMemo, useState } from "react";
+//import { useEffect, useState } from "react";
+import React, { createContext, lazy, Suspense, useContext, useMemo } from "react";
 import { createPortal } from 'react-dom';
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
@@ -47,8 +48,7 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
 };
 
 // Stuff
-import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, SettingsIcon, X } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
 import { BackgroundEffectsBoundary } from "./components/animated-background/BackgroundEffectsBoundary";
@@ -59,7 +59,6 @@ import { UiDebugPanel } from "./components/debug/ui/UiDebugPanel";
 import { EdgeToEdgeTicker } from "./components/layout/EdgeToEdgeTicker";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
-import { ServerDownBanner } from "./components/layout/ServerDownBanner";
 import { WalletBalanceTicker } from "./components/layout/WalletBalanceTicker";
 import { InviteWelcomeModal } from "./components/modals/InviteWelcomeModal";
 import { AdminRoute } from "./components/routes/AdminRoute";
@@ -325,11 +324,12 @@ const AppContent: React.FC = () => {
   // State and hooks for error banners
   const { error: notificationsError } = useNotifications();
   const { error: systemSettingsError } = useSystemSettings(); // Renamed for clarity
-  const [showNotificationErrorBanner, setShowNotificationErrorBanner] = useState(false);
-  const [showSystemSettingsErrorBanner, setShowSystemSettingsErrorBanner] = useState(false);
+  //const [showNotificationErrorBanner, setShowNotificationErrorBanner] = useState(false);
+  //const [showSystemSettingsErrorBanner, setShowSystemSettingsErrorBanner] = useState(false);
   const { isCompact: isHeaderCompact } = useScrollHeader(50); // To dynamically position banners
 
   // Effect for notification errors
+  /*
   useEffect(() => {
     if (notificationsError) {
       setShowNotificationErrorBanner(true);
@@ -342,6 +342,7 @@ const AppContent: React.FC = () => {
       setShowSystemSettingsErrorBanner(true);
     }
   }, [systemSettingsError]);
+  */
 
   // Calculate top position for banners dynamically
   const headerBaseHeight = 16; // h-16 (4rem)
@@ -355,11 +356,13 @@ const AppContent: React.FC = () => {
   const totalOffset = currentHeaderHeight + currentTickerHeight; // This is in Tailwind spacing units (1 unit = 0.25rem)
   
   // Helper to get error message safely
+  /*
   const getErrorMessage = (error: any): string => {
     if (typeof error === 'string') return error;
     if (error && typeof error.message === 'string') return error.message;
     return "Unknown error";
   };
+  */
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -386,7 +389,7 @@ const AppContent: React.FC = () => {
       {user && <WalletBalanceTicker isCompact={true} />}
       
       {/* ServerDownBanner (?) */}
-      <ServerDownBanner />
+      {/* <ServerDownBanner /> */}
 
       {/* Main */}
       <main className="flex-1 pb-12">
@@ -559,6 +562,8 @@ const AppContent: React.FC = () => {
           <AnimatePresence>
             
             {/* Notification Error Banner */}
+           
+            {/*
             {notificationsError && showNotificationErrorBanner && (
               <motion.div
                 key="app-notification-error-banner"
@@ -568,22 +573,17 @@ const AppContent: React.FC = () => {
                 transition={{ type: "spring", stiffness: 200, damping: 25 }}
                 className="bg-dark-300/80 backdrop-blur-md text-orange-300 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-orange-600/50 pointer-events-auto flex items-center justify-between gap-2"
               >
-                {/* Icon */}
                 <AlertTriangle size={16} className="text-orange-400 flex-shrink-0"/>
 
-                {/* Error Message */}
                 <span>
 
-                  {/* Title */}
                   <strong className="font-semibold">
-                    Warning: Connection Trouble
+                    Warning: 
                   </strong> 
                 
-                  {/* Notification Error Message */}
                   {getErrorMessage(notificationsError)}
                 </span>
 
-                {/* Dismiss Button */}
                 <button 
                   onClick={() => setShowNotificationErrorBanner(false)} 
                   className="p-1 rounded-full hover:bg-orange-400/20 transition-colors flex-shrink-0"
@@ -593,8 +593,11 @@ const AppContent: React.FC = () => {
                 </button>
               </motion.div>
             )}
+            */}
 
             {/* System Settings Error Banner */}
+
+            {/*
             {systemSettingsError && showSystemSettingsErrorBanner && (
               <motion.div
                 key="app-system-settings-error-banner"
@@ -605,23 +608,20 @@ const AppContent: React.FC = () => {
                 className="bg-dark-300/80 backdrop-blur-md text-red-400 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-red-600/50 pointer-events-auto flex items-center justify-between gap-2"
               >
 
-                {/* Icon */}
                 <SettingsIcon 
                   size={16} 
                   className="text-red-400 flex-shrink-0" 
                 /> 
 
-                {/* System Settings Error Message */}
                 <span>
                   <strong className="font-semibold">
-                    Error: Can't Connect
+                    Error: 
                   </strong> 
                   
                   {getErrorMessage(systemSettingsError)}
 
                 </span>
 
-                {/* Dismiss Button */}
                 <button 
                   onClick={() => setShowSystemSettingsErrorBanner(false)} 
                   className="p-1 rounded-full hover:bg-red-400/20 transition-colors flex-shrink-0"
@@ -631,7 +631,7 @@ const AppContent: React.FC = () => {
                 </button>
               </motion.div>
             )}
-
+            */}
 
           </AnimatePresence>
           
