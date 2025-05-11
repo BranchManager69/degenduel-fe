@@ -9,6 +9,7 @@
  * accurate and consistent information across the application.
  * 
  * V69 UPDATE: Now integrated with WebSocket for real-time updates.
+ * 
  * V69 FOLLOW UP: The status of this file is unclear because we've had some setbacks with the web socket implementation although some of it works some of it doesn't the fact is we do not use web socketconnections on the back end with the streaming responsesso if you're getting streaming thenjust use this unless there's a newer ....nt one yeah this is so **** confusing
  * just use this unless there's a newer replacement one yeah this is so **** confusing 
  * 
@@ -28,18 +29,18 @@ export interface TerminalData {
   platformName: string;
   platformDescription: string;
   platformStatus: string;
-  
+
   // Key features list
   features?: string[];
-  
+
   // These fields are no longer used - all contract data comes from token.address
   // Left here for backward compatibility but will be removed in future versions
   _legacyContractAddress?: string;
   _legacyContractAddressRevealed?: boolean;
-  
+
   // System status information from server
   systemStatus?: Record<string, string>;
-  
+
   // Statistics
   stats: {
     currentUsers: number | null;
@@ -49,7 +50,7 @@ export interface TerminalData {
     socialGrowth: string;
     waitlistUsers: number | null;
   };
-  
+
   // Token info
   token: {
     symbol: string;
@@ -66,7 +67,7 @@ export interface TerminalData {
     decimals: number | null;
     address?: string; // Backend sends the contract address here
   };
-  
+
   // Launch info
   launch: {
     method: string;
@@ -77,7 +78,7 @@ export interface TerminalData {
     minPurchase: string;
     maxPurchase: string;
   };
-  
+
   // Roadmap
   roadmap: Array<{
     quarter: string;
@@ -85,7 +86,7 @@ export interface TerminalData {
     title: string;
     details: string[];
   }>;
-  
+
   // Commands
   commands: Record<string, string>;
 }
@@ -101,7 +102,7 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
   features: ["[Features unavailable]"],
   _legacyContractAddress: undefined,
   _legacyContractAddressRevealed: false,
-  
+
   stats: {
     currentUsers: null,
     upcomingContests: null,
@@ -110,7 +111,7 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
     socialGrowth: "[Social data unavailable]",
     waitlistUsers: null
   },
-  
+
   token: {
     symbol: "[?]",
     totalSupply: null,
@@ -125,7 +126,7 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
     tokenType: "[?]",
     decimals: null
   },
-  
+
   launch: {
     method: "[Unavailable]",
     platforms: [],
@@ -135,7 +136,7 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
     minPurchase: "[Unavailable]",
     maxPurchase: "[Unavailable]"
   },
-  
+
   roadmap: [
     {
       quarter: "[?]",
@@ -144,7 +145,7 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
       details: ["Unable to load roadmap information"]
     }
   ],
-  
+
   // These are soooo bland
   commands: {
     help: "Available commands: help, status, info, contract, stats, clear, banner\nAI: Type any question to speak with the AI assistant.",
@@ -206,32 +207,32 @@ let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
  */
 export const fetchTerminalData = async (): Promise<TerminalData> => {
   const now = Date.now();
-  
+
   // Return cached data if it's still fresh
   //   TODO: Entirely replace with a WSS event instead
   if (cachedTerminalData && (now - lastFetchTime < CACHE_TTL)) {
     return cachedTerminalData;
   }
-  
+
   // If we're in error cooldown period, return cached data or default
   const timeSinceLastError = now - lastErrorTime;
   if (lastErrorTime > 0 && timeSinceLastError < errorCooldownPeriod) {
     console.log(`[TerminalDataService] In error cooldown (${Math.ceil((errorCooldownPeriod - timeSinceLastError) / 1000)}s remaining), using cached data`);
     return cachedTerminalData || DEFAULT_TERMINAL_DATA;
   }
-  
+
   // If already fetching, return cached data or default
   if (isFetchingTerminalData) {
     return cachedTerminalData || DEFAULT_TERMINAL_DATA;
   }
-  
+
   // Create a promise that will resolve with actual data
   return new Promise<TerminalData>((resolve) => {
     // Clear any pending debounce timer
     if (fetchDebounceTimer) {
       clearTimeout(fetchDebounceTimer);
     }
-    
+
     // Set up a new debounce timer
     fetchDebounceTimer = setTimeout(async () => {
       // Only proceed if not already fetching 
@@ -239,24 +240,24 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
         resolve(cachedTerminalData || DEFAULT_TERMINAL_DATA);
         return;
       }
-      
+
       // Set fetching flag
       isFetchingTerminalData = true;
-      
+
       try {
         // API endpoint for fetching terminal data
         const endpoint = `${API_URL}/terminal/terminal-data`;
         const result = await fetchWithRetry(endpoint);
-        
+
         // Update cache with new data
         if (result && result.success) {
           cachedTerminalData = result.terminalData;
           lastFetchTime = Date.now();
-          
+
           // Reset error cooldown on success
           lastErrorTime = 0;
           errorCooldownPeriod = 5000; // Reset to initial value
-          
+
           resolve(result.terminalData);
         } else {
           // Only warn once per session if API returns unsuccessful response
@@ -272,21 +273,21 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
         if (!window.terminalDataErrorCount) {
           window.terminalDataErrorCount = 0;
         }
-        
+
         // Only log first few errors, then reduce frequency
         if (window.terminalDataErrorCount < 3 || window.terminalDataErrorCount % 10 === 0) {
           console.error('[TerminalDataService] Error fetching terminal data after multiple retries');
         }
-        
+
         // Increment the error count
         window.terminalDataErrorCount++;
-        
+
         // Set error cooldown
         lastErrorTime = Date.now();
-        
+
         // Increase cooldown period exponentially, capped at MAX_COOLDOWN_PERIOD
         errorCooldownPeriod = Math.min(errorCooldownPeriod * 2, MAX_COOLDOWN_PERIOD);
-        
+
         resolve(DEFAULT_TERMINAL_DATA);
       } finally {
         // Reset fetching flag
@@ -307,7 +308,7 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
-    
+
     // Fetch the data
     //   TODO: Entirely replace with a WSS event instead
     const response = await fetch(url, {
@@ -317,15 +318,15 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
         'Cache-Control': 'no-cache',
       }
     });
-    
+
     // Clear the timeout
     clearTimeout(timeoutId);
-    
+
     // If the response is not ok, throw an error
     if (!response.ok) {
       throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
-    
+
     // Return the JSON response
     return await response.json();
   } catch (error) {
@@ -333,15 +334,15 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
     if (retries <= 0) {
       throw error;
     }
-    
+
     // Only log first retry attempt to reduce console spam
     if (retries === MAX_RETRIES) {
       console.warn(`[TerminalDataService] Fetch attempt failed, retrying in ${delay}ms...`);
     }
-    
+
     // Implement exponential backoff
     await new Promise(resolve => setTimeout(resolve, delay));
-    
+
     // Retry with decreased retries count and increased delay
     return fetchWithRetry(url, retries - 1, delay * 2); // Increase to 2x for more aggressive backoff
   }
@@ -365,7 +366,7 @@ export const formatTerminalCommands = (data: TerminalData): Record<string, strin
  Type 'help' for available commands
 `
   };
-  
+
   // Status command
   if (data.systemStatus) {
     commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━\n\n${Object.entries(data.systemStatus || {}).map(([key, value]) => {
@@ -374,28 +375,28 @@ export const formatTerminalCommands = (data: TerminalData): Record<string, strin
   } else {
     commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━\n\n${data.platformStatus}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   }
-  
+
   // Info command
-  commands.info = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} PLATFORM ━━━━━━━━━━━━━━━━\n\n${data.platformDescription}\n\n${data.features && data.features.length > 0 ? 
+  commands.info = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} PLATFORM ━━━━━━━━━━━━━━━━\n\n${data.platformDescription}\n\n${data.features && data.features.length > 0 ?
     `Key features:\n${data.features.map(feature => `• ${feature}`).join('\n')}` : ''}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  
+
   // Stats command
   commands.stats = `━━━━━━━━━━━━━━━━━ PLATFORM STATS ━━━━━━━━━━━━━━━━━
 Current users: ${data.stats.currentUsers}
 Upcoming contests: ${data.stats.upcomingContests}
 Total prize pool: ${data.stats.totalPrizePool}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  
+
   // Roadmap command
   commands.roadmap = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} ROADMAP ━━━━━━━━━━━━━━━━
 
 ${data.roadmap.map(phase => {
     return `• ${phase.quarter} ${phase.year}: ${phase.title}
   ${phase.details.map(detail => `↳ ${detail}`).join('\n  ')}`;
-}).join('\n\n')}
+  }).join('\n\n')}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  
+
   // Tokenomics command
   commands.tokenomics = `━━━━━━━━━━━━━━━━ $${data.token.symbol} TOKENOMICS ━━━━━━━━━━━━━━━━
 
@@ -409,7 +410,7 @@ Allocation:
 • Treasury: ${data.token.treasuryAllocation}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  
+
   // Launch details command
   commands["launch-details"] = `━━━━━━━━━━━━━━━━ $${data.token.symbol} TOKEN LAUNCH ━━━━━━━━━━━━━━━━
 
@@ -422,7 +423,7 @@ Allocation:
 • Public IDO: ${data.launch.publicSaleStatus}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  
+
   // Analytics command
   commands.analytics = `━━━━━━━━━━━━━━━━ PLATFORM ANALYTICS ━━━━━━━━━━━━━━━━
 
@@ -431,7 +432,7 @@ Allocation:
 • Waitlist: ${data.stats.waitlistUsers} users
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  
+
   // Token command
   commands.token = `━━━━━━━━━━━━━━━━ $${data.token.symbol} TOKEN INFO ━━━━━━━━━━━━━━━━
 
@@ -450,7 +451,7 @@ Type 'launch-details' for information about the token launch.
   // The only source of truth for contract address is now token.address
   const contractAddress = data.token.address;
   const isContractRevealed = !!contractAddress;
-  
+
   if (isContractRevealed) {
     // When the contract address is revealed, show the actual address
     commands.contract = `━━━━━━━━━━━━━━━━ $${data.token.symbol} CONTRACT ADDRESS ━━━━━━━━━━━━━━━━
@@ -478,7 +479,7 @@ Type 'token' to learn more about the $${data.token.symbol} token.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   }
-  
+
   // Add any custom commands that came from the API
   return { ...commands, ...data.commands };
 };
