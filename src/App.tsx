@@ -79,12 +79,12 @@ import "./styles/color-schemes.css";
 
 // Hooks and utils
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
-import { InviteSystemProvider } from './hooks/social/legacy/useInviteSystem';
+import { InviteSystemProvider } from './hooks/social/legacy/useInviteSystem'; // ? test
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
 
 // Get Privy app ID
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
-console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
+//console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
 
 // Config - Prelaunch mode
 import { config, PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
@@ -349,6 +349,7 @@ const AppContent: React.FC = () => {
   const compactHeaderHeight = 14; // sm:h-14 (3.5rem)
   const compactTickerHeight = 10; // sm:h-10 (2.5rem)
 
+  // Calculate the total offset for banners
   const currentHeaderHeight = isHeaderCompact ? compactHeaderHeight : headerBaseHeight;
   const currentTickerHeight = isHeaderCompact ? compactTickerHeight : tickerBaseHeight;
   const totalOffset = currentHeaderHeight + currentTickerHeight; // This is in Tailwind spacing units (1 unit = 0.25rem)
@@ -362,6 +363,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Toast Listener */}
       <ToastListener />
       
       {/* Debug Panels */}
@@ -369,6 +371,7 @@ const AppContent: React.FC = () => {
       {user && (user as any).is_superadmin && <ServiceDebugPanel />}
       {user && (user as any).is_superadmin && <GameDebugPanel />}
       
+      {/* Background Effects */}
       <BackgroundEffectsBoundary>
         <BackgroundEffects />
       </BackgroundEffectsBoundary>
@@ -382,7 +385,7 @@ const AppContent: React.FC = () => {
       {/* WalletBalanceTicker */}
       {user && <WalletBalanceTicker isCompact={true} />}
       
-      {/* ServerDownBanner */}
+      {/* ServerDownBanner (?) */}
       <ServerDownBanner />
 
       {/* Main */}
@@ -532,60 +535,112 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
+      {/* Footer */}
       <Footer />
-      <AchievementNotification />
+
+      {/* Invite Welcome Modal */}
       <InviteWelcomeModal />
+
+      {/* Blink Resolver */}
       <BlinkResolver />
-      
-      {/* Error Banners Container - MOVED HERE */}
+
+      {/* Achievement Notification (?) */}
+      <AchievementNotification />
+
+      {/* Connection Error Banners Container */}
       {createPortal(
-        <div className={`fixed left-1/2 -translate-x-1/2 w-auto max-w-xs sm:max-w-sm md:max-w-md z-[60] pointer-events-none space-y-2`} style={{ top: `${totalOffset / 4 + 1}rem`}}>
-        {/* Added 1rem spacing below ticker */}
-        <AnimatePresence>
-          {notificationsError && showNotificationErrorBanner && (
-            <motion.div
-              key="app-notification-error-banner"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
-              transition={{ type: "spring", stiffness: 200, damping: 25 }}
-              className="bg-dark-300/80 backdrop-blur-md text-orange-300 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-orange-600/50 pointer-events-auto flex items-center justify-between gap-2"
-            >
-              <AlertTriangle size={16} className="text-orange-400 flex-shrink-0"/>
-              <span><strong className="font-semibold">NOTIFICATIONS ERROR:</strong> {getErrorMessage(notificationsError)}</span>
-              <button 
-                onClick={() => setShowNotificationErrorBanner(false)} 
-                className="p-1 rounded-full hover:bg-orange-400/20 transition-colors flex-shrink-0"
-                title="Dismiss notification error"
+        <div 
+          className={`fixed left-1/2 -translate-x-1/2 w-auto max-w-xs sm:max-w-sm md:max-w-md z-[60] pointer-events-none space-y-2`} 
+          style={
+            { top: `${totalOffset / 4 + 1}rem`}
+            }>
+        
+          {/* Connection error banners aligned to the top of the screen */}
+          <AnimatePresence>
+            
+            {/* Notification Error Banner */}
+            {notificationsError && showNotificationErrorBanner && (
+              <motion.div
+                key="app-notification-error-banner"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 0.9, y: 0 }}
+                exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+                transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                className="bg-dark-300/80 backdrop-blur-md text-orange-300 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-orange-600/50 pointer-events-auto flex items-center justify-between gap-2"
               >
-                <X size={14} />
-              </button>
-            </motion.div>
-          )}
-          {systemSettingsError && showSystemSettingsErrorBanner && (
-            <motion.div
-              key="app-system-settings-error-banner"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0, transition: { delay: (notificationsError && showNotificationErrorBanner) ? 0.1 : 0 } }}
-              exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
-              transition={{ type: "spring", stiffness: 200, damping: 25 }}
-              className="bg-dark-300/80 backdrop-blur-md text-red-400 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-red-600/50 pointer-events-auto flex items-center justify-between gap-2"
-            >
-              <SettingsIcon size={16} className="text-red-400 flex-shrink-0" /> {/* Using a generic SettingsIcon from lucide-react */}
-              <span><strong className="font-semibold">SYSTEM SETTINGS ERROR:</strong> {getErrorMessage(systemSettingsError)}</span>
-              <button 
-                onClick={() => setShowSystemSettingsErrorBanner(false)} 
-                className="p-1 rounded-full hover:bg-red-400/20 transition-colors flex-shrink-0"
-                title="Dismiss system settings error"
+                {/* Icon */}
+                <AlertTriangle size={16} className="text-orange-400 flex-shrink-0"/>
+
+                {/* Error Message */}
+                <span>
+
+                  {/* Title */}
+                  <strong className="font-semibold">
+                    Warning: Connection Trouble
+                  </strong> 
+                
+                  {/* Notification Error Message */}
+                  {getErrorMessage(notificationsError)}
+                </span>
+
+                {/* Dismiss Button */}
+                <button 
+                  onClick={() => setShowNotificationErrorBanner(false)} 
+                  className="p-1 rounded-full hover:bg-orange-400/20 transition-colors flex-shrink-0"
+                  title="Dismiss notification error"
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
+
+            {/* System Settings Error Banner */}
+            {systemSettingsError && showSystemSettingsErrorBanner && (
+              <motion.div
+                key="app-system-settings-error-banner"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0, transition: { delay: (notificationsError && showNotificationErrorBanner) ? 0.1 : 0 } }}
+                exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+                transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                className="bg-dark-300/80 backdrop-blur-md text-red-400 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-red-600/50 pointer-events-auto flex items-center justify-between gap-2"
               >
-                <X size={14} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+                {/* Icon */}
+                <SettingsIcon 
+                  size={16} 
+                  className="text-red-400 flex-shrink-0" 
+                /> 
+
+                {/* System Settings Error Message */}
+                <span>
+                  <strong className="font-semibold">
+                    Error: Can't Connect
+                  </strong> 
+                  
+                  {getErrorMessage(systemSettingsError)}
+
+                </span>
+
+                {/* Dismiss Button */}
+                <button 
+                  onClick={() => setShowSystemSettingsErrorBanner(false)} 
+                  className="p-1 rounded-full hover:bg-red-400/20 transition-colors flex-shrink-0"
+                  title="Dismiss system settings error"
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
+
+
+          </AnimatePresence>
+          
         </div>,
+
+        // Render the banners in the document body
         document.body
       )}
+
     </div>
   );
 };

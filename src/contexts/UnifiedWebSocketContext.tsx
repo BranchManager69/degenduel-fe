@@ -283,7 +283,7 @@ export const UnifiedWebSocketProvider: React.FC<{
         break;
       case 1006:
         // Abnormal closure - often indicates server unavailability or network issues
-        errorMessage = 'Connection closed abnormally - server may be down or unreachable';
+        errorMessage = 'Can\'t connect to DegenDuel.';
         localServerDown = true;
         break;
       case 1011:

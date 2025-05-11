@@ -53,6 +53,9 @@ import { FloatingJupButton } from '../../../components/layout/FloatingJupButton'
 import { FloatingPumpButton } from '../../../components/layout/FloatingPumpButton'; // Added import
 import { Footer } from "../../../components/layout/Footer"; // Corrected Footer import
 
+// Directly import the Features component
+import Features from "../../../components/landing/features-list/Features";
+
 // Landing Page
 export const LandingPage: React.FC = () => {
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
@@ -520,18 +523,18 @@ export const LandingPage: React.FC = () => {
                         if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
                           
                           // Dynamic import only when needed
-                          const Features = React.lazy(
-                            () =>
-                              import(
-                                "../../../components/landing/features-list/Features"
-                              ),
-                          );
+                          // const Features = React.lazy(  // <-- REMOVE THIS LINE
+                          //   () =>                    // <-- REMOVE THIS LINE
+                          //     import(                 // <-- REMOVE THIS LINE
+                          //       "../../../components/landing/features-list/Features" // <-- REMOVE THIS LINE
+                          //     ),                   // <-- REMOVE THIS LINE
+                          // );                         // <-- REMOVE THIS LINE
                           return (
 
                             // Features List (Loading fallback)
-                            <React.Suspense fallback={<div>Loading features...</div>}>
-                              <Features />
-                            </React.Suspense>
+                            // <React.Suspense fallback={<div>Loading features...</div>}> // <-- REMOVE THIS LINE
+                            <Features />
+                            // </React.Suspense> // <-- REMOVE THIS LINE
                             
                           );
                         }
