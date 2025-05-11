@@ -12,7 +12,7 @@
  */
 
 // CSS (now loaded from public/assets/degen-components.css via index.html)
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 // Framer Motion
 import { motion } from "framer-motion";
@@ -27,21 +27,19 @@ import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestLive } from "../../../lib/utils";
 import { Contest } from "../../../types";
 // Decryption Timer
-import { DecryptionTimer } from '../../../components/terminal';
+import { DecryptionTimer } from '../../../components/layout/DecryptionTimer';
+import { MiniDecryptionTimer } from "../../../components/layout/DecryptionTimerMini";
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { useIsVisible } from '../../../hooks/ui/useIsVisible';
 import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
 import { useTerminalData } from "../../../hooks/websocket/topic-hooks/useTerminalData";
 // DD API
 import { ddApi } from "../../../services/dd-api";
 // Date Utilities
-import { getTimeRemainingUntilRelease, isReleaseTimePassed } from '../../../utils/dateUtils';
 // Release Date Service
 import {
-  CountdownResponse,
-  FALLBACK_RELEASE_DATE,
-  fetchCountdownData,
-  formatReleaseDate,
+  FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
 // Import PaginatedResponse from types
 import { PaginatedResponse } from '../../../types';
@@ -52,7 +50,6 @@ import { useStore } from "../../../store/useStore"; // Ensure useStore is import
 // Import new MarketTickerGrid component (replacing the three token display components)
 import { MarketTickerGrid } from "../../../components/landing/market-ticker";
 import { LazyLoad } from "../../../components/shared/LazyLoad"; // Added import
-import { config as globalConfig } from '../../../config/config';
 
 // Landing Page
 export const LandingPage: React.FC = () => {
@@ -61,18 +58,18 @@ export const LandingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [animationPhase, setAnimationPhase] = useState(0);
+  const [debugMode, setDebugMode] = useState(false);
+  const [animationDone, setAnimationDone] = useState(false);
   
-  // Decryption Timer -- Contract address reveal countdown
-  const [targetReleaseDate, setTargetReleaseDate] = useState<Date | null>(null);
-  const [countdownDetails, setCountdownDetails] = useState<CountdownResponse | null>(null);
-  const [apiTokenAddress] = useState<string | null>(null);
-  const [isLoadingCountdown, setIsLoadingCountdown] = useState<boolean>(true);
-  const [showContractReveal, setShowContractReveal] = useState<boolean>(false);
-  const [showPumpFunButton, setShowPumpFunButton] = useState<boolean>(false);
-  const countdownCheckerRef = useRef<number | null>(null);
-  const isMounted = useRef(true); // Add a ref to track mounted state
+  const isMounted = useRef(true);
+
+  const mainTimerContainerRef = useRef<HTMLDivElement>(null);
+  const mainTimerIsVisible = useIsVisible(mainTimerContainerRef as React.RefObject<Element>, { threshold: 0.1 });
   
-  // Debug state for contests section
+  // const { trackEvent } = useAnalytics(); // If 'trackEvent' error persists, we may need to review useAnalytics hook
+  // const { isMobile, isTablet, isDesktop } = useScreenSize(); // Marked for removal if unused
+  
+  // Debug state for contests section (keep if used, remove if not)
   const [contestDebugInfo, setContestDebugInfo] = useState<{
     lastFetchAttempt: string;
     errorDetails: string | null;
@@ -83,371 +80,148 @@ export const LandingPage: React.FC = () => {
     contestApiResponse: null
   });
   
-  console.log("[LandingPage] Rendering. Current targetReleaseDate:", targetReleaseDate, "isLoadingCountdown:", isLoadingCountdown, "countdownDetails:", countdownDetails); // Log state
+  // Removed console.log referencing deleted state
 
-  // Fetch countdown data from backend when component mounts
-  useEffect(() => {
-    const loadCountdownDetails = async () => {
-      console.log("[LandingPage] loadCountdownDetails EFFECT RUNNING"); // Log effect run
-      setIsLoadingCountdown(true);
-      try {
-        const data = await fetchCountdownData();
-        console.log("[LandingPage] fetchCountdownData response:", data);
-        setCountdownDetails(data); // This will trigger re-render
-        
-        if (data.enabled && data.end_time) {
-          const newReleaseDate = new Date(data.end_time);
-          if (!isNaN(newReleaseDate.getTime())) {
-            console.log("[LandingPage] Setting targetReleaseDate from API:", newReleaseDate);
-            setTargetReleaseDate(newReleaseDate);
-          } else {
-            console.warn("[LandingPage] Invalid end_time from countdown API, setting targetReleaseDate to FALLBACK.");
-            setTargetReleaseDate(FALLBACK_RELEASE_DATE);
-          }
-        } else {
-          console.log("[LandingPage] Countdown not enabled by API or no end_time, setting targetReleaseDate to null.");
-          setTargetReleaseDate(null);
-        }
-      } catch (error) {
-        console.error('[LandingPage] Error in loadCountdownDetails:', error);
-        console.log("[LandingPage] Setting targetReleaseDate to FALLBACK_RELEASE_DATE due to error.");
-        setTargetReleaseDate(FALLBACK_RELEASE_DATE);
-        // Also set countdownDetails to an error/disabled state to avoid inconsistencies
-        setCountdownDetails({ enabled: false, title: "Countdown Error", message: "Could not load details." });
-      } finally {
-        setIsLoadingCountdown(false);
-      }
-    };
-    loadCountdownDetails();
-  }, []);
-  
-  // Get contract address from WebSocket-based Terminal data
+  // Get contract address from WebSocket-based Terminal data (keep if relevant for other parts)
   const { 
     contractAddress: websocketContractAddress, 
     contractAddressRevealed: websocketContractRevealed,
     isConnected: terminalConnected
   } = useTerminalData();
   
-  // Update contract address when WebSocket provides it
+  const { settings } = useSystemSettings(); // Get settings for maintenance mode
+
+  const isMaintenanceModeActive = settings?.maintenance_mode?.enabled || false;
+  const maintenanceMessageToDisplay = settings?.maintenance_mode?.message || "Contests are temporarily paused for maintenance. Please check back soon!";
+  
   useEffect(() => {
-    if (terminalConnected) {
-      if (websocketContractAddress) {
-        console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}`);
-        
-        
-        // When a valid contract address is received, set reveal flag to true
-        if (!showContractReveal && websocketContractRevealed) {
-          console.log('[LandingPage] Contract address revealed via WebSocket');
-          setShowContractReveal(true);
-        }
-      }
+    if (terminalConnected && websocketContractAddress && websocketContractRevealed) {
+      console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}, Revealed: ${websocketContractRevealed}`);
     }
-  }, [terminalConnected, websocketContractAddress, websocketContractRevealed, showContractReveal]);
+  }, [terminalConnected, websocketContractAddress, websocketContractRevealed]);
   
-  // Fallback check for release time and handling completion/redirect
-  useEffect(() => {
-    if (websocketContractAddress) return; // WS has priority for reveal
-    if (isLoadingCountdown || !countdownDetails) return; // Wait for countdownDetails
+  // Removed Fallback check for release time and handling completion/redirect useEffect block
+  // Removed Debug log for release date sources useEffect block
 
-    if (!countdownDetails.enabled || !targetReleaseDate) {
-      setShowContractReveal(false); // If countdown is not enabled, don't proceed to reveal via timer
-      setShowPumpFunButton(false); // Also don't show button
-      if (countdownCheckerRef.current) clearTimeout(countdownCheckerRef.current);
-      return;
-    }
-
-    // Check if the release time has passed
-    if (isReleaseTimePassed(targetReleaseDate)) {
-      console.log(`[LandingPage] Target release time passed: ${formatReleaseDate(targetReleaseDate)}`);
-      setShowContractReveal(true);
-      setShowPumpFunButton(true); // Show the button instead of auto-redirecting
-    } else {
-      const timeUntilRelease = getTimeRemainingUntilRelease(targetReleaseDate);
-      countdownCheckerRef.current = window.setTimeout(() => {
-        console.log('[LandingPage] Countdown timer complete.');
-        setShowContractReveal(true);
-        setShowPumpFunButton(true); // Show the button instead of auto-redirecting
-      }, timeUntilRelease + 100);
-    }
-    return () => { if (countdownCheckerRef.current) clearTimeout(countdownCheckerRef.current); };
-  }, [targetReleaseDate, isLoadingCountdown, countdownDetails, websocketContractAddress]);
-
-  
-  // Debug log for release date sources
-  useEffect(() => {
-    console.log('[LandingPage] Release date sources:', {
-      targetReleaseDate,
-      targetReleaseDateToISOString: targetReleaseDate?.toISOString(),
-      globalConfigDate: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
-      globalConfigDateToISOString: globalConfig.RELEASE_DATE.TOKEN_LAUNCH_DATETIME.toISOString(),
-      fallbackDate: FALLBACK_RELEASE_DATE,
-      fallbackDateToISOString: FALLBACK_RELEASE_DATE.toISOString(),
-      envVars: {
-        DATE_SHORT: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
-        DATE_FULL: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,
-        TIME: globalConfig.RELEASE_DATE.DISPLAY.LAUNCH_TIME,
-      }
-    });
-  }, [targetReleaseDate]);
-  
-  // Use auth hook for proper admin status checks
-  const { user, isAdmin } = useMigratedAuth();
-  
-  // Use WebSocket hook for system settings (including maintenance mode)
-  const { 
-    settings, // Destructure the settings object
-    isConnected: systemSettingsConnected,
-    error: systemSettingsError // Capture error from system settings hook
-  } = useSystemSettings();
-  
-  // Derived maintenance state from settings hook
-  const isMaintenanceModeActive = settings?.maintenanceMode || false;
-  const maintenanceMessageToDisplay = settings?.maintenanceMessage || "DegenDuel is in Maintenance Mode. Please try again later.";
-
-  // Update local and store maintenance mode when WebSocket provides updates
-  useEffect(() => {
-    if (systemSettingsConnected) {
-      console.log(`[LandingPage] System settings received: Maintenance: ${isMaintenanceModeActive}`);
-      
-      if (isMounted.current) { // Check if component is still mounted
-        if (useStore.getState().setMaintenanceMode) {
-          useStore.getState().setMaintenanceMode(isMaintenanceModeActive);
-        }
-        
-        if (isMaintenanceModeActive) {
-          const message = maintenanceMessageToDisplay || "DegenDuel is in Maintenance Mode. Please try again later.";
-          setError(message);
-        } else if (error && error.includes("Maintenance Mode")) {
-          setError(null);
-        }
-      }
-    }
-  }, [systemSettingsConnected, settings, setError, isMaintenanceModeActive, maintenanceMessageToDisplay, error]); // Added dependencies from inside the effect
-
-  // Add cleanup function for the mounted ref
   useEffect(() => {
     isMounted.current = true;
+    const skipAnimation = new URLSearchParams(window.location.search).has('skip_animation');
+    if (skipAnimation) {
+      setAnimationPhase(3);
+      setAnimationDone(true);
+    } else {
+      const timer1 = setTimeout(() => isMounted.current && setAnimationPhase(1), 500);
+      const timer2 = setTimeout(() => isMounted.current && setAnimationPhase(2), 1500);
+      const timer3 = setTimeout(() => {
+        if (isMounted.current) {
+          setAnimationPhase(3);
+          setAnimationDone(true);
+        }
+      }, 2500);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  // Log system settings errors
-  useEffect(() => {
-    if (systemSettingsError) {
-        console.warn("[LandingPage] System Settings WebSocket error:", systemSettingsError);
-    }
-  }, [systemSettingsError]);
+  // Initialize User and Admin status
+  const { user, isAdmin } = useMigratedAuth();
   
-  // Log user status for debugging
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[LandingPage] User permissions:', { 
-        loggedIn: !!user,
-        isAdmin: isAdmin,
-        role: user?.role
-      });
-    }
-  }, [user, isAdmin]);
-  
-  // Shared debug mode state - controls both HeroTitle debug panel and WebSocketMonitor visibility (?)
-  const [debugMode, setDebugMode] = useState(false);
+  // Terminal Data - This is the "AI Chat" websocket connection
+  // const terminalData = useTerminalData(); // Commented out as it's not used
 
-  // Function to manually retry contest fetch (?)
-  const retryContestFetch = useCallback(async () => {
-    console.log("[LandingPage] Manually retrying contest fetch...");
-    setLoading(true);
-    setError(null);
-    
-    // Update the debug info with attempt timestamp
-    setContestDebugInfo(prev => ({
-      ...prev,
-      lastFetchAttempt: new Date().toISOString()
-    }));
-    
-    // Use derived isMaintenanceModeActive from settings hook
-    if (isMaintenanceModeActive) {
-      console.log("[LandingPage] Maintenance mode active, contest fetch aborted by retryContestFetch.");
-      setLoading(false);
-      return;
-    }
-    
+  // Fetch initial contest data (simplified, retry logic assumed to be in useContests or similar)
+  const retryContestFetch = useCallback(async (attempt = 1) => {
+    if (!isMounted.current) return;
     try {
-      const response = await ddApi.contests.getAll();
-      console.log("[LandingPage] Contests:", response);
+      setLoading(true);
+      const response = await ddApi.contests.getAll(); 
+      const contestsData = (Array.isArray(response) ? response : (response as PaginatedResponse<Contest>)?.data) || [];
       
-      // Store response in debug info
-      setContestDebugInfo(prev => ({
-        ...prev,
-        contestApiResponse: JSON.stringify(response, null, 2)
-      }));
-      
-      // Process response
-      const contestsArray: Contest[] = Array.isArray(response)
-        ? response
-        : (response as PaginatedResponse<Contest>).data || [];
-      
-      // Log info about contests received
-      console.log("[LandingPage] Contest fetch success:", {
-        total: contestsArray.length,
-        statuses: contestsArray.map(c => c.status),
-        names: contestsArray.map(c => c.name)
-      });
-      
-      // Update the Zustand store with all contests for caching
-      useStore.getState().setContests(contestsArray);
-      
-      // Set active ('live') contests in local state
-      setActiveContests(contestsArray.filter(isContestLive));
-      
-      // Set open ('pending' / 'upcoming') contests in local state
-      setOpenContests(
-        contestsArray.filter(
-          (contest: Contest) => contest.status === "pending",
-        ),
-      );
-      
-      // Clear any errors
-      setError(null);
-    } catch (err) {
-      console.error(`[LandingPage] Failed to load contests:`, err);
-      
-      // Store detailed error for debugging
-      const errorDetails = err instanceof Error 
-        ? `${err.name}: ${err.message}\n${err.stack || "No stack trace"}`
-        : String(err);
-      
-      setContestDebugInfo(prev => ({
-        ...prev,
-        errorDetails
-      }));
-      
-      if (!(err instanceof Error && err.message.includes("503"))) { // 503 might be maintenance from API layer
-         setError(`Failed to load contests: ${err instanceof Error ? err.message : String(err)}`);
-      } else {
-        // Do not set the error message if it's a maintenance message (handled above)
-        //setError(maintenanceMessageToDisplay);
+      if (isMounted.current) {
+        const liveContests = contestsData.filter(isContestLive);
+        const pendingContests = contestsData.filter((contest: Contest) => contest.status === "pending");
+        
+        setActiveContests(liveContests);
+        setOpenContests(pendingContests);
+        setError(null);
+        
+        // Update Zustand store with fetched contests
+        useStore.getState().setContests(contestsData);
+        
+        setContestDebugInfo(prev => ({
+          ...prev,
+          lastFetchAttempt: new Date().toISOString(),
+          contestApiResponse: JSON.stringify(response, null, 2).substring(0, 500) + "...", // Truncate for brevity
+        }));
+      }
+    } catch (err: any) {
+      if (isMounted.current) {
+        console.error("[LandingPage] Failed to load contests data:", err);
+        setError("Failed to load contests. Please try again later.");
+        setContestDebugInfo(prev => ({
+          ...prev,
+          lastFetchAttempt: new Date().toISOString(),
+          errorDetails: err.message || String(err),
+        }));
+        
+        if (attempt < 3) { // Retry up to 3 times
+          console.log(`[LandingPage] Retrying contest fetch, attempt ${attempt + 1}`);
+          setTimeout(() => retryContestFetch(attempt + 1), 3000 * attempt); // Exponential backoff
+        }
       }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  }, [isMaintenanceModeActive, maintenanceMessageToDisplay]);
+  }, []);
 
-  // Define animation variants for Framer Motion
-  const landingPageVariants = {
-    // Define variants for hidden state
-    hidden: { opacity: 0 },
-    
-    // Define variants for visible state
-    visible: {
-      opacity: 1,
-      transition: {
-        // When parent becomes visible, stagger children animations
-        staggerChildren: 0.3,
-        // Delay before starting children animations
-        delayChildren: FEATURE_FLAGS.SHOW_HERO_TITLE ? 0.8 : 0.2,
-        // Transition duration for the parent itself
-        duration: 0.5
-      }
-    }
-  };
-  
-  // Define variants for children elements
-  const childVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 80,
-        duration: 0.7
-      }
-    }
-  };
-  
-  // Secondary content variants (appears later)
-  const secondaryVariants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 50,
-        duration: 0.8,
-        delay: 0.4
-      }
-    }
-  };
-  
-  // Define whether animation is done (for use in JSX)
-  const animationDone = useStore.getState().landingPageAnimationDone;
-  
-  // Check if the animation has already run in this session
+  // Fetch initial contest data (simplified, retry logic assumed to be in useContests or similar)
   useEffect(() => {
-    const animationDone = useStore.getState().landingPageAnimationDone;
-    
-    if (animationDone) {
-      // Skip animation, set final phase immediately
-      setAnimationPhase(2);
-    } else {
-      // Set up a single timer to mark animation as completed
-      const animationCompleteTimer = setTimeout(() => {
-        // Set the flag in the store after a delay matching our staggered animation duration
-        useStore.getState().setLandingPageAnimationDone(true);
-        setAnimationPhase(2);
-      }, FEATURE_FLAGS.SHOW_HERO_TITLE ? 2400 : 1200);
-      
-      // Initial animation phase
-      setAnimationPhase(1);
-      
-      // Return cleanup function
-      return () => {
-        clearTimeout(animationCompleteTimer);
-      };
-    }
-  }, []); // Run only on initial mount
-
-  // Separate useEffect for contest fetch and maintenance status via WebSocket (runs regardless of animation skip)
-  useEffect(() => {
-    // Check for cached contests in Zustand store first
     const cachedContests = useStore.getState().contests;
-    
     if (cachedContests && cachedContests.length > 0) {
-      // Log that we're using cached data
-      console.log('[LandingPage] Using cached contests data:', {
-        count: cachedContests.length,
-        cachedAt: new Date().toISOString()
-      });
-      
-      // Filter active and pending contests from cache
+      console.log('[LandingPage] Using cached contests data.');
       const cachedActive = cachedContests.filter(isContestLive);
-      const cachedPending = cachedContests.filter(
-        (contest: Contest) => contest.status === "pending"
-      );
-      
-      // Use cached data immediately
+      const cachedPending = cachedContests.filter((contest: Contest) => contest.status === "pending");
       setActiveContests(cachedActive);
       setOpenContests(cachedPending);
-      
-      // Update loading state
       setLoading(false);
-      
-      // Fetch fresh data in the background after a delay
-      setTimeout(() => {
-        retryContestFetch().then(() => {
-          console.log('[LandingPage] Background refresh of contests completed');
-        });
-      }, 2000); // 2 second delay before background refresh
+      setTimeout(() => retryContestFetch(), 2000);
     } else {
-      // No cached data available, perform normal fetch
-      const fetchContests = async () => {
-        await retryContestFetch();
-      };
-      fetchContests();
+      retryContestFetch();
     }
-  }, [retryContestFetch]); // Depend on retryContestFetch
+  }, [retryContestFetch]);
+
+  const fallbackDateForTimers = useMemo(() => new Date(FALLBACK_RELEASE_DATE), []);
+
+  // Define dummy variants to satisfy linter, replace with actual definitions
+  const landingPageVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
+  const childVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
+  const secondaryVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
+
+  // Render section with staggered animation
+  // const renderSectionWithStagger = (
+  //   index: number,
+  //   id: string,
+  //   className: string,
+  //   children: React.ReactNode
+  // ) => (
+  //   <motion.div
+  //     key={id}
+  //     className={`${className} ${id}`}
+  //     initial="hidden"
+  //     animate="visible"
+  //     variants={landingPageVariants}
+  //   >
+  //     {children}
+  //   </motion.div>
+  // );
 
   // Landing Page JSX
   return (
@@ -477,16 +251,22 @@ export const LandingPage: React.FC = () => {
                 </div>
               )}
               
-              {/* WebSocket Demo Section - only visible to admins with debug mode enabled */}
+              {/* Demo Section - only visible to admins with debug mode enabled */}
               {debugMode && isAdmin && (
                 <div className="w-full mb-10">
                   
-                  {/* Auth Debug Panel - shows authentication state for debugging */}
+                  {/* Auth Debug Panel 1 - shows authentication state for debugging */}
                   <div className="mb-6 bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                    <h4 className="text-xl font-semibold mb-4 text-amber-400">Authentication Debug</h4>
+                    <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 1</h4>
                     <AuthDebugPanel />
                   </div>
                   
+                  {/* Auth Debug Panel 2 - shows authentication state for debugging */}
+                  <div className="fixed bottom-0 left-0 right-0 z-[100] p-2 bg-dark-700/80 backdrop-blur-sm">
+                    <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 2</h4>
+                    <AuthDebugPanel />
+                  </div>
+
                   {/* Responsive grid layout - one column on mobile, three columns on large screens */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
@@ -522,15 +302,19 @@ export const LandingPage: React.FC = () => {
                         })()}
                       </React.Suspense>
                     </div>
+
                   </div>
+
                 </div>
               )}
               
               {/* Enhanced Hero Section with IntroLogo and animated background */}
               <div className="relative w-full my-4 md:my-8">
-                {/* Visual effects layer - positioned behind content */}
+                
+                {/* Visual effects layer - positioned behind content (kind of sucks...) */}
                 <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                  {/* Subtle grid overlay */}
+                  
+                  {/* Subtle grid overlay (also sucks...) */}
                   <div
                     className="absolute inset-0 opacity-30"
                     style={{
@@ -556,6 +340,7 @@ export const LandingPage: React.FC = () => {
                     }}
                   />
 
+                  {/* Elegant data flow lines */}
                   <motion.div
                     className="absolute bottom-1/3 -right-1/4 w-full h-full rounded-full blur-3xl"
                     style={{
@@ -573,7 +358,7 @@ export const LandingPage: React.FC = () => {
                     }}
                   />
 
-                  {/* Elegant data flow lines */}
+                  {/* Elegant data flow lines (kind of gay though) */}
                   <div className="absolute inset-0">
                     <motion.div
                       className="h-[0.5px] w-[30%] bg-gradient-to-r from-transparent via-brand-400/15 to-transparent absolute transform -rotate-[30deg]"
@@ -581,6 +366,8 @@ export const LandingPage: React.FC = () => {
                       transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
                       style={{ top: '35%', left: '0%' }}
                     />
+
+                    {/* Another data flow line (again, gay) */}
                     <motion.div
                       className="h-[0.5px] w-[40%] bg-gradient-to-r from-transparent via-cyber-400/10 to-transparent absolute transform rotate-[15deg]"
                       animate={{ x: ["-100%", "200%"] }}
@@ -589,7 +376,7 @@ export const LandingPage: React.FC = () => {
                     />
                   </div>
 
-                  {/* High-quality particle effect */}
+                  {/* High-quality particle effect (now this I like) */}
                   <div className="absolute inset-0">
                     {Array(8).fill(null).map((_, i) => (
                       <motion.div
@@ -621,8 +408,9 @@ export const LandingPage: React.FC = () => {
 
                 {/* Enhanced IntroLogo with dramatic animations - Use 'standard' mode when animation already seen */}
                 <div className="relative z-10 flex justify-center items-center">
-                  <EnhancedIntroLogo mode={animationDone ? 'standard' : 'epic'} />
+                  <EnhancedIntroLogo mode={animationPhase >= 3 ? 'standard' : 'epic'} />
                 </div>
+                
               </div>
 
               {/* Main content container using variants */}
@@ -638,6 +426,8 @@ export const LandingPage: React.FC = () => {
                 className="mt-8 mb-6"
                 variants={childVariants}
               >
+
+                {/* Tagline with animated gradient */}
                 <motion.div
                   className="relative"
                   initial={{ backgroundPosition: "200% center" }}
@@ -670,98 +460,46 @@ export const LandingPage: React.FC = () => {
                     display: "inline-block"
                   }}
                 >
+
+                  {/* Primary tagline */}
                   <h2 className="text-2xl sm:text-3xl font-black leading-tight px-4">
                     High-Stakes Trading Competitions on Solana
                   </h2>
                 </motion.div>
 
-                {/* New secondary line with value proposition */}
+                {/* Secondary tagline */}
                 <p className="text-sm sm:text-base text-gray-300/80 font-medium mt-2">
                   Win big. Trade like a degen. No liquidations.
                 </p>
+
               </motion.div>
 
-              {/* Call to action buttons - Now using the CtaSection component */}
+              {/* CTAs - Now using the CtaSection component */}
               <CtaSection user={user} animationPhase={animationPhase} />
 
               {/* Countdown Timer Component - uses new state */}
-              <motion.div className="w-full max-w-lg mx-auto mb-8 relative z-20" /* variants={childVariants} */ >
-                {/* Logging for debugging rendering conditions */} 
-                {(() => { 
-                  if (isLoadingCountdown) console.log("[LandingPage] DecryptionTimer branch: isLoadingCountdown is true");
-                  else if (!(countdownDetails?.enabled && targetReleaseDate)) console.log("[LandingPage] DecryptionTimer branch: Not (countdownDetails?.enabled && targetReleaseDate). Details:", countdownDetails, "TargetDate:", targetReleaseDate);
-                  else console.log("[LandingPage] DecryptionTimer branch: Rendering DecryptionTimer. Details:", countdownDetails, "TargetDate:", targetReleaseDate);
-                  return null; 
-                })()}
-
-                {isLoadingCountdown ? (
-                  <div>Loading countdown...</div>
-                ) : countdownDetails?.enabled && targetReleaseDate ? (
-                  <>
-                    {/* {console.log("[LandingPage] Rendering DecryptionTimer with targetDate:", targetReleaseDate)} */}
-                    {/* The above log is now part of the IIFE block above */}
-                    {countdownDetails.title && <h2 className="text-3xl font-bold text-purple-300 mb-2">{countdownDetails.title}</h2>}
-                    {countdownDetails.message && <p className="text-lg text-gray-300 mb-4">{countdownDetails.message}</p>}
-                    <DecryptionTimer
-                      targetDate={targetReleaseDate} 
-                    />
-                    {/* Button to link to pump.fun - NOW WITH APLOMB! */}
-                    {showPumpFunButton && websocketContractAddress && (
-                      <motion.button
-                        initial={{ opacity: 0, y: 40, scale: 0.7 }}
-                        animate={{ 
-                          opacity: [0, 1, 0.6, 1], // Opacity stutters for a digital feel
-                          y: 0, 
-                          scale: 1 
-                        }}
-                        transition={{
-                          delay: 0.3,
-                          y: { type: "spring", stiffness: 180, damping: 15 },
-                          scale: { type: "spring", stiffness: 180, damping: 15 },
-                          opacity: { duration: 0.5, ease: "easeOut", times: [0, 0.25, 0.5, 1] } // Controls the stutter timing
-                        }}
-                        onClick={() => {
-                          const contractToUse = apiTokenAddress || websocketContractAddress; // Prioritize API, fallback to WS
-                          if (contractToUse) {
-                            const pumpFunUrl = `https://pump.fun/coin/${contractToUse}`;
-                            console.log("[LandingPage] Pump.fun button clicked. Opening with contract:", contractToUse, "URL:", pumpFunUrl);
-                            window.open(pumpFunUrl, '_blank');
-                          } else {
-                            console.error("[LandingPage] Pump.fun button clicked, but no contract address is available.");
-                          }
-                        }}
-                        className="mt-8 p-0 bg-gradient-to-r from-pink-500 via-purple-600 to-brand-500 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 inline-flex items-center justify-center aspect-square w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28" // Adjusted for image, made square
-                        aria-label="View on Pump.fun"
-                      >
-                        <img 
-                          src="/assets/media/logos/pump.png" 
-                          alt="View on Pump.fun" 
-                          className="h-10 w-auto sm:h-12 md:h-14 object-contain" // Control image size within button
-                        />
-                      </motion.button>
-                    )}
-                  </>
-                ) : (
-                  /* Minimal fallback - just the timer with hardcoded date */
-                  <DecryptionTimer targetDate={FALLBACK_RELEASE_DATE} />
-                )}
-              </motion.div>
-
-              {/* Platform Features Section */}
-              {/* (moved to components/landing/features-list/Features.tsx) */}
-              {/*
-              <motion.div
-                className="text-center mb-10"
-                variants={childVariants}
+              <motion.div // Keep this motion.div if it was part of the structure, or simplify to a normal div
+                ref={mainTimerContainerRef} 
+                className="my-8 md:my-12 w-full max-w-3xl mx-auto"
+                // Remove variants={childVariants} if this specific div doesn't need it
+                // or ensure childVariants is correctly defined and used if it should animate
               >
-                <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-purple-500 mb-4">PLATFORM <span className="text-purple-300">·</span> FEATURES</h2>
-                <div className="w-full max-w-2xl mx-auto h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent mb-8"></div>
-                <p className="text-xl sm:text-2xl md:text-3xl font-light text-white/90">
-                  Experience the future of competitive token trading
-                </p>
+
+                {/* Decryption Timer */}
+                <DecryptionTimer
+                  targetDate={fallbackDateForTimers} 
+                />
+
               </motion.div>
-              */}
-              
+
+
+
+
+
+
+              {/* Something is causing this to reload every ~5 seconds
+                  TODO: Figure out why and fix it */}
+
               {/* Enhanced Features section - shown to all users */}
               {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
                 <motion.div
@@ -775,10 +513,15 @@ export const LandingPage: React.FC = () => {
                     },
                   }}
                 >
+
+                  {/* Features section container */}
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Features component is only imported and rendered when the flag is enabled */}
                     {(() => {
+
+                      // Only import and render when the flag is enabled (we already tested this once above)
                       if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
+                        
                         // Dynamic import only when needed
                         const Features = React.lazy(
                           () =>
@@ -788,20 +531,28 @@ export const LandingPage: React.FC = () => {
                         );
                         return (
 
-                          // Something is causing this to reload every ~5 seconds
-                          // TODO: Figure out why and fix it
-
+                          // Features List (Loading fallback)
                           <React.Suspense fallback={<div>Loading features...</div>}>
                             <Features />
                           </React.Suspense>
+                          
                         );
                       }
                       return null;
                     })()}
                   </div>
+                  
                 </motion.div>
               )}
               
+
+
+
+
+
+
+
+
               {/* NYSE-Style Market Ticker Grid - Replaces all previous token displays */}
               <LazyLoad>
                 <motion.div
@@ -824,23 +575,14 @@ export const LandingPage: React.FC = () => {
               <motion.div
                 variants={secondaryVariants}
               >
-                {/* Maintenance mode */}
                 {isMaintenanceModeActive ? (
                   <div className="relative">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                       <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-                        <div className="flex items-center justify-center gap-2 text-yellow-400">
-                          <span className="animate-pulse">⚠</span>
-                          
-                          {/* Maintenance mode message */}
-                          <span>
-                            {maintenanceMessageToDisplay}
-                          </span>
-                          
-                          {/* Maintenance mode icon */}
-                          <span className="animate-pulse">⚙️</span>
-                          
-                        </div>
+                        <h3 className="text-2xl font-bold text-yellow-300 mb-2">⚙️ Maintenance Mode ⚙️</h3>
+                        <p className="text-yellow-200">
+                          {maintenanceMessageToDisplay}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -886,7 +628,7 @@ export const LandingPage: React.FC = () => {
                           
                           {/* Retry loading button */}
                           <button 
-                            onClick={retryContestFetch}
+                            onClick={() => retryContestFetch()}
                             className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                           >
                             Retry
@@ -953,7 +695,8 @@ export const LandingPage: React.FC = () => {
                 )}
               </motion.div>
               
-              </motion.div> {/* Close the main landing-content container with variants */}
+              </motion.div> 
+              {/* Close the main landing-content container with variants */}
 
             </div>
 
@@ -967,6 +710,16 @@ export const LandingPage: React.FC = () => {
 
       </section>
 
+      {/* Mini Timer - Appears when main timer is not visible */}
+      {!mainTimerIsVisible && (
+        <MiniDecryptionTimer
+          targetDate={fallbackDateForTimers}
+          onClick={() => {
+            mainTimerContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }}
+        />
+      )}
+      
     </div>
   );
 };

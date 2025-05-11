@@ -401,7 +401,6 @@ export const UnifiedTicker: React.FC<Props> = ({
     if(isInteractingRef.current) handleInteractionEnd();
   };
   const onTouchStart = (e: React.TouchEvent) => handleInteractionStart(e.touches[0].clientX);
-  const onTouchMove = (e: React.TouchEvent) => { e.preventDefault(); handleInteractionMove(e.touches[0].clientX);};
   const onTouchEnd = () => handleInteractionEnd();
 
   const tabButtonVariants = {
@@ -448,7 +447,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     return (
       <div
         ref={viewportRef}
-        className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing"
+        className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing pl-40"
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUpOrLeave}
@@ -457,7 +456,6 @@ export const UnifiedTicker: React.FC<Props> = ({
           handleMouseLeave(); 
         }}
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onMouseEnter={handleMouseEnter}
       >
@@ -482,6 +480,30 @@ export const UnifiedTicker: React.FC<Props> = ({
       </div>
     );
   };
+
+  // Effect to handle touchmove with preventDefault
+  useEffect(() => {
+    const viewportElement = viewportRef.current;
+
+    // Define the callback for touchmove
+    const onTouchMoveCallback = (e: TouchEvent) => {
+      // Only prevent default if we are actively interacting (dragging)
+      if (isInteractingRef.current) {
+        e.preventDefault();
+      }
+      handleInteractionMove(e.touches[0].clientX);
+    };
+
+    if (viewportElement) {
+      viewportElement.addEventListener('touchmove', onTouchMoveCallback, { passive: false });
+    }
+
+    return () => {
+      if (viewportElement) {
+        viewportElement.removeEventListener('touchmove', onTouchMoveCallback);
+      }
+    };
+  }, [handleInteractionMove]); // Add handleInteractionMove to dependencies
 
   const floatingTabs = (
     <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex space-x-0.5">

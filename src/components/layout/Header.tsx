@@ -18,12 +18,14 @@ import React, { useEffect, useRef } from "react";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
 import { useStore } from "../../store/useStore";
+import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton"; // Verify path
 
 // STEP 3: Re-enable Logo import
 // import IntroLogo from "../logo/index"; // Keep the full IntroLogo for now, maybe it's used elsewhere
 // import Logo from "../ui/Logo"; // REMOVE old logo import
 import MiniLogo from "../logo/MiniLogo"; // Add MiniLogo import
 import NanoLogo from "../logo/NanoLogo"; // Add NanoLogo import
+import { UserMenu } from './user-menu/UserMenu';
 
 // STEP ???: Re-enable dropdowns
 // import { ContestsDropdown } from "./ContestsDropdown"; // TEMP
@@ -31,11 +33,10 @@ import NanoLogo from "../logo/NanoLogo"; // Add NanoLogo import
 // import { TokensDropdown } from "./TokensDropdown"; // TEMP
 
 // STEP ???: Re-enable user menus (desktop and mobile)
-// import { UserMenu } from "./user-menu/UserMenu"; // TEMP
-// import { MobileMenuButton } from "./MobileMenuButton"; // TEMP
+import { MobileMenuButton } from './MobileMenuButton'; // TEMP
 
 // Error-related hooks are no longer used directly in Header for banners
-// import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications"; 
+import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 // import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
 
 export const Header: React.FC = () => {
@@ -45,10 +46,10 @@ export const Header: React.FC = () => {
   const storeErrorMessage = useStore(state => state.error?.message || null);
   const clearStoreError = useStore(state => state.clearError);
   
-  const { user, isAdmin, isAuthenticated } = useMigratedAuth(); 
+  const { user, isAdmin, isAuthenticated, logout } = useMigratedAuth(); 
   // unreadCount and settings might still be needed for other parts of the Header later
   // For now, keep them if UserMenu/MobileMenu will use them, or comment out if not.
-  // const { unreadCount } = useNotifications(); 
+  const { unreadCount } = useNotifications(); 
   // const { settings } = useSystemSettings(); 
   
   const isMounted = useRef(true);
@@ -87,7 +88,7 @@ export const Header: React.FC = () => {
 
   // Other effects (maintenance sync, header height) remain commented out for now
 
-  console.log("[Header STEP 4 - Error Banners Relocated] Rendering. User:", user ? user.id : null, "IsAuth:", isAuthenticated, "IsAdmin:", isAdmin, "Compact:", isCompact, "StoreError:", storeErrorMessage ? "Yes" : "No");
+  console.log("[Header STEP 4 - Error Banners Relocated] Rendering. User:", user ? user.id : null, "IsAuth:", isAuthenticated, "IsAdmin:", isAdmin, "Compact:", isCompact, "StoreError:", storeErrorMessage ? "Yes" : "No", "UnreadNotifs:", unreadCount);
 
   const headerHeight = isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16";
 
@@ -153,14 +154,33 @@ export const Header: React.FC = () => {
             <div className="hidden md:block">
               <AnimatePresence mode="wait">
                 {isAuthenticated && user ? (
-                  <motion.div key="user-menu-ph">
-                    {/* <div className="w-8 h-8 bg-green-500/30 rounded-full text-xs flex items-center justify-center text-green-300">U</div> */} {/* REMOVE placeholder */}
-                    {/* Add actual UserMenu component here when ready */}
+                  <motion.div 
+                    key="user-menu" 
+                    initial={{ opacity: 0, x: 10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <UserMenu 
+                      user={user} 
+                      onDisconnect={() => logout && logout()} 
+                      isCompact={isCompact} 
+                      unreadNotifications={unreadCount} 
+                    />
                   </motion.div>
                 ) : (
-                  <motion.div key="login-btn-ph">
-                     {/* <div className="w-24 h-8 bg-purple-500/30 rounded text-xs flex items-center justify-center text-purple-300">Connect</div> */} {/* REMOVE placeholder */}
-                     {/* Add actual Connect/Login button here when ready */}
+                  <motion.div 
+                    key="login-btn-consolidated"
+                    initial={{ opacity: 0, x: 10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ConsolidatedLoginButton 
+                      onLoginComplete={() => {
+                        console.log("[Header] Login complete callback triggered from ConsolidatedLoginButton");
+                      }}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -169,7 +189,11 @@ export const Header: React.FC = () => {
             {/* Mobile Menu Button */}
             <div className="md:hidden">
               {/* <div className="w-8 h-8 bg-gray-500/30 rounded text-xs flex items-center justify-center text-gray-300">M</div> */} {/* REMOVE placeholder */}
-              {/* Add actual MobileMenuButton component here when ready */}
+              <MobileMenuButton 
+                isCompact={isCompact}
+                onDisconnect={() => logout && logout()}
+                unreadNotifications={unreadCount}
+              />
             </div>
 
           </div>

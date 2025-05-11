@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 // Import from the correct Terminal export file with createConfig and DecryptionTimer
-import { Terminal, DecryptionTimer, createConfig, Config } from '../components/terminal/index';
+import { DecryptionTimer } from '../components/layout/DecryptionTimer';
+import { Config, Terminal, createConfig } from '../components/terminal/index';
+
 /**
  * @fileoverview
  * Storybook stories for the Terminal component
