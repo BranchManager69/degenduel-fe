@@ -95,7 +95,7 @@ export const Header: React.FC = () => {
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}
-      ${isCompact ? 'bg-transparent backdrop-blur-none' : 'bg-dark-200/30 backdrop-blur-lg'}
+      ${isCompact ? 'bg-dark-200/30 backdrop-blur-lg' : 'bg-dark-200/30 backdrop-blur-lg'}
       `}
       onClick={(e) => e.stopPropagation()}
     >
