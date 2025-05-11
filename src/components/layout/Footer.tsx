@@ -8,7 +8,6 @@ import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketCo
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { MessageType } from '../../hooks/websocket';
-import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
@@ -17,7 +16,7 @@ export const Footer: React.FC = () => {
   const unifiedWs = useWebSocket();
   
   // Get errors from hooks
-  const { settings: systemSettingsDataFromHook, error: systemSettingsErrorFromHook } = useSystemSettings();
+  ////const { settings: systemSettingsDataFromHook, error: systemSettingsErrorFromHook } = useSystemSettings();
   
   // Use our scroll hook for footer
   const { isCompact } = useScrollFooter(50);
@@ -68,6 +67,7 @@ export const Footer: React.FC = () => {
       },
     };
 
+    /*
     if (systemSettingsDataFromHook?.maintenanceMode) {
       status = 'maintenance';
       message = systemSettingsDataFromHook?.maintenanceMessage || "The platform is currently undergoing scheduled maintenance. Please check back shortly.";
@@ -95,6 +95,7 @@ export const Footer: React.FC = () => {
       message = 'Authenticating...';
     }
     // If none of the above, default to 'online' and 'Server is operating normally'
+    */
 
     const currentBaseStyle = baseStyles[status] || baseStyles.unknown;
     const isWsActuallyConnected = unifiedWs.isConnected; // True if ConnectionState is CONNECTED or AUTHENTICATED
@@ -115,7 +116,7 @@ export const Footer: React.FC = () => {
   const styles = getStatusStyles();
 
   // Add console log to check error states
-  console.log("[Footer] Error States: SystemSettings:", systemSettingsErrorFromHook);
+  ////console.log("[Footer] Error States: SystemSettings:", systemSettingsErrorFromHook);
 
   return (
     <>
@@ -291,7 +292,10 @@ export const Footer: React.FC = () => {
                     </Link>
                     
                     {/* RPC Benchmark Dashboard (only visible to admin users) */}
+                    {/* 
                     {isAdmin && systemSettingsDataFromHook?.showDiagnostics && systemSettingsDataFromHook?.diagOptions?.includes('rpc_benchmarks') && (
+                    */}
+                    {isAdmin && (
                       <div className="ml-2 pl-2 border-l border-gray-700">
                         <RPCBenchmarkFooter compactMode={isCompact} />
                       </div>
@@ -358,6 +362,7 @@ export const Footer: React.FC = () => {
                   </div>
                 </>
               ) : (
+
                 /* Minimal footer for non-authenticated users before release */
                 <div className="flex items-center space-x-4 shrink-0">
                   <a href="https://branch.bet" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 hover:text-brand-400 opacity-70 hover:opacity-100 transition-opacity">by Branch • <span className="text-[10px]">2025</span></a>
@@ -371,6 +376,7 @@ export const Footer: React.FC = () => {
                     Status
                   </a>
                 </div>
+
               )}
             </div>
 
@@ -471,9 +477,6 @@ UnifiedWS Authenticated: ${unifiedWs.isAuthenticated ? "✅" : "❌"}
 UnifiedWS State: ${unifiedWs.connectionState}
 UnifiedWS Connection Error: ${unifiedWs.connectionError || "None"}
 UnifiedWS Server Down: ${unifiedWs.isServerDown ? "✅" : "❌"}
-SystemSettings Maintenance: ${systemSettingsDataFromHook?.maintenanceMode ? "✅" : "❌"}
-SystemSettings Error: ${systemSettingsErrorFromHook || "None"}
-SystemSettings Watched: ${JSON.stringify(systemSettingsDataFromHook)}
 URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}
 Last Check: ${new Date().toLocaleTimeString()}
                           `.trim();
@@ -531,18 +534,24 @@ Last Check: ${new Date().toLocaleTimeString()}
                             <div className="font-mono truncate max-w-[200px]">{unifiedWs.connectionError}</div>
                           </div>
                         )}
+
+                        {/* Potentially down server status */}
                         {unifiedWs.isServerDown && (
                            <div className="flex justify-between mt-1 text-red-400">
                              <div>Server Status:</div>
                              <div className="font-mono">Potentially Down</div>
                            </div>
                         )}
+
+                        {/*
                          {systemSettingsDataFromHook?.maintenanceMode && (
                            <div className="flex justify-between mt-1 text-yellow-400">
                              <div>Platform Status:</div>
                              <div className="font-mono">Maintenance Mode</div>
                            </div>
                         )}
+                        */}
+
                       </div>
                     </div>
                     
