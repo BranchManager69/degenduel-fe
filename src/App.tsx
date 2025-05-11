@@ -368,7 +368,7 @@ const AppContent: React.FC = () => {
   */
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen w-screen flex flex-col">
       {/* Toast Listener */}
       <ToastListener />
       
