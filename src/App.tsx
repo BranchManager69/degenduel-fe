@@ -32,7 +32,6 @@ import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use Sol
 // Wallet providers
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'; // Example wallets
 
 // Other providers of dubious quality:
 import { ToastListener, ToastProvider } from "./components/toast";
@@ -80,6 +79,7 @@ import "./styles/color-schemes.css";
 
 // Hooks and utils
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
+import { InviteSystemProvider } from './hooks/social/legacy/useInviteSystem';
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
 
 // Get Privy app ID
@@ -90,6 +90,7 @@ console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
 import { config, PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
 
 // Landing Page
+import { AffiliateSystemProvider } from '@/hooks/social/legacy/useAffiliateSystem';
 import { LandingPage } from "./pages/public/general/LandingPage";
 
 // Admin Chat Dashboard
@@ -179,17 +180,20 @@ export const useDegenDuelRpc = () => {
 const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
   
+  // Attempt to rely on auto-detection for Standard Wallets like Phantom and Solflare
   const wallets = useMemo(
     () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      // Add other wallets you want to support here
+      // new PhantomWalletAdapter(), // Removed: Rely on standard wallet auto-detection
+      // new SolflareWalletAdapter(), // Removed: Rely on standard wallet auto-detection
+      // Add other non-standard or specifically configured wallets you want to support here
     ],
     []
   );
 
   return (
     <ConnectionProvider endpoint={rpcEndpoint}> {/* Use your dynamic endpoint here */}
+      {/* If wallets array is empty, WalletProvider might auto-detect standard wallets */}
+      {/* If autoConnect causes issues with no wallets explicitly listed, we might need to adjust it */}
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           {children}
@@ -294,26 +298,23 @@ const AppProvidersAndContent: React.FC = () => {
   }), []); // Stable config
 
   return (
-    // Our custom SolanaConnectionProvider is now at the top for endpoint determination
-    <SolanaConnectionProvider> 
-      {/* WalletAdapterProviders will consume the endpoint from SolanaConnectionProvider */}
-      <WalletAdapterProviders> 
-          {/* Our existing custom RpcContext.Provider - evaluate if still needed or if ConnectionProvider suffices */}
-          {/* <RpcContext.Provider value={{ rpcClient: rpcClientV2, endpoint: currentRpcEndpoint }}> */}
-            <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
-              <UnifiedAuthProvider>
-                <UnifiedWebSocketProvider>
-                  <TokenDataProvider>
-                    <ToastProvider>
-                      <AppContent />
-                    </ToastProvider>
-                  </TokenDataProvider>
-                </UnifiedWebSocketProvider>
-              </UnifiedAuthProvider>
-            </PrivyProvider>
-          {/* </RpcContext.Provider> */}
-      </WalletAdapterProviders>
-    </SolanaConnectionProvider>
+    <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}> {/* Pass appId directly and spread rest of config */}
+      <InviteSystemProvider>
+        <SolanaConnectionProvider>
+          <WalletAdapterProviders>
+            <UnifiedWebSocketProvider>
+              <TokenDataProvider>
+                <AffiliateSystemProvider>
+                  <ToastProvider>
+                    <AppContent />
+                  </ToastProvider>
+                </AffiliateSystemProvider>
+              </TokenDataProvider>
+            </UnifiedWebSocketProvider>
+          </WalletAdapterProviders>
+        </SolanaConnectionProvider>
+      </InviteSystemProvider>
+    </PrivyProvider>
   );
 };
 

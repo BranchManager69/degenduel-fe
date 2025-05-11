@@ -47,38 +47,31 @@ const SolanaConnectionContext = createContext<SolanaConnectionContextType>({
 
 // Provider component
 export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Use migrated auth hook
-  const { isAdmin, isSuperAdmin, user: authUser } = useMigratedAuth(); 
+  const { user: authUser } = useMigratedAuth(); 
   const storeUser = useStore(state => state.user);
-  const user = authUser || storeUser; // Prioritize user from auth hook
+  const user = authUser || storeUser; 
   
-  // Determine which RPC endpoint to use based on user role
   const connectionInfo = useMemo(() => {
-    // isAdmin and isSuperAdmin from useMigratedAuth are booleans, directly use them.
-    const isAdminUser = isAdmin;
-    const isSuperAdminUser = isSuperAdmin;
+    const isAdminUser = authUser?.is_admin;       
+    const isSuperAdminUser = authUser?.is_superadmin; 
     
-    // Determine the tier based on user role
     let tier: 'public' | 'user' | 'admin' = 'public';
     if (isSuperAdminUser || isAdminUser) {
       tier = 'admin';
-    } else if (user) {
+    } else if (user) { // This `user` is the merged one, which is fine for this tier logic
       tier = 'user';
     }
     
-    // Get the appropriate RPC endpoint from config
     const baseEndpoint = config.SOLANA.RPC_BASE_URL;
-    
     const endpoint = tier === 'admin'
       ? `${baseEndpoint}/admin`
       : tier === 'user'
         ? baseEndpoint
         : `${baseEndpoint}/public`;
     
-    // Create connection with appropriate configuration
     const connection = new Connection(endpoint, {
       commitment: 'confirmed',
-      confirmTransactionInitialTimeout: 60000, // 60 seconds timeout for transactions
+      confirmTransactionInitialTimeout: 60000, 
     });
     
     return {
@@ -87,7 +80,7 @@ export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> =
       rpcEndpoint: endpoint,
       isHighVolumeTier: tier === 'admin'
     };
-  }, [isAdmin, isSuperAdmin, user]);
+  }, [authUser, user]); // Ensure dependency array uses authUser (for is_admin, is_superadmin) and user (for the tier logic based on user presence)
   
   return (
     <SolanaConnectionContext.Provider value={connectionInfo}>

@@ -48,7 +48,6 @@ import { useStore } from "../../../store/useStore"; // Ensure useStore is import
 
 // Config
 // Import new MarketTickerGrid component (replacing the three token display components)
-import { MarketTickerGrid } from "../../../components/landing/market-ticker";
 import { FloatingDexscreenerButton } from '../../../components/layout/FloatingDexscreenerButton'; // Added import
 import { FloatingJupButton } from '../../../components/layout/FloatingJupButton'; // Added import
 import { FloatingPumpButton } from '../../../components/layout/FloatingPumpButton'; // Added import
@@ -275,7 +274,7 @@ export const LandingPage: React.FC = () => {
                     {/* Responsive grid layout - one column on mobile, three columns on large screens */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       
-                      {/* Token Data Demo */}
+                      {/* Token Data Demo 
                       <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
                         <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
                         <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading token data...</div>}>
@@ -543,7 +542,7 @@ export const LandingPage: React.FC = () => {
                   </motion.div>
                 )}
                 
-                {/* NYSE-Style Market Ticker Grid - Replaces all previous token displays */}
+                {/* NYSE-Style Market Ticker Grid - Replaces all previous token displays 
                 <motion.div
                   className="w-full mt-8 mb-6"
                   variants={secondaryVariants}
@@ -558,6 +557,7 @@ export const LandingPage: React.FC = () => {
                     />
                   </div>
                 </motion.div>
+                */}
                 
                 {/* Contest sections - shown to all users */}
                 <motion.div
