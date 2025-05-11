@@ -28,6 +28,8 @@ import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
 // NEW: @solana/kit related imports
 import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use SolanaRpcApi from @solana/rpc
+import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explicit typing
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'; // Added for explicit wallet list
 
 // Wallet providers
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
@@ -176,11 +178,11 @@ export const useDegenDuelRpc = () => {
 const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
   
-  // Attempt to rely on auto-detection for Standard Wallets like Phantom and Solflare
-  const wallets = useMemo(
+  // Explicitly list the wallet adapters you want to support.
+  const wallets: Adapter[] = useMemo(
     () => [
-      // new PhantomWalletAdapter(), // Removed: Rely on standard wallet auto-detection
-      // new SolflareWalletAdapter(), // Removed: Rely on standard wallet auto-detection
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
       // Add other non-standard or specifically configured wallets you want to support here
     ],
     []
@@ -188,9 +190,8 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <ConnectionProvider endpoint={rpcEndpoint}> {/* Use your dynamic endpoint here */}
-      {/* If wallets array is empty, WalletProvider might auto-detect standard wallets */}
-      {/* If autoConnect causes issues with no wallets explicitly listed, we might need to adjust it */}
-      <WalletProvider wallets={wallets} autoConnect>
+      {/* Use the explicit list of wallets and set autoConnect to false */}
+      <WalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>
           {children}
         </WalletModalProvider>
@@ -254,6 +255,8 @@ const AppProvidersAndContent: React.FC = () => {
   //   return createDegenDuelRpcClient(currentRpcEndpoint, ddJwt);
   // }, [currentRpcEndpoint, ddJwt]);
 
+  // Removed the problematic 'solanaConnectors' variable that was causing type errors.
+
   const privyConfig: PrivyClientConfig = useMemo(() => ({
     loginMethods: [
       "wallet", 
@@ -277,6 +280,8 @@ const AppProvidersAndContent: React.FC = () => {
       solana: { createOnLogin: 'users-without-wallets' },
     },
     externalWallets: {
+      // This is how Privy's config likely expects it, using its own utility.
+      // `toSolanaWalletConnectors` returns what PrivyClientConfig needs for this field.
       solana: { connectors: toSolanaWalletConnectors({ shouldAutoConnect: false }) }
     },
     supportedChains: [
@@ -291,12 +296,13 @@ const AppProvidersAndContent: React.FC = () => {
         }
       }
     ]
-  }), []); // Stable config
+  }), []); // Stable config, no longer depends on the removed 'solanaConnectors'
 
   return (
     <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}> {/* Pass appId directly and spread rest of config */}
       <InviteSystemProvider>
         <SolanaConnectionProvider>
+          {/* WalletAdapterProviders no longer takes the solanaConnectors prop */}
           <WalletAdapterProviders>
             <UnifiedWebSocketProvider>
               <TokenDataProvider>

@@ -108,7 +108,7 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
           </svg>
         )}
       </Button>
-      
+
       {/* Expandable login options */}
       <AnimatePresence>
         {isExpanded && (
@@ -117,7 +117,7 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            className="mt-2 overflow-hidden"
+            className="absolute top-full left-0 right-0 mt-1 overflow-hidden"
           >
             <div className="flex flex-col gap-2 p-2 bg-dark-400/60 backdrop-blur-sm border border-brand-500/30 rounded-md shadow-xl">
               {/* Each login method gets its own button */}
