@@ -3,18 +3,20 @@
 /**
  * Wallet Balance Ticker Component
  * 
- * @description Displays a real-time ticker with wallet balances in the header
- * Uses the v69 Unified WebSocket System for live updates
+ * @description Displays a real-time ticker with wallet balances in the header.
+ * Now uses @solana/wallet-adapter-react to determine the wallet address.
+ * Still uses the v69 Unified WebSocket System (via custom useWallet hook) for live balance updates.
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 2.0.0
  * @created 2025-04-28
- * @updated 2025-05-07
+ * @updated 2025-05-12
  */
 
-import React, { useMemo } from "react";
-import { useWallet } from "../../hooks/websocket/topic-hooks/useWallet";
-import { useStore } from "../../store/useStore";
+import { useWallet as useSolanaWalletAdapter } from "@solana/wallet-adapter-react"; // Renamed to avoid conflict
+import React, { useEffect, useMemo } from "react";
+import { useWallet as useCustomDegenWallet } from "../../hooks/websocket/topic-hooks/useWallet"; // Your custom hook
+// import { useStore } from "../../store/useStore"; // No longer needed for walletAddress
 
 interface WalletBalanceTickerProps {
   isCompact?: boolean;
@@ -23,18 +25,24 @@ interface WalletBalanceTickerProps {
 export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
   isCompact = false,
 }) => {
-  // Get the current wallet address from store
-  const { user } = useStore();
-  const walletAddress = user?.wallet_address;
+  // Get the connected public key from the Solana Wallet Adapter
+  const { publicKey: adapterPublicKey, connected: isAdapterConnected } = useSolanaWalletAdapter();
+  const walletAddress = useMemo(() => adapterPublicKey?.toBase58() || null, [adapterPublicKey]);
   
-  // Use wallet hook to get all wallet data
+  // Use your custom wallet hook to get all wallet data for the adapter-connected address
   const {
     balance,
     isLoading,
-    isConnected,
     refreshWallet,
     error
-  } = useWallet(walletAddress);
+  } = useCustomDegenWallet(walletAddress ? walletAddress : undefined); // Explicitly pass undefined if walletAddress is null
+
+  // Effect to refresh wallet data when the connected wallet address changes
+  useEffect(() => {
+    if (walletAddress && isAdapterConnected) {
+      refreshWallet();
+    }
+  }, [walletAddress, isAdapterConnected, refreshWallet]);
   
   // Format SOL balance
   const formattedSolBalance = useMemo(() => {
@@ -71,8 +79,8 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
     ${isCompact ? 'text-[10px]' : 'text-xs'}
   `;
   
-  // Handle loading state
-  if (isLoading) {
+  // Handle loading state - consider both adapter connection and WebSocket loading
+  if (isLoading || (isAdapterConnected && !walletAddress && !balance)) { // Show loading if adapter connected but address/balance not yet resolved
     return (
       <div className={containerClasses}>
         <div className={`animate-pulse bg-dark-300/50 ${isCompact ? 'h-6' : 'h-8'}`} />
@@ -80,27 +88,29 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
     );
   }
   
-  // Handle connection errors
-  if (error || !isConnected) {
+  // Handle adapter not connected or WebSocket errors
+  if (!isAdapterConnected || error) {
     return (
       <div className={containerClasses}>
         <div className={`flex items-center justify-center space-x-3 ${isCompact ? 'h-6' : 'h-8'}`}>
           <span className="font-mono text-red-400">
             <span className="animate-ping inline-block h-2 w-2 rounded-full bg-red-500 opacity-75 mr-2"></span>
-            WALLET CONNECTION ERROR
+            {error ? "WALLET DATA ERROR" : "WALLET NOT CONNECTED"}
           </span>
-          <button 
-            onClick={refreshWallet}
-            className="bg-red-900/30 hover:bg-red-800/30 border border-red-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-red-300"
-          >
-            RETRY
-          </button>
+          {error && (
+            <button 
+              onClick={refreshWallet}
+              className="bg-red-900/30 hover:bg-red-800/30 border border-red-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-red-300"
+            >
+              RETRY
+            </button>
+          )}
         </div>
       </div>
     );
   }
   
-  // Handle no balances (user might not be logged in)
+  // Handle no balances (adapter connected, but balance data isn't available from WebSocket yet)
   if (!balance) {
     return (
       <div className={containerClasses}>

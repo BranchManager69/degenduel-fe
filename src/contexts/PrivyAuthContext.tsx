@@ -69,6 +69,7 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
     );
   }, []);
 
+  // Privy Auth Context
   const { 
     ready,
     authenticated,
@@ -78,7 +79,10 @@ export const PrivyAuthProvider: React.FC<{ children: ReactNode }> = ({ children 
     getAccessToken
   } = usePrivy();
   
+  // Auth User
   const [authUser, setAuthUser] = React.useState<any>(null);
+  
+  // Privy Linked?
   const [isPrivyLinked, setIsPrivyLinked] = React.useState<boolean>(false);
 
   // Add debugging object to window for inspection in console

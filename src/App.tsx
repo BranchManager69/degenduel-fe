@@ -14,32 +14,32 @@
 
 // React
 import React, { createContext, lazy, Suspense, useContext, useEffect, useMemo, useState } from "react";
-// React Router
+import { createPortal } from 'react-dom';
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
 // Auth providers
 // Privy
 import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
-//import { toEthereumWalletConnectors } from "@privy-io/react-auth/ethereum";
 // Unified Auth Contexts
+import { SolanaConnectionProvider, useSolanaConnection } from './contexts/SolanaConnectionContext';
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
 import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
 // NEW: @solana/kit related imports
 import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use SolanaRpcApi from @solana/rpc
-import { createDegenDuelRpcClient } from "./lib/solana/rpcClient"; // Our custom RPC client factory
 
 // Wallet providers
-// We will remove WalletName and Commitment if they are confirmed to be unused after this change.
+import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'; // Example wallets
 
 // Other providers of dubious quality:
-import { ToastContainer, ToastListener, ToastProvider } from "./components/toast";
+import { ToastListener, ToastProvider } from "./components/toast";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
-import { AffiliateSystemProvider } from "./hooks/social/legacy/useAffiliateSystem";
-import { InviteSystemProvider } from "./hooks/social/legacy/useInviteSystem";
 
 // Components
+
 // Helper component to redirect while preserving query parameters
 const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
   const location = useLocation();
@@ -47,6 +47,9 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
   return <Navigate to={`${to}${location.search}`} replace />;
 };
 
+// Stuff
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertTriangle, SettingsIcon, X } from 'lucide-react';
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
 import { BackgroundEffectsBoundary } from "./components/animated-background/BackgroundEffectsBoundary";
@@ -66,6 +69,9 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 import { Terminal } from "./components/terminal/Terminal";
+import { useScrollHeader } from './hooks/ui/useScrollHeader';
+import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
+import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
 
 // Wallet adapter styles (if this is the old wallet adapter, we removed it)
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -75,95 +81,16 @@ import "./styles/color-schemes.css";
 // Hooks and utils
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
-import { useStore } from "./store/useStore";
-
-// Route components
-// Admin routes
-// import { AdminDashboard } from "./pages/admin/AdminDashboard"; // Will be lazy
-// import { AiTesting } from "./pages/admin/AiTesting"; // Now a lazy const
-// import ClientErrorsPage from "./pages/admin/ClientErrorsPage"; // Will be lazy
-// import { ConnectionDebugger } from "./pages/admin/ConnectionDebugger"; // Will be lazy
-// import { ContestImageBrowserPage } from "./pages/admin/ContestImageBrowserPage"; // Will be lazy
-// import IpBanManagementPage from "./pages/admin/ip-ban/IpBanManagementPage"; // Will be lazy
-// import { SkyDuelPage } from "./pages/admin/SkyDuelPage"; // Now a lazy const
-// import { SystemReports } from "./pages/admin/SystemReports"; // Will be lazy
-// import VanityWalletManagementPage from "./pages/admin/VanityWalletManagementPage"; // Will be lazy
-// import WalletManagementPage from "./pages/admin/WalletManagementPage"; // Will be lazy
-// import WebSocketHub from "./pages/admin/WebSocketHub"; // Now a lazy const
-
-// Authenticated routes
-// import { ReferralPage } from "./pages/authenticated/AffiliatePage"; // Will be lazy
-// import { ContestCreditsPage } from "./pages/authenticated/ContestCreditsPage"; // Will be lazy
-// import { CreateContestPage } from "./pages/authenticated/CreateContestPage"; // Will be lazy
-// import MyContestsPage from "./pages/authenticated/MyContestsPage"; // Will be lazy
-// import MyPortfoliosPage from "./pages/authenticated/MyPortfoliosPage"; // Will be lazy
-// import NotificationsPage from "./pages/authenticated/NotificationsPage"; // Will be lazy
-// import { TokenSelection } from "./pages/authenticated/PortfolioTokenSelectionPage"; // Will be lazy
-// import { PrivateProfilePage } from "./pages/authenticated/PrivateProfilePage"; // Will be lazy
-// import WalletPage from "./pages/authenticated/WalletPage"; // Will be lazy
-
-// Example routes
-// import ContestChatExample from "./pages/examples/ContestChatExample"; // Will be lazy
-
-// Public routes
-// import { ContestBrowser } from "./pages/public/contests/ContestBrowserPage"; // Will be lazy
-// import { ContestDetails } from "./pages/public/contests/ContestDetailPage"; // Will be lazy
-// import { ContestLobby } from "./pages/public/contests/ContestLobbyPage"; // Will be lazy
-// import { ContestResults } from "./pages/public/contests/ContestResultsPage"; // Will be lazy
-// import ComingSoonPage from './pages/public/general/ComingSoonPage'; // Will be lazy
-// import { Contact } from "./pages/public/general/Contact"; // Will be lazy
-// import { FAQ } from "./pages/public/general/FAQ"; // Will be lazy
-// import { HowItWorks } from "./pages/public/general/HowItWorks"; // Will be lazy
-// import { LandingPage } from "./pages/public/general/LandingPage"; // This is the main entry, not lazy loaded here
-// import LoginPage from "./pages/public/general/LoginPage"; // Will be lazy
-// import { Maintenance } from "./pages/public/general/Maintenance"; // Will be lazy
-// import { NotFound } from "./pages/public/general/NotFound"; // Will be lazy
-// import { PublicProfile } from "./pages/public/general/PublicProfile"; // Will be lazy
-// import { BannedIP } from "./pages/public/general/BannedIP"; // Will be lazy
-// import { BannedUser } from "./pages/public/general/BannedUser"; // Will be lazy
-// import { BlinksDemo } from "./pages/public/general/BlinksDemo"; // Will be lazy
-// import SolanaBlockchainDemo from "./pages/public/general/SolanaBlockchainDemo"; // Will be lazy
-// import { VirtualAgentPage } from "./pages/public/game/VirtualAgent"; // Will be lazy
-
-// Leaderboard routes
-// import { ContestPerformance } from "./pages/public/leaderboards/ContestPerformanceRankings"; // Will be lazy
-// import { DegenLevelPage } from "./pages/public/leaderboards/DegenLevelPage"; // Will be lazy
-// import { GlobalRankings } from "./pages/public/leaderboards/GlobalRankings"; // Will be lazy
-// import { LeaderboardLanding } from "./pages/public/leaderboards/LeaderboardLanding"; // Will be lazy
-
-// Token routes
-// import { TokensPage } from "./pages/public/tokens/TokensPage"; // Will be lazy
-
-// API routes
-// import WebSocketAPIPage from "./pages/public/WebSocketAPIPage"; // Will be lazy
-
-// Superadmin routes
-// import AmmSim from "./pages/superadmin/AmmSim"; // Will be lazy
-// import ApiPlayground from "./pages/superadmin/ApiPlayground"; // Will be lazy
-// import CircuitBreakerPage from "./pages/superadmin/CircuitBreakerPage"; // Will be lazy
-// import { ControlPanelHub } from "./pages/superadmin/ControlPanelHub"; // Will be lazy
-// import ServiceCommandCenter from "./pages/superadmin/ServiceCommandCenter"; // Will be lazy
-// import { ServiceControlPage } from "./pages/superadmin/ServiceControlPage"; // Will be lazy
-// import { ServiceSwitchboard } from "./pages/superadmin/ServiceSwitchboard"; // Will be lazy
-// import { SuperAdminDashboard } from "./pages/superadmin/SuperAdminDashboard"; // Will be lazy
-// import { WalletMonitoring } from "./pages/superadmin/WalletMonitoring"; // Will be lazy for superadmin route
-// import { WssPlayground } from "./pages/superadmin/WssPlayground"; // Will be lazy
 
 // Get Privy app ID
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
 console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
 
-// Config
-// Prelaunch mode
+// Config - Prelaunch mode
 import { config, PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
+
+// Landing Page
 import { LandingPage } from "./pages/public/general/LandingPage";
-
-// Lazy loaded components
-
-// Decryption Timer - No longer used directly in App.tsx, Terminal handles its own
-// const DecryptionTimer = lazy(
-//   () => import("./components/layout/DecryptionTimer"),
-// );
 
 // Admin Chat Dashboard
 const AdminChatDashboard = lazy(() => import('./pages/admin/AdminChatDashboard'));
@@ -248,6 +175,30 @@ export const useDegenDuelRpc = () => {
   return context;
 };
 
+// A small intermediate component to bridge your context with the adapter's
+const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
+  
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      // Add other wallets you want to support here
+    ],
+    []
+  );
+
+  return (
+    <ConnectionProvider endpoint={rpcEndpoint}> {/* Use your dynamic endpoint here */}
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          {children}
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
+  );
+};
+
 // App entry
 export const App: React.FC = () => {
   useScrollbarVisibility();
@@ -287,24 +238,35 @@ export const App: React.FC = () => {
 
 // Component to house providers that depend on auth state and manage dynamic DegenDuel RPC client
 const AppProvidersAndContent: React.FC = () => {
-  const { user } = useMigratedAuth();
-  const ddJwt = useMemo(() => (user as any)?.ddJwt || null, [user]);
-  const [currentRpcEndpoint, setCurrentRpcEndpoint] = useState(() => `${window.location.origin}/api/solana-rpc/public`);
+  // const { user } = useMigratedAuth(); // This was here, but might not be needed directly in AppProvidersAndContent anymore
+  // const ddJwt = useMemo(() => (user as any)?.ddJwt || null, [user]); // same for this
+  // const [currentRpcEndpoint, setCurrentRpcEndpoint] = useState(() => `${window.location.origin}/api/solana-rpc/public`); // This logic is now in SolanaConnectionProvider
 
-  useEffect(() => {
-    if (ddJwt) {
-      setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc`);
-    } else {
-      setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc/public`);
-    }
-  }, [ddJwt]);
+  // useEffect(() => { // This useEffect and the rpcClientV2 below are now redundant
+  //   if (ddJwt) {
+  //     setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc`);
+  //   } else {
+  //     setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc/public`);
+  //   }
+  // }, [ddJwt]);
 
-  const rpcClientV2 = useMemo(() => {
-    return createDegenDuelRpcClient(currentRpcEndpoint, ddJwt);
-  }, [currentRpcEndpoint, ddJwt]);
+  // const rpcClientV2 = useMemo(() => { // This is also likely handled or available via useSolanaConnection or wallet adapter's useConnection
+  //   return createDegenDuelRpcClient(currentRpcEndpoint, ddJwt);
+  // }, [currentRpcEndpoint, ddJwt]);
 
   const privyConfig: PrivyClientConfig = useMemo(() => ({
-    loginMethods: ["wallet", "email", "sms", "google", "twitter", "discord", "github", "apple", "telegram", "passkey"],
+    loginMethods: [
+      "wallet", 
+  //    "email", 
+  //    "sms", 
+  //    "google", 
+  //    "twitter", 
+  //    "discord", 
+  //    "github", 
+  //    "apple", 
+  //    "telegram", 
+  //    "passkey"
+    ],
     appearance: {
       theme: 'dark',
       accentColor: '#5a2b66',
@@ -332,56 +294,97 @@ const AppProvidersAndContent: React.FC = () => {
   }), []); // Stable config
 
   return (
-    <RpcContext.Provider value={{ rpcClient: rpcClientV2, endpoint: currentRpcEndpoint }}>
-      <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
-        <InviteSystemProvider>
-          <AffiliateSystemProvider>
-            <UnifiedWebSocketProvider>
-              <TokenDataProvider>
-                <ToastProvider>
-                  <AppContent />
-                </ToastProvider>
-              </TokenDataProvider>
-            </UnifiedWebSocketProvider>
-          </AffiliateSystemProvider>
-        </InviteSystemProvider>
-      </PrivyProvider>
-    </RpcContext.Provider>
+    // Our custom SolanaConnectionProvider is now at the top for endpoint determination
+    <SolanaConnectionProvider> 
+      {/* WalletAdapterProviders will consume the endpoint from SolanaConnectionProvider */}
+      <WalletAdapterProviders> 
+          {/* Our existing custom RpcContext.Provider - evaluate if still needed or if ConnectionProvider suffices */}
+          {/* <RpcContext.Provider value={{ rpcClient: rpcClientV2, endpoint: currentRpcEndpoint }}> */}
+            <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
+              <UnifiedAuthProvider>
+                <UnifiedWebSocketProvider>
+                  <TokenDataProvider>
+                    <ToastProvider>
+                      <AppContent />
+                    </ToastProvider>
+                  </TokenDataProvider>
+                </UnifiedWebSocketProvider>
+              </UnifiedAuthProvider>
+            </PrivyProvider>
+          {/* </RpcContext.Provider> */}
+      </WalletAdapterProviders>
+    </SolanaConnectionProvider>
   );
 };
 
 // This component can safely use auth hooks because it renders after all providers
 const AppContent: React.FC = () => {
-  const { user: authUser } = useMigratedAuth();
-  const storeErrorMessage = useStore(state => state.error?.message || null);
+  const { user } = useMigratedAuth();
+
+  // State and hooks for error banners
+  const { error: notificationsError } = useNotifications();
+  const { error: systemSettingsError } = useSystemSettings(); // Renamed for clarity
+  const [showNotificationErrorBanner, setShowNotificationErrorBanner] = useState(false);
+  const [showSystemSettingsErrorBanner, setShowSystemSettingsErrorBanner] = useState(false);
+  const { isCompact: isHeaderCompact } = useScrollHeader(50); // To dynamically position banners
+
+  // Effect for notification errors
+  useEffect(() => {
+    if (notificationsError) {
+      setShowNotificationErrorBanner(true);
+    }
+  }, [notificationsError]);
+
+  // Effect for system settings errors
+  useEffect(() => {
+    if (systemSettingsError) {
+      setShowSystemSettingsErrorBanner(true);
+    }
+  }, [systemSettingsError]);
+
+  // Calculate top position for banners dynamically
+  const headerBaseHeight = 16; // h-16 (4rem)
+  const tickerBaseHeight = 12; // h-12 (3rem)
+  const compactHeaderHeight = 14; // sm:h-14 (3.5rem)
+  const compactTickerHeight = 10; // sm:h-10 (2.5rem)
+
+  const currentHeaderHeight = isHeaderCompact ? compactHeaderHeight : headerBaseHeight;
+  const currentTickerHeight = isHeaderCompact ? compactTickerHeight : tickerBaseHeight;
+  const totalOffset = currentHeaderHeight + currentTickerHeight; // This is in Tailwind spacing units (1 unit = 0.25rem)
+  
+  // Helper to get error message safely
+  const getErrorMessage = (error: any): string => {
+    if (typeof error === 'string') return error;
+    if (error && typeof error.message === 'string') return error.message;
+    return "Unknown error";
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <ToastListener />
       
       {/* Debug Panels */}
-      {authUser && (authUser as any).is_superadmin && <UiDebugPanel />}
-      {authUser && (authUser as any).is_superadmin && <ServiceDebugPanel />}
-      {authUser && (authUser as any).is_superadmin && <GameDebugPanel />}
+      {user && (user as any).is_superadmin && <UiDebugPanel />}
+      {user && (user as any).is_superadmin && <ServiceDebugPanel />}
+      {user && (user as any).is_superadmin && <GameDebugPanel />}
       
       <BackgroundEffectsBoundary>
         <BackgroundEffects />
       </BackgroundEffectsBoundary>
 
+      {/* Header */}
       <Header />
-      <EdgeToEdgeTicker storeError={storeErrorMessage} />
-      {authUser && <WalletBalanceTicker isCompact={true} />}
-      <ServerDownBanner />
       
-      {/* Loose DecryptionTimer instance removed */}
-      {/* 
-      {isLandingPage ? (
-        null 
-      ) : (
-        <DecryptionTimer /> 
-      )}
-      */}
+      {/* EdgeToEdgeTicker */}
+      <EdgeToEdgeTicker storeError={notificationsError || systemSettingsError} />
+      
+      {/* WalletBalanceTicker */}
+      {user && <WalletBalanceTicker isCompact={true} />}
+      
+      {/* ServerDownBanner */}
+      <ServerDownBanner />
 
+      {/* Main */}
       <main className="flex-1 pb-12">
         <Routes>
           {/* Landing and Public Routes */}
@@ -532,7 +535,56 @@ const AppContent: React.FC = () => {
       <AchievementNotification />
       <InviteWelcomeModal />
       <BlinkResolver />
-      <ToastContainer />
+      
+      {/* Error Banners Container - MOVED HERE */}
+      {createPortal(
+        <div className={`fixed left-1/2 -translate-x-1/2 w-auto max-w-xs sm:max-w-sm md:max-w-md z-[60] pointer-events-none space-y-2`} style={{ top: `${totalOffset / 4 + 1}rem`}}>
+        {/* Added 1rem spacing below ticker */}
+        <AnimatePresence>
+          {notificationsError && showNotificationErrorBanner && (
+            <motion.div
+              key="app-notification-error-banner"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+              transition={{ type: "spring", stiffness: 200, damping: 25 }}
+              className="bg-dark-300/80 backdrop-blur-md text-orange-300 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-orange-600/50 pointer-events-auto flex items-center justify-between gap-2"
+            >
+              <AlertTriangle size={16} className="text-orange-400 flex-shrink-0"/>
+              <span><strong className="font-semibold">NOTIFICATIONS ERROR:</strong> {getErrorMessage(notificationsError)}</span>
+              <button 
+                onClick={() => setShowNotificationErrorBanner(false)} 
+                className="p-1 rounded-full hover:bg-orange-400/20 transition-colors flex-shrink-0"
+                title="Dismiss notification error"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+          {systemSettingsError && showSystemSettingsErrorBanner && (
+            <motion.div
+              key="app-system-settings-error-banner"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: (notificationsError && showNotificationErrorBanner) ? 0.1 : 0 } }}
+              exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+              transition={{ type: "spring", stiffness: 200, damping: 25 }}
+              className="bg-dark-300/80 backdrop-blur-md text-red-400 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-red-600/50 pointer-events-auto flex items-center justify-between gap-2"
+            >
+              <SettingsIcon size={16} className="text-red-400 flex-shrink-0" /> {/* Using a generic SettingsIcon from lucide-react */}
+              <span><strong className="font-semibold">SYSTEM SETTINGS ERROR:</strong> {getErrorMessage(systemSettingsError)}</span>
+              <button 
+                onClick={() => setShowSystemSettingsErrorBanner(false)} 
+                className="p-1 rounded-full hover:bg-red-400/20 transition-colors flex-shrink-0"
+                title="Dismiss system settings error"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

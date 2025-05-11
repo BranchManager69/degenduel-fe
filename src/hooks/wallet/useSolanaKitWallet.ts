@@ -2,317 +2,270 @@
 
 /**
  * Solana Kit Wallet Hook
- * 
- * @description This file contains the useSolanaKitWallet hook, THE way to connect and disconnect from a Solana wallet.
  *
+ * @description This file contains the useSolanaKitWallet hook, THE way to connect and disconnect from a Solana wallet.
  * @author BranchManager69
- * @version v2.0.1
+ * @version v2.0.2
  * @created 2025-05-06
- * @updated 2025-05-07
+ * @updated 2025-05-11
  */
 
-import { address, type Address } from '@solana/addresses';
-import { useWalletAccountTransactionSendingSigner } from '@solana/react';
-import { blockhash as createBlockhash } from '@solana/rpc-types';
+// ─────────────────────────────────── Imports ──────────────────────────────
+import { type Address } from '@solana/addresses';
+
+// Transaction‑message primitives (versions, fee payer, lifetimes)
 import {
-  addSignersToTransactionMessage,
-  signTransactionMessageWithSigners
-} from '@solana/signers';
-import {
-  decompileTransactionMessage,
-  type CompiledTransactionMessage,
-  type ITransactionMessageWithFeePayer,
+  ITransactionMessageWithFeePayer,
   type TransactionMessage,
   type TransactionMessageWithBlockhashLifetime,
   type TransactionMessageWithDurableNonceLifetime,
 } from '@solana/transaction-messages';
-import {
-  compileTransaction,
-  getBase64EncodedWireTransaction,
-  type FullySignedTransaction,
-  type TransactionWithLifetime
-} from '@solana/transactions';
-import {
-  StandardConnect,
-  StandardDisconnect
-} from '@wallet-standard/features';
-import {
-  useWallets,
-  type UiWallet,
-  type UiWalletAccount,
-} from '@wallet-standard/react-core';
-import bs58 from 'bs58';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { VersionedTransaction, type MessageAddressTableLookup, type MessageCompiledInstruction, type MessageV0, type CompiledInstruction as W3JSCompiledInstruction } from '@solana/web3.js';
-import { Buffer } from 'buffer/';
-import { useDegenDuelRpc, type RpcContextType } from '../../App';
+// Instruction & meta generics
+import {
+  AccountRole,
+  type IAccountLookupMeta,
+  type IAccountMeta,
+  type IInstruction
+} from '@solana/instructions';
 
-// Local definition for the instruction structure expected by @solana/transaction-messages' CompiledTransactionMessage
-type TMCompiledInstruction = Readonly<{
-    accountIndices?: number[];
-    data?: Readonly<Uint8Array>;
-    programAddressIndex: number;
-}>;
+import type { WalletName } from '@solana/wallet-adapter-base';
+import type { Wallet, WalletContextState } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useCallback, useMemo } from 'react';
 
-// The message builder must return a message that includes feePayer, instructions, and one type of lifetime constraint.
-export type FullyPreparedTransactionMessage = TransactionMessage & 
+import {
+  AddressLookupTableAccount,
+  MessageV0,
+  PublicKey,
+  TransactionInstruction,
+  VersionedTransaction,
+} from '@solana/web3.js';
+
+import { Buffer } from 'buffer';
+
+import { useSolanaConnection } from '../../contexts/SolanaConnectionContext';
+
+// ────────────────────────────── Types ─────────────────────────────────────
+
+// Helper type for Legacy Instructions. IInstruction provides optional `accounts` and `data`.
+// `programAddress` is specific to legacy.
+export type AppLegacyInstruction = IInstruction<Address> & {
+  programAddress: Address;
+  accounts?: Readonly<Array<IAccountMeta<Address>>>; // Explicitly IAccountMeta for legacy
+  data?: Uint8Array;
+};
+
+// Helper type for V0 Instructions. IInstruction provides `programAddressIndex`.
+export type AppV0Instruction = IInstruction<Address> & {
+  programAddressIndex: number; // V0 must have this
+  accounts?: Readonly<Array<IAccountMeta<Address> | IAccountLookupMeta<Address>>>;
+  data?: Uint8Array;
+};
+
+export type FullyPreparedTransactionMessage = 
+  TransactionMessage & // Base from @solana/transaction-messages
   ITransactionMessageWithFeePayer<Address> & 
-  (TransactionMessageWithBlockhashLifetime | TransactionMessageWithDurableNonceLifetime);
+  (TransactionMessageWithBlockhashLifetime | TransactionMessageWithDurableNonceLifetime) & 
+  ({
+    version: 'legacy';
+    instructions: Readonly<Array<AppLegacyInstruction>>;
+  } | {
+    version: 0;
+    instructions: Readonly<Array<AppV0Instruction>>;
+    staticAccountKeys: Readonly<Array<Address>>;
+    addressTableLookups?: Readonly<Array<{
+        accountKey: Address;
+        writableIndexes: Readonly<Array<number>>;
+        readonlyIndexes: Readonly<Array<number>>;
+    }>>;
+  });
 
-// Interface for what the hook will expose
 export interface UseSolanaKitWalletHook {
-  availableWallets: readonly UiWallet[];
-  selectedWallet: UiWallet | null;
-  currentAccount: UiWalletAccount | undefined;
-  publicKey: Address | null;
+  availableWallets: readonly Wallet[]; 
+  selectedWallet: WalletContextState['wallet']; 
+  publicKey: PublicKey | null; 
+  publicKeyBase58: string | null;
   isConnected: boolean;
   isConnecting: boolean;
   isDisconnecting: boolean;
-  connect: (wallet: UiWallet) => Promise<void>;
-  disconnect: () => Promise<void>; // Changed: disconnects the current selected wallet
-  signAndSendTransaction: (getTransactionMessage: () => FullyPreparedTransactionMessage) => Promise<string>; // Now returns base58 string signature
-  signAndSendBlinkTransaction: (base64TransactionString: string) => Promise<string>; // New method for Blinks
+  connect: (wallet: Wallet) => Promise<void>;
+  disconnect: () => Promise<void>;
+  signAndSendTransaction: (getMsg: () => FullyPreparedTransactionMessage) => Promise<string>; 
+  signAndSendBlinkTransaction: (base64: string) => Promise<string>;
 }
 
-// Function to use the SolanaKitWallet hook
+// ────────────────────────────── Helpers ───────────────────────────────────
+// Assuming Address from @solana/addresses, when part of a library structure like IAccountMeta<Address>,
+// might be an object { address: string }, while standalone Address might be a branded string.
+// This helper tries to accommodate both for `new PublicKey()`.
+const addrToString = (addrInput: Address | { address: Address }): string => {
+    if (typeof addrInput === 'string') return addrInput; // It's already the string (branded Address)
+    if (addrInput && typeof addrInput.address === 'string') return addrInput.address; // It's an object { address: string_Address }
+    throw new Error('Invalid Address structure for addrToString');
+};
+
+// ────────────────────────────── Hook ──────────────────────────────────────
 export function useSolanaKitWallet(): UseSolanaKitWalletHook {
-  const rpcContext = useDegenDuelRpc(); 
-  const { rpcClient, endpoint } = rpcContext as RpcContextType;
+  // Ensure SolanaConnectionContext side‑effects run (even if we don't use endpoint)
+  useSolanaConnection();
 
-  const availableWallets = useWallets();
+  const { connection } = useConnection();
+  const walletAdapter = useWallet();
 
-  const [selectedWalletInternal, setSelectedWalletInternal] = useState<UiWallet | null>(null);
-  const [currentAccountInternal, setCurrentAccountInternal] = useState<UiWalletAccount | undefined>(undefined);
-  
-  // Local states to reflect the status from useConnect/useDisconnect hooks
-  const [isConnectingLocal, setIsConnectingLocal] = useState(false);
-  const [isDisconnectingLocal, setIsDisconnectingLocal] = useState(false);
+  const {
+    select,
+    disconnect: adapterDisconnect,
+    connected: adapterConnected,
+    publicKey: adapterPubKey,
+    wallet: adapterSelectedWallet,
+    wallets: adapterWallets,
+    connecting,
+    disconnecting,
+    signTransaction: adapterSignTx,
+  } = walletAdapter;
 
-  // Effect to set the current account
-  useEffect(() => {
-    if (selectedWalletInternal && selectedWalletInternal.accounts.length > 0) {
-      if (currentAccountInternal?.address !== selectedWalletInternal.accounts[0].address) {
-        setCurrentAccountInternal(selectedWalletInternal.accounts[0]);
-        console.log('[useSolanaKitWallet] Account set:', selectedWalletInternal.accounts[0].address);
-      }
-    } else if (selectedWalletInternal && selectedWalletInternal.accounts.length === 0 && currentAccountInternal) {
-      setCurrentAccountInternal(undefined); 
-       console.log('[useSolanaKitWallet] Wallet selected, but no accounts. Account cleared.');
-    } else if (!selectedWalletInternal && currentAccountInternal) {
-      setCurrentAccountInternal(undefined);
-      console.log('[useSolanaKitWallet] No wallet selected. Account cleared.');
-    }
-  }, [selectedWalletInternal, selectedWalletInternal?.accounts, currentAccountInternal]);
-
-  // Effect to set the chain for the signer
-  const chainForSigner = useMemo(() => {
-    if (endpoint.includes('devnet')) return 'solana:devnet';
-    if (endpoint.includes('testnet')) return 'solana:testnet';
-    return 'solana:mainnet';
-  }, [endpoint]);
-
-  // Effect to set the transaction signer
-  const transactionSigner = currentAccountInternal ? useWalletAccountTransactionSendingSigner(currentAccountInternal, chainForSigner) : undefined;
-
-  // Effect to set the public key
-  const publicKey = useMemo(() => currentAccountInternal?.address as Address | null ?? null, [currentAccountInternal]);
-  // Effect to set the connection status
-  const isConnected = useMemo(() => !!currentAccountInternal && !!selectedWalletInternal, [currentAccountInternal, selectedWalletInternal]);
-
-  // Connect
-  const connect = useCallback(async (walletToConnect: UiWallet) => {
-    if (isConnectingLocal || (isConnected && selectedWalletInternal?.name === walletToConnect.name)) return;
-    // Update local state to reflect that connection is in progress
-    setIsConnectingLocal(true);
-    // --- Attempt to connect to the wallet
-    try {
-      // Ensure the wallet supports the `standard:connect` feature before attempting to connect.
-      if ((walletToConnect.features as Record<string, any>)[StandardConnect]) {
-        await (walletToConnect.features as Record<string, any>)[StandardConnect].connect();
-        setSelectedWalletInternal(walletToConnect);
-      } else {
-        throw new Error('Wallet does not support standard:connect feature.');
-      }
-    } catch (error) {
-      // If the connection fails, clear the selected wallet and update the local state to reflect that connection is complete
-      console.error(`[useSolanaKitWallet] Failed to connect to ${walletToConnect.name}:`, error);
-      setSelectedWalletInternal(null); 
-    } finally {
-      // Update the local state to reflect that connection is complete
-      setIsConnectingLocal(false);
-    }
-    // --- Connection attempt at the wallet is complete
-  }, [isConnectingLocal, isConnected, selectedWalletInternal, availableWallets]);
-
-  // Disconnect
-  const disconnect = useCallback(async () => { 
-    // If the disconnection is already in progress or the selected wallet is not available, return
-    if (isDisconnectingLocal || !selectedWalletInternal) return;
-    // Update local state to reflect that disconnection is in progress
-    setIsDisconnectingLocal(true);
-    // --- Attempt to disconnect from the wallet
-    try {
-      // Ensure the wallet supports the `standard:disconnect` feature before attempting to disconnect.
-      if (
-        selectedWalletInternal &&
-        (selectedWalletInternal.features as Record<string, any>)[StandardDisconnect]
-      ) {
-        await (selectedWalletInternal.features as Record<string, any>)[StandardDisconnect].disconnect();
-        setSelectedWalletInternal(null);
-      } else {
-        console.warn('Wallet does not support standard:disconnect feature or no wallet selected, clearing local state.');
-        setSelectedWalletInternal(null); // Ensure wallet is cleared if feature not present
-      }
-    } catch (error) {
-      // If the disconnection fails, clear the selected wallet and update the local state to reflect that disconnection is complete
-      console.error("[useSolanaKitWallet] Failed to disconnect wallet:", error);
-      setSelectedWalletInternal(null);
-    } finally {
-      // Update the local state to reflect that disconnection is complete
-      setIsDisconnectingLocal(false);
-    }
-    // --- Disconnect attempt at the wallet is complete
-  }, [isDisconnectingLocal, selectedWalletInternal]);
-
-  // Sign and send transaction
-  const signAndSendTransaction = useCallback(
-    async (getTransactionMessage: () => FullyPreparedTransactionMessage): Promise<string> => {
-      if (!transactionSigner) throw new Error('Signer not available.');
-      if (!rpcClient) throw new Error('RPC client not available for send.');
-      console.log("[useSolanaKitWallet] Preparing to sign and send transaction...");
-      let unsignedMsg = getTransactionMessage(); 
-      console.log("[useSolanaKitWallet] TransactionMessage (fully prepared) received, signing and sending...");
-      // transactionSigner should be compatible with (PartialSigner | ModifyingSigner)
-      const msgWithSigner = addSignersToTransactionMessage([transactionSigner], unsignedMsg);
-      const signedTxObject: Readonly<FullySignedTransaction & TransactionWithLifetime> = 
-        await signTransactionMessageWithSigners(msgWithSigner);
-      // Get the base64 encoded wire transaction from the FullySignedTransaction
-      const base64WireTransaction = getBase64EncodedWireTransaction(signedTxObject);
-      // Broadcast through the RPC client
-      const signature = await rpcClient.sendTransaction(
-        base64WireTransaction, 
-        { encoding: 'base64' } // Specify encoding as per YOU_WILL_ACCOMPLISH_SUCCESS.md (4b)
-      ).send();
-      // Return the signature
-      return typeof signature === 'string' ? signature : bs58.encode(signature);
-    },
-    [transactionSigner, rpcClient]
+  const publicKey = adapterPubKey;
+  const publicKeyBase58 = useMemo(
+    () => publicKey?.toBase58() ?? null,
+    [publicKey],
   );
 
-  // New method to sign and send a pre-serialized Blink transaction
-  const signAndSendBlinkTransaction = useCallback(
-    async (base64TransactionString: string): Promise<string> => {
-      if (!transactionSigner) throw new Error('Transaction signer not available for Blink.');
-      if (!publicKey) throw new Error('Public key not available for Blink.');
-
-      console.log("[useSolanaKitWallet] Processing Blink transaction (v12: type refinements)...");
-
-      // Deserialize the base64 transaction string
-      const transactionBytes = Buffer.from(base64TransactionString, 'base64');
-      // Deserialize the transaction into a VersionedTransaction object
-      const vtx = VersionedTransaction.deserialize(transactionBytes);
-
-      // Decompile the compiled transaction message
-      let compiledMessageForDecompile: CompiledTransactionMessage;
-      // Get the static accounts
-      const staticAccounts = vtx.message.staticAccountKeys.map(pk => address(pk.toBase58()));
-      // Get the header
-      const web3jsHeader = vtx.message.header;
-      // Convert the header to the expected format
-      const tmHeader = {
-          numSignerAccounts: web3jsHeader.numRequiredSignatures,
-          numReadonlySignerAccounts: web3jsHeader.numReadonlySignedAccounts,
-          numReadonlyNonSignerAccounts: web3jsHeader.numReadonlyUnsignedAccounts,
-      };
-      // Get the lifetime token if it exists
-      if (!vtx.message.recentBlockhash) {
-        throw new Error('Transaction message is missing recentBlockhash.');
+  // ───────── Connect / disconnect ─────────
+  const connectWallet = useCallback(
+    async (wallet: Wallet) => {
+      if (connecting || adapterConnected) return;
+      try {
+        select(wallet.adapter.name as WalletName<string>); 
+      } catch (err) {
+        console.error('[useSolanaKitWallet] connect error', err);
+        select(null);
       }
-      // Create the lifetime token (get recentBlockhash from the transaction)
-      const lifetimeToken = createBlockhash(vtx.message.recentBlockhash);
+    },
+    [connecting, adapterConnected, select],
+  );
 
-      // Get the instructions (TMCompiledInstruction[])
-      let tmInstructions: TMCompiledInstruction[];
+  const disconnectWallet = useCallback(async () => {
+    if (disconnecting || !adapterConnected) return;
+    try {
+      await adapterDisconnect();
+    } catch (err) {
+      console.error('[useSolanaKitWallet] disconnect error', err);
+    }
+  }, [disconnecting, adapterConnected, adapterDisconnect]);
 
-      // If the transaction is a legacy transaction
-      if (vtx.message.version === 'legacy') {
-        // Get the instructions
-        const web3Instructions = vtx.message.instructions;
-        // Convert the instructions to the expected format (TMCompiledInstruction[])
-        tmInstructions = web3Instructions.map((ix: W3JSCompiledInstruction) => ({
-            programAddressIndex: ix.programIdIndex,
-            accountIndices: ix.accounts,
-            data: Buffer.from(ix.data, 'base64'),
-        }));
-        // Compile the message
-        compiledMessageForDecompile = {
-          version: 'legacy',
-          header: tmHeader,
-          staticAccounts,
-          instructions: tmInstructions,
-          lifetimeToken: lifetimeToken,
-        };
-      } else { // Version 0
-        // Get the instructions
-        const v0Message = vtx.message as MessageV0;
-        const web3CompiledInstructions = v0Message.compiledInstructions;
-        // Convert the instructions to the expected format (TMCompiledInstruction)
-        tmInstructions = web3CompiledInstructions.map((ix: MessageCompiledInstruction) => ({
-            programAddressIndex: ix.programIdIndex,
-            accountIndices: ix.accountKeyIndexes,
-            data: ix.data,
-        }));
-        // Get the address table lookups
-        const tmAddressTableLookups = v0Message.addressTableLookups.map((lookup: MessageAddressTableLookup) => ({
-            lookupTableAddress: address(lookup.accountKey.toBase58()),
-            readableIndices: Array.from(lookup.readonlyIndexes),
-            writableIndices: Array.from(lookup.writableIndexes),
-        }));
-        // Compile the message for decompilation
-        compiledMessageForDecompile = {
-          version: 0,
-          header: tmHeader,
-          staticAccounts,
-          instructions: tmInstructions,
-          lifetimeToken: lifetimeToken,
-          addressTableLookups: tmAddressTableLookups,
-        };
+  // ───────── Tx helpers ─────────
+  const signAndSendTransaction = useCallback(
+    async (getMsg: () => FullyPreparedTransactionMessage): Promise<string> => {
+      if (!publicKey || !adapterSignTx || !connection)
+        throw new Error('Wallet not ready');
+
+      const txMsg = getMsg();
+      const { blockhash } = await connection.getLatestBlockhash();
+      const feePayer = new PublicKey(addrToString(txMsg.feePayer));
+
+      let resolvedInstructions: TransactionInstruction[];
+
+      if (txMsg.version === 'legacy') {
+        const legacyInstructions = txMsg.instructions as Readonly<Array<AppLegacyInstruction>>;
+        resolvedInstructions = legacyInstructions.map((ix: AppLegacyInstruction) => {
+          if (!ix.programAddress) throw new Error('Legacy instruction missing programAddress');
+          const programId = new PublicKey(addrToString(ix.programAddress));
+          const keys = (ix.accounts || []).map((acc: IAccountMeta<Address>) => ({
+            pubkey: new PublicKey(addrToString(acc.address)),
+            isSigner: acc.role === AccountRole.READONLY_SIGNER || acc.role === AccountRole.WRITABLE_SIGNER,
+            isWritable: acc.role === AccountRole.WRITABLE || acc.role === AccountRole.WRITABLE_SIGNER,
+          }));
+          const data = Buffer.from(ix.data || new Uint8Array());
+          return new TransactionInstruction({ programId, keys, data });
+        });
+      } else { // V0 transaction
+        const v0Instructions = txMsg.instructions as Readonly<Array<AppV0Instruction>>;
+        if (!txMsg.staticAccountKeys) { 
+            throw new Error("staticAccountKeys is undefined for V0 transaction message.");
+        }
+        resolvedInstructions = v0Instructions.map((ix: AppV0Instruction) => {
+          if (ix.programAddressIndex === undefined) throw new Error('V0 instruction missing programAddressIndex');
+          if (!txMsg.staticAccountKeys || !txMsg.staticAccountKeys[ix.programAddressIndex]) throw new Error('Invalid programAddressIndex');
+          const programId = new PublicKey(addrToString(txMsg.staticAccountKeys[ix.programAddressIndex]));
+          
+          const keys = (ix.accounts || []).map((acc: IAccountMeta<Address> | IAccountLookupMeta<Address>) => {
+            let pubkey: PublicKey;
+            let isSigner: boolean;
+            let isWritable: boolean;
+
+            if ('address' in acc && 'role' in acc ) { // It's an IAccountMeta<Address>
+              pubkey = new PublicKey(addrToString(acc.address));
+              isSigner = acc.role === AccountRole.READONLY_SIGNER || acc.role === AccountRole.WRITABLE_SIGNER;
+              isWritable = acc.role === AccountRole.WRITABLE || acc.role === AccountRole.WRITABLE_SIGNER;
+            } else if ('addressLookupTableAccountAddress' in acc) { // It's an IAccountLookupMeta<Address>
+              throw new Error('Direct mapping of IAccountLookupMeta in V0 instruction accounts needs ALT resolution for web3.js TransactionInstruction keys.');
+            } else {
+              throw new Error('Unknown account meta type in V0 instruction accounts array');
+            }
+            return { pubkey, isSigner, isWritable };
+          });
+          const data = Buffer.from(ix.data || new Uint8Array());
+          return new TransactionInstruction({ programId, keys, data });
+        });
       }
-      // Decompile the message
-      const decompiledMessage = decompileTransactionMessage(compiledMessageForDecompile, {
-        // addressLookupTableAccounts: undefined 
+
+      let altAccounts_web3js: AddressLookupTableAccount[] | undefined = undefined;
+      if (txMsg.version === 0 && txMsg.addressTableLookups && txMsg.addressTableLookups.length > 0) {
+        altAccounts_web3js = await Promise.all(
+          txMsg.addressTableLookups.map(async (lookup: { accountKey: Address; writableIndexes: readonly number[]; readonlyIndexes: readonly number[]; }) => {
+            const accountKey = new PublicKey(addrToString(lookup.accountKey));
+            const accountInfo = await connection.getAccountInfo(accountKey);
+            if (!accountInfo) throw new Error(`ALT not found: ${addrToString(lookup.accountKey)}`);
+            return new AddressLookupTableAccount({
+              key: accountKey,
+              state: AddressLookupTableAccount.deserialize(accountInfo.data),
+            });
+          })
+        );
+      }
+
+      const message = MessageV0.compile({
+        payerKey: feePayer,
+        recentBlockhash: blockhash,
+        instructions: resolvedInstructions,
+        addressLookupTableAccounts: altAccounts_web3js,
       });
 
-      const compiledTxForSigner = compileTransaction(decompiledMessage);
-
-      const signedTransactionSignatures = await transactionSigner.signAndSendTransactions([
-        compiledTxForSigner 
-      ]);
-
-      if (!signedTransactionSignatures || signedTransactionSignatures.length === 0) {
-        throw new Error('Blink transaction not signed or sent, no signature returned.');
-      }
-
-      const finalSignature = bs58.encode(signedTransactionSignatures[0]);
-      console.log("[useSolanaKitWallet] Blink transaction signed and sent (v12), signature:", finalSignature);
-      return finalSignature;
+      const vtx = new VersionedTransaction(message);
+      const signed = await adapterSignTx(vtx);
+      const sig = await connection.sendRawTransaction(signed.serialize());
+      return sig;
     },
-    [transactionSigner, publicKey, rpcClient] 
+    [connection, publicKey, adapterSignTx],
   );
 
-  // Return the hook
+  const signAndSendBlinkTransaction = useCallback(
+    async (b64: string): Promise<string> => {
+      if (!publicKey || !adapterSignTx || !connection)
+        throw new Error('Wallet not ready');
+
+      const tx = VersionedTransaction.deserialize(Buffer.from(b64, 'base64'));
+      const signed = await adapterSignTx(tx);
+      return connection.sendRawTransaction(signed.serialize(), {
+        skipPreflight: true,
+      });
+    },
+    [connection, publicKey, adapterSignTx],
+  );
+
+  // ────────────────────────────── Return API ──────────────────────────────
   return {
-    availableWallets,
-    selectedWallet: selectedWalletInternal,
-    currentAccount: currentAccountInternal,
+    availableWallets: adapterWallets,
+    selectedWallet: adapterSelectedWallet,
     publicKey,
-    isConnected,
-    isConnecting: isConnectingLocal,
-    isDisconnecting: isDisconnectingLocal,
-    connect,
-    disconnect,
-    signAndSendTransaction, 
+    publicKeyBase58,
+    isConnected: adapterConnected,
+    isConnecting: connecting,
+    isDisconnecting: disconnecting,
+    connect: connectWallet,
+    disconnect: disconnectWallet,
+    signAndSendTransaction,
     signAndSendBlinkTransaction,
   };
-} 
+}
