@@ -41,7 +41,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
       resolve: {
         alias: {
           'degen-components': degenComponentsPath,
-          'use-sync-external-store/shim/with-selector': path.resolve(__dirname, '.storybook/shims/use-sync-external-store.js')
+          'use-sync-external-store/shim/with-selector': path.resolve(__dirname, '.storybook/shims/use-sync-external-store.js'),
+          'bowser': path.resolve(__dirname, 'node_modules/bowser/src/bowser.js'),
+          'base64url': path.resolve(__dirname, 'node_modules/base64url/index.js'),
+          'color': path.resolve(__dirname, 'node_modules/color/index.js'),
+          'pino': path.resolve(__dirname, 'node_modules/pino/browser.js'),
+          'socket.io-parser': path.resolve(__dirname, 'node_modules/socket.io-parser/index.js'),
+          'engine.io-client': path.resolve(__dirname, 'node_modules/engine.io-client/build/esm/index.js'),
+          'json-stable-stringify': path.resolve(__dirname, 'node_modules/json-stable-stringify/index.js'),
+          'rtcpeerconnection-shim': path.resolve(__dirname, 'node_modules/rtcpeerconnection-shim/rtcpeerconnection.js'),
+          'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js')
         }
       },
       server: {
@@ -192,8 +201,25 @@ export default defineConfig(({ command, mode }): UserConfig => {
         }),
       ],
       optimizeDeps: {
-        include: ["react", "react-dom", "react-router-dom"],
-        exclude: ["@react-three/fiber", "@react-three/drei", "degen-components"],
+        include: [
+          "react",
+          "react-dom",
+          "react-router-dom",
+          "graphql",
+          "@telegram-apps/bridge", // ???
+          "bowser",
+          "base64url",
+          "color",
+          "pino",
+          "socket.io-parser",
+          "engine.io-client",
+          "json-stable-stringify" // Added here
+        ],
+        exclude: [
+          "@react-three/fiber",
+          "@react-three/drei",
+          "degen-components"
+        ],
         esbuildOptions: {
           target: "esnext",
         },
@@ -240,8 +266,28 @@ export default defineConfig(({ command, mode }): UserConfig => {
   const config: UserConfig = {
     resolve: {
       alias: {
+        '@/': `${path.resolve(__dirname, 'src')}/`,
         'degen-components': degenComponentsPath,
-        'use-sync-external-store/shim/with-selector': path.resolve(__dirname, '.storybook/shims/use-sync-external-store.js')
+        '#components': path.resolve(__dirname, 'src/components'),
+        '#hooks': path.resolve(__dirname, 'src/hooks'),
+        '#lib': path.resolve(__dirname, 'src/lib'),
+        '#pages': path.resolve(__dirname, 'src/pages'),
+        '#services': path.resolve(__dirname, 'src/services'),
+        '#store': path.resolve(__dirname, 'src/store'),
+        '#types': path.resolve(__dirname, 'src/types'),
+        '#contexts': path.resolve(__dirname, 'src/contexts'),
+        '#styles': path.resolve(__dirname, 'src/styles'),
+        '#utils': path.resolve(__dirname, 'src/utils'),
+        'use-sync-external-store/shim/with-selector': path.resolve(__dirname, '.storybook/shims/use-sync-external-store.js'),
+        'bowser': path.resolve(__dirname, 'node_modules/bowser/src/bowser.js'),
+        'base64url': path.resolve(__dirname, 'node_modules/base64url/index.js'),
+        'color': path.resolve(__dirname, 'node_modules/color/index.js'),
+        'pino': path.resolve(__dirname, 'node_modules/pino/browser.js'),
+        'socket.io-parser': path.resolve(__dirname, 'node_modules/socket.io-parser/index.js'),
+        'engine.io-client': path.resolve(__dirname, 'node_modules/engine.io-client/build/esm/index.js'),
+        'json-stable-stringify': path.resolve(__dirname, 'node_modules/json-stable-stringify/index.js'),
+        'rtcpeerconnection-shim': path.resolve(__dirname, 'node_modules/rtcpeerconnection-shim/rtcpeerconnection.js'),
+        'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js')
       }
     },
     server: {
@@ -257,7 +303,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       proxy: {
         "/api": {
           target: isDev
-            ? "https://dev.degenduel.me/api" 
+            ? "https://dev.degenduel.me/api"
             : "https://degenduel.me/api",
           changeOrigin: true,
           secure: true,
@@ -291,7 +337,6 @@ export default defineConfig(({ command, mode }): UserConfig => {
         //   ws: true,
         //   changeOrigin: true,
         //   secure: true,
-        //   cookieDomainRewrite: "localhost",
         // },
         "/api/v69/ws": {
           target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
@@ -412,10 +457,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "react-router-dom",
         "graphql",
         "@telegram-apps/bridge", // ???
+        "bowser", // Added bowser here
+        "base64url" // Added base64url here
       ],
       exclude: [
-        "@react-three/fiber", 
-        "@react-three/drei", 
+        "@react-three/fiber",
+        "@react-three/drei",
         "degen-components"
       ],
       esbuildOptions: {
@@ -483,21 +530,21 @@ export default defineConfig(({ command, mode }): UserConfig => {
         isDev || forceDisableMinify
           ? undefined
           : {
-              compress: {
-                drop_console: true,
-                drop_debugger: true,
-                pure_funcs: [
-                  "console.log",
-                  "console.info",
-                  "console.debug",
-                  "console.trace",
-                ],
-              },
-              mangle: true,
-              format: {
-                comments: false,
-              },
+            compress: {
+              drop_console: true,
+              drop_debugger: true,
+              pure_funcs: [
+                "console.log",
+                "console.info",
+                "console.debug",
+                "console.trace",
+              ],
             },
+            mangle: true,
+            format: {
+              comments: false,
+            },
+          },
     },
     esbuild: {
       pure: ['React.createElement'], // any dummy entry tricks Rollup into keeping quiet
