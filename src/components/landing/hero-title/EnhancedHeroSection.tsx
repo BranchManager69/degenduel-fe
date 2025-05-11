@@ -1,6 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import IntroLogo from '../logo/IntroLogo';
+import React from 'react';
+import IntroLogo from '../../logo/IntroLogo';
 
 /**
  * EnhancedHeroSection - A visually enhanced hero section with animations
@@ -40,7 +40,7 @@ export const EnhancedHeroSection: React.FC = () => {
         <motion.div 
           className="absolute top-1/4 -left-1/4 w-full h-full rounded-full blur-3xl"
           style={{ 
-            background: 'radial-gradient(circle, rgba(153, 51, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
+            background: 'radial-gradient(circle, rgba(153, 51, 255, 0.1) 0%, rgba(0, 0, 0, 0) 60%)'
           }}
           animate={{ 
             opacity: [0.5, 0.7, 0.5],
@@ -56,7 +56,7 @@ export const EnhancedHeroSection: React.FC = () => {
         <motion.div 
           className="absolute bottom-1/3 -right-1/4 w-full h-full rounded-full blur-3xl"
           style={{ 
-            background: 'radial-gradient(circle, rgba(0, 225, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
+            background: 'radial-gradient(circle, rgba(0, 225, 255, 0.1) 0%, rgba(0, 0, 0, 0) 60%)'
           }}
           animate={{ 
             opacity: [0.5, 0.7, 0.5],

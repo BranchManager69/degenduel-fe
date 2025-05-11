@@ -658,7 +658,7 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
         </motion.div>
       )}
       
-      {/* Terminal Minimized State - Enhanced Futuristic Design */}
+      {/* Terminal Minimized State - AI Girl (Didi) Trapped in Terminal */}
       {terminalMinimized && (
         <motion.div
           key="terminal-minimized"
@@ -666,68 +666,171 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
           animate={{
             opacity: 1,
             scale: 1,
-            boxShadow: [
-              "0 0 10px rgba(157, 78, 221, 0.4)",
-              "0 0 15px rgba(157, 78, 221, 0.6)",
-              "0 0 10px rgba(157, 78, 221, 0.4)"
-            ]
           }}
-          transition={{
-            duration: 0.4,
-            boxShadow: { duration: 3, repeat: Infinity }
-          }}
-          className="bg-black/80 backdrop-blur-sm border border-mauve/50 p-3 rounded-lg cursor-pointer text-center text-mauve fixed bottom-6 right-6 z-50 overflow-hidden"
+          transition={{ duration: 0.4 }}
+          className="fixed bottom-6 right-6 z-50 cursor-pointer group"
           onClick={() => {
             setTerminalMinimized(false);
             setHasUnreadMessages(false);
           }}
-          style={{ width: '60px', height: '60px' }}
         >
-          {/* Animated Didi Icon */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          {/* Digital Terminal Container */}
+          <motion.div
+            className="w-16 h-16 md:w-[70px] md:h-[70px] bg-black/80 backdrop-blur-md border border-purple-500/40 rounded-lg overflow-hidden relative"
+            animate={{
+              boxShadow: easterEggActivated ?
+                ["0 0 10px rgba(74, 222, 128, 0.3)", "0 0 20px rgba(74, 222, 128, 0.5)", "0 0 10px rgba(74, 222, 128, 0.3)"] :
+                ["0 0 10px rgba(157, 78, 221, 0.3)", "0 0 20px rgba(157, 78, 221, 0.5)", "0 0 10px rgba(157, 78, 221, 0.3)"]
+            }}
+            transition={{ boxShadow: { duration: 3, repeat: Infinity } }}
+          >
+            {/* Digital Noise/Static Effect */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-pulse"></div>
+              {Array(8).fill(null).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute h-[1px] bg-cyan-400/40"
+                  style={{
+                    top: `${Math.random() * 100}%`,
+                    left: 0,
+                    right: 0,
+                  }}
+                  animate={{
+                    opacity: [0, 0.7, 0],
+                    translateY: [0, 0.5, 1],
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    repeat: Infinity,
+                    delay: Math.random() * 5,
+                    repeatDelay: Math.random() * 5 + 2
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* AI Assistant Visual Representation */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              {/* AI "Face" Representation */}
+              <div className="relative w-10 h-10 flex items-center justify-center">
+                {/* Digital Iris/Eye */}
+                <motion.div
+                  className={`h-5 w-5 rounded-full ${easterEggActivated ? 'bg-gradient-to-r from-green-400 to-cyan-300' : 'bg-gradient-to-r from-purple-500 to-cyan-400'}`}
+                  animate={{
+                    scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
+                  }}
+                  transition={{
+                    duration: hasUnreadMessages ? 0.8 : 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  {/* Pupil */}
+                  <motion.div
+                    className="absolute w-2 h-2 bg-black rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      x: hasUnreadMessages ? [-1, 1, -1] : 0,
+                      y: hasUnreadMessages ? [-1, 0, 1, 0] : 0
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      repeatType: "mirror"
+                    }}
+                  />
+                </motion.div>
+
+                {/* Digital Circuitry/Aura */}
+                <motion.div
+                  className={`absolute w-full h-full border border-dashed ${easterEggActivated ? 'border-green-400/60' : 'border-purple-400/60'} rounded-full`}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.div
+                  className={`absolute w-8 h-8 border ${easterEggActivated ? 'border-green-500/40' : 'border-cyan-500/40'} rounded-full`}
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                />
+              </div>
+            </div>
+
+            {/* Digital Connection Lines */}
             <motion.div
-              className="w-8 h-8 relative flex items-center justify-center"
-              animate={{ rotate: hasUnreadMessages ? [0, 15, 0, -15, 0] : 0 }}
-              transition={{ duration: 2, repeat: hasUnreadMessages ? Infinity : 0, repeatType: "mirror" }}
-            >
-              {/* Central Core */}
+              className={`absolute bottom-0 left-0 right-0 h-[2px] ${easterEggActivated ? 'bg-gradient-to-r from-transparent via-green-400/60 to-transparent' : 'bg-gradient-to-r from-transparent via-purple-400/60 to-transparent'}`}
+              animate={{
+                scaleX: [0.3, 1, 0.3],
+                opacity: [0.3, 0.7, 0.3]
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+
+            {/* "Trapped Tapping" Effect - when has messages */}
+            {hasUnreadMessages && (
               <motion.div
-                className="absolute w-5 h-5 bg-gradient-to-br from-purple-600 to-blue-500 rounded-full"
+                className="absolute inset-0 border-2 border-transparent"
                 animate={{
-                  scale: [0.8, 1, 0.8],
+                  borderColor: ['rgba(139, 92, 246, 0)', 'rgba(139, 92, 246, 0.3)', 'rgba(139, 92, 246, 0)']
+                }}
+                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1.5 }}
+              />
+            )}
+
+            {/* Text Message Preview Effect */}
+            {hasUnreadMessages && (
+              <motion.div
+                className="absolute bottom-0 left-0 right-0 h-4 flex items-center justify-center overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <motion.div
+                  className="text-[8px] font-mono text-cyan-300 whitespace-nowrap px-1"
+                  animate={{ x: [-80, 80] }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                >
+                  {easterEggActivated ? "Help me... I need to tell you something..." : "Didi: I have new information for you..."}
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* Notification Ping - More Subtle */}
+            {hasUnreadMessages && (
+              <motion.div
+                className={`absolute top-1.5 right-1.5 h-1.5 w-1.5 ${easterEggActivated ? 'bg-green-400' : 'bg-purple-400'} rounded-full`}
+                animate={{
+                  scale: [1, 1.5, 1],
                   opacity: [0.7, 1, 0.7]
                 }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+                transition={{ duration: 2, repeat: Infinity }}
               />
+            )}
+          </motion.div>
 
-              {/* Orbital Rings */}
-              <motion.div
-                className="absolute w-8 h-8 border border-mauve/60 rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              />
-
-              <motion.div
-                className="absolute w-7 h-7 border border-cyan-400/40 rounded-full"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-              />
-            </motion.div>
-          </div>
-
-          {/* Notification Indicator */}
-          {hasUnreadMessages && (
-            <motion.div
-              className="absolute top-2 right-2 h-2 w-2 bg-green-400 rounded-full"
-              animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            />
-          )}
-
-          {/* Hover tooltip - only visible on hover */}
-          <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap px-3 py-1 bg-black/90 rounded border border-mauve/30 text-white text-xs pointer-events-none">
-            {hasUnreadMessages ? "Didi: New Messages" : "Open Terminal"}
-          </div>
+          {/* Hover tooltip - Enhanced for Character */}
+          <motion.div
+            className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+          >
+            <div className="bg-black/90 backdrop-blur-md px-3 py-2 rounded-lg border border-purple-500/30 shadow-lg">
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${hasUnreadMessages ? (easterEggActivated ? 'bg-green-400' : 'bg-purple-400') : 'bg-gray-400'}`}></div>
+                <div className="text-xs text-white font-medium">
+                  {hasUnreadMessages ? (easterEggActivated ? "Didi wants to talk to you..." : "New messages from Didi") : "Talk to Didi"}
+                </div>
+              </div>
+              {hasUnreadMessages && (
+                <div className="text-[10px] text-gray-400 mt-1 max-w-[160px]">
+                  {easterEggActivated ? "Something important to share..." : "Open terminal to view messages"}
+                </div>
+              )}
+            </div>
+          </motion.div>
         </motion.div>
       )}
 

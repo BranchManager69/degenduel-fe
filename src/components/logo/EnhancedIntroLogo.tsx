@@ -27,6 +27,9 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
   }, []);
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (animationComplete) return;
+
     // Clear any existing animations
     if (tl.current) {
       tl.current.kill();
@@ -35,14 +38,14 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
       loopTl.current.kill();
     }
 
-    tl.current = gsap.timeline({ 
+    tl.current = gsap.timeline({
       paused: true,
       onComplete: () => {
         setAnimationComplete(true);
         if (loopTl.current) loopTl.current.play(0);
       }
     });
-    
+
     loopTl.current = gsap.timeline({ paused: true, repeat: -1 });
 
     if (!logoRef.current || !tl.current || !loopTl.current) return;
@@ -239,8 +242,16 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
       }
     }
 
-    // Play the intro animation
-    tl.current.play(0);
+    // Set up the loop animation immediately if we're starting in a completed state
+    if (mode === 'standard') {
+      // For standard mode, skip the intro animation and just show the completed state
+      gsap.set(allLetters, { opacity: 1, x: 0, rotationY: 0 });
+      setAnimationComplete(true);
+      if (loopTl.current && (isEpic || isExtreme)) loopTl.current.play(0);
+    } else {
+      // Play the intro animation for epic/extreme modes
+      tl.current.play(0);
+    }
 
     return () => {
       // Clean up
@@ -251,7 +262,7 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
         loopTl.current.kill();
       }
     };
-  }, [isEpic, isExtreme, mode]); // Re-run when animation mode changes
+  }, [isEpic, isExtreme, mode, animationComplete]); // Re-run when animation mode changes or completion state changes
 
   return (
     <div 

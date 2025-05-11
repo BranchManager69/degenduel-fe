@@ -1,14 +1,14 @@
 // src/components/layout/Footer.tsx
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
-import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
+import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
-import { MessageType, TopicType, WebSocketMessage } from "../../hooks/websocket";
+import { MessageType } from '../../hooks/websocket';
 import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
 import { useStore } from "../../store/useStore";
@@ -20,196 +20,18 @@ export const Footer: React.FC = () => {
   
   // Get errors from hooks
   const { error: notificationsError } = useNotifications();
-  const { error: systemSettingsError } = useSystemSettings();
+  const { settings: systemSettingsDataFromHook, error: systemSettingsErrorFromHook } = useSystemSettings();
   
-  // Check for storybook mock status
-  const initialStatus = typeof window !== 'undefined' && (window as any).serverStatusState
-    ? (window as any).serverStatusState
-    : {
-        status: 'online' as 'online' | 'maintenance' | 'offline' | 'error',
-        message: 'Server is operating normally',
-        timestamp: new Date().toISOString(),
-        lastChecked: new Date().toISOString(),
-        loading: false
-      };
-  
-  // State to manage server status
-  const [serverStatus, setServerStatus] = useState(initialStatus);
-  const [systemSettings, setSystemSettings] = useState({
-    loading: false,
-    error: null as string | null,
-    lastUpdated: null as Date | null,
-    showDiagnostics: false,
-    diagOptions: [] as string[],
-  });
-  
-  // Register listener for WebSocket messages
-  useEffect(() => {
-    const handleMessage = (message: WebSocketMessage | any) => { 
-      // Handle different message types and topics
-      if (message.type === MessageType.DATA && message.topic === TopicType.SYSTEM) {
-        // System data (status updates)
-        if (message.data?.status) {
-          // Update the server status
-          setServerStatus({
-            status: message.data.status,
-            message: message.data.message || 'Server status update received',
-            timestamp: message.timestamp || new Date().toISOString(),
-            lastChecked: new Date().toISOString(),
-            loading: false
-          });
-        }
-      } else if (message.type === MessageType.SYSTEM) {
-        // System messages might contain settings updates
-        setSystemSettings({
-          loading: false,
-          error: null,
-          lastUpdated: new Date(),
-          showDiagnostics: message.data?.showDiagnostics || false,
-          diagOptions: message.data?.diagOptions || []
-        });
-      }
-    };
-
-    const unregister = unifiedWs.registerListener(
-      'footer-status',
-      [MessageType.DATA, MessageType.SYSTEM],
-      handleMessage,
-      [TopicType.SYSTEM]
-    );
-    return unregister;
-  }, [unifiedWs]);
-
-  // Subscribe to system topic when connection is ready
-  useEffect(() => {
-    let isSubscribed = false;
-
-    if (unifiedWs.isConnected) { 
-      console.log(`[Footer] WebSocket connected. Attempting to subscribe to: ${TopicType.SYSTEM}`);
-      const success = unifiedWs.subscribe([TopicType.SYSTEM]);
-      if (success) {
-          console.log(`👑🤩👍🏻 <<==== Subscribed to ${TopicType.SYSTEM}`);
-          isSubscribed = true;
-      } else {
-          console.error(`[Footer] Failed to send subscribe request for ${TopicType.SYSTEM}`);
-      }
-    } else {
-      console.log(`[Footer] WebSocket not ready for subscription. State: ${unifiedWs.connectionState}`);
-    }
-
-    return () => {
-      if (isSubscribed) {
-        console.log(`[Footer] Cleaning up subscription to ${TopicType.SYSTEM}`);
-        unifiedWs.unsubscribe([TopicType.SYSTEM]);
-      }
-    };
-  }, [unifiedWs.isConnected, unifiedWs.subscribe, unifiedWs.unsubscribe, unifiedWs.connectionState]);
-  
-  // Track combined WebSocket connection status
-  const [combinedWsStatus, setCombinedWsStatus] = useState({
-    isConnected: false,
-    connectedSockets: 0
-  });
+  // State to manage modal visibility
+  const [showStatusModal, setShowStatusModal] = useState(false);
   
   // Use our scroll hook for footer
   const { isCompact } = useScrollFooter(50);
   
-  // Update connection status based on unified WebSocket
-  useEffect(() => {
-    const isConnected = unifiedWs.isConnected;
-    
-    // :-?
-    console.log(` === ?? === isConnected: ${isConnected}`);
-
-    // Update the combined WebSocket status
-    setCombinedWsStatus({
-      isConnected,                              // is the unified WebSocket connected?
-      connectedSockets: isConnected ? 1 : 0     // We now have only 1 socket
-    });
-    
-    // ------------------------------------------------------------
-    // Update server status based on WebSocket connection state
-    //   Ensures the status indicator correctly shows offline when disconnected
-    // ------------------------------------------------------------
-
-    // If the WebSocket is disconnected and the server is online, update the status to offline
-    if (!isConnected && serverStatus.status === 'online') {
-
-      // Update the server status
-      setServerStatus({
-        status: 'offline',
-        message: 'WebSocket connection lost',
-        timestamp: new Date().toISOString(),
-        lastChecked: new Date().toISOString(),
-        loading: false
-      });
-    } else if (isConnected && serverStatus.status === 'offline') {
-
-      // Update the server status
-      setServerStatus({
-        status: 'online',
-        message: 'Server is operating normally',
-        timestamp: new Date().toISOString(),
-        lastChecked: new Date().toISOString(),
-        loading: false
-      });
-
-      // Update the combined WebSocket connection status
-      setCombinedWsStatus({
-        isConnected: true,
-        connectedSockets: 1
-      });
-
-
-      // Start of ridiculous logging ------------------------------------------------------------
-
-      // ------------------------------------------------------------
-      // Log the unified WebSocket connection status
-      // ------------------------------------------------------------
-
-      // Log the unified WebSocket connection status
-      console.log("Unified WebSocket Connection Status:", {
-        connected: isConnected ? "Connected" : "Disconnected",
-        authenticated: unifiedWs.isAuthenticated ? "Yes" : "No",
-        connectionState: unifiedWs.connectionState,
-        // Use the correct property name for connection error
-        error: unifiedWs.connectionError, 
-        showLightningBolt: isConnected
-      });
-
-      // ------------------------------------------------------------
-      // Log the combined WebSocket connection status
-      // ------------------------------------------------------------
-
-      // Log the combined WebSocket connection status
-      console.log("Combined WebSocket Connection Status:", {
-        isConnected: combinedWsStatus.isConnected,
-        connectedSockets: combinedWsStatus.connectedSockets
-      });
-
-      // ------------------------------------------------------------ 
-      // Log the server status
-      // ------------------------------------------------------------
-
-      // Log the server status
-      console.log("Server Status:", {
-        status: serverStatus.status,
-        message: serverStatus.message,
-        timestamp: serverStatus.timestamp,
-        lastChecked: serverStatus.lastChecked
-      });
-    }
-        
-    // End of ridiculous logging ------------------------------------------------------------
-    
-  }, [unifiedWs.isConnected, unifiedWs.isAuthenticated, unifiedWs.connectionState, serverStatus.status, unifiedWs.connectionError]);
-
-  // State to manage modal visibility
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  
   // Get styles based on server status and unified WebSocket connection
   const getStatusStyles = () => {
-
+    let status: 'online' | 'maintenance' | 'offline' | 'error' = 'online';
+    let message = 'Server is operating normally';
     // Base styles depending on server status
     const baseStyles = {
       online: {
@@ -240,7 +62,7 @@ export const Footer: React.FC = () => {
         textColor: "text-red-400",
         animate: "",
       },
-      unknown: {
+      unknown: { // Fallback, though should be covered
         bgColor: "bg-gray-500/10",
         dotColor: "bg-gray-500",
         shadow: "shadow-[0_0_10px_rgba(128,128,128,0.5)]",
@@ -249,28 +71,46 @@ export const Footer: React.FC = () => {
       },
     };
 
-    // Get base styles for current status
-    const currentStyles = baseStyles[serverStatus.status as keyof typeof baseStyles] || baseStyles.offline;
-
-    // If the unified WebSocket is connected, include WebSocket-specific enhancements
-    if (combinedWsStatus.isConnected) {
-      return {
-        ...currentStyles,
-        // Enhanced styles for WebSocket connection
-        wsBorder: "border border-brand-500/30",
-        wsEffect: "animate-shine-websocket",
-        wsIndicator: true,
-        // With unified WebSocket, we only have one connection
-        connectedSockets: 1
-      };
+    if (systemSettingsDataFromHook?.maintenanceMode) {
+      status = 'maintenance';
+      message = systemSettingsDataFromHook?.maintenanceMessage || "The platform is currently undergoing scheduled maintenance. Please check back shortly.";
+    } else if (unifiedWs.isServerDown) {
+      status = 'offline';
+      message = unifiedWs.connectionError || 'Server unavailable. Connection closed.';
+    } else if (unifiedWs.connectionState === ConnectionState.DISCONNECTED) {
+      status = 'offline';
+      message = unifiedWs.connectionError || 'Disconnected. Check your internet connection.';
+    } else if (unifiedWs.connectionState === ConnectionState.RECONNECTING) {
+      status = 'offline'; // Visually, reconnecting is an offline state variation
+      message = 'Attempting to reconnect...';
+    } else if (unifiedWs.connectionState === ConnectionState.ERROR) {
+      status = 'error';
+      message = unifiedWs.connectionError || 'A connection error occurred.';
+    } else if (unifiedWs.connectionError && (unifiedWs.connectionState !== ConnectionState.CONNECTED && unifiedWs.connectionState !== ConnectionState.AUTHENTICATED)) {
+      // A connection error exists, but we are not in a fully connected state yet
+      status = 'error';
+      message = unifiedWs.connectionError;
+    } else if (unifiedWs.connectionState === ConnectionState.CONNECTING) {
+      status = 'online'; // Visually, this is a transient online state
+      message = 'Connecting...';
+    } else if (unifiedWs.connectionState === ConnectionState.AUTHENTICATING) {
+      status = 'online'; // Visually, this is a transient online state
+      message = 'Authenticating...';
     }
-    // Otherwise, use the regular style without WebSocket enhancements
+    // If none of the above, default to 'online' and 'Server is operating normally'
+
+    const currentBaseStyle = baseStyles[status] || baseStyles.unknown;
+    const isWsActuallyConnected = unifiedWs.isConnected; // True if ConnectionState is CONNECTED or AUTHENTICATED
+
     return {
-      ...currentStyles,
-      wsBorder: "",
-      wsEffect: "",
-      wsIndicator: false,
-      connectedSockets: 0
+      ...currentBaseStyle,
+      statusText: status.toUpperCase(),
+      message: message,
+      // wsIndicator related styles depend on actual WS connection, not just derived server status
+      wsBorder: isWsActuallyConnected ? "border border-brand-500/30" : "",
+      wsEffect: isWsActuallyConnected ? "animate-shine-websocket" : "",
+      wsIndicator: isWsActuallyConnected,
+      connectedSockets: isWsActuallyConnected ? 1 : 0,
     };
   };
 
@@ -285,29 +125,72 @@ export const Footer: React.FC = () => {
   };
 
   // Add console log to check error states
-  console.log("[Footer] Error States: Notifications:", notificationsError, "SystemSettings:", systemSettingsError);
+  console.log("[Footer] Error States: Notifications:", notificationsError, "SystemSettings:", systemSettingsErrorFromHook);
 
   return (
     <>
-      {/* Error Banners Container - Fixed to bottom-left of viewport */}
+      {/* Error Banners Container - Moved to bottom-right */}
       <AnimatePresence>
-        {(notificationsError || systemSettingsError) && (
-          <motion.div 
-            className="fixed bottom-4 left-4 w-auto max-w-xs sm:max-w-sm md:max-w-md z-[60] pointer-events-none space-y-2" 
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30, transition: { duration: 0.2 } }}
+        {(notificationsError || systemSettingsErrorFromHook) && (
+          <motion.div
+            className="fixed bottom-4 right-4 w-auto max-w-xs sm:max-w-sm md:max-w-md z-[60] pointer-events-none space-y-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
             transition={{ type: "spring", stiffness: 200, damping: 25 }}
           >
             {notificationsError && (
-              <div className="bg-dark-300/80 backdrop-blur-md text-orange-300 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-orange-600/50 pointer-events-auto">
-                <strong className="font-semibold">NOTIFICATIONS ERROR:</strong> {getErrorMessage(notificationsError)}
-              </div>
+              <motion.div
+                className="bg-gray-900/90 backdrop-blur-md text-orange-300 text-xs font-medium px-4 py-3 rounded-md shadow-xl border-l-2 border-orange-500 flex items-center gap-3 pointer-events-auto"
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 20, opacity: 0 }}
+              >
+                <div className="flex-shrink-0 bg-orange-500/20 p-1.5 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-xs mb-0.5 text-white">Connection Issue</div>
+                  <div className="text-[10px] text-gray-300">{getErrorMessage(notificationsError)}</div>
+                </div>
+                <button
+                  className="ml-auto text-gray-400 hover:text-white"
+                  onClick={() => window.location.reload()}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </motion.div>
             )}
-            {systemSettingsError && (
-              <div className="bg-dark-300/80 backdrop-blur-md text-red-400 text-xs font-medium px-3 py-2 rounded-lg shadow-2xl border border-red-600/50 pointer-events-auto">
-                <strong className="font-semibold">SYSTEM SETTINGS ERROR:</strong> {getErrorMessage(systemSettingsError)}
-              </div>
+            {systemSettingsErrorFromHook && (
+              <motion.div
+                className="bg-gray-900/90 backdrop-blur-md text-red-300 text-xs font-medium px-4 py-3 rounded-md shadow-xl border-l-2 border-red-500 flex items-center gap-3 pointer-events-auto mt-2"
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 20, opacity: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="flex-shrink-0 bg-red-500/20 p-1.5 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-xs mb-0.5 text-white">System Connection Error</div>
+                  <div className="text-[10px] text-gray-300">{getErrorMessage(systemSettingsErrorFromHook)}</div>
+                </div>
+                <button
+                  className="ml-auto text-gray-400 hover:text-white"
+                  onClick={() => window.location.reload()}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </motion.div>
             )}
           </motion.div>
         )}
@@ -317,8 +200,8 @@ export const Footer: React.FC = () => {
         className="backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-visible relative"
         style={{ paddingTop: '4px' }} 
       >
-        {/* Full footer-width status background */}
-        {serverStatus.status === 'maintenance' && (
+        {/* Full footer-width status background based on derived styles.statusText */}
+        {styles.statusText === 'MAINTENANCE' && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
        
             {/* Dark overlay for contrast */}
@@ -373,8 +256,8 @@ export const Footer: React.FC = () => {
           </div>
         )}
         
-        {/* Error state */}
-        {serverStatus.status === 'error' && (
+        {/* Error state background */}
+        {styles.statusText === 'ERROR' && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
             {/* Soft orange gradient background */}
             <div className="absolute inset-0 bg-gradient-to-l from-orange-500/15 via-orange-500/5 to-transparent" />
@@ -389,8 +272,8 @@ export const Footer: React.FC = () => {
           </div>
         )}
         
-        {/* Offline state */}
-        {serverStatus.status === 'offline' && (
+        {/* Offline state background */}
+        {styles.statusText === 'OFFLINE' && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
             {/* Soft red gradient background */}
             <div className="absolute inset-0 bg-gradient-to-l from-red-500/15 via-red-500/5 to-transparent" />
@@ -406,8 +289,8 @@ export const Footer: React.FC = () => {
           </div>
         )}
         
-        {/* Online state */}
-        {serverStatus.status === 'online' && (
+        {/* Online state background */}
+        {styles.statusText === 'ONLINE' && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
             {/* Soft green gradient background */}
             <div className="absolute inset-0 bg-gradient-to-l from-green-500/15 via-green-500/5 to-transparent" />
@@ -469,7 +352,7 @@ export const Footer: React.FC = () => {
                     </Link>
                     
                     {/* RPC Benchmark Dashboard (only visible to admin users) */}
-                    {isAdmin && systemSettings.showDiagnostics && systemSettings.diagOptions.includes('rpc_benchmarks') && (
+                    {isAdmin && systemSettingsDataFromHook?.showDiagnostics && systemSettingsDataFromHook?.diagOptions?.includes('rpc_benchmarks') && (
                       <div className="ml-2 pl-2 border-l border-gray-700">
                         <RPCBenchmarkFooter compactMode={isCompact} />
                       </div>
@@ -572,7 +455,7 @@ export const Footer: React.FC = () => {
                   <span
                     className={`text-xs font-fira-code tracking-wider ${styles.textColor} ${styles.wsIndicator ? "text-shadow-sm font-semibold" : ""} cursor-pointer`}
                   >
-                    {serverStatus.status.toUpperCase()}
+                    {styles.statusText}
                     {styles.wsIndicator && (
                       <span className="ml-1 text-cyan-400 text-opacity-90 text-[10px] align-middle font-bold">
                         ⚡{styles.connectedSockets > 1 ? styles.connectedSockets : ''}
@@ -605,10 +488,11 @@ export const Footer: React.FC = () => {
                     className={`bg-gray-900 p-4 rounded-lg shadow-xl text-xs ${styles.textColor} border border-gray-700 w-full max-w-[400px] max-h-[90vh] overflow-auto relative`}
                     style={{
                       boxShadow: `0 10px 25px -5px ${
-                        serverStatus.status === 'online' ? 'rgba(34,197,94,0.2)' :
-                        serverStatus.status === 'maintenance' ? 'rgba(234,179,8,0.2)' :
-                        serverStatus.status === 'error' ? 'rgba(249,115,22,0.2)' :
-                        'rgba(239,68,68,0.2)'
+                        styles.statusText === 'ONLINE' ? 'rgba(34,197,94,0.2)' :
+                        styles.statusText === 'MAINTENANCE' ? 'rgba(234,179,8,0.2)' :
+                        styles.statusText === 'ERROR' ? 'rgba(249,115,22,0.2)' :
+                        styles.statusText === 'OFFLINE' ? 'rgba(239,68,68,0.2)' : // Explicitly handle offline
+                        'rgba(128,128,128,0.2)' // Fallback for unknown, though derived status should cover known states
                       }, 0 8px 10px -6px rgba(0,0,0,0.3)`
                     }}
                     onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
@@ -626,8 +510,14 @@ export const Footer: React.FC = () => {
                     {/* Header with status and copy button */}
                     <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
                       <div className="font-bold text-sm">
-                        Status: <span className={serverStatus.status === 'online' ? 'text-green-400' : serverStatus.status === 'maintenance' ? 'text-yellow-400' : 'text-red-400'}>
-                          {serverStatus.status.toUpperCase()}
+                        Status: <span className={
+                          styles.statusText === 'ONLINE' ? 'text-green-400' : 
+                          styles.statusText === 'MAINTENANCE' ? 'text-yellow-400' : 
+                          styles.statusText === 'ERROR' ? 'text-orange-400' : // Consistent error color
+                          styles.statusText === 'OFFLINE' ? 'text-red-400' : // Consistent offline color
+                          'text-gray-400' // Fallback
+                        }>
+                          {styles.statusText}
                         </span>
                       </div>
                       <button 
@@ -635,10 +525,16 @@ export const Footer: React.FC = () => {
                         onClick={() => {
                           // Copy technical info to clipboard
                           const technicalInfo = `
-Status: ${serverStatus.status.toUpperCase()}
-Connected Sockets: ${combinedWsStatus.connectedSockets}/1
-Monitor: ${unifiedWs.isConnected ? "✅" : "❌"}
-Settings: ${!systemSettings.loading && !systemSettings.error ? "✅" : "❌"}
+Status: ${styles.statusText}
+Message: ${styles.message}
+UnifiedWS Connected: ${unifiedWs.isConnected ? "✅" : "❌"}
+UnifiedWS Authenticated: ${unifiedWs.isAuthenticated ? "✅" : "❌"}
+UnifiedWS State: ${unifiedWs.connectionState}
+UnifiedWS Connection Error: ${unifiedWs.connectionError || "None"}
+UnifiedWS Server Down: ${unifiedWs.isServerDown ? "✅" : "❌"}
+SystemSettings Maintenance: ${systemSettingsDataFromHook?.maintenanceMode ? "✅" : "❌"}
+SystemSettings Error: ${systemSettingsErrorFromHook || "None"}
+SystemSettings Watched: ${JSON.stringify(systemSettingsDataFromHook)}
 URL: ${import.meta.env.VITE_WS_URL || "wss://degenduel.me"}
 Last Check: ${new Date().toLocaleTimeString()}
                           `.trim();
@@ -667,7 +563,7 @@ Last Check: ${new Date().toLocaleTimeString()}
                         </div>
                         <div className="flex items-center">
                           <div className={unifiedWs.isConnected ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
-                            {unifiedWs.isConnected ? "CONNECTED" : "DISCONNECTED"}
+                            {unifiedWs.isConnected ? "CONNECTED" : unifiedWs.connectionState === ConnectionState.RECONNECTING ? "RECONNECTING" : "DISCONNECTED"}
                           </div>
                         </div>
                       </div>
@@ -678,8 +574,8 @@ Last Check: ${new Date().toLocaleTimeString()}
                           <div>WebSocket Authentication</div>
                         </div>
                         <div className="flex items-center">
-                          <div className={unifiedWs.isAuthenticated ? "text-green-400 font-medium" : (unifiedWs.isConnected ? "text-yellow-400 font-medium" : "text-red-400 font-medium")}>
-                            {unifiedWs.isAuthenticated ? "AUTHENTICATED" : (unifiedWs.isConnected ? "UNAUTHENTICATED" : "N/A")}
+                          <div className={unifiedWs.isAuthenticated ? "text-green-400 font-medium" : (unifiedWs.isConnected ? (unifiedWs.connectionState === ConnectionState.AUTHENTICATING ? "AUTHENTICATING" : "UNAUTHENTICATED") : "N/A")}>
+                            {unifiedWs.isAuthenticated ? "AUTHENTICATED" : (unifiedWs.isConnected ? (unifiedWs.connectionState === ConnectionState.AUTHENTICATING ? "AUTHENTICATING" : "UNAUTHENTICATED") : "N/A")}
                           </div>
                         </div>
                       </div>
@@ -695,6 +591,18 @@ Last Check: ${new Date().toLocaleTimeString()}
                             <div>Error:</div>
                             <div className="font-mono truncate max-w-[200px]">{unifiedWs.connectionError}</div>
                           </div>
+                        )}
+                        {unifiedWs.isServerDown && (
+                           <div className="flex justify-between mt-1 text-red-400">
+                             <div>Server Status:</div>
+                             <div className="font-mono">Potentially Down</div>
+                           </div>
+                        )}
+                         {systemSettingsDataFromHook?.maintenanceMode && (
+                           <div className="flex justify-between mt-1 text-yellow-400">
+                             <div>Platform Status:</div>
+                             <div className="font-mono">Maintenance Mode</div>
+                           </div>
                         )}
                       </div>
                     </div>

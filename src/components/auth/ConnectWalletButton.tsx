@@ -7,11 +7,12 @@
  * Integrates with Solana Kit and unified authentication to provide wallet login functionality.
  * 
  * @author Claude
- * @version 1.0.0
+ * @version 1.0.1
  * @created 2025-05-09
+ * @updated 2025-05-11 - Corrected useSignMessage call and restored button UI
  */
 
-import { useSignMessage } from '@solana/react';
+import { useSignMessage } from '@solana/react'; // Explicitly import UiWalletAccount if needed for type clarity
 import axios from 'axios';
 import React, { useCallback, useState } from 'react';
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
@@ -45,15 +46,12 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     connect: connectWallet,
     disconnect: disconnectWallet,
     publicKey,
-    currentAccount
+    currentAccount // This is UiWalletAccount | undefined
   } = useSolanaKitWallet();
 
-  // Get the signMessage function from the @solana/react hook.
-  // This hook needs the currentAccount. It might return a non-functional version if currentAccount is null/undefined.
-  const walletSignMessageFn = useSignMessage(currentAccount!);
-  // We use currentAccount! assuming that when handleConnectWallet is called, currentAccount will be defined.
-  // A more robust solution might involve ensuring walletSignMessageFn is only called when currentAccount is defined,
-  // or the hook useSignMessage gracefully handles a null/undefined account.
+  // Call useSignMessage conditionally based on currentAccount's presence.
+  // walletSignMessageFn will be undefined if currentAccount is undefined.
+  const walletSignMessageFn = currentAccount ? useSignMessage(currentAccount) : undefined;
 
   // Get a challenge nonce from the server
   const getChallengeNonce = async (walletAddress: string): Promise<string> => {
@@ -68,83 +66,98 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
 
   // Handle connecting and authenticating with the wallet
   const handleConnectWallet = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Show wallet selector if not connected yet
-      if (!isWalletConnected && availableWallets.length > 0) {
-        const wallet = availableWallets[0];
-        await connectWallet(wallet);
+      // We will use publicKey and currentAccount directly from the useSolanaKitWallet hook.
+      // Their values will be from the render in which this callback was created.
+
+      if (!isWalletConnected || !currentAccount) { // Check currentAccount directly
+        if (availableWallets.length > 0) {
+          await connectWallet(availableWallets[0]);
+          // After connectWallet, the hook state (publicKey, currentAccount) will update,
+          // leading to a re-render. If login needs to proceed automatically after connection,
+          // an effect reacting to publicKey/currentAccount changes might be more robust.
+          // For this direct click flow, we'll proceed, and the *next* click might have the updated state
+          // or the UI re-renders allowing a subsequent action with the connected wallet.
+          // If connectWallet() itself updated publicKey/currentAccount used in *this* specific
+          // callback instance (e.g., if it returned them), we could use that.
+          // For now, if we just connected, we might want to return and let the user click again
+          // once the UI reflects the connected state, or handle the login in an effect.
+          // To keep this simple, we will check publicKey *after* this block.
+        } else {
+          throw new Error("No wallets available to connect.");
+        }
       }
       
-      // If the wallet is connected and we have a public key, proceed with authentication
-      // currentAccount should be updated by connectWallet by this point.
-      if (publicKey && currentAccount) { // Added currentAccount check here for safety
-        const walletAddress = publicKey.toString();
-        
-        await getChallengeNonce(walletAddress);
-        
-        const signMessage = async (messageToSign: Uint8Array) => {
-          if (!currentAccount) { // Defensive check
-            throw new Error('No wallet account available for signing');
-          }
-          // walletSignMessageFn is created using currentAccount from the component's scope.
-          // Ensure it's valid before use.
-          if (typeof walletSignMessageFn !== 'function') {
-            throw new Error('Wallet signMessage function not available from useSignMessage hook.');
-          }
-          
-          try {
-            // Use the signMessage function from the useSignMessage hook
-            // It expects an object: { message: Uint8Array }
-            // It returns a Promise of an object: { signature: Uint8Array, signedMessage?: Uint8Array }
-            const { signature: resultSignature } = await walletSignMessageFn({ message: messageToSign });
-            
-            console.log('Message signed by wallet. Signature:', resultSignature);
-            return { signature: resultSignature };
+      // If already authenticated with the current publicKey from the hook, avoid re-login.
+      if (auth.user?.wallet_address && auth.user.wallet_address === publicKey?.toString()) {
+         console.log("ConnectWalletButton: Already authenticated with this wallet.");
+         onSuccess?.();
+         setIsLoading(false);
+         return;
+      }
 
-          } catch (error) {
-            console.error('Error signing message with wallet:', error);
-            throw new Error('Failed to sign message with wallet');
+      // Crucial: Check publicKey *after* the connection attempt.
+      // This publicKey is from the hook's state in the *current render*.
+      if (publicKey) {
+        const walletAddress = publicKey.toString();
+        await getChallengeNonce(walletAddress);
+
+        const signMessageWrapper = async (messageToSign: Uint8Array) => {
+          if (!walletSignMessageFn) { // This walletSignMessageFn is also from the current render
+            console.error('ConnectWalletButton: signMessage function is not available. `currentAccount` might have been undefined or hook state not updated yet.');
+            throw new Error('Cannot sign message: Wallet signing function unavailable.');
           }
+          const { signature } = await walletSignMessageFn({ message: messageToSign });
+          return { signature };
         };
-        
-        await auth.loginWithWallet(walletAddress, signMessage);
-        
+
+        await auth.loginWithWallet(walletAddress, signMessageWrapper);
         onSuccess?.();
       } else {
-        throw new Error('Wallet connected but no public key or current account available');
+        // This means publicKey is still not available from the hook, even after an attempt to connect.
+        // This could happen if connectWallet was called but the re-render with new publicKey hasn't happened yet,
+        // or if the connection failed silently within connectWallet and didn't update publicKey.
+        console.warn("ConnectWalletButton: publicKey is not available after connection attempt. The user might need to click again or there was an issue updating wallet state.");
+        throw new Error('Wallet public key not available. If you just connected, please try signing in again.');
       }
     } catch (err) {
-      console.error('Wallet connection error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown wallet connection error';
+      console.error('ConnectWalletButton: Error during wallet connection/login:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
       setError(errorMessage);
       onError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
       setIsLoading(false);
     }
-  }, [auth, availableWallets, connectWallet, currentAccount, isWalletConnected, onError, onSuccess, publicKey, walletSignMessageFn]);
+  }, [
+    auth, 
+    availableWallets, 
+    connectWallet, 
+    publicKey, 
+    currentAccount, 
+    isWalletConnected, 
+    onSuccess, 
+    onError,
+    walletSignMessageFn 
+  ]);
 
   // Handle disconnecting the wallet
   const handleDisconnectWallet = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      
-      // Disconnect from wallet
       await disconnectWallet();
-      
-      // Also log out from the auth system
       await auth.logout();
-      
     } catch (err) {
-      console.error('Wallet disconnection error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown wallet disconnection error';
+      console.error('ConnectWalletButton: Error during disconnect:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to disconnect.';
       setError(errorMessage);
+      onError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
       setIsLoading(false);
     }
-  }, [auth, disconnectWallet]);
+  }, [auth, disconnectWallet, onError]);
 
   // Button size classes
   const sizeClasses = {
@@ -163,7 +176,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       <Button
         variant="gradient"
         className={`w-full font-cyber flex items-center justify-center ${sizeClasses[size]}`}
-        onClick={isWalletConnected ? handleDisconnectWallet : handleConnectWallet}
+        onClick={isWalletConnected && publicKey ? handleDisconnectWallet : handleConnectWallet}
         disabled={isLoading || isWalletConnecting}
       >
         {isLoading || isWalletConnecting ? (
@@ -174,7 +187,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
             </svg>
             {isWalletConnecting ? 'Connecting...' : 'Processing...'}
           </>
-        ) : isWalletConnected ? (
+        ) : isWalletConnected && publicKey ? (
           <>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -190,7 +203,6 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           </>
         )}
       </Button>
-      
       {error && (
         <div className="mt-2 text-xs text-red-500">
           {error}
