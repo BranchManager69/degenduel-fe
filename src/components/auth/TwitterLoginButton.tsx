@@ -90,7 +90,7 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
     });
     if (!linkMode && !user && urlParams.get("twitter") === "pending") {
       authDebug('TwitterBtn', 'Found twitter=pending parameter, showing toast');
-      toast.error("Please connect your wallet to complete Twitter linking");
+      toast.error("Please connect your wallet to complete logging in with Twitter.");
     }
     if (urlParams.get("twitter_linked") === "true") {
       authDebug('TwitterBtn', 'Found twitter_linked=true parameter, showing success toast');

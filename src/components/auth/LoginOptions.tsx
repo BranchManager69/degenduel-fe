@@ -94,7 +94,7 @@ const LoginOptions = () => {
   const showLinkPrivy = user && !isPrivyLinked && !privyLoading;
   
   return (
-    <Card className="w-full max-w-md mx-auto overflow-hidden relative border border-brand-500/30 shadow-xl bg-dark-200/70 backdrop-blur-lg">
+    <Card className="w-full max-w-md mx-auto relative border border-brand-500/30 shadow-xl bg-dark-200/70 backdrop-blur-lg">
       {/* Decorative elements */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(127,0,255,0.15),transparent_70%)]"></div>
       <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5"></div>
