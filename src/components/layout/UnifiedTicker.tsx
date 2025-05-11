@@ -36,7 +36,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     isConnected: isDataConnected,
   } = useStandardizedTokenData("all");
   const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
-  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("contests");
   const [viewportWidth, setViewportWidth] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -413,6 +413,7 @@ export const UnifiedTicker: React.FC<Props> = ({
 
     const showError = !!storeError;
     const showSystemError = !!systemError;
+    const isLoadingNoData = isOverallLoading && originalTickerItems.length === 0;
 
     if (showError) {
       return (
@@ -431,8 +432,8 @@ export const UnifiedTicker: React.FC<Props> = ({
       );
     }
     
-    if (isOverallLoading && originalTickerItems.length === 0) {
-      console.log("UnifiedTicker: renderTickerContentArea - RENDERING LOADING STATE");
+    if (isLoadingNoData) {
+      console.log("UnifiedTicker: renderTickerContentArea - RENDERING LOADING STATE (NO GRAB)");
       return (
         <div className="flex items-center justify-center w-full overflow-hidden h-full" ref={viewportRef}>
           <div className={`flex items-center justify-center px-4 py-2 h-full w-full`}>
@@ -443,21 +444,21 @@ export const UnifiedTicker: React.FC<Props> = ({
       );
     }
 
-    console.log("UnifiedTicker: renderTickerContentArea - RENDERING MAIN CONTENT AREA (where scrollableContentRef should be set)");
+    console.log("UnifiedTicker: renderTickerContentArea - RENDERING MAIN CONTENT AREA (GRAB ENABLED)");
     return (
       <div
         ref={viewportRef}
-        className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing pl-40"
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUpOrLeave}
+        className={`h-full w-full overflow-hidden ${actualContentWidthRef.current > viewportWidth ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} pl-40`}
+        onMouseDown={actualContentWidthRef.current > viewportWidth ? onMouseDown : undefined}
+        onMouseMove={actualContentWidthRef.current > viewportWidth ? onMouseMove : undefined}
+        onMouseUp={actualContentWidthRef.current > viewportWidth ? onMouseUpOrLeave : undefined}
         onMouseLeave={() => { 
-          onMouseUpOrLeave(); 
+          if(actualContentWidthRef.current > viewportWidth) onMouseUpOrLeave(); 
           handleMouseLeave(); 
         }}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-        onMouseEnter={handleMouseEnter}
+        onTouchStart={actualContentWidthRef.current > viewportWidth ? onTouchStart : undefined}
+        onTouchEnd={actualContentWidthRef.current > viewportWidth ? onTouchEnd : undefined}
+        onMouseEnter={actualContentWidthRef.current > viewportWidth ? handleMouseEnter : undefined}
       >
         <div
           ref={scrollableContentRef}

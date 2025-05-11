@@ -73,6 +73,7 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null); 
+  const [specificError, setSpecificError] = useState<string | null>(null); // Added for specific errors
 
   const { setMaintenanceMode /*, addServiceAlert */ } = useStore(); // Example store actions
   const ws = useWebSocket(); // Use the context hook (takes no args)
@@ -80,13 +81,15 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
   const handleMessage = useCallback((message: Partial<SystemSettingsWebSocketMessage>) => {
     if (message.type === DDExtendedMessageType.ERROR && message.error) {
       dispatchWebSocketEvent('system_settings_error', { error: message.error });
-      // setError(message.error); // If hook manages its own error state
+      setSpecificError(message.error); // Set specific error here
       return;
     }
 
     if (!message.data || message.type !== DDExtendedMessageType.DATA || message.topic !== DDWebSocketTopic.SYSTEM) {
       return;
     }
+    
+    setSpecificError(null); // Clear specific error on successful data processing
 
     const { subtype, action, data } = message;
 
@@ -173,7 +176,7 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
   return {
     settings,
     isLoading: isLoading && !settings,
-    error: ws.connectionError,
+    error: specificError || ws.connectionError, // Prioritize specific error
     updateSystemSettings,
     isConnected: ws.isConnected,
     isReadyForSecureInteraction: ws.isReadyForSecureInteraction,

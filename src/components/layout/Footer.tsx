@@ -1,6 +1,5 @@
 // src/components/layout/Footer.tsx
 
-import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -9,7 +8,6 @@ import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketCo
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { MessageType } from '../../hooks/websocket';
-import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
@@ -19,15 +17,14 @@ export const Footer: React.FC = () => {
   const unifiedWs = useWebSocket();
   
   // Get errors from hooks
-  const { error: notificationsError } = useNotifications();
   const { settings: systemSettingsDataFromHook, error: systemSettingsErrorFromHook } = useSystemSettings();
-  
-  // State to manage modal visibility
-  const [showStatusModal, setShowStatusModal] = useState(false);
   
   // Use our scroll hook for footer
   const { isCompact } = useScrollFooter(50);
-  
+
+  // State to manage modal visibility
+  const [showStatusModal, setShowStatusModal] = useState(false);
+
   // Get styles based on server status and unified WebSocket connection
   const getStatusStyles = () => {
     let status: 'online' | 'maintenance' | 'offline' | 'error' = 'online';
@@ -117,84 +114,26 @@ export const Footer: React.FC = () => {
   // Get the styles for the current status
   const styles = getStatusStyles();
 
-  // Helper to get error message safely
-  const getErrorMessage = (error: any): string => {
-    if (typeof error === 'string') return error;
-    if (error && typeof error.message === 'string') return error.message;
-    return "Unknown error";
-  };
-
   // Add console log to check error states
-  console.log("[Footer] Error States: Notifications:", notificationsError, "SystemSettings:", systemSettingsErrorFromHook);
+  console.log("[Footer] Error States: SystemSettings:", systemSettingsErrorFromHook);
 
   return (
     <>
-      {/* Error Banners Container - Moved to bottom-right */}
+      {/* Error Banners Container - REMOVE ENTIRE BLOCK (AnimatePresence and its children) */}
+      {/*
       <AnimatePresence>
-        {(notificationsError || systemSettingsErrorFromHook) && (
-          <motion.div
-            className="fixed bottom-4 right-4 w-auto max-w-xs sm:max-w-sm md:max-w-md z-[60] pointer-events-none space-y-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
-            transition={{ type: "spring", stiffness: 200, damping: 25 }}
-          >
-            {notificationsError && (
-              <motion.div
-                className="bg-gray-900/90 backdrop-blur-md text-orange-300 text-xs font-medium px-4 py-3 rounded-md shadow-xl border-l-2 border-orange-500 flex items-center gap-3 pointer-events-auto"
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 20, opacity: 0 }}
-              >
-                <div className="flex-shrink-0 bg-orange-500/20 p-1.5 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-semibold text-xs mb-0.5 text-white">Connection Issue</div>
-                  <div className="text-[10px] text-gray-300">{getErrorMessage(notificationsError)}</div>
-                </div>
-                <button
-                  className="ml-auto text-gray-400 hover:text-white"
-                  onClick={() => window.location.reload()}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </motion.div>
+        {((notificationsError && showNotificationErrorBanner) || (systemSettingsErrorFromHook && showSystemSettingsErrorBanner)) && (
+          <motion.div ... >
+            {notificationsError && showNotificationErrorBanner && (
+              <motion.div ... </motion.div>
             )}
-            {systemSettingsErrorFromHook && (
-              <motion.div
-                className="bg-gray-900/90 backdrop-blur-md text-red-300 text-xs font-medium px-4 py-3 rounded-md shadow-xl border-l-2 border-red-500 flex items-center gap-3 pointer-events-auto mt-2"
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 20, opacity: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <div className="flex-shrink-0 bg-red-500/20 p-1.5 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-semibold text-xs mb-0.5 text-white">System Connection Error</div>
-                  <div className="text-[10px] text-gray-300">{getErrorMessage(systemSettingsErrorFromHook)}</div>
-                </div>
-                <button
-                  className="ml-auto text-gray-400 hover:text-white"
-                  onClick={() => window.location.reload()}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </motion.div>
+            {systemSettingsErrorFromHook && showSystemSettingsErrorBanner && (
+              <motion.div ... </motion.div>
             )}
           </motion.div>
         )}
       </AnimatePresence>
+      */}
 
       <footer
         className="backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-visible relative"

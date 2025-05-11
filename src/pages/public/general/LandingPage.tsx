@@ -49,7 +49,10 @@ import { useStore } from "../../../store/useStore"; // Ensure useStore is import
 // Config
 // Import new MarketTickerGrid component (replacing the three token display components)
 import { MarketTickerGrid } from "../../../components/landing/market-ticker";
-import { LazyLoad } from "../../../components/shared/LazyLoad"; // Added import
+import { FloatingDexscreenerButton } from '../../../components/layout/FloatingDexscreenerButton'; // Added import
+import { FloatingJupButton } from '../../../components/layout/FloatingJupButton'; // Added import
+import { FloatingPumpButton } from '../../../components/layout/FloatingPumpButton'; // Added import
+import { Footer } from "../../../components/layout/Footer"; // Corrected Footer import
 
 // Landing Page
 export const LandingPage: React.FC = () => {
@@ -86,7 +89,7 @@ export const LandingPage: React.FC = () => {
   const { 
     contractAddress: websocketContractAddress, 
     contractAddressRevealed: websocketContractRevealed,
-    isConnected: terminalConnected
+    // terminalConnected // Ensure this is removed from destructuring
   } = useTerminalData();
   
   const { settings } = useSystemSettings(); // Get settings for maintenance mode
@@ -95,10 +98,10 @@ export const LandingPage: React.FC = () => {
   const maintenanceMessageToDisplay = settings?.maintenance_mode?.message || "Contests are temporarily paused for maintenance. Please check back soon!";
   
   useEffect(() => {
-    if (terminalConnected && websocketContractAddress && websocketContractRevealed) {
+    if (/* terminalConnected && */ websocketContractAddress && websocketContractRevealed) { // Remove terminalConnected from condition
       console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}, Revealed: ${websocketContractRevealed}`);
     }
-  }, [terminalConnected, websocketContractAddress, websocketContractRevealed]);
+  }, [/* terminalConnected, */ websocketContractAddress, websocketContractRevealed]); // Remove terminalConnected from dependency array
   
   // Removed Fallback check for release time and handling completion/redirect useEffect block
   // Removed Debug log for release date sources useEffect block
@@ -225,207 +228,225 @@ export const LandingPage: React.FC = () => {
 
   // Landing Page JSX
   return (
-    <div className="flex flex-col min-h-screen relative overflow-x-hidden">
+    <>
+      {/* <ScrollToTop /> */}
+      <div className="flex flex-col min-h-screen relative overflow-x-hidden">
 
-      {/* Landing Page Content Section */}
-      <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>
-        
-        {/* Landing Page Container */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {/* Landing Page Content Section */}
+        <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>
           
-          {/* Landing Page Content */}
-          <div className="text-center space-y-4">
+          {/* Landing Page Container */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0">
             
-            {/* Title Section - Now featuring IntroLogo */}
-            <div className="flex flex-col items-center justify-center mb-8 md:mb-12">
+            {/* Landing Page Content */}
+            <div className="text-center space-y-4">
               
-              {/* Admin debug button - visible even when HeroTitle is hidden */}
-              {isAdmin && (
-                <div className="flex justify-end mb-2 w-full max-w-4xl">
-                  <button
-                    className="bg-black/50 text-white text-xs p-1 rounded-md"
-                    onClick={() => setDebugMode(!debugMode)}
-                  >
-                    {debugMode ? "🛠️" : "🐛"}
-                  </button>
-                </div>
-              )}
-              
-              {/* Demo Section - only visible to admins with debug mode enabled */}
-              {debugMode && isAdmin && (
-                <div className="w-full mb-10">
-                  
-                  {/* Auth Debug Panel 1 - shows authentication state for debugging */}
-                  <div className="mb-6 bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                    <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 1</h4>
-                    <AuthDebugPanel />
-                  </div>
-                  
-                  {/* Auth Debug Panel 2 - shows authentication state for debugging */}
-                  <div className="fixed bottom-0 left-0 right-0 z-[100] p-2 bg-dark-700/80 backdrop-blur-sm">
-                    <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 2</h4>
-                    <AuthDebugPanel />
-                  </div>
-
-                  {/* Responsive grid layout - one column on mobile, three columns on large screens */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    {/* Token Data Demo */}
-                    <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                      <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
-                      <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading token data...</div>}>
-                        {(() => {
-                          const TokenDataDebug = React.lazy(() => import("../../../components/debug/websocket/TokenDataDebug"));
-                          return <TokenDataDebug />;
-                        })()}
-                      </React.Suspense>
-                    </div>
-                    
-                    {/* System Status Demo */}
-                    <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                      <h4 className="text-xl font-semibold mb-4 text-cyan-400">System Topic</h4>
-                      <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading system status...</div>}>
-                        {(() => {
-                          const SystemStatusDebug = React.lazy(() => import("../../../components/debug/websocket/SystemStatusDebug"));
-                          return <SystemStatusDebug />;
-                        })()}
-                      </React.Suspense>
-                    </div>
-                    
-                    {/* User Profile Demo */}
-                    <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                      <h4 className="text-xl font-semibold mb-4 text-purple-400">User Topic (Requires Auth)</h4>
-                      <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading user profile...</div>}>
-                        {(() => {
-                          const UserProfileDebug = React.lazy(() => import("../../../components/debug/websocket/UserProfileDebug"));
-                          return <UserProfileDebug />;
-                        })()}
-                      </React.Suspense>
-                    </div>
-
-                  </div>
-
-                </div>
-              )}
-              
-              {/* Enhanced Hero Section with IntroLogo and animated background */}
-              <div className="relative w-full my-4 md:my-8">
+              {/* Title Section - Now featuring IntroLogo */}
+              <div className="flex flex-col items-center justify-center mb-8 md:mb-12">
                 
-                {/* Visual effects layer - positioned behind content (kind of sucks...) */}
-                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                  
-                  {/* Subtle grid overlay (also sucks...) */}
-                  <div
-                    className="absolute inset-0 opacity-30"
-                    style={{
-                      backgroundImage: 'linear-gradient(to right, rgba(153, 51, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(153, 51, 255, 0.03) 1px, transparent 1px)',
-                      backgroundSize: '24px 24px'
-                    }}
-                  />
-
-                  {/* Deep ambient glow spots */}
-                  <motion.div
-                    className="absolute top-1/4 -left-1/4 w-full h-full rounded-full blur-3xl"
-                    style={{
-                      background: 'radial-gradient(circle, rgba(153, 51, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
-                    }}
-                    animate={{
-                      opacity: [0.5, 0.7, 0.5],
-                      scale: [1, 1.1, 1]
-                    }}
-                    transition={{
-                      duration: 15,
-                      repeat: Infinity,
-                      repeatType: "mirror"
-                    }}
-                  />
-
-                  {/* Elegant data flow lines */}
-                  <motion.div
-                    className="absolute bottom-1/3 -right-1/4 w-full h-full rounded-full blur-3xl"
-                    style={{
-                      background: 'radial-gradient(circle, rgba(0, 225, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
-                    }}
-                    animate={{
-                      opacity: [0.5, 0.7, 0.5],
-                      scale: [1, 1.1, 1]
-                    }}
-                    transition={{
-                      duration: 18,
-                      repeat: Infinity,
-                      repeatType: "mirror",
-                      delay: 3
-                    }}
-                  />
-
-                  {/* Elegant data flow lines (kind of gay though) */}
-                  <div className="absolute inset-0">
-                    <motion.div
-                      className="h-[0.5px] w-[30%] bg-gradient-to-r from-transparent via-brand-400/15 to-transparent absolute transform -rotate-[30deg]"
-                      animate={{ x: ["-100%", "200%"] }}
-                      transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                      style={{ top: '35%', left: '0%' }}
-                    />
-
-                    {/* Another data flow line (again, gay) */}
-                    <motion.div
-                      className="h-[0.5px] w-[40%] bg-gradient-to-r from-transparent via-cyber-400/10 to-transparent absolute transform rotate-[15deg]"
-                      animate={{ x: ["-100%", "200%"] }}
-                      transition={{ duration: 18, repeat: Infinity, ease: "linear", delay: 3 }}
-                      style={{ top: '60%', left: '0%' }}
-                    />
+                {/* Admin debug button - visible even when HeroTitle is hidden */}
+                {isAdmin && (
+                  <div className="flex justify-end mb-2 w-full max-w-4xl">
+                    <button
+                      className="bg-black/50 text-white text-xs p-1 rounded-md"
+                      onClick={() => setDebugMode(!debugMode)}
+                    >
+                      {debugMode ? "🛠️" : "🐛"}
+                    </button>
                   </div>
+                )}
+                
+                {/* Demo Section - only visible to admins with debug mode enabled */}
+                {debugMode && isAdmin && (
+                  <div className="w-full mb-10">
+                    
+                    {/* Auth Debug Panel 1 - shows authentication state for debugging */}
+                    <div className="mb-6 bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                      <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 1</h4>
+                      <AuthDebugPanel />
+                    </div>
+                    
+                    {/* Auth Debug Panel 2 - shows authentication state for debugging */}
+                    <div className="fixed bottom-0 left-0 right-0 z-[100] p-2 bg-dark-700/80 backdrop-blur-sm">
+                      <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 2</h4>
+                      <AuthDebugPanel />
+                    </div>
 
-                  {/* High-quality particle effect (now this I like) */}
-                  <div className="absolute inset-0">
-                    {Array(8).fill(null).map((_, i) => (
+                    {/* Responsive grid layout - one column on mobile, three columns on large screens */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      
+                      {/* Token Data Demo */}
+                      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                        <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
+                        <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading token data...</div>}>
+                          {(() => {
+                            const TokenDataDebug = React.lazy(() => import("../../../components/debug/websocket/TokenDataDebug"));
+                            return <TokenDataDebug />;
+                          })()}
+                        </React.Suspense>
+                      </div>
+                      
+                      {/* System Status Demo */}
+                      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                        <h4 className="text-xl font-semibold mb-4 text-cyan-400">System Topic</h4>
+                        <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading system status...</div>}>
+                          {(() => {
+                            const SystemStatusDebug = React.lazy(() => import("../../../components/debug/websocket/SystemStatusDebug"));
+                            return <SystemStatusDebug />;
+                          })()}
+                        </React.Suspense>
+                      </div>
+                      
+                      {/* User Profile Demo */}
+                      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
+                        <h4 className="text-xl font-semibold mb-4 text-purple-400">User Topic (Requires Auth)</h4>
+                        <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading user profile...</div>}>
+                          {(() => {
+                            const UserProfileDebug = React.lazy(() => import("../../../components/debug/websocket/UserProfileDebug"));
+                            return <UserProfileDebug />;
+                          })()}
+                        </React.Suspense>
+                      </div>
+
+                    </div>
+
+                  </div>
+                )}
+                
+                {/* Enhanced Hero Section with IntroLogo and animated background */}
+                <div className="relative w-full my-4 md:my-8">
+                  
+                  {/* Visual effects layer - positioned behind content */}
+                  <div className="absolute inset-0 z-0 pointer-events-none">
+                    
+                    {/* Subtle grid overlay (also sucks...) */}
+                    <div
+                      className="absolute inset-0 opacity-30"
+                      style={{
+                        backgroundImage: 'linear-gradient(to right, rgba(153, 51, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(153, 51, 255, 0.03) 1px, transparent 1px)',
+                        backgroundSize: '24px 24px'
+                      }}
+                    />
+
+                    {/* Deep ambient glow spots */}
+                    <motion.div
+                      className="absolute top-1/4 -left-1/4 w-full h-full rounded-full blur-3xl"
+                      style={{
+                        background: 'radial-gradient(circle, rgba(153, 51, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
+                      }}
+                      animate={{
+                        opacity: [0.5, 0.7, 0.5],
+                        scale: [1, 1.1, 1]
+                      }}
+                      transition={{
+                        duration: 15,
+                        repeat: Infinity,
+                        repeatType: "mirror"
+                      }}
+                    />
+
+                    {/* Elegant data flow lines */}
+                    <motion.div
+                      className="absolute bottom-1/3 -right-1/4 w-full h-full rounded-full blur-3xl"
+                      style={{
+                        background: 'radial-gradient(circle, rgba(0, 225, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
+                      }}
+                      animate={{
+                        opacity: [0.5, 0.7, 0.5],
+                        scale: [1, 1.1, 1]
+                      }}
+                      transition={{
+                        duration: 18,
+                        repeat: Infinity,
+                        repeatType: "mirror",
+                        delay: 3
+                      }}
+                    />
+
+                    {/* Elegant data flow lines (kind of gay though) */}
+                    <div className="absolute inset-0">
                       <motion.div
-                        key={i}
-                        className="absolute rounded-full"
-                        style={{
-                          width: Math.random() * 3 + 1 + 'px',
-                          height: Math.random() * 3 + 1 + 'px',
-                          backgroundColor: i % 2 === 0 ? 'rgba(153, 51, 255, 0.4)' : 'rgba(0, 225, 255, 0.4)',
-                          top: `${Math.random() * 100}%`,
-                          left: `${Math.random() * 100}%`,
-                          boxShadow: `0 0 4px ${i % 2 === 0 ? 'rgba(153, 51, 255, 0.4)' : 'rgba(0, 225, 255, 0.4)'}`
-                        }}
-                        animate={{
-                          opacity: [0.4, 0.8, 0.4],
-                          scale: [1, 1.2, 1],
-                          y: [0, -30, 0]
-                        }}
-                        transition={{
-                          duration: Math.random() * 5 + 5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: Math.random() * 5
-                        }}
+                        className="h-[0.5px] w-[30%] bg-gradient-to-r from-transparent via-brand-400/15 to-transparent absolute transform -rotate-[30deg]"
+                        animate={{ x: ["-100%", "200%"] }}
+                        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                        style={{ top: '35%', left: '0%' }}
                       />
-                    ))}
+
+                      {/* Another data flow line (again, gay) */}
+                      <motion.div
+                        className="h-[0.5px] w-[40%] bg-gradient-to-r from-transparent via-cyber-400/10 to-transparent absolute transform rotate-[15deg]"
+                        animate={{ x: ["-100%", "200%"] }}
+                        transition={{ duration: 18, repeat: Infinity, ease: "linear", delay: 3 }}
+                        style={{ top: '60%', left: '0%' }}
+                      />
+                    </div>
+
+                    {/* High-quality particle effect (now this I like) */}
+                    <div className="absolute inset-0">
+                      {Array(8).fill(null).map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="absolute rounded-full"
+                          style={{
+                            width: Math.random() * 3 + 1 + 'px',
+                            height: Math.random() * 3 + 1 + 'px',
+                            backgroundColor: i % 2 === 0 ? 'rgba(153, 51, 255, 0.4)' : 'rgba(0, 225, 255, 0.4)',
+                            top: `${Math.random() * 100}%`,
+                            left: `${Math.random() * 100}%`,
+                            boxShadow: `0 0 4px ${i % 2 === 0 ? 'rgba(153, 51, 255, 0.4)' : 'rgba(0, 225, 255, 0.4)'}`
+                          }}
+                          animate={{
+                            opacity: [0.4, 0.8, 0.4],
+                            scale: [1, 1.2, 1],
+                            y: [0, -30, 0]
+                          }}
+                          transition={{
+                            duration: Math.random() * 5 + 5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: Math.random() * 5
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Enhanced IntroLogo with dramatic animations - Use 'standard' mode when animation already seen */}
+                  <div className="relative z-10 flex justify-center items-center">
+                    <EnhancedIntroLogo mode={animationPhase >= 3 ? 'standard' : 'epic'} />
+                  </div>
+                  
                 </div>
 
-                {/* Enhanced IntroLogo with dramatic animations - Use 'standard' mode when animation already seen */}
-                <div className="relative z-10 flex justify-center items-center">
-                  <EnhancedIntroLogo mode={animationPhase >= 3 ? 'standard' : 'epic'} />
-                </div>
-                
-              </div>
+                {/* Main content container using variants */}
+                <motion.div
+                  className="landing-content"
+                  initial={animationDone ? "visible" : "hidden"}
+                  animate="visible"
+                  variants={landingPageVariants}
+                >
 
-              {/* Main content container using variants */}
-              <motion.div
-                className="landing-content"
-                initial={animationDone ? "visible" : "hidden"}
-                animate="visible"
-                variants={landingPageVariants}
-              >
 
-              {/* Enhanced tagline with secondary line */}
-              <motion.div
-                className="mt-8 mb-6"
-                variants={childVariants}
-              >
+                {/* Countdown Timer Component - uses new state */}
+                <motion.div // Keep this motion.div if it was part of the structure, or simplify to a normal div
+                  ref={mainTimerContainerRef} 
+                  className="my-8 md:my-12 w-full max-w-3xl mx-auto"
+                  // Remove variants={childVariants} if this specific div doesn't need it
+                  // or ensure childVariants is correctly defined and used if it should animate
+                >
+
+                  {/* Decryption Timer */}
+                  <DecryptionTimer
+                    targetDate={fallbackDateForTimers} 
+                  />
+
+                </motion.div>
+
+                {/* Enhanced tagline with secondary line */}
+                <motion.div
+                  className="mt-8 mb-6"
+                  variants={childVariants}
+                >
 
                 {/* Tagline with animated gradient */}
                 <motion.div
@@ -472,89 +493,57 @@ export const LandingPage: React.FC = () => {
                   Win big. Trade like a degen. No liquidations.
                 </p>
 
-              </motion.div>
-
-              {/* CTAs - Now using the CtaSection component */}
-              <CtaSection user={user} animationPhase={animationPhase} />
-
-              {/* Countdown Timer Component - uses new state */}
-              <motion.div // Keep this motion.div if it was part of the structure, or simplify to a normal div
-                ref={mainTimerContainerRef} 
-                className="my-8 md:my-12 w-full max-w-3xl mx-auto"
-                // Remove variants={childVariants} if this specific div doesn't need it
-                // or ensure childVariants is correctly defined and used if it should animate
-              >
-
-                {/* Decryption Timer */}
-                <DecryptionTimer
-                  targetDate={fallbackDateForTimers} 
-                />
-
-              </motion.div>
-
-
-
-
-
-
-              {/* Something is causing this to reload every ~5 seconds
-                  TODO: Figure out why and fix it */}
-
-              {/* Enhanced Features section - shown to all users */}
-              {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
-                <motion.div
-                  className="relative w-full mt-12"
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: animationPhase > 0 ? 1 : 0,
-                    transition: {
-                      delay: 0.9,
-                      duration: 1.2,
-                    },
-                  }}
-                >
-
-                  {/* Features section container */}
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Features component is only imported and rendered when the flag is enabled */}
-                    {(() => {
-
-                      // Only import and render when the flag is enabled (we already tested this once above)
-                      if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
-                        
-                        // Dynamic import only when needed
-                        const Features = React.lazy(
-                          () =>
-                            import(
-                              "../../../components/landing/features-list/Features"
-                            ),
-                        );
-                        return (
-
-                          // Features List (Loading fallback)
-                          <React.Suspense fallback={<div>Loading features...</div>}>
-                            <Features />
-                          </React.Suspense>
-                          
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                  
                 </motion.div>
-              )}
-              
 
+                {/* CTAs - Now using the CtaSection component */}
+                <CtaSection user={user} animationPhase={animationPhase} />
 
+                {/* Enhanced Features section - shown to all users */}
+                {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
+                  <motion.div
+                    className="relative w-full mt-12"
+                    initial={{ opacity: 0 }}
+                    animate={{
+                      opacity: animationPhase > 0 ? 1 : 0,
+                      transition: {
+                        delay: 0.9,
+                        duration: 1.2,
+                      },
+                    }}
+                  >
 
+                    {/* Features section container */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                      {/* Features component is only imported and rendered when the flag is enabled */}
+                      {(() => {
 
+                        // Only import and render when the flag is enabled (we already tested this once above)
+                        if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
+                          
+                          // Dynamic import only when needed
+                          const Features = React.lazy(
+                            () =>
+                              import(
+                                "../../../components/landing/features-list/Features"
+                              ),
+                          );
+                          return (
 
-
-
-
-              {/* NYSE-Style Market Ticker Grid - Replaces all previous token displays */}
-              <LazyLoad>
+                            // Features List (Loading fallback)
+                            <React.Suspense fallback={<div>Loading features...</div>}>
+                              <Features />
+                            </React.Suspense>
+                            
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                    
+                  </motion.div>
+                )}
+                
+                {/* NYSE-Style Market Ticker Grid - Replaces all previous token displays */}
                 <motion.div
                   className="w-full mt-8 mb-6"
                   variants={secondaryVariants}
@@ -569,157 +558,166 @@ export const LandingPage: React.FC = () => {
                     />
                   </div>
                 </motion.div>
-              </LazyLoad>
-              
-              {/* Contest sections - shown to all users */}
-              <motion.div
-                variants={secondaryVariants}
-              >
-                {isMaintenanceModeActive ? (
-                  <div className="relative">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-                      <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-                        <h3 className="text-2xl font-bold text-yellow-300 mb-2">⚙️ Maintenance Mode ⚙️</h3>
-                        <p className="text-yellow-200">
-                          {maintenanceMessageToDisplay}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : error ? (
-                  <div className="relative">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
-                        <div className="text-center py-4">
-                          <div className="text-red-400 mb-2">
-                            {error}
-                          </div>
-                          
-                          {/* Debug info (admin only) */}
-                          {isAdmin && (
-                            <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
-                              <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
-                              
-                              {/* Debug info */}
-                              <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
-                               
-                                {/* Last fetch attempt */}
-                                <div>Last Fetch Attempt:
-                                  <span className="text-blue-400">
-                                    {contestDebugInfo.lastFetchAttempt}
-                                  </span>
-                                </div>
-                                
-                                {/* Error details */}
-                                <div>Error Details:</div>
-                                <pre className="text-red-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
-                                  {contestDebugInfo.errorDetails || "No specific error details available"}
-                                </pre>
-
-                                {/* API response */}
-                                <div>API Response:</div>
-                                <pre className="text-gray-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
-                                  {contestDebugInfo.contestApiResponse || "No API response recorded"}
-                                </pre>
-
-                              </div>
-                            </details>
-                          )}
-                          
-                          {/* Retry loading button */}
-                          <button 
-                            onClick={() => retryContestFetch()}
-                            className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                          >
-                            Retry
-                          </button>
-
+                
+                {/* Contest sections - shown to all users */}
+                <motion.div
+                  variants={secondaryVariants}
+                >
+                  {isMaintenanceModeActive ? (
+                    <div className="relative">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                        <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
+                          <h3 className="text-2xl font-bold text-yellow-300 mb-2">⚙️ Maintenance Mode ⚙️</h3>
+                          <p className="text-yellow-200">
+                            {maintenanceMessageToDisplay}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                      
-                      {/* Add significant bottom margin to prevent footer overlap */}
-                      <div className="mb-32">
-                        {/* Use the shared ContestSection component for active contests */}
-                        {activeContests.length > 0 && (
+                  ) : error ? (
+                    <div className="relative">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
+                          <div className="text-center py-4">
+                            <div className="text-red-400 mb-2">
+                              {error}
+                            </div>
+                            
+                            {/* Debug info (admin only) */}
+                            {isAdmin && (
+                              <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
+                                <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
+                                
+                                {/* Debug info */}
+                                <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
+                                 
+                                  {/* Last fetch attempt */}
+                                  <div>Last Fetch Attempt:
+                                    <span className="text-blue-400">
+                                      {contestDebugInfo.lastFetchAttempt}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Error details */}
+                                  <div>Error Details:</div>
+                                  <pre className="text-red-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
+                                    {contestDebugInfo.errorDetails || "No specific error details available"}
+                                  </pre>
+
+                                  {/* API response */}
+                                  <div>API Response:</div>
+                                  <pre className="text-gray-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
+                                    {contestDebugInfo.contestApiResponse || "No API response recorded"}
+                                  </pre>
+
+                                </div>
+                              </details>
+                            )}
+                            
+                            {/* Retry loading button */}
+                            <button 
+                              onClick={() => retryContestFetch()}
+                              className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+                            >
+                              Retry
+                            </button>
+
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                        
+                        {/* Add significant bottom margin to prevent footer overlap */}
+                        <div className="mb-32">
+                          {/* Use the shared ContestSection component for active contests */}
+                          {activeContests.length > 0 && (
+                            <ContestSection
+                              title="Live Duels"
+                              type="active"
+                              contests={activeContests}
+                              loading={loading}
+                            />
+                          )}
+
+                          {/* Use the shared ContestSection component for upcoming contests */}
                           <ContestSection
-                            title="Live Duels"
-                            type="active"
-                            contests={activeContests}
+                            title="Starting Soon"
+                            type="pending"
+                            contests={openContests}
                             loading={loading}
                           />
-                        )}
 
-                        {/* Use the shared ContestSection component for upcoming contests */}
-                        <ContestSection
-                          title="Starting Soon"
-                          type="pending"
-                          contests={openContests}
-                          loading={loading}
-                        />
+                          {/* No duels available */}
+                          {activeContests.length === 0 &&
+                            openContests.length === 0 &&
+                            !loading && (
+                              <div className="text-center py-16">
+                                
+                                {/* No duels available title */}
+                                <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
+                                  No Duels Available
+                                </h2>
+                                
+                                {/* Check back soon message */}
+                                <p className="text-gray-400 mb-8">
+                                  Check back soon for new Duels.
+                                </p>
 
-                        {/* No duels available */}
-                        {activeContests.length === 0 &&
-                          openContests.length === 0 &&
-                          !loading && (
-                            <div className="text-center py-16">
-                              
-                              {/* No duels available title */}
-                              <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
-                                No Duels Available
-                              </h2>
-                              
-                              {/* Check back soon message */}
-                              <p className="text-gray-400 mb-8">
-                                Check back soon for new Duels.
-                              </p>
+                                {/* Create a Duel button */}
+                                <Link
+                                  to="/contests/create"
+                                  className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
+                                >
+                                  Create a Duel
+                                </Link>
 
-                              {/* Create a Duel button */}
-                              <Link
-                                to="/contests/create"
-                                className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
-                              >
-                                Create a Duel
-                              </Link>
+                              </div>
+                            )}
+                        </div>
 
-                            </div>
-                          )}
                       </div>
-
                     </div>
-                  </div>
-                )}
-              </motion.div>
-              
-              </motion.div> 
-              {/* Close the main landing-content container with variants */}
+                  )}
+                </motion.div>
+                
+                </motion.div> 
+                {/* Close the main landing-content container with variants */}
+
+              </div>
 
             </div>
 
-
-            {/* Test moving the non-header content HERE */}
-
-
           </div>
 
-        </div>
+        </section>
 
-      </section>
+        {/* Mini Timer - Appears when main timer is not visible */}
+        {!mainTimerIsVisible && (
+          <MiniDecryptionTimer
+            targetDate={fallbackDateForTimers}
+            onClick={() => {
+              mainTimerContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+          />
+        )}
+      </div>
 
-      {/* Mini Timer - Appears when main timer is not visible */}
-      {!mainTimerIsVisible && (
-        <MiniDecryptionTimer
-          targetDate={fallbackDateForTimers}
-          onClick={() => {
-            mainTimerContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }}
-        />
+      {/* Floating Action Buttons - Render conditionally */}
+      {websocketContractRevealed && websocketContractAddress && (
+        <>
+          <FloatingJupButton tokenAddress={websocketContractAddress} />
+          <FloatingPumpButton tokenAddress={websocketContractAddress} />
+          <FloatingDexscreenerButton tokenAddress={websocketContractAddress} />
+        </>
       )}
-      
-    </div>
+
+      {/* Footer for the landing page */}
+      <Footer />
+    </>
   );
 };
+
+export default LandingPage;

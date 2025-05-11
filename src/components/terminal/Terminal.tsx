@@ -356,33 +356,63 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const getContainerClasses = () => {
     switch(size) {
       case 'contracted':
-        return 'max-w-md'; // Small width (around 448px)
+        return 'max-w-md'; // Keep mobile size: 448px
       case 'middle':
-        return 'max-w-4xl'; // Medium width (around 896px)
+        return 'max-w-4xl'; // Keep mobile size: 896px
       case 'large':
-        return 'max-w-6xl'; // Large width (around 1152px)
+        return isDesktopView ? 'max-w-6xl xl:max-w-7xl' : 'max-w-6xl'; // Desktop: wider (1280px), Mobile: 1152px
       default:
         return 'max-w-4xl';
     }
   };
   
+  // State to track if we're on desktop
+  const [isDesktopView, setIsDesktopView] = useState(() => window.innerWidth >= 1280);
+
   // Make sure sizeState updates when prop changes
   useEffect(() => {
     setSizeState(size);
   }, [size]);
+
+  // Add resize listener for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktopView(window.innerWidth >= 1280);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
-  // Toggle through terminal sizes
+  // Toggle through terminal sizes with desktop-specific behavior
   const cycleSize = () => {
-    switch(sizeState) {
-      case 'large':
-        setSizeState('middle');
-        break;
-      case 'middle':
-        setSizeState('contracted');
-        break;
-      case 'contracted':
-        setSizeState('large');
-        break;
+    // On desktop, we start with 'large' and toggle to 'middle' and 'contracted'
+    // as this gives a better experience with larger screens
+    if (isDesktopView) {
+      switch(sizeState) {
+        case 'large':
+          setSizeState('middle');
+          break;
+        case 'middle':
+          setSizeState('contracted');
+          break;
+        case 'contracted':
+          setSizeState('large');
+          break;
+      }
+    } else {
+      // On mobile/smaller screens, we use the original sequence
+      switch(sizeState) {
+        case 'large':
+          setSizeState('middle');
+          break;
+        case 'middle':
+          setSizeState('contracted');
+          break;
+        case 'contracted':
+          setSizeState('large');
+          break;
+      }
     }
   };
 
@@ -507,10 +537,10 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
       
       {/* Terminal Container */}
       {!terminalMinimized && (
-        <motion.div 
+        <motion.div
           ref={terminalRef}
           key="terminal"
-          className={`bg-darkGrey-dark/80 border ${easterEggActivated ? 'border-green-400/60' : 'border-mauve/30'} font-mono text-sm relative p-4 rounded-md max-w-full w-full`}
+          className={`bg-darkGrey-dark/80 border ${easterEggActivated ? 'border-green-400/60' : 'border-mauve/30'} font-mono text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} relative p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full w-full`}
           style={{ 
             perspective: "1000px",
             transformStyle: "preserve-3d",
@@ -817,18 +847,15 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
           >
-            <div className="bg-black/90 backdrop-blur-md px-3 py-2 rounded-lg border border-purple-500/30 shadow-lg">
+            <div className="bg-black/80 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-lg border border-purple-500/20">
               <div className="flex items-center gap-2">
                 <div className={`h-2 w-2 rounded-full ${hasUnreadMessages ? (easterEggActivated ? 'bg-green-400' : 'bg-purple-400') : 'bg-gray-400'}`}></div>
-                <div className="text-xs text-white font-medium">
-                  {hasUnreadMessages ? (easterEggActivated ? "Didi wants to talk to you..." : "New messages from Didi") : "Talk to Didi"}
+                <div className="text-xs text-white font-medium whitespace-nowrap">
+                  {hasUnreadMessages ? 
+                    (easterEggActivated ? "Didi Wants to Talk" : "New Msgs From Didi") : 
+                    "Talk to Didi"}
                 </div>
               </div>
-              {hasUnreadMessages && (
-                <div className="text-[10px] text-gray-400 mt-1 max-w-[160px]">
-                  {easterEggActivated ? "Something important to share..." : "Open terminal to view messages"}
-                </div>
-              )}
             </div>
           </motion.div>
         </motion.div>

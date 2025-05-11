@@ -158,8 +158,8 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
 
       {/* Content container */}
       <div
-        className={`relative transition-[height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          finalIsCompact ? 'h-10' : 'h-16 sm:h-20'
+        className={`relative transition-[height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${       
+          finalIsCompact ? 'h-10' : 'h-12 sm:h-12' // Adjusted non-compact height
         }`}
       >
         {/* Core UnifiedTicker component */}

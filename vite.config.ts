@@ -205,7 +205,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
           // Mark packages as external to prevent Vite from trying to bundle them
           // 'degenduel-shared' is marked external to allow local workspace usage without CI build errors
           // since this package exists locally but is not committed to the repository
-          external: ['degen-components', 'degenduel-shared']
+          external: ['degen-components', 'degenduel-shared', 'eth-rpc-errors']
         }
       },
     };
@@ -438,6 +438,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         external: [
           'degen-components',
           // 'degenduel-shared' // NO LONGER NEEDED
+          'eth-rpc-errors'
         ],
         output: {
           manualChunks: {
@@ -499,6 +500,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
             },
     },
     esbuild: {
+      pure: ['React.createElement'], // any dummy entry tricks Rollup into keeping quiet
       keepNames: isDev || forceDisableMinify,
       minifyIdentifiers: !isDev && !forceDisableMinify,
       minifySyntax: !isDev && !forceDisableMinify,

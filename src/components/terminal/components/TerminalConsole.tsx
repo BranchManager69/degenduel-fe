@@ -272,10 +272,14 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
       }}
       className="relative rounded-t-md"
     >
-      <div 
-        ref={consoleOutputRef} 
-        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full 
-                   ${size === 'contracted' ? 'h-40' : size === 'middle' ? 'h-60' : 'h-80'}` }
+      <div
+        ref={consoleOutputRef}
+        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full
+                   ${size === 'contracted'
+                     ? 'h-40'
+                     : size === 'middle'
+                     ? 'h-60'
+                     : 'h-80 xl:h-96'}` }
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
