@@ -15,7 +15,6 @@
 // React
 //import { useEffect, useState } from "react";
 import React, { createContext, lazy, Suspense, useContext, useMemo } from "react";
-import { createPortal } from 'react-dom';
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
 // Auth providers
@@ -48,7 +47,6 @@ const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
 };
 
 // Stuff
-import { AnimatePresence } from 'framer-motion';
 import { AchievementNotification } from "./components/achievements/AchievementNotification";
 import { BackgroundEffects } from "./components/animated-background/BackgroundEffects";
 import { BackgroundEffectsBoundary } from "./components/animated-background/BackgroundEffectsBoundary";
@@ -67,7 +65,6 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 import { Terminal } from "./components/terminal/Terminal";
-import { useScrollHeader } from './hooks/ui/useScrollHeader';
 import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
 import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
 
@@ -326,7 +323,7 @@ const AppContent: React.FC = () => {
   const { error: systemSettingsError } = useSystemSettings(); // Renamed for clarity
   //const [showNotificationErrorBanner, setShowNotificationErrorBanner] = useState(false);
   //const [showSystemSettingsErrorBanner, setShowSystemSettingsErrorBanner] = useState(false);
-  const { isCompact: isHeaderCompact } = useScrollHeader(50); // To dynamically position banners
+  // const { isCompact: isHeaderCompact } = useScrollHeader(50); // To dynamically position banners
 
   // Effect for notification errors
   /*
@@ -345,15 +342,15 @@ const AppContent: React.FC = () => {
   */
 
   // Calculate top position for banners dynamically
-  const headerBaseHeight = 16; // h-16 (4rem)
-  const tickerBaseHeight = 12; // h-12 (3rem)
-  const compactHeaderHeight = 14; // sm:h-14 (3.5rem)
-  const compactTickerHeight = 10; // sm:h-10 (2.5rem)
+  //const headerBaseHeight = 16; // h-16 (4rem)
+  //const tickerBaseHeight = 12; // h-12 (3rem)
+  //const compactHeaderHeight = 14; // sm:h-14 (3.5rem)
+  //const compactTickerHeight = 10; // sm:h-10 (2.5rem)
 
   // Calculate the total offset for banners
-  const currentHeaderHeight = isHeaderCompact ? compactHeaderHeight : headerBaseHeight;
-  const currentTickerHeight = isHeaderCompact ? compactTickerHeight : tickerBaseHeight;
-  const totalOffset = currentHeaderHeight + currentTickerHeight; // This is in Tailwind spacing units (1 unit = 0.25rem)
+  //const currentHeaderHeight = isHeaderCompact ? compactHeaderHeight : headerBaseHeight;
+  //const currentTickerHeight = isHeaderCompact ? compactTickerHeight : tickerBaseHeight;
+  //const totalOffset = currentHeaderHeight + currentTickerHeight; // This is in Tailwind spacing units (1 unit = 0.25rem)
   
   // Helper to get error message safely
   /*
@@ -550,7 +547,8 @@ const AppContent: React.FC = () => {
       {/* Achievement Notification (?) */}
       <AchievementNotification />
 
-      {/* Connection Error Banners Container */}
+      {/* Connection error banners aligned to the top of the screen */}
+      {/*
       {createPortal(
         <div 
           className={`fixed left-1/2 -translate-x-1/2 w-auto max-w-xs sm:max-w-sm md:max-w-md z-[60] pointer-events-none space-y-2`} 
@@ -558,12 +556,8 @@ const AppContent: React.FC = () => {
             { top: `${totalOffset / 4 + 1}rem`}
             }>
         
-          {/* Connection error banners aligned to the top of the screen */}
           <AnimatePresence>
-            
-            {/* Notification Error Banner */}
-           
-            {/*
+                       
             {notificationsError && showNotificationErrorBanner && (
               <motion.div
                 key="app-notification-error-banner"
@@ -593,11 +587,8 @@ const AppContent: React.FC = () => {
                 </button>
               </motion.div>
             )}
-            */}
 
-            {/* System Settings Error Banner */}
 
-            {/*
             {systemSettingsError && showSystemSettingsErrorBanner && (
               <motion.div
                 key="app-system-settings-error-banner"
@@ -631,7 +622,6 @@ const AppContent: React.FC = () => {
                 </button>
               </motion.div>
             )}
-            */}
 
           </AnimatePresence>
           
@@ -640,6 +630,7 @@ const AppContent: React.FC = () => {
         // Render the banners in the document body
         document.body
       )}
+      */}
 
     </div>
   );
