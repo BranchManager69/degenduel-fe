@@ -21,6 +21,7 @@ import { AuthDebugPanel } from "../../../components/debug";
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
 // import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle"; // No longer using HeroTitle
+// Import new MarketTickerGrid component (replacing the three token display components)
 // import IntroLogo from "../../../components/logo/IntroLogo"; // Original logo (no longer used)
 import EnhancedIntroLogo from "../../../components/logo/EnhancedIntroLogo"; // Enhanced, more dramatic logo
 import { FEATURE_FLAGS } from "../../../config/config";
@@ -47,11 +48,15 @@ import { PaginatedResponse } from '../../../types';
 import { useStore } from "../../../store/useStore"; // Ensure useStore is imported
 
 // Config
-// Import new MarketTickerGrid component (replacing the three token display components)
+import { config } from "../../../config/config"; // Config
+
+// Floating Buttons
 import { FloatingDexscreenerButton } from '../../../components/layout/FloatingDexscreenerButton'; // Added import
 import { FloatingJupButton } from '../../../components/layout/FloatingJupButton'; // Added import
 import { FloatingPumpButton } from '../../../components/layout/FloatingPumpButton'; // Added import
-import { Footer } from "../../../components/layout/Footer"; // Corrected Footer import
+
+// Contract Address
+const FALLBACK_CA_FOR_BUTTONS = config.CONTRACT_ADDRESS.REAL;
 
 // Directly import the Features component
 import Features from "../../../components/landing/features-list/Features";
@@ -65,6 +70,7 @@ export const LandingPage: React.FC = () => {
   const [animationPhase, setAnimationPhase] = useState(0);
   const [debugMode, setDebugMode] = useState(false);
   const [animationDone, setAnimationDone] = useState(false);
+  const forceShowFabs = true; // Changed from useState to a const, always true
   
   const isMounted = useRef(true);
 
@@ -709,16 +715,13 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Floating Action Buttons - Render conditionally */}
-      {websocketContractRevealed && websocketContractAddress && (
+      {(forceShowFabs || (websocketContractRevealed && websocketContractAddress)) && (
         <>
-          <FloatingJupButton tokenAddress={websocketContractAddress} />
-          <FloatingPumpButton tokenAddress={websocketContractAddress} />
-          <FloatingDexscreenerButton tokenAddress={websocketContractAddress} />
+          <FloatingJupButton tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS} />
+          <FloatingPumpButton tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS} />
+          <FloatingDexscreenerButton tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS} />
         </>
       )}
-
-      {/* Footer for the landing page */}
-      <Footer />
     </>
   );
 };

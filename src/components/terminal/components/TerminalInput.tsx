@@ -123,7 +123,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                   repeatType: "loop"
                 }}
               >
-                Ask Didi_
+                ___________________________
               </motion.div>
             </div>
           )}
