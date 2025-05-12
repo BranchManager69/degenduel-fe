@@ -34,6 +34,7 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
     isLoading, 
     linkTwitter,
     isTwitterLinked,
+    logout,
   } = useMigratedAuth();
   
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -64,10 +65,27 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
         toast.error(errorMsg);
       }
     } catch (error) {
-      const errorMsg = `An error occurred during Twitter ${linkMode ? 'linking' : 'login'}`;
-      authDebug('TwitterBtn', errorMsg, { error });
-      toast.error(errorMsg);
-      console.error("[Twitter] Auth error:", error);
+      const specificErrorMessage = "Must be authenticated to link Twitter account";
+      let displayMessage = (error instanceof Error && error.message) 
+                             ? error.message 
+                             : `An error occurred during Twitter ${linkMode ? 'linking' : 'login'}`;
+      
+      authDebug('TwitterBtn', 'Error in handleTwitterAuth', { errorMessage: displayMessage, originalError: error });
+
+      if (error instanceof Error && error.message === specificErrorMessage) {
+        toast.error("Your session is not valid for linking. You'll be logged out.");
+        // Attempt to logout to clear the invalid session
+        try {
+          await logout(); // Call the logout function
+          toast.success("You have been logged out. Please sign in again to link your account.");
+        } catch (logoutError) {
+          authDebug('TwitterBtn', 'Error during automatic logout after link failure', { logoutError });
+          toast.error("Attempted to clear session but failed. Please try logging out manually.");
+        }
+      } else {
+        toast.error(displayMessage);
+      }
+      console.error("[Twitter] Auth error:", error); // This will still log the full error object
     } finally {
       if (isMounted.current) {
          setIsProcessing(false);
