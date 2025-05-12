@@ -259,8 +259,8 @@ const AppProvidersAndContent: React.FC = () => {
 
   const privyConfig: PrivyClientConfig = useMemo(() => ({
     loginMethods: [
-      "wallet", 
-  //    "email", 
+  //    "wallet", 
+      "email", 
   //    "sms", 
   //    "google", 
   //    "twitter", 
@@ -368,7 +368,7 @@ const AppContent: React.FC = () => {
   */
 
   return (
-    <div className="min-h-screen w-screen flex flex-col">
+    <div className="min-h-screen w-full flex flex-col">
       {/* Toast Listener */}
       <ToastListener />
       

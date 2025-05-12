@@ -4,6 +4,29 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: clip; /* More subtle than hidden, prevents scroll container creation if not needed */
+}
+
+body {
+  width: 100%;
+  min-height: 100vh; /* Ensure body takes at least full viewport height */
+  margin: 0;
+  padding: 0;
+  /* background-color: #f0f0f0; /* Optional: For debugging body extent */
+}
+
+#root {
+  width: 100%;
+  height: 100%; /* Make root fill the body */
+  margin: 0;
+  padding: 0;
+}
+
 @layer utilities {
   .animation-delay-100 {
     animation-delay: 100ms;
