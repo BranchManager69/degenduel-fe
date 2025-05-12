@@ -209,17 +209,17 @@ export const App: React.FC = () => {
   
   /* PRELAUNCH BYPASS */
   // Log the expected bypass key for debugging
-  console.log('[App.tsx] Expected PRELAUNCH_BYPASS_KEY:', PRELAUNCH_BYPASS_KEY);
+  // console.log('[App.tsx] Expected PRELAUNCH_BYPASS_KEY:', PRELAUNCH_BYPASS_KEY);
   // Log the received bypass key from URL for debugging
-  console.log('[App.tsx] Received bypass from URL:', searchParams.get('bypass'));
+  // console.log('[App.tsx] Received bypass from URL:', searchParams.get('bypass'));
 
   const hasAdminBypass = searchParams.get('bypass') === PRELAUNCH_BYPASS_KEY;
   const showComingSoon = PRELAUNCH_MODE && !hasAdminBypass;
 
   // Debug logging
-  if (PRELAUNCH_MODE) {
-    console.log(`[App.tsx] Prelaunch Mode Active. Expected Key: ${PRELAUNCH_BYPASS_KEY}, Received Key: ${searchParams.get('bypass')}, Bypass active: ${hasAdminBypass}. Showing Coming Soon: ${showComingSoon}`);
-  }
+  // if (PRELAUNCH_MODE) {
+  //   console.log(`[App.tsx] Prelaunch Mode Active. Expected Key: ${PRELAUNCH_BYPASS_KEY}, Received Key: ${searchParams.get('bypass')}, Bypass active: ${hasAdminBypass}. Showing Coming Soon: ${showComingSoon}`);
+  // }
 
   // Return the app or Coming Soon page based on the bypass status
   return (
@@ -368,7 +368,7 @@ const AppContent: React.FC = () => {
   */
 
   return (
-    <div className="min-h-screen w-full flex flex-col">
+    <div className="min-h-screen w-full flex flex-col relative">
       {/* Toast Listener */}
       <ToastListener />
       

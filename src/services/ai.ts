@@ -31,7 +31,7 @@ import { authService } from './index';
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'; // Added 'tool' role
   content: string | null; // Allow content to be null for tool calls
-  tool_calls?: { 
+  tool_calls?: {
     id: string;
     type: 'function';
     function: { name: string; arguments: string; };
@@ -50,7 +50,7 @@ export interface AIBaseOptions {
 export interface ChatOptions extends AIBaseOptions {
   conversationId?: string; // For client-side caching
   context?: 'default' | 'trading' | 'terminal'; // DegenDuel specific context for backend prompt engineering
-  
+
   // Standard OpenAI Chat Completion parameters (subset for frontend control)
   model?: string; // e.g., 'gpt-4', 'gpt-3.5-turbo' - backend might override
   temperature?: number | null; // 0.0 to 2.0
@@ -63,7 +63,7 @@ export interface ChatOptions extends AIBaseOptions {
   seed?: number | null; // For reproducibility
   tools?: any[]; // For function calling / tool use
   tool_choice?: string | object; // Control tool usage
-  
+
   // Streaming options (handled by client logic)
   streaming?: boolean; // If true, use streaming endpoint
   onChunk?: (chunk: string) => void; // Callback for streaming chunks
@@ -72,7 +72,7 @@ export interface ChatOptions extends AIBaseOptions {
 export interface ChatResponse {
   content: string | null; // Content can be null if function/tool is called
   functionCalled?: string; // Deprecated - check tool_calls instead
-  tool_calls?: { 
+  tool_calls?: {
     id: string;
     type: 'function';
     function: { name: string; arguments: string; };
@@ -147,7 +147,7 @@ export enum AIErrorType {
 export class AIServiceError extends Error {
   type: AIErrorType;
   statusCode?: number;
-  
+
   constructor(message: string, type: AIErrorType = AIErrorType.UNKNOWN, statusCode?: number) {
     super(message);
     this.name = 'AIServiceError';
@@ -168,17 +168,32 @@ export class AIServiceError extends Error {
  *   Uses REST API for all functionality
  */
 class AIService {
-  private readonly API_AI_SVC_REST_URL = `${API_URL_BASE}/api/ai`;
-  
+  private readonly API_AI_SVC_REST_URL: string;
+
   // Cache for conversations to enable history tracking without repeated server calls
   private conversationCache = new Map<string, AIMessage[]>();
-  
+
   constructor() {
-    // No initialization needed - we use REST API exclusively
+    // Correctly set the base path for AI services
+    let base = API_URL_BASE;
+    // Remove trailing slash from base if present, for consistency
+    if (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
+
+    // Now base is e.g. "https://host.com" or "https://host.com/api"
+
+    if (base.endsWith('/api')) {
+      // base is "https://host.com/api", so append "/ai"
+      this.API_AI_SVC_REST_URL = `${base}/ai`;
+    } else {
+      // base is "https://host.com", so append "/api/ai"
+      this.API_AI_SVC_REST_URL = `${base}/api/ai`;
+    }
   }
-  
+
   // No WebSocket methods needed - using REST API only
-  
+
   /**
    * Generate a chat completion using REST API
    * 
@@ -191,15 +206,15 @@ class AIService {
       if (options.debug) {
         console.log('AI Chat Request:', { messages, options });
       }
-      
+
       // Determine if we should use streaming
       const useStreaming = !!options.streaming;
-      
+
       // Build conversation history if we have a conversation ID
       let conversationHistory = [...messages];
       if (options.conversationId && this.conversationCache.has(options.conversationId)) {
         const cachedMessages = this.conversationCache.get(options.conversationId) || [];
-        
+
         // Only include the latest user message from the input
         const latestUserMessage = messages[messages.length - 1];
         if (latestUserMessage && latestUserMessage.role === 'user') {
@@ -208,10 +223,10 @@ class AIService {
           conversationHistory = cachedMessages;
         }
       }
-      
+
       // Filter out system messages as they're handled by the backend
       const filteredMessages = conversationHistory.filter(msg => msg.role !== 'system');
-      
+
       // Use appropriate REST API endpoint based on streaming preference
       if (useStreaming) {
         return this.chatStreaming(filteredMessages, options);
@@ -222,7 +237,7 @@ class AIService {
       if (error instanceof AIServiceError) {
         throw error;
       }
-      
+
       console.error('AI Chat Error:', error);
       throw new AIServiceError(
         'Failed to get AI response. Please try again later.',
@@ -230,7 +245,7 @@ class AIService {
       );
     }
   }
-  
+
   // Uses the SHITTY, WOEFULLY OUTDATED, and ENTIRELY WORTHLESS OpenAI Chat Completions API (new standard: OpenAI Responses API. See https://platform.openai.com/docs/api-reference/responses)
   /**
    * Generate a chat completion using the REST API
@@ -241,17 +256,20 @@ class AIService {
    */
   private async chatRest(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
     try {
-      // Get auth token for the request
+      // Get auth token for the request (still useful for logging/potential future use, but don't block on it)
+      console.log('[AI Service REST] About to attempt token retrieval. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
       const token = await authService.getToken();
-      
+      console.log('[AI Service REST] Token retrieved:', token ? `Exists (len: ${token.length})` : 'NULL or Undefined');
+
       // Create the DegenDuel AI Service API URL
       const responseUrl = `${this.API_AI_SVC_REST_URL}/response`;
-      
+
       const response = await fetch(responseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          // Only include Auth header if token exists
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify({
           messages,
@@ -259,17 +277,17 @@ class AIService {
           context: options.context || 'terminal'
         }),
       });
-      
+
       if (!response.ok) {
         throw await this.handleErrorResponse(response);
       }
-      
+
       const data = await response.json();
-      
+
       if (options.debug) {
         console.log('AI Chat Response:', data);
       }
-      
+
       // Update conversation cache
       if (data.conversationId) {
         // Add the assistant response to the conversation history
@@ -279,7 +297,7 @@ class AIService {
         ];
         this.conversationCache.set(data.conversationId, updatedHistory);
       }
-      
+
       return {
         content: data.content || '',
         functionCalled: data.functionCalled,
@@ -289,7 +307,7 @@ class AIService {
       if (error instanceof AIServiceError) {
         throw error;
       }
-      
+
       console.error('AI REST API Error:', error);
       throw new AIServiceError(
         'Failed to get AI response via REST API.',
@@ -297,7 +315,7 @@ class AIService {
       );
     }
   }
-  
+
   // Uses the LATEST and GREATEST OpenAI Responses API
   //   @see https://platform.openai.com/docs/api-reference/responses
   /**
@@ -308,94 +326,148 @@ class AIService {
    * @returns Promise with the AI response
    */
   private async chatStreaming(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
+    let responseController: AbortController | undefined;
     try {
-      // Get auth token for the request
+      // Get auth token for the request (still useful for logging/potential future use, but don't block on it)
+      console.log('[AI Service Stream] About to attempt token retrieval. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
       const token = await authService.getToken();
-      
-      // Create the DegenDuel AI Service API URL
+      console.log('[AI Service Stream] Token retrieved:', token ? `Exists (len: ${token.length})` : 'NULL or Undefined');
+
       const streamUrl = `${this.API_AI_SVC_REST_URL}/stream`;
-      
+      responseController = new AbortController(); // Create AbortController
+
       const response = await fetch(streamUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          // Only include Auth header if token exists
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify({
           messages,
           conversationId: options.conversationId,
           context: options.context || 'terminal'
         }),
+        signal: responseController.signal, // Pass signal to fetch
       });
-      
+
       if (!response.ok) {
+        // Throw error based on response, potentially parsing JSON error
         throw await this.handleErrorResponse(response);
       }
-      
-      // Process the streaming response
-      const reader = response.body!.getReader();
+
+      if (!response.body) {
+        throw new AIServiceError('Response body is missing in streaming response.', AIErrorType.SERVER);
+      }
+
+      // Process the streaming response using SSE logic
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
       let responseConversationId = options.conversationId || '';
-      
-      // Read and process the stream
+      let leftover = ''; // Buffer for partial lines
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        
-        // Process the chunk
-        try {
-          // Try to parse as JSON - the stream might have complete JSON chunks or partial text
-          const jsonChunk = JSON.parse(chunk);
-          
-          if (jsonChunk.conversationId) {
-            responseConversationId = jsonChunk.conversationId;
-          }
-          
-          if (jsonChunk.content) {
-            fullContent += jsonChunk.content;
-            if (options.onChunk) {
-              options.onChunk(jsonChunk.content);
+        if (done) {
+          // Stream finished without an explicit isComplete=true event from the server
+          // This might be normal or indicate an unexpected closure.
+          console.debug('[AI Service Stream] SSE stream ended without isComplete=true event.');
+          break;
+        }
+
+        // Prepend leftover data from the previous chunk
+        const chunkText = leftover + decoder.decode(value, { stream: true });
+        const lines = chunkText.split(/\\r?\\n/); // Split into lines
+
+        // The last line might be incomplete, keep it for the next chunk
+        leftover = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const jsonData = line.substring(5).trim(); // Remove "data:" prefix and trim whitespace
+            if (jsonData) {
+              try {
+                const parsedData = JSON.parse(jsonData);
+
+                if (parsedData.error) {
+                  // Server sent an explicit error object
+                  console.error('[AI Service Stream] Received error from server:', parsedData.error);
+                  reader.cancel(); // Stop reading the stream
+                  throw new AIServiceError(parsedData.error, AIErrorType.SERVER); // Reject the promise
+                }
+
+                if (parsedData.conversationId) {
+                  responseConversationId = parsedData.conversationId;
+                }
+
+                if (parsedData.content) {
+                  fullContent += parsedData.content;
+                  if (options.onChunk) {
+                    options.onChunk(parsedData.content); // Pass only content string
+                  }
+                }
+
+                if (parsedData.isComplete === true) {
+                  console.debug('[AI Service Stream] SSE stream processing complete.');
+                  // Don't break here immediately, allow reader.read() to return { done: true }
+                  // reader.cancel(); // Optionally cancel reading explicitly
+                  // The loop will terminate naturally when done is true.
+                  // Resolve will happen outside the loop.
+                }
+
+              } catch (e) {
+                console.error('[AI Service Stream] Failed to parse SSE data JSON:', jsonData, e);
+                // Decide how to handle potentially malformed data from the server
+                // Option 1: Ignore the chunk
+                // Option 2: Treat as raw text (less likely for SSE)
+                // Option 3: Throw an error
+                // Current: Ignoring
+              }
             }
-          }
-        } catch (e) {
-          // Not valid JSON, treat as raw content
-          fullContent += chunk;
-          if (options.onChunk) {
-            options.onChunk(chunk);
+          } else if (line.trim()) {
+            // Handle non-empty lines that don't start with "data:" (e.g., comments, other event types)
+            console.debug(`[AI Service Stream] Received non-data SSE line: ${line}`);
           }
         }
       }
-      
-      // Update conversation cache
+
+      // Update conversation cache only after successful completion
       if (responseConversationId) {
-        // Add the assistant response to the conversation history
         const updatedHistory = [
           ...messages,
           { role: 'assistant' as const, content: fullContent }
         ];
         this.conversationCache.set(responseConversationId, updatedHistory);
       }
-      
+
       return {
         content: fullContent,
         conversationId: responseConversationId
       };
     } catch (error) {
+      // Ensure the fetch request is aborted if an error occurs
+      if (responseController && !responseController.signal.aborted) {
+        responseController.abort();
+      }
+
       if (error instanceof AIServiceError) {
         throw error;
       }
-      
+
       console.error('AI Streaming Error:', error);
+      // Check if it's an AbortError (e.g., from reader.cancel() or controller.abort())
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new AIServiceError('Streaming request aborted.', AIErrorType.UNKNOWN);
+      }
+
       throw new AIServiceError(
         'Failed to get streaming AI response.',
-        AIErrorType.NETWORK
+        AIErrorType.NETWORK // Or map based on error type if possible
       );
     }
   }
-    
+
   /**
    * Get token data directly without using natural language
    * 
@@ -405,17 +477,17 @@ class AIService {
   async getTokenData(tokenAddressOrSymbol: string): Promise<TokenData> {
     try {
       const response = await fetch(`${this.API_AI_SVC_REST_URL}/data/${tokenAddressOrSymbol}`);
-      
+
       if (!response.ok) {
         throw await this.handleErrorResponse(response);
       }
-      
+
       return await response.json();
     } catch (error) {
       if (error instanceof AIServiceError) {
         throw error;
       }
-      
+
       console.error('Token Data Error:', error);
       throw new AIServiceError(
         'Failed to get token data',
@@ -423,7 +495,7 @@ class AIService {
       );
     }
   }
-  
+
   /**
    * Get the WebSocket connection status
    * 
@@ -433,7 +505,7 @@ class AIService {
   isWebSocketConnected(): boolean {
     return false;
   }
-  
+
   /**
    * Clear conversation history
    * 
@@ -446,7 +518,7 @@ class AIService {
       this.conversationCache.clear();
     }
   }
-  
+
   /**
    * Process API error responses
    * 
@@ -457,7 +529,7 @@ class AIService {
     const statusCode = response.status;
     let errorMessage = 'AI service error';
     let errorType = AIErrorType.UNKNOWN;
-    
+
     try {
       const errorData = await response.json();
       errorMessage = errorData.error || errorData.message || errorMessage;
@@ -465,10 +537,10 @@ class AIService {
     } catch (e) {
       // If we can't parse the error as JSON, use default error message
     }
-    
+
     return new AIServiceError(errorMessage, errorType, statusCode);
   }
-  
+
   /**
    * Map status codes to error types
    * 
@@ -487,7 +559,7 @@ class AIService {
         case 'network': return AIErrorType.NETWORK;
       }
     }
-    
+
     // Map status code to error type
     switch (status) {
       case 400: return AIErrorType.INVALID_REQUEST;
