@@ -26,7 +26,6 @@ import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 // NEW: @solana/kit related imports
 import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use SolanaRpcApi from @solana/rpc
 import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explicit typing
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'; // Added for explicit wallet list
 
 // Wallet providers
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
@@ -172,12 +171,12 @@ export const useDegenDuelRpc = () => {
 const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
   
-  // Explicitly list the wallet adapters you want to support.
+  // Use empty wallet list to rely on Standard Wallet protocol for auto-detection
+  // Phantom and Solflare now support Standard Wallet, so no need for explicit adapters
   const wallets: Adapter[] = useMemo(
     () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
       // Add other non-standard or specifically configured wallets you want to support here
+      // Phantom and Solflare will be auto-detected via Standard Wallet protocol
     ],
     []
   );
