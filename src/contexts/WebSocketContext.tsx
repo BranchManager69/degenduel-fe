@@ -347,11 +347,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       const message = JSON.parse(event.data) as WebSocketMessage;
       
-      // Process system messages
+      // Process proper pong responses from backend
       if ((message.type === DDExtendedMessageType.SYSTEM && message.action === 'pong') || 
           message.type === DDExtendedMessageType.PONG) {
-        // Reset heartbeat counter
+        // Reset heartbeat counter - proper pong received
         missedHeartbeatsRef.current = 0;
+        authDebug('WebSocketContext', 'Proper pong response received');
         return;
       } else if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && message.message?.includes('authenticated')) {
         // Server acknowledges authentication

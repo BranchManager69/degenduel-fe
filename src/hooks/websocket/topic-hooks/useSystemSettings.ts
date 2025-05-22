@@ -79,6 +79,11 @@ export function useSystemSettings(settingsToWatch?: string[]) { // settingsToWat
   const ws = useWebSocket(); // Use the context hook (takes no args)
 
   const handleMessage = useCallback((message: Partial<SystemSettingsWebSocketMessage>) => {
+    // Let ping/pong messages be handled by the WebSocket context layer
+    if (message.action === 'ping' || message.action === 'pong') {
+      return;
+    }
+
     if (message.type === DDExtendedMessageType.ERROR && message.error) {
       dispatchWebSocketEvent('system_settings_error', { error: message.error });
       setSpecificError(message.error); // Set specific error here

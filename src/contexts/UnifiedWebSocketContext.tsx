@@ -219,15 +219,16 @@ export const UnifiedWebSocketProvider: React.FC<{
       const message = JSON.parse(event.data);
       authDebug('WebSocketContext', 'Raw message received:', message); // Log raw message
 
-      // Handle system messages like pong
-      if (message.type === 'SYSTEM' && message.action === 'pong') {
+      // Handle proper pong responses from backend
+      if ((message.type === 'RESPONSE' || message.type === 'SYSTEM') && message.action === 'pong') {
         missedHeartbeatsRef.current = 0;
+        authDebug('WebSocketContext', 'Heartbeat pong received from server');
         return;
       }
       // Handle explicit PONG type if backend sends it
-      if (message.type === DDExtendedMessageType.PONG) { // Assuming PONG is in DDExtendedMessageType
+      if (message.type === DDExtendedMessageType.PONG) {
         missedHeartbeatsRef.current = 0;
-        authDebug('WebSocketContext', 'Pong received');
+        authDebug('WebSocketContext', 'PONG message type received');
         return;
       }
       
@@ -435,13 +436,16 @@ export const UnifiedWebSocketProvider: React.FC<{
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         // Send ping
         try {
-          wsRef.current.send(JSON.stringify({
+          const pingMessage = {
             type: 'REQUEST',
             topic: 'system',
             action: 'ping',
             requestId: crypto.randomUUID(),
             timestamp: new Date().toISOString()
-          }));
+          };
+          
+          authDebug('WebSocketContext', 'Sending heartbeat ping', pingMessage);
+          wsRef.current.send(JSON.stringify(pingMessage));
           
           // Increment missed heartbeats
           missedHeartbeatsRef.current++;
