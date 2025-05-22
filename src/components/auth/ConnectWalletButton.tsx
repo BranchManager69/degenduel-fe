@@ -41,6 +41,8 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     isConnected: isWalletAdapterConnected,
     isConnecting: isWalletAdapterConnecting,
     publicKey,
+    availableWallets,
+    connect: connectWallet
   } = useSolanaKitWallet();
 
   const { signMessage: adapterSignMessage } = useWallet();
@@ -55,17 +57,38 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     }
   };
 
-  const handleSignInWithWallet = useCallback(async () => {
+  const handleConnectAndSignIn = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    if (!isWalletAdapterConnected || !publicKey) {
-      setError("Wallet not connected. Please connect your wallet first using the main connect button.");
-      setIsLoading(false);
-      return;
-    }
-      
     try {
+      // If wallet is not connected, try to connect first
+      if (!isWalletAdapterConnected || !publicKey) {
+        // Try to connect to the first available wallet (usually Phantom)
+        const preferredWallet = availableWallets.find(w => 
+          w.adapter.name.toLowerCase().includes('phantom') ||
+          w.adapter.name.toLowerCase().includes('solflare')
+        ) || availableWallets[0];
+        
+        if (!preferredWallet) {
+          setError("No compatible wallets found. Please install Phantom or Solflare.");
+          setIsLoading(false);
+          return;
+        }
+        
+        await connectWallet(preferredWallet);
+        
+        // Wait a moment for the connection to be established
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Check if connection was successful
+        if (!isWalletAdapterConnected || !publicKey) {
+          setError("Failed to connect wallet. Please try again.");
+          setIsLoading(false);
+          return;
+        }
+      }
+      
       const walletAddress = publicKey.toBase58();
 
       if (auth.user?.wallet_address && auth.user.wallet_address === walletAddress) {
@@ -89,8 +112,8 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       await auth.loginWithWallet(walletAddress, signMessageWrapper);
       onSuccess?.();
     } catch (err) {
-      console.error('ConnectWalletButton: Error during wallet sign-in:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during sign-in.';
+      console.error('ConnectWalletButton: Error during wallet connection/sign-in:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during connection/sign-in.';
       setError(errorMessage);
       onError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
@@ -102,7 +125,9 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     isWalletAdapterConnected, 
     onSuccess, 
     onError,
-    adapterSignMessage 
+    adapterSignMessage,
+    availableWallets,
+    connectWallet
   ]);
 
   const handleDegenDuelLogout = useCallback(async () => {
@@ -131,8 +156,8 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     ? `${publicKey.toBase58().slice(0, 6)}...${publicKey.toBase58().slice(-4)}`
     : '';
 
-  let buttonText = "Sign In With Wallet";
-  let buttonOnClick = handleSignInWithWallet;
+  let buttonText = "Connect Wallet";
+  let buttonOnClick = handleConnectAndSignIn;
   let isDisabled = isLoading || isWalletAdapterConnecting;
 
   if (isWalletAdapterConnected && publicKey) {
@@ -141,18 +166,12 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       buttonOnClick = handleDegenDuelLogout;
     } else {
       buttonText = `Sign In as ${shortenedAddress}`;
-      buttonOnClick = handleSignInWithWallet;
+      buttonOnClick = handleConnectAndSignIn;
     }
-  } else {
-    buttonText = "Connect Wallet First";
-    buttonOnClick = async () => {
-      setError("Please use the main Connect Wallet button to connect your wallet.");
-    };
-    isDisabled = true;
   }
 
   if (isLoading || isWalletAdapterConnecting) {
-    buttonText = isWalletAdapterConnecting ? 'Connecting...' : 'Processing...';
+    buttonText = isWalletAdapterConnecting ? 'Connecting Wallet...' : 'Processing...';
   }
 
   return (
