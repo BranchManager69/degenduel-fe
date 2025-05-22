@@ -17,7 +17,6 @@ import React, { useState } from 'react';
 import { FaWallet } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
-import PrivyLoginButton from './PrivyLoginButton';
 import TwitterLoginButton from './TwitterLoginButton';
 
 interface LoginOptionsButtonProps {
@@ -31,7 +30,6 @@ interface LoginOptionsButtonProps {
  * Displays a login button that expands to show all available login methods:
  * - Wallet connection
  * - Twitter login
- * - Privy (email/social) login
  */
 const LoginOptionsButton: React.FC<LoginOptionsButtonProps> = ({ 
   compact = false, 
@@ -100,11 +98,6 @@ const LoginOptionsButton: React.FC<LoginOptionsButtonProps> = ({
                   onClick={() => setIsOpen(false)}
                 />
                 
-                {/* Privy Login */}
-                <PrivyLoginButton 
-                  className="w-full justify-center" 
-                  onClick={() => setIsOpen(false)}
-                />
                 
                 <div className="pt-1 mt-1 border-t border-gray-700/50">
                   <button

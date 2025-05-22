@@ -30,19 +30,15 @@ interface NormalizedAuthAPI {
   
   // Auth method checks (these are functions on UnifiedAuthContextType)
   isWalletAuth: () => boolean;
-  isPrivyAuth: () => boolean;
   isTwitterAuth: () => boolean;
   
   // Other methods from UnifiedAuthContextType
   checkAuth: () => Promise<boolean> | void;
   getToken: (type?: TokenType) => Promise<string | null>;
   loginWithWallet: (walletAddress: string, signMessage: (message: Uint8Array) => Promise<any>) => Promise<User>;
-  loginWithPrivy: (token: string, userId: string) => Promise<User>;
   logout: () => Promise<void>;
   getAccessToken: () => Promise<string | null>; 
   linkTwitter: () => Promise<string>;
-  linkPrivy: (token: string, userId: string) => Promise<boolean>;
-  isPrivyLinked: () => boolean;
   isTwitterLinked: () => boolean;
   
   // Properties from UnifiedAuthContextType
@@ -77,17 +73,13 @@ export function useMigratedAuth(): NormalizedAuthAPI {
 
     // Methods (pass through directly)
     isWalletAuth: authContextValue.isWalletAuth,
-    isPrivyAuth: authContextValue.isPrivyAuth,
     isTwitterAuth: authContextValue.isTwitterAuth,
     checkAuth: authContextValue.checkAuth,
     getToken: authContextValue.getToken,
     loginWithWallet: authContextValue.loginWithWallet,
-    loginWithPrivy: authContextValue.loginWithPrivy,
     logout: authContextValue.logout,
     getAccessToken: authContextValue.getAccessToken,
     linkTwitter: authContextValue.linkTwitter,
-    linkPrivy: authContextValue.linkPrivy,
-    isPrivyLinked: authContextValue.isPrivyLinked,
     isTwitterLinked: authContextValue.isTwitterLinked,
   };
 }

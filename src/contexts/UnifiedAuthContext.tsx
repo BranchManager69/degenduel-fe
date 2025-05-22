@@ -4,10 +4,10 @@
  * UnifiedAuthContext.tsx
  * 
  * @description A single unified authentication context for DegenDuel that replaces the multiple
- * overlapping authentication providers (AuthContext, PrivyAuthContext, TwitterAuthContext).
+ * overlapping authentication providers (AuthContext, TwitterAuthContext).
  * 
  * This context provides state and methods for all authentication operations across different 
- * authentication methods (wallet, Privy, Twitter) through a single, consistent interface.
+ * authentication methods (wallet, Twitter) through a single, consistent interface.
  * 
  * @author BranchManager69
  * @version 1.0.0
@@ -37,7 +37,6 @@ export interface UnifiedAuthContextType extends AuthStatus {
   
   // Authentication methods
   loginWithWallet: (walletAddress: string, signMessage: (message: Uint8Array) => Promise<any>) => Promise<User>;
-  loginWithPrivy: (token: string, userId: string) => Promise<User>;
   logout: () => Promise<void>;
   
   // Token management
@@ -46,7 +45,6 @@ export interface UnifiedAuthContextType extends AuthStatus {
   
   // Account linking
   linkTwitter: () => Promise<string>;
-  linkPrivy: (token: string, userId: string) => Promise<boolean>;
   
   // Role checks - support both function and property forms
   isAdmin: () => boolean;
@@ -57,11 +55,9 @@ export interface UnifiedAuthContextType extends AuthStatus {
   
   // Auth method status
   isWalletAuth: () => boolean;
-  isPrivyAuth: () => boolean;
   isTwitterAuth: () => boolean;
   
   // Method linking status
-  isPrivyLinked: () => boolean;
   isTwitterLinked: () => boolean;
   
   // Auth refresh
@@ -90,15 +86,11 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   // Cached auth method statuses
   const [methodStatuses, setMethodStatuses] = useState<{
     wallet: boolean;
-    privy: boolean;
     twitter: boolean;
-    privyLinked: boolean;
     twitterLinked: boolean;
   }>({
     wallet: false,
-    privy: false,
     twitter: false,
-    privyLinked: false,
     twitterLinked: false
   });
   
@@ -192,7 +184,6 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     // Otherwise infer from available data (???)
     if (user.wallet_address) return 'wallet';
-    if (user.privy_id) return 'privy';
     if (user.twitter_id) return 'twitter';
     
     // Default to session if no other indicators
@@ -204,9 +195,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     if (!user) {
       setMethodStatuses({
         wallet: false,
-        privy: false,
         twitter: false,
-        privyLinked: false,
         twitterLinked: false
       });
       return;
@@ -216,10 +205,8 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     setMethodStatuses({
       wallet: activeMethod === 'wallet',
-      privy: activeMethod === 'privy',
       twitter: activeMethod === 'twitter',
       // For linking status, check for IDs regardless of active method
-      privyLinked: !!user.privy_id,
       twitterLinked: !!user.twitter_id
     });
   };
@@ -236,11 +223,9 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   
   // Auth method status checks
   const isWalletAuth = () => methodStatuses.wallet;
-  const isPrivyAuth = () => methodStatuses.privy;
   const isTwitterAuth = () => methodStatuses.twitter;
   
   // Method linking status checks
-  const isPrivyLinked = () => methodStatuses.privyLinked;
   const isTwitterLinked = () => methodStatuses.twitterLinked;
   
   // Check URL parameters for redirects on mount
@@ -267,23 +252,6 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       window.history.replaceState({}, '', url);
     }
     
-    // Check for Privy auth redirect parameters
-    if (searchParams.has('privy_login') || searchParams.has('privy_linked')) {
-      authDebug('UnifiedAuthContext', 'Detected Privy auth redirect', {
-        privy_login: searchParams.get('privy_login'),
-        privy_linked: searchParams.get('privy_linked')
-      });
-      
-      // Trigger auth check
-      authService.checkAuth();
-      
-      // Clean up URL parameters
-      const url = new URL(window.location.href);
-      if (searchParams.has('privy_login')) url.searchParams.delete('privy_login');
-      if (searchParams.has('privy_linked')) url.searchParams.delete('privy_linked');
-      
-      window.history.replaceState({}, '', url);
-    }
   }, []);
   
   // Create context value
@@ -326,12 +294,6 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     'Direct property check is recommended for performance reasons.'
   );
   
-  const isPrivyAuthFunc = deprecatedFunction(
-    isPrivyAuth,
-    'isPrivyAuth()',
-    'user?.auth_method === "privy"',
-    'Direct property check is recommended for performance reasons.'
-  );
   
   const isTwitterAuthFunc = deprecatedFunction(
     isTwitterAuth,
@@ -348,7 +310,6 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     // Auth methods
     loginWithWallet: authService.loginWithWallet.bind(authService),
-    loginWithPrivy: authService.loginWithPrivy.bind(authService),
     logout: authService.logout.bind(authService),
     
     // Token management
@@ -358,7 +319,6 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     // Account linking
     linkTwitter: authService.linkTwitter.bind(authService),
-    linkPrivy: authService.linkPrivy.bind(authService),
     
     // Hybrid isAuthenticated that works as both property and function
     // @ts-ignore - Hybrid property/function for backward compatibility
@@ -370,16 +330,9 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     // Auth method status with deprecation warnings
     isWalletAuth: isWalletAuthFunc,
-    isPrivyAuth: isPrivyAuthFunc,
     isTwitterAuth: isTwitterAuthFunc,
     
     // Method linking status with deprecation warnings
-    isPrivyLinked: deprecatedFunction(
-      isPrivyLinked,
-      'isPrivyLinked()',
-      'user?.privy_id !== undefined',
-      'Direct property check is recommended for performance reasons.'
-    ),
     isTwitterLinked: deprecatedFunction(
       isTwitterLinked,
       'isTwitterLinked()',

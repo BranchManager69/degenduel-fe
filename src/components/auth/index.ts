@@ -21,11 +21,8 @@ export { default as TwitterLoginButton } from './TwitterLoginButton';
 // Export mock components (for testing and development)
 export { default as ConnectWalletButtonMock } from './ConnectWalletButton.mock';
 export { default as LoginOptionsMock } from './LoginOptions.mock';
-export { default as PrivyLoginButtonMock } from './PrivyLoginButton.mock';
 export { default as TwitterLoginButtonMock } from './TwitterLoginButton.mock';
 
-// Export Privy components
-export { default as PrivyLoginButton } from './PrivyLoginButton';
 
 // Corrected export for InviteCodeInput (originally ReferralCodeInput)
 export { ReferralCodeInput as InviteCodeInput } from './InviteCodeInput';

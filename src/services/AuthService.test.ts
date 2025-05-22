@@ -121,18 +121,6 @@ describe('AuthService', () => {
     });
   });
 
-  describe('loginWithPrivy', () => {
-    it('should authenticate user with Privy', async () => {
-      const user = await authService.loginWithPrivy('test-privy-token', 'test-privy-user-id');
-      
-      expect(user).toEqual(expect.objectContaining({ 
-        id: 'test-privy-user-id', 
-        username: 'privyuser',
-        privy_id: 'test-privy-id'
-      }));
-      expect(authService.loginWithPrivy).toHaveBeenCalledWith('test-privy-token', 'test-privy-user-id');
-    });
-  });
 
   describe('linkTwitter', () => {
     it('should return redirect URL for Twitter linking', async () => {

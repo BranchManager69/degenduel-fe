@@ -26,10 +26,9 @@ import axiosInstance from '../lib/axiosInstance';
 import { User } from '../types/user';
 import { tokenManagerService, TokenType } from './tokenManagerService';
 
-// Auth method types - EXPANDED based on Privy config
+// Auth method types
 export type AuthMethod = 
   | 'wallet' 
-  | 'privy' 
   | 'twitter' 
   | 'session' 
   | 'email' 
@@ -529,75 +528,6 @@ export class AuthService {
     }
   }
   
-  /**
-   * Login with Privy
-   * 
-   * @param token Privy token
-   * @param userId Privy user ID
-   * @returns Promise that resolves to the authenticated user
-   */
-  public async loginWithPrivy(token: string, userId: string): Promise<User> {
-    try {
-      authDebug('AuthService', 'Starting Privy authentication', { userId });
-      
-      // Use the configured instance
-      const response = await axiosInstance.post('/auth/verify-privy', { 
-        token,
-        userId
-      }); 
-      
-      const { user, token: jwtToken } = response.data;
-      
-      if (!user) {
-        throw new Error('No user returned from Privy authentication');
-      }
-      
-      // Ensure user has a wallet_address (required field)
-      if (!user.wallet_address) {
-        authDebug('AuthService', 'User from Privy authentication missing wallet_address', { 
-          userId, 
-          user_id: user.id 
-        });
-        throw new Error('Invalid user data: wallet_address is required');
-      }
-      
-      // Store JWT token
-      if (jwtToken) {
-        tokenManagerService.setToken(
-          TokenType.JWT,
-          jwtToken,
-          tokenManagerService.estimateExpiration(jwtToken),
-          'privy'
-        );
-      }
-      
-      // Store user
-      this.setUser(user, 'privy');
-      
-      // Request WebSocket token
-      tokenManagerService.refreshToken(TokenType.WS_TOKEN);
-      
-      // Dispatch login event
-      this.dispatchEvent({
-        type: AuthEventType.LOGIN,
-        user,
-        method: 'privy'
-      });
-      
-      return user;
-    } catch (error: any) {
-      authDebug('AuthService', 'Privy authentication failed', {
-        error: error?.response?.data || error?.message || String(error),
-        userId
-      });
-      this.dispatchEvent({
-        type: AuthEventType.AUTH_ERROR,
-        error: error instanceof Error ? error : new Error(String(error)),
-        method: 'privy'
-      });
-      throw error;
-    }
-  }
   
   /**
    * Link Twitter account to existing user
@@ -621,38 +551,6 @@ export class AuthService {
     }
   }
   
-  /**
-   * Link Privy account to existing user
-   * 
-   * @param token Privy token
-   * @param userId Privy user ID
-   * @returns Promise that resolves to true if successful
-   */
-  public async linkPrivy(token: string, userId: string): Promise<boolean> {
-    if (!this.isAuthenticated()) {
-      throw new Error('Must be authenticated to link Privy account');
-    }
-    
-    try {
-      // Use the configured instance
-      const response = await axiosInstance.post('/api/auth/privy/link', { 
-        token,
-        userId
-      });
-      
-      // Update user if returned
-      if (response.data.user) {
-        this.setUser(response.data.user);
-      }
-      
-      return true;
-    } catch (error: any) { 
-      authDebug('AuthService', 'Privy linking failed', {
-        error: error?.response?.data || error?.message || String(error)
-      });
-      return false;
-    }
-  }
   
   /**
    * Logout the current user
