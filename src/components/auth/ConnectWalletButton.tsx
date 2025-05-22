@@ -12,11 +12,11 @@
  * @updated 2025-05-11 - Corrected useSignMessage call and restored button UI
  */
 
-import { useWallet } from "@solana/wallet-adapter-react"; // Import adapter's useWallet directly for signMessage
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import axios from 'axios';
 import React, { useCallback, useState } from 'react';
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
-import { useSolanaKitWallet } from '../../hooks/wallet/useSolanaKitWallet';
 import { Button } from '../ui/Button';
 
 interface ConnectWalletButtonProps {
@@ -36,16 +36,13 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   const auth = useMigratedAuth();
-  
-  const {
-    isConnected: isWalletAdapterConnected,
-    isConnecting: isWalletAdapterConnecting,
-    publicKey,
-    availableWallets,
-    connect: connectWallet
-  } = useSolanaKitWallet();
-
-  const { signMessage: adapterSignMessage } = useWallet();
+  const { 
+    publicKey, 
+    connected, 
+    connecting,
+    disconnect,
+    signMessage 
+  } = useWallet();
 
   const getChallengeNonce = async (walletAddress: string): Promise<string> => {
     try {
@@ -57,38 +54,19 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     }
   };
 
-  const handleConnectAndSignIn = useCallback(async () => {
+  // This component now just handles authentication, not connection
+  // Connection is handled by WalletMultiButton
+
+  const handleAuthenticate = useCallback(async () => {
+    if (!connected || !publicKey || !signMessage) {
+      setError("Wallet not connected.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      // If wallet is not connected, try to connect first
-      if (!isWalletAdapterConnected || !publicKey) {
-        // Try to connect to the first available wallet (usually Phantom)
-        const preferredWallet = availableWallets.find(w => 
-          w.adapter.name.toLowerCase().includes('phantom') ||
-          w.adapter.name.toLowerCase().includes('solflare')
-        ) || availableWallets[0];
-        
-        if (!preferredWallet) {
-          setError("No compatible wallets found. Please install Phantom or Solflare.");
-          setIsLoading(false);
-          return;
-        }
-        
-        await connectWallet(preferredWallet);
-        
-        // Wait a moment for the connection to be established
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Check if connection was successful
-        if (!isWalletAdapterConnected || !publicKey) {
-          setError("Failed to connect wallet. Please try again.");
-          setIsLoading(false);
-          return;
-        }
-      }
-      
       const walletAddress = publicKey.toBase58();
 
       if (auth.user?.wallet_address && auth.user.wallet_address === walletAddress) {
@@ -101,19 +79,18 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       await getChallengeNonce(walletAddress);
 
       const signMessageWrapper = async (messageToSign: Uint8Array) => {
-        if (!adapterSignMessage) {
-          console.error('ConnectWalletButton: adapterSignMessage function is not available.');
-          throw new Error('Cannot sign message: Wallet signing function unavailable.');
+        if (!signMessage) {
+          throw new Error('Wallet signing function not available.');
         }
-        const signature = await adapterSignMessage(messageToSign);
+        const signature = await signMessage(messageToSign);
         return { signature }; 
       };
 
       await auth.loginWithWallet(walletAddress, signMessageWrapper);
       onSuccess?.();
     } catch (err) {
-      console.error('ConnectWalletButton: Error during wallet connection/sign-in:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during connection/sign-in.';
+      console.error('ConnectWalletButton: Error during authentication:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during authentication.';
       setError(errorMessage);
       onError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
@@ -122,29 +99,28 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   }, [
     auth, 
     publicKey, 
-    isWalletAdapterConnected, 
+    connected, 
+    signMessage,
     onSuccess, 
-    onError,
-    adapterSignMessage,
-    availableWallets,
-    connectWallet
+    onError
   ]);
 
-  const handleDegenDuelLogout = useCallback(async () => {
+  const handleLogout = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       await auth.logout();
-      console.log("ConnectWalletButton: DegenDuel logout successful.");
+      await disconnect();
+      console.log("ConnectWalletButton: Logout successful.");
     } catch (err) {
-      console.error('ConnectWalletButton: Error during DegenDuel logout:', err);
+      console.error('ConnectWalletButton: Error during logout:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to logout.';
       setError(errorMessage);
       onError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
       setIsLoading(false);
     }
-  }, [auth, onError]);
+  }, [auth, disconnect, onError]);
 
   const sizeClasses = {
     sm: 'text-xs py-1 px-2',
@@ -156,22 +132,38 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     ? `${publicKey.toBase58().slice(0, 6)}...${publicKey.toBase58().slice(-4)}`
     : '';
 
-  let buttonText = "Connect Wallet";
-  let buttonOnClick = handleConnectAndSignIn;
-  let isDisabled = isLoading || isWalletAdapterConnecting;
-
-  if (isWalletAdapterConnected && publicKey) {
-    if (auth.isAuthenticated && auth.user?.wallet_address === publicKey.toBase58()) {
-      buttonText = `Disconnect ${shortenedAddress}`;
-      buttonOnClick = handleDegenDuelLogout;
-    } else {
-      buttonText = `Sign In as ${shortenedAddress}`;
-      buttonOnClick = handleConnectAndSignIn;
-    }
+  // If wallet not connected, show WalletMultiButton
+  if (!connected || !publicKey) {
+    return (
+      <div className={`flex flex-col ${className}`}>
+        <WalletMultiButton className={`font-cyber ${sizeClasses[size]}`} />
+        {error && (
+          <div className="mt-2 text-xs text-red-500">
+            {error}
+          </div>
+        )}
+      </div>
+    );
   }
 
-  if (isLoading || isWalletAdapterConnecting) {
-    buttonText = isWalletAdapterConnecting ? 'Connecting Wallet...' : 'Processing...';
+  // Wallet is connected, show auth/logout button
+  let buttonText: string;
+  let buttonOnClick: () => void;
+  
+  if (auth.isAuthenticated && auth.user?.wallet_address === publicKey.toBase58()) {
+    buttonText = `Disconnect ${shortenedAddress}`;
+    buttonOnClick = handleLogout;
+  } else {
+    buttonText = `Sign In as ${shortenedAddress}`;
+    buttonOnClick = handleAuthenticate;
+  }
+
+  const isDisabled = isLoading || connecting;
+
+  if (isLoading) {
+    buttonText = 'Processing...';
+  } else if (connecting) {
+    buttonText = 'Connecting...';
   }
 
   return (
@@ -182,7 +174,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
         onClick={buttonOnClick}
         disabled={isDisabled}
       >
-        {isLoading || isWalletAdapterConnecting ? (
+        {(isLoading || connecting) ? (
           <>
             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -192,8 +184,9 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           </>
         ) : (
           <>
-            {isWalletAdapterConnected && publicKey && <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>}
-            {!isWalletAdapterConnected && !publicKey && <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg> }
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
             {buttonText}
           </>
         )}
