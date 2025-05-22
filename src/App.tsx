@@ -18,9 +18,6 @@ import React, { createContext, lazy, Suspense, useContext, useMemo } from "react
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
 // Auth providers
-// Privy
-import { PrivyProvider, type PrivyClientConfig } from "@privy-io/react-auth";
-import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 // Unified Auth Contexts
 import { SolanaConnectionProvider, useSolanaConnection } from './contexts/SolanaConnectionContext';
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
@@ -80,9 +77,6 @@ import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { InviteSystemProvider } from './hooks/social/legacy/useInviteSystem'; // ? test
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
 
-// Get Privy app ID
-const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || '';
-//console.log('[DEBUG][App.tsx] PRIVY_APP_ID:', PRIVY_APP_ID);
 
 // Config - Prelaunch mode
 import { config, PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
@@ -255,68 +249,24 @@ const AppProvidersAndContent: React.FC = () => {
   //   return createDegenDuelRpcClient(currentRpcEndpoint, ddJwt);
   // }, [currentRpcEndpoint, ddJwt]);
 
-  // Removed the problematic 'solanaConnectors' variable that was causing type errors.
-
-  const privyConfig: PrivyClientConfig = useMemo(() => ({
-    loginMethods: [
-  //    "wallet", 
-      "email", 
-  //    "sms", 
-  //    "google", 
-  //    "twitter", 
-  //    "discord", 
-  //    "github", 
-  //    "apple", 
-  //    "telegram", 
-  //    "passkey"
-    ],
-    appearance: {
-      theme: 'dark',
-      accentColor: '#5a2b66',
-      showWalletLoginFirst: false,
-      walletChainType: 'solana-only',
-    },
-    embeddedWallets: {
-      solana: { createOnLogin: 'users-without-wallets' },
-    },
-    externalWallets: {
-      // This is how Privy's config likely expects it, using its own utility.
-      // `toSolanaWalletConnectors` returns what PrivyClientConfig needs for this field.
-      solana: { connectors: toSolanaWalletConnectors({ shouldAutoConnect: false }) }
-    },
-    supportedChains: [
-      {
-        name: 'Solana',
-        id: 101,
-        nativeCurrency: { name: 'Solana', symbol: 'SOL', decimals: 9 },
-        rpcUrls: {
-          default: { http: [`${window.location.origin}/api/solana-rpc`] },
-          public: { http: [`${window.location.origin}/api/solana-rpc`] },
-          admin: { http: [`${window.location.origin}/api/solana-rpc`] }
-        }
-      }
-    ]
-  }), []); // Stable config, no longer depends on the removed 'solanaConnectors'
 
   return (
-    <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}> {/* Pass appId directly and spread rest of config */}
-      <InviteSystemProvider>
-        <SolanaConnectionProvider>
-          {/* WalletAdapterProviders no longer takes the solanaConnectors prop */}
-          <WalletAdapterProviders>
-            <UnifiedWebSocketProvider>
-              <TokenDataProvider>
-                <AffiliateSystemProvider>
-                  <ToastProvider>
-                    <AppContent />
-                  </ToastProvider>
-                </AffiliateSystemProvider>
-              </TokenDataProvider>
-            </UnifiedWebSocketProvider>
-          </WalletAdapterProviders>
-        </SolanaConnectionProvider>
-      </InviteSystemProvider>
-    </PrivyProvider>
+    <InviteSystemProvider>
+      <SolanaConnectionProvider>
+        {/* WalletAdapterProviders no longer takes the solanaConnectors prop */}
+        <WalletAdapterProviders>
+          <UnifiedWebSocketProvider>
+            <TokenDataProvider>
+              <AffiliateSystemProvider>
+                <ToastProvider>
+                  <AppContent />
+                </ToastProvider>
+              </AffiliateSystemProvider>
+            </TokenDataProvider>
+          </UnifiedWebSocketProvider>
+        </WalletAdapterProviders>
+      </SolanaConnectionProvider>
+    </InviteSystemProvider>
   );
 };
 

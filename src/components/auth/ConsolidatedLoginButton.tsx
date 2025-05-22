@@ -16,7 +16,6 @@ import useBiometricAuth from '../../hooks/auth/legacy/useBiometricAuth';
 import { Button } from '../ui/Button';
 import BiometricAuthButton from './BiometricAuthButton';
 import ConnectWalletButton from './ConnectWalletButton';
-import PrivyLoginButton from './PrivyLoginButton';
 import TwitterLoginButton from './TwitterLoginButton';
 
 interface ConsolidatedLoginButtonProps {
@@ -137,13 +136,6 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
                 />
               </div>
               
-              <div className="relative p-0.5 bg-gradient-to-r from-purple-500/40 to-brand-500/80 rounded-md group overflow-hidden shadow-md">
-                <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
-                <PrivyLoginButton 
-                  className="w-full h-12 z-10 relative" 
-                  onClick={handleLoginClick} 
-                />
-              </div>
               
               {/* Biometric option - only shown if available and registered */}
               {showBiometricOption && (

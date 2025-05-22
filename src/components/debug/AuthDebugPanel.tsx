@@ -34,7 +34,6 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
     isSuperAdmin,
     activeMethod,
     isWalletAuth,
-    isPrivyAuth,
     isTwitterAuth,
   } = useMigratedAuth();
 
@@ -104,7 +103,6 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
         <p><span className="text-gray-400">SuperAdmin:</span> {isSuperAdmin ? "Yes" : "No"}</p>
         <p><span className="text-gray-400">Active Method:</span> {activeMethod || "N/A"}</p>
         <p><span className="text-gray-400">Is Wallet Auth Active:</span> {isWalletAuth() ? "Yes" : "No"}</p>
-        <p><span className="text-gray-400">Is Privy Auth Active:</span> {isPrivyAuth() ? "Yes" : "No"}</p>
         <p><span className="text-gray-400">Is Twitter Auth Active:</span> {isTwitterAuth() ? "Yes" : "No"}</p>
         
         {user && (
@@ -123,7 +121,6 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
           <pre className="overflow-x-auto bg-gray-900/50 p-2 rounded mt-1 text-[10px] max-h-40 overflow-y-auto">
             {JSON.stringify({
               wallet: isWalletAuth(),
-              privy: isPrivyAuth(),
               twitter: isTwitterAuth(),
             }, null, 2)}
           </pre>

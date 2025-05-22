@@ -63,7 +63,6 @@ const AuthSystemTestPage: React.FC = () => {
     if (!isAuth) return 'None';
     
     if (auth.isWalletAuth?.()) return 'Wallet';
-    if (auth.isPrivyAuth?.()) return 'Privy';
     if (auth.isTwitterAuth?.()) return 'Twitter';
     
     return 'Unknown';
