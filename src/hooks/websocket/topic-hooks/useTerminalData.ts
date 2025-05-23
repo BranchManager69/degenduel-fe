@@ -11,7 +11,7 @@
  */
 
 import { DDWebSocketActions } from '@branchmanager69/degenduel-shared/dist/types/websocket';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { TerminalData } from '../../../services/terminalDataService';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
@@ -82,6 +82,7 @@ export function useTerminalData() {
   const [terminalData, setTerminalData] = useState<TerminalData>(DEFAULT_TERMINAL_DATA);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const isSubscribedRef = useRef<boolean>(false);
 
   const ws = useWebSocket(); // Use the context hook
 
@@ -134,11 +135,14 @@ export function useTerminalData() {
   // Subscribe and request initial terminal data when WebSocket is connected
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
+    
     // Terminal data is often public, so using ws.isConnected. Change to ws.isReadyForSecureInteraction if auth is required.
-    if (ws.isConnected && isLoading) {
+    if (ws.isConnected && !isSubscribedRef.current) {
       console.log('[useTerminalData] WebSocket connected. Subscribing and requesting terminal data.');
       ws.subscribe([TopicType.TERMINAL]);
       ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
+      isSubscribedRef.current = true;
+      
       dispatchWebSocketEvent('terminal_data_subscribe', {
         socketType: TopicType.TERMINAL,
         message: 'Subscribing to terminal data',
@@ -146,16 +150,28 @@ export function useTerminalData() {
       });
       
       timeoutId = setTimeout(() => {
-        if (isLoading) {
-          console.warn('[TerminalData WebSocket] Timed out waiting for data');
-          setIsLoading(false);
-        }
+        console.warn('[TerminalData WebSocket] Timed out waiting for data');
+        setIsLoading(false);
       }, 10000);
-    } else if (!ws.isConnected && isLoading) {
+    } else if (!ws.isConnected) {
       console.log('[useTerminalData] WebSocket not connected, deferring setup.');
+      isSubscribedRef.current = false;
     }
-    return () => { if (timeoutId) clearTimeout(timeoutId); };
-  }, [ws.isConnected, ws.subscribe, ws.request, isLoading]);
+    
+    return () => { 
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [ws.isConnected, ws.subscribe, ws.request]);
+
+  // Cleanup subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (isSubscribedRef.current) {
+        ws.unsubscribe([TopicType.TERMINAL]);
+        isSubscribedRef.current = false;
+      }
+    };
+  }, [ws.unsubscribe]);
 
   const refreshTerminalData = useCallback(() => {
     // Use ws.isConnected for refresh as well, assuming public data.

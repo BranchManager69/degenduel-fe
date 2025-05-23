@@ -16,6 +16,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { authDebug } from '../config/config';
 import { DDExtendedMessageType } from '../hooks/websocket/types';
+import { setupWebSocketInstance } from '../hooks/websocket/useUnifiedWebSocket';
 import { AuthEventType, authService, TokenType } from '../services';
 
 // Re-export the ConnectionState enum for components that need it
@@ -236,19 +237,30 @@ export const UnifiedWebSocketProvider: React.FC<{
       if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && message.message?.includes('authenticated')) {
         setConnectionState(ConnectionState.AUTHENTICATED);
         authDebug('WebSocketContext', 'WebSocket authentication successful via ACK');
+        
+        // Clear auth timeout since authentication succeeded
+        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
+          clearTimeout((wsRef.current as any).__authTimeoutId);
+          delete (wsRef.current as any).__authTimeoutId;
+        }
         return;
       }
 
       // Handle WebSocket Authentication Error (token_expired or other auth issues from WS message)
       if (message.type === DDExtendedMessageType.ERROR && message.code === 4401 && message.reason === 'token_expired') {
         authDebug('WebSocketContext', 'WebSocket auth error: Token expired (4401)', message);
+        
+        // Clear auth timeout and fall back to CONNECTED state
+        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
+          clearTimeout((wsRef.current as any).__authTimeoutId);
+          delete (wsRef.current as any).__authTimeoutId;
+        }
+        setConnectionState(ConnectionState.CONNECTED);
+        
         // Even if WS token is bad, the main session might still be valid or renewable.
         // Trigger a global auth check. If that also determines the session is invalid (e.g., main JWT also expired), `authService` should then handle the full logout.
         // Do not set connectionState to ERROR here, as the connection itself might be fine.
         // The key is that this specific WebSocket session is not AUTHENTICATED.
-        if (connectionState === ConnectionState.AUTHENTICATING || connectionState === ConnectionState.AUTHENTICATED) {
-          setConnectionState(ConnectionState.CONNECTED); // Revert to CONNECTED, not authenticated for secure topics
-        }
         // Potentially dispatch an event that authService or UnifiedAuthContext can listen to, to trigger re-auth or logout.
         // For now, let's call authService.checkAuth() which might lead to logout if main tokens are also bad.
         authService.checkAuth().then(isValidSession => {
@@ -270,6 +282,12 @@ export const UnifiedWebSocketProvider: React.FC<{
   
   // Handle WebSocket close
   const handleClose = (event: CloseEvent) => {
+    // Clear any pending authentication timeout
+    if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
+      clearTimeout((wsRef.current as any).__authTimeoutId);
+      delete (wsRef.current as any).__authTimeoutId;
+    }
+    
     // Identify specific types of connection issues
     let errorMessage = '';
     let localServerDown = false;
@@ -510,10 +528,25 @@ export const UnifiedWebSocketProvider: React.FC<{
       wsRef.current.send(JSON.stringify(message));
       
       authDebug('WebSocketContext', 'Sent WebSocket authentication message');
+      
+      // Set a timeout to fall back to CONNECTED if no auth response in 5 seconds
+      const authTimeoutId = setTimeout(() => {
+        // Check current state, not closure state
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          authDebug('WebSocketContext', 'Authentication timeout, falling back to CONNECTED state');
+          setConnectionState(ConnectionState.CONNECTED);
+        }
+      }, 5000);
+      
+      // Store timeout ID for potential cleanup
+      if (!wsRef.current) return;
+      (wsRef.current as any).__authTimeoutId = authTimeoutId;
     } catch (error) {
       authDebug('WebSocketContext', 'WebSocket authentication failed', {
         error: error instanceof Error ? error.message : String(error)
       });
+      // Fall back to CONNECTED state on authentication error
+      setConnectionState(ConnectionState.CONNECTED);
     }
   };
   
@@ -671,6 +704,22 @@ export const UnifiedWebSocketProvider: React.FC<{
                       connectionState === ConnectionState.AUTHENTICATED;
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
   const isReadyForSecureInteraction = isAuthenticated;
+  
+  // Setup the singleton instance for useUnifiedWebSocket hook
+  useEffect(() => {
+    console.log('[UnifiedWebSocketContext] Setting up singleton instance:', {
+      connectionState,
+      connectionError,
+      hasRegisterListener: !!registerListener,
+      hasSendMessage: !!sendMessage
+    });
+    setupWebSocketInstance(
+      registerListener,
+      sendMessage,
+      connectionState,
+      connectionError
+    );
+  }, [connectionState, connectionError]);
   
   // Create context value
   const contextValue: UnifiedWebSocketContextType = {

@@ -29,8 +29,8 @@ import SolanaWalletDisplay from '../../SolanaWalletDisplay';
  * Displays SOL balance, token balance, and link to wallet details
  */
 export const WalletDetailsSection: React.FC<{ user: User }> = ({ user }) => (
-  <div className="p-3 bg-dark-300/50 border-b border-brand-500/20">
-    <div className="flex flex-col gap-2">
+  <div className="p-2 bg-dark-300/50 border-b border-brand-500/20">
+    <div className="flex flex-col gap-1.5">
       {/* SOL Balance */}
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-400">SOL Balance</span>
@@ -67,7 +67,7 @@ export const WalletDetailsSection: React.FC<{ user: User }> = ({ user }) => (
  * Consistent section header component for menu sections
  */
 export const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
-  <div className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+  <div className="px-3 py-0.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
     {title}
   </div>
 );
@@ -154,9 +154,9 @@ export const MenuBackdrop: React.FC<{
   onClose: () => void;
   isMobile?: boolean;
 }> = ({ isOpen, onClose, isMobile = false }) => {
-  // Prevent body scrolling when menu is open
+  // Prevent body scrolling when menu is open (mobile only)
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isMobile) {
       // Save current scroll position and body style
       const scrollY = window.scrollY;
       const originalStyle = {
@@ -181,7 +181,7 @@ export const MenuBackdrop: React.FC<{
         window.scrollTo(0, scrollY);
       };
     }
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   if (!isOpen) return null;
   
@@ -205,7 +205,11 @@ export const MenuBackdrop: React.FC<{
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      className={`fixed inset-0 ${topPosition} bg-black/60 backdrop-blur-[2px] z-40`}
+      className={`fixed inset-0 ${topPosition} z-40 ${
+        isMobile 
+          ? 'bg-black/60 backdrop-blur-[2px]' 
+          : 'bg-black/20 backdrop-blur-[1px]'
+      }`}
       onClick={onClose}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

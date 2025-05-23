@@ -30,16 +30,17 @@ const loggedInstanceWarnings = new Set<string>();
 if (!instance) {
   instance = {
     registerListener: (id: string, _types: DDExtendedMessageType[], _callback: (message: any) => void) => {
-      console.log(`WebSocket: Component '${id}' registered but WebSocket not yet fully initialized`);
+      console.log(`[useUnifiedWebSocket] Component '${id}' registered but WebSocket not yet fully initialized`);
       return () => {}; // No-op cleanup
     },
     sendMessage: () => {
-      console.log("WebSocket: Attempted to send message before initialization");
+      console.log("[useUnifiedWebSocket] Attempted to send message before initialization");
       return false;
     },
     connectionState: ConnectionState.CONNECTING,
     connectionError: null
   };
+  console.log('[useUnifiedWebSocket] Created default instance with state:', ConnectionState.CONNECTING);
 }
 
 // Function to set up the singleton instance

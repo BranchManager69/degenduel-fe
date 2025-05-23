@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
-import { MessageType } from '../../hooks/websocket';
+import { DDExtendedMessageType as MessageType } from '../../hooks/websocket/types';
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 

@@ -12,6 +12,7 @@
 import { format } from 'date-fns';
 import React, { useState } from 'react';
 import { useSolanaWalletData } from '../hooks/data/useSolanaWalletData';
+import { AnimatedNumber } from './ui/AnimatedNumber';
 
 interface SolanaWalletDisplayProps {
   walletAddress?: string;
@@ -60,7 +61,13 @@ export const SolanaWalletDisplay: React.FC<SolanaWalletDisplayProps> = ({
         ) : error ? (
           <span className="disconnected">--</span>
         ) : walletData ? (
-          <span className="balance">{formatSOL(walletData.balance)} SOL</span>
+          <span className="balance">
+            <AnimatedNumber 
+              value={walletData.balance} 
+              decimals={4} 
+              suffix=" SOL"
+            />
+          </span>
         ) : (
           <span className="disconnected">--</span>
         )}

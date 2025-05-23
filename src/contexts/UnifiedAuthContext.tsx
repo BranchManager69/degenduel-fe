@@ -341,7 +341,10 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     ),
     
     // Auth refresh
-    checkAuth: authService.checkAuth.bind(authService)
+    checkAuth: authService.checkAuth.bind(authService),
+    
+    // Emergency reset
+    hardReset: authService.hardReset.bind(authService)
   };
   
   return (

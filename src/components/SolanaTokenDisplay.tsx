@@ -13,6 +13,7 @@
 
 import React from 'react';
 import { useSolanaTokenData } from '../hooks/data/useSolanaTokenData';
+import { AnimatedNumber } from './ui/AnimatedNumber';
 
 interface SolanaTokenDisplayProps {
   mintAddress?: string;
@@ -58,7 +59,10 @@ export const SolanaTokenDisplay: React.FC<SolanaTokenDisplayProps> = ({
         ) : tokenData ? (
           <span className="balance">
             {tokenData.userBalance !== undefined 
-              ? formatNumber(tokenData.userBalance)
+              ? <AnimatedNumber 
+                  value={parseFloat(tokenData.userBalance.toString())} 
+                  decimals={0}
+                />
               : (tokenData.symbol || 'Token')}
           </span>
         ) : (
