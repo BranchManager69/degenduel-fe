@@ -23,7 +23,21 @@
 import { API_URL } from "../config/config";
 import { useTerminalData } from "../hooks/websocket";
 
-// Terminal data interface
+// Minimal interface for AI chat terminal data only
+export interface ChatTerminalData {
+  // AI Chat system info
+  platformName: string;
+  platformDescription: string;
+  platformStatus: string;
+  
+  // Available AI chat commands
+  commands: Record<string, any>;
+  
+  // System status for AI chat availability
+  systemStatus?: Record<string, string>;
+}
+
+// Terminal data interface (legacy - for backwards compatibility)
 export interface TerminalData {
   // Platform info
   platformName: string;
@@ -353,133 +367,36 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, delay = 1000):
  * @param data The terminal data
  * @returns Formatted command map
  */
-export const formatTerminalCommands = (data: TerminalData): Record<string, string> => {
+export const formatTerminalCommands = (data: ChatTerminalData): Record<string, string> => {
   const commands: Record<string, string> = {
-    help: `Available commands: help, status, info, contract, stats, roadmap, tokenomics, launch-details, token, analytics, clear, banner\nAI: Type any question to speak with the AI assistant.`,
+    help: `Available commands: help, status, info, clear, banner\nAI: Type any question to speak with the AI assistant.`,
     clear: "",
     banner: `
 ========================================
  D E G E N D U E L   T E R M I N A L 
                v6.9
 ========================================
- - ${data.platformDescription || "Welcome to DegenDuel"} -
+ - ${data.platformDescription || "AI Chat Terminal"} -
  Type 'help' for available commands
 `
   };
 
-  // Status command
+  // Status command - AI chat system status
   if (data.systemStatus) {
-    commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━\n\n${Object.entries(data.systemStatus || {}).map(([key, value]) => {
+    commands.status = `━━━━━━━━━━━━━━━━ AI CHAT STATUS ━━━━━━━━━━━━━━━━\n\n${Object.entries(data.systemStatus || {}).map(([key, value]) => {
       return `• ${key}: ${value}`;
     }).join('\n')}\n\n${data.platformStatus}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   } else {
-    commands.status = `━━━━━━━━━━━━━━━━ SYSTEM STATUS ━━━━━━━━━━━━━━━━\n\n${data.platformStatus}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    commands.status = `━━━━━━━━━━━━━━━━ AI CHAT STATUS ━━━━━━━━━━━━━━━━\n\n${data.platformStatus}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   }
 
-  // Info command
-  commands.info = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} PLATFORM ━━━━━━━━━━━━━━━━\n\n${data.platformDescription}\n\n${data.features && data.features.length > 0 ?
-    `Key features:\n${data.features.map(feature => `• ${feature}`).join('\n')}` : ''}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  // Info command - AI chat terminal info
+  commands.info = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} AI TERMINAL ━━━━━━━━━━━━━━━━\n\n${data.platformDescription}\n\nType any question to chat with the AI assistant.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
-  // Stats command
-  commands.stats = `━━━━━━━━━━━━━━━━━ PLATFORM STATS ━━━━━━━━━━━━━━━━━
-Current users: ${data.stats.currentUsers}
-Upcoming contests: ${data.stats.upcomingContests}
-Total prize pool: ${data.stats.totalPrizePool}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-  // Roadmap command
-  commands.roadmap = `━━━━━━━━━━━━━━━━ ${data.platformName.toUpperCase()} ROADMAP ━━━━━━━━━━━━━━━━
-
-${data.roadmap.map(phase => {
-    return `• ${phase.quarter} ${phase.year}: ${phase.title}
-  ${phase.details.map(detail => `↳ ${detail}`).join('\n  ')}`;
-  }).join('\n\n')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-  // Tokenomics command
-  commands.tokenomics = `━━━━━━━━━━━━━━━━ $${data.token.symbol} TOKENOMICS ━━━━━━━━━━━━━━━━
-
-• Total supply: ${data.token.totalSupply ? data.token.totalSupply.toLocaleString() : "N/A"} $${data.token.symbol}
-• Initial circulating: ${data.token.initialCirculating ? data.token.initialCirculating.toLocaleString() : "N/A"} $${data.token.symbol}
-• Initial price: ${data.token.initialPrice}
-
-Allocation:
-• Community: ${data.token.communityAllocation}
-• Team: ${data.token.teamAllocation}
-• Treasury: ${data.token.treasuryAllocation}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-  // Launch details command
-  commands["launch-details"] = `━━━━━━━━━━━━━━━━ $${data.token.symbol} TOKEN LAUNCH ━━━━━━━━━━━━━━━━
-
-• Launch method: ${data.launch.method}
-• Initial price: ${data.token.initialPrice}
-• Liquidity lock: ${data.token.liquidityLockPeriod}
-• Initial market cap: ${data.token.marketCap}
-• Launch platforms: ${data.launch.platforms.join(', ')}
-• Private sale: ${data.launch.privateSaleStatus}
-• Public IDO: ${data.launch.publicSaleStatus}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-  // Analytics command
-  commands.analytics = `━━━━━━━━━━━━━━━━ PLATFORM ANALYTICS ━━━━━━━━━━━━━━━━
-
-• Platform traffic: ${data.stats.platformTraffic}
-• Social metrics: ${data.stats.socialGrowth}
-• Waitlist: ${data.stats.waitlistUsers} users
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-  // Token command
-  commands.token = `━━━━━━━━━━━━━━━━ $${data.token.symbol} TOKEN INFO ━━━━━━━━━━━━━━━━
-
-• Name: ${data.platformName} Token
-• Symbol: $${data.token.symbol}
-• Network: ${data.token.networkType}
-• Token Type: ${data.token.tokenType}
-• Decimals: ${data.token.decimals}
-
-Type 'tokenomics' for detailed token distribution.
-Type 'launch-details' for information about the token launch.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-  // Contract command - dynamically show based on token.address from API
-  // The only source of truth for contract address is now token.address
-  const contractAddress = data.token.address;
-  const isContractRevealed = !!contractAddress;
-
-  if (isContractRevealed) {
-    // When the contract address is revealed, show the actual address
-    commands.contract = `━━━━━━━━━━━━━━━━ $${data.token.symbol} CONTRACT ADDRESS ━━━━━━━━━━━━━━━━
-
-✅ CONTRACT REVEALED ✅
-
-Official contract address: ${contractAddress}
-
-WARNING: Only use this official contract address. Always verify on the blockchain explorer.
-
-Type 'token' to learn more about the $${data.token.symbol} token.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  } else {
-    // Default state - contract not yet revealed
-    commands.contract = `━━━━━━━━━━━━━━━━ $${data.token.symbol} CONTRACT ADDRESS ━━━━━━━━━━━━━━━━
-
-⌛ PENDING REVEAL ⌛
-
-The official contract address will be automatically revealed when the countdown reaches zero.
-
-WARNING: Beware of scam addresses shared before the official reveal. Only trust the address displayed in this terminal when the countdown completes.
-
-Type 'token' to learn more about the $${data.token.symbol} token.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  // Add any custom AI commands from the WebSocket
+  if (data.commands) {
+    Object.assign(commands, data.commands);
   }
 
-  // Add any custom commands that came from the API
-  return { ...commands, ...data.commands };
+  return commands;
 };
