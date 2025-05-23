@@ -20,11 +20,11 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { Token } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
 import { DDExtendedMessageType } from '../types';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Default fallback tokens for when connection is unavailable
 const FALLBACK_TOKENS: Token[] = [
@@ -160,15 +160,22 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   }, [isLoading]);
 
   // Connect to the unified WebSocket system
-  const ws = useUnifiedWebSocket(
-    'token-data-hook',
-    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
-    handleMessage,
-    [TopicType.MARKET_DATA, TopicType.TOKEN_DATA, TopicType.SYSTEM] // Subscribe to both market-data and token-data topics
-  );
+  const ws = useWebSocket();
+
+  // Register message listener
+  useEffect(() => {
+    const unregister = ws.registerListener('token-data-hook', [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR], handleMessage);
+    return unregister;
+  }, [handleMessage, ws.registerListener]);
 
   // Subscribe to token data when the WebSocket is connected
   useEffect(() => {
+    console.log('[TokenData] WebSocket state:', { 
+      isConnected: ws.isConnected, 
+      connectionState: ws.connectionState, 
+      initialized, 
+      error: ws.connectionError 
+    });
     if (ws.isConnected && !initialized) {
       // Subscribe to market-data topic
       ws.subscribe([TopicType.MARKET_DATA, TopicType.TOKEN_DATA]);
@@ -235,7 +242,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   return {
     tokens,
     isConnected: ws.isConnected,
-    error: ws.error,
+    error: ws.connectionError,
     lastUpdate,
     refresh,
     isLoading,

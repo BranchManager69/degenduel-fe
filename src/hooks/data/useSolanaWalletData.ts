@@ -71,6 +71,14 @@ export function useSolanaWalletData(walletAddress?: string): {
       return;
     }
 
+    // Don't fetch if no user is authenticated (avoids 403 errors on public tier)
+    if (!user?.wallet_address) {
+      setWalletData(null);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 

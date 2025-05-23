@@ -13,11 +13,11 @@
  * @updated 2025-05-05
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
 import { DDExtendedMessageType } from '../types';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Wallet data interfaces based on backend API documentation
 export interface WalletTransaction {
@@ -93,6 +93,7 @@ export function useWallet(walletAddress?: string) {
   const [walletState, setWalletState] = useState<WalletState>(DEFAULT_WALLET_STATE);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const isSubscribedRef = useRef<boolean>(false);
 
   // Message handler for WebSocket messages
   const handleMessage = useCallback((message: Partial<WebSocketWalletMessage>) => {
@@ -209,23 +210,29 @@ export function useWallet(walletAddress?: string) {
     }
   }, [isLoading, walletState.wallet_address]);
 
-  // Connect to WebSocket
-  const ws = useUnifiedWebSocket(
-    'wallet-hook',
-    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
-    handleMessage,
-    [TopicType.WALLET, 'wallet-balance', TopicType.SYSTEM] // Both wallet and wallet-balance topics
-  );
+  // Connect to the unified WebSocket system
+  const ws = useWebSocket();
+
+  // Register message listener
+  useEffect(() => {
+    if (ws.registerListener) {
+      const unregister = ws.registerListener('wallet-hook', [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR], handleMessage);
+      return unregister;
+    }
+  }, [ws, handleMessage]);
 
   // Subscribe to wallet data when connected
   useEffect(() => {
-    if (ws.isConnected && isLoading) {
+    let timeoutId: NodeJS.Timeout | undefined;
+    
+    if (ws.isConnected && !isSubscribedRef.current) {
       // Subscribe to wallet and wallet-balance topics
       ws.subscribe([TopicType.WALLET, 'wallet-balance']);
       
       // Request initial wallet data
       const requestParams = walletAddress ? { walletAddress } : {};
       ws.request(TopicType.WALLET, 'GET_WALLET_DATA', requestParams);
+      isSubscribedRef.current = true;
       
       dispatchWebSocketEvent('wallet_subscribe', {
         socketType: TopicType.WALLET,
@@ -235,16 +242,28 @@ export function useWallet(walletAddress?: string) {
       });
       
       // Set a timeout to reset loading state if we don't get data
-      const timeoutId = setTimeout(() => {
-        if (isLoading) {
-          console.warn('[Wallet WebSocket] Timed out waiting for data');
-          setIsLoading(false);
-        }
+      timeoutId = setTimeout(() => {
+        console.warn('[Wallet WebSocket] Timed out waiting for data');
+        setIsLoading(false);
       }, 10000);
-      
-      return () => clearTimeout(timeoutId);
+    } else if (!ws.isConnected) {
+      isSubscribedRef.current = false;
     }
-  }, [ws.isConnected, isLoading, ws.subscribe, ws.request, walletAddress]);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [ws.isConnected, ws.subscribe, ws.request, walletAddress]);
+
+  // Cleanup subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (isSubscribedRef.current) {
+        ws.unsubscribe([TopicType.WALLET, 'wallet-balance']);
+        isSubscribedRef.current = false;
+      }
+    };
+  }, [ws.unsubscribe]);
 
   // Send a transaction
   const sendTransaction = useCallback((params: {
@@ -377,7 +396,7 @@ export function useWallet(walletAddress?: string) {
     walletAddress: walletState.wallet_address,
     isLoading,
     isConnected: ws.isConnected,
-    error: ws.error,
+    error: ws.connectionError,
     lastUpdate,
     sendTransaction,
     updateSettings,

@@ -9,9 +9,9 @@
  * @created 2025-04-10
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
 
@@ -274,6 +274,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>(DEFAULT_ANALYTICS);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const isSubscribedRef = useRef<boolean>(false);
 
   // Message handler for WebSocket messages
   const handleMessage = useCallback((message: Partial<WebSocketAnalyticsMessage>) => {
@@ -395,22 +396,28 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
     }
   }, []);
 
-  // Connect to WebSocket
-  const ws = useUnifiedWebSocket(
-    'admin-analytics-hook',
-    [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
-    handleMessage,
-    [TopicType.ADMIN, TopicType.SYSTEM]
-  );
+  // Connect to the unified WebSocket system
+  const ws = useWebSocket();
+
+  // Register message listener
+  useEffect(() => {
+    if (ws.registerListener) {
+      const unregister = ws.registerListener('admin-analytics-hook', [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR], handleMessage);
+      return unregister;
+    }
+  }, [ws, handleMessage]);
 
   // Subscribe to admin topic when connected
   useEffect(() => {
-    if (ws.isConnected && isLoading) {
+    let timeoutId: NodeJS.Timeout | undefined;
+    
+    if (ws.isConnected && !isSubscribedRef.current) {
       // Subscribe to admin topic
       ws.subscribe([TopicType.ADMIN]);
       
       // Request initial analytics data
       ws.request(TopicType.ADMIN, 'GET_ANALYTICS', { timeframe });
+      isSubscribedRef.current = true;
       
       dispatchWebSocketEvent('analytics_subscribe', {
         socketType: TopicType.ADMIN,
@@ -420,16 +427,28 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
       });
       
       // Set a timeout to reset loading state if we don't get data
-      const timeoutId = setTimeout(() => {
-        if (isLoading) {
-          console.warn('[Analytics WebSocket] Timed out waiting for data');
-          setIsLoading(false);
-        }
+      timeoutId = setTimeout(() => {
+        console.warn('[Analytics WebSocket] Timed out waiting for data');
+        setIsLoading(false);
       }, 10000);
-      
-      return () => clearTimeout(timeoutId);
+    } else if (!ws.isConnected) {
+      isSubscribedRef.current = false;
     }
-  }, [ws.isConnected, isLoading, ws.subscribe, ws.request, timeframe]);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [ws.isConnected, ws.subscribe, ws.request, timeframe]);
+
+  // Cleanup subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (isSubscribedRef.current) {
+        ws.unsubscribe([TopicType.ADMIN]);
+        isSubscribedRef.current = false;
+      }
+    };
+  }, [ws.unsubscribe]);
 
   // Effect to update data when timeframe changes
   useEffect(() => {
@@ -509,7 +528,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
     timeframe,
     isLoading,
     isConnected: ws.isConnected,
-    error: ws.error,
+    error: ws.connectionError,
     lastUpdate,
     refreshAnalytics,
     getGrowthRates,

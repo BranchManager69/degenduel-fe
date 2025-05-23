@@ -103,19 +103,8 @@ export const getMenuItems = (user: User | null, userLevel: number) => {
     }
   ];
 
-  // Rankings Section
-  const rankingItems = [
-    {
-      id: 'global-rankings',
-      label: "Global Rankings",
-      to: "/rankings/global"
-    },
-    {
-      id: 'performance-rankings',
-      label: "Performance Rankings",
-      to: "/rankings/performance"
-    }
-  ];
+  // Rankings Section - REMOVED PER USER REQUEST
+  const rankingItems: any[] = [];
 
   return {
     profileItems,

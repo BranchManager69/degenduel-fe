@@ -24,7 +24,6 @@ import { getMenuItems } from '../menu/menuConfig';
 import { NotificationsDropdown } from '../menu/NotificationsDropdown';
 import {
   BiometricAuthComponent,
-  MenuBackdrop,
   MenuDivider,
   SectionHeader,
   WalletDetailsSection
@@ -51,7 +50,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const userLevel = achievements?.userProgress?.level || 0;
   
   // Get shared menu items from unified configuration
-  const { profileItems, contestItems, tokenItems, rankingItems } = getMenuItems(user, userLevel);
+  const { profileItems, contestItems, tokenItems } = getMenuItems(user, userLevel);
 
   // Define a function to get color scheme based on level
   const getLevelColorScheme = useMemo(() => {
@@ -227,11 +226,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     setImageError(true);
     console.warn("Failed to load profile image, falling back to default");
   };
-  
-  // Create a function to close the menu by simulating a click outside
-  const closeMenu = () => {
-    document.body.click(); // This will trigger the Menu to close
-  };
 
   // Active menu item style
   const activeItemStyles = `bg-brand-500/20 text-white`;
@@ -262,14 +256,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <Menu as="div" className="relative">
         {({ open }) => (
           <>
-            {/* Add a backdrop when menu is open */}
-            {open && (
-              <MenuBackdrop 
-                isOpen={open} 
-                onClose={closeMenu} 
-                isMobile={false}
-              />
-            )}
+            {/* Desktop menu doesn't need backdrop - Headless UI handles click-outside */}
             
             <div className="relative z-50">
               <Menu.Button
@@ -430,7 +417,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                       <BiometricAuthComponent 
                         userId={user.wallet_address}
                         menuItemClass={`${menuItemClass} text-blue-300 hover:text-blue-200 hover:bg-blue-500/20`}
-                        onClose={closeMenu}
                       />
                     )}
 
@@ -476,25 +462,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                       </Menu.Item>
                     ))}
 
-                    {/* Rankings Section */}
-                    <MenuDivider />
-                    <SectionHeader title="Rankings" />
-                    {rankingItems.map((item) => (
-                      <Menu.Item key={item.id}>
-                        {({ active }) => (
-                          <Link
-                            to={item.to}
-                            className={`
-                              ${menuItemClass}
-                              ${active ? activeItemStyles : inactiveItemStyles}
-                            `}
-                            role="menuitem"
-                          >
-                            <span className="flex-1">{item.label}</span>
-                          </Link>
-                        )}
-                      </Menu.Item>
-                    ))}
+                    {/* Rankings Section - REMOVED */}
 
                     <MenuDivider />
 

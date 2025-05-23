@@ -141,6 +141,13 @@ export class AuthService {
    */
   private async restoreSession() {
     try {
+      // Check if user explicitly logged out (prevent auto-restore after explicit logout)
+      const explicitLogout = localStorage.getItem('degen_explicit_logout');
+      if (explicitLogout === 'true') {
+        authDebug('AuthService', 'Skipping session restore - user explicitly logged out');
+        return;
+      }
+      
       // Ensure tokenManagerService is ready before using it
       if (tokenManagerService) { 
         if (tokenManagerService.getToken(TokenType.JWT)) {
@@ -333,6 +340,8 @@ export class AuthService {
           authDebug('AuthService', `Received ${status} on status check, definitive logout.`);
           if (this.user) this.setUser(null);
           tokenManagerService.clearAllTokens(); // Ensure tokens are cleared on 401/403
+          // Clear explicit logout flag so session can be restored if valid tokens exist
+          localStorage.removeItem('degen_explicit_logout');
           return false; // Definitive unauthenticated state
         }
         
@@ -503,6 +512,9 @@ export class AuthService {
       // Store user
       this.setUser(user, 'wallet');
       
+      // Clear explicit logout flag (user is now logged in)
+      localStorage.removeItem('degen_explicit_logout');
+      
       // Request WebSocket token
       tokenManagerService.refreshToken(TokenType.WS_TOKEN);
       
@@ -559,6 +571,9 @@ export class AuthService {
     try {
       authDebug('AuthService', 'Logging out user');
       
+      // Mark that user explicitly logged out (prevent auto-restore)
+      localStorage.setItem('degen_explicit_logout', 'true');
+      
       // Use the configured instance
       await axiosInstance.post('/api/auth/logout', {}); 
       
@@ -583,6 +598,33 @@ export class AuthService {
       tokenManagerService.clearAllTokens(); 
       this.setUser(null);
     }
+  }
+
+  /**
+   * Nuclear reset - clears all auth data and forces clean state
+   * Use this for fixing stuck auth states
+   */
+  public hardReset(): void {
+    authDebug('AuthService', 'Performing hard reset of auth state');
+    
+    // Clear all tokens
+    tokenManagerService.clearAllTokens();
+    
+    // Clear user
+    this.setUser(null);
+    
+    // Clear explicit logout flag
+    localStorage.removeItem('degen_explicit_logout');
+    
+    // Clear any other auth-related localStorage items
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('auth') || key.includes('token') || key.includes('degen'))) {
+        localStorage.removeItem(key);
+      }
+    }
+    
+    authDebug('AuthService', 'Hard reset complete - page refresh recommended');
   }
 
   // setupTokenRefreshHandlers remains the same (currently empty)

@@ -16,7 +16,6 @@ import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
 //import { useEffect } from "react";
 //import { Link } from "react-router-dom";
-import { DD_PLATFORM_FEE } from "../../config/config";
 import { ddApi } from "../../services/dd-api";
 import { Contest, ContestSettings } from "../../types/index";
 import { Button } from "../ui/Button";
@@ -63,29 +62,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     return adjustedTime.toISOString().slice(0, 16);
   };
 
-  const formatSolAmount = (amount: string | number) => {
-    const num = typeof amount === "string" ? parseFloat(amount) : amount;
-    if (isNaN(num)) return "0 SOL";
-
-    // For very small amounts (less than 0.01), show all decimal places up to 9
-    if (num < 0.01) {
-      return `${num.toFixed(9).replace(/\.?0+$/, "")} SOL`;
-    }
-
-    // For amounts between 0.01 and 1, show 3 decimal places
-    if (num < 1) {
-      return `${num.toFixed(3).replace(/\.?0+$/, "")} SOL`;
-    }
-
-    // For larger amounts, show 2 decimal places
-    return `${num.toFixed(2)} SOL`;
-  };
-
-  const calculateMaxPrizePool = (entryFee: string, maxParticipants: number) => {
-    const fee = parseFloat(entryFee) || 0;
-    // Don't use Math.floor to preserve decimal precision
-    return fee * maxParticipants * (1 - DD_PLATFORM_FEE);
-  };
 
   const generateContestCode = (name: string, attempt = 0) => {
     // Get initials from words in the name
@@ -161,12 +137,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           contest_code: generateContestCode(formData.name, attempt),
           entry_fee: formData.entry_fee,
           status: "pending" as const,
-          prize_pool: String(
-            calculateMaxPrizePool(
-              formData.entry_fee,
-              formData.max_participants,
-            ),
-          ),
           start_time: formData.start_time,
           end_time: formData.end_time,
           entry_deadline: formData.entry_deadline,
@@ -505,19 +475,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Max. Prize Pool
-                  </label>
-                  <div className="w-full px-4 py-2 bg-dark-300 rounded-lg text-gray-100">
-                    {formatSolAmount(
-                      calculateMaxPrizePool(
-                        formData.entry_fee,
-                        formData.max_participants,
-                      ),
-                    )}
-                  </div>
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">

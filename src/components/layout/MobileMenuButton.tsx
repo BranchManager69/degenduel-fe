@@ -53,7 +53,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
   const userLevel = achievements?.userProgress?.level || 0;
   
   // Get shared menu items from unified configuration
-  const { profileItems, contestItems, tokenItems, rankingItems } = getMenuItems(user, userLevel);
+  const { profileItems, contestItems, tokenItems } = getMenuItems(user, userLevel);
   
   const handleDisconnect = () => {
     if (onDisconnect) {
@@ -252,8 +252,8 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className={`absolute right-0 mt-2 w-56 bg-dark-200/95 border border-brand-500/30 
-                rounded-b-md rounded-tl-md rounded-tr-[24px] shadow-lg shadow-black/50 overflow-hidden z-50 origin-top-right backdrop-blur-xl`}
+              className={`absolute right-0 mt-2 w-56 max-h-[85vh] overflow-y-auto bg-dark-200/95 border border-brand-500/30 
+                rounded-b-md rounded-tl-md rounded-tr-[24px] shadow-lg shadow-black/50 z-50 origin-top-right backdrop-blur-xl`}
               role="menu"
               aria-orientation="vertical"
               aria-labelledby="mobile-menu-button"
@@ -284,7 +284,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                 {user ? (
                   <>
                     {/* User profile info */}
-                    <div className="px-4 py-3 bg-dark-300/40 border-b border-brand-500/20">
+                    <div className="px-3 py-2 bg-dark-300/40 border-b border-brand-500/20">
                       <div className="flex items-center">
                         <div className="relative mr-3">
                           {/* Level Badge */}
@@ -340,18 +340,18 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                         <SectionHeader title="Admin Access" />
                         
                         {/* Side-by-side Admin and Super Admin buttons */}
-                        <div className="grid grid-cols-2 gap-2 px-4 py-2">
+                        <div className="grid grid-cols-2 gap-1 px-3 py-1">
                           {isAdmin && (
                             <Link
                               to="/admin"
-                              className="flex items-center justify-center px-4 py-2.5 rounded-md transition-all duration-300
+                              className="flex items-center justify-center px-2 py-1.5 rounded-md transition-all duration-300
                                 bg-gradient-to-br from-red-600/90 to-red-800/90 border border-red-500/50 
-                                text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-red-500/90 hover:to-red-700/90
+                                text-white text-xs font-semibold shadow-md hover:shadow-lg hover:from-red-500/90 hover:to-red-700/90
                                 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-dark-200"
                               onClick={() => setIsOpen(false)}
                             >
                               <span className="flex items-center">
-                                <svg className="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
                                   <path d="M19 10H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"></path>
                                   <path d="M12 13v5"></path>
@@ -364,14 +364,14 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                           {isSuperAdmin && (
                             <Link
                               to="/superadmin"
-                              className="flex items-center justify-center px-4 py-2.5 rounded-md transition-all duration-300
+                              className="flex items-center justify-center px-2 py-1.5 rounded-md transition-all duration-300
                                 bg-gradient-to-br from-amber-500/90 to-amber-700/90 border border-amber-400/50
-                                text-white text-sm font-semibold shadow-md hover:shadow-lg hover:from-amber-400/90 hover:to-amber-600/90
+                                text-white text-xs font-semibold shadow-md hover:shadow-lg hover:from-amber-400/90 hover:to-amber-600/90
                                 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 focus:ring-offset-dark-200"
                               onClick={() => setIsOpen(false)}
                             >
                               <span className="flex items-center">
-                                <svg className="w-4 h-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                                 </svg>
                                 SUPER
@@ -394,7 +394,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                 ) : (
                   <>
                     {/* Consolidated Login section */}
-                    <div className="px-4 py-3 bg-dark-300/40 border-b border-brand-500/20">
+                    <div className="px-3 py-2 bg-dark-300/40 border-b border-brand-500/20">
                       <div className="flex flex-col gap-2">
                         {/* Login Options Section */}
                         <ConsolidatedLoginButton onLoginComplete={() => setIsOpen(false)} />
@@ -440,19 +440,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   </MenuItem>
                 ))}
 
-                {/* Rankings Section - using shared config */}
-                <MenuDivider />
-                <SectionHeader title="Rankings" />
-                {rankingItems.map((item) => (
-                  <MenuItem
-                    key={item.id}
-                    to={item.to}
-                    onClick={() => setIsOpen(false)}
-                    variants={itemVariants}
-                  >
-                    {item.label}
-                  </MenuItem>
-                ))}
+                {/* Rankings Section - REMOVED */}
 
                 {/* Disconnect button (if logged in) */}
                 {user && (
@@ -483,7 +471,7 @@ const MenuItem: React.FC<{
   >
     <Link
       to={to}
-      className={`block px-4 py-2 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ${className}`}
+      className={`block px-3 py-1.5 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ${className}`}
       onClick={onClick}
       role="menuitem"
     >
@@ -507,7 +495,7 @@ const ProfileMenuItem: React.FC<{
   >
     <Link
       to={to}
-      className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ${className}`}
+      className={`flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:bg-brand-500/20 hover:backdrop-blur-md hover:text-white rounded-lg transition-all duration-300 ${className}`}
       onClick={onClick}
       role="menuitem"
     >
@@ -532,7 +520,7 @@ const LogoutButton: React.FC<{
   >
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-300 hover:bg-red-500/20 hover:backdrop-blur-md hover:text-red-200 rounded-lg transition-all duration-300"
+      className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-300 hover:bg-red-500/20 hover:backdrop-blur-md hover:text-red-200 rounded-lg transition-all duration-300"
       role="menuitem"
     >
       <svg
