@@ -550,24 +550,22 @@ const persistConfig: StorePersist = {
           // console.log("[STORE REHYDRATE] Fetching maintenance. Current window.location.origin:", window.location.origin, "API_URL used:", API_URL);
         }
         
-        const response = await fetch(`${API_URL}/admin/maintenance/status`, {
+        const response = await fetch(`${API_URL}/status`, {
           credentials: "include",
         });
 
-        if (response.ok) {
+        if (response.status === 503) {
+          state.setMaintenanceMode(true);
+        } else if (response.ok) {
           const data = await response.json();
-          if (state.setMaintenanceMode && typeof state.setMaintenanceMode === 'function') {
-            if (data.enabled !== state.maintenanceMode) {
-              // console.warn(
-              //   "[STORE REHYDRATE] Maintenance mode state mismatch on init, syncing with backend. Backend:", data.enabled, "Store:", state.maintenanceMode
-              // );
-              state.setMaintenanceMode(data.enabled);
+          if (
+            state.setMaintenanceMode &&
+            typeof state.setMaintenanceMode === "function"
+          ) {
+            if (data.maintenance !== state.maintenanceMode) {
+              state.setMaintenanceMode(Boolean(data.maintenance));
             }
-          } else {
-            // console.warn("[STORE REHYDRATE] state.setMaintenanceMode is not available or not a function.");
           }
-        } else {
-          // console.error(`[STORE REHYDRATE] Failed to fetch maintenance status on rehydrate: ${response.status} ${response.statusText}`);
         }
       } catch (error) {
         // const errorMessage = error instanceof Error ? error.message : String(error);
