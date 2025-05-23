@@ -34,7 +34,7 @@ import { MiniDecryptionTimer } from "../../../components/layout/DecryptionTimerM
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useIsVisible } from '../../../hooks/ui/useIsVisible';
 import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
-import { useTerminalData } from "../../../hooks/websocket/topic-hooks/useTerminalData";
+import { useLaunchEvent } from "../../../hooks/websocket/topic-hooks/useLaunchEvent";
 // DD API
 import { ddApi } from "../../../services/dd-api";
 // Date Utilities
@@ -93,12 +93,9 @@ export const LandingPage: React.FC = () => {
   
   // Removed console.log referencing deleted state
 
-  // Get contract address from WebSocket-based Terminal data (keep if relevant for other parts)
-  const { 
-    contractAddress: websocketContractAddress, 
-    contractAddressRevealed: websocketContractRevealed,
-    // terminalConnected // Ensure this is removed from destructuring
-  } = useTerminalData();
+  // Contract address reveal is handled by dedicated launch event service
+  const { contractAddress: websocketContractAddress } = useLaunchEvent();
+  const websocketContractRevealed = !!websocketContractAddress; // Contract is revealed if address exists
   
   const { settings } = useSystemSettings(); // Get settings for maintenance mode
 
@@ -106,10 +103,10 @@ export const LandingPage: React.FC = () => {
   const maintenanceMessageToDisplay = settings?.maintenance_mode?.message || "Contests are temporarily paused for maintenance. Please check back soon!";
   
   useEffect(() => {
-    if (/* terminalConnected && */ websocketContractAddress && websocketContractRevealed) { // Remove terminalConnected from condition
+    if (websocketContractAddress && websocketContractRevealed) {
       console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}, Revealed: ${websocketContractRevealed}`);
     }
-  }, [/* terminalConnected, */ websocketContractAddress, websocketContractRevealed]); // Remove terminalConnected from dependency array
+  }, [websocketContractAddress, websocketContractRevealed]);
   
   // Removed Fallback check for release time and handling completion/redirect useEffect block
   // Removed Debug log for release date sources useEffect block

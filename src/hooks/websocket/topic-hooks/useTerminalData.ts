@@ -1,19 +1,22 @@
 // src/hooks/websocket/topic-hooks/useTerminalData.ts
 
 /**
- * useTerminalData Hook
- * @description This hook provides real-time updates for terminal data, including contract address
+ * useTerminalData Hook - AI Chat Terminal Only
+ * @description This hook provides real-time updates for AI chat terminal data ONLY.
+ * Contract address reveals and countdown functionality are handled by separate services:
+ * - releaseDateService.ts for countdown API
+ * - useLaunchEvent.ts for contract reveal WebSocket events
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 2.0.0
  * @created 2025-04-14
- * @updated 2025-05-03
+ * @updated 2025-05-23
  */
 
 import { DDWebSocketActions } from '@branchmanager69/degenduel-shared/dist/types/websocket';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
-import { TerminalData } from '../../../services/terminalDataService';
+import { ChatTerminalData } from '../../../services/terminalDataService';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
 import { DDExtendedMessageType } from '../types';
@@ -25,53 +28,17 @@ interface WebSocketTerminalMessage {
   topic: string; // 'terminal'
   subtype: string; // 'terminal'
   action: string; // 'update'
-  data: Partial<TerminalData>;
+  data: Partial<ChatTerminalData>;
   timestamp: string;
 }
 
-// Default terminal data for initial state
-const DEFAULT_TERMINAL_DATA: TerminalData = {
+// Default terminal data for AI chat only
+const DEFAULT_TERMINAL_DATA: ChatTerminalData = {
   platformName: "DegenDuel",
-  platformDescription: "Loading platform information...",
-  platformStatus: "Connecting to server...",
-  _legacyContractAddress: undefined,
-  _legacyContractAddressRevealed: false,
-  features: [],
-  systemStatus: {},
-  stats: {
-    currentUsers: null,
-    upcomingContests: null,
-    totalPrizePool: "Loading...",
-    platformTraffic: "Loading...",
-    socialGrowth: "Loading...",
-    waitlistUsers: null
-  },
-  token: {
-    symbol: "DEGEN",
-    totalSupply: null,
-    initialCirculating: null,
-    communityAllocation: "Loading...",
-    teamAllocation: "Loading...",
-    treasuryAllocation: "Loading...",
-    initialPrice: "Loading...",
-    marketCap: "Loading...",
-    liquidityLockPeriod: "Loading...",
-    networkType: "Loading...",
-    tokenType: "Loading...",
-    decimals: null,
-    address: undefined // Added to match backend structure
-  },
-  launch: {
-    method: "Loading...",
-    platforms: [],
-    privateSaleStatus: "Loading...",
-    publicSaleStatus: "Loading...",
-    kycRequired: false,
-    minPurchase: "Loading...",
-    maxPurchase: "Loading..."
-  },
-  roadmap: [],
-  commands: {}
+  platformDescription: "AI Chat Terminal",
+  platformStatus: "Connecting to AI chat system...",
+  commands: {},
+  systemStatus: {}
 };
 
 /**
@@ -79,7 +46,7 @@ const DEFAULT_TERMINAL_DATA: TerminalData = {
  * Hook for accessing and managing terminal data with real-time updates
  */
 export function useTerminalData() {
-  const [terminalData, setTerminalData] = useState<TerminalData>(DEFAULT_TERMINAL_DATA);
+  const [terminalData, setTerminalData] = useState<ChatTerminalData>(DEFAULT_TERMINAL_DATA);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const isSubscribedRef = useRef<boolean>(false);
@@ -88,36 +55,44 @@ export function useTerminalData() {
 
   const handleMessage = useCallback((message: Partial<WebSocketTerminalMessage>) => {
     try {
-      // console.log('[TerminalData WebSocket] Received message:', message); // Keep for debugging if needed
+      // console.log('[TerminalData WebSocket] Received AI chat message:', message); // Keep for debugging if needed
       if (message.type === DDExtendedMessageType.DATA && 
           message.topic === TopicType.TERMINAL && 
           message.subtype === 'terminal' && 
           message.action === DDWebSocketActions.TERMINAL_UPDATE && 
           message.data) {
-        const terminalDataFromServer = message.data;
-        const processedData: Partial<TerminalData> = { ...terminalDataFromServer };
-        setTerminalData(prevData => ({ ...prevData, ...processedData }));
+        
+        // Only process AI chat related fields, ignore token/launch data
+        const chatDataFromServer = message.data;
+        const processedChatData: Partial<ChatTerminalData> = {
+          platformName: chatDataFromServer.platformName || terminalData.platformName,
+          platformDescription: chatDataFromServer.platformDescription || terminalData.platformDescription,
+          platformStatus: chatDataFromServer.platformStatus || terminalData.platformStatus,
+          commands: chatDataFromServer.commands || terminalData.commands,
+          systemStatus: chatDataFromServer.systemStatus || terminalData.systemStatus
+        };
+        
+        setTerminalData(prevData => ({ ...prevData, ...processedChatData }));
         if (isLoading) setIsLoading(false);
         setLastUpdate(new Date());
+        
         dispatchWebSocketEvent('terminal_data_update', {
           socketType: TopicType.TERMINAL,
-          message: 'Received terminal data from WebSocket',
+          message: 'Received AI chat terminal data from WebSocket',
           timestamp: new Date().toISOString(),
-          hasContractAddress: !!processedData.token?.address,
-          contractRevealed: !!processedData.token?.address,
-          updatedFields: Object.keys(processedData)
+          updatedFields: Object.keys(processedChatData)
         });
       }
-      if (isLoading && message.type === DDExtendedMessageType.DATA) setIsLoading(false); // Also set loading false on any DATA message for this hook if still loading
+      if (isLoading && message.type === DDExtendedMessageType.DATA) setIsLoading(false);
     } catch (err) {
-      console.error('[TerminalData WebSocket] Error processing message:', err);
+      console.error('[TerminalData WebSocket] Error processing AI chat message:', err);
       dispatchWebSocketEvent('error', {
         socketType: TopicType.TERMINAL,
-        message: 'Error processing terminal data',
+        message: 'Error processing AI chat terminal data',
         error: err instanceof Error ? err.message : String(err)
       });
     }
-  }, [isLoading]);
+  }, [isLoading, terminalData]);
 
   // Effect for WebSocket listener registration
   useEffect(() => {
@@ -138,14 +113,14 @@ export function useTerminalData() {
     
     // Terminal data is often public, so using ws.isConnected. Change to ws.isReadyForSecureInteraction if auth is required.
     if (ws.isConnected && !isSubscribedRef.current) {
-      console.log('[useTerminalData] WebSocket connected. Subscribing and requesting terminal data.');
+      console.log('[useTerminalData] WebSocket connected. Subscribing to AI chat terminal data.');
       ws.subscribe([TopicType.TERMINAL]);
       ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
       isSubscribedRef.current = true;
       
       dispatchWebSocketEvent('terminal_data_subscribe', {
         socketType: TopicType.TERMINAL,
-        message: 'Subscribing to terminal data',
+        message: 'Subscribing to AI chat terminal data',
         timestamp: new Date().toISOString()
       });
       
@@ -176,7 +151,7 @@ export function useTerminalData() {
   const refreshTerminalData = useCallback(() => {
     // Use ws.isConnected for refresh as well, assuming public data.
     if (!ws.isConnected) {
-      console.warn('[TerminalData WebSocket] Cannot refresh - WebSocket not connected');
+      console.warn('[TerminalData WebSocket] Cannot refresh AI chat - WebSocket not connected');
       setIsLoading(false); // Ensure loading is set to false if we can't refresh
       return;
     }
@@ -184,7 +159,7 @@ export function useTerminalData() {
     ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
     dispatchWebSocketEvent('terminal_data_refresh', {
       socketType: TopicType.TERMINAL,
-      message: 'Refreshing terminal data',
+      message: 'Refreshing AI chat terminal data',
       timestamp: new Date().toISOString()
     });
     
@@ -199,12 +174,10 @@ export function useTerminalData() {
     terminalData,
     isLoading,
     isConnected: ws.isConnected,
-    isReadyForSecureInteraction: ws.isReadyForSecureInteraction, // Expose for potential conditional actions by consumer
-    error: ws.connectionError, // Use connectionError
+    isReadyForSecureInteraction: ws.isReadyForSecureInteraction,
+    error: ws.connectionError,
     lastUpdate,
-    refreshTerminalData,
-    contractAddress: terminalData.token?.address,
-    contractAddressRevealed: !!terminalData.token?.address
+    refreshTerminalData
   };
 }
 
