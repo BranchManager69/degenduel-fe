@@ -14,7 +14,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef } from "react";
-
+import { Link } from "react-router-dom";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
 import { useStore } from "../../store/useStore";
@@ -130,12 +130,16 @@ export const Header: React.FC = () => {
         <div
           className={`relative flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}`}
         >
-          {/* Logo (OLD IMAGE BASED -- CHANGE TO OUR NEW COMPONENT!) */}
-          <div className="flex items-center">
-            {/* <Logo /> */}
-            {/* <IntroLogo /> */} {/* Keep IntroLogo for now if it is used elsewhere */}
-            {isCompact ? <NanoLogo /> : <MiniLogo />} {/* Use NanoLogo when compact, MiniLogo otherwise */}
-          </div>
+          {/* Logo (links to Home) */}
+          <Link to="/" className="flex items-center" aria-label="Home">
+            {/* Use NanoLogo when compact, MiniLogo otherwise */}
+            {isCompact 
+              ? <NanoLogo /> 
+              : <MiniLogo />
+            } 
+            {/* <IntroLogo /> */} {/* another option - full name */}
+            {/* <Logo /> */} {/* another option - old logo image */}
+          </Link>
 
           {/* Spacer */}
           <div className="flex-1"></div> 
