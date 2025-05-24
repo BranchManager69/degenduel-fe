@@ -12,6 +12,7 @@
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import React, { useCallback, useEffect, useState } from 'react';
+import { API_URL } from '../../config/config';
 import { useLaunchEvent } from '../../hooks/websocket/topic-hooks/useLaunchEvent';
 import { DecryptionTimerProps } from '../terminal/types';
 
@@ -111,7 +112,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
   useEffect(() => {
     const fetchCountdownData = async () => {
       try {
-        const response = await axios.get<CountdownApiResponse>('https://degenduel.me/api/status/countdown');
+        const response = await axios.get<CountdownApiResponse>(`${API_URL}/status/countdown`);
         const data = response.data;
         setApiData(data);
 
