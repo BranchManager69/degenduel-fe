@@ -12,38 +12,63 @@ export const useBiometricAuth = () => {
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
   const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [hasCheckedRegistration, setHasCheckedRegistration] = useState<boolean>(false);
+
   const user = useStore(state => state.user);
-  
-  // Check if biometric auth is available in this browser
+
+  // Only check if biometric auth is available in this browser
   useEffect(() => {
     const available = BiometricAuthService.canUseBiometrics();
     setIsAvailable(available);
-    
-    // If available and user is logged in, check if they have registered credentials
-    if (available && user?.wallet_address) {
-      checkRegistrationStatus(user.wallet_address);
+
+    // Clear registration status when user logs out
+    if (!user?.wallet_address) {
+      setIsRegistered(false);
+      setHasCheckedRegistration(false);
     }
   }, [user?.wallet_address]);
-  
-  // Check if the user has registered credentials
-  const checkRegistrationStatus = useCallback(async (userId: string) => {
+
+  // Helper function to determine if user is fully authenticated
+  const isUserFullyAuthenticated = (user: any): boolean => {
+    // User should have both wallet_address and some form of authentication token
+    return !!(user?.wallet_address && (user?.jwt || user?.session_token || user?.authenticated));
+  };
+
+  // Manual check for registration status - only called when explicitly needed
+  const checkRegistrationStatus = useCallback(async (userId?: string): Promise<boolean> => {
+    const userIdToCheck = userId || user?.wallet_address;
+
+    if (!userIdToCheck) {
+      authDebug('BiometricAuth', 'No user ID provided for registration check');
+      setIsRegistered(false);
+      return false;
+    }
+
+    if (!isUserFullyAuthenticated(user)) {
+      authDebug('BiometricAuth', 'User not fully authenticated, skipping biometric check');
+      setIsRegistered(false);
+      return false;
+    }
+
     try {
-      const hasCredential = await BiometricAuthService.hasRegisteredCredential(userId);
+      authDebug('BiometricAuth', 'Manually checking registration status for authenticated user', { userId: userIdToCheck });
+      const hasCredential = await BiometricAuthService.hasRegisteredCredential(userIdToCheck);
       setIsRegistered(hasCredential);
+      setHasCheckedRegistration(true);
       return hasCredential;
     } catch (error) {
       authDebug('BiometricAuth', 'Error checking registration status', error);
       setIsRegistered(false);
+      setHasCheckedRegistration(true);
       return false;
     }
-  }, []);
-  
+  }, [user]);
+
   // Register a new credential
   const registerCredential = useCallback(async (
-    userId: string, 
+    userId: string,
     username: string,
-    options?: { 
+    options?: {
       nickname?: string;
       authenticatorType?: 'platform' | 'cross-platform';
     }
@@ -52,22 +77,23 @@ export const useBiometricAuth = () => {
       setError('Biometric authentication is not available in this browser');
       return false;
     }
-    
+
     setIsRegistering(true);
     setError(null);
-    
+
     try {
       // Pass optional parameters to the service
       const nickname = options?.nickname || username;
       const authenticatorType = options?.authenticatorType || 'platform';
-      
+
       await BiometricAuthService.registerCredential(
-        userId, 
+        userId,
         nickname,
         { authenticatorType }
       );
-      
+
       setIsRegistered(true);
+      setHasCheckedRegistration(true);
       authDebug('BiometricAuth', 'Credential registered successfully');
       return true;
     } catch (error) {
@@ -78,22 +104,27 @@ export const useBiometricAuth = () => {
       setIsRegistering(false);
     }
   }, [isAvailable]);
-  
+
   // Authenticate with biometric credential
   const authenticate = useCallback(async (userId: string): Promise<boolean> => {
     if (!isAvailable) {
       setError('Biometric authentication is not available in this browser');
       return false;
     }
-    
+
+    // Check registration status first if we haven't already
+    if (!hasCheckedRegistration) {
+      await checkRegistrationStatus(userId);
+    }
+
     if (!isRegistered) {
       setError('No biometric credential registered');
       return false;
     }
-    
+
     setIsAuthenticating(true);
     setError(null);
-    
+
     try {
       await BiometricAuthService.authenticate(userId);
       authDebug('BiometricAuth', 'Authenticated successfully with biometrics');
@@ -105,17 +136,18 @@ export const useBiometricAuth = () => {
     } finally {
       setIsAuthenticating(false);
     }
-  }, [isAvailable, isRegistered]);
-  
+  }, [isAvailable, isRegistered, hasCheckedRegistration, checkRegistrationStatus]);
+
   return {
     isAvailable,
     isRegistered,
     isRegistering,
     isAuthenticating,
     error,
+    hasCheckedRegistration,
     registerCredential,
     authenticate,
-    checkRegistrationStatus
+    checkRegistrationStatus // Now requires manual call
   };
 };
 

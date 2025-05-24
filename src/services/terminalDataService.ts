@@ -13,7 +13,6 @@
  * V69 FOLLOW UP: The status of this file is unclear because we've had some setbacks with the web socket implementation although some of it works some of it doesn't the fact is we do not use web socketconnections on the back end with the streaming responsesso if you're getting streaming thenjust use this unless there's a newer ....nt one yeah this is so **** confusing
  * just use this unless there's a newer replacement one yeah this is so **** confusing 
  * 
- * 
  * @author BranchManager69
  * @version 1.8.5
  * @created 2025-04-14
@@ -29,10 +28,10 @@ export interface ChatTerminalData {
   platformName: string;
   platformDescription: string;
   platformStatus: string;
-  
+
   // Available AI chat commands
   commands: Record<string, any>;
-  
+
   // System status for AI chat availability
   systemStatus?: Record<string, string>;
 }
@@ -212,6 +211,48 @@ const MAX_COOLDOWN_PERIOD = 5 * 60 * 1000;
  */
 let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Global state for circuit breaker
+let circuitBreakerOpen = false;
+let consecutiveFailures = 0;
+let lastFailureTime = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_TIMEOUT = 60000; // 60 seconds
+
+// Reset circuit breaker after successful request
+const resetCircuitBreaker = () => {
+  circuitBreakerOpen = false;
+  consecutiveFailures = 0;
+  lastFailureTime = 0;
+};
+
+// Check if circuit breaker should open
+const checkCircuitBreaker = () => {
+  const now = Date.now();
+
+  // If circuit breaker is open, check if timeout has passed
+  if (circuitBreakerOpen) {
+    if (now - lastFailureTime > CIRCUIT_BREAKER_TIMEOUT) {
+      console.log('[TerminalDataService] Circuit breaker timeout passed, resetting');
+      resetCircuitBreaker();
+      return false; // Allow request
+    }
+    return true; // Circuit breaker still open
+  }
+
+  return false; // Circuit breaker closed
+};
+
+// Record failure and potentially open circuit breaker
+const recordFailure = () => {
+  consecutiveFailures++;
+  lastFailureTime = Date.now();
+
+  if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitBreakerOpen = true;
+    console.error(`[TerminalDataService] Circuit breaker opened after ${CIRCUIT_BREAKER_THRESHOLD} failures - backing off for ${CIRCUIT_BREAKER_TIMEOUT / 1000}s`);
+  }
+};
+
 /**
  * @description Debounced fetchTerminalData implementation
  * This function returns a promise that resolves with terminal data, but automatically
@@ -221,6 +262,12 @@ let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
  */
 export const fetchTerminalData = async (): Promise<TerminalData> => {
   const now = Date.now();
+
+  // Check circuit breaker first
+  if (checkCircuitBreaker()) {
+    console.warn('[TerminalDataService] Circuit breaker open - using cached data or default');
+    return cachedTerminalData || DEFAULT_TERMINAL_DATA;
+  }
 
   // Return cached data if it's still fresh
   //   TODO: Entirely replace with a WSS event instead
@@ -268,12 +315,16 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
           cachedTerminalData = result.terminalData;
           lastFetchTime = Date.now();
 
-          // Reset error cooldown on success
+          // Reset error cooldown and circuit breaker on success
           lastErrorTime = 0;
           errorCooldownPeriod = 5000; // Reset to initial value
+          resetCircuitBreaker();
 
           resolve(result.terminalData);
         } else {
+          // Record failure for circuit breaker
+          recordFailure();
+
           // Only warn once per session if API returns unsuccessful response
           if (!window.terminalDataWarningShown) {
             console.warn('[TerminalDataService] Terminal data not available from API, using default');
@@ -282,32 +333,34 @@ export const fetchTerminalData = async (): Promise<TerminalData> => {
           resolve(DEFAULT_TERMINAL_DATA);
         }
       } catch (error) {
-        // Error handling after all retries have failed
-        // Limit repetitive error messages
+        // Record failure for circuit breaker
+        recordFailure();
+
+        // Keep existing error handling
+        console.error('[TerminalDataService] Error fetching terminal data after multiple retries');
+
         if (!window.terminalDataErrorCount) {
           window.terminalDataErrorCount = 0;
         }
 
-        // Only log first few errors, then reduce frequency
+        // Log error rate limiting
+        window.terminalDataErrorCount++;
         if (window.terminalDataErrorCount < 3 || window.terminalDataErrorCount % 10 === 0) {
-          console.error('[TerminalDataService] Error fetching terminal data after multiple retries');
+          console.error('[TerminalDataService] Fetch error details:', {
+            error: error instanceof Error ? error.message : String(error),
+            attemptNumber: window.terminalDataErrorCount
+          });
         }
 
-        // Increment the error count
-        window.terminalDataErrorCount++;
-
-        // Set error cooldown
+        // Set error time and increase cooldown
         lastErrorTime = Date.now();
-
-        // Increase cooldown period exponentially, capped at MAX_COOLDOWN_PERIOD
-        errorCooldownPeriod = Math.min(errorCooldownPeriod * 2, MAX_COOLDOWN_PERIOD);
+        errorCooldownPeriod = Math.min(errorCooldownPeriod * 2, 60000); // Cap at 60 seconds
 
         resolve(DEFAULT_TERMINAL_DATA);
       } finally {
-        // Reset fetching flag
         isFetchingTerminalData = false;
       }
-    }, 300); // Debounce period - 300ms is a good balance
+    }, 500); // Reduced debounce from potentially long delays to 500ms
   });
 };
 

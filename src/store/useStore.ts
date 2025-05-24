@@ -1,15 +1,16 @@
 // src/store/useStore.ts
 
 /**
- * This file contains the store for the application.
- * It is used to manage the state of the application.
- * It is also used to manage the state of the websocket.
+ * Store hook
  * 
- * There are no guarantees that anything in here is the way it's supposed to be;
- *  things are a little messy right now.
+ * @description This file contains the store for the application, websocket connection, etc.
+ * 
+ * @note There are no guarantees that anything in here is the way it's supposed to be; things are a little messy right now.
  * 
  * @author @BranchManager69
- * @last-modified 2025-04-02
+ * @version 1.9.1
+ * @created 2025-01-01
+ * @updated 2025-05-24
  */
 
 import console from 'console';
@@ -231,12 +232,12 @@ interface StateData {
     unlockedAchievements: Array<{
       id: string;
       tier:
-        | "BRONZE"
-        | "SILVER"
-        | "GOLD"
-        | "PLATINUM"
-        | "DIAMOND"
-        | "TRANSCENDENT";
+      | "BRONZE"
+      | "SILVER"
+      | "GOLD"
+      | "PLATINUM"
+      | "DIAMOND"
+      | "TRANSCENDENT";
       xp_awarded: number;
       achieved_at: string;
       context: any;
@@ -549,7 +550,7 @@ const persistConfig: StorePersist = {
         if (typeof window !== 'undefined') {
           // console.log("[STORE REHYDRATE] Fetching maintenance. Current window.location.origin:", window.location.origin, "API_URL used:", API_URL);
         }
-        
+
         const response = await fetch(`${API_URL}/status`, {
           credentials: "include",
         });
@@ -621,10 +622,10 @@ const retryFetch = async (
         error:
           error instanceof Error
             ? {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-              }
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
             : error,
         timestamp: new Date().toISOString(),
       });
@@ -991,13 +992,13 @@ export const useStore = create<State>()(
 
           // 2. Disconnect wallet adapters
           console.log("[Wallet Debug] Disconnecting wallet adapters");
-          
+
           // Disconnect Phantom wallet
           const { solana } = window as any;
           if (solana?.isPhantom) {
             await solana.disconnect();
           }
-          
+
           // 3. Clear all authentication tokens AFTER API call
           console.log("[Wallet Debug] Clearing tokens from tokenManagerService");
           try {
@@ -1014,7 +1015,7 @@ export const useStore = create<State>()(
           // 4. Clear local storage and cookies
           console.log("[Wallet Debug] Clearing storage and cookies");
           localStorage.removeItem("degenduel-storage"); // Use the same key as defined in persistConfig
-          
+
           // Also clear any biometric auth data
           localStorage.removeItem("dd_webauthn_credentials");
 
@@ -1033,17 +1034,16 @@ export const useStore = create<State>()(
             const cookieName = c.split("=")[0].trim();
             domains.forEach((domain) => {
               paths.forEach((path) => {
-                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${
-                  domain ? `; domain=${domain}` : ""
-                }`;
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}${domain ? `; domain=${domain}` : ""
+                  }`;
               });
             });
           });
 
           // 5. Reset store state LAST
           console.log("[Wallet Debug] Resetting store state");
-          set({ 
-            user: null, 
+          set({
+            user: null,
             isConnecting: false,
             achievements: {
               userProgress: null,
@@ -1060,9 +1060,9 @@ export const useStore = create<State>()(
           // Still clear local state even if something fails
           localStorage.removeItem("degenduel-storage");
           localStorage.removeItem("dd_webauthn_credentials");
-          set({ 
-            user: null, 
-            isConnecting: false, 
+          set({
+            user: null,
+            isConnecting: false,
             achievements: {
               userProgress: null,
               unlockedAchievements: [],
@@ -1329,12 +1329,12 @@ export const useStore = create<State>()(
           webSocketAlerts: [...prev.webSocketAlerts, alert],
         })),
       setLandingPageAnimationDone: (done) => set({ landingPageAnimationDone: done }),
-      setSkyDuelState: (skyDuelData) => 
-        set((state) => ({ skyDuel: { ...state.skyDuel, ...skyDuelData }})),
-      setSkyDuelSelectedNode: (nodeId) => 
-        set((state) => ({ skyDuel: { ...state.skyDuel, selectedNode: nodeId }})),
-      setSkyDuelLayout: (layout) => 
-        set((state) => ({ skyDuel: { ...state.skyDuel, layout }})),
+      setSkyDuelState: (skyDuelData) =>
+        set((state) => ({ skyDuel: { ...state.skyDuel, ...skyDuelData } })),
+      setSkyDuelSelectedNode: (nodeId) =>
+        set((state) => ({ skyDuel: { ...state.skyDuel, selectedNode: nodeId } })),
+      setSkyDuelLayout: (layout) =>
+        set((state) => ({ skyDuel: { ...state.skyDuel, layout } })),
     }),
     {
       ...persistConfig,

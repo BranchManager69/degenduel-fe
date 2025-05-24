@@ -339,22 +339,22 @@ export const verifyPrivyToken = async (
         case 400:
           // Missing required fields
           throw new Error("Missing required information for login. Please try again.");
-        
+
         case 401:
           // Invalid token
           throw new Error("Your login session has expired. Please log in again.");
-        
+
         case 404:
           // No user found
           throw new Error("User account not found. Please create an account first.");
-        
+
         case 500:
         case 502:
         case 503:
         case 504:
           // Server errors
           throw new Error("Server is currently unavailable. Please try again in a few minutes.");
-        
+
         default:
           // Use server-provided error if available
           if (error.response.data?.message) {
@@ -426,9 +426,9 @@ export const linkPrivyAccount = async (token: string, userId: string) => {
       error?.response?.data?.message ||
       error?.message ||
       "Failed to link Privy account";
-      
+
     console.error("[Auth] Failed to link Privy account:", errorMessage);
-    
+
     throw new Error(errorMessage);
   }
 };
@@ -446,7 +446,7 @@ export const getTwitterAuthUrl = async (): Promise<string> => {
  * Links a Twitter account to existing authenticated user
  * @returns {Promise<{success: boolean, message: string}>} - Success status and message
  */
-export const linkTwitterAccount = async (): Promise<{success: boolean, message: string}> => {
+export const linkTwitterAccount = async (): Promise<{ success: boolean, message: string }> => {
   try {
     const response = await axios.post(`${API_URL}/auth/twitter/link`, {}, {
       headers: {
@@ -457,19 +457,19 @@ export const linkTwitterAccount = async (): Promise<{success: boolean, message: 
       },
       withCredentials: true,
     });
-    
+
     return {
       success: true,
       message: response.data.message || "Twitter account linked successfully"
     };
   } catch (error: any) {
-    const errorMessage = 
+    const errorMessage =
       error?.response?.data?.message ||
       error?.message ||
       "Failed to link Twitter account";
-      
+
     console.error("[Auth] Failed to link Twitter account:", errorMessage);
-    
+
     return {
       success: false,
       message: errorMessage
@@ -482,12 +482,12 @@ export const linkTwitterAccount = async (): Promise<{success: boolean, message: 
  * @returns {Promise<{linked: boolean, username?: string}>} - Status of Twitter linking
  */
 export const checkTwitterLinkStatus = async (): Promise<{
-  linked: boolean, 
+  linked: boolean,
   username?: string
 }> => {
   try {
     const status = await getAuthStatus();
-    
+
     return {
       linked: !!status.methods?.twitter?.linked,
       username: status.methods?.twitter?.details?.username
@@ -522,9 +522,9 @@ export const getBiometricRegistrationOptions = async (
       nickname: options?.nickname,
       authenticatorType: options?.authenticatorType || 'platform'
     };
-    
+
     const response = await axios.post(
-      `${API_URL}/auth/biometric/register-options`, 
+      `${API_URL}/auth/biometric/register-options`,
       requestData,
       {
         headers: {
@@ -534,11 +534,11 @@ export const getBiometricRegistrationOptions = async (
         withCredentials: true,
       }
     );
-    
+
     if (DDAPI_DEBUG_MODE === "true") {
       console.log("[Auth] Biometric registration options:", response.data);
     }
-    
+
     return response.data;
   } catch (error: any) {
     console.error("[Auth] Failed to get biometric registration options:", {
@@ -546,10 +546,10 @@ export const getBiometricRegistrationOptions = async (
       status: error?.response?.status,
       data: error?.response?.data
     });
-    
+
     throw new Error(
-      error?.response?.data?.message || 
-      error?.message || 
+      error?.response?.data?.message ||
+      error?.message ||
       "Failed to get biometric registration options"
     );
   }
@@ -573,11 +573,11 @@ export const verifyBiometricRegistration = async (attestation: any): Promise<any
         withCredentials: true,
       }
     );
-    
+
     if (DDAPI_DEBUG_MODE === "true") {
       console.log("[Auth] Biometric registration verification:", response.data);
     }
-    
+
     return response.data;
   } catch (error: any) {
     console.error("[Auth] Failed to verify biometric registration:", {
@@ -585,10 +585,10 @@ export const verifyBiometricRegistration = async (attestation: any): Promise<any
       status: error?.response?.status,
       data: error?.response?.data
     });
-    
+
     throw new Error(
-      error?.response?.data?.message || 
-      error?.message || 
+      error?.response?.data?.message ||
+      error?.message ||
       "Failed to verify biometric registration"
     );
   }
@@ -612,11 +612,11 @@ export const getBiometricAuthenticationOptions = async (userId: string): Promise
         withCredentials: true,
       }
     );
-    
+
     if (DDAPI_DEBUG_MODE === "true") {
       console.log("[Auth] Biometric authentication options:", response.data);
     }
-    
+
     return response.data;
   } catch (error: any) {
     console.error("[Auth] Failed to get biometric authentication options:", {
@@ -624,10 +624,10 @@ export const getBiometricAuthenticationOptions = async (userId: string): Promise
       status: error?.response?.status,
       data: error?.response?.data
     });
-    
+
     throw new Error(
-      error?.response?.data?.message || 
-      error?.message || 
+      error?.response?.data?.message ||
+      error?.message ||
       "Failed to get biometric authentication options"
     );
   }
@@ -651,11 +651,11 @@ export const verifyBiometricAuthentication = async (assertion: any): Promise<any
         withCredentials: true,
       }
     );
-    
+
     if (DDAPI_DEBUG_MODE === "true") {
       console.log("[Auth] Biometric authentication verification:", response.data);
     }
-    
+
     // Update the user in the store
     const store = useStore.getState();
     if (response.data?.user) {
@@ -664,7 +664,7 @@ export const verifyBiometricAuthentication = async (assertion: any): Promise<any
         jwt: response.data.token,
       });
     }
-    
+
     return response.data;
   } catch (error: any) {
     console.error("[Auth] Failed to verify biometric authentication:", {
@@ -672,10 +672,10 @@ export const verifyBiometricAuthentication = async (assertion: any): Promise<any
       status: error?.response?.status,
       data: error?.response?.data
     });
-    
+
     throw new Error(
-      error?.response?.data?.message || 
-      error?.message || 
+      error?.response?.data?.message ||
+      error?.message ||
       "Failed to verify biometric authentication"
     );
   }
@@ -698,15 +698,24 @@ export const checkBiometricCredentialStatus = async (userId: string): Promise<bo
         withCredentials: true,
       }
     );
-    
+
     return !!response.data?.hasCredential;
   } catch (error: any) {
+    // Handle 401 (unauthenticated) gracefully - user just isn't logged in yet
+    if (error?.response?.status === 401) {
+      if (DDAPI_DEBUG_MODE === "true") {
+        console.log("[Auth] Biometric credential check skipped - user not authenticated");
+      }
+      return false;
+    }
+
+    // Log other errors but still return false to prevent crashes
     console.error("[Auth] Failed to check biometric credential status:", {
       message: error?.message,
       status: error?.response?.status,
       data: error?.response?.data
     });
-    
+
     return false;
   }
 };

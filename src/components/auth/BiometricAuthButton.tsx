@@ -28,6 +28,7 @@ interface BiometricAuthButtonProps {
   nickname?: string;
   walletAddress?: string;
   showAvailabilityIndicator?: boolean;
+  forcePlatformAuth?: boolean;
   onSuccess?: () => void;
   onError?: (error: string) => void;
   onAvailabilityChange?: (isAvailable: boolean) => void;
@@ -48,6 +49,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
   nickname,
   walletAddress,
   showAvailabilityIndicator = false,
+  forcePlatformAuth = false,
   onSuccess,
   onError,
   onAvailabilityChange
@@ -90,11 +92,22 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
         try {
           const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
           setIsPlatformAuthenticatorAvailable(available);
+          authDebug('BiometricAuth', 'Platform authenticator availability check:', { 
+            available, 
+            userAgent: navigator.userAgent,
+            isInWebView: /iPhone|iPad.*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent)
+          });
         } catch (err) {
           console.error("Error checking platform authenticator:", err);
-          setIsPlatformAuthenticatorAvailable(false);
+          authDebug('BiometricAuth', 'Platform authenticator check failed, treating as available for mobile devices', err);
+          
+          // On mobile devices, assume platform authenticator is available even if detection fails
+          // This handles webview scenarios where the API might not work correctly
+          const isMobileDevice = /iPhone|iPad|Android/i.test(navigator.userAgent);
+          setIsPlatformAuthenticatorAvailable(isMobileDevice ? true : false);
         }
       } else {
+        authDebug('BiometricAuth', 'Platform authenticator API not available');
         setIsPlatformAuthenticatorAvailable(false);
       }
     }
@@ -134,7 +147,12 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
   // Determine if button should be enabled
   const isEnabled = isAvailable && !isLoading && (
     mode === 'register' ? 
-      (!isRegistered && (authenticatorType !== 'platform' || isPlatformAuthenticatorAvailable)) : 
+      (!isRegistered && (
+        authenticatorType !== 'platform' || 
+        isPlatformAuthenticatorAvailable || 
+        isPlatformAuthenticatorAvailable === null || // Allow when detection is uncertain
+        forcePlatformAuth // Allow manual override
+      )) : 
       isRegistered
   );
   
@@ -214,7 +232,15 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
         if (error.name === 'NotAllowedError') {
           errorMsg = 'You canceled the biometric registration';
         } else if (error.name === 'NotSupportedError') {
-          errorMsg = 'Your device doesn\'t support biometric authentication';
+          // Check if we're in a webview and provide helpful guidance
+          const isInWebView = /iPhone|iPad.*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent);
+          if (isInWebView) {
+            errorMsg = 'Biometric authentication may not work in this app. Try opening in Safari browser for best results.';
+          } else {
+            errorMsg = 'Your device doesn\'t support biometric authentication';
+          }
+        } else if (error.name === 'SecurityError') {
+          errorMsg = 'Security error occurred. Please ensure you\'re on a secure connection (HTTPS).';
         } else {
           errorMsg = error.message;
         }
@@ -454,8 +480,15 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
           <span>Biometric auth not available</span>
         </div>
         {authenticatorType === 'platform' && isPlatformAuthenticatorAvailable === false && (
-          <div className="mt-2 text-xs text-gray-500">
-            Your device doesn't support Face ID, Touch ID, or Windows Hello
+          <div className="mt-2 text-xs text-gray-500 text-center">
+            {/iPhone|iPad.*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent) ? (
+              <span>
+                Face ID may not work in this app.<br />
+                Try opening in Safari for best results.
+              </span>
+            ) : (
+              <span>Your device doesn't support Face ID, Touch ID, or Windows Hello</span>
+            )}
           </div>
         )}
       </div>
@@ -465,6 +498,22 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
   // Render the normal button
   return (
     <div className="flex flex-col items-center">
+      {/* Debug information - only shown when authDebug is available */}
+      {typeof authDebug === 'function' && (
+        <div className="mb-2 text-xs text-gray-400 text-center max-w-xs">
+          <div>WebAuthn: {isAvailable ? '✅' : '❌'}</div>
+          <div>Platform Auth: {isPlatformAuthenticatorAvailable === null ? '❓' : isPlatformAuthenticatorAvailable ? '✅' : '❌'}</div>
+          <div>Registered: {isRegistered ? '✅' : '❌'}</div>
+          <div>Enabled: {isEnabled ? '✅' : '❌'}</div>
+          {forcePlatformAuth && <div className="text-yellow-400">🔓 Force Platform Auth: ON</div>}
+          {/iPhone|iPad/i.test(navigator.userAgent) && (
+            <div className="text-orange-400">
+              📱 iOS Device - WebView: {/iPhone|iPad.*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent) ? 'Yes' : 'No'}
+            </div>
+          )}
+        </div>
+      )}
+      
       {/* Button for registering or authenticating with biometrics */}
       <button
         onClick={handleClick}

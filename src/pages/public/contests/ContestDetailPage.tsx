@@ -21,10 +21,11 @@ import { PrizeStructure } from "../../../components/contest-detail/PrizeStructur
 import { Card } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
-  formatCurrency,
-  isContestLive,
-  mapContestStatus,
+    formatCurrency,
+    isContestLive,
+    mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import type { Contest as BaseContest } from "../../../types/index";
@@ -509,7 +510,7 @@ export const ContestDetails: React.FC = () => {
             className="relative overflow-hidden rounded-lg mb-8"
           >
             {/* Contest Image with Parallax Effect */}
-            {contest.image_url && (
+            {getContestImageUrl(contest.image_url) && (
               <div className="absolute inset-0 overflow-hidden">
                 {/* Loading state */}
                 {!imageLoaded && !imageError && (
@@ -536,7 +537,7 @@ export const ContestDetails: React.FC = () => {
                     }}
                   >
                     <img
-                      src={contest.image_url}
+                      src={getContestImageUrl(contest.image_url)}
                       alt={contest.name}
                       onLoad={() => setImageLoaded(true)}
                       onError={() => setImageError(true)}
@@ -551,7 +552,7 @@ export const ContestDetails: React.FC = () => {
             )}
             
             {/* If no image or image error, show gradient background */}
-            {(!contest.image_url || imageError) && (
+            {(!getContestImageUrl(contest.image_url) || imageError) && (
               <div className="absolute inset-0 bg-gradient-to-br from-dark-200/80 to-dark-300/80" />
             )}
             

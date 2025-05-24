@@ -34,15 +34,15 @@ export const authDebug = (context: string, message: string, data?: any) => {
   if (AUTH_DEBUG_MODE === "true") {
     const timestamp = new Date().toISOString().slice(11, 23); // HH:MM:SS.sss
     if (data) {
-      console.log(`%c[AuthDebug:${context}] %c${timestamp} %c${message}`, 
-        'color: #00a8e8; font-weight: bold', 
-        'color: #888', 
-        'color: #fff', 
+      console.log(`%c[AuthDebug:${context}] %c${timestamp} %c${message}`,
+        'color: #00a8e8; font-weight: bold',
+        'color: #888',
+        'color: #fff',
         data);
     } else {
-      console.log(`%c[AuthDebug:${context}] %c${timestamp} %c${message}`, 
-        'color: #00a8e8; font-weight: bold', 
-        'color: #888', 
+      console.log(`%c[AuthDebug:${context}] %c${timestamp} %c${message}`,
+        'color: #00a8e8; font-weight: bold',
+        'color: #888',
         'color: #fff');
     }
   }
@@ -76,11 +76,10 @@ export const API_URL = isDev
 //   Should this include the full path after the domain just like the rest api URL does?Because this doesn't right now...
 //
 export const WS_URL = window.location.hostname === "localhost" ||
-    window.location.hostname.startsWith("127.0.0.1")
-    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${
-        window.location.host
-      }`
-    : `wss://${window.location.hostname}`; // Always use current hostname to avoid cross-domain issues
+  window.location.hostname.startsWith("127.0.0.1")
+  ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host
+  }`
+  : `wss://${window.location.hostname}`; // Always use current hostname to avoid cross-domain issues
 
 /* Platform Fees */
 export const TOKEN_SUBMISSION_COST = isDev // New token whitelisting cost
@@ -231,3 +230,48 @@ if (NODE_ENV === "development") {
     hostname: window.location.hostname,
   });
 }
+
+// Global server status tracking to prevent cascading failures
+class ServerStatus {
+  private static instance: ServerStatus;
+  private isServerDown: boolean = false;
+  private consecutiveFailures: number = 0;
+  private lastFailureTime: number = 0;
+  private readonly FAILURE_THRESHOLD = 3;
+  private readonly RECOVERY_TIMEOUT = 30000; // 30 seconds
+
+  static getInstance(): ServerStatus {
+    if (!ServerStatus.instance) {
+      ServerStatus.instance = new ServerStatus();
+    }
+    return ServerStatus.instance;
+  }
+
+  recordFailure(): void {
+    this.consecutiveFailures++;
+    this.lastFailureTime = Date.now();
+
+    if (this.consecutiveFailures >= this.FAILURE_THRESHOLD) {
+      this.isServerDown = true;
+      console.warn(`[ServerStatus] Server marked as down after ${this.FAILURE_THRESHOLD} failures`);
+    }
+  }
+
+  recordSuccess(): void {
+    this.consecutiveFailures = 0;
+    this.isServerDown = false;
+  }
+
+  checkServerStatus(): boolean {
+    // Auto-recovery after timeout
+    if (this.isServerDown && Date.now() - this.lastFailureTime > this.RECOVERY_TIMEOUT) {
+      console.log('[ServerStatus] Recovery timeout passed, attempting to mark server as up');
+      this.isServerDown = false;
+      this.consecutiveFailures = 0;
+    }
+
+    return !this.isServerDown;
+  }
+}
+
+export const serverStatus = ServerStatus.getInstance();

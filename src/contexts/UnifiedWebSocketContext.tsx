@@ -234,9 +234,11 @@ export const UnifiedWebSocketProvider: React.FC<{
       }
       
       // Handle successful authentication ACK from server
-      if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && message.message?.includes('authenticated')) {
+      if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && 
+          message.operation === 'authenticate' && 
+          message.status === 'success') {
         setConnectionState(ConnectionState.AUTHENTICATED);
-        authDebug('WebSocketContext', 'WebSocket authentication successful via ACK');
+        authDebug('WebSocketContext', 'WebSocket authentication successful via authenticate ACK');
         
         // Clear auth timeout since authentication succeeded
         if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
@@ -246,31 +248,48 @@ export const UnifiedWebSocketProvider: React.FC<{
         return;
       }
 
-      // Handle WebSocket Authentication Error (token_expired or other auth issues from WS message)
-      if (message.type === DDExtendedMessageType.ERROR && message.code === 4401 && message.reason === 'token_expired') {
-        authDebug('WebSocketContext', 'WebSocket auth error: Token expired (4401)', message);
-        
-        // Clear auth timeout and fall back to CONNECTED state
-        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
-          clearTimeout((wsRef.current as any).__authTimeoutId);
-          delete (wsRef.current as any).__authTimeoutId;
-        }
-        setConnectionState(ConnectionState.CONNECTED);
-        
-        // Even if WS token is bad, the main session might still be valid or renewable.
-        // Trigger a global auth check. If that also determines the session is invalid (e.g., main JWT also expired), `authService` should then handle the full logout.
-        // Do not set connectionState to ERROR here, as the connection itself might be fine.
-        // The key is that this specific WebSocket session is not AUTHENTICATED.
-        // Potentially dispatch an event that authService or UnifiedAuthContext can listen to, to trigger re-auth or logout.
-        // For now, let's call authService.checkAuth() which might lead to logout if main tokens are also bad.
-        authService.checkAuth().then(isValidSession => {
-          if (!isValidSession) {
-            authDebug('WebSocketContext', 'Global auth check failed after WS token expiry, full logout likely.');
-            // authService.logout(); // checkAuth should handle logout if necessary
+      // Handle subscription confirmations (separate from authentication)
+      if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && 
+          message.operation === 'subscribe' && 
+          message.status === 'success') {
+        authDebug('WebSocketContext', 'Successfully subscribed to topics:', message.topics);
+        return;
+      }
+
+      // Handle WebSocket Authentication Errors per backend specification
+      if (message.type === DDExtendedMessageType.ERROR) {
+        // Token expired (4401)
+        if (message.code === 4401 && message.reason === 'token_expired') {
+          authDebug('WebSocketContext', 'WebSocket auth error: Token expired (4401)', message);
+          
+          // Clear auth timeout and fall back to CONNECTED state
+          if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
+            clearTimeout((wsRef.current as any).__authTimeoutId);
+            delete (wsRef.current as any).__authTimeoutId;
           }
-        });
-        // Do not distribute this specific error message further if it's just for WS auth status.
-        return; 
+          setConnectionState(ConnectionState.CONNECTED);
+          
+          // Trigger global auth check for token renewal
+          authService.checkAuth().then(isValidSession => {
+            if (!isValidSession) {
+              authDebug('WebSocketContext', 'Global auth check failed after WS token expiry, full logout likely.');
+            }
+          });
+          return;
+        }
+        
+        // Authentication required for restricted topics (4010)
+        if (message.code === 4010) {
+          authDebug('WebSocketContext', 'WebSocket auth error: Authentication required (4010)', message);
+          
+          // Clear auth timeout and fall back to CONNECTED state
+          if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
+            clearTimeout((wsRef.current as any).__authTimeoutId);
+            delete (wsRef.current as any).__authTimeoutId;
+          }
+          setConnectionState(ConnectionState.CONNECTED);
+          return;
+        }
       }
       
       // Distribute other messages to listeners
@@ -529,14 +548,14 @@ export const UnifiedWebSocketProvider: React.FC<{
       
       authDebug('WebSocketContext', 'Sent WebSocket authentication message');
       
-      // Set a timeout to fall back to CONNECTED if no auth response in 5 seconds
+      // Set a timeout to fall back to CONNECTED if no auth response in 15 seconds
       const authTimeoutId = setTimeout(() => {
         // Check current state, not closure state
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           authDebug('WebSocketContext', 'Authentication timeout, falling back to CONNECTED state');
           setConnectionState(ConnectionState.CONNECTED);
         }
-      }, 5000);
+      }, 15000);
       
       // Store timeout ID for potential cleanup
       if (!wsRef.current) return;
@@ -619,29 +638,66 @@ export const UnifiedWebSocketProvider: React.FC<{
   // Subscribe to topics
   const subscribe = (topics: string[]) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || topics.length === 0) {
+      authDebug('WebSocketContext', 'Subscribe failed - validation check', {
+        hasWebSocket: !!wsRef.current,
+        readyState: wsRef.current?.readyState,
+        topicsLength: topics.length,
+        topics
+      });
       return false;
     }
     
-    const message: any = {
-      type: 'SUBSCRIBE',
-      topics
+    // Create the base message with topics preserved
+    const createSubscribeMessage = (authToken?: string) => {
+      const message: any = {
+        type: 'SUBSCRIBE',
+        topics: [...topics] // Clone the array to prevent mutation
+      };
+      
+      if (authToken) {
+        message.authToken = authToken;
+      }
+      
+      authDebug('WebSocketContext', 'Created subscribe message', {
+        type: message.type,
+        topicsLength: message.topics.length,
+        topics: message.topics,
+        hasAuthToken: !!authToken
+      });
+      
+      return message;
     };
     
-    // Add auth token if authenticated
+    // Handle authenticated subscription
     if (authService.isAuthenticated()) {
-      authService.getToken(TokenType.WS_TOKEN).then(token => {
-        if (token) {
-          message.authToken = token;
-          sendMessage(message);
-        } else {
-          sendMessage(message);
-        }
-      }).catch(() => {
-        sendMessage(message);
-      });
+      authDebug('WebSocketContext', 'Subscribing with authentication', { topics });
+      
+      authService.getToken(TokenType.WS_TOKEN)
+        .then(token => {
+          const message = createSubscribeMessage(token || undefined);
+          const success = sendMessage(message);
+          authDebug('WebSocketContext', 'Sent authenticated subscribe message', {
+            success,
+            topicsCount: message.topics.length,
+            hasToken: !!token
+          });
+        })
+        .catch((error) => {
+          authDebug('WebSocketContext', 'Token retrieval failed, sending without token', { error });
+          // Send without token if token retrieval fails
+          const message = createSubscribeMessage();
+          const success = sendMessage(message);
+          authDebug('WebSocketContext', 'Sent unauthenticated subscribe message', {
+            success,
+            topicsCount: message.topics.length
+          });
+        });
       return true;
     }
     
+    // Send without auth for public topics
+    authDebug('WebSocketContext', 'Subscribing without authentication', { topics });
+    const message = createSubscribeMessage();
     return sendMessage(message);
   };
   

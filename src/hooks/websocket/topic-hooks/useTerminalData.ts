@@ -51,6 +51,13 @@ export function useTerminalData() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const isSubscribedRef = useRef<boolean>(false);
 
+  // Circuit breaker state to prevent infinite retries when server is down
+  const [circuitBreakerOpen, setCircuitBreakerOpen] = useState<boolean>(false);
+  const consecutiveFailuresRef = useRef<number>(0);
+  const lastFailureTimeRef = useRef<number>(0);
+  const CIRCUIT_BREAKER_THRESHOLD = 3;
+  const CIRCUIT_BREAKER_TIMEOUT = 30000; // 30 seconds
+
   // Use refs to avoid recreating handleMessage on every state change
   const isLoadingRef = useRef(isLoading);
   const terminalDataRef = useRef(terminalData);
@@ -155,12 +162,43 @@ export function useTerminalData() {
   }, [ws.unsubscribe]);
 
   const refreshTerminalData = useCallback(() => {
+    // Check circuit breaker - if open and timeout hasn't passed, don't retry
+    const now = Date.now();
+    if (circuitBreakerOpen) {
+      if (now - lastFailureTimeRef.current < CIRCUIT_BREAKER_TIMEOUT) {
+        console.warn('[TerminalData WebSocket] Circuit breaker open - skipping retry for',
+          Math.ceil((CIRCUIT_BREAKER_TIMEOUT - (now - lastFailureTimeRef.current)) / 1000), 'seconds');
+        setIsLoading(false);
+        return;
+      } else {
+        // Reset circuit breaker after timeout
+        setCircuitBreakerOpen(false);
+        consecutiveFailuresRef.current = 0;
+        console.log('[TerminalData WebSocket] Circuit breaker reset - attempting reconnection');
+      }
+    }
+
     // Use ws.isConnected for refresh as well, assuming public data.
     if (!ws.isConnected) {
-      console.warn('[TerminalData WebSocket] Cannot refresh AI chat - WebSocket not connected');
-      setIsLoading(false); // Ensure loading is set to false if we can't refresh
+      // Increment failure count
+      consecutiveFailuresRef.current++;
+      lastFailureTimeRef.current = now;
+
+      // Open circuit breaker if too many failures
+      if (consecutiveFailuresRef.current >= CIRCUIT_BREAKER_THRESHOLD) {
+        setCircuitBreakerOpen(true);
+        console.error(`[TerminalData WebSocket] Circuit breaker opened after ${CIRCUIT_BREAKER_THRESHOLD} failures - backing off for ${CIRCUIT_BREAKER_TIMEOUT / 1000}s`);
+      } else {
+        console.warn('[TerminalData WebSocket] Cannot refresh AI chat - WebSocket not connected');
+      }
+
+      setIsLoading(false);
       return;
     }
+
+    // Reset failure count on successful connection
+    consecutiveFailuresRef.current = 0;
+
     setIsLoading(true);
     ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
     dispatchWebSocketEvent('terminal_data_refresh', {
@@ -170,11 +208,16 @@ export function useTerminalData() {
     });
 
     const timeoutId = setTimeout(() => {
-      if (isLoadingRef.current) setIsLoading(false);
+      if (isLoadingRef.current) {
+        setIsLoading(false);
+        // Increment failure count on timeout
+        consecutiveFailuresRef.current++;
+        lastFailureTimeRef.current = Date.now();
+      }
     }, 10000);
-    return () => clearTimeout(timeoutId); // Return cleanup for this timeout
+    return () => clearTimeout(timeoutId);
 
-  }, [ws.isConnected, ws.request]); // Remove isLoading dependency
+  }, [ws.isConnected, ws.request, circuitBreakerOpen]);
 
   return {
     terminalData,

@@ -132,11 +132,31 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     ? `${publicKey.toBase58().slice(0, 6)}...${publicKey.toBase58().slice(-4)}`
     : '';
 
-  // If wallet not connected, show WalletMultiButton
+  // If wallet not connected, show WalletMultiButton with consistent styling
   if (!connected || !publicKey) {
     return (
       <div className={`flex flex-col ${className}`}>
-        <WalletMultiButton className={`font-cyber ${sizeClasses[size]}`} />
+        <div className="w-full h-12 flex items-center justify-center">
+          <WalletMultiButton 
+            style={{
+              width: '100%',
+              height: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '0.875rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '0',
+              boxShadow: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              fontFamily: 'inherit'
+            }}
+          />
+        </div>
         {error && (
           <div className="mt-2 text-xs text-red-500">
             {error}
@@ -170,7 +190,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     <div className={`flex flex-col ${className}`}>
       <Button
         variant="gradient"
-        className={`w-full font-cyber flex items-center justify-center ${sizeClasses[size]}`}
+        className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]}`}
         onClick={buttonOnClick}
         disabled={isDisabled}
       >

@@ -7,7 +7,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ParticipantsList } from '../components/contest-detail/ParticipantsList';
 import { PrizeStructure } from '../components/contest-detail/PrizeStructure';
+import { getContestImageUrl } from '../lib/imageUtils';
 import { Contest } from '../types';
+//import src from 'gsap/src';
 
 // This is a standalone story version of the redesigned ContestDetailPage
 // It's a simplified version that doesn't require all the context dependencies
@@ -156,7 +158,7 @@ const MobileContestDetailPage: React.FC<MobileContestDetailPageProps> = ({
             className="relative overflow-hidden rounded-lg mb-8"
           >
             {/* Contest Image with Parallax Effect */}
-            {contest.image_url && (
+            {getContestImageUrl(contest.image_url) && (
               <div className="absolute inset-0 overflow-hidden">
                 {/* Loading state */}
                 {!imageLoaded && !imageError && (
@@ -181,7 +183,7 @@ const MobileContestDetailPage: React.FC<MobileContestDetailPageProps> = ({
                     }}
                   >
                     <img
-                      src={contest.image_url}
+                      src={getContestImageUrl(contest.image_url)}
                       alt={contest.name}
                       onLoad={() => setImageLoaded(true)}
                       onError={() => setImageError(true)}
@@ -196,7 +198,7 @@ const MobileContestDetailPage: React.FC<MobileContestDetailPageProps> = ({
             )}
             
             {/* If no image or image error, show gradient background */}
-            {(!contest.image_url || imageError) && (
+            {(!getContestImageUrl(contest.image_url) || imageError) && (
               <div className="absolute inset-0 bg-gradient-to-br from-dark-200/80 to-dark-300/80" />
             )}
             

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
+import { getContestImageUrl } from "../../lib/imageUtils";
 import { formatCurrency } from "../../lib/utils";
 import { Contest, ContestStatus } from "../../types/index";
 import { LoadingSpinner } from "../common/LoadingSpinner";
@@ -85,7 +86,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       className="group relative bg-dark-200/80 backdrop-blur-sm border border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 rounded-lg overflow-hidden w-full max-w-full"
     >
       {/* Contest Image with Parallax Effect */}
-      {contest.image_url && (
+      {getContestImageUrl(contest.image_url) && (
         <div className="absolute inset-0 overflow-hidden">
           {/* Initial loading state - show spinner */}
           {!imageLoaded && !imageError && !imageBlurhash && (
@@ -130,14 +131,14 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 }}
               >
                 <motion.img
-                  src={contest.image_url}
+                  src={getContestImageUrl(contest.image_url)}
                   alt={contest.name}
                   onLoad={() => {
                     // Small delay for smoother transition from placeholder
                     setTimeout(() => setImageLoaded(true), 100);
                   }}
                   onError={() => {
-                    console.error(`Failed to load image: ${contest.image_url}`);
+                    console.error(`Failed to load image: ${getContestImageUrl(contest.image_url)}`);
                     setImageError(true);
                   }}
                   initial={{ scale: 1.2, filter: "blur(8px)" }}
@@ -155,7 +156,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       )}
       
       {/* Fallback background for cards without images */}
-      {!contest.image_url && (
+      {!getContestImageUrl(contest.image_url) && (
         <div className="absolute inset-0 bg-gradient-to-br from-dark-300/50 to-dark-400/50" />
       )}
 

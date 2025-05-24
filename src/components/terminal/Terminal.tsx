@@ -36,17 +36,17 @@ import './Terminal.css';
 
 // Import utility functions
 import {
-  getDidiMemoryState,
-  resetDidiMemory
+    getDidiMemoryState,
+    resetDidiMemory
 } from './utils/didiHelpers';
 
 // Didi loves Easter
 import {
-  awardEasterEggProgress,
-  EASTER_EGG_CODE,
-  getDiscoveredPatterns,
-  getEasterEggProgress,
-  SECRET_COMMANDS
+    awardEasterEggProgress,
+    EASTER_EGG_CODE,
+    getDiscoveredPatterns,
+    getEasterEggProgress,
+    SECRET_COMMANDS
 } from './utils/easterEggHandler';
 
 // Import types
@@ -199,16 +199,22 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     // Reset the counter
     window.terminalRefreshCount = 0;
     
+    // Prevent infinite loops when server is down
+    if (!wsConnected) {
+      console.log('[Terminal] WebSocket not connected, deferring initialization');
+      return;
+    }
+    
     // WebSocket-only approach - no REST API fallback
     const initializeTerminalData = () => {
       console.log('[Terminal] Initializing terminal data via WebSocket ONLY');
       
-      // Request data from WebSocket
-      refreshWsTerminalData();
-      
-      // If not connected, try again when connection becomes available
-      if (!wsConnected) {
-        console.log('[Terminal] WebSocket not connected yet. Will initialize when connected.');
+      // Only call refresh if we haven't already tried recently
+      if (!window.terminalRefreshCount || window.terminalRefreshCount < 3) {
+        window.terminalRefreshCount = (window.terminalRefreshCount || 0) + 1;
+        refreshWsTerminalData();
+      } else {
+        console.log('[Terminal] Skipping refresh - too many attempts');
       }
     };
     
@@ -216,15 +222,25 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     initializeTerminalData();
     
     // No interval - initial WebSocket connection and subsequent updates only
-  }, [wsConnected, refreshWsTerminalData]);
+  }, [wsConnected]); // Remove refreshWsTerminalData dependency to prevent infinite loops
   
-  // Re-request terminal data when WebSocket connection state changes
+  // Re-request terminal data when WebSocket connection state changes - WITH CIRCUIT BREAKER
   useEffect(() => {
-    if (wsConnected) {
+    // Only attempt refresh if connected and we haven't failed too many times
+    if (wsConnected && (!window.terminalRefreshCount || window.terminalRefreshCount < 5)) {
       console.log('[Terminal] WebSocket connected, requesting terminal data');
-      refreshWsTerminalData();
+      
+      // Debounce the refresh call to prevent spam
+      const timeoutId = setTimeout(() => {
+        refreshWsTerminalData();
+        window.terminalRefreshCount = (window.terminalRefreshCount || 0) + 1;
+      }, 1000); // 1 second debounce
+      
+      return () => clearTimeout(timeoutId);
+    } else if (wsConnected) {
+      console.log('[Terminal] Skipping refresh - circuit breaker engaged');
     }
-  }, [wsConnected, refreshWsTerminalData]);
+  }, [wsConnected]); // Remove refreshWsTerminalData dependency
 
   // Random glitch effect for contract address
   useEffect(() => {

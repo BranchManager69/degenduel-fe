@@ -1,6 +1,43 @@
-import { render, act, waitFor } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
+import { authService } from "../services";
 import { UnifiedWebSocketProvider, useWebSocket } from "./UnifiedWebSocketContext";
-import { authService, TokenType } from "../services";
+
+// Mock the config file to avoid import.meta.env issues
+jest.mock("../config/config", () => ({
+  authDebug: jest.fn(),
+  NODE_ENV: "test",
+  API_URL: "http://localhost:3000/api",
+  PRELAUNCH_MODE: false,
+  config: {
+    ENV: {
+      NODE_ENV: "test",
+      IS_DEV: true,
+      IS_PROD: false
+    }
+  }
+}));
+
+// Mock the websocket types to avoid ES modules issues
+jest.mock("../hooks/websocket/types", () => ({
+  DDExtendedMessageType: {
+    PING: 'PING',
+    PONG: 'PONG',
+    ACKNOWLEDGMENT: 'ACKNOWLEDGMENT',
+    ERROR: 'ERROR',
+    SUBSCRIBE: 'SUBSCRIBE',
+    UNSUBSCRIBE: 'UNSUBSCRIBE',
+    REQUEST: 'REQUEST',
+    RESPONSE: 'RESPONSE',
+    SYSTEM: 'SYSTEM',
+    UPDATE: 'UPDATE',
+    NOTIFICATION: 'NOTIFICATION'
+  }
+}));
+
+// Mock the unified websocket hook
+jest.mock("../hooks/websocket/useUnifiedWebSocket", () => ({
+  setupWebSocketInstance: jest.fn()
+}));
 
 // Mock WebSocket
 class MockWebSocket {
@@ -25,15 +62,20 @@ class MockWebSocket {
   }
 }
 
+// Create a Jest mock function for WebSocket constructor
+const mockWebSocketConstructor = jest.fn().mockImplementation((url: string) => new MockWebSocket(url));
+
 // Mock the WebSocket global
-global.WebSocket = MockWebSocket as any;
+global.WebSocket = mockWebSocketConstructor as any;
 
 // Mock services
 jest.mock("../services", () => {
   return {
     authService: {
       getToken: jest.fn().mockResolvedValue("test-auth-token"),
+      isAuthenticated: jest.fn().mockReturnValue(false), // Default to false
       on: jest.fn().mockReturnValue(jest.fn()), // Return unsubscribe function
+      checkAuth: jest.fn().mockResolvedValue(true),
     },
     TokenType: {
       JWT: 'jwt',
@@ -122,6 +164,11 @@ describe("UnifiedWebSocketContext", () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset WebSocket constructor mock
+    mockWebSocketConstructor.mockClear();
+    // Reset auth service to default state for each test
+    (authService.isAuthenticated as jest.Mock).mockReturnValue(false);
+    (authService.getToken as jest.Mock).mockResolvedValue("test-auth-token");
   });
 
   test("should establish connection on mount", async () => {
@@ -141,8 +188,8 @@ describe("UnifiedWebSocketContext", () => {
   });
 
   test("should authenticate when connection is established", async () => {
-    // Reset mock to track calls
-    (authService.getToken as jest.Mock).mockClear();
+    // Enable authentication for this test
+    (authService.isAuthenticated as jest.Mock).mockReturnValue(true);
     
     const { getByTestId } = render(
       <UnifiedWebSocketProvider>
@@ -157,7 +204,7 @@ describe("UnifiedWebSocketContext", () => {
     
     // Verify token was requested for authentication
     await waitFor(() => {
-      expect(authService.getToken).toHaveBeenCalledWith(TokenType.WS_TOKEN);
+      expect(authService.getToken).toHaveBeenCalledWith('ws_token');
     });
   });
 
@@ -174,7 +221,7 @@ describe("UnifiedWebSocketContext", () => {
     });
     
     // Get WebSocket instance
-    const wsInstance = (global.WebSocket as unknown as jest.Mock).mock.instances[0];
+    const wsInstance = mockWebSocketConstructor.mock.results[0].value;
     
     // Send a message
     act(() => {
@@ -200,7 +247,7 @@ describe("UnifiedWebSocketContext", () => {
     });
     
     // Get WebSocket instance
-    const wsInstance = (global.WebSocket as unknown as jest.Mock).mock.instances[0];
+    const wsInstance = mockWebSocketConstructor.mock.results[0].value;
     
     // Subscribe to topic
     act(() => {
@@ -231,7 +278,10 @@ describe("UnifiedWebSocketContext", () => {
     });
     
     // Get WebSocket instance
-    const wsInstance = (global.WebSocket as unknown as jest.Mock).mock.instances[0];
+    const wsInstance = mockWebSocketConstructor.mock.results[0].value;
+    
+    // Clear previous calls
+    wsInstance.send.mockClear();
     
     // Unsubscribe from topic
     act(() => {
@@ -240,12 +290,23 @@ describe("UnifiedWebSocketContext", () => {
     
     // Verify unsubscription message was sent
     await waitFor(() => {
-      expect(wsInstance.send).toHaveBeenCalledWith(
-        expect.stringContaining('"type":"UNSUBSCRIBE"')
-      );
-      expect(wsInstance.send).toHaveBeenCalledWith(
-        expect.stringContaining('"topics":["test-topic"]')
-      );
+      const calls = wsInstance.send.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      
+      const unsubscribeCall = calls.find((call: any) => {
+        try {
+          const message = JSON.parse(call[0]);
+          return message.type === 'UNSUBSCRIBE';
+        } catch {
+          return false;
+        }
+      });
+      
+      expect(unsubscribeCall).toBeTruthy();
+      if (unsubscribeCall) {
+        const message = JSON.parse(unsubscribeCall[0]);
+        expect(message.topics).toEqual(['test-topic']);
+      }
     });
   });
 
@@ -262,12 +323,123 @@ describe("UnifiedWebSocketContext", () => {
     });
     
     // Get WebSocket instance
-    const wsInstance = (global.WebSocket as unknown as jest.Mock).mock.instances[0];
+    const wsInstance = mockWebSocketConstructor.mock.results[0].value;
     
     // Unmount component
     unmount();
     
     // Verify connection was closed
     expect(wsInstance.close).toHaveBeenCalled();
+  });
+
+  test("should handle async token retrieval without corrupting topics", async () => {
+    // Mock async token retrieval that takes some time
+    const mockGetToken = jest.fn().mockImplementation(() => 
+      new Promise(resolve => setTimeout(() => resolve('mock-ws-token'), 100))
+    );
+    
+    (authService.getToken as jest.Mock) = mockGetToken;
+    (authService.isAuthenticated as jest.Mock).mockReturnValue(true); // Enable authentication
+
+    const { getByTestId } = render(
+      <UnifiedWebSocketProvider>
+        <TestComponent />
+      </UnifiedWebSocketProvider>
+    );
+    
+    // Wait for connection
+    await waitFor(() => {
+      expect(getByTestId("connection-status")).toHaveTextContent("Connected");
+    });
+    
+    // Get WebSocket instance
+    const wsInstance = mockWebSocketConstructor.mock.results[0].value;
+    
+    // Clear previous calls
+    wsInstance.send.mockClear();
+    
+    // Subscribe to topic
+    act(() => {
+      getByTestId("subscribe-button").click();
+    });
+    
+    // Wait for async token retrieval to complete
+    await waitFor(() => {
+      expect(mockGetToken).toHaveBeenCalledWith('ws_token');
+    });
+    
+    // Verify subscription message was sent with proper topics
+    await waitFor(() => {
+      const calls = wsInstance.send.mock.calls;
+      const subscribeCall = calls.find((call: any) => {
+        try {
+          const message = JSON.parse(call[0]);
+          return message.type === 'SUBSCRIBE';
+        } catch {
+          return false;
+        }
+      });
+      
+      expect(subscribeCall).toBeTruthy();
+      
+      if (subscribeCall) {
+        const message = JSON.parse(subscribeCall[0]);
+        expect(message.topics).toEqual(['test-topic']);
+        expect(message.topics.length).toBeGreaterThan(0);
+        expect(message.authToken).toBe('mock-ws-token');
+      }
+    });
+  });
+
+  test("should handle token retrieval failure gracefully", async () => {
+    // Mock token retrieval failure
+    const mockGetToken = jest.fn().mockRejectedValue(new Error('Token retrieval failed'));
+    
+    (authService.getToken as jest.Mock) = mockGetToken;
+    (authService.isAuthenticated as jest.Mock).mockReturnValue(true); // Enable authentication
+
+    const { getByTestId } = render(
+      <UnifiedWebSocketProvider>
+        <TestComponent />
+      </UnifiedWebSocketProvider>
+    );
+    
+    // Wait for connection
+    await waitFor(() => {
+      expect(getByTestId("connection-status")).toHaveTextContent("Connected");
+    });
+    
+    // Get WebSocket instance
+    const wsInstance = mockWebSocketConstructor.mock.results[0].value;
+    
+    // Clear previous calls
+    wsInstance.send.mockClear();
+    
+    // Subscribe to topic
+    act(() => {
+      getByTestId("subscribe-button").click();
+    });
+    
+    // Wait for token retrieval to fail and fallback message to be sent
+    await waitFor(() => {
+      const calls = wsInstance.send.mock.calls;
+      const subscribeCall = calls.find((call: any) => {
+        try {
+          const message = JSON.parse(call[0]);
+          return message.type === 'SUBSCRIBE';
+        } catch {
+          return false;
+        }
+      });
+      
+      expect(subscribeCall).toBeTruthy();
+      
+      if (subscribeCall) {
+        const message = JSON.parse(subscribeCall[0]);
+        expect(message.topics).toEqual(['test-topic']);
+        expect(message.topics.length).toBeGreaterThan(0);
+        expect(message.authToken).toBeUndefined(); // No token due to failure
+      }
+    });
   });
 });
