@@ -14,7 +14,7 @@ import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
  */
 export const AdminRoute: React.FC = () => {
   // Use the migrated auth hook (switches between old and new auth based on feature flag)
-  const { isLoading, loading, isAuthenticated, isAdmin } = useMigratedAuth();
+  const { isLoading, loading, isAuthenticated, isAdministrator } = useMigratedAuth();
   const location = useLocation();
   
   // Use either isLoading or loading (for backward compatibility)
@@ -37,7 +37,7 @@ export const AdminRoute: React.FC = () => {
 
   // Check if user is authenticated and has admin privileges
   const isAuth = isAuthenticated;
-  const hasAdminAccess = isAuth && isAdmin;
+  const hasAdminAccess = isAuth && isAdministrator;
 
   // If not admin, redirect to home
   if (!hasAdminAccess) {

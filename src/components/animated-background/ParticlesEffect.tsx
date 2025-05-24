@@ -31,7 +31,7 @@ export const ParticlesEffect: React.FC = () => {
   const [hasWebGLError, setHasWebGLError] = useState(false);
 
   // No animation if maintenance mode is on and user is not an administrator
-  if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
+  if (maintenanceMode && !(user?.role === 'admin' || user?.role === 'superadmin')) {
     return null;
   }
 

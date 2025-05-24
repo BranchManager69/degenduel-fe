@@ -287,11 +287,6 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
       {user && (
         <WhaleRoomButton walletAddress={user.wallet_address} />
       )}
-            
-      {/* Link to standardized test page */}
-      <RouterLink to="/tokens/standardized-test" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
-        View Standardized Components
-      </RouterLink>
 
     </motion.div>
   );

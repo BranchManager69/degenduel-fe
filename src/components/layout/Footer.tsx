@@ -12,7 +12,7 @@ import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
-  const { isAdmin, isAuthenticated } = useMigratedAuth();
+  const { isAdministrator, isAuthenticated } = useMigratedAuth();
   const unifiedWs = useWebSocket();
   
   // Get errors from hooks
@@ -295,7 +295,7 @@ export const Footer: React.FC = () => {
                     {/* 
                     {isAdmin && systemSettingsDataFromHook?.showDiagnostics && systemSettingsDataFromHook?.diagOptions?.includes('rpc_benchmarks') && (
                     */}
-                    {isAdmin && (
+                    {isAdministrator && (
                       <div className="ml-2 pl-2 border-l border-gray-700">
                         <RPCBenchmarkFooter compactMode={isCompact} />
                       </div>

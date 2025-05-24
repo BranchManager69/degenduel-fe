@@ -28,7 +28,7 @@ import type { SortDirection, SortField } from "../../../types/sort";
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useMigratedAuth();
+  const { isAdministrator } = useMigratedAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -264,7 +264,7 @@ export const ContestBrowser: React.FC = () => {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             </h1>
-            {isAdmin && (
+            {isAdministrator && (
               <CreateContestButton
                 onCreateClick={() => setIsCreateModalOpen(true)}
               />

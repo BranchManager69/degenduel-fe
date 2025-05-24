@@ -44,11 +44,18 @@ export interface BenchmarkData {
 export interface BenchmarkMessage {
   type: string;
   topic: string;
-  data: {
-    type: 'rpc-benchmark-update';
-    test_run_id: string;
-    timestamp: string;
-  };
+  action?: string; // For RESPONSE messages
+  error?: string;  // For ERROR messages
+  data?: {
+    type?: 'rpc-benchmark-update';
+    test_run_id?: string;
+    timestamp?: string;
+    success?: boolean;
+    // Include all BenchmarkData fields for RESPONSE messages
+    methods?: Record<string, BenchmarkMethod>;
+    overall_fastest_provider?: string;
+    performance_advantage?: PerformanceAdvantage[];
+  } | BenchmarkData; // Can be either update notification or full benchmark data
 }
 
 /**
@@ -57,10 +64,10 @@ export interface BenchmarkMessage {
 export function useRPCBenchmarkWebSocket() {
   // Using a ref to avoid the unused setData warning while maintaining state functionality
   const [data, setData] = useState<BenchmarkData | null>(null);
-  
+
   // Create a mutable ref to store the latest benchmark data
   const dataRef = React.useRef<BenchmarkData | null>(null);
-  
+
   // Update both the state and ref when new data comes in
   const updateData = React.useCallback((newData: BenchmarkData | null) => {
     setData(newData);
@@ -69,24 +76,44 @@ export function useRPCBenchmarkWebSocket() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isBenchmarkRunning, setIsBenchmarkRunning] = useState<boolean>(false);
-  const uniqueId = 'rpc-benchmark-' + Math.random().toString(36).substring(2, 9);
-  
+
+  // FIXED: Create stable unique ID using useState instead of recreating on every render
+  const [uniqueId] = useState(() => 'rpc-benchmark-' + Math.random().toString(36).substring(2, 9));
+
   // Message handler
-  const handleMessage = useCallback((message: BenchmarkMessage) => {
+  const handleMessage = useCallback((message: any) => {
+    // Handle update notifications (triggers a fetch)
     if (message.topic === 'admin' && message.data?.type === 'rpc-benchmark-update') {
       // Trigger a fetch for the latest data
       fetchLatestBenchmarkData();
-      
+
       // Check if benchmark is still running
       if (message.data.test_run_id) {
         setIsBenchmarkRunning(false);
       }
     }
-  }, []);
-  
+
+    // FIXED: Handle actual data response from getRpcBenchmarks request
+    if (message.type === 'RESPONSE' &&
+      message.action === 'getRpcBenchmarks' &&
+      message.data?.success) {
+      console.log('[RPC Benchmark] Received benchmark data:', message.data);
+      updateData(message.data as BenchmarkData);
+      setIsLoading(false);
+      setError(null);
+    }
+
+    // Handle errors
+    if (message.type === 'ERROR') {
+      console.error('[RPC Benchmark] WebSocket error:', message);
+      setError(message.error || 'Unknown WebSocket error');
+      setIsLoading(false);
+    }
+  }, [updateData]);
+
   // Set up WebSocket connection
-  const { 
-    isConnected, 
+  const {
+    isConnected,
     isAuthenticated,
     request,
     subscribe,
@@ -98,36 +125,38 @@ export function useRPCBenchmarkWebSocket() {
     handleMessage,
     ['admin']
   );
-  
+
   // Fetch latest benchmark data
   const fetchLatestBenchmarkData = useCallback(() => {
     if (!isConnected || !isAuthenticated) return;
-    
+
     setIsLoading(true);
-    
-    // Send request for latest benchmark data
+
+    // FIXED: Use correct action name as specified by backend team
     try {
-      request('admin', 'rpc-benchmarks/latest');
-      
+      request('admin', 'getRpcBenchmarks');
+
       // Handle async response if available
       Promise.resolve().then(() => {
-        setIsLoading(false);
+        // Don't set loading to false here - wait for actual response
+        // setIsLoading(false);
       });
     } catch (error) {
       console.error('Error fetching benchmark data:', error);
       setError(error instanceof Error ? error.message : String(error));
       setIsLoading(false);
     }
-  }, [isConnected, isAuthenticated, request, updateData]);
-  
+  }, [isConnected, isAuthenticated, request]);
+
   // Trigger a new benchmark
   const triggerBenchmark = useCallback(() => {
     if (!isConnected || !isAuthenticated) return false;
-    
+
     setIsBenchmarkRunning(true);
-    
+
     try {
-      request('admin', 'rpc-benchmarks/trigger');
+      // FIXED: Use correct action name for triggering benchmarks
+      request('admin', 'triggerRpcBenchmark');
       return true;
     } catch (error) {
       console.error('Error triggering benchmark:', error);
@@ -135,31 +164,31 @@ export function useRPCBenchmarkWebSocket() {
       return false;
     }
   }, [isConnected, isAuthenticated, request]);
-  
+
   // Set up subscription when connected
   useEffect(() => {
     if (isConnected && isAuthenticated) {
       // Subscribe to admin topics
       subscribe(['admin']);
-      
+
       // Initial data fetch
       fetchLatestBenchmarkData();
     }
-    
+
     return () => {
       if (isConnected) {
         unsubscribe(['admin']);
       }
     };
   }, [isConnected, isAuthenticated, subscribe, unsubscribe, fetchLatestBenchmarkData]);
-  
+
   // Update error state
   useEffect(() => {
     if (wsError) {
       setError(wsError);
     }
   }, [wsError]);
-  
+
   return {
     data,
     isLoading,

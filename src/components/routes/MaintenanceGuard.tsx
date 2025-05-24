@@ -14,10 +14,10 @@ export const MaintenanceGuard: React.FC<MaintenanceGuardProps> = ({
   children,
 }) => {
   const { maintenanceMode } = useStore();
-  const { isAdmin } = useMigratedAuth();
+  const { isAdministrator } = useMigratedAuth();
 
   // If in maintenance mode and not admin, redirect to maintenance page
-  if (maintenanceMode && !isAdmin) {
+  if (maintenanceMode && !isAdministrator) {
     return <Navigate to="/maintenance" replace />;
   }
 

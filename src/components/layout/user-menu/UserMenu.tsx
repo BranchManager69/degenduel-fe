@@ -23,10 +23,10 @@ import { AdminControls } from "./UserMenuAdminControls";
 import { getMenuItems } from '../menu/menuConfig';
 import { NotificationsDropdown } from '../menu/NotificationsDropdown';
 import {
-  BiometricAuthComponent,
-  MenuDivider,
-  SectionHeader,
-  WalletDetailsSection
+    BiometricAuthComponent,
+    MenuDivider,
+    SectionHeader,
+    WalletDetailsSection
 } from '../menu/SharedMenuComponents';
 
 interface UserMenuProps {
@@ -42,7 +42,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   isCompact = false,
   unreadNotifications = 0,
 }) => {
-  const { isAdmin, isSuperAdmin } = useMigratedAuth();
+  const { isAdministrator, isSuperAdmin } = useMigratedAuth();
   const { achievements } = useStore();
   const [imageError, setImageError] = useState(false);
 
@@ -156,7 +156,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     }
 
     // Admin styling takes secondary precedence
-    if (isAdmin) {
+    if (isAdministrator) {
       return {
         bg: "from-brand-600/20 via-brand-500/20 to-brand-400/20",
         text: "text-brand-100",
@@ -204,7 +204,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       ring: "ring-brand-400/20 group-hover:ring-brand-400/30",
       shine: "via-white/20",
     };
-  }, [isAdmin, isSuperAdmin, userLevel, getLevelColorScheme]);
+  }, [isAdministrator, isSuperAdmin, userLevel, getLevelColorScheme]);
 
   const displayName = useMemo(() => {
     if (!user) return 'User';

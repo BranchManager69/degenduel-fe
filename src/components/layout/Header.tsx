@@ -34,7 +34,7 @@ export const Header: React.FC = () => {
   const storeErrorMessage = useStore(state => state.error?.message || null);
   const clearStoreError = useStore(state => state.clearError);
   
-  const { user, isAdmin, isAuthenticated, logout } = useMigratedAuth(); 
+  const { user, isAdministrator, isAuthenticated, logout } = useMigratedAuth(); 
   const { unreadCount } = useNotifications(); 
   // TODO: Add settings back in; may still be needed for other parts of the Header
   // const { settings } = useSystemSettings(); 
@@ -53,8 +53,8 @@ export const Header: React.FC = () => {
 
   // Log the user, isAuthenticated, and isAdmin when they change
   useEffect(() => {
-    console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdmin);
-  }, [user, isAuthenticated, isAdmin]);
+    console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdministrator);
+  }, [user, isAuthenticated, isAdministrator]);
 
   // Re-enable the effect for clearing storeError, but guarded
   useEffect(() => {
@@ -75,7 +75,7 @@ export const Header: React.FC = () => {
 
   // Other effects (maintenance sync, header height) remain commented out for now
 
-  //console.log("[Header STEP 4 - Error Banners Relocated] Rendering. User:", user ? user.id : null, "IsAuth:", isAuthenticated, "IsAdmin:", isAdmin, "Compact:", isCompact, "StoreError:", storeErrorMessage ? "Yes" : "No", "UnreadNotifs:", unreadCount);
+  //console.log("[Header STEP 4 - Error Banners Relocated] Rendering. User:", user ? user.id : null, "IsAuth:", isAuthenticated, "IsAdmin:", isAdministrator, "Compact:", isCompact, "StoreError:", storeErrorMessage ? "Yes" : "No", "UnreadNotifs:", unreadCount);
 
   const headerHeight = isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16";
 
@@ -108,7 +108,7 @@ export const Header: React.FC = () => {
 
       {/* Maintenance Mode Banner - uses settings, so useSystemSettings hook might need to be restored if this is re-enabled fully */}
       {/* For now, assuming settings might come from a different source or this banner logic will be refined */}
-      {/* {settings && typeof settings.maintenance_mode === 'object' && settings.maintenance_mode?.enabled && !isAdmin && ( ... )} */}
+      {/* {settings && typeof settings.maintenance_mode === 'object' && settings.maintenance_mode?.enabled && !isAdministrator && ( ... )} */}
 
       {/* Main Header Container */}
       <div className="relative max-w-[1920px] mx-auto px-2 sm:px-4 lg:px-8">

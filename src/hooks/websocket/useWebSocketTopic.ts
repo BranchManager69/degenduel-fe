@@ -10,7 +10,7 @@
  * Based on official WebSocket protocol documented in WS.TXT.
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { MessageType, TopicType, useUnifiedWebSocket } from './index';
 
 interface WebSocketTopicOptions {
@@ -35,9 +35,9 @@ export function useWebSocketTopic<T = any>(
   onMessage: (data: T) => void,
   options: WebSocketTopicOptions = { autoSubscribe: true }
 ) {
-  // Generate a unique ID for this subscription
-  const subscriptionId = `${topicName}-${Math.random().toString(36).substring(2, 9)}`;
-  
+  // FIXED: Create stable subscription ID using useState instead of recreating on every render
+  const [subscriptionId] = useState(() => `${topicName}-${Math.random().toString(36).substring(2, 9)}`);
+
   // Use the unified WebSocket connection
   const ws = useUnifiedWebSocket(
     subscriptionId,
@@ -45,13 +45,13 @@ export function useWebSocketTopic<T = any>(
     onMessage,
     [topicName] // Only listen to messages for this topic
   );
-  
+
   // Subscribe to the topic when connected (if autoSubscribe is true)
   useEffect(() => {
     if (ws.connectionState === 'connected' && options.autoSubscribe) {
       // Subscribe to the topic
       ws.subscribe([topicName]);
-      
+
       // Make initial request if specified
       if (options.requestOnConnect) {
         const { action, params = {} } = options.requestOnConnect;
@@ -59,52 +59,52 @@ export function useWebSocketTopic<T = any>(
       }
     }
   }, [ws.connectionState, topicName, options.autoSubscribe]);
-  
+
   // Helper for making requests on this topic
   const request = useCallback((action: string, params: Record<string, any> = {}) => {
     if (!ws.isConnected) {
       console.warn(`Cannot make request: WebSocket not connected (Topic: ${topicName})`);
       return false;
     }
-    
+
     return ws.request(topicName, action, params);
   }, [ws.isConnected, topicName, ws.request]);
-  
+
   // Subscribe to the topic (manual control)
   const subscribe = useCallback(() => {
     if (!ws.isConnected) {
       console.warn(`Cannot subscribe: WebSocket not connected (Topic: ${topicName})`);
       return false;
     }
-    
+
     return ws.subscribe([topicName]);
   }, [ws.isConnected, topicName, ws.subscribe]);
-  
+
   // Unsubscribe from the topic
   const unsubscribe = useCallback(() => {
     if (!ws.isConnected) {
       console.warn(`Cannot unsubscribe: WebSocket not connected (Topic: ${topicName})`);
       return false;
     }
-    
+
     return ws.unsubscribe([topicName]);
   }, [ws.isConnected, topicName, ws.unsubscribe]);
-  
+
   return {
     // Connection status
     isConnected: ws.isConnected,
     isAuthenticated: ws.isAuthenticated,
     connectionState: ws.connectionState,
     error: ws.error,
-    
+
     // Topic interaction
     subscribe,
     unsubscribe,
     request,
-    
+
     // Raw message sending (use sparingly, prefer request)
     sendMessage: ws.sendMessage,
-    
+
     // Internal (for debugging)
     _topicName: topicName,
     _subscriptionId: subscriptionId

@@ -17,9 +17,10 @@ import { TokenFilters } from "../../components/portfolio-selection/TokenFilters"
 import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
+import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
-import { Contest, Token, TokensResponse } from "../../types/index";
+import { Contest } from "../../types/index";
 
 // Declare Buffer on window type
 declare global {
@@ -55,10 +56,28 @@ function ErrorFallback({ error }: { error: Error }) {
 }
 
 export const TokenSelection: React.FC = () => {
+  console.log("🏗️ PortfolioTokenSelectionPage: Component rendering");
+  
   const { id: contestId } = useParams();
   const navigate = useNavigate();
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  
+  // NEW: Use standardized WebSocket token data instead of REST API
+  console.log("🔌 PortfolioTokenSelectionPage: Initializing useStandardizedTokenData hook");
+  const {
+    tokens,
+    isLoading: tokenListLoading,
+    error: tokensError,
+    isConnected: isTokenDataConnected,
+    refresh: refreshTokens
+  } = useStandardizedTokenData("all", "marketCap", { status: "active" });
+  
+  console.log("📊 PortfolioTokenSelectionPage: Token data state:", {
+    tokenCount: tokens.length,
+    tokenListLoading,
+    tokensError,
+    isTokenDataConnected
+  });
+  
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
     new Map(),
   );
@@ -66,7 +85,6 @@ export const TokenSelection: React.FC = () => {
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [contest, setContest] = useState<Contest | null>(null);
   const user = useStore((state) => state.user);
-  const [tokenListLoading, setTokenListLoading] = useState(true);
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [transactionState, setTransactionState] = useState<{
@@ -87,65 +105,14 @@ export const TokenSelection: React.FC = () => {
     message: "",
   });
 
-  useEffect(() => {
-    const fetchTokens = async () => {
-      try {
-        setTokenListLoading(true);
-        const response = await ddApi.tokens.getAll();
-        const tokenData = Array.isArray(response)
-          ? response
-          : (response as TokensResponse).data;
-        ////console.log("Raw token data:", tokenData);
-
-        // Enhanced validation and transformation
-        const validatedTokens = tokenData.map((token: Token) => ({
-          ...token,
-          // Use changesJson for price changes
-          change_24h: token.changesJson?.h24?.toString() ?? "0",
-
-          // Market data with proper formatting
-          price: token.price?.toString() || "0",
-          volume24h: token.volume24h?.toString() || "0",
-          marketCap: token.marketCap?.toString() || "0",
-
-          // Additional market metrics
-          liquidity: {
-            usd: token.liquidity?.usd?.toString() || "0",
-            base: token.liquidity?.base?.toString() || "0",
-            quote: token.liquidity?.quote?.toString() || "0",
-          },
-
-          // Transaction metrics for the last 24h
-          transactions24h: token.transactionsJson?.h24 ?? {
-            buys: 0,
-            sells: 0,
-          },
-
-          // Base and quote token info
-          baseToken: token.baseToken ?? {
-            name: token.name,
-            symbol: token.symbol,
-            address: token.contractAddress,
-          },
-          quoteToken: token.quoteToken,
-        }));
-
-        setTokens(validatedTokens);
-      } catch (err) {
-        console.error("Failed to fetch tokens:", err);
-        setError("Failed to load tokens");
-      } finally {
-        setTokenListLoading(false);
-      }
-    };
-
-    fetchTokens();
-  }, []);
-
+  // Remove the old REST API fetchTokens function - now using WebSocket data!
+  console.log("🚀 PortfolioTokenSelectionPage: Using WebSocket-based token data");
+  
   useEffect(() => {
     const fetchContest = async () => {
       if (!contestId) return;
       try {
+        console.log("🏆 PortfolioTokenSelectionPage: Fetching contest:", contestId);
         const data = await ddApi.contests.getById(contestId);
         console.log("Contest data from API:", {
           data,
@@ -196,33 +163,12 @@ export const TokenSelection: React.FC = () => {
     });
   }, [contestId, contest]);
 
-  // Memoize the transformed tokens
-  const memoizedTokens = useMemo(
-    () =>
-      tokens.map((token: Token) => ({
-        ...token,
-        change_24h: token.changesJson?.h24 ?? 0,
-        price: token.price,
-        volume24h: token.volume24h,
-        marketCap: token.marketCap,
-        liquidity: {
-          usd: token.liquidity?.usd ?? 0,
-          base: token.liquidity?.base ?? 0,
-          quote: token.liquidity?.quote ?? 0,
-        },
-        transactions24h: token.transactionsJson?.h24 ?? {
-          buys: 0,
-          sells: 0,
-        },
-        baseToken: token.baseToken ?? {
-          name: token.name,
-          symbol: token.symbol,
-          address: token.contractAddress,
-        },
-        quoteToken: token.quoteToken,
-      })),
-    [tokens],
-  );
+  // NEW: Simplified token processing since we get standardized Token[] format
+  const memoizedTokens = useMemo(() => {
+    console.log("🔄 PortfolioTokenSelectionPage: Processing tokens, count:", tokens.length);
+    // Tokens are already in the correct format from useStandardizedTokenData!
+    return tokens;
+  }, [tokens]);
 
   // Memoize the token selection handler
   const handleTokenSelect = useCallback(
@@ -514,32 +460,64 @@ export const TokenSelection: React.FC = () => {
     }
   };
 
+  // NEW: Handle WebSocket connection issues and errors
+  const displayError = tokensError || (!isTokenDataConnected && !tokenListLoading ? "WebSocket connection lost" : null);
+
+  console.log("🎯 PortfolioTokenSelectionPage: Render logic state:", {
+    tokenListLoading,
+    displayError,
+    tokenCount: memoizedTokens.length,
+    isTokenDataConnected
+  });
+
   if (tokenListLoading) {
+    console.log("⏳ PortfolioTokenSelectionPage: Rendering loading state");
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="relative inline-block">
-            <div className="animate-spin rounded-full h-12 w-12 border-2 border-brand-400 border-t-transparent" />
-            <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border-2 border-brand-400 opacity-20" />
-          </div>
-          <p className="mt-4 text-brand-400 animate-pulse">Loading tokens...</p>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        backgroundColor: '#1a1a1a',
+        color: '#10b981',
+        fontFamily: 'monospace'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            width: '50px', 
+            height: '50px', 
+            border: '3px solid #10b981', 
+            borderTop: '3px solid transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 20px'
+          }} />
+          <h2>LOADING PORTFOLIO TOKENS...</h2>
+          <p>Tokens: {tokens.length} | Connected: {isTokenDataConnected ? 'YES' : 'NO'}</p>
         </div>
+        <style dangerouslySetInnerHTML={{
+          __html: `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`
+        }} />
       </div>
     );
   }
 
-  if (error) {
+  if (displayError) {
+    console.log("❌ PortfolioTokenSelectionPage: Rendering error state:", displayError);
     return (
       <div className="p-6 bg-dark-300/20 rounded-lg border border-red-500/30 backdrop-blur-sm max-w-2xl mx-auto mt-8">
         <div className="flex items-center gap-3">
           <span className="text-2xl">⚠️</span>
           <div>
-            <p className="text-red-400 animate-glitch">{error}</p>
+            <p className="text-red-400 animate-glitch">{displayError}</p>
             <button
-              onClick={() => window.location.reload()}
-              className="mt-2 px-4 py-2 bg-dark-400/50 hover:bg-dark-400 rounded text-brand-400 text-sm transition-all duration-300 hover:scale-105"
+              onClick={() => {
+                console.log("🔄 PortfolioTokenSelectionPage: Manual refresh triggered");
+                refreshTokens();
+              }}
+              className="mt-2 px-4 py-2 bg-dark-400/50 hover:bg-dark-400 rounded text-emerald-400 text-sm transition-all duration-300 hover:scale-105"
             >
-              Try Again
+              Retry Connection
             </button>
           </div>
         </div>
@@ -547,39 +525,91 @@ export const TokenSelection: React.FC = () => {
     );
   }
 
-  /* console.log("Render state:", {
-    totalWeight,
-    isButtonDisabled: totalWeight !== 100,
-    selectedTokensCount: selectedTokens.size,
-  }); */
-
+  console.log("✅ PortfolioTokenSelectionPage: Rendering main content with", memoizedTokens.length, "tokens");
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
+        {/* DIFFERENT BACKGROUND: Matrix-style instead of cyber grid */}
+        <div className="fixed inset-0 z-0">
+          <div className="absolute inset-0 bg-dark-100"></div>
+          {/* Matrix rain effect */}
+          <div 
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, rgba(34, 197, 94, 0.3) 0px, transparent 1px, transparent 20px, rgba(34, 197, 94, 0.3) 21px)',
+              backgroundSize: '20px 40px',
+              animation: 'matrix-rain 20s linear infinite'
+            }}
+          />
+          
+          {/* Floating hexagons instead of particles */}
+          <div className="absolute inset-0 pointer-events-none">
+            {Array.from({ length: 15 }).map((_, i) => {
+              const left = `${Math.random() * 100}%`;
+              const top = `${Math.random() * 100}%`;
+              const duration = `${Math.random() * 10 + 15}s`;
+              const delay = `${Math.random() * 3}s`;
+              
+              return (
+                <div
+                  key={i}
+                  className="absolute w-3 h-3 border border-emerald-500/20 transform rotate-45 animate-pulse"
+                  style={{
+                    left,
+                    top,
+                    animationDuration: duration,
+                    animationDelay: delay
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
 
         {/* Content Section */}
         <div className="relative z-10">
           <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
-            {/* Header Section */}
+            {/* Header Section - Different styling */}
             <div className="mb-4 sm:mb-8 text-center relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 group-hover:animate-glitch">
-                Select Your Portfolio
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/0 via-emerald-400/5 to-emerald-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 font-mono">
+                <span className="text-emerald-400">[</span>
+                BUILD PORTFOLIO
+                <span className="text-emerald-400">]</span>
               </h1>
-              <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto group-hover:animate-cyber-pulse">
-                Choose tokens and allocate weights to build your initial
-                portfolio.
+              <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-mono">
+                SELECT.TOKENS → ALLOCATE.WEIGHTS → DEPLOY.STRATEGY
               </p>
+              
+              {/* Connection status indicator */}
+              <div className="mt-2 flex justify-center items-center gap-2 text-xs">
+                <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {isTokenDataConnected ? 'LIVE.DATA.STREAM' : 'CONNECTION.LOST'}
+                </span>
+              </div>
             </div>
 
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 pb-24 lg:pb-0">
-              {/* Token Selection Area */}
+              {/* Token Selection Area - Different card styling */}
               <div className="lg:col-span-2">
-                <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+                <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/30 transition-colors group relative overflow-hidden">
+                  {/* Different gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/5 via-transparent to-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-emerald-500/5 to-dark-300/0 opacity-0 group-hover:opacity-100" />
+                  
                   <div className="p-3 sm:p-6 relative">
+                    {/* Header with token count */}
+                    <div className="mb-4 flex justify-between items-center">
+                      <h2 className="text-lg font-bold text-emerald-400 font-mono">
+                        TOKEN.SELECTION
+                      </h2>
+                      <div className="text-xs font-mono text-gray-400">
+                        AVAILABLE: <span className="text-emerald-400">{memoizedTokens.length}</span>
+                      </div>
+                    </div>
+                    
                     {/* Filters */}
                     <div className="mb-4 sm:mb-6">
                       <TokenFilters
@@ -594,17 +624,17 @@ export const TokenSelection: React.FC = () => {
                     <div className="relative">
                       {tokenListLoading ? (
                         <div className="flex justify-center items-center h-48 sm:h-64">
-                          <div className="animate-cyber-pulse text-brand-400">
-                            Loading tokens...
+                          <div className="text-emerald-400 font-mono">
+                            LOADING.TOKENS...
                           </div>
                         </div>
-                      ) : error ? (
-                        <div className="text-red-400 text-center animate-glitch">
-                          {error}
+                      ) : displayError ? (
+                        <div className="text-red-400 text-center font-mono">
+                          ERROR: {displayError}
                         </div>
                       ) : (
                         <TokenGrid
-                          tokens={tokens}
+                          tokens={memoizedTokens}
                           selectedTokens={selectedTokens}
                           onTokenSelect={handleTokenSelect}
                           marketCapFilter={marketCapFilter}
@@ -616,64 +646,64 @@ export const TokenSelection: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Portfolio Summary - Hidden on mobile when floating button is shown */}
+              {/* Portfolio Summary - Different styling */}
               <div className="hidden lg:block">
                 <div className="sticky top-4">
-                  <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+                  <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/30 transition-colors group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/5 via-transparent to-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
                     <div className="p-4 sm:p-6 relative">
-                      <h2 className="text-lg sm:text-xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
-                        Confirm Entry
+                      <h2 className="text-lg sm:text-xl font-bold text-emerald-400 mb-4 font-mono">
+                        PORTFOLIO.DEPLOY
                       </h2>
                       <PortfolioSummary
                         selectedTokens={selectedTokens}
-                        tokens={tokens}
+                        tokens={memoizedTokens}
                       />
 
                       <div className="mt-4 sm:mt-6">
-                        {/* Transaction Status Indicator */}
+                        {/* Transaction Status Indicator - Different styling */}
                         {transactionState.status !== "idle" && (
                           <div
-                            className={`mb-4 p-3 rounded-lg border ${
+                            className={`mb-4 p-3 rounded-lg border font-mono text-xs ${
                               transactionState.status === "error"
                                 ? "border-red-500/30 bg-red-500/10"
                                 : transactionState.status === "success"
-                                  ? "border-green-500/30 bg-green-500/10"
-                                  : "border-brand-500/30 bg-brand-500/10"
+                                  ? "border-emerald-500/30 bg-emerald-500/10"
+                                  : "border-emerald-500/30 bg-emerald-500/10"
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               {transactionState.status === "preparing" && (
-                                <div className="animate-pulse text-brand-400">
-                                  ⚙️
+                                <div className="animate-pulse text-emerald-400">
+                                  [PREP]
                                 </div>
                               )}
                               {transactionState.status === "signing" && (
-                                <div className="animate-bounce text-brand-400">
-                                  ✍️
+                                <div className="animate-bounce text-emerald-400">
+                                  [SIGN]
                                 </div>
                               )}
                               {transactionState.status === "sending" && (
-                                <div className="animate-spin text-brand-400">
-                                  🔄
+                                <div className="animate-spin text-emerald-400">
+                                  [SEND]
                                 </div>
                               )}
                               {transactionState.status === "confirming" && (
-                                <div className="animate-pulse text-brand-400">
-                                  ⏳
+                                <div className="animate-pulse text-emerald-400">
+                                  [WAIT]
                                 </div>
                               )}
                               {transactionState.status === "submitting" && (
-                                <div className="animate-pulse text-brand-400">
-                                  📝
+                                <div className="animate-pulse text-emerald-400">
+                                  [SUBMIT]
                                 </div>
                               )}
                               {transactionState.status === "success" && (
-                                <div className="text-green-400">✅</div>
+                                <div className="text-emerald-400">[SUCCESS]</div>
                               )}
                               {transactionState.status === "error" && (
-                                <div className="text-red-400">❌</div>
+                                <div className="text-red-400">[ERROR]</div>
                               )}
                               <div>
                                 <p
@@ -681,8 +711,8 @@ export const TokenSelection: React.FC = () => {
                                     transactionState.status === "error"
                                       ? "text-red-400"
                                       : transactionState.status === "success"
-                                        ? "text-green-400"
-                                        : "text-brand-400"
+                                        ? "text-emerald-400"
+                                        : "text-emerald-400"
                                   }`}
                                 >
                                   {transactionState.message}
@@ -697,9 +727,9 @@ export const TokenSelection: React.FC = () => {
                                     href={`https://solscan.io/tx/${transactionState.signature}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs text-brand-400 hover:text-brand-300 mt-1 inline-block"
+                                    className="text-xs text-emerald-400 hover:text-emerald-300 mt-1 inline-block"
                                   >
-                                    View on Solscan
+                                    VIEW.ON.SOLSCAN
                                   </a>
                                 )}
                               </div>
@@ -715,23 +745,23 @@ export const TokenSelection: React.FC = () => {
                             isLoading ||
                             transactionState.status !== "idle"
                           }
-                          className="w-full relative group overflow-hidden text-sm sm:text-base py-3"
+                          className="w-full relative group overflow-hidden text-sm sm:text-base py-3 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                          <span className="relative flex items-center justify-center font-medium group-hover:animate-glitch">
+                          <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                          <span className="relative flex items-center justify-center font-medium font-mono">
                             {isLoading ? (
-                              <div className="animate-cyber-pulse">
-                                Entering...
+                              <div>
+                                [DEPLOYING...]
                               </div>
                             ) : (
-                              "Enter Contest"
+                              "[DEPLOY.PORTFOLIO]"
                             )}
                           </span>
                         </Button>
 
                         {portfolioValidation && (
-                          <p className="mt-2 text-xs sm:text-sm text-red-400 text-center animate-glitch">
-                            {portfolioValidation}
+                          <p className="mt-2 text-xs sm:text-sm text-red-400 text-center font-mono">
+                            ERROR: {portfolioValidation}
                           </p>
                         )}
                       </div>
@@ -741,7 +771,7 @@ export const TokenSelection: React.FC = () => {
               </div>
             </div>
 
-            {/* Floating Submit Button for Mobile */}
+            {/* Floating Submit Button for Mobile - Different styling */}
             <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent">
               <div className="max-w-md mx-auto">
                 <Button
@@ -752,23 +782,23 @@ export const TokenSelection: React.FC = () => {
                     isLoading ||
                     transactionState.status !== "idle"
                   }
-                  className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-brand-500/20"
+                  className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                  <span className="relative flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <span className="relative flex items-center justify-center gap-2 font-mono">
                     {isLoading ? (
-                      <div className="animate-cyber-pulse">Entering...</div>
+                      <div>[DEPLOYING...]</div>
                     ) : (
                       <>
-                        <span className="font-medium">Enter Contest</span>
-                        <span className="text-brand-400">{totalWeight}%</span>
+                        <span className="font-medium">[DEPLOY]</span>
+                        <span className="text-emerald-400">{totalWeight}%</span>
                       </>
                     )}
                   </span>
                 </Button>
                 {portfolioValidation && (
-                  <p className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
-                    {portfolioValidation}
+                  <p className="mt-2 text-xs text-red-400 text-center font-mono bg-dark-100/95 rounded-lg py-2">
+                    ERROR: {portfolioValidation}
                   </p>
                 )}
               </div>
@@ -776,6 +806,16 @@ export const TokenSelection: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Custom CSS for matrix rain effect */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes matrix-rain {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+          }
+        `
+      }} />
     </ErrorBoundary>
   );
 };

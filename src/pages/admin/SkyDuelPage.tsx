@@ -10,12 +10,12 @@ export const SkyDuelPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDebug, setShowDebug] = useState(true); // Debug shown by default for SkyDuel admin page
   const skyDuelSocket = useSkyDuelWebSocket();
-  const { isAdmin } = useMigratedAuth();
+  const { isAdministrator } = useMigratedAuth();
   const { addServiceAlert } = useStore();
 
   useEffect(() => {
     // Check if user has admin permissions
-    if (!isAdmin) {
+    if (!isAdministrator) {
       window.location.href = "/";
       return;
     }
@@ -36,7 +36,7 @@ export const SkyDuelPage: React.FC = () => {
         skyDuelSocket.close();
       }
     };
-  }, [isAdmin, skyDuelSocket, addServiceAlert]);
+  }, [isAdministrator, skyDuelSocket, addServiceAlert]);
 
   // Handle connection status changes
   useEffect(() => {
