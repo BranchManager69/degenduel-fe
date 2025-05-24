@@ -33,10 +33,16 @@ export const TokensPage: React.FC = () => {
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
   const [selectedTokenSymbol, setSelectedTokenSymbol] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  
+  // Infinite scroll state
+  const [visibleTokensCount, setVisibleTokensCount] = useState(50); // Start with 50 tokens
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
   const user = useStore((state) => state.user);
   const location = useLocation();
   const navigate = useNavigate();
   const searchDebounceRef = useRef<number | null>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   
   // Token state management with address indexing
   const [tokenMap, setTokenMap] = useState<Record<string, Token>>({});
@@ -77,86 +83,63 @@ export const TokensPage: React.FC = () => {
     navigate(location.pathname, { replace: true });
   }, [location.pathname, navigate]);
 
-  // Helper function to transform API token data to Token format
+  // Load more tokens for infinite scroll
+  const loadMoreTokens = useCallback(() => {
+    if (isLoadingMore) return;
+    
+    setIsLoadingMore(true);
+    
+    // Simulate loading delay for better UX
+    setTimeout(() => {
+      setVisibleTokensCount(prev => prev + 50); // Load 50 more tokens
+      setIsLoadingMore(false);
+    }, 300);
+  }, [isLoadingMore]);
+
+  // Helper function to transform REAL WebSocket token data to Token format
   const transformTokenData = useCallback((tokenData: any): Token => {
     return {
-      contractAddress: tokenData.address || tokenData.contractAddress || "",
-      status: tokenData.status || "active",
+      contractAddress: tokenData.address || "", // Use 'address' field from WebSocket
+      status: "active", // All WebSocket tokens are active
       name: tokenData.name || "",
       symbol: tokenData.symbol || "",
       price: tokenData.price?.toString() || "0",
-      marketCap: tokenData.marketCap?.toString() || "0",
-      volume24h: tokenData.volume24h?.toString() || "0",
-      change24h: tokenData.change24h?.toString() || "0",
+      marketCap: tokenData.market_cap?.toString() || "0", // Use 'market_cap' from WebSocket
+      volume24h: tokenData.volume_24h?.toString() || "0", // Use 'volume_24h' from WebSocket  
+      change24h: tokenData.change_24h?.toString() || "0", // Use 'change_24h' from WebSocket
       liquidity: {
-        usd: tokenData.liquidity?.usd?.toString() || "0",
-        base: tokenData.liquidity?.base?.toString() || "0", 
-        quote: tokenData.liquidity?.quote?.toString() || "0"
+        usd: tokenData.liquidity?.toString() || "0", // WebSocket liquidity is a string
+        base: "0", // Not provided in WebSocket data
+        quote: "0"  // Not provided in WebSocket data
       },
       images: {
-        imageUrl: tokenData.imageUrl || tokenData.images?.imageUrl || "",
-        headerImage: tokenData.headerImage || tokenData.images?.headerImage || "",
-        openGraphImage: tokenData.openGraphImage || tokenData.images?.openGraphImage || ""
+        imageUrl: tokenData.image_url || "", // Use 'image_url' from WebSocket
+        headerImage: "",
+        openGraphImage: ""
       },
-      socials: {
-        twitter: tokenData.socials?.twitter || { url: "", count: null },
-        telegram: tokenData.socials?.telegram || { url: "", count: null },
-        discord: tokenData.socials?.discord || { url: "", count: null }
+      socials: tokenData.socials || {
+        twitter: { url: "", count: null },
+        telegram: { url: "", count: null },
+        discord: { url: "", count: null }
       },
       websites: tokenData.websites || []
     };
   }, []);
   
-  // Load initial token data via REST API
-  const loadInitialTokenData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Remove limit parameter since v3 endpoint doesn't process it
-      const response = await fetch('/api/v3/tokens');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-      
-      const responseData = await response.json();
-      lastUpdateRef.current = new Date();
-      
-      // Handle v3 structured response: { status: "success", count: 1234, data: [tokens...] }
-      const tokensArray = responseData.data || responseData;
-      
-      // Validate that we have an array
-      if (!Array.isArray(tokensArray)) {
-        console.error("API response data is not an array:", responseData);
-        throw new Error("Invalid API response format");
-      }
-      
-      // Create metadata from timestamp
-      const metadata: TokenResponseMetadata = {
-        timestamp: lastUpdateRef.current.toISOString(),
-        _cached: false,
-        _stale: false
-      };
-      setMetadata(metadata);
-      
-      // Transform and index by address
-      const newTokenMap: Record<string, Token> = {};
-      tokensArray.forEach((tokenData: any) => {
-        const token = transformTokenData(tokenData);
-        if (token.contractAddress) {
-          newTokenMap[token.contractAddress] = token;
+  // Request all tokens from WebSocket 
+  const requestAllTokens = useCallback(() => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      console.log('Requesting all tokens from WebSocket...');
+      socketRef.current.send(JSON.stringify({
+        type: 'REQUEST',
+        topic: 'market-data',
+        action: 'getTokens',
+        data: {
+          limit: 1000 // Request all 1000 tokens
         }
-      });
-      
-      setTokenMap(newTokenMap);
-      setLoading(false);
-    } catch (err) {
-      console.error("Failed to load initial token data:", err);
-      setError("Failed to load token data. Please try again later.");
-      setLoading(false);
+      }));
     }
-  }, [transformTokenData]);
+  }, []);
   
   // Connect to WebSocket for real-time updates
   const connectWebSocket = useCallback(() => {
@@ -175,12 +158,14 @@ export const TokensPage: React.FC = () => {
       setConnectionState('connected');
       reconnectAttemptsRef.current = 0;
       
-      // Subscribe to market data updates only (not initial data)
+      // Subscribe to market data updates AND request initial tokens
       socket.send(JSON.stringify({
         type: 'SUBSCRIBE',
-        topics: [TopicType.MARKET_DATA],
-        initialData: false // Don't send full data on connection
+        topics: [TopicType.MARKET_DATA]
       }));
+      
+      // Request all tokens immediately after connection
+      requestAllTokens();
       
       // Set up ping interval to keep connection alive
       if (pingIntervalRef.current) {
@@ -198,8 +183,33 @@ export const TokensPage: React.FC = () => {
       try {
         const data = JSON.parse(event.data);
         
-        // Process market data updates
-        if (data.type === MessageType.DATA && data.topic === TopicType.MARKET_DATA) {
+        // Handle direct market-data messages (your real format!)
+        if (data.topic === 'market-data' && data.action === 'getTokens' && Array.isArray(data.data)) {
+          console.log(`Processing ${data.data.length} tokens from WebSocket`);
+          lastUpdateRef.current = new Date();
+          
+          // Update metadata
+          setMetadata({
+            timestamp: lastUpdateRef.current.toISOString(),
+            _cached: false,
+            _stale: false
+          });
+          
+          // Transform and index all tokens by address
+          const newTokenMap: Record<string, Token> = {};
+          data.data.forEach((tokenData: any) => {
+            const token = transformTokenData(tokenData);
+            if (token.contractAddress) {
+              newTokenMap[token.contractAddress] = token;
+            }
+          });
+          
+          setTokenMap(newTokenMap);
+          setLoading(false);
+        }
+        
+        // Handle legacy format for compatibility
+        else if (data.type === MessageType.DATA && data.topic === TopicType.MARKET_DATA) {
           lastUpdateRef.current = new Date();
           
           // Update metadata
@@ -225,7 +235,7 @@ export const TokensPage: React.FC = () => {
               const updated = { ...prev };
               
               data.data.forEach((tokenUpdate: any) => {
-                const address = tokenUpdate.address || tokenUpdate.contractAddress;
+                const address = tokenUpdate.address;
                 if (address) {
                   if (updated[address]) {
                     // Update existing token - merge current with updates
@@ -237,9 +247,7 @@ export const TokensPage: React.FC = () => {
                   } else {
                     // Add new token if it has required fields
                     if (tokenUpdate.name && tokenUpdate.symbol) {
-                      const newToken = transformTokenData({
-                        ...tokenUpdate
-                      });
+                      const newToken = transformTokenData(tokenUpdate);
                       updated[address] = newToken;
                     }
                   }
@@ -320,8 +328,8 @@ export const TokensPage: React.FC = () => {
     return null;
   }, [tokenMap, selectedTokenSymbol, connectionState, requestTokenByAddress]);
 
-  // Compute filtered and sorted tokens list
-  const filteredAndSortedTokens = useMemo(() => {
+  // Compute filtered and sorted tokens list (all tokens for search/filter)
+  const allFilteredAndSortedTokens = useMemo(() => {
     // Get tokens array from map
     const tokensArray = Object.values(tokenMap);
     
@@ -366,6 +374,14 @@ export const TokensPage: React.FC = () => {
     return sortedTokens;
   }, [tokenMap, debouncedSearchQuery, sortField, sortDirection]);
 
+  // Visible tokens for infinite scroll (only show up to visibleTokensCount)
+  const visibleTokens = useMemo(() => {
+    return allFilteredAndSortedTokens.slice(0, visibleTokensCount);
+  }, [allFilteredAndSortedTokens, visibleTokensCount]);
+
+  // Check if there are more tokens to load
+  const hasMoreTokens = allFilteredAndSortedTokens.length > visibleTokensCount;
+
   // Create debounce for search to improve performance
   useEffect(() => {
     if (searchDebounceRef.current) {
@@ -409,14 +425,10 @@ export const TokensPage: React.FC = () => {
     }
   }, [location.search, requestTokenByAddress]);
   
-  // Initial data load and WebSocket connection
+  // WebSocket-only connection
   useEffect(() => {
-    // Load initial data first
-    loadInitialTokenData()
-      .then(() => {
-        // Then connect to WebSocket for updates
-        connectWebSocket();
-      });
+    // Connect to WebSocket (it will request tokens automatically)
+    connectWebSocket();
     
     // Cleanup on unmount
     return () => {
@@ -429,7 +441,7 @@ export const TokensPage: React.FC = () => {
         pingIntervalRef.current = null;
       }
     };
-  }, [loadInitialTokenData, connectWebSocket]);
+  }, [connectWebSocket]);
   
   // Check maintenance mode
   useEffect(() => {
@@ -463,6 +475,35 @@ export const TokensPage: React.FC = () => {
       }
     }
      }, [connectionState, tokenMap]);
+
+  // Reset visible tokens when search/filter changes
+  useEffect(() => {
+    setVisibleTokensCount(50);
+  }, [debouncedSearchQuery, sortField, sortDirection]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current;
+    if (!trigger || !hasMoreTokens) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMore && hasMoreTokens) {
+          loadMoreTokens();
+        }
+      },
+      {
+        rootMargin: '100px', // Trigger 100px before the element comes into view
+      }
+    );
+
+    observer.observe(trigger);
+
+    return () => {
+      observer.unobserve(trigger);
+    };
+  }, [hasMoreTokens, isLoadingMore, loadMoreTokens]);
 
   // Pre-calculate JSX elements to avoid conditional hooks
   const floatingParticles = useMemo(() => 
@@ -763,8 +804,8 @@ export const TokensPage: React.FC = () => {
               {/* Search result stats */}
               {searchQuery && (
                 <div className="mt-4 text-sm text-gray-400 flex items-center">
-                  <span>Found {filteredAndSortedTokens.length} tokens matching "{searchQuery}"</span>
-                  {filteredAndSortedTokens.length > 0 && (
+                  <span>Found {allFilteredAndSortedTokens.length} tokens matching "{searchQuery}"</span>
+                  {allFilteredAndSortedTokens.length > 0 && (
                     <span className="ml-2 px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 text-xs">
                       {sortField === "marketCap" ? "By Market Cap" : 
                        sortField === "volume24h" ? "By Volume" : 
@@ -800,10 +841,46 @@ export const TokensPage: React.FC = () => {
             </div>
             
             <CreativeTokensGrid 
-              tokens={filteredAndSortedTokens} 
+              tokens={visibleTokens} 
               selectedTokenSymbol={selectedTokenSymbol}
               onTokenClick={handleTokenClick}
             />
+            
+            {/* Infinite scroll trigger and loading indicator */}
+            {hasMoreTokens && (
+              <div 
+                ref={loadMoreTriggerRef}
+                className="flex justify-center items-center py-8"
+              >
+                {isLoadingMore ? (
+                  <div className="flex items-center gap-3 text-gray-400">
+                    <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading more tokens...</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={loadMoreTokens}
+                    className="px-6 py-3 bg-dark-300/70 hover:bg-brand-500/20 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg text-gray-300 hover:text-white transition-all duration-300 flex items-center gap-2"
+                  >
+                    <span>Load more tokens</span>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {/* End of tokens indicator */}
+            {!hasMoreTokens && allFilteredAndSortedTokens.length > 0 && (
+              <div className="flex justify-center py-8">
+                <div className="text-gray-500 text-sm flex items-center gap-2">
+                  <div className="w-2 h-2 bg-brand-500/60 rounded-full"></div>
+                  <span>You've seen all {allFilteredAndSortedTokens.length} tokens</span>
+                  <div className="w-2 h-2 bg-brand-500/60 rounded-full"></div>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Cyberpunk footer accent */}
