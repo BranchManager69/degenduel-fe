@@ -19,7 +19,7 @@
  * @updated 2025-04-29 - Added migration guide
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { Token } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
@@ -86,6 +86,10 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date());
   const [initialized, setInitialized] = useState(false);
 
+  // Use ref to avoid recreating handleMessage on every isLoading change
+  const isLoadingRef = useRef(isLoading);
+  isLoadingRef.current = isLoading;
+
   // Message handler for WebSocket messages
   const handleMessage = useCallback((message: Partial<WebSocketTokenMessage>) => {
     try {
@@ -146,7 +150,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
       }
 
       // Mark as not loading once we've processed any valid message
-      if (isLoading) {
+      if (isLoadingRef.current) {
         setIsLoading(false);
       }
     } catch (err) {
@@ -157,7 +161,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
         error: err instanceof Error ? err.message : String(err)
       });
     }
-  }, [isLoading]);
+  }, []); // Remove isLoading dependency to prevent callback recreation
 
   // Connect to the unified WebSocket system
   const ws = useWebSocket();
@@ -197,7 +201,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
 
       // Set a timeout to reset loading state if we don't get data
       const timeoutId = setTimeout(() => {
-        if (isLoading) {
+        if (isLoadingRef.current) {
           console.warn('[TokenData WebSocket] Timed out waiting for data');
           setIsLoading(false);
         }
@@ -205,7 +209,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [ws.isConnected, initialized, tokensToSubscribe, isLoading, ws.subscribe, ws.request]);
+  }, [ws.isConnected, initialized, tokensToSubscribe, ws.subscribe, ws.request]);
 
   // Force refresh function for token data
   const refresh = useCallback(() => {
@@ -227,7 +231,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
 
       // Set a timeout to reset loading state if we don't get data
       setTimeout(() => {
-        if (isLoading) {
+        if (isLoadingRef.current) {
           setIsLoading(false);
         }
       }, 10000);
@@ -235,7 +239,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
       console.warn('[TokenData WebSocket] Cannot refresh - WebSocket not connected');
       setIsLoading(false);
     }
-  }, [ws.isConnected, ws.request, tokensToSubscribe, isLoading]);
+  }, [ws.isConnected, ws.request, tokensToSubscribe]);
 
   // Return the token data and helper functions
   // This matches the interface of the legacy useTokenDataWebSocket hook
