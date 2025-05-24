@@ -299,8 +299,7 @@ export class AuthService {
     while (retryCount <= maxRetries) {
       try {
         authDebug('AuthService', `Checking authentication status (attempt ${retryCount + 1})`);
-        const authBaseURL = API_URL.replace('/api', '');
-        const statusUrl = `${authBaseURL}/auth/status`;
+        const statusUrl = `${API_URL}/auth/status`;
         const response = await axiosInstance.get(statusUrl);
         const isAuthenticated = response.data?.authenticated || false;
         const authMethods = response.data?.methods || {};
@@ -398,10 +397,7 @@ export class AuthService {
 
         const timestamp = new Date().getTime();
         const url = `${endpoint}?_t=${timestamp}`;
-
-        // For auth endpoints, use the base server URL without /api prefix
-        const authBaseURL = API_URL.replace('/api', '');
-        const tokenUrl = `${authBaseURL}${url}`;
+        const tokenUrl = `${API_URL}${url}`;
         const response = await axiosInstance.get(tokenUrl, {
           timeout: 5000
         });
@@ -460,11 +456,14 @@ export class AuthService {
       authDebug('AuthService', 'Starting wallet authentication', { walletAddress });
 
       // Use the configured instance for challenge
-      const authBaseURL = API_URL.replace('/api', '');
-      const challengeUrl = `${authBaseURL}/auth/challenge?wallet=${encodeURIComponent(walletAddress)}`;
+      const challengeUrl = `${API_URL}/auth/challenge?wallet=${encodeURIComponent(walletAddress)}`;
       const nonceResponse = await axiosInstance.get(challengeUrl);
 
       const nonce = nonceResponse.data.nonce || nonceResponse.data.challenge;
+
+      if (!nonce) {
+        throw new Error('Failed to get authentication nonce from server');
+      }
 
       // Create message to sign
       const message = `DegenDuel Authentication\nWallet: ${walletAddress}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`;
@@ -487,7 +486,7 @@ export class AuthService {
       }
 
       // Use the configured instance for verification
-      const verifyUrl = `${authBaseURL}/auth/verify-wallet`;
+      const verifyUrl = `${API_URL}/auth/verify-wallet`;
       const authResponse = await axiosInstance.post(verifyUrl, {
         wallet: walletAddress,
         signature,
@@ -558,8 +557,7 @@ export class AuthService {
 
     try {
       // Use the configured instance
-      const authBaseURL = API_URL.replace('/api', '');
-      const twitterLinkUrl = `${authBaseURL}/auth/twitter/link`;
+      const twitterLinkUrl = `${API_URL}/auth/twitter/link`;
       const response = await axiosInstance.get(twitterLinkUrl);
       return response.data.redirectUrl;
     } catch (error: any) {
@@ -582,8 +580,7 @@ export class AuthService {
       localStorage.setItem('degen_explicit_logout', 'true');
 
       // Use the configured instance
-      const authBaseURL = API_URL.replace('/api', '');
-      const logoutUrl = `${authBaseURL}/auth/logout`;
+      const logoutUrl = `${API_URL}/auth/logout`;
       await axiosInstance.post(logoutUrl, {});
 
       // Clear all tokens
