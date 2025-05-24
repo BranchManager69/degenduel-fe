@@ -38,22 +38,14 @@ export const TokensPage: React.FC = () => {
   const navigate = useNavigate();
   const searchDebounceRef = useRef<number | null>(null);
   
-  // Create debounce for search to improve performance
-  useEffect(() => {
-    if (searchDebounceRef.current) {
-      window.clearTimeout(searchDebounceRef.current);
-    }
-    
-    searchDebounceRef.current = window.setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-    
-    return () => {
-      if (searchDebounceRef.current) {
-        window.clearTimeout(searchDebounceRef.current);
-      }
-    };
-  }, [searchQuery]);
+  // Token state management with address indexing
+  const [tokenMap, setTokenMap] = useState<Record<string, Token>>({});
+  const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
+  const socketRef = useRef<WebSocket | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const pingIntervalRef = useRef<number | null>(null);
+  const lastUpdateRef = useRef<Date>(new Date());
   
   // Request data for a specific token by address if needed
   const requestTokenByAddress = useCallback((address: string) => {
@@ -68,32 +60,6 @@ export const TokensPage: React.FC = () => {
       }));
     }
   }, []);
-
-  // Parse URL parameters for token selection
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tokenAddress = params.get('address');
-    const tokenSymbol = params.get('symbol'); // For backward compatibility
-    
-    if (tokenAddress) {
-      // Prioritize address if available (more reliable)
-      setSelectedTokenSymbol(tokenAddress);
-      setSearchQuery(tokenAddress);
-      setDebouncedSearchQuery(tokenAddress);
-      setIsDetailModalOpen(true);
-      
-      // If we have a WebSocket connection, request specific token data
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        requestTokenByAddress(tokenAddress);
-      }
-    } else if (tokenSymbol) {
-      // Fall back to symbol for backward compatibility
-      setSelectedTokenSymbol(tokenSymbol);
-      setSearchQuery(tokenSymbol);
-      setDebouncedSearchQuery(tokenSymbol);
-      setIsDetailModalOpen(true);
-    }
-  }, [location.search, requestTokenByAddress]);
 
   // Token selection handler
   const handleTokenClick = useCallback((token: Token) => {
@@ -110,15 +76,6 @@ export const TokensPage: React.FC = () => {
     // Remove both address and symbol from the URL without page reload
     navigate(location.pathname, { replace: true });
   }, [location.pathname, navigate]);
-
-  // Token state management with address indexing
-  const [tokenMap, setTokenMap] = useState<Record<string, Token>>({});
-  const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
-  const socketRef = useRef<WebSocket | null>(null);
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 5;
-  const pingIntervalRef = useRef<number | null>(null);
-  const lastUpdateRef = useRef<Date>(new Date());
 
   // Helper function to transform API token data to Token format
   const transformTokenData = useCallback((tokenData: any): Token => {
@@ -156,14 +113,24 @@ export const TokensPage: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetch('/api/v3/tokens?limit=100');
+      // Remove limit parameter since v3 endpoint doesn't process it
+      const response = await fetch('/api/v3/tokens');
       
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}`);
       }
       
-      const tokensData = await response.json();
+      const responseData = await response.json();
       lastUpdateRef.current = new Date();
+      
+      // Handle v3 structured response: { status: "success", count: 1234, data: [tokens...] }
+      const tokensArray = responseData.data || responseData;
+      
+      // Validate that we have an array
+      if (!Array.isArray(tokensArray)) {
+        console.error("API response data is not an array:", responseData);
+        throw new Error("Invalid API response format");
+      }
       
       // Create metadata from timestamp
       const metadata: TokenResponseMetadata = {
@@ -175,7 +142,7 @@ export const TokensPage: React.FC = () => {
       
       // Transform and index by address
       const newTokenMap: Record<string, Token> = {};
-      tokensData.forEach((tokenData: any) => {
+      tokensArray.forEach((tokenData: any) => {
         const token = transformTokenData(tokenData);
         if (token.contractAddress) {
           newTokenMap[token.contractAddress] = token;
@@ -316,61 +283,6 @@ export const TokensPage: React.FC = () => {
     
     return socket;
   }, [transformTokenData]);
-  
-  // Initial data load and WebSocket connection
-  useEffect(() => {
-    // Load initial data first
-    loadInitialTokenData()
-      .then(() => {
-        // Then connect to WebSocket for updates
-        connectWebSocket();
-      });
-    
-    // Cleanup on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
-      
-      if (pingIntervalRef.current) {
-        window.clearInterval(pingIntervalRef.current);
-        pingIntervalRef.current = null;
-      }
-    };
-  }, [loadInitialTokenData, connectWebSocket]);
-  
-  // Check maintenance mode
-  useEffect(() => {
-    const checkMaintenanceMode = async () => {
-      try {
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        setIsMaintenanceMode(isInMaintenance);
-
-        if (isInMaintenance) {
-          setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
-          );
-          setLoading(false);
-        }
-      } catch (err) {
-        console.warn("Failed to check maintenance mode:", err);
-      }
-    };
-
-    checkMaintenanceMode();
-  }, []);
-  
-  // Handle connection state changes
-  useEffect(() => {
-    if (connectionState === 'error') {
-      setError("Connection error. Please try again later.");
-    } else if (connectionState === 'connecting') {
-      // Only show loading if we're connecting for the first time and don't have data
-      if (Object.keys(tokenMap).length === 0) {
-        setLoading(true);
-      }
-    }
-  }, [connectionState, tokenMap]);
 
   // Find the selected token based on address or symbol
   const selectedToken = useMemo(() => {
@@ -454,6 +366,141 @@ export const TokensPage: React.FC = () => {
     return sortedTokens;
   }, [tokenMap, debouncedSearchQuery, sortField, sortDirection]);
 
+  // Create debounce for search to improve performance
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      window.clearTimeout(searchDebounceRef.current);
+    }
+    
+    searchDebounceRef.current = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    
+    return () => {
+      if (searchDebounceRef.current) {
+        window.clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Parse URL parameters for token selection
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tokenAddress = params.get('address');
+    const tokenSymbol = params.get('symbol'); // For backward compatibility
+    
+    if (tokenAddress) {
+      // Prioritize address if available (more reliable)
+      setSelectedTokenSymbol(tokenAddress);
+      setSearchQuery(tokenAddress);
+      setDebouncedSearchQuery(tokenAddress);
+      setIsDetailModalOpen(true);
+      
+      // If we have a WebSocket connection, request specific token data
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        requestTokenByAddress(tokenAddress);
+      }
+    } else if (tokenSymbol) {
+      // Fall back to symbol for backward compatibility
+      setSelectedTokenSymbol(tokenSymbol);
+      setSearchQuery(tokenSymbol);
+      setDebouncedSearchQuery(tokenSymbol);
+      setIsDetailModalOpen(true);
+    }
+  }, [location.search, requestTokenByAddress]);
+  
+  // Initial data load and WebSocket connection
+  useEffect(() => {
+    // Load initial data first
+    loadInitialTokenData()
+      .then(() => {
+        // Then connect to WebSocket for updates
+        connectWebSocket();
+      });
+    
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+      
+      if (pingIntervalRef.current) {
+        window.clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = null;
+      }
+    };
+  }, [loadInitialTokenData, connectWebSocket]);
+  
+  // Check maintenance mode
+  useEffect(() => {
+    const checkMaintenanceMode = async () => {
+      try {
+        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
+        setIsMaintenanceMode(isInMaintenance);
+
+        if (isInMaintenance) {
+          setError(
+            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
+          );
+          setLoading(false);
+        }
+      } catch (err) {
+        console.warn("Failed to check maintenance mode:", err);
+      }
+    };
+
+    checkMaintenanceMode();
+  }, []);
+  
+  // Handle connection state changes
+  useEffect(() => {
+    if (connectionState === 'error') {
+      setError("Connection error. Please try again later.");
+    } else if (connectionState === 'connecting') {
+      // Only show loading if we're connecting for the first time and don't have data
+      if (Object.keys(tokenMap).length === 0) {
+        setLoading(true);
+      }
+    }
+     }, [connectionState, tokenMap]);
+
+  // Pre-calculate JSX elements to avoid conditional hooks
+  const floatingParticles = useMemo(() => 
+    Array.from({ length: 30 }).map((_, i) => {
+      // Pre-calculate random values to prevent re-renders
+      const left = `${Math.random() * 100}%`;
+      const top = `${Math.random() * 100}%`;
+      const duration = `${Math.random() * 5 + 5}s`;
+      const delay = `${Math.random() * 2}s`;
+      
+      return (
+        <div
+          key={i}
+          className="absolute w-1 h-1 bg-brand-500 rounded-full opacity-30 animate-float"
+          style={{
+            left,
+            top,
+            animationDuration: duration,
+            animationDelay: delay
+          }}
+        />
+      );
+    }), 
+  []);
+
+  const scanningLines = useMemo(() => (
+    <>
+      <div
+        className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
+        style={{ left: "20%", animationDuration: "8s" }}
+      />
+      <div
+        className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
+        style={{ left: "80%", animationDuration: "8s", animationDelay: "2s" }}
+      />
+    </>
+  ), []);
+
   // Loading state UI
   if (loading) {
     return (
@@ -532,44 +579,12 @@ export const TokensPage: React.FC = () => {
         
         {/* Floating particles - Memoized to prevent re-renders */}
         <div className="absolute inset-0 pointer-events-none">
-          {React.useMemo(() => 
-            Array.from({ length: 30 }).map((_, i) => {
-              // Pre-calculate random values to prevent re-renders
-              const left = `${Math.random() * 100}%`;
-              const top = `${Math.random() * 100}%`;
-              const duration = `${Math.random() * 5 + 5}s`;
-              const delay = `${Math.random() * 2}s`;
-              
-              return (
-                <div
-                  key={i}
-                  className="absolute w-1 h-1 bg-brand-500 rounded-full opacity-30 animate-float"
-                  style={{
-                    left,
-                    top,
-                    animationDuration: duration,
-                    animationDelay: delay
-                  }}
-                />
-              );
-            }), 
-          [])}
+          {floatingParticles}
         </div>
         
         {/* Scanning lines - Static to prevent reflows */}
         <div className="absolute inset-0 overflow-hidden" style={{ opacity: 0.3 }}>
-          {React.useMemo(() => (
-            <>
-              <div
-                className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
-                style={{ left: "20%", animationDuration: "8s" }}
-              />
-              <div
-                className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
-                style={{ left: "80%", animationDuration: "8s", animationDelay: "2s" }}
-              />
-            </>
-          ), [])}
+          {scanningLines}
         </div>
       </div>
 
