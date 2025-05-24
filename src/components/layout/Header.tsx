@@ -7,9 +7,9 @@
  * It displays the logo, user menu, and login button.
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.1.1
  * @created 2025-01-01
- * @updated 2025-05-10
+ * @updated 2025-05-23
  */
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -17,39 +17,26 @@ import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
+import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useStore } from "../../store/useStore";
-import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton"; // Verify path
-
-// STEP 3: Re-enable Logo import
-// import IntroLogo from "../logo/index"; // Keep the full IntroLogo for now, maybe it's used elsewhere
-// import Logo from "../ui/Logo"; // REMOVE old logo import
-import MiniLogo from "../logo/MiniLogo"; // Add MiniLogo import
-import NanoLogo from "../logo/NanoLogo"; // Add NanoLogo import
+// import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
+import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton";
+import MiniLogo from "../logo/MiniLogo";
+import NanoLogo from "../logo/NanoLogo";
+import { MobileMenuButton } from './MobileMenuButton'; // TEMP
 import { UserMenu } from './user-menu/UserMenu';
 
-// STEP ???: Re-enable dropdowns
-// import { ContestsDropdown } from "./ContestsDropdown"; // TEMP
-// import { RankingsDropdown } from "./RankingsDropdown"; // TEMP
-// import { TokensDropdown } from "./TokensDropdown"; // TEMP
-
-// STEP ???: Re-enable user menus (desktop and mobile)
-import { MobileMenuButton } from './MobileMenuButton'; // TEMP
-
-// Error-related hooks are no longer used directly in Header for banners
-import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
-// import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
 
 export const Header: React.FC = () => {
   const { isCompact } = useScrollHeader(50);
   
-  // Get the store error message and clear the error
+  // (why?) Get the store error message and clear the error
   const storeErrorMessage = useStore(state => state.error?.message || null);
   const clearStoreError = useStore(state => state.clearError);
   
   const { user, isAdmin, isAuthenticated, logout } = useMigratedAuth(); 
-  // unreadCount and settings might still be needed for other parts of the Header later
-  // For now, keep them if UserMenu/MobileMenu will use them, or comment out if not.
   const { unreadCount } = useNotifications(); 
+  // TODO: Add settings back in; may still be needed for other parts of the Header
   // const { settings } = useSystemSettings(); 
   
   const isMounted = useRef(true);
@@ -57,10 +44,10 @@ export const Header: React.FC = () => {
   // Log the component mount and unmount
   useEffect(() => {
     isMounted.current = true;
-    console.log("[Header STEP 2] Mounted");
+    //console.log("[Header STEP 2] Mounted");
     return () => {
       isMounted.current = false;
-      console.log("[Header STEP 2] Unmounted");
+      //console.log("[Header STEP 2] Unmounted");
     };
   }, []);
 
@@ -72,12 +59,12 @@ export const Header: React.FC = () => {
   // Re-enable the effect for clearing storeError, but guarded
   useEffect(() => {
     if (storeErrorMessage && clearStoreError) {
-      console.log("[Header] Store error detected, will clear in 5s:", storeErrorMessage);
+      //console.log("[Header] Store error detected, will clear in 5s:", storeErrorMessage);
       // Clear the store error after 5 seconds
       const timer = setTimeout(() => {
         // Check if the component is still mounted
         if (isMounted.current) {
-          console.log("[Header] Clearing store error.");
+          //console.log("[Header] Clearing store error.");
           clearStoreError();
         }
       }, 5000);
@@ -88,7 +75,7 @@ export const Header: React.FC = () => {
 
   // Other effects (maintenance sync, header height) remain commented out for now
 
-  console.log("[Header STEP 4 - Error Banners Relocated] Rendering. User:", user ? user.id : null, "IsAuth:", isAuthenticated, "IsAdmin:", isAdmin, "Compact:", isCompact, "StoreError:", storeErrorMessage ? "Yes" : "No", "UnreadNotifs:", unreadCount);
+  //console.log("[Header STEP 4 - Error Banners Relocated] Rendering. User:", user ? user.id : null, "IsAuth:", isAuthenticated, "IsAdmin:", isAdmin, "Compact:", isCompact, "StoreError:", storeErrorMessage ? "Yes" : "No", "UnreadNotifs:", unreadCount);
 
   const headerHeight = isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16";
 
@@ -110,7 +97,7 @@ export const Header: React.FC = () => {
           {/* Banned User Banner Content */}
           <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2">
             <p className="text-red-400 text-sm text-center">
-              Uh-oh! You've been banned from DegenDuel. GG.
+              Uh-oh, you're banned from DegenDuel... gg.
               {user?.banned_reason ? `: ${user.banned_reason}` : ""} 
             </p>
           </div>

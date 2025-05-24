@@ -10,8 +10,8 @@
  * @last-modified 2025-04-07
  */
 
-import React, { useState, useEffect } from 'react';
-import { authDebug } from '../../config/config';
+import React, { useEffect, useState } from 'react';
+import { API_URL, authDebug } from '../../config/config';
 import { useStore } from '../../store/useStore';
 import BiometricAuthButton from './BiometricAuthButton';
 
@@ -54,7 +54,7 @@ const BiometricCredentialManager: React.FC<BiometricCredentialManagerProps> = ({
     setError(undefined);
 
     try {
-      const response = await fetch('/api/auth/biometric/credentials', {
+      const response = await fetch(`${API_URL}/auth/biometric/credentials`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ const BiometricCredentialManager: React.FC<BiometricCredentialManagerProps> = ({
     setSuccess(undefined);
 
     try {
-      const response = await fetch(`/api/auth/biometric/credentials/${credentialId}`, {
+      const response = await fetch(`${API_URL}/auth/biometric/credentials/${credentialId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {

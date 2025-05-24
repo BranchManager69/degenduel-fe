@@ -12,7 +12,7 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MeasureRender } from "../../../utils/performance";
 
 // Feature flags
@@ -60,6 +60,24 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   
   // If no image is provided, try to use a default one
   const featureImage = imagePath || (title in DEGENDUEL_FEATURES_IMAGES ? DEGENDUEL_FEATURES_IMAGES[title as keyof typeof DEGENDUEL_FEATURES_IMAGES] : null);
+
+  // Prevent scroll events when modal is open
+  const preventScroll = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  // Cleanup scroll lock on component unmount
+  useEffect(() => {
+    return () => {
+      // Ensure scroll lock is removed if component unmounts while modal is open
+      if (isExpanded) {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('wheel', preventScroll);
+        document.removeEventListener('touchmove', preventScroll);
+      }
+    };
+  }, [isExpanded, preventScroll]);
   
   // Determine the color scheme based on upcoming status
   const colorScheme = isUpcoming 
@@ -84,12 +102,26 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         tag: ""
       };
   
-  // Toggle expanded state
+  // Toggle expanded state with comprehensive scroll lock
   const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
+    const newExpandedState = !isExpanded;
+    setIsExpanded(newExpandedState);
     
-    // Scroll expanded card into view if needed
-    if (!isExpanded && cardRef.current) {
+    // Comprehensive scroll lock to prevent scroll bleed-through
+    if (newExpandedState) {
+      // Lock body scroll and prevent wheel events
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('wheel', preventScroll, { passive: false });
+      document.addEventListener('touchmove', preventScroll, { passive: false });
+    } else {
+      // Restore body scroll and remove event listeners
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('wheel', preventScroll);
+      document.removeEventListener('touchmove', preventScroll);
+    }
+    
+    // Scroll expanded card into view if needed (only when closing)
+    if (!newExpandedState && cardRef.current) {
       setTimeout(() => {
         cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
@@ -286,56 +318,53 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           {/* Card expanded view */}
           {isExpanded && (
 
-            // Card expanded view container
+            // Card expanded view container - FULL VIEWPORT MODAL
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleExpand}
             >
-              {/* Card expanded view content */}
+              {/* Modal content - uses full viewport efficiently */}
               <motion.div 
-                className="relative w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl rounded-xl overflow-hidden bg-gray-900/90 border border-gray-800 flex flex-col max-h-[90vh]"
-                initial={{ scale: 0.9, y: 30 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 30 }}
+                className="h-full w-full flex flex-col bg-gray-900/95 border-0 md:m-8 md:h-[calc(100vh-4rem)] md:w-[calc(100vw-4rem)] md:rounded-xl md:border md:border-gray-800"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()}
-                layout
               >
                 {/* Close button */}
                 <button 
-                  className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-gray-900/60 text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"
+                  className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-gray-900/80 text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"
                   onClick={toggleExpand}
                 >
-                  {/* Close button icon (X) */}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
                 </button>
                 
-                {/* Scrollable content area starts here, excluding fixed header/footer of modal */}
-                <div className="flex-grow overflow-y-auto">
-                  {/* Feature image if available */}
+                {/* Header section with feature image and title - FIXED HEIGHT */}
+                <div className="relative h-48 md:h-64 w-full overflow-hidden shrink-0 md:rounded-t-xl">
+                  {/* Feature image background */}
                   {featureImage && (
-                    <div className="w-full h-48 sm:h-64 relative overflow-hidden z-10">
-                      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-900/30 to-gray-900/10 z-10"></div>
+                    <>
                       <img 
                         src={featureImage}
                         alt={title}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-900 to-transparent z-10"></div>
-                    </div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/60 via-gray-900/40 to-gray-900/80"></div>
+                    </>
                   )}
                   
-                  {/* Header with title (prominent with glowing effects) - part of scrollable if image pushes it down */}
-                  <div className="p-6 border-b border-gray-800 bg-gradient-to-r from-gray-900 to-gray-800 relative z-10">
-                    <div className="flex items-center gap-4">
+                  {/* Title overlay */}
+                  <div className="absolute inset-0 flex items-end p-6 md:p-8">
+                    <div className="flex items-center gap-4 w-full">
                       <motion.div 
-                        className={`flex items-center justify-center p-4 rounded-lg bg-${colorScheme.secondary}-900/40 text-${colorScheme.accent}`}
+                        className={`flex items-center justify-center p-3 md:p-4 rounded-lg bg-${colorScheme.secondary}-900/60 text-${colorScheme.accent} backdrop-blur-sm`}
                         animate={{
                           boxShadow: [
                             `0 0 0 rgba(var(--${colorScheme.secondary}-rgb), 0)`,
@@ -347,117 +376,120 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                       >
                         {icon}
                       </motion.div>
-                      <div>
-                        <h2 className={`text-3xl sm:text-4xl font-russo-one bg-gradient-to-r ${colorScheme.primary} bg-clip-text text-transparent mb-1 tracking-wider`}>
+                      <div className="flex-1">
+                        <h2 className={`text-2xl md:text-4xl font-russo-one bg-gradient-to-r ${colorScheme.primary} bg-clip-text text-transparent mb-1 tracking-wider`}>
                           {title}
                         </h2>
                         {isUpcoming && (
-                          <span className="px-2 py-1 bg-blue-600/30 text-blue-300 text-xs font-bold uppercase tracking-wide rounded-sm font-sans">
+                          <span className="px-2 py-1 bg-blue-600/40 text-blue-200 text-xs font-bold uppercase tracking-wide rounded-sm font-sans backdrop-blur-sm">
                             Coming Soon
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Two-column layout for larger screens, stacked for mobile - THIS IS THE MAIN CONTENT BODY */}
-                  <div className="grid md:grid-cols-2 grid-cols-1 gap-6 p-6 relative z-10">
-                    {/* Left column: Detailed description */}
-                    <div className="space-y-4">
-                      <div className="mb-4">
-                        <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">OVERVIEW</h3>
-                        <p className="text-gray-200 leading-relaxed font-sans text-sm">
-                          {description}
-                        </p>
-                      </div>
-                      {extendedDescription && (
-                        <div>
-                          <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">DETAILS</h3>
-                          <div className="text-gray-200 leading-relaxed space-y-3 font-sans text-sm">
-                            {extendedDescription.split('\n').map((paragraph, idx) => (
-                              <p key={idx}>
-                                {paragraph}
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className="mt-6 space-y-3">
-                        <h3 className="text-lg font-bold text-white/90 font-russo-one tracking-wider">HIGHLIGHTS</h3>
-                        <ul className="space-y-2 font-sans text-sm">
-                          {description.split('. ').filter(Boolean).map((point, idx) => (
-                            <li key={idx} className="flex gap-2 items-start">
-                              <span className={`inline-block h-5 w-5 flex-shrink-0 rounded-full bg-gradient-to-br ${colorScheme.primary} mt-0.5`}></span>
-                              <span className="text-gray-300">
-                                {point}.
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                </div>
+                
+                {/* Main content area - FLEXIBLE HEIGHT, NO SCROLL */}
+                <div className="flex-1 grid md:grid-cols-2 grid-cols-1 gap-6 p-6 md:p-8 min-h-0">
+                  {/* Left column: Content */}
+                  <div className="space-y-6 overflow-y-auto md:overflow-visible">
+                    <div>
+                      <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">OVERVIEW</h3>
+                      <p className="text-gray-200 leading-relaxed font-sans text-sm">
+                        {description}
+                      </p>
                     </div>
-                    {/* Right column: Animation/Diagram */}
-                    <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center min-h-[300px]">
-                      {animation && FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS ? (
-                        <div className="w-full h-full">
-                          {animation}
+                    
+                    {extendedDescription && (
+                      <div>
+                        <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">DETAILS</h3>
+                        <div className="text-gray-200 leading-relaxed space-y-3 font-sans text-sm">
+                          {extendedDescription.split('\n').map((paragraph, idx) => (
+                            <p key={idx}>
+                              {paragraph}
+                            </p>
+                          ))}
                         </div>
-                      ) : (
-                        <div className="text-center p-10 h-full flex flex-col items-center justify-center">
-                          {featureImage ? (
-                            <motion.div
-                              className="relative w-full max-w-xs"
-                              animate={{ scale: [1, 1.03, 1], y: [0, -5, 0] }}
-                              transition={{ duration: 4, repeat: Infinity, repeatType: "reverse" }}
-                            >
-                              <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-lg blur-lg"></div>
-                              <img 
-                                src={featureImage} 
-                                alt={title} 
-                                className="relative rounded-lg w-full h-full object-cover"
-                              />
-                            </motion.div>
-                          ) : (
-                            <motion.div
-                              className="relative inline-block w-32 h-32"
-                              animate={{ 
-                                rotateY: 360, 
-                                boxShadow: [
-                                  `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`,
-                                  `0 0 40px rgba(var(--${colorScheme.secondary}-rgb), 0.6)`,
-                                  `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`
-                                ]
-                              }}
-                              transition={{ 
-                                rotateY: { duration: 8, repeat: Infinity, ease: "linear" },
-                                boxShadow: { duration: 2, repeat: Infinity }
-                              }}
-                            >
-                              <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${colorScheme.primary} opacity-70`}></div>
-                              <div className="absolute inset-0 flex items-center justify-center text-white transform scale-[3]">
-                                {icon}
-                              </div>
-                            </motion.div>
-                          )}
-                          <p className="mt-6 text-gray-400">
-                            {animation && !FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS 
-                              ? "Animations disabled" 
-                              : "Interactive demo coming soon"}
-                          </p>
-                        </div>
-                      )}
+                      </div>
+                    )}
+                    
+                    <div>
+                      <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">KEY BENEFITS</h3>
+                      <ul className="space-y-2 font-sans text-sm">
+                        {description.split('. ').filter(Boolean).slice(0, 3).map((point, idx) => (
+                          <li key={idx} className="flex gap-2 items-start">
+                            <span className={`inline-block h-4 w-4 flex-shrink-0 rounded-full bg-gradient-to-br ${colorScheme.primary} mt-1`}></span>
+                            <span className="text-gray-300">
+                              {point}.
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
-                </div> { /* End of scrollable content area */}
+                  
+                  {/* Right column: Animation/Visual */}
+                  <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center">
+                    {animation && FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS ? (
+                      <div className="w-full h-full">
+                        {animation}
+                      </div>
+                    ) : (
+                      <div className="text-center p-8 h-full flex flex-col items-center justify-center">
+                        {featureImage ? (
+                          <motion.div
+                            className="relative w-full max-w-sm"
+                            animate={{ scale: [1, 1.03, 1], y: [0, -5, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, repeatType: "reverse" }}
+                          >
+                            <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-lg blur-lg"></div>
+                            <img 
+                              src={featureImage} 
+                              alt={title} 
+                              className="relative rounded-lg w-full h-auto object-cover"
+                            />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            className="relative inline-block w-32 h-32"
+                            animate={{ 
+                              rotateY: 360, 
+                              boxShadow: [
+                                `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`,
+                                `0 0 40px rgba(var(--${colorScheme.secondary}-rgb), 0.6)`,
+                                `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.2)`
+                              ]
+                            }}
+                            transition={{ 
+                              rotateY: { duration: 8, repeat: Infinity, ease: "linear" },
+                              boxShadow: { duration: 2, repeat: Infinity }
+                            }}
+                          >
+                            <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${colorScheme.primary} opacity-70`}></div>
+                            <div className="absolute inset-0 flex items-center justify-center text-white transform scale-[3]">
+                              {icon}
+                            </div>
+                          </motion.div>
+                        )}
+                        <p className="mt-6 text-gray-400 text-sm">
+                          {animation && !FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS 
+                            ? "Animations disabled" 
+                            : "Interactive demo coming soon"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 
-                {/* Bottom call-to-action container - should be fixed at the bottom of the modal */}
-                <div className="p-6 bg-gray-900/70 border-t border-gray-800 flex justify-between items-center relative z-10 shrink-0">
+                {/* Footer - FIXED HEIGHT */}
+                <div className="p-6 md:p-8 bg-gray-900/70 border-t border-gray-800 flex justify-between items-center shrink-0 md:rounded-b-xl">
                   <div className="text-sm text-gray-400">
-                    <span className="text-gray-300 font-semibold">DegenDuel</span> • Core Platform Feature
+                    <span className="text-gray-300 font-semibold">DegenDuel</span> • {isUpcoming ? 'Upcoming' : 'Core'} Platform Feature
                   </div>
                   <button 
                     onClick={toggleExpand}
-                    className={`px-4 py-2 rounded-md bg-gradient-to-r ${colorScheme.primary} text-white text-sm font-medium`}
+                    className={`px-6 py-2 rounded-md bg-gradient-to-r ${colorScheme.primary} text-white text-sm font-medium hover:scale-105 transition-transform`}
                   >
                     Close
                   </button>

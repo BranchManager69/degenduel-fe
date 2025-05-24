@@ -16,7 +16,7 @@ interface Props {
   systemError?: string | null;
 }
 
-const TICKER_DEBUG_MODE = false;
+const TICKER_DEBUG_MODE = true;
 
 //const SCROLL_SPEED_PX_PER_SECOND = 30; // Adjusted speed
 const HOVER_PAUSE_DELAY_MS = 100; // Small delay before hover-pause engages
@@ -162,14 +162,69 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   const significantChanges = useMemo(() => {
     if (!standardizedTokens) return [];
-    return (standardizedTokens as Token[])
-      .filter(
-        (token: Token): token is Token =>
-          token.change24h !== undefined &&
-          token.price !== undefined &&
-          (Math.abs(parseFloat(token.change24h)) > 0.05 || (parseFloat(token.volume24h) || 0) > 10000)
-      )
-      .sort((a: Token, b: Token) => (parseFloat(b.volume24h) || 0) - (parseFloat(a.volume24h) || 0))
+    
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: Processing ${standardizedTokens.length} raw tokens`);
+    }
+    
+    // First, filter out completely empty/invalid tokens
+    const validTokens = (standardizedTokens as Token[]).filter(
+      (token: Token): token is Token => {
+        // Must have a symbol and name (no empty strings)
+        const hasValidSymbol = Boolean(token.symbol && token.symbol.trim() !== '');
+        const hasValidName = Boolean(token.name && token.name.trim() !== '');
+        
+        // Must have defined price and change values (even if 0)
+        const hasValidData = token.change24h !== undefined && 
+                            token.price !== undefined;
+        
+        const isValid = hasValidSymbol && hasValidName && hasValidData;
+        
+        if (TICKER_DEBUG_MODE && !isValid) {
+          console.log(`UnifiedTicker: Filtered out token - Symbol: "${token.symbol}", Name: "${token.name}", hasValidSymbol: ${hasValidSymbol}, hasValidName: ${hasValidName}, hasValidData: ${hasValidData}`);
+        }
+        
+        return isValid;
+      }
+    );
+    
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: ${validTokens.length} valid tokens after filtering`);
+    }
+    
+    // If we have valid tokens with actual movement, show those
+    const tokensWithMovement = validTokens.filter(token => 
+      Math.abs(parseFloat(token.change24h)) > 0.05 || 
+      (parseFloat(token.volume24h) || 0) > 10000
+    );
+    
+    // If no tokens with movement, fall back to showing any valid tokens
+    const tokensToShow = tokensWithMovement.length > 0 ? tokensWithMovement : validTokens;
+    
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: Using ${tokensWithMovement.length > 0 ? 'tokens with movement' : 'all valid tokens'} - ${tokensToShow.length} tokens`);
+      if (tokensToShow.length > 0) {
+        console.log(`UnifiedTicker: Top tokens:`, tokensToShow.slice(0, 3).map(t => ({
+          symbol: t.symbol,
+          name: t.name,
+          price: t.price,
+          change24h: t.change24h,
+          volume24h: t.volume24h
+        })));
+      }
+    }
+    
+    return tokensToShow
+      .sort((a: Token, b: Token) => {
+        // Sort by volume first, then by absolute change
+        const volumeA = parseFloat(a.volume24h) || 0;
+        const volumeB = parseFloat(b.volume24h) || 0;
+        if (volumeB !== volumeA) return volumeB - volumeA;
+        
+        const changeA = Math.abs(parseFloat(a.change24h) || 0);
+        const changeB = Math.abs(parseFloat(b.change24h) || 0);
+        return changeB - changeA;
+      })
       .slice(0, maxTokens);
   }, [standardizedTokens, maxTokens]);
   
@@ -221,6 +276,12 @@ export const UnifiedTicker: React.FC<Props> = ({
             const change24hNum = parseFloat(token.change24h);
             const logoUrl = token.images?.imageUrl || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
 
+            const priceNum = parseFloat(token.price);
+            const hasRealPrice = priceNum > 0;
+            const displayPrice = hasRealPrice ? 
+              (priceNum < 0.01 ? priceNum.toFixed(6) : priceNum.toFixed(4)) : 
+              'N/A';
+
             return (
               <div
                 key={tokenKey}
@@ -230,8 +291,13 @@ export const UnifiedTicker: React.FC<Props> = ({
                 <span className="text-xs font-medium text-cyber-300">
                   {token.symbol}
                 </span>
+                {hasRealPrice && (
+                  <span className="text-xs ml-1.5 text-gray-400">
+                    ${displayPrice}
+                  </span>
+                )}
                 <span className={`text-xs ml-1.5 ${change24hNum >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {change24hNum >= 0 ? '+' : ''}{(change24hNum * 100).toFixed(2)}%
+                  {change24hNum >= 0 ? '+' : ''}{change24hNum === 0 ? '0.00' : (change24hNum * 100).toFixed(2)}%
                 </span>
               </div>
             );

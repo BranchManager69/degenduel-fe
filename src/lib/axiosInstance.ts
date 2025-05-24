@@ -7,7 +7,7 @@ import { authService } from '../services/AuthService'; // Check path validity
 
 // Create a dedicated Axios instance
 const axiosInstance = axios.create({
-  baseURL: API_URL, 
+  baseURL: API_URL,
   withCredentials: true, // Send cookies automatically
   headers: {
     'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ axiosInstance.interceptors.response.use(
 
     // Check if it's a 401 error and not a request to the refresh endpoint itself
     if (error.response?.status === 401 && originalRequest.url !== '/auth/refresh' && !originalRequest._retry) {
-     
+
       // Prevent multiple refresh attempts concurrently
       if (isRefreshing) {
         // If refresh is already in progress, queue the failed request
@@ -63,7 +63,7 @@ axiosInstance.interceptors.response.use(
         console.log('[Axios Interceptor] Session expired (401). Attempting token refresh...');
         // Make the refresh request (no body needed, uses r_session cookie)
         await axiosInstance.post('/auth/refresh', {}); // Using the same instance ensures cookies are sent
-        
+
         console.log('[Axios Interceptor] Token refresh successful. Retrying original request...');
         // Process queue without passing token
         processQueue(null);
@@ -77,7 +77,7 @@ axiosInstance.interceptors.response.use(
         // Trigger logout
         // Using authService directly might cause circular dependency issues.
         // Consider an event emitter or state management action instead.
-        authService.logout(); 
+        authService.logout();
         // Reject the original request's promise with the refresh error
         return Promise.reject(refreshError);
       } finally {
