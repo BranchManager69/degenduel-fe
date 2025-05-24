@@ -1,6 +1,6 @@
-import { render, screen, act, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { AuthEventType, authService } from "../services";
 import { UnifiedAuthProvider, useAuth } from "./UnifiedAuthContext";
-import { authService, AuthEventType } from "../services";
 
 // Mock services module
 jest.mock("../services", () => {
@@ -55,12 +55,12 @@ const mockUser = {
 
 // Component that uses the auth hook for testing
 const TestComponent = () => {
-  const { user, isAuthenticated, isLoading, loginWithWallet, logout } = useAuth();
+  const { user, isAuthenticated, loading, loginWithWallet, logout } = useAuth();
 
   return (
     <div>
       <div data-testid="auth-status">
-        {isLoading
+        {loading
           ? "Loading..."
           : isAuthenticated === true  /* Explicitly compare to true to avoid function call detection */
           ? "Authenticated"

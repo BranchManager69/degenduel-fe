@@ -5,7 +5,7 @@
  * 
  * @description A WebSocket context wrapper that uses the new unified authentication system.
  * This ensures that WebSocket authentication is properly integrated with the
- * new authentication service and doesn't rely on direct store access.
+ * new authentication service and DOES NOT RELY ON DIRECT STORE ACCESS.
  * 
  * @author BranchManager69
  * @version 2.0.0
@@ -114,7 +114,7 @@ export const UnifiedWebSocketProvider: React.FC<{
   const missedHeartbeatsRef = useRef<number>(0);
   
   // Get default configuration
-  const defaultUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`;
+  const defaultUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`; // doubt that this is the best practices method but it works for now
   const connectionUrl = params?.url || defaultUrl;
   const options = params?.options || {};
   

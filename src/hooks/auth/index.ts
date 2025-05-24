@@ -1,10 +1,10 @@
 // src/hooks/auth/index.ts
 // Auth-related hooks
 
-// Export current auth hook
-export { useMigratedAuth } from './useMigratedAuth';
+// Export the primary auth hook
+export { useAuth } from '../../contexts/UnifiedAuthContext';
 
-// Export biometric auth hook (from legacy for now)
+// Export other auth-related hooks
 export { useBiometricAuth } from './legacy/useBiometricAuth';
 
 // Export QR Code auth hook
