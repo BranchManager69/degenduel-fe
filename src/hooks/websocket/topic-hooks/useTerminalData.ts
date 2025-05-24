@@ -51,31 +51,37 @@ export function useTerminalData() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const isSubscribedRef = useRef<boolean>(false);
 
+  // Use refs to avoid recreating handleMessage on every state change
+  const isLoadingRef = useRef(isLoading);
+  const terminalDataRef = useRef(terminalData);
+  isLoadingRef.current = isLoading;
+  terminalDataRef.current = terminalData;
+
   const ws = useWebSocket(); // Use the context hook
 
   const handleMessage = useCallback((message: Partial<WebSocketTerminalMessage>) => {
     try {
       // console.log('[TerminalData WebSocket] Received AI chat message:', message); // Keep for debugging if needed
-      if (message.type === DDExtendedMessageType.DATA && 
-          message.topic === TopicType.TERMINAL && 
-          message.subtype === 'terminal' && 
-          message.action === DDWebSocketActions.TERMINAL_UPDATE && 
-          message.data) {
-        
+      if (message.type === DDExtendedMessageType.DATA &&
+        message.topic === TopicType.TERMINAL &&
+        message.subtype === 'terminal' &&
+        message.action === DDWebSocketActions.TERMINAL_UPDATE &&
+        message.data) {
+
         // Only process AI chat related fields, ignore token/launch data
         const chatDataFromServer = message.data;
         const processedChatData: Partial<ChatTerminalData> = {
-          platformName: chatDataFromServer.platformName || terminalData.platformName,
-          platformDescription: chatDataFromServer.platformDescription || terminalData.platformDescription,
-          platformStatus: chatDataFromServer.platformStatus || terminalData.platformStatus,
-          commands: chatDataFromServer.commands || terminalData.commands,
-          systemStatus: chatDataFromServer.systemStatus || terminalData.systemStatus
+          platformName: chatDataFromServer.platformName || terminalDataRef.current.platformName,
+          platformDescription: chatDataFromServer.platformDescription || terminalDataRef.current.platformDescription,
+          platformStatus: chatDataFromServer.platformStatus || terminalDataRef.current.platformStatus,
+          commands: chatDataFromServer.commands || terminalDataRef.current.commands,
+          systemStatus: chatDataFromServer.systemStatus || terminalDataRef.current.systemStatus
         };
-        
+
         setTerminalData(prevData => ({ ...prevData, ...processedChatData }));
-        if (isLoading) setIsLoading(false);
+        if (isLoadingRef.current) setIsLoading(false);
         setLastUpdate(new Date());
-        
+
         dispatchWebSocketEvent('terminal_data_update', {
           socketType: TopicType.TERMINAL,
           message: 'Received AI chat terminal data from WebSocket',
@@ -83,7 +89,7 @@ export function useTerminalData() {
           updatedFields: Object.keys(processedChatData)
         });
       }
-      if (isLoading && message.type === DDExtendedMessageType.DATA) setIsLoading(false);
+      if (isLoadingRef.current && message.type === DDExtendedMessageType.DATA) setIsLoading(false);
     } catch (err) {
       console.error('[TerminalData WebSocket] Error processing AI chat message:', err);
       dispatchWebSocketEvent('error', {
@@ -92,7 +98,7 @@ export function useTerminalData() {
         error: err instanceof Error ? err.message : String(err)
       });
     }
-  }, [isLoading, terminalData]);
+  }, []); // Remove dependencies to prevent callback recreation
 
   // Effect for WebSocket listener registration
   useEffect(() => {
@@ -110,20 +116,20 @@ export function useTerminalData() {
   // Subscribe and request initial terminal data when WebSocket is connected
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
-    
+
     // Terminal data is often public, so using ws.isConnected. Change to ws.isReadyForSecureInteraction if auth is required.
     if (ws.isConnected && !isSubscribedRef.current) {
       console.log('[useTerminalData] WebSocket connected. Subscribing to AI chat terminal data.');
       ws.subscribe([TopicType.TERMINAL]);
       ws.request(TopicType.TERMINAL, DDWebSocketActions.GET_DATA);
       isSubscribedRef.current = true;
-      
+
       dispatchWebSocketEvent('terminal_data_subscribe', {
         socketType: TopicType.TERMINAL,
         message: 'Subscribing to AI chat terminal data',
         timestamp: new Date().toISOString()
       });
-      
+
       timeoutId = setTimeout(() => {
         console.warn('[TerminalData WebSocket] Timed out waiting for data');
         setIsLoading(false);
@@ -132,8 +138,8 @@ export function useTerminalData() {
       console.log('[useTerminalData] WebSocket not connected, deferring setup.');
       isSubscribedRef.current = false;
     }
-    
-    return () => { 
+
+    return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [ws.isConnected, ws.subscribe, ws.request]);
@@ -162,13 +168,13 @@ export function useTerminalData() {
       message: 'Refreshing AI chat terminal data',
       timestamp: new Date().toISOString()
     });
-    
+
     const timeoutId = setTimeout(() => {
-      if (isLoading) setIsLoading(false);
+      if (isLoadingRef.current) setIsLoading(false);
     }, 10000);
     return () => clearTimeout(timeoutId); // Return cleanup for this timeout
 
-  }, [ws.isConnected, ws.request, isLoading]); // isLoading is a dependency
+  }, [ws.isConnected, ws.request]); // Remove isLoading dependency
 
   return {
     terminalData,
