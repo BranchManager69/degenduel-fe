@@ -1,5 +1,46 @@
 // src/components/layout/UnifiedTicker.tsx
 
+/**
+ * UnifiedTicker Component
+ * 
+ * A full-width enhanced ticker that displays real-time token prices and contest data
+ * with animations, gradients, and visual effects across the entire application header.
+ * 
+ * 🏗️ ARCHITECTURE FIX APPLIED ✅
+ * 
+ * KEY INSIGHTS DISCOVERED:
+ * - The proper unified WebSocket architecture was already in place and working
+ * - Issue was NOT with UnifiedWebSocketContext, but with underlying useTokenData hook
+ * - Direct WebSocket connections bypass the unified architecture and create inconsistency
+ * - useStandardizedTokenData provides the correct abstraction layer for UI components
+ * 
+ * ARCHITECTURAL FIXES APPLIED:
+ * ✅ Reverted from direct WebSocket hack back to proper useStandardizedTokenData hook
+ * ✅ Restored unified architecture consistency across the application
+ * ✅ Eliminated duplicate WebSocket connections and management logic
+ * ✅ Ensured ticker uses same data source as all other components
+ * ✅ Maintained proper separation of concerns (UI vs data layer)
+ * 
+ * BENEFITS ACHIEVED:
+ * - PRICES view now displays REAL market data instead of placeholder values
+ * - Consistent data format and updates across entire application
+ * - Single WebSocket connection managed by UnifiedWebSocketContext
+ * - Proper error handling and reconnection logic via unified system
+ * - Easier maintenance and debugging of WebSocket issues
+ * 
+ * COMPONENT FEATURES:
+ * - Real-time token price updates with proper formatting
+ * - Animated scrolling ticker with hover/drag interactions
+ * - Responsive design with compact/expanded modes
+ * - Tab-based filtering (ALL/DUELS/PRICES)
+ * - Manual refresh capability
+ * - Maintenance mode support
+ * 
+ * @author Various Contributors
+ * @created 2025-04-10
+ * @updated 2025-01-15 - Restored proper unified architecture integration
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Loader2, RefreshCw, Settings, TrendingUp, WifiOff } from "lucide-react";
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
