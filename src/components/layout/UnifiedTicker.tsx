@@ -18,7 +18,6 @@ interface Props {
 
 const TICKER_DEBUG_MODE = true;
 
-//const SCROLL_SPEED_PX_PER_SECOND = 30; // Adjusted speed
 const HOVER_PAUSE_DELAY_MS = 100; // Small delay before hover-pause engages
 const INTERACTION_RESUME_DELAY_MS = 3000; // 3 seconds
 
@@ -31,12 +30,20 @@ export const UnifiedTicker: React.FC<Props> = ({
   systemError,
 }) => {
   const { maintenanceMode } = useStore();
+  
+  // ====================================
+  // PROPER UNIFIED WEBSOCKET (FIXED!)
+  // ====================================
   const {
     tokens: standardizedTokens,
     isLoading: tokensAreLoading,
     refresh: refreshTokenData,
     isConnected: isDataConnected,
   } = useStandardizedTokenData("all");
+  
+  // ====================================
+  // REST OF TICKER LOGIC
+  // ====================================
   const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
   const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("contests");
   const [viewportWidth, setViewportWidth] = useState<number>(0);
@@ -69,7 +76,7 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   useEffect(() => {
     if (TICKER_DEBUG_MODE) {
-      console.log(`UnifiedTicker: HOOK tokensAreLoading changed to: ${tokensAreLoading}`);
+      console.log(`UnifiedTicker: FIXED tokensAreLoading changed to: ${tokensAreLoading}`);
     }
   }, [tokensAreLoading]);
 
@@ -141,18 +148,20 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   const handleManualRefresh = useCallback(async () => {
     if (TICKER_DEBUG_MODE) {
-      console.log("UnifiedTicker: Manual refresh triggered.");
+      console.log("UnifiedTicker: Manual refresh triggered via unified system.");
     }
     setIsRefreshing(true);
     try {
-      await refreshTokenData();
+      if (refreshTokenData) {
+        refreshTokenData();
+      }
     } catch (error) {
       console.error("UnifiedTicker: Error during manual refresh:", error);
     } finally {
       setTimeout(() => {
         setIsRefreshing(false);
         if (TICKER_DEBUG_MODE) {
-          console.log("UnifiedTicker: Manual refresh complete.");
+          console.log("UnifiedTicker: Manual refresh complete via unified system.");
         }
         lastTimestampRef.current = 0;
         setMeasurementNonce(prev => prev + 1);
