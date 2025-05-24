@@ -6,9 +6,9 @@
  * @description Features section component for the landing page
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.1.1
  * @created 2025-01-01
- * @updated 2025-05-09
+ * @updated 2025-05-23
  */
 
 import { motion } from "framer-motion";
@@ -127,7 +127,7 @@ const Features: React.FC = () => {
                 }}
               >
                 {/* Title */}
-                Platform Features
+                What is DegenDuel?
                 
                 {/* Animated underline */}
                 <motion.div 
@@ -146,7 +146,7 @@ const Features: React.FC = () => {
               
               {/* Subtitle */}
               <p className="text-gray-300 max-w-2xl mx-auto text-lg font-mono tracking-wide">
-                Experience the future of competitive token trading
+                Experience crypto trading like never before - competitive, fun, and rewarding.
               </p>
 
               {/* Blinking cursor */}

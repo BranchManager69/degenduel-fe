@@ -6,9 +6,9 @@
  * @description Shows platform features with dramatic visuals, expandable details, and animated effects
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.1.1
  * @created 2025-01-01
- * @updated 2025-05-09
+ * @updated 2025-05-23
  */
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -31,23 +31,16 @@ interface FeatureCardProps {
 }
 
 // Default feature illustrations if none provided
-const DEGENDUEL_FEATURES = {
-  // 1 - Has image
-  "Trading Contests": "/assets/media/features/trading-contests.png",
-  // 2 - Placeholder
-  "Degen Dividends": "/assets/media/features/trading-contests.png", // Placeholder
-  // 3 - Placeholder
-  "Real-Time On-Chain Data": "/assets/media/features/trading-contests.png", // Placeholder
-  // 4 - Placeholder
-  "Instant SOL Settlement": "/assets/media/features/trading-contests.png", // Placeholder
-  // 5 - Has image (maps to "AI Trading Agents" title in FeatureList.tsx)
-  "AI Trading Agents": "/assets/media/features/advanced-analytics.png", 
-  // 6 - Placeholder (maps to "Bring Your Own Agent" title in FeatureList.tsx)
-  "Bring Your Own Agent": "/assets/media/features/trading-contests.png", // Placeholder
-  // 7 - Placeholder (maps to "1v1 Challenges" title in FeatureList.tsx)
-  "1v1 Challenges": "/assets/media/features/trading-contests.png", // Placeholder
-  // 8 - Has image (maps to "Degen Reputation System" title in FeatureList.tsx)
-  "Degen Reputation System": "/assets/media/features/reputation-system.png",
+const DEGENDUEL_FEATURES_IMAGES = {
+  "Trading Contests": "/assets/media/features/trading-contests.png",                // ✅
+  "Degen Dividends": "/assets/media/features/degen-dividends.png",                  // Placeholder for Degen Dividends
+  "Real-Time On-Chain Data": "/assets/media/features/real-time-on-chain-data.png",  // Placeholder for Real-Time On-Chain Data
+  "Instant SOL Settlement": "/assets/media/features/instant-sol-settlement.png",    // Placeholder for Instant SOL Settlement
+  "1v1 Duels": "/assets/media/features/1v1-duels.png",                              // Placeholder for 1v1 Duels
+  "Advanced Analytics": "/assets/media/features/advanced-analytics.png",            // ✅
+  "Bring Your Own Agent": "/assets/media/features/bring-your-own-agent.png",        // Placeholder for Bring Your Own Agent
+  "Degen Rep": "/assets/media/features/reputation-system.png",                      // ✅
+  // ...
 };
 
 export const FeatureCard: React.FC<FeatureCardProps> = ({
@@ -66,7 +59,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   
   // If no image is provided, try to use a default one
-  const featureImage = imagePath || (title in DEGENDUEL_FEATURES ? DEGENDUEL_FEATURES[title as keyof typeof DEGENDUEL_FEATURES] : null);
+  const featureImage = imagePath || (title in DEGENDUEL_FEATURES_IMAGES ? DEGENDUEL_FEATURES_IMAGES[title as keyof typeof DEGENDUEL_FEATURES_IMAGES] : null);
   
   // Determine the color scheme based on upcoming status
   const colorScheme = isUpcoming 

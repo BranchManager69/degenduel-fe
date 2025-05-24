@@ -24,23 +24,23 @@ interface NormalizedAuthAPI {
   isLoading: boolean;
   loading: boolean; // For backward compatibility (maps to isLoading)
   isAuthenticated: boolean; // Correctly a boolean
-  
+
   isAdmin: boolean; // Correctly a boolean
   isSuperAdmin: boolean; // Correctly a boolean
-  
+
   // Auth method checks (these are functions on UnifiedAuthContextType)
   isWalletAuth: () => boolean;
   isTwitterAuth: () => boolean;
-  
+
   // Other methods from UnifiedAuthContextType
   checkAuth: () => Promise<boolean> | void;
   getToken: (type?: TokenType) => Promise<string | null>;
   loginWithWallet: (walletAddress: string, signMessage: (message: Uint8Array) => Promise<any>) => Promise<User>;
   logout: () => Promise<void>;
-  getAccessToken: () => Promise<string | null>; 
+  getAccessToken: () => Promise<string | null>;
   linkTwitter: () => Promise<string>;
   isTwitterLinked: () => boolean;
-  
+
   // Properties from UnifiedAuthContextType
   activeMethod: AuthMethod | null;
   error: Error | null;
@@ -55,32 +55,32 @@ export function useMigratedAuth(): NormalizedAuthAPI {
       `color: white; background-color: #4caf50; padding: 4px 8px; border-radius: 4px; font-weight: bold;`
     );
   }, []);
-  
+
   // Always use the Unified Auth system
   const authContextValue = useUnifiedAuth();
-  
+
   // Construct the normalized API object based on NormalizedAuthAPI interface
   return {
     // Properties
     user: authContextValue.user,
-    isLoading: authContextValue.isLoading,
-    loading: authContextValue.isLoading, // Backward compatibility
-    isAuthenticated: authContextValue.isAuthenticated(), // Call function to get boolean
-    isAdmin: authContextValue.isAdmin(), // Call function to get boolean
-    isSuperAdmin: authContextValue.isSuperAdmin(), // Call function to get boolean
+    isLoading: authContextValue.loading,
+    loading: authContextValue.loading, // Backward compatibility
+    isAuthenticated: authContextValue.isAuthenticated,
+    isAdmin: authContextValue.user?.is_admin || false,
+    isSuperAdmin: authContextValue.user?.is_superadmin || false,
     activeMethod: authContextValue.activeMethod,
     error: authContextValue.error,
 
     // Methods (pass through directly)
-    isWalletAuth: authContextValue.isWalletAuth,
-    isTwitterAuth: authContextValue.isTwitterAuth,
+    isWalletAuth: () => authContextValue.activeMethod === 'wallet',
+    isTwitterAuth: () => authContextValue.activeMethod === 'twitter',
     checkAuth: authContextValue.checkAuth,
     getToken: authContextValue.getToken,
     loginWithWallet: authContextValue.loginWithWallet,
     logout: authContextValue.logout,
     getAccessToken: authContextValue.getAccessToken,
     linkTwitter: authContextValue.linkTwitter,
-    isTwitterLinked: authContextValue.isTwitterLinked,
+    isTwitterLinked: () => authContextValue.isTwitterLinked, // Wrap boolean in function
   };
 }
 

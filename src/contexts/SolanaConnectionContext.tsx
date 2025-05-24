@@ -3,7 +3,7 @@
 /**
  * SolanaConnectionContext
  * 
- * This context provides a centralized Solana Connection management system
+ * @description This context provides a centralized Solana Connection management system
  * that automatically selects the appropriate RPC endpoint based on user role.
  * 
  * @author BranchManager69
@@ -14,9 +14,7 @@
 
 import { Connection } from '@solana/web3.js';
 import React, { createContext, useContext, useMemo } from 'react';
-// import { useAuth } from '../hooks/auth/legacy/useAuth'; // Legacy
-import { useMigratedAuth } from '../hooks/auth/useMigratedAuth'; // Use new migrated hook
-import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/UnifiedAuthContext';
 
 // Config
 import { config } from '../config/config';
@@ -47,18 +45,15 @@ const SolanaConnectionContext = createContext<SolanaConnectionContextType>({
 
 // Provider component
 export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user: authUser } = useMigratedAuth(); 
-  const storeUser = useStore(state => state.user);
-  const user = authUser || storeUser; 
+  const { user } = useAuth(); 
   
   const connectionInfo = useMemo(() => {
-    const isAdminUser = authUser?.is_admin;       
-    const isSuperAdminUser = authUser?.is_superadmin; 
+    const isAdministrator = user?.is_admin || user?.is_superadmin;
     
     let tier: 'public' | 'user' | 'admin' = 'public';
-    if (isSuperAdminUser || isAdminUser) {
+    if (isAdministrator) {
       tier = 'admin';
-    } else if (user) { // This `user` is the merged one, which is fine for this tier logic
+    } else if (user) {
       tier = 'user';
     }
     
@@ -80,7 +75,7 @@ export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> =
       rpcEndpoint: endpoint,
       isHighVolumeTier: tier === 'admin'
     };
-  }, [authUser, user]); // Ensure dependency array uses authUser (for is_admin, is_superadmin) and user (for the tier logic based on user presence)
+  }, [user]);
   
   return (
     <SolanaConnectionContext.Provider value={connectionInfo}>

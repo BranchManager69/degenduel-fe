@@ -35,6 +35,3 @@ export { useStandardizedTokenData } from './data';
 
 /** @deprecated - Import from hooks/data instead */
 export { useSolanaTokenData } from './data';
-
-/** @deprecated - Use useMigratedAuth from hooks/auth instead */
-export { useMigratedAuth } from './auth';

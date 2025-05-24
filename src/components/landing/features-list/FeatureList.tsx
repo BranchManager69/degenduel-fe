@@ -6,9 +6,9 @@
  * @description Displays current and future features of DegenDuel with descriptions and rich animations.
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.1.1
  * @created 2025-01-01
- * @updated 2025-05-09
+ * @updated 2025-05-23
  */
 
 import { motion } from "framer-motion";
@@ -17,14 +17,16 @@ import React from "react";
 import { FeatureCard } from "./FeatureCard";
 
 // Feature animations
-import { AdvancedAnalyticsAnimation } from "./animations/AdvancedAnalyticsAnimation";
-import { InstantSettlementAnimation } from "./animations/InstantSettlementAnimation";
-import { RealTimeMarketDataAnimation } from "./animations/RealTimeMarketDataAnimation";
-import { ReflectionSystemAnimation } from "./animations/ReflectionSystemAnimation";
-import { TradingCompetitionsAnimation } from "./animations/TradingCompetitionsAnimation";
-// Need animation for 1v1 Challenges
-// Need animation for Bring Your Own Agent
-import { DegenReputationAnimation } from "./animations/DegenReputationAnimation";
+// CURRENT FEATURES:
+import { InstantSettlementAnimation } from "./animations/InstantSettlementAnimation"; // 4 - Instant SOL Settlement
+import { RealTimeMarketDataAnimation } from "./animations/RealTimeMarketDataAnimation"; // 3 - Real-Time On-Chain Data
+import { ReflectionSystemAnimation } from "./animations/ReflectionSystemAnimation"; // 2 - Degen Dividends
+import { TradingCompetitionsAnimation } from "./animations/TradingCompetitionsAnimation"; // 1 - Trading Contests
+// import { OneVsOneDuelsAnimation } from "./animations/OneVsOneDuelsAnimation";          // 5 - 1v1 Duels
+// FUTURE FEATURES:
+import { AdvancedAnalyticsAnimation } from "./animations/AdvancedAnalyticsAnimation"; // 6 - Advanced Analytics
+// import { BringYourOwnAgentAnimation } from "./animations/BringYourOwnAgentAnimation";  // 7 - Bring Your Own Agent
+import { DegenReputationAnimation } from "./animations/DegenReputationAnimation"; // 8 - Degen Reputation
 
 // DegenDuel features - Descriptions and animations
 const currentFeatures = [
@@ -140,7 +142,7 @@ const currentFeatures = [
   // 4 - Instant SOL Settlement
   {
     title: "Instant SOL Settlement",
-    description: "Duel winnings are automatically distributed to winners' wallets seconds after contest completion.",
+    description: "Winnings from Duels are automatically distributed to winners' wallets seconds after contest completion.",
     extendedDescription: 
       "Our proprietary settlement engine calculates final standings and processes all prize distributions immediately after competition end. Winners receive their rewards directly to their connected wallets with no manual claims required.\n\nTransaction verification and validation are handled through a decentralized dual-signature system for maximum security, while still maintaining near-instantaneous settlement times regardless of competition size or complexity.",
     icon: (
@@ -163,10 +165,36 @@ const currentFeatures = [
     isUpcoming: false
   },
 
-  // 5 - AI Trading Agents
+  // 5 - 1v1 Duels
   {
-    title: "AI Trading Agents",
-    description: "Track performance with comprehensive metrics and visualizations to refine your trading strategies over time.",
+    title: "1v1 Duels",
+    description: "Challenge others for degen supremacy. Initiate head-to-head battles with custom stakes and competition parameters.",
+    extendedDescription: 
+      "Wanna challenge the dude who swears he's a better trencher than you? Want to reply to the Twitter eggs in your mentions with a DegenDuel invite link? However you want to challenge others for degen supremacy, you can do it. Initiate head-to-head battles with custom stakes and competition parameters.",
+    icon: (
+      <svg
+        className="w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M16 8L20 12L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8 8L4 12L8 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 4L10 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+    //animation: <OneVsOneDuelsAnimation />, // (needs to be generated 5/23/25)
+    isUpcoming: false
+  },
+
+];
+
+// Upcoming features with "SOON" tag
+const upcomingFeatures = [
+  // 6 - Advanced Analytics
+  {
+    title: "Advanced Analytics",
+    description: "Live analytics powered by AI can help you improve your duel performances with comprehensive metrics and visualizations to refine your trading strategies over time.",
     extendedDescription:
       "DegenDuel provides institutional-grade analytics for all users, regardless of portfolio size. Track your trading performance across competitions with detailed metrics including win rate, average ROI, drawdown statistics, and sentiment analysis.\n\nExport your historical data in multiple formats, create custom dashboards, and compare your performance against market benchmarks or other traders through our percentile ranking system.",
     icon: (
@@ -192,39 +220,15 @@ const currentFeatures = [
       </svg>
     ),
     animation: <AdvancedAnalyticsAnimation />,
-    isUpcoming: false
-  },
-];
-
-// Upcoming features with "SOON" tag
-const upcomingFeatures = [
-  // 6 - 1v1 Challenges
-  {
-    title: "1v1 Challenges",
-    description: "Challenge specific traders to head-to-head battles with custom stakes and competition parameters.",
-    extendedDescription: 
-      "P2P Trading Duels will enable direct head-to-head competition between traders. Challenge anyone on the platform to a trading duel with customizable parameters including duration, starting capital, allowed tokens, and stake amount.\n\nSet special rules like maximum order size, allowed order types, or specific trading hours. Create public or private duels, with the option for spectators to watch the action unfold in real-time through our specialized duel visualization interface.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d="M16 8L20 12L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 8L4 12L8 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M14 4L10 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
     isUpcoming: true
   },
   
   // 7 - Bring Your Own Agent
   {
     title: "Bring Your Own Agent",
-    description: "Deploy your own AI trading algorithms to compete in specialized contests against other traders' agents.",
+    description: "Deploy your own AI trading agents to compete in specialized contests against other traders' agents (ElizaOS, Virtuals).",
     extendedDescription: 
-      "The upcoming AI Trading Agent platform will allow you to create, test, and deploy custom trading algorithms in specialized competitions. Code your strategy in Python, JavaScript, or use our no-code builder to create sophisticated trading logic.\n\nTest your agents in historical market simulations before deploying them in live competitions against other traders' algorithms. The platform supports reinforcement learning, neural networks, and traditional algorithmic approaches with comprehensive documentation and templates.",
+      "The upcoming AI Trading Agent platform will allow you to create, test, and deploy custom trading agents created from open-source frameworks (ElizaOS, Virtuals) in specialized competitions. Bring your own strategy for sophisticated trading logic.\n\nTest your agents in historical market simulations before deploying them in live competitions against other traders' algorithms.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -237,15 +241,16 @@ const upcomingFeatures = [
         <path d="M2 10H6M18 10H22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
+    //animation: <BringYourOwnAgentAnimation />, // (needs to be generated 5/23/25)
     isUpcoming: true
   },
   
-  // 8 - Rep System
+  // 8 - Degen Reputation System
   {
-    title: "Degen Reputation System",
-    description: "Build your profile and reputation through competitions, achievements, and community contribution for exclusive platform benefits.",
+    title: "Degen Reputation",
+    description: "Build your Degen Rep through competitions, achievements, and community contribution for exclusive platform benefits.",
     extendedDescription: 
-      "DegenDuel's Rep System tracks your progress and accomplishments across the platform. Earn achievement badges, ranking points, and reputation scores through competition performance, referrals, and community contributions.\n\nHigher reputation levels unlock exclusive benefits including fee discounts, early access to new features, private competitions, and enhanced profit-sharing tiers through the reflections system.",
+      "DegenDuel's reputation system tracks your progress and accomplishments across the platform. Earn achievement badges, ranking points, and reputation scores through competition performance, referrals, and community contributions.\n\nHigher reputation levels unlock exclusive benefits including fee discounts, early access to new features, private competitions, and enhanced profit-sharing tiers through the reflections system.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -286,8 +291,6 @@ const upcomingFeatures = [
     isUpcoming: true
   },
 
-  // 9 - (Make something up)
-  // (Make something up)
 ];
 
 // Combine current and upcoming features for rendering
