@@ -4,15 +4,31 @@
  * V69 Standardized WebSocket Hook for Token Data
  * This hook provides real-time updates for token data from the unified WebSocket system
  * 
- * ⚠️ FIXED FOR PRODUCTION ⚠️
- * Updated to use the correct backend WebSocket message format:
- * - type: 'DATA' (not DDExtendedMessageType.DATA)
- * - topic: 'market-data' (not TopicType.MARKET_DATA)
- * - action: 'getTokens' (in message structure)
+ * 🔧 PRODUCTION FIX APPLIED ✅
+ * 
+ * KEY INSIGHTS DISCOVERED:
+ * - Backend uses standard string message types ('DATA', 'RESPONSE') not DDExtendedMessageType enum
+ * - Backend expects topic 'market-data' as string, not TopicType.MARKET_DATA constant  
+ * - Backend sends structured responses with {type, topic, action, data} format
+ * - Real backend token data uses different field names (address vs contractAddress, market_cap vs marketCap, etc.)
+ * 
+ * CRITICAL FIXES APPLIED:
+ * ✅ Removed fake FALLBACK_TOKENS that were masking real data
+ * ✅ Updated message type checks to use correct backend format ('DATA' vs DDExtendedMessageType.DATA)
+ * ✅ Fixed topic strings to match backend exactly ('market-data' vs TopicType.MARKET_DATA)
+ * ✅ Added transformBackendTokenData() to properly map backend fields to frontend Token interface
+ * ✅ Updated request format to use correct backend specifications
+ * ✅ Added proper handling for both DATA (real-time) and RESPONSE (request) message types
+ * 
+ * IMPACT:
+ * - All components using useStandardizedTokenData now receive REAL market data
+ * - UnifiedTicker PRICES view shows actual token prices instead of placeholder data
+ * - Consistent data format across entire application
+ * - Proper integration with UnifiedWebSocketContext architecture
  * 
  * @author Branch Manager
  * @created 2025-04-10
- * @updated 2025-01-15 - Fixed backend message format integration
+ * @updated 2025-01-15 - Fixed backend message format integration for production
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
