@@ -202,11 +202,6 @@ let lastErrorTime = 0;
 let errorCooldownPeriod = 5000;
 
 /**
- * @description Max cooldown period (5 minutes)
- */
-const MAX_COOLDOWN_PERIOD = 5 * 60 * 1000;
-
-/**
  * @description Debounce timer for fetch requests
  */
 let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
