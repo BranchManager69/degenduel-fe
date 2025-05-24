@@ -16,6 +16,8 @@ interface Props {
   systemError?: string | null;
 }
 
+const TICKER_DEBUG_MODE = false;
+
 //const SCROLL_SPEED_PX_PER_SECOND = 30; // Adjusted speed
 const HOVER_PAUSE_DELAY_MS = 100; // Small delay before hover-pause engages
 const INTERACTION_RESUME_DELAY_MS = 3000; // 3 seconds
@@ -60,11 +62,15 @@ export const UnifiedTicker: React.FC<Props> = ({
   }, [contestsLoadingProp, tokensAreLoading]);
 
   useEffect(() => {
-    console.log(`UnifiedTicker: PROP contestsLoadingProp changed to: ${contestsLoadingProp}`);
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: PROP contestsLoadingProp changed to: ${contestsLoadingProp}`);
+    }
   }, [contestsLoadingProp]);
 
   useEffect(() => {
-    console.log(`UnifiedTicker: HOOK tokensAreLoading changed to: ${tokensAreLoading}`);
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: HOOK tokensAreLoading changed to: ${tokensAreLoading}`);
+    }
   }, [tokensAreLoading]);
 
   useEffect(() => {
@@ -121,7 +127,9 @@ export const UnifiedTicker: React.FC<Props> = ({
     let newTranslateX = translateXRef.current - scrollSpeed * deltaTime;
 
     if (actualContentWidthRef.current > 0 && Math.abs(newTranslateX) >= actualContentWidthRef.current) {
-      console.log(`UnifiedTicker: Resetting scroll. current: ${newTranslateX}, reset to: ${newTranslateX + actualContentWidthRef.current}`);
+      if (TICKER_DEBUG_MODE) {
+        console.log(`UnifiedTicker: Resetting scroll. current: ${newTranslateX}, reset to: ${newTranslateX + actualContentWidthRef.current}`);
+      }
       newTranslateX += actualContentWidthRef.current; 
     }
     
@@ -132,7 +140,9 @@ export const UnifiedTicker: React.FC<Props> = ({
   }, []);
 
   const handleManualRefresh = useCallback(async () => {
-    console.log("UnifiedTicker: Manual refresh triggered.");
+    if (TICKER_DEBUG_MODE) {
+      console.log("UnifiedTicker: Manual refresh triggered.");
+    }
     setIsRefreshing(true);
     try {
       await refreshTokenData();
@@ -141,7 +151,9 @@ export const UnifiedTicker: React.FC<Props> = ({
     } finally {
       setTimeout(() => {
         setIsRefreshing(false);
-        console.log("UnifiedTicker: Manual refresh complete.");
+        if (TICKER_DEBUG_MODE) {
+          console.log("UnifiedTicker: Manual refresh complete.");
+        }
         lastTimestampRef.current = 0;
         setMeasurementNonce(prev => prev + 1);
       }, 500);
@@ -253,18 +265,24 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   // Effect to measure the actual content width AFTER original items are rendered
   useLayoutEffect(() => {
-    console.log(`UnifiedTicker: MEASUREMENT EFFECT RUNNING. isOverallLoading: ${isOverallLoading}, originalTickerItems.length: ${originalTickerItems.length}, viewportWidth: ${viewportWidth}, scrollableContentRef.current exists: ${!!scrollableContentRef.current}`);
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: MEASUREMENT EFFECT RUNNING. isOverallLoading: ${isOverallLoading}, originalTickerItems.length: ${originalTickerItems.length}, viewportWidth: ${viewportWidth}, scrollableContentRef.current exists: ${!!scrollableContentRef.current}`);
+    }
 
     // Only attempt to measure if not loading, and the main scrollable area is rendered
     if (!isOverallLoading && scrollableContentRef.current && viewportWidth > 0) {
       if (originalTickerItems.length > 0) {
         if (originalTickerItems.length === 1 && originalTickerItems[0]?.key === "no-data-ticker") {
           if (actualContentWidthRef.current !== 0) {
-            console.log(`UnifiedTicker: MEASUREMENT - Only 'no-data-ticker'. Resetting ACW from ${actualContentWidthRef.current} to 0.`);
+            if (TICKER_DEBUG_MODE) {
+              console.log(`UnifiedTicker: MEASUREMENT - Only 'no-data-ticker'. Resetting ACW from ${actualContentWidthRef.current} to 0.`);
+            }
             actualContentWidthRef.current = 0;
             setMeasurementNonce(prev => prev + 1);
           } else {
-            console.log(`UnifiedTicker: MEASUREMENT - Only 'no-data-ticker'. ACW already 0.`);
+            if (TICKER_DEBUG_MODE) {
+              console.log(`UnifiedTicker: MEASUREMENT - Only 'no-data-ticker'. ACW already 0.`);
+            }
           }
           return;
         }
@@ -274,41 +292,61 @@ export const UnifiedTicker: React.FC<Props> = ({
         scrollableContentRef.current.style.transform = originalTransform; 
         if (newActualContentWidth > 0) {
           if (actualContentWidthRef.current !== newActualContentWidth) {
-            console.log(`UnifiedTicker: MEASURING ACW. Old: ${actualContentWidthRef.current}, New: ${newActualContentWidth}, VPW: ${viewportWidth}`);
+            if (TICKER_DEBUG_MODE) {
+              console.log(`UnifiedTicker: MEASURING ACW. Old: ${actualContentWidthRef.current}, New: ${newActualContentWidth}, VPW: ${viewportWidth}`);
+            }
             actualContentWidthRef.current = newActualContentWidth;
             setMeasurementNonce(prev => prev + 1);
           } else {
-            console.log(`UnifiedTicker: MEASURED ACW. No change from ${actualContentWidthRef.current}. VPW: ${viewportWidth}`);
+            if (TICKER_DEBUG_MODE) {
+              console.log(`UnifiedTicker: MEASURED ACW. No change from ${actualContentWidthRef.current}. VPW: ${viewportWidth}`);
+            }
           }
         } else {
-          console.log(`UnifiedTicker: MEASURED ACW resulted in 0. Actual items may be hidden or zero-width. VPW: ${viewportWidth}`);
+          if (TICKER_DEBUG_MODE) {
+            console.log(`UnifiedTicker: MEASURED ACW resulted in 0. Actual items may be hidden or zero-width. VPW: ${viewportWidth}`);
+          }
         }
       } else { 
         if (actualContentWidthRef.current !== 0) {
-            console.log(`UnifiedTicker: MEASUREMENT - No items (and not loading). Resetting ACW from ${actualContentWidthRef.current} to 0.`);
+            if (TICKER_DEBUG_MODE) {
+              console.log(`UnifiedTicker: MEASUREMENT - No items (and not loading). Resetting ACW from ${actualContentWidthRef.current} to 0.`);
+            }
             actualContentWidthRef.current = 0;
             setMeasurementNonce(prev => prev + 1);
         } else {
-            console.log(`UnifiedTicker: MEASUREMENT - No items (and not loading). ACW already 0.`);
+            if (TICKER_DEBUG_MODE) {
+              console.log(`UnifiedTicker: MEASUREMENT - No items (and not loading). ACW already 0.`);
+            }
         }
       }
     } else {
-        console.log(`UnifiedTicker: MEASUREMENT - Conditions not met (isOverallLoading: ${isOverallLoading}, scrollableRef: ${!!scrollableContentRef.current}, viewportWidth: ${viewportWidth}).`);
+        if (TICKER_DEBUG_MODE) {
+          console.log(`UnifiedTicker: MEASUREMENT - Conditions not met (isOverallLoading: ${isOverallLoading}, scrollableRef: ${!!scrollableContentRef.current}, viewportWidth: ${viewportWidth}).`);
+        }
     }
   }, [originalTickerItems, viewportWidth, isOverallLoading]);
 
   const clonedItems = useMemo(() => {
-    console.log(`UnifiedTicker: PASS 2 - Recalculating clonedItems. Measured ACW: ${actualContentWidthRef.current}, VPW: ${viewportWidth}, Nonce: ${measurementNonce}`);
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: PASS 2 - Recalculating clonedItems. Measured ACW: ${actualContentWidthRef.current}, VPW: ${viewportWidth}, Nonce: ${measurementNonce}`);
+    }
     if (!originalTickerItems.length || viewportWidth === 0) {
-      console.log("UnifiedTicker: PASS 2 - No original items or no viewport width, returning original items.");
+      if (TICKER_DEBUG_MODE) {
+        console.log("UnifiedTicker: PASS 2 - No original items or no viewport width, returning original items.");
+      }
       return originalTickerItems; 
     }
     if (originalTickerItems.length === 1 && originalTickerItems[0]?.key === "no-data-ticker") {
-        console.log("UnifiedTicker: PASS 2 - Only 'no-data-ticker', returning it directly without cloning.");
+        if (TICKER_DEBUG_MODE) {
+          console.log("UnifiedTicker: PASS 2 - Only 'no-data-ticker', returning it directly without cloning.");
+        }
         return originalTickerItems;
     }
     if (actualContentWidthRef.current === 0 && originalTickerItems.length > 0) {
-        console.log("UnifiedTicker: PASS 2 - ACW is 0 for actual content, returning originals, awaiting measurement effect.");
+        if (TICKER_DEBUG_MODE) {
+          console.log("UnifiedTicker: PASS 2 - ACW is 0 for actual content, returning originals, awaiting measurement effect.");
+        }
         return originalTickerItems;
     }
     const itemsToRender = [originalTickerItems];
@@ -332,9 +370,13 @@ export const UnifiedTicker: React.FC<Props> = ({
             }));
             numClones = 1;
         }
-        console.log(`UnifiedTicker: PASS 2 - Cloned content ${numClones} times.`);
+        if (TICKER_DEBUG_MODE) {
+          console.log(`UnifiedTicker: PASS 2 - Cloned content ${numClones} times.`);
+        }
     } else {
-        console.log("UnifiedTicker: PASS 2 - ACW is 0 or no original items, skipping cloning.");
+        if (TICKER_DEBUG_MODE) {
+          console.log("UnifiedTicker: PASS 2 - ACW is 0 or no original items, skipping cloning.");
+        }
     }
     return itemsToRender.flat();
   }, [originalTickerItems, viewportWidth, measurementNonce]);
@@ -409,7 +451,9 @@ export const UnifiedTicker: React.FC<Props> = ({
   };
 
   const renderTickerContentArea = () => {
-    console.log(`UnifiedTicker: renderTickerContentArea CALLED. isOverallLoading: ${isOverallLoading}, ContestsLoading: ${contestsLoadingProp}, TokensLoading: ${tokensAreLoading}, scrollableContentRef.current exists: ${!!scrollableContentRef.current}, originalTickerItems.length: ${originalTickerItems.length}`);
+    if (TICKER_DEBUG_MODE) {
+      console.log(`UnifiedTicker: renderTickerContentArea CALLED. isOverallLoading: ${isOverallLoading}, ContestsLoading: ${contestsLoadingProp}, TokensLoading: ${tokensAreLoading}, scrollableContentRef.current exists: ${!!scrollableContentRef.current}, originalTickerItems.length: ${originalTickerItems.length}`);
+    }
 
     const showError = !!storeError;
     const showSystemError = !!systemError;
@@ -433,7 +477,9 @@ export const UnifiedTicker: React.FC<Props> = ({
     }
     
     if (isLoadingNoData) {
-      console.log("UnifiedTicker: renderTickerContentArea - RENDERING LOADING STATE (NO GRAB)");
+      if (TICKER_DEBUG_MODE) {
+        console.log("UnifiedTicker: renderTickerContentArea - RENDERING LOADING STATE (NO GRAB)");
+      }
       return (
         <div className="flex items-center justify-center w-full overflow-hidden h-full" ref={viewportRef}>
           <div className={`flex items-center justify-center px-4 py-2 h-full w-full`}>
@@ -444,7 +490,9 @@ export const UnifiedTicker: React.FC<Props> = ({
       );
     }
 
-    console.log("UnifiedTicker: renderTickerContentArea - RENDERING MAIN CONTENT AREA (GRAB ENABLED)");
+    if (TICKER_DEBUG_MODE) {
+      console.log("UnifiedTicker: renderTickerContentArea - RENDERING MAIN CONTENT AREA (GRAB ENABLED)");
+    }
     return (
       <div
         ref={viewportRef}

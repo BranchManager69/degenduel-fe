@@ -33,7 +33,7 @@ const FALLBACK_TOKENS: Token[] = [
     name: "Solana",
     price: "420.69",
     marketCap: "420420069",
-    volume24h: "420420069", 
+    volume24h: "420420069",
     change24h: "42069.69",
     status: "active",
     contractAddress: "So11111111111111111111111111111111111111112",
@@ -48,7 +48,7 @@ const FALLBACK_TOKENS: Token[] = [
     name: "DegenDuel",
     price: "0.00005",
     marketCap: "9500000",
-    volume24h: "7500000", 
+    volume24h: "7500000",
     change24h: "52.1",
     status: "active",
     contractAddress: "DoxsC4PpVHiUxCKYeKSkPXVVVSJYzidZZJxW4XCFF2t",
@@ -97,24 +97,24 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
           setTokens(message.data);
           setLastUpdate(new Date());
           setIsLoading(false);
-          
+
           dispatchWebSocketEvent('token_data_update', {
             socketType: TopicType.TOKEN_DATA,
             message: `Updated ${message.data.length} tokens`,
             timestamp: new Date().toISOString()
           });
-        } 
+        }
         else if (message.action === 'update' && message.data?.symbol) {
           // Single token update
-          setTokens(prev => 
-            prev.map(token => 
-              token.symbol === message.data.symbol ? 
-              { ...token, ...message.data } : 
-              token
+          setTokens(prev =>
+            prev.map(token =>
+              token.symbol === message.data.symbol ?
+                { ...token, ...message.data } :
+                token
             )
           );
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('token_data_update', {
             socketType: TopicType.TOKEN_DATA,
             message: `Updated token ${message.data.symbol}`,
@@ -125,7 +125,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
           // Add new token
           setTokens(prev => [...prev, message.data]);
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('token_data_update', {
             socketType: TopicType.TOKEN_DATA,
             message: `Added token ${message.data.symbol}`,
@@ -136,7 +136,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
           // Remove token
           setTokens(prev => prev.filter(token => token.symbol !== message.data.symbol));
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('token_data_update', {
             socketType: TopicType.TOKEN_DATA,
             message: `Removed token ${message.data.symbol}`,
@@ -144,7 +144,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
           });
         }
       }
-      
+
       // Mark as not loading once we've processed any valid message
       if (isLoading) {
         setIsLoading(false);
@@ -170,31 +170,31 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
 
   // Subscribe to token data when the WebSocket is connected
   useEffect(() => {
-    console.log('[TokenData] WebSocket state:', { 
-      isConnected: ws.isConnected, 
-      connectionState: ws.connectionState, 
-      initialized, 
-      error: ws.connectionError 
+    console.log('[TokenData] WebSocket state:', {
+      isConnected: ws.isConnected,
+      connectionState: ws.connectionState,
+      initialized,
+      error: ws.connectionError
     });
     if (ws.isConnected && !initialized) {
       // Subscribe to market-data topic
       ws.subscribe([TopicType.MARKET_DATA, TopicType.TOKEN_DATA]);
-      
+
       // Request initial data
       if (tokensToSubscribe === "all") {
-        ws.request(TopicType.MARKET_DATA, 'getAllTokens');
+        ws.request(TopicType.MARKET_DATA, 'getTokens');
       } else if (Array.isArray(tokensToSubscribe) && tokensToSubscribe.length > 0) {
         ws.request(TopicType.MARKET_DATA, 'getTokens', { symbols: tokensToSubscribe });
       }
-      
+
       setInitialized(true);
-      
+
       dispatchWebSocketEvent('token_data_init', {
         socketType: TopicType.TOKEN_DATA,
         message: 'Token data subscription initialized through unified WebSocket',
         subscription: tokensToSubscribe === "all" ? "all tokens" : tokensToSubscribe
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
       const timeoutId = setTimeout(() => {
         if (isLoading) {
@@ -202,7 +202,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
           setIsLoading(false);
         }
       }, 10000);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [ws.isConnected, initialized, tokensToSubscribe, isLoading, ws.subscribe, ws.request]);
@@ -210,21 +210,21 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
   // Force refresh function for token data
   const refresh = useCallback(() => {
     setIsLoading(true);
-    
+
     if (ws.isConnected) {
       // Request fresh token data
       if (tokensToSubscribe === "all") {
-        ws.request(TopicType.MARKET_DATA, 'getAllTokens');
+        ws.request(TopicType.MARKET_DATA, 'getTokens');
       } else if (Array.isArray(tokensToSubscribe) && tokensToSubscribe.length > 0) {
         ws.request(TopicType.MARKET_DATA, 'getTokens', { symbols: tokensToSubscribe });
       }
-      
+
       dispatchWebSocketEvent('token_data_refresh', {
         socketType: TopicType.TOKEN_DATA,
         message: 'Refreshing token data',
         timestamp: new Date().toISOString()
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
       setTimeout(() => {
         if (isLoading) {
