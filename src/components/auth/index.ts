@@ -1,4 +1,16 @@
 // src/components/auth/index.ts
+
+/**
+ * Consolidated Login Button
+ * 
+ * @description This file exports all the auth-related components.
+ * 
+ * @author BranchManager69
+ * @version 1.9.0
+ * @created 2025-02-14
+ * @updated 2025-05-24
+ */
+
 // Auth-related components
 
 // Export biometric authentication components
@@ -23,7 +35,5 @@ export { default as ConnectWalletButtonMock } from './ConnectWalletButton.mock';
 export { default as LoginOptionsMock } from './LoginOptions.mock';
 export { default as TwitterLoginButtonMock } from './TwitterLoginButton.mock';
 
-
 // Corrected export for InviteCodeInput (originally ReferralCodeInput)
 export { ReferralCodeInput as InviteCodeInput } from './InviteCodeInput';
-

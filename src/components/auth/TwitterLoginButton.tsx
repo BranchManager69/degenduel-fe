@@ -4,6 +4,7 @@ import { FaTwitter } from "react-icons/fa";
 
 import { authDebug } from "../../config/config";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
+import { getTwitterAuthUrl } from "../../services/api/auth";
 import { Button } from "../ui/Button";
 
 interface TwitterLoginButtonProps {
@@ -55,7 +56,16 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
     
     setIsProcessing(true);
     try {
-      const redirectUrl = await linkTwitter();
+      let redirectUrl: string;
+      
+      if (linkMode || user) {
+        // For linking mode or authenticated users, use linkTwitter
+        redirectUrl = await linkTwitter();
+      } else {
+        // For login mode (no authenticated user), use direct Twitter login URL
+        redirectUrl = await getTwitterAuthUrl();
+      }
+      
       if (redirectUrl) {
         authDebug('TwitterBtn', `Redirecting to Twitter for ${linkMode ? 'linking' : 'login'}`, { redirectUrl });
         window.location.href = redirectUrl;
@@ -126,7 +136,7 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
     <Button
       onClick={handleTwitterAuth}
       variant={linkMode ? "outline" : "secondary"}
-      className={`flex items-center justify-center gap-2 ${className}`}
+      className={`flex items-center justify-center gap-2 font-bold ${className}`}
       aria-label={linkMode ? "Link Twitter Account" : "Login with Twitter"}
       disabled={isLoading || isProcessing}
     >

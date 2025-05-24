@@ -16,17 +16,17 @@ import { Link } from "react-router-dom";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
-import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton";
+import { ConsolidatedLoginButton } from "../auth";
 
 // Import shared menu components and configuration
 import { getMenuItems } from './menu/menuConfig';
 import { NotificationsDropdown } from './menu/NotificationsDropdown';
 import {
-    BiometricAuthComponent,
-    MenuBackdrop,
-    MenuDivider,
-    SectionHeader,
-    WalletDetailsSection
+  BiometricAuthComponent,
+  MenuBackdrop,
+  MenuDivider,
+  SectionHeader,
+  WalletDetailsSection
 } from './menu/SharedMenuComponents';
 
 interface MobileMenuButtonProps {

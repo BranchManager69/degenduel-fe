@@ -434,28 +434,6 @@ const logError = (
   });
 };
 
-// This function is deprecated and will be removed in a future update
-// Use checkContestParticipation or getContestParticipation instead
-/*
-const addParticipationFlag = (
-  contest: Contest,
-  userWallet?: string
-): Contest => {
-  if (!userWallet) return { ...contest, is_participating: false };
-
-  // This approach relies on the participants array which may not be complete
-  // or may not be available in all contest responses
-  return {
-    ...contest,
-    is_participating:
-      contest.participants?.some(
-        (p: { address?: string }) =>
-          p.address?.toLowerCase() === userWallet.toLowerCase()
-      ) || false,
-  };
-};
-*/
-
 // Add a debounce/cache mechanism for participation checks
 const participationCache = new Map<
   string,
@@ -641,7 +619,7 @@ const checkMaintenanceMode = async () => {
     if (statusCheckResponse.status === 500) {
       console.error(
         `DegenDuel servers are down, cannot check maintenance mode.`,
-        statusCheckResponse.statusText,
+        statusCheckResponse.statusText
       );
       return false;
     }

@@ -78,6 +78,36 @@ let batchSendTimer: number | null = null;
 let isWebSocketConnected = false;
 let sessionId = '';
 
+// Circuit breaker for log forwarding
+let logCircuitBreakerOpen = false;
+let logConsecutiveFailures = 0;
+let logLastFailureTime = 0;
+const LOG_CIRCUIT_BREAKER_THRESHOLD = 3;
+const LOG_CIRCUIT_BREAKER_TIMEOUT = 60000; // 60 seconds
+
+// Reset log circuit breaker
+const resetLogCircuitBreaker = () => {
+  logCircuitBreakerOpen = false;
+  logConsecutiveFailures = 0;
+  logLastFailureTime = 0;
+};
+
+// Check if log circuit breaker should block requests
+const checkLogCircuitBreaker = () => {
+  const now = Date.now();
+
+  if (logCircuitBreakerOpen) {
+    if (now - logLastFailureTime > LOG_CIRCUIT_BREAKER_TIMEOUT) {
+      originalConsole.log('[LogForwarder] Circuit breaker timeout passed, resetting');
+      resetLogCircuitBreaker();
+      return false;
+    }
+    return true; // Circuit breaker still open
+  }
+
+  return false;
+};
+
 // Initialize the session ID with cryptographically secure random values
 const generateSessionId = (): string => {
   // Use Web Crypto API which is available in all modern browsers
@@ -92,7 +122,7 @@ const generateSessionId = (): string => {
 export const initializeClientLogForwarder = (): void => {
   sessionId = sessionStorage.getItem('logSessionId') || generateSessionId();
   sessionStorage.setItem('logSessionId', sessionId);
-  
+
   // TEMP: To debug console corruption, let's NOT override for a moment
   // originalConsole.log(`[LogForwarder] Initializing. Default verbose client console output: ${enableVerboseClientConsole} (NODE_ENV: ${NODE_ENV})`);
   // originalConsole.log("[LogForwarder] CONSOLE OVERRIDE DISABLED FOR TEST");
@@ -115,7 +145,7 @@ export const initializeClientLogForwarder = (): void => {
 
   console.warn = (...args: any[]) => {
     try { originalConsole.warn.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
-    const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' && 
+    const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' &&
       !args[0].includes('App configuration has Solana wallet login enabled') &&
       !args[0].includes('WalletContext without providing one') &&
       !args[0].includes('Solana wallet connectors have been passed') &&
@@ -134,7 +164,7 @@ export const initializeClientLogForwarder = (): void => {
 
   console.error = (...args: any[]) => {
     try { originalConsole.error.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
-    const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' && 
+    const forwardToServer = VERBOSE_SERVER_LOGGING || (args.length > 0 && typeof args[0] === 'string' &&
       !args[0].includes('tried to read "publicKey" on a WalletContext') &&
       !args[0].includes('tried to read "wallet" on a WalletContext') &&
       !args[0].includes('tried to read "wallets" on a WalletContext') &&
@@ -144,7 +174,8 @@ export const initializeClientLogForwarder = (): void => {
       !args[0].includes('WebSocketManager:') &&
       !args[0].includes('WebSocketContext:') &&
       !args[0].includes('[WebSocketContext]') &&
-      !args[0].includes('Solana wallet connectors have been passed'));
+      !args[0].includes('Solana wallet connectors have been passed') &&
+      !args[0].includes('Failed to check biometric credential status'));
 
     if (forwardToServer) {
       addToQueue(LogLevel.ERROR, args);
@@ -153,7 +184,7 @@ export const initializeClientLogForwarder = (): void => {
 
   // Capture unhandled errors
   window.addEventListener('error', (event) => {
-    try { originalConsole.error('Unhandled error:', event.error || event.message); } catch(e) {} // Guard this too
+    try { originalConsole.error('Unhandled error:', event.error || event.message); } catch (e) { } // Guard this too
     addToQueue(LogLevel.ERROR, [event.message], {
       filename: event.filename,
       lineno: event.lineno,
@@ -164,7 +195,7 @@ export const initializeClientLogForwarder = (): void => {
 
   // Capture unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    try { originalConsole.error('Unhandled promise rejection:', event.reason); } catch(e) {} // Guard this too
+    try { originalConsole.error('Unhandled promise rejection:', event.reason); } catch (e) { } // Guard this too
     addToQueue(LogLevel.ERROR, ['Unhandled Promise Rejection:', event.reason], {
       stack: event.reason?.stack
     });
@@ -188,16 +219,16 @@ export const initializeClientLogForwarder = (): void => {
 const addToQueue = (level: LogLevel, args: any[], context: Record<string, any> = {}): void => {
   try {
     const message = formatLogMessage(args);
-    
+
     // Get user information if available
     const store = useStore.getState();
     const user = store.user;
-    
+
     // Truncate message if too large
-    const truncatedMessage = message.length > MAX_LOG_SIZE 
+    const truncatedMessage = message.length > MAX_LOG_SIZE
       ? message.substring(0, MAX_LOG_SIZE) + '... [truncated]'
       : message;
-    
+
     // Create log entry
     const logEntry: LogEntry = {
       level,
@@ -211,15 +242,15 @@ const addToQueue = (level: LogLevel, args: any[], context: Record<string, any> =
       userAgent: navigator.userAgent,
       stackTrace: extractStackTrace(args)
     };
-    
+
     // Add to queue
     logQueue.push(logEntry);
-    
+
     // Limit queue size to prevent memory issues
     if (logQueue.length > MAX_QUEUE_SIZE) {
       logQueue.shift();
     }
-    
+
     // Send immediately if it's an error
     if (level === LogLevel.ERROR || level === LogLevel.FATAL) {
       sendLogsNow();
@@ -242,7 +273,7 @@ const extractStackTrace = (args: any[]): string | undefined => {
       return String(arg.stack);
     }
   }
-  
+
   // If no stack found in args, generate one
   try {
     throw new Error('Stack trace');
@@ -253,7 +284,7 @@ const extractStackTrace = (args: any[]): string | undefined => {
       return lines.slice(3).join('\n');
     }
   }
-  
+
   return undefined;
 };
 
@@ -279,7 +310,7 @@ const scheduleBatchSend = (): void => {
   if (batchSendTimer !== null) {
     window.clearTimeout(batchSendTimer);
   }
-  
+
   batchSendTimer = window.setTimeout(() => {
     sendLogs();
     scheduleBatchSend();
@@ -298,10 +329,17 @@ export const sendLogsNow = (): void => {
  */
 const sendLogs = async (): Promise<void> => {
   if (isSending || logQueue.length === 0) return;
-  
+
+  // Check circuit breaker first
+  if (checkLogCircuitBreaker()) {
+    // Drop logs silently when circuit breaker is open to prevent spam
+    logQueue = [];
+    return;
+  }
+
   isSending = true;
   const logsToSend = [...logQueue];
-  
+
   try {
     // Try to send logs via WebSocket first (preferred for real-time)
     if (isWebSocketConnected) {
@@ -311,30 +349,55 @@ const sendLogs = async (): Promise<void> => {
         logQueue = logQueue.slice(logsToSend.length);
         isSending = false;
         retryCount = 0;
+        resetLogCircuitBreaker(); // Reset on success
         return;
       }
     }
-    
+
     // Fallback to API if WebSocket failed or is not connected
     const success = await sendLogsViaApi(logsToSend);
-    
+
     if (success) {
       // Clear sent logs from queue
       logQueue = logQueue.slice(logsToSend.length);
       retryCount = 0;
+      resetLogCircuitBreaker(); // Reset on success
     } else {
+      // Record failure
+      logConsecutiveFailures++;
+      logLastFailureTime = Date.now();
+
       // Increment retry count
       retryCount++;
-      
+
       // If we've tried too many times, drop these logs to prevent queue buildup
       if (retryCount >= ERROR_RETRY_COUNT) {
         logQueue = logQueue.slice(logsToSend.length);
         retryCount = 0;
-        originalConsole.error('[LogForwarder] Failed to send logs after maximum retries, dropping logs');
+
+        // Open circuit breaker if too many failures
+        if (logConsecutiveFailures >= LOG_CIRCUIT_BREAKER_THRESHOLD) {
+          logCircuitBreakerOpen = true;
+          originalConsole.error(`[LogForwarder] Circuit breaker opened after ${LOG_CIRCUIT_BREAKER_THRESHOLD} failures - backing off for ${LOG_CIRCUIT_BREAKER_TIMEOUT / 1000}s`);
+        } else {
+          originalConsole.error('[LogForwarder] Failed to send logs after maximum retries, dropping logs');
+        }
       }
     }
   } catch (err) {
+    // Record failure
+    logConsecutiveFailures++;
+    logLastFailureTime = Date.now();
+
     originalConsole.error('[LogForwarder] Error during sendLogs:', err);
+
+    // Open circuit breaker if too many failures
+    if (logConsecutiveFailures >= LOG_CIRCUIT_BREAKER_THRESHOLD) {
+      logCircuitBreakerOpen = true;
+      originalConsole.error(`[LogForwarder] Circuit breaker opened after ${LOG_CIRCUIT_BREAKER_THRESHOLD} failures`);
+      // Drop logs to prevent infinite accumulation
+      logQueue = [];
+    }
   } finally {
     isSending = false;
   }
@@ -347,14 +410,14 @@ const sendLogsViaWebSocket = (logs: LogEntry[]): boolean => {
   try {
     // WebSocketContext provides a stable, persistent connection for log forwarding
     const webSocketContext = (window as any).__DD_WEBSOCKET_CONTEXT;
-    
+
     if (!webSocketContext || !webSocketContext.isConnected) {
       return false;
     }
-    
+
     // Get user info if available
     const user = useStore.getState().user;
-    
+
     try {
       // Use the standardized message type from our extended type
       return webSocketContext.sendMessage({

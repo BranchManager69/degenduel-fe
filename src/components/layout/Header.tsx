@@ -20,7 +20,7 @@ import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
 import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useStore } from "../../store/useStore";
 // import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
-import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton";
+import { ConsolidatedLoginButton } from "../auth";
 import MiniLogo from "../logo/MiniLogo";
 import NanoLogo from "../logo/NanoLogo";
 import { MobileMenuButton } from './MobileMenuButton'; // TEMP

@@ -19,7 +19,7 @@ const config: Config.InitialOptions = {
     ],
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!(@testing-library|@babel|@jest)/)",
+    "/node_modules/(?!(@testing-library|@babel|@jest|@branchmanager69/degenduel-shared)/)",
   ],
   testRegex: "(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$",
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
@@ -46,7 +46,7 @@ const config: Config.InitialOptions = {
     },
     global: {
       branches: 5,
-      functions: 5, 
+      functions: 5,
       lines: 5,
       statements: 5
     }
@@ -54,9 +54,26 @@ const config: Config.InitialOptions = {
   globals: {
     "import.meta": {
       env: {
+        // Auth/API related
         VITE_SUPERADMIN_SECRET: "test-secret",
         VITE_API_URL: "http://localhost:3000",
-        // Add any other environment variables needed for tests
+
+        // Prelaunch settings
+        VITE_PRELAUNCH_MODE: "false",
+        VITE_PRELAUNCH_BYPASS_KEY: "test-bypass-key",
+
+        // Wallet/Contract addresses
+        VITE_TREASURY_WALLET: "test-treasury-wallet",
+        VITE_CONTRACT_ADDRESS_REAL: "test-contract-address-real",
+        VITE_CONTRACT_ADDRESS_FAKE: "test-contract-address-fake",
+
+        // Release date configuration
+        VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME: "2025-12-31T23:59:59-05:00",
+        VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL: "December 31, 2025",
+        VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT: "Dec 31, 2025",
+        VITE_RELEASE_DATE_DISPLAY_LAUNCH_TIME: "23:59:59",
+        VITE_RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_HOURS: "6",
+        VITE_RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES_HOURS: "1",
       },
     },
   },
