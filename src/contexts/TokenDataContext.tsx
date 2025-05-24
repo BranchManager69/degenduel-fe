@@ -98,7 +98,7 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
       subscribe(['market-data']);
       
       // Request initial token data
-      request('market-data', 'getAllTokens');
+      request('market-data', 'getTokens');
     }
   }, [isConnected, subscribe, request]);
   
@@ -106,7 +106,7 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const refresh = () => {
     if (isConnected) {
       authDebug('TokenData', 'Manually refreshing token data');
-      request('market-data', 'getAllTokens');
+      request('market-data', 'getTokens');
     }
   };
   
