@@ -23,6 +23,7 @@
 
 import { API_URL, authDebug } from '../config/config';
 import axiosInstance from '../lib/axiosInstance';
+import { useStore } from '../store/useStore';
 import { User } from '../types/user';
 import { tokenManagerService, TokenType } from './tokenManagerService';
 
@@ -234,6 +235,20 @@ export class AuthService {
   private setUser(user: User | null, method?: AuthMethod) {
     this.user = user;
 
+    // Also update the store immediately to prevent race conditions
+    // This ensures TokenManagerService can access the user when setting tokens
+    try {
+      const store = useStore.getState();
+      if (store.setUser) {
+        store.setUser(user);
+        authDebug('AuthService', `Updated store with user: ${user ? `${user.id} (${user.wallet_address})` : 'null'}`);
+      } else {
+        authDebug('AuthService', 'Warning: setUser not found in store during user update');
+      }
+    } catch (error) {
+      authDebug('AuthService', 'Error updating store with user', error);
+    }
+
     // Dispatch appropriate event
     if (user) {
       this.dispatchEvent({
@@ -386,7 +401,7 @@ export class AuthService {
         let endpoint: string;
         switch (type) {
           case TokenType.WS_TOKEN:
-            endpoint = '/auth/ws-token';
+            endpoint = '/auth/token';
             break;
           case TokenType.JWT:
           case TokenType.SESSION:

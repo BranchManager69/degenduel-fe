@@ -30,7 +30,7 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
     user,
     isLoading,
     isAuthenticated,
-    isAdmin,
+    isAdministrator,
     isSuperAdmin,
     activeMethod,
     isWalletAuth,
@@ -99,7 +99,7 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({
         <p><span className="text-gray-400">IsAuthenticated:</span> {isAuthenticated ? "Yes" : "No"}</p>
         <p><span className="text-gray-400">User ID:</span> {user?.id || "N/A"}</p>
         <p><span className="text-gray-400">Wallet Address:</span> {walletAddress || "N/A"}</p>
-        <p><span className="text-gray-400">Admin:</span> {isAdmin ? "Yes" : "No"}</p>
+        <p><span className="text-gray-400">Admin:</span> {isAdministrator ? "Yes" : "No"}</p>
         <p><span className="text-gray-400">SuperAdmin:</span> {isSuperAdmin ? "Yes" : "No"}</p>
         <p><span className="text-gray-400">Active Method:</span> {activeMethod || "N/A"}</p>
         <p><span className="text-gray-400">Is Wallet Auth Active:</span> {isWalletAuth() ? "Yes" : "No"}</p>

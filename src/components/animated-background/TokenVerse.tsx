@@ -34,7 +34,7 @@ export const TokenVerse: React.FC = () => {
 
   // Effect to check for Maintenance Mode and handle accordingly
   useEffect(() => {
-    if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
+    if (maintenanceMode && !(user?.role === 'admin' || user?.role === 'superadmin')) {
       setError(
         "System is currently in maintenance mode. Please check back later.",
       );

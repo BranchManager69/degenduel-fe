@@ -57,7 +57,7 @@ interface Props {
   systemError?: string | null;
 }
 
-const TICKER_DEBUG_MODE = true;
+const TICKER_DEBUG_MODE = false;
 
 const HOVER_PAUSE_DELAY_MS = 100; // Small delay before hover-pause engages
 const INTERACTION_RESUME_DELAY_MS = 3000; // 3 seconds
@@ -600,7 +600,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         <div className="flex items-center justify-center w-full overflow-hidden h-full" ref={viewportRef}>
           <div className={`flex items-center justify-center px-4 py-2 h-full w-full`}>
             <Loader2 className="w-4 h-4 mr-2 text-blue-400 animate-spin" />
-            <span className="text-xs font-mono text-blue-400">LOADING INITIAL DATA...</span>
+            <span className="text-xs font-mono text-blue-400">Loading...</span>
           </div>
         </div>
       );

@@ -4,15 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 
 export const AdminControls: React.FC = () => {
-  const { isAdmin, isSuperAdmin } = useMigratedAuth();
+  const { isAdministrator, isSuperAdmin } = useMigratedAuth();
   const navigate = useNavigate();
 
-  if (!isAdmin) return null;
+  if (!isAdministrator) return null;
 
   return (
     <div className="px-2 pt-2 pb-1">
       <div className="flex gap-1">
-        {isAdmin && (
+        {isAdministrator && (
           <button
             onClick={() => navigate("/admin")}
             className={`

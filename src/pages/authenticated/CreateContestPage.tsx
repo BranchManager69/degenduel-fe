@@ -22,7 +22,7 @@ import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
 export const CreateContestPage: React.FC = () => {
   const navigate = useNavigate();
   const auth = useMigratedAuth();
-  const { user, isAuthenticated, isLoading: authIsLoading, getToken, isAdmin } = auth;
+  const { user, isAuthenticated, isLoading: authIsLoading, getToken, isAdministrator } = auth;
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal will be controlled to be open once data is ready
 
   const [availableCredits, setAvailableCredits] = useState(0);
@@ -36,14 +36,14 @@ export const CreateContestPage: React.FC = () => {
 
   useEffect(() => {
     const fetchUserCredits = async () => {
-      if (isAuthenticated && isAdmin) {
+      if (isAuthenticated && isAdministrator) {
         // Admins don't need a credit check, assume effectively infinite
         setAvailableCredits(999); 
         setCreditsLoading(false);
         return;
       }
       
-      if (isAuthenticated && !isAdmin) {
+      if (isAuthenticated && !isAdministrator) {
         // For regular users, fetch credit stats
         setCreditsLoading(true);
         try {
@@ -82,7 +82,7 @@ export const CreateContestPage: React.FC = () => {
     };
 
     fetchUserCredits();
-  }, [user, isAuthenticated, authIsLoading, getToken, isAdmin]);
+  }, [user, isAuthenticated, authIsLoading, getToken, isAdministrator]);
 
   useEffect(() => {
     // Open the modal once authentication and credit data are loaded
@@ -114,8 +114,8 @@ export const CreateContestPage: React.FC = () => {
     return <LoadingFallback message="Redirecting to login..." />;
   }
   
-  // Determine user role for the modal using the boolean isAdmin property
-  const userRole = isAdmin ? 'admin' : 'user';
+  // Determine user role for the modal using the boolean isAdministrator property
+  const userRole = isAdministrator ? 'admin' : 'user';
 
 
   return (

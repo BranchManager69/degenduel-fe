@@ -510,7 +510,7 @@ const AffiliateLeaderboard: React.FC = () => {
   }, []);
 
   // Handle missing data gracefully instead of returning null (which causes component not to render)
-  if (!leaderboardStats) {
+  if (!leaderboardStats || !leaderboardStats.current_period) {
     return (
       <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
         <div className="py-4 text-center text-gray-400">

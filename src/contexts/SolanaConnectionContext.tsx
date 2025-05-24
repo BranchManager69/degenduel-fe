@@ -48,7 +48,7 @@ export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> =
   const { user } = useAuth(); 
   
   const connectionInfo = useMemo(() => {
-    const isAdministrator = user?.is_admin || user?.is_superadmin;
+    const isAdministrator = user?.role === 'admin' || user?.role === 'superadmin';
     
     let tier: 'public' | 'user' | 'admin' = 'public';
     if (isAdministrator) {

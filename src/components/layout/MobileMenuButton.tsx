@@ -22,11 +22,11 @@ import ConsolidatedLoginButton from "../auth/ConsolidatedLoginButton";
 import { getMenuItems } from './menu/menuConfig';
 import { NotificationsDropdown } from './menu/NotificationsDropdown';
 import {
-  BiometricAuthComponent,
-  MenuBackdrop,
-  MenuDivider,
-  SectionHeader,
-  WalletDetailsSection
+    BiometricAuthComponent,
+    MenuBackdrop,
+    MenuDivider,
+    SectionHeader,
+    WalletDetailsSection
 } from './menu/SharedMenuComponents';
 
 interface MobileMenuButtonProps {
@@ -45,7 +45,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   // Use store directly to check user authentication
   const { user, disconnectWallet } = useStore();
-  const { isAdmin, isSuperAdmin } = useMigratedAuth();
+  const { isAdministrator, isSuperAdmin } = useMigratedAuth();
   const [imageError, setImageError] = useState(false);
   
   // Get user level information
@@ -334,14 +334,14 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     ))}
                     
                     {/* Admin controls section if applicable */}
-                    {(isAdmin || isSuperAdmin) && (
+                    {(isAdministrator || isSuperAdmin) && (
                       <>
                         <MenuDivider />
                         <SectionHeader title="Admin Access" />
                         
                         {/* Side-by-side Admin and Super Admin buttons */}
                         <div className="grid grid-cols-2 gap-1 px-3 py-1">
-                          {isAdmin && (
+                          {isAdministrator && (
                             <Link
                               to="/admin"
                               className="flex items-center justify-center px-2 py-1.5 rounded-md transition-all duration-300

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 import ThreeManager from "../../utils/three/ThreeManager";
@@ -10,7 +10,7 @@ interface Logo3DProps {
 
 const Logo3D: React.FC<Logo3DProps> = ({ size = "lg", className = "" }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const componentId = "logo3d-" + Math.random().toString(36).substr(2, 9);
+  const [componentId] = useState(() => "logo3d-" + Math.random().toString(36).substr(2, 9));
 
   // Convert size to pixel height
   const getHeight = () => {

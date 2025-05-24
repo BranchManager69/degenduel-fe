@@ -12,7 +12,7 @@
  * @updated 2025-05-07 // Updated to solely use UnifiedAuth
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useAuth as useUnifiedAuth } from "../../contexts/UnifiedAuthContext";
 import { User } from "../../types/user";
 // import { TokenType } from "../../services/authTokenManagerService"; // Old direct import
@@ -25,8 +25,8 @@ interface NormalizedAuthAPI {
   loading: boolean; // For backward compatibility (maps to isLoading)
   isAuthenticated: boolean; // Correctly a boolean
 
-  isAdmin: boolean; // Correctly a boolean
-  isSuperAdmin: boolean; // Correctly a boolean
+  isAdministrator: boolean; // Has administrator privileges (admin OR superadmin)
+  isSuperAdmin: boolean; // Specifically has superadmin role
 
   // Auth method checks (these are functions on UnifiedAuthContextType)
   isWalletAuth: () => boolean;
@@ -59,6 +59,15 @@ export function useMigratedAuth(): NormalizedAuthAPI {
   // Always use the Unified Auth system
   const authContextValue = useUnifiedAuth();
 
+  // FIXED: Memoize role-based computed values to prevent unnecessary re-computation and component unmounting
+  const isAdministrator = useMemo(() => {
+    return authContextValue.user?.role === 'admin' || authContextValue.user?.role === 'superadmin' || false;
+  }, [authContextValue.user?.role]);
+
+  const isSuperAdmin = useMemo(() => {
+    return authContextValue.user?.role === 'superadmin' || false;
+  }, [authContextValue.user?.role]);
+
   // Construct the normalized API object based on NormalizedAuthAPI interface
   return {
     // Properties
@@ -66,8 +75,11 @@ export function useMigratedAuth(): NormalizedAuthAPI {
     isLoading: authContextValue.loading,
     loading: authContextValue.loading, // Backward compatibility
     isAuthenticated: authContextValue.isAuthenticated,
-    isAdmin: authContextValue.user?.is_admin || false,
-    isSuperAdmin: authContextValue.user?.is_superadmin || false,
+
+    // FIXED: Use memoized values instead of inline computation
+    isAdministrator,
+    isSuperAdmin,
+
     activeMethod: authContextValue.activeMethod,
     error: authContextValue.error,
 

@@ -20,7 +20,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
     );
   }, []);
 
-  const { user, isLoading, loading, isAdmin } = useMigratedAuth();
+  const { user, isLoading, loading, isAdministrator } = useMigratedAuth();
   const location = useLocation();
 
   // Use either isLoading or loading (for backward compatibility)
@@ -34,7 +34,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !isAdministrator) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 

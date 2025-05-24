@@ -7,7 +7,7 @@ import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
  * If user is not an admin, redirects to the home page.
  */
 export const AdminRoute: React.FC = () => {
-  const { isAuthenticated, isLoading, isAdmin } = useMigratedAuth();
+  const { isAuthenticated, isLoading, isAdministrator } = useMigratedAuth();
   const location = useLocation();
 
   // Show loading spinner while authentication state is being determined
@@ -27,7 +27,7 @@ export const AdminRoute: React.FC = () => {
 
   // Check if user is authenticated and has admin privileges
   // We now use the isAdmin property directly from the migrated auth hook
-  const hasAdminRole = isAuthenticated && isAdmin;
+  const hasAdminRole = isAuthenticated && isAdministrator;
 
   // If not admin, redirect to home
   if (!hasAdminRole) {

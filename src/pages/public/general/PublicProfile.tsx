@@ -97,7 +97,7 @@ export const PublicProfile: React.FC = () => {
   });
 
   // Use useMigratedAuth hook for role checks
-  const { isAdmin } = useMigratedAuth();
+  const { isAdministrator } = useMigratedAuth();
 
   // Helper to determine if a string is likely a Solana wallet address
   // Simple length-based heuristic - Solana addresses are much longer than usernames
@@ -293,7 +293,7 @@ export const PublicProfile: React.FC = () => {
                   </h1>
 
                   {/* Admin controls - only shown if user has admin role */}
-                  {isAdmin && !userData.is_banned && (
+                  {isAdministrator && !userData.is_banned && (
                     <BanOnSightButton
                       user={{
                         wallet_address: userData.wallet_address,

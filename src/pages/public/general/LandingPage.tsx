@@ -33,14 +33,14 @@ import { MiniDecryptionTimer } from "../../../components/layout/DecryptionTimerM
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useIsVisible } from '../../../hooks/ui/useIsVisible';
-import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
 import { useLaunchEvent } from "../../../hooks/websocket/topic-hooks/useLaunchEvent";
+import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
 // DD API
 import { ddApi } from "../../../services/dd-api";
 // Date Utilities
 // Release Date Service
 import {
-  FALLBACK_RELEASE_DATE
+    FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
 // Import PaginatedResponse from types
 import { PaginatedResponse } from '../../../types';
@@ -138,7 +138,7 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   // Initialize User and Admin status
-  const { user, isAdmin } = useMigratedAuth();
+  const { user, isAdministrator } = useMigratedAuth();
   
   // Terminal Data - This is the "AI Chat" websocket connection
   // const terminalData = useTerminalData(); // Commented out as it's not used
@@ -250,7 +250,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex flex-col items-center justify-center mb-8 md:mb-12">
                 
                 {/* Admin debug button - visible even when HeroTitle is hidden */}
-                {isAdmin && (
+                {isAdministrator && (
                   <div className="flex justify-end mb-2 w-full max-w-4xl">
                     <button
                       className="bg-black/50 text-white text-xs p-1 rounded-md"
@@ -262,7 +262,7 @@ export const LandingPage: React.FC = () => {
                 )}
                 
                 {/* Demo Section - only visible to admins with debug mode enabled */}
-                {debugMode && isAdmin && (
+                {debugMode && isAdministrator && (
                   <div className="w-full mb-10">
                     
                     {/* Auth Debug Panel 1 - shows authentication state for debugging */}
@@ -590,7 +590,7 @@ export const LandingPage: React.FC = () => {
                             </div>
                             
                             {/* Debug info (admin only) */}
-                            {isAdmin && (
+                            {isAdministrator && (
                               <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
                                 <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
                                 

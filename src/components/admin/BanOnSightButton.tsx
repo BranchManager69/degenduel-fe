@@ -26,7 +26,7 @@ export function BanOnSightButton({
   // currentUserRole is unused but kept for backward compatibility
 }: BanOnSightButtonProps) {
   const [showBanModal, setShowBanModal] = useState(false);
-  const { isAdmin, isSuperAdmin } = useMigratedAuth(); // Use the auth hook's built-in role checks
+  const { isAdministrator, isSuperAdmin } = useMigratedAuth(); // Use the auth hook's built-in role checks
 
   // Size classes
   const sizeClasses = {
@@ -48,7 +48,7 @@ export function BanOnSightButton({
     console.log("[BanOnSightButton] Checking ban permissions:", {
       targetUserRole,
       isSuperAdmin,
-      isAdmin,
+      isAdministrator,
       targetIsBanned: user.is_banned,
     });
 
@@ -71,7 +71,7 @@ export function BanOnSightButton({
     }
 
     // 3. Ensure current user has admin rights
-    return isAdmin;
+    return isAdministrator;
   };
 
   return (

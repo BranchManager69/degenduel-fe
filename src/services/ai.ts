@@ -156,16 +156,12 @@ export class AIServiceError extends Error {
   }
 }
 
-// TODO: Is the following correct?
-// No global state needed - using simple REST API approach
-
 /**
  * AI Service implementation
  * 
  * Provides an API client for the DegenDuel AI service
  * 
- * TODO: Is the following correct?
- *   Uses REST API for all functionality
+ * Uses REST API for all functionality (as it must for streaming)
  */
 class AIService {
   private readonly API_AI_SVC_REST_URL: string;
@@ -181,143 +177,22 @@ class AIService {
       base = base.slice(0, -1);
     }
 
-    // Now base is e.g. "https://host.com" or "https://host.com/api"
+    // Now base is e.g. "https://degenduel.me" or "https://degenduel.me/api"
 
     if (base.endsWith('/api')) {
-      // base is "https://host.com/api", so append "/ai"
+      // base is "https://degenduel.me/api", so append "/ai"
       this.API_AI_SVC_REST_URL = `${base}/ai`;
     } else {
-      // base is "https://host.com", so append "/api/ai"
+      // base is "https://degenduel.me", so append "/api/ai"
       this.API_AI_SVC_REST_URL = `${base}/api/ai`;
     }
   }
 
   // No WebSocket methods needed - using REST API only
 
-  /**
-   * Generate a chat completion using REST API
-   * 
-   * @param messages Array of messages in the conversation
-   * @param options Configuration options
-   * @returns Promise with the AI response
-   */
-  async chat(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
-    try {
-      if (options.debug) {
-        console.log('AI Chat Request:', { messages, options });
-      }
-
-      // Determine if we should use streaming
-      const useStreaming = !!options.streaming;
-
-      // Build conversation history if we have a conversation ID
-      let conversationHistory = [...messages];
-      if (options.conversationId && this.conversationCache.has(options.conversationId)) {
-        const cachedMessages = this.conversationCache.get(options.conversationId) || [];
-
-        // Only include the latest user message from the input
-        const latestUserMessage = messages[messages.length - 1];
-        if (latestUserMessage && latestUserMessage.role === 'user') {
-          conversationHistory = [...cachedMessages, latestUserMessage];
-        } else {
-          conversationHistory = cachedMessages;
-        }
-      }
-
-      // Filter out system messages as they're handled by the backend
-      const filteredMessages = conversationHistory.filter(msg => msg.role !== 'system');
-
-      // Use appropriate REST API endpoint based on streaming preference
-      if (useStreaming) {
-        return this.chatStreaming(filteredMessages, options);
-      } else {
-        return this.chatRest(filteredMessages, options);
-      }
-    } catch (error) {
-      if (error instanceof AIServiceError) {
-        throw error;
-      }
-
-      console.error('AI Chat Error:', error);
-      throw new AIServiceError(
-        'Failed to get AI response. Please try again later.',
-        AIErrorType.UNKNOWN
-      );
-    }
-  }
-
-  // Uses the SHITTY, WOEFULLY OUTDATED, and ENTIRELY WORTHLESS OpenAI Chat Completions API (new standard: OpenAI Responses API. See https://platform.openai.com/docs/api-reference/responses)
-  /**
-   * Generate a chat completion using the REST API
-   * 
-   * @param messages Array of messages in the conversation
-   * @param options Configuration options
-   * @returns Promise with the AI response
-   */
-  private async chatRest(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
-    try {
-      // Get auth token for the request (still useful for logging/potential future use, but don't block on it)
-      console.log('[AI Service REST] About to attempt token retrieval. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
-      const token = await authService.getToken();
-      console.log('[AI Service REST] Token retrieved:', token ? `Exists (len: ${token.length})` : 'NULL or Undefined');
-
-      // Create the DegenDuel AI Service API URL
-      const responseUrl = `${this.API_AI_SVC_REST_URL}/response`;
-
-      const response = await fetch(responseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Only include Auth header if token exists
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-        body: JSON.stringify({
-          messages,
-          conversationId: options.conversationId,
-          context: options.context || 'terminal'
-        }),
-      });
-
-      if (!response.ok) {
-        throw await this.handleErrorResponse(response);
-      }
-
-      const data = await response.json();
-
-      if (options.debug) {
-        console.log('AI Chat Response:', data);
-      }
-
-      // Update conversation cache
-      if (data.conversationId) {
-        // Add the assistant response to the conversation history
-        const updatedHistory = [
-          ...messages,
-          { role: 'assistant' as const, content: data.content }
-        ];
-        this.conversationCache.set(data.conversationId, updatedHistory);
-      }
-
-      return {
-        content: data.content || '',
-        functionCalled: data.functionCalled,
-        conversationId: data.conversationId || options.conversationId || ''
-      };
-    } catch (error) {
-      if (error instanceof AIServiceError) {
-        throw error;
-      }
-
-      console.error('AI REST API Error:', error);
-      throw new AIServiceError(
-        'Failed to get AI response via REST API.',
-        AIErrorType.NETWORK
-      );
-    }
-  }
-
   // Uses the LATEST and GREATEST OpenAI Responses API
   //   @see https://platform.openai.com/docs/api-reference/responses
+
   /**
    * Generate a streaming chat completion using the stream API
    * 
@@ -378,7 +253,7 @@ class AIService {
 
         // Prepend leftover data from the previous chunk
         const chunkText = leftover + decoder.decode(value, { stream: true });
-        const lines = chunkText.split(/\\r?\\n/); // Split into lines
+        const lines = chunkText.split(/\r?\n/); // Split into lines
 
         // The last line might be incomplete, keep it for the next chunk
         leftover = lines.pop() || '';
@@ -464,6 +339,128 @@ class AIService {
       throw new AIServiceError(
         'Failed to get streaming AI response.',
         AIErrorType.NETWORK // Or map based on error type if possible
+      );
+    }
+  }
+
+  /**
+   * Generate a chat completion using REST API
+   * 
+   * @param messages Array of messages in the conversation
+   * @param options Configuration options
+   * @returns Promise with the AI response
+   */
+  async chat(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
+    try {
+      if (options.debug) {
+        console.log('AI Chat Request:', { messages, options });
+      }
+
+      // Determine if we should use streaming
+      const useStreaming = !!options.streaming;
+
+      // Build conversation history if we have a conversation ID
+      let conversationHistory = [...messages];
+      if (options.conversationId && this.conversationCache.has(options.conversationId)) {
+        const cachedMessages = this.conversationCache.get(options.conversationId) || [];
+
+        // Only include the latest user message from the input
+        const latestUserMessage = messages[messages.length - 1];
+        if (latestUserMessage && latestUserMessage.role === 'user') {
+          conversationHistory = [...cachedMessages, latestUserMessage];
+        } else {
+          conversationHistory = cachedMessages;
+        }
+      }
+
+      // Filter out system messages as they're handled by the backend
+      const filteredMessages = conversationHistory.filter(msg => msg.role !== 'system');
+
+      // Use appropriate REST API endpoint based on streaming preference
+      if (useStreaming) {
+        return this.chatStreaming(filteredMessages, options);
+      } else {
+        return this.chatRest(filteredMessages, options);
+      }
+    } catch (error) {
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+
+      console.error('AI Chat Error:', error);
+      throw new AIServiceError(
+        'Failed to get AI response. Please try again later.',
+        AIErrorType.UNKNOWN
+      );
+    }
+  }
+
+  // (private for a reason) Uses the SHITTY, WOEFULLY OUTDATED, and ENTIRELY WORTHLESS OpenAI Chat Completions API (new standard: OpenAI Responses API. See https://platform.openai.com/docs/api-reference/responses)
+  /**
+   * Generate a chat completion using the SHITTY, WOEFULLY OUTDATED, and ENTIRELY WORTHLESS OpenAI Chat Completions REST API
+   * 
+   * @param messages Array of messages in the conversation
+   * @param options Configuration options
+   * @returns Promise with the AI response
+   */
+  private async chatRest(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
+    try {
+      // Get auth token for the request (still useful for logging/potential future use, but don't block on it)
+      console.log('[AI Service REST] About to attempt token retrieval. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
+      const token = await authService.getToken();
+      console.log('[AI Service REST] Token retrieved:', token ? `Exists (len: ${token.length})` : 'NULL or Undefined');
+
+      // Create the DegenDuel AI Service API URL
+      const responseUrl = `${this.API_AI_SVC_REST_URL}/response`;
+
+      const response = await fetch(responseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Only include Auth header if token exists
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          messages,
+          conversationId: options.conversationId,
+          context: options.context || 'terminal'
+        }),
+      });
+
+      if (!response.ok) {
+        throw await this.handleErrorResponse(response);
+      }
+
+      const data = await response.json();
+
+      if (options.debug) {
+        console.log('AI Chat Response:', data);
+      }
+
+      // Update conversation cache
+      if (data.conversationId) {
+        // Add the assistant response to the conversation history
+        const updatedHistory = [
+          ...messages,
+          { role: 'assistant' as const, content: data.content }
+        ];
+        this.conversationCache.set(data.conversationId, updatedHistory);
+      }
+
+      return {
+        content: data.content || '',
+        functionCalled: data.functionCalled,
+        conversationId: data.conversationId || options.conversationId || ''
+      };
+    } catch (error) {
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+
+      console.error('AI REST API Error:', error);
+      throw new AIServiceError(
+        'Failed to get AI response via REST API.',
+        AIErrorType.NETWORK
       );
     }
   }

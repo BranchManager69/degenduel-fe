@@ -23,7 +23,7 @@ export const MarketVerse: React.FC = () => {
 
   // Effect to check for Maintenance Mode and handle accordingly
   useEffect(() => {
-    if (maintenanceMode && !(user?.is_admin || user?.is_superadmin)) {
+    if (maintenanceMode && !(user?.role === 'admin' || user?.role === 'superadmin')) {
       setError(
         "System is currently in maintenance mode. Please check back later.",
       );
@@ -58,7 +58,7 @@ export const MarketVerse: React.FC = () => {
       !isConnected ||
       !tokens.length ||
       !sceneRef.current ||
-      (maintenanceMode && !(user?.is_admin || user?.is_superadmin))
+      (maintenanceMode && !(user?.role === 'admin' || user?.role === 'superadmin'))
     ) {
       return;
     }
