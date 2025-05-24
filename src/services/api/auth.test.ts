@@ -60,7 +60,7 @@ describe("Authentication API Service", () => {
 
       // Verify axios was called with correct parameters
       expect(mockAxios.get).toHaveBeenCalledWith(
-        "/api/auth/session",
+        expect.stringMatching(/\/auth\/session$/),
         expect.objectContaining({
           withCredentials: true,
         }),
@@ -195,7 +195,7 @@ describe("Authentication API Service", () => {
 
       // Verify axios was called with correct parameters
       expect(mockAxios.post).toHaveBeenCalledWith(
-        "/api/auth/verify-wallet",
+        expect.stringMatching(/\/auth\/verify-wallet$/),
         expect.objectContaining({
           wallet: mockWallet,
           signature: Array.from(mockSignature), // Converted to array for JSON

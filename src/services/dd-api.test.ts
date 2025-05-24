@@ -43,7 +43,7 @@ describe("DegenDuel API Service", () => {
       headers: new Headers(),
       text: jest.fn().mockResolvedValue(JSON.stringify(data))
     } as unknown as Response;
-    
+
     return response;
   };
 
@@ -66,7 +66,7 @@ describe("DegenDuel API Service", () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/auth/nonce?wallet_address=${walletAddress}`,
+        expect.stringMatching(/\/auth\/nonce\?wallet_address=/),
         expect.objectContaining({
           method: "GET",
         }),
@@ -98,7 +98,7 @@ describe("DegenDuel API Service", () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        "/api/auth/verify",
+        expect.stringMatching(/\/auth\/verify$/),
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
@@ -135,7 +135,7 @@ describe("DegenDuel API Service", () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        "/api/auth/verify",
+        expect.stringMatching(/\/auth\/verify$/),
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({
@@ -168,7 +168,7 @@ describe("DegenDuel API Service", () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/users/${walletAddress}`,
+        expect.stringMatching(new RegExp(`/users/${walletAddress}$`)),
         expect.objectContaining({
           method: "GET",
         }),
@@ -200,7 +200,7 @@ describe("DegenDuel API Service", () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/users/${walletAddress}`,
+        expect.stringMatching(new RegExp(`/users/${walletAddress}$`)),
         expect.objectContaining({
           method: "PUT",
           headers: expect.objectContaining({
@@ -237,7 +237,7 @@ describe("DegenDuel API Service", () => {
 
       // Verify fetch was called with correct parameters
       expect(global.fetch).toHaveBeenCalledWith(
-        `/api/tokens/${tokenId}/price`,
+        expect.stringMatching(new RegExp(`/tokens/${tokenId}/price$`)),
         expect.objectContaining({
           method: "GET",
         }),

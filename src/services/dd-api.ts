@@ -174,16 +174,17 @@ const updateAnalytics = (breaker: ServiceCircuitBreaker, success: boolean) => {
 // TODO: This is a very curious function, and I'm not sure why it's needed. I forget.
 const isExpectedUnauthorized = (path: string, status: number): boolean => {
   // List of endpoints that are expected to return 401 unauthorized status
+  // Note: These paths should match normalized paths (without /api/ prefix)
   const expectedUnauthEndpoints: readonly string[] = [
-    "/api/auth/session",
-    "/api/admin/maintenance/status",
-    "/api/admin/metrics/service-analytics",
+    "auth/session",
+    "admin/maintenance/status",
+    "admin/metrics/service-analytics",
   ] as const;
 
   // Check if the path includes any of the expected unauthorized endpoints
   return expectedUnauthEndpoints.some(
     (endpoint) =>
-      path.includes(endpoint.replace("/api/", "")) && status === 401,
+      path.includes(endpoint) && status === 401,
   );
 };
 
@@ -909,8 +910,8 @@ export const ddApi = {
           if (!response.ok) {
             throw new Error(
               parsedResponse.error ||
-                parsedResponse.message ||
-                `Server error: ${response.status} ${response.statusText}`,
+              parsedResponse.message ||
+              `Server error: ${response.status} ${response.statusText}`,
             );
           }
 
@@ -1002,7 +1003,7 @@ export const ddApi = {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(
             errorData.error ||
-              `Failed to set maintenance mode: ${response.statusText}`,
+            `Failed to set maintenance mode: ${response.statusText}`,
           );
         }
 
@@ -1220,7 +1221,7 @@ export const ddApi = {
                 bValue = b.participant_count;
                 break;
               case "entry_fee":
-                aValue = parseFloat(a.entry_fee); 
+                aValue = parseFloat(a.entry_fee);
                 bValue = parseFloat(b.entry_fee);
                 break;
               case "prize_pool":
@@ -1239,8 +1240,8 @@ export const ddApi = {
 
             // Handle potential NaN from parseFloat, default to 0 for comparison
             if (field === "entry_fee" || field === "prize_pool") {
-                if (isNaN(aValue as number)) aValue = 0;
-                if (isNaN(bValue as number)) bValue = 0;
+              if (isNaN(aValue as number)) aValue = 0;
+              if (isNaN(bValue as number)) bValue = 0;
             }
 
             if (sortOptions.direction === "asc") {
@@ -1599,8 +1600,8 @@ export const ddApi = {
         if (!response.ok) {
           throw new Error(
             errorData?.message ||
-              errorData?.error ||
-              `Failed to create contest: ${response.status} ${response.statusText}`,
+            errorData?.error ||
+            `Failed to create contest: ${response.status} ${response.statusText}`,
           );
         }
 
@@ -1659,28 +1660,28 @@ export const ddApi = {
         throw error;
       }
     },
-    
+
     // Get AI-selected portfolio for a contest
     getAIPortfolio: async (contestId: string | number) => {
       const user = useStore.getState().user;
-      
+
       if (!user?.wallet_address) {
         throw new Error("Please connect your wallet first");
       }
-      
+
       try {
         const api = createApiClient();
         const response = await api.fetch(
           `/blinks/ai-portfolio?contest_id=${contestId}&wallet_address=${encodeURIComponent(user.wallet_address)}`
         );
-        
+
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
           throw new Error(data.message || 'Failed to generate AI portfolio');
         }
-        
+
         const data = await response.json();
-        
+
         // The expected response format includes portfolio (array of tokens) and a summary string
         return {
           portfolio: data.portfolio || [],
@@ -1696,7 +1697,7 @@ export const ddApi = {
     getView: async (contestId: string): Promise<ContestViewData> => {
       const user = useStore.getState().user;
       const api = createApiClient();
-      
+
       try {
         const response = await api.fetch(`/contests/${contestId}/view`, {
           headers: {
@@ -1715,7 +1716,7 @@ export const ddApi = {
         // TODO: Potentially add caching layer here if needed later
 
         return result.data; // Return only the data part
-        
+
       } catch (error: any) {
         logError(`contests.getView failed for contest ${contestId}`, error, {
           contestId,

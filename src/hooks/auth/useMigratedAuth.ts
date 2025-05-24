@@ -51,8 +51,8 @@ export function useMigratedAuth(): NormalizedAuthAPI {
   // Log which auth system is being used (only on initial mount)
   React.useEffect(() => {
     console.log(
-      `%c[AUTH SYSTEM] UNIFIED AUTH system is currently active`,
-      `color: white; background-color: #4caf50; padding: 4px 8px; border-radius: 4px; font-weight: bold;`
+      `%c[AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).`,
+      `color: black; background-color: #4caf50; padding: 4px 8px; border-radius: 4px; font-weight: bold;`
     );
   }, []);
 

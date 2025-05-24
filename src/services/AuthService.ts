@@ -21,24 +21,24 @@
  * @updated 2025-05-08 - Cleaned up legacy comments and refined types.
  */
 
-import { authDebug } from '../config/config';
+import { API_URL, authDebug } from '../config/config';
 import axiosInstance from '../lib/axiosInstance';
 import { User } from '../types/user';
 import { tokenManagerService, TokenType } from './tokenManagerService';
 
 // Auth method types
-export type AuthMethod = 
-  | 'wallet' 
-  | 'twitter' 
-  | 'session' 
-  | 'email' 
-  | 'sms' 
-  | 'google' 
-  | 'discord' 
-  | 'github' 
-  | 'apple' 
-  | 'telegram' 
-  | 'passkey'; 
+export type AuthMethod =
+  | 'wallet'
+  | 'twitter'
+  | 'session'
+  | 'email'
+  | 'sms'
+  | 'google'
+  | 'discord'
+  | 'github'
+  | 'apple'
+  | 'telegram'
+  | 'passkey';
 
 // Authentication event types
 export enum AuthEventType {
@@ -62,7 +62,7 @@ export interface AuthEvent {
 // Authentication response
 export interface AuthResponse {
   user: User;
-  token: string; 
+  token: string;
   expiresIn?: number;
   refreshToken?: string;
 }
@@ -84,7 +84,7 @@ export class AuthService {
   private eventListeners: Map<AuthEventType, Set<(event: AuthEvent) => void>> = new Map();
   private static instance: AuthService;
   private isInitialized: boolean = false; // Flag to track initialization
-  
+
   /**
    * Get the singleton instance of the AuthService
    */
@@ -92,11 +92,11 @@ export class AuthService {
     if (!AuthService.instance) {
       AuthService.instance = new AuthService();
       // Call initialization AFTER the instance is created and assigned
-      AuthService.instance.initialize(); 
+      AuthService.instance.initialize();
     }
     return AuthService.instance;
   }
-  
+
   /**
    * Private constructor to enforce singleton pattern
    */
@@ -107,7 +107,7 @@ export class AuthService {
       (window as any).debugAuth = () => this.debugState();
     }
   }
-  
+
   /**
    * New async initialization method
    */
@@ -115,11 +115,11 @@ export class AuthService {
     if (this.isInitialized || typeof window === 'undefined') return;
     this.isInitialized = true; // Prevent double initialization
     authDebug('AuthService', 'Initializing and restoring session...');
-    await this.restoreSession(); 
+    await this.restoreSession();
     this.setupTokenRefreshHandlers();
     authDebug('AuthService', 'Initialization complete.');
   }
-  
+
   /**
    * Debug helper function
    */
@@ -131,11 +131,11 @@ export class AuthService {
       wsToken: tokenManagerService.getToken(TokenType.WS_TOKEN),
       sessionToken: tokenManagerService.getToken(TokenType.SESSION)
     };
-    
+
     authDebug('AuthService', 'Current auth state', state);
     return state;
   }
-  
+
   /**
    * Restore session from stored tokens if available
    */
@@ -147,13 +147,13 @@ export class AuthService {
         authDebug('AuthService', 'Skipping session restore - user explicitly logged out');
         return;
       }
-      
+
       // Ensure tokenManagerService is ready before using it
-      if (tokenManagerService) { 
+      if (tokenManagerService) {
         if (tokenManagerService.getToken(TokenType.JWT)) {
           authDebug('AuthService', 'Found stored JWT token, attempting to restore session');
           const sessionResult = await this.checkAuth();
-          
+
           if (sessionResult) {
             authDebug('AuthService', 'Successfully restored session');
           } else {
@@ -173,7 +173,7 @@ export class AuthService {
       });
     }
   }
-  
+
   /**
    * Register an event listener
    * 
@@ -185,9 +185,9 @@ export class AuthService {
     if (!this.eventListeners.has(eventType)) {
       this.eventListeners.set(eventType, new Set());
     }
-    
+
     this.eventListeners.get(eventType)!.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       const listeners = this.eventListeners.get(eventType);
@@ -196,7 +196,7 @@ export class AuthService {
       }
     };
   }
-  
+
   /**
    * Dispatch an event to all registered listeners
    * 
@@ -204,7 +204,7 @@ export class AuthService {
    */
   private dispatchEvent(event: AuthEvent) {
     const listeners = this.eventListeners.get(event.type);
-    
+
     if (listeners) {
       listeners.forEach(callback => {
         try {
@@ -214,7 +214,7 @@ export class AuthService {
         }
       });
     }
-    
+
     // Also dispatch AUTH_STATE_CHANGED for login/logout events
     if (event.type === AuthEventType.LOGIN || event.type === AuthEventType.LOGOUT) {
       this.dispatchEvent({
@@ -224,7 +224,7 @@ export class AuthService {
       });
     }
   }
-  
+
   /**
    * Set the current authenticated user
    * 
@@ -233,7 +233,7 @@ export class AuthService {
    */
   private setUser(user: User | null, method?: AuthMethod) {
     this.user = user;
-    
+
     // Dispatch appropriate event
     if (user) {
       this.dispatchEvent({
@@ -249,7 +249,7 @@ export class AuthService {
       });
     }
   }
-  
+
   /**
    * Get the currently authenticated user
    * 
@@ -258,7 +258,7 @@ export class AuthService {
   public getUser(): User | null {
     return this.user;
   }
-  
+
   /**
    * Check if user is authenticated
    * 
@@ -267,7 +267,7 @@ export class AuthService {
   public isAuthenticated(): boolean {
     return !!this.user;
   }
-  
+
   /**
    * Check if user has a specific role
    * 
@@ -276,16 +276,16 @@ export class AuthService {
    */
   public hasRole(role: string): boolean {
     if (!this.user) return false;
-    
+
     if (role === 'superadmin') {
       return this.user.role === 'superadmin';
     } else if (role === 'admin') {
       return this.user.role === 'admin' || this.user.role === 'superadmin';
     }
-    
+
     return this.user.role === role;
   }
-  
+
   /**
    * Check authentication status with the server
    * 
@@ -299,7 +299,9 @@ export class AuthService {
     while (retryCount <= maxRetries) {
       try {
         authDebug('AuthService', `Checking authentication status (attempt ${retryCount + 1})`);
-        const response = await axiosInstance.get('/auth/status');
+        const authBaseURL = API_URL.replace('/api', '');
+        const statusUrl = `${authBaseURL}/auth/status`;
+        const response = await axiosInstance.get(statusUrl);
         const isAuthenticated = response.data?.authenticated || false;
         const authMethods = response.data?.methods || {};
         let activeMethod: AuthMethod | null = null;
@@ -315,7 +317,7 @@ export class AuthService {
           if (!user.wallet_address) {
             authDebug('AuthService', 'User from auth check missing wallet_address', { user_id: user.id });
             if (this.user) this.setUser(null); // Clear user if data is invalid
-            return false; 
+            return false;
           }
           authDebug('AuthService', 'User is authenticated', { method: activeMethod, userId: user.id, wallet: user.wallet_address });
           const currentUserId = this.user?.id;
@@ -344,11 +346,11 @@ export class AuthService {
           localStorage.removeItem('degen_explicit_logout');
           return false; // Definitive unauthenticated state
         }
-        
+
         // For 5xx server errors or network errors, retry with backoff
         if (retryCount < maxRetries) {
           retryCount++;
-          authDebug('AuthService', `Attempt ${retryCount}/${maxRetries+1} failed. Retrying in ${retryDelay}ms...`);
+          authDebug('AuthService', `Attempt ${retryCount}/${maxRetries + 1} failed. Retrying in ${retryDelay}ms...`);
           await new Promise(resolve => setTimeout(resolve, retryDelay * retryCount)); // Incremental backoff
           continue; // Continue to next iteration of the while loop
         } else {
@@ -368,7 +370,7 @@ export class AuthService {
     }
     return !!this.user; // Should not be reached if loop logic is correct, but as a fallback
   }
-  
+
   /**
    * Get a token for authentication
    * 
@@ -377,32 +379,35 @@ export class AuthService {
    */
   public async getToken(type: TokenType = TokenType.JWT): Promise<string | null> {
     let token = tokenManagerService.getToken(type);
-    
+
     if (!token && this.isAuthenticated()) {
       try {
         authDebug('AuthService', `No ${type} token found, requesting from server`);
-        
+
         let endpoint: string;
         switch (type) {
           case TokenType.WS_TOKEN:
-            endpoint = '/api/auth/ws-token';
+            endpoint = '/auth/ws-token';
             break;
           case TokenType.JWT:
           case TokenType.SESSION:
           default:
-            endpoint = '/api/auth/token';
+            endpoint = '/auth/token';
             break;
         }
-        
+
         const timestamp = new Date().getTime();
         const url = `${endpoint}?_t=${timestamp}`;
-        
-        const response = await axiosInstance.get(url, {
-          timeout: 5000 
-        }); 
-        
+
+        // For auth endpoints, use the base server URL without /api prefix
+        const authBaseURL = API_URL.replace('/api', '');
+        const tokenUrl = `${authBaseURL}${url}`;
+        const response = await axiosInstance.get(tokenUrl, {
+          timeout: 5000
+        });
+
         token = response.data.token;
-        
+
         if (token) {
           tokenManagerService.setToken(
             type,
@@ -410,7 +415,7 @@ export class AuthService {
             tokenManagerService.estimateExpiration(token),
             'server'
           );
-          
+
           if (this.user) {
             const updatedUser = { ...this.user };
             switch (type) {
@@ -420,7 +425,7 @@ export class AuthService {
             }
             this.user = updatedUser;
           }
-          
+
           this.dispatchEvent({
             type: AuthEventType.TOKEN_REFRESHED,
             token,
@@ -429,7 +434,7 @@ export class AuthService {
         }
       } catch (error: any) {
         authDebug('AuthService', `Error getting ${type} token`, {
-           error: error?.response?.data || error?.message || String(error)
+          error: error?.response?.data || error?.message || String(error)
         });
         this.dispatchEvent({
           type: AuthEventType.AUTH_ERROR,
@@ -439,7 +444,7 @@ export class AuthService {
     }
     return token;
   }
-  
+
   /**
    * Login with wallet by signing a message
    * 
@@ -453,21 +458,21 @@ export class AuthService {
   ): Promise<User> {
     try {
       authDebug('AuthService', 'Starting wallet authentication', { walletAddress });
-      
+
       // Use the configured instance for challenge
-      const nonceResponse = await axiosInstance.get('/auth/challenge', { 
-        params: { wallet: walletAddress }
-      });
-      
+      const authBaseURL = API_URL.replace('/api', '');
+      const challengeUrl = `${authBaseURL}/auth/challenge?wallet=${encodeURIComponent(walletAddress)}`;
+      const nonceResponse = await axiosInstance.get(challengeUrl);
+
       const nonce = nonceResponse.data.nonce || nonceResponse.data.challenge;
-      
+
       // Create message to sign
       const message = `DegenDuel Authentication\nWallet: ${walletAddress}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`;
       const encodedMessage = new TextEncoder().encode(message);
-      
+
       // Sign message
       const signatureResult = await signMessage(encodedMessage);
-      
+
       // Extract signature based on format
       let signature;
       if (signatureResult.signatureBytes) {
@@ -480,25 +485,25 @@ export class AuthService {
         // Fallback for other wallet implementations
         signature = Array.from(signatureResult as unknown as Uint8Array);
       }
-      
+
       // Use the configured instance for verification
-      const authResponse = await axiosInstance.post('/auth/verify-wallet', { 
+      const verifyUrl = `${authBaseURL}/auth/verify-wallet`;
+      const authResponse = await axiosInstance.post(verifyUrl, {
         wallet: walletAddress,
         signature,
         message
       }, {
         headers: {
-            'X-Debug': 'true', // Keep specific headers if needed
-             Origin: window.location.origin
+          'X-Debug': 'true' // Remove unsafe Origin header
         }
       });
-      
+
       const { token, user } = authResponse.data;
-      
+
       if (!user) {
         throw new Error('No user returned from authentication');
       }
-      
+
       // Store JWT token
       if (token) {
         tokenManagerService.setToken(
@@ -508,23 +513,23 @@ export class AuthService {
           'wallet'
         );
       }
-      
+
       // Store user
       this.setUser(user, 'wallet');
-      
+
       // Clear explicit logout flag (user is now logged in)
       localStorage.removeItem('degen_explicit_logout');
-      
+
       // Request WebSocket token
       tokenManagerService.refreshToken(TokenType.WS_TOKEN);
-      
+
       // Dispatch login event
       this.dispatchEvent({
         type: AuthEventType.LOGIN,
         user,
         method: 'wallet'
       });
-      
+
       return user;
     } catch (error: any) {
       authDebug('AuthService', 'Wallet authentication failed', {
@@ -539,8 +544,8 @@ export class AuthService {
       throw error;
     }
   }
-  
-  
+
+
   /**
    * Link Twitter account to existing user
    * 
@@ -550,52 +555,56 @@ export class AuthService {
     if (!this.isAuthenticated()) {
       throw new Error('Must be authenticated to link Twitter account');
     }
-    
+
     try {
       // Use the configured instance
-      const response = await axiosInstance.get('/api/auth/twitter/link'); 
+      const authBaseURL = API_URL.replace('/api', '');
+      const twitterLinkUrl = `${authBaseURL}/auth/twitter/link`;
+      const response = await axiosInstance.get(twitterLinkUrl);
       return response.data.redirectUrl;
-    } catch (error: any) { 
+    } catch (error: any) {
       authDebug('AuthService', 'Twitter linking failed', {
         error: error?.response?.data || error?.message || String(error)
       });
       throw error;
     }
   }
-  
-  
+
+
   /**
    * Logout the current user
    */
   public async logout(): Promise<void> {
     try {
       authDebug('AuthService', 'Logging out user');
-      
+
       // Mark that user explicitly logged out (prevent auto-restore)
       localStorage.setItem('degen_explicit_logout', 'true');
-      
+
       // Use the configured instance
-      await axiosInstance.post('/api/auth/logout', {}); 
-      
+      const authBaseURL = API_URL.replace('/api', '');
+      const logoutUrl = `${authBaseURL}/auth/logout`;
+      await axiosInstance.post(logoutUrl, {});
+
       // Clear all tokens
       tokenManagerService.clearAllTokens();
-      
+
       // Clear user
       const previousUser = this.user;
       this.setUser(null);
-      
+
       // Dispatch logout event
       this.dispatchEvent({
         type: AuthEventType.LOGOUT,
         user: previousUser
       });
-      
+
     } catch (error: any) {
       authDebug('AuthService', 'Error during logout', {
         error: error?.response?.data || error?.message || String(error)
       });
       // Still clear tokens/user even if API fails
-      tokenManagerService.clearAllTokens(); 
+      tokenManagerService.clearAllTokens();
       this.setUser(null);
     }
   }
@@ -606,16 +615,16 @@ export class AuthService {
    */
   public hardReset(): void {
     authDebug('AuthService', 'Performing hard reset of auth state');
-    
+
     // Clear all tokens
     tokenManagerService.clearAllTokens();
-    
+
     // Clear user
     this.setUser(null);
-    
+
     // Clear explicit logout flag
     localStorage.removeItem('degen_explicit_logout');
-    
+
     // Clear any other auth-related localStorage items
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
@@ -623,7 +632,7 @@ export class AuthService {
         localStorage.removeItem(key);
       }
     }
-    
+
     authDebug('AuthService', 'Hard reset complete - page refresh recommended');
   }
 

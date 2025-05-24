@@ -92,7 +92,6 @@ const LiquiditySimulatorPage = lazy(() => import("./pages/admin/LiquiditySimulat
 
 // Superadmin routes lazy loaded
 const AmmSim = lazy(() => import('./pages/superadmin/AmmSim'));
-const ApiPlayground = lazy(() => import('./pages/superadmin/ApiPlayground'));
 const CircuitBreakerPage = lazy(() => import('./pages/superadmin/CircuitBreakerPage'));
 const ControlPanelHub = lazy(() => import('./pages/superadmin/ControlPanelHub').then(module => ({ default: module.ControlPanelHub })));
 const ServiceCommandCenter = lazy(() => import('./pages/superadmin/ServiceCommandCenter'));
@@ -449,7 +448,6 @@ const AppContent: React.FC = () => {
           <Route path="/superadmin/circuit-breaker" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback />}><CircuitBreakerPage /></Suspense></SuperAdminRoute>} />
           <Route path="/superadmin/service-command-center" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback />}><ServiceCommandCenter /></Suspense></SuperAdminRoute>} />
           <Route path="/superadmin/websocket-monitor" element={<SuperAdminRoute><Navigate to="/superadmin/service-command-center" replace /></SuperAdminRoute>} />
-          <Route path="/api-playground" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback />}><ApiPlayground /></Suspense></SuperAdminRoute>} />
           <Route path="/wss-playground" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback />}><WssPlayground /></Suspense></SuperAdminRoute>} />
           <Route path="/admin/ai-testing" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading AI Testing..." />}><AiTesting /></Suspense></AdminRoute>} />
           <Route path="/admin/wallet-monitoring" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Wallet Monitoring..." />}><WalletMonitoring /></Suspense></AdminRoute>} />

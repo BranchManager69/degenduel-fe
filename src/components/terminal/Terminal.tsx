@@ -183,6 +183,11 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
           console.log('[Terminal] WebSocket data updated - commands refreshed');
           Object.assign(commandMap, updatedCommands);
         }
+
+        // WHAT DID THEY CHANGE FROM AND TO?
+        console.log('[Debugging Terminal] Updated commands:', updatedCommands);
+        console.log('[Debugging Terminal] Current commands:', commandMap);
+
       } catch (error) {
         console.error('[Terminal] Failed to update terminal data from WebSocket:', error);
       }

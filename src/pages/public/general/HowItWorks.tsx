@@ -1,7 +1,6 @@
 // src/pages/public/general/HowItWorks.tsx
 
 import React from "react";
-import ExampleUsage from "../../../components/animated-guys/ExampleUsage";
 import { Card, CardContent } from "../../../components/ui/Card";
 
 export const HowItWorks: React.FC = () => {
@@ -77,10 +76,6 @@ export const HowItWorks: React.FC = () => {
             ))}
           </div>
 
-          {/* Add the Sprite Animation Example here */}
-          <div className="mt-16">
-            <ExampleUsage />
-          </div>
 
           {/* Enhanced Call to Action */}
           <div className="mt-16 text-center relative group">
