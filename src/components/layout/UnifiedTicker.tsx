@@ -439,13 +439,13 @@ export const UnifiedTicker: React.FC<Props> = ({
             return (
               <div
                 key={contestKey}
-                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-brand-500/10 border border-brand-500/20 cursor-pointer hover:bg-brand-500/20 transition-colors"
+                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-brand-500/10 border border-brand-500/20 cursor-pointer hover:bg-brand-500/20 transition-colors whitespace-nowrap"
               >
-                <TrendingUp className="w-3 h-3 mr-1.5 text-brand-400" />
-                <span className="text-xs font-medium text-brand-300">
+                <TrendingUp className="w-3 h-3 mr-1.5 text-brand-400 flex-shrink-0" />
+                <span className="text-xs font-medium text-brand-300 truncate max-w-[120px]">
                   {contest.name}
                 </span>
-                <span className="text-xs text-gray-400 ml-1.5">
+                <span className="text-xs text-gray-400 ml-1.5 flex-shrink-0">
                   | {new Date(contest.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
@@ -477,13 +477,13 @@ export const UnifiedTicker: React.FC<Props> = ({
               <div
                 key={tokenKey}
                 onClick={handleTokenClick}
-                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-cyber-500/10 cursor-pointer hover:bg-cyber-500/20 transition-colors"
+                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-cyber-500/10 cursor-pointer hover:bg-cyber-500/20 transition-colors whitespace-nowrap"
               >
-                <img src={logoUrl} alt={token.symbol} className="w-3.5 h-3.5 mr-1.5 rounded-full object-cover" />
-                <span className="text-xs font-medium text-cyber-300">
+                <img src={logoUrl} alt={token.symbol} className="w-3.5 h-3.5 mr-1.5 rounded-full object-cover flex-shrink-0" />
+                <span className="text-xs font-medium text-cyber-300 truncate max-w-[60px] flex-shrink-0">
                   {token.symbol}
                 </span>
-                <span className="text-xs ml-1.5 text-gray-400">
+                <span className="text-xs ml-1.5 text-gray-400 flex-shrink-0">
                   {displayMarketCap}
                 </span>
               </div>

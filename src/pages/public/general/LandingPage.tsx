@@ -25,7 +25,7 @@ import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
 // import IntroLogo from "../../../components/logo/IntroLogo"; // Original logo (no longer used)
 import EnhancedIntroLogo from "../../../components/logo/EnhancedIntroLogo"; // Enhanced, more dramatic logo
 import { FEATURE_FLAGS } from "../../../config/config";
-import { isContestLive } from "../../../lib/utils";
+import { isContestCurrentlyUnderway } from "../../../lib/utils";
 import { Contest } from "../../../types";
 // Decryption Timer
 import { DecryptionTimer } from '../../../components/layout/DecryptionTimer';
@@ -40,7 +40,7 @@ import { ddApi } from "../../../services/dd-api";
 // Date Utilities
 // Release Date Service
 import {
-  FALLBACK_RELEASE_DATE
+    FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
 // Import PaginatedResponse from types
 import { PaginatedResponse } from '../../../types';
@@ -150,7 +150,7 @@ export const LandingPage: React.FC = () => {
       const contestsData = (Array.isArray(response) ? response : (response as PaginatedResponse<Contest>)?.data) || [];
       
       if (isMounted.current) {
-        const liveContests = contestsData.filter(isContestLive);
+        const liveContests = contestsData.filter(isContestCurrentlyUnderway);
         const pendingContests = contestsData.filter((contest: Contest) => contest.status === "pending");
         
         setActiveContests(liveContests);
@@ -193,7 +193,7 @@ export const LandingPage: React.FC = () => {
     const cachedContests = useStore.getState().contests;
     if (cachedContests && cachedContests.length > 0) {
       console.log('[LandingPage] Using cached contests data.');
-      const cachedActive = cachedContests.filter(isContestLive);
+      const cachedActive = cachedContests.filter(isContestCurrentlyUnderway);
       const cachedPending = cachedContests.filter((contest: Contest) => contest.status === "pending");
       setActiveContests(cachedActive);
       setOpenContests(cachedPending);
