@@ -39,58 +39,108 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  // Removed isMobile state as it's not used in this component
+  // Memoized filtered tokens with search and market cap filtering
+  const filteredTokens = useMemo(() => {
+    return tokens.filter((token) => {
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesSearch = 
+          token.symbol.toLowerCase().includes(query) ||
+          token.name.toLowerCase().includes(query) ||
+          token.contractAddress.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
 
-  // Handle window resize
+      // Market cap filter
+      if (!marketCapFilter) return true;
+
+      const marketCap = Number(token.marketCap);
+      switch (marketCapFilter) {
+        case "high-cap":
+          return marketCap ? marketCap >= 50_000_000 : false;
+        case "mid-cap":
+          return marketCap
+            ? marketCap >= 10_000_000 && marketCap < 50_000_000
+            : false;
+        case "low-cap":
+          return marketCap < 10_000_000;
+        default:
+          return true;
+      }
+    });
+  }, [tokens, searchQuery, marketCapFilter]);
+
+  // Setup intersection observer for virtual scrolling
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
+    // Skip setup if we have few tokens
+    if (filteredTokens.length <= 50) return;
     
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  const filteredTokens = tokens.filter((token) => {
-    if (!marketCapFilter) return true;
+    const options = {
+      root: null,
+      rootMargin: '600px', // Load tokens that are approaching the viewport
+      threshold: 0.1
+    };
 
-    const marketCap = Number(token.marketCap);
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && containerRef.current) {
+          // Calculate visible range based on scroll position
+          const scrollTop = window.scrollY;
+          const viewportHeight = window.innerHeight;
+          
+          // Expand the range as user scrolls
+          const startIndex = Math.max(0, Math.floor((scrollTop - 600) / 100));
+          const endIndex = Math.min(filteredTokens.length, Math.ceil((scrollTop + viewportHeight + 800) / 100));
+          
+          setVisibleRange({ 
+            start: startIndex, 
+            end: endIndex 
+          });
+        }
+      });
+    };
 
-    switch (marketCapFilter) {
-      case "high-cap":
-        return marketCap ? marketCap >= 50_000_000 : false;
-      case "mid-cap":
-        return marketCap
-          ? marketCap >= 10_000_000 && marketCap < 50_000_000
-          : false;
-      case "low-cap":
-        return marketCap < 10_000_000;
-      default:
-        return true;
+    const observer = new IntersectionObserver(handleIntersection, options);
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
     }
-  });
 
-  // Handle card click
-  const handleCardClick = (token: Token) => {
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, [filteredTokens.length]);
+
+  // Determine visible tokens (either all tokens or just the visible range)
+  const visibleTokens = filteredTokens.length <= 50 
+    ? filteredTokens 
+    : filteredTokens.slice(visibleRange.start, visibleRange.end);
+
+  // Memoized handlers for better performance
+  const handleCardClick = useCallback((token: Token) => {
     if (selectedTokens.has(token.contractAddress)) {
       onTokenSelect(token.contractAddress, 0); // Remove token
     } else {
       onTokenSelect(token.contractAddress, 50); // Add token with default weight
     }
-  };
+  }, [selectedTokens, onTokenSelect]);
 
-  // Handle weight change
-  const handleWeightChange = (
+  const handleWeightChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement>,
     token: Token,
   ) => {
     e.stopPropagation();
     onTokenSelect(token.contractAddress, Number(e.target.value));
-  };
+  }, [onTokenSelect]);
 
-  // Render card view
+  // Render card view with virtual scrolling
   const renderCardView = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-      {filteredTokens.map((token) => (
+    <div className="relative" ref={containerRef}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {visibleTokens.map((token) => (
         <Card
           key={token.contractAddress}
           onClick={() => handleCardClick(token)}
@@ -329,23 +379,40 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
             </CardContent>
           </div>
         </Card>
-      ))}
+        ))}
+      </div>
+      
+      {/* Virtual loading placeholder for better UX when progressively loading */}
+      {filteredTokens.length > 50 && visibleRange.end < filteredTokens.length && (
+        <div className="h-20 flex items-center justify-center mt-4">
+          <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
     </div>
   );
   
-  // Render list view
+  // Render list view with virtual scrolling
   const renderListView = () => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-      {filteredTokens.map(token => (
-        <TokenListItem
-          key={token.contractAddress}
-          token={token}
-          isSelected={selectedTokens.has(token.contractAddress)}
-          weight={selectedTokens.get(token.contractAddress) || 0}
-          onSelect={() => handleCardClick(token)}
-          onWeightChange={(weight: number) => onTokenSelect(token.contractAddress, weight)}
-        />
-      ))}
+    <div className="relative" ref={containerRef}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        {visibleTokens.map(token => (
+          <TokenListItem
+            key={token.contractAddress}
+            token={token}
+            isSelected={selectedTokens.has(token.contractAddress)}
+            weight={selectedTokens.get(token.contractAddress) || 0}
+            onSelect={() => handleCardClick(token)}
+            onWeightChange={(weight: number) => onTokenSelect(token.contractAddress, weight)}
+          />
+        ))}
+      </div>
+      
+      {/* Virtual loading placeholder for list view */}
+      {filteredTokens.length > 50 && visibleRange.end < filteredTokens.length && (
+        <div className="h-20 flex items-center justify-center mt-4">
+          <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
     </div>
   );
   

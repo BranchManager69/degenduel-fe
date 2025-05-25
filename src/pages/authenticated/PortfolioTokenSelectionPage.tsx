@@ -17,7 +17,9 @@ import { TokenFilters } from "../../components/portfolio-selection/TokenFilters"
 import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
+import { useDebounce } from "../../hooks/utilities/useDebounce";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import { Contest } from "../../types/index";
@@ -39,6 +41,50 @@ interface PortfolioToken {
   symbol: string;
   contractAddress: string;
   weight: number;
+}
+
+// Token Card Skeleton Component
+function TokenCardSkeleton() {
+  return (
+    <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20 p-3 sm:p-6">
+      <div className="space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <Skeleton className="h-6 w-20 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-4" />
+          </div>
+        </div>
+        
+        {/* Sparkline area */}
+        <Skeleton className="h-8 w-full" />
+        
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Skeleton className="h-3 w-12 mb-1" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <div>
+            <Skeleton className="h-3 w-8 mb-1" />
+            <Skeleton className="h-4 w-12" />
+          </div>
+          <div>
+            <Skeleton className="h-3 w-16 mb-1" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div>
+            <Skeleton className="h-3 w-14 mb-1" />
+            <Skeleton className="h-4 w-18" />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 function ErrorFallback({ error }: { error: Error }) {
@@ -69,7 +115,7 @@ export const TokenSelection: React.FC = () => {
     error: tokensError,
     isConnected: isTokenDataConnected,
     refresh: refreshTokens
-  } = useStandardizedTokenData(1000, "marketCap", { status: "active" });
+  } = useStandardizedTokenData("all", "marketCap", { status: "active" });
   
   console.log("📊 PortfolioTokenSelectionPage: Token data state:", {
     tokenCount: tokens.length,
@@ -82,7 +128,11 @@ export const TokenSelection: React.FC = () => {
     new Map(),
   );
   const [marketCapFilter, setMarketCapFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  
+  // Debounce search query to reduce filtering operations
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms delay
   const [contest, setContest] = useState<Contest | null>(null);
   const user = useStore((state) => state.user);
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
@@ -163,11 +213,13 @@ export const TokenSelection: React.FC = () => {
     });
   }, [contestId, contest]);
 
-  // NEW: Simplified token processing since we get standardized Token[] format
+  // NEW: Simplified token processing with 1000 token limit
   const memoizedTokens = useMemo(() => {
     console.log("🔄 PortfolioTokenSelectionPage: Processing tokens, count:", tokens.length);
-    // Tokens are already in the correct format from useStandardizedTokenData!
-    return tokens;
+    // Limit to 1000 tokens for performance and apply to already sorted tokens
+    const limitedTokens = tokens.slice(0, 1000);
+    console.log("🔄 PortfolioTokenSelectionPage: Limited to:", limitedTokens.length, "tokens");
+    return limitedTokens;
   }, [tokens]);
 
   // Memoize the token selection handler
@@ -246,6 +298,9 @@ export const TokenSelection: React.FC = () => {
       return;
     }
 
+    // Capture signature in local variable to avoid React state race condition
+    let confirmedSignature: string | undefined;
+    
     try {
       setIsLoading(true);
 
@@ -326,7 +381,7 @@ export const TokenSelection: React.FC = () => {
       console.log(
         "Requesting transaction signature and submission from Phantom using recommended signAndSendTransaction method...",
       );
-
+      
       try {
         // Use signAndSendTransaction in a single call with the transaction object as a property
         // This is the correct approach according to Phantom's documentation
@@ -334,6 +389,7 @@ export const TokenSelection: React.FC = () => {
           transaction, // Must be passed as a property of an options object
         });
         console.log("Transaction sent, signature:", signature);
+        confirmedSignature = signature; // Store locally to avoid race condition
 
         setTransactionState({
           status: "sending",
@@ -403,9 +459,14 @@ export const TokenSelection: React.FC = () => {
         ),
       };
 
+      // Ensure we have a valid signature before proceeding
+      if (!confirmedSignature) {
+        throw new Error("Transaction signature not available");
+      }
+
       await ddApi.contests.enterContestWithPortfolio(
         contestId,
-        transactionState.signature || "",
+        confirmedSignature, // Use local variable instead of potentially stale state
         portfolioData,
       );
 
@@ -413,24 +474,22 @@ export const TokenSelection: React.FC = () => {
       setTransactionState({
         status: "success",
         message: "Success! You have entered the contest.",
-        signature: transactionState.signature,
+        signature: confirmedSignature,
       });
 
       toast.success(
         <div>
           <div>Successfully entered contest!</div>
-          {transactionState.signature && (
-            <div className="text-xs mt-1">
-              <a
-                href={`https://solscan.io/tx/${transactionState.signature}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand-400 hover:text-brand-300"
-              >
-                View transaction on Solscan
-              </a>
-            </div>
-          )}
+          <div className="text-xs mt-1">
+            <a
+              href={`https://solscan.io/tx/${confirmedSignature}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-400 hover:text-brand-300"
+            >
+              View transaction on Solscan
+            </a>
+          </div>
         </div>,
         { duration: 5000 },
       );
@@ -444,7 +503,7 @@ export const TokenSelection: React.FC = () => {
         status: "error",
         message: "Error entering contest",
         error: errorMsg,
-        signature: transactionState.signature,
+        signature: confirmedSignature || transactionState.signature,
       });
 
       console.error("Contest entry failed:", {
@@ -471,33 +530,91 @@ export const TokenSelection: React.FC = () => {
   });
 
   if (tokenListLoading) {
-    console.log("⏳ PortfolioTokenSelectionPage: Rendering loading state");
+    console.log("⏳ PortfolioTokenSelectionPage: Rendering skeleton loading state");
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh',
-        backgroundColor: '#1a1a1a',
-        color: '#10b981',
-        fontFamily: 'monospace'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '50px', 
-            height: '50px', 
-            border: '3px solid #10b981', 
-            borderTop: '3px solid transparent',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
-          }} />
-          <h2>LOADING PORTFOLIO TOKENS...</h2>
-          <p>Tokens: {tokens.length} | Connected: {isTokenDataConnected ? 'YES' : 'NO'}</p>
+      <div className="flex flex-col min-h-screen">
+        {/* Background effects */}
+        <div className="fixed inset-0 z-0">
+          <div className="absolute inset-0 bg-dark-100"></div>
+          <div 
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, rgba(34, 197, 94, 0.3) 0px, transparent 1px, transparent 20px, rgba(34, 197, 94, 0.3) 21px)',
+              backgroundSize: '20px 40px'
+            }}
+          />
         </div>
-        <style dangerouslySetInnerHTML={{
-          __html: `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`
-        }} />
+
+        {/* Content */}
+        <div className="relative z-10">
+          <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
+            {/* Header */}
+            <div className="mb-4 sm:mb-8 text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 font-mono">
+                <span className="text-emerald-400">[</span>
+                BUILD PORTFOLIO
+                <span className="text-emerald-400">]</span>
+              </h1>
+              <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-mono">
+                LOADING.TOKENS → PREPARING.SELECTION
+              </p>
+              
+              {/* Loading indicator */}
+              <div className="mt-2 flex justify-center items-center gap-2 text-xs">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-mono text-emerald-400">
+                  LOADING.DATA.STREAM ({tokens.length}/1000)
+                </span>
+              </div>
+            </div>
+
+            {/* Skeleton Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 pb-24 lg:pb-0">
+              <div className="lg:col-span-2">
+                <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20">
+                  <div className="p-3 sm:p-6">
+                    <div className="mb-4 flex justify-between items-center">
+                      <Skeleton className="h-6 w-32" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    
+                    {/* Filters skeleton */}
+                    <div className="mb-6 space-y-4">
+                      <Skeleton className="h-10 w-full" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-8 w-32" />
+                        <Skeleton className="h-8 w-32" />
+                        <Skeleton className="h-8 w-32" />
+                      </div>
+                    </div>
+                    
+                    {/* Token grid skeleton */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                      {Array.from({ length: 12 }).map((_, i) => (
+                        <TokenCardSkeleton key={i} />
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              </div>
+              
+              {/* Portfolio summary skeleton */}
+              <div className="hidden lg:block">
+                <div className="sticky top-4">
+                  <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20">
+                    <div className="p-4 sm:p-6">
+                      <Skeleton className="h-6 w-40 mb-4" />
+                      <div className="space-y-4">
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -615,6 +732,8 @@ export const TokenSelection: React.FC = () => {
                       <TokenFilters
                         marketCapFilter={marketCapFilter}
                         onMarketCapFilterChange={setMarketCapFilter}
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
                         viewMode={viewMode}
                         onViewModeChange={setViewMode}
                       />
@@ -638,6 +757,7 @@ export const TokenSelection: React.FC = () => {
                           selectedTokens={selectedTokens}
                           onTokenSelect={handleTokenSelect}
                           marketCapFilter={marketCapFilter}
+                          searchQuery={debouncedSearchQuery}
                           viewMode={viewMode}
                         />
                       )}
