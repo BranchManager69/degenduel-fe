@@ -11,7 +11,7 @@
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { FloatingBelieveButton } from './FloatingBelieveButton';
 import { FloatingDexscreenerButton } from './FloatingDexscreenerButton';
 import { FloatingJupButton } from './FloatingJupButton';
@@ -28,19 +28,6 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
   tokenSymbol, 
   enabled = true 
 }) => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect mobile devices
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
-
   // Button configurations
   const buttons = [
     { 
@@ -111,7 +98,7 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
       animate="visible"
     >
       <AnimatePresence>
-        {buttons.map((buttonConfig, index) => {
+        {buttons.map((buttonConfig) => {
           const ButtonComponent = buttonConfig.component;
           
           return (

@@ -48,10 +48,11 @@ export const FloatingBelieveButton: React.FC<FloatingBelieveButtonProps> = ({ on
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       <motion.div
-        className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border border-emerald-500/50 rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
+        className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
+        style={{ borderColor: 'rgba(0, 208, 68, 0.5)' }}
         whileHover={{ 
-          borderColor: 'rgba(16, 185, 129, 0.8)',
-          boxShadow: '0 0 25px rgba(16, 185, 129, 0.6), 0 0 50px rgba(16, 185, 129, 0.3)'
+          borderColor: 'rgba(0, 208, 68, 0.8)',
+          boxShadow: '0 0 25px rgba(0, 208, 68, 0.6), 0 0 50px rgba(0, 208, 68, 0.3)'
         }}
         transition={{ duration: 0.3 }}
       >
