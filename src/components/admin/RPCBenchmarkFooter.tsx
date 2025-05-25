@@ -114,7 +114,7 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
   const currentDisplay = displays[rotationIndex];
 
   return (
-    <div className={`flex items-center gap-1 ${compactMode ? 'scale-90 transform-origin-left' : ''}`}>
+    <div className={`flex items-center gap-1 ${compactMode ? 'scale-90 transform-origin-left' : ''} sm:gap-1.5`}>
       <motion.span 
         className="text-cyan-400 text-xs font-mono cursor-help"
         whileHover={{ scale: 1.05 }}
@@ -186,7 +186,7 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
           style={{ backgroundColor: getTokensColor(activeTokens) }}
         >
           <span className="text-[7px] font-mono text-black font-bold leading-none">
-            {activeTokens > 999 ? `${Math.round(activeTokens/1000)}k` : activeTokens}
+            {activeTokens >= 10000 ? `${Math.round(activeTokens/1000)}k` : activeTokens}
           </span>
         </div>
       </motion.div>
