@@ -3,7 +3,8 @@
 /**
  * useRPCBenchmark Hook
  * 
- * @description Standardized hook for the RPC benchmark system that provides real-time benchmark data and controls for admin users.
+ * @description Public hook for accessing RPC benchmark data via SYSTEM WebSocket topic
+ * NO AUTHENTICATION REQUIRED - public data
  * 
  * @author BranchManager69
  * @version 1.0.0
@@ -48,18 +49,8 @@ export interface RPCBenchmarkData {
   performance_advantage: RPCPerformanceAdvantage[];
 }
 
-// Message types from v69 Unified WebSocket System
-interface BenchmarkMessage {
-  type: string;
-  topic: string;
-  subtype: string;
-  action: string;
-  data: any;
-  timestamp: string;
-}
-
 /**
- * useRPCBenchmark hook for accessing and controlling RPC benchmark data
+ * useRPCBenchmark hook for accessing RPC benchmark data via public SYSTEM WebSocket
  * 
  * @returns RPC benchmark data, status, and control functions
  */
@@ -68,6 +59,7 @@ export function useRPCBenchmark() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBenchmarkRunning, setIsBenchmarkRunning] = useState<boolean>(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Create a mutable ref to store the latest benchmark data
   const dataRef = useRef<RPCBenchmarkData | null>(null);
@@ -82,40 +74,76 @@ export function useRPCBenchmark() {
   }, []);
 
   // Process incoming messages
-  const handleMessage = useCallback((message: BenchmarkMessage) => {
-    if (!isMessageType(message.type, DDExtendedMessageType.DATA)) {
+  const handleMessage = useCallback((message: {
+    type: string;
+    action?: string;
+    data?: any;
+    topic?: string;
+    subtype?: string;
+    code?: number;
+    error?: string;
+  }) => {
+    // Handle successful RPC benchmark data responses
+    if (message.type === 'RESPONSE' &&
+      message.action === 'rpc-benchmarks/latest' &&
+      message.data) {
+      console.log('[RPC Benchmark] Received data:', message.data);
+      updateData(message.data);
+      setIsBenchmarkRunning(false);
+      setIsLoading(false);
+      setError(null);
       return;
     }
 
-    try {
-      const { topic, subtype, action, data } = message;
+    // Handle DATA messages for real-time updates
+    if (isMessageType(message.type, DDExtendedMessageType.DATA)) {
+      try {
+        const { topic, subtype, action, data } = message;
 
-      if (topic === TopicType.SYSTEM) {
-        if (subtype === 'rpc-benchmark') {
-          if (action === 'update') {
-            // Updated benchmark data
-            if (data && data.test_run_id) {
-              updateData(data);
-              setIsBenchmarkRunning(false);
-              setIsLoading(false);
-            }
-          } else if (action === 'status') {
-            // Benchmark status update
-            if (data && data.running !== undefined) {
-              setIsBenchmarkRunning(data.running);
-            }
-          } else if (action === 'result') {
-            // Complete benchmark result
-            if (data) {
-              updateData(data);
-              setIsBenchmarkRunning(false);
-              setIsLoading(false);
+        if (topic === TopicType.SYSTEM) {
+          if (subtype === 'rpc-benchmark') {
+            if (action === 'update') {
+              // Updated benchmark data
+              if (data && data.test_run_id) {
+                updateData(data);
+                setIsBenchmarkRunning(false);
+                setIsLoading(false);
+                setError(null);
+              }
+            } else if (action === 'status') {
+              // Benchmark status update
+              if (data && data.running !== undefined) {
+                setIsBenchmarkRunning(data.running);
+              }
+            } else if (action === 'result') {
+              // Complete benchmark result
+              if (data) {
+                updateData(data);
+                setIsBenchmarkRunning(false);
+                setIsLoading(false);
+                setError(null);
+              }
             }
           }
         }
+      } catch (err) {
+        console.error('Error processing RPC benchmark message:', err);
       }
-    } catch (error) {
-      console.error('Error processing RPC benchmark message:', error);
+    }
+
+    // Handle errors gracefully (like database stats hook)
+    if (message.type === 'ERROR') {
+      console.error('[RPC Benchmark] WebSocket error:', message);
+
+      // Handle errors (should be rare since this is public data)
+      if (message.code === 4003 || message.error?.includes('Authentication required')) {
+        setError('RPC benchmark temporarily unavailable');
+      } else if (message.code === 4012 || message.error?.includes('Admin/superadmin role required')) {
+        setError('RPC benchmark access issue (this should not happen for public data)');
+      } else {
+        setError(message.error || 'RPC benchmark unavailable');
+      }
+      setIsLoading(false);
     }
   }, [updateData]);
 
@@ -183,7 +211,7 @@ export function useRPCBenchmark() {
     isBenchmarkRunning,
     isConnected: ws.isConnected,
     isAuthenticated: ws.isAuthenticated,
-    error: ws.error,
+    error: error || ws.error,
     lastUpdate,
     refreshData: fetchLatestBenchmarkData,
     triggerBenchmark
