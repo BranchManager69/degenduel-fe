@@ -92,6 +92,7 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollableContentRef = useRef<HTMLDivElement>(null);
+  const floatingTabsRef = useRef<HTMLDivElement>(null);
   const translateXRef = useRef<number>(0);
   const animationFrameIdRef = useRef<number | null>(null);
   const isInteractingRef = useRef<boolean>(false);
@@ -103,6 +104,13 @@ export const UnifiedTicker: React.FC<Props> = ({
   const lastTimestampRef = useRef<number>(0);
   const actualContentWidthRef = useRef<number>(0);
   const [measurementNonce, setMeasurementNonce] = useState(0);
+
+  // Grace period state for WebSocket connection issues (similar to Footer)
+  const [wsDisconnectTime, setWsDisconnectTime] = useState<number | null>(null);
+  const [isInWsGracePeriod, setIsInWsGracePeriod] = useState(false);
+  
+  // Dynamic padding based on floating tabs width to prevent content overlap
+  const [tabsWidth, setTabsWidth] = useState(160); // Default fallback
 
   const isOverallLoading = useMemo(() => {
     const overall = contestsLoadingProp || tokensAreLoading;
@@ -159,6 +167,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     };
   }, [viewportWidth]);
 
+  // Animate the scroll of the ticker
   const animateScroll = useCallback((timestamp: number) => {
     if (!scrollableContentRef.current || isInteractingRef.current || isHoverPausedRef.current) {
       animationFrameIdRef.current = null; 
@@ -186,6 +195,78 @@ export const UnifiedTicker: React.FC<Props> = ({
 
     animationFrameIdRef.current = requestAnimationFrame(animateScroll);
   }, []);
+
+  // Effect to start/stop animation based on content and viewport
+  useEffect(() => {
+    // Only start animation if we have content that overflows
+    if (actualContentWidthRef.current > viewportWidth && 
+        !isInteractingRef.current && 
+        !isHoverPausedRef.current && 
+        !animationFrameIdRef.current) {
+      lastTimestampRef.current = 0;
+      animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+      }
+    };
+  }, [actualContentWidthRef.current, viewportWidth, animateScroll]);
+
+  // Handle grace period for WebSocket connection issues (similar to Footer)
+  useEffect(() => {
+    const GRACE_PERIOD_MS = 8000; // 8 seconds buffer, same as Footer
+
+    if (!isDataConnected) {
+      // Just disconnected
+      if (wsDisconnectTime === null) {
+        const now = Date.now();
+        setWsDisconnectTime(now);
+        setIsInWsGracePeriod(true);
+
+        // Set timeout to end grace period
+        const timeout = setTimeout(() => {
+          setIsInWsGracePeriod(false);
+        }, GRACE_PERIOD_MS);
+
+        return () => clearTimeout(timeout);
+      }
+    } else if (isDataConnected) {
+      // Reconnected - clear grace period
+      setWsDisconnectTime(null);
+      setIsInWsGracePeriod(false);
+    }
+  }, [isDataConnected, wsDisconnectTime]);
+
+  // Measure floating tabs width for proper content padding
+  useEffect(() => {
+    const measureTabsWidth = () => {
+      if (floatingTabsRef.current) {
+        const width = floatingTabsRef.current.offsetWidth;
+        const padding = width + 16; // Add 16px buffer to the right of refresh button
+        setTabsWidth(padding);
+        
+        if (TICKER_DEBUG_MODE) {
+          console.log(`UnifiedTicker: Measured tabs width: ${width}px, setting padding: ${padding}px`);
+        }
+      }
+    };
+
+    // Measure after a short delay to ensure tabs are rendered
+    const timeoutId = setTimeout(measureTabsWidth, 100);
+    
+    // Re-measure on window resize
+    const handleResize = () => measureTabsWidth();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [activeTab, isRefreshing]); // Re-measure when tabs change
 
   const handleManualRefresh = useCallback(async () => {
     if (TICKER_DEBUG_MODE) {
@@ -363,11 +444,11 @@ export const UnifiedTicker: React.FC<Props> = ({
     }
     
     if (items.length === 0 && !isOverallLoading && !showError && !showSystemError) {
-        const message = !isDataConnected ? "WEBSOCKET OFFLINE" : 
+        const message = (!isDataConnected && !isInWsGracePeriod) ? "WEBSOCKET OFFLINE" : 
                         activeTab === "contests" ? "NO ACTIVE DUELS" :
                         activeTab === "tokens" ? "NO SIGNIFICANT TOKEN MOVEMENT" :
                         "NO DATA AVAILABLE";
-        const icon = !isDataConnected ? <WifiOff className="w-3 h-3 mr-1.5 text-orange-400" /> : 
+        const icon = (!isDataConnected && !isInWsGracePeriod) ? <WifiOff className="w-3 h-3 mr-1.5 text-orange-400" /> : 
                      <AlertTriangle className="w-3 h-3 mr-1.5 text-yellow-400" />;
         items.push(
             <div key="no-data-ticker" className="flex items-center justify-center px-4 py-2 h-full w-full text-center"> {/* This key is fine */}
@@ -377,7 +458,26 @@ export const UnifiedTicker: React.FC<Props> = ({
         );
     }
     return items;
-  }, [activeTab, sortedContests, significantChanges, storeError, systemError, isOverallLoading, isDataConnected]);
+  }, [activeTab, sortedContests, significantChanges, storeError, systemError, isOverallLoading, isDataConnected, isInWsGracePeriod]);
+
+  // Auto-start animation when content is ready and overflows (after originalTickerItems is defined)
+  useEffect(() => {
+    // Start animation if content overflows and no animation is running
+    if (actualContentWidthRef.current > 0 && 
+        actualContentWidthRef.current > viewportWidth && 
+        !isInteractingRef.current && 
+        !isHoverPausedRef.current && 
+        !animationFrameIdRef.current &&
+        originalTickerItems.length > 0) {
+      
+      lastTimestampRef.current = 0;
+      animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+      
+      if (TICKER_DEBUG_MODE) {
+        console.log(`UnifiedTicker: Auto-starting animation. Content: ${actualContentWidthRef.current}px, Viewport: ${viewportWidth}px`);
+      }
+    }
+  }, [actualContentWidthRef.current, viewportWidth, originalTickerItems.length, animateScroll]);
 
   // Effect to measure the actual content width AFTER original items are rendered
   useLayoutEffect(() => {
@@ -612,7 +712,8 @@ export const UnifiedTicker: React.FC<Props> = ({
     return (
       <div
         ref={viewportRef}
-        className={`h-full w-full overflow-hidden ${actualContentWidthRef.current > viewportWidth ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} pl-40`}
+        className={`h-full w-full overflow-hidden ${actualContentWidthRef.current > viewportWidth ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+        style={{ paddingLeft: `${tabsWidth}px` }}
         onMouseDown={actualContentWidthRef.current > viewportWidth ? onMouseDown : undefined}
         onMouseMove={actualContentWidthRef.current > viewportWidth ? onMouseMove : undefined}
         onMouseUp={actualContentWidthRef.current > viewportWidth ? onMouseUpOrLeave : undefined}
@@ -671,7 +772,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   }, [handleInteractionMove]); // Add handleInteractionMove to dependencies
 
   const floatingTabs = (
-    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex space-x-0.5">
+    <div ref={floatingTabsRef} className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex space-x-0.5">
       <AnimatePresence>
         <motion.button
           key="tab-all"
@@ -862,6 +963,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         <div>Size: {viewportWidth}px</div>
         <div>Contests: {sortedContests.length}, Tokens: {significantChanges.length}</div>
         <div>WebSocket: {isDataConnected ? 'Connected' : 'Disconnected'}</div>
+        <div>Grace Period: {isInWsGracePeriod ? 'Active' : 'Inactive'}</div>
       </div>
     </div>
   );
