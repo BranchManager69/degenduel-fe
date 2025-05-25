@@ -13,6 +13,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
+import PortfolioPreviewModal from "../../components/portfolio-selection/PortfolioPreviewModal";
 import { TokenFilters } from "../../components/portfolio-selection/TokenFilters";
 import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
 import { Button } from "../../components/ui/Button";
@@ -134,6 +135,7 @@ export const TokenSelection: React.FC = () => {
   // Debounce search query to reduce filtering operations
   const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms delay
   const [contest, setContest] = useState<Contest | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const user = useStore((state) => state.user);
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -281,6 +283,42 @@ export const TokenSelection: React.FC = () => {
     }
     return null;
   }, [totalWeight, selectedTokens.size]);
+
+  const handlePreviewPortfolio = () => {
+    setShowPreviewModal(true);
+  };
+
+  // Generate portfolio summary for the modal
+  const portfolioSummary = useMemo(() => {
+    if (selectedTokens.size === 0) return '';
+    
+    const tokenEntries = Array.from(selectedTokens.entries())
+      .map(([contractAddress, weight]) => {
+        const token = memoizedTokens.find(t => t.contractAddress === contractAddress);
+        return `${token?.symbol || 'Unknown'} (${weight}%)`;
+      })
+      .join(', ');
+    
+    return tokenEntries;
+  }, [selectedTokens, memoizedTokens]);
+
+  const portfolioDetails = useMemo(() => {
+    const tokens = Array.from(selectedTokens.entries())
+      .map(([contractAddress, weight]) => {
+        const token = memoizedTokens.find(t => t.contractAddress === contractAddress);
+        return {
+          symbol: token?.symbol || 'Unknown',
+          weight,
+          price: token?.price ? Number(token.price) : undefined
+        };
+      })
+      .sort((a, b) => b.weight - a.weight); // Sort by weight descending
+
+    return {
+      name: `Portfolio for ${contest?.name || 'Contest'}`,
+      tokens
+    };
+  }, [selectedTokens, memoizedTokens, contest?.name]);
 
   const handleSubmit = async () => {
     if (!contest || !contestId) {
@@ -858,7 +896,7 @@ export const TokenSelection: React.FC = () => {
                         )}
 
                         <Button
-                          onClick={handleSubmit}
+                          onClick={handlePreviewPortfolio}
                           disabled={
                             loadingEntryStatus ||
                             portfolioValidation !== null ||
@@ -874,7 +912,7 @@ export const TokenSelection: React.FC = () => {
                                 [DEPLOYING...]
                               </div>
                             ) : (
-                              "[DEPLOY.PORTFOLIO]"
+                              "[PREVIEW.PORTFOLIO]"
                             )}
                           </span>
                         </Button>
@@ -895,7 +933,7 @@ export const TokenSelection: React.FC = () => {
             <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent">
               <div className="max-w-md mx-auto">
                 <Button
-                  onClick={handleSubmit}
+                  onClick={handlePreviewPortfolio}
                   disabled={
                     loadingEntryStatus ||
                     portfolioValidation !== null ||
@@ -910,7 +948,7 @@ export const TokenSelection: React.FC = () => {
                       <div>[DEPLOYING...]</div>
                     ) : (
                       <>
-                        <span className="font-medium">[DEPLOY]</span>
+                        <span className="font-medium">[PREVIEW]</span>
                         <span className="text-emerald-400">{totalWeight}%</span>
                       </>
                     )}
@@ -936,6 +974,19 @@ export const TokenSelection: React.FC = () => {
           }
         `
       }} />
+
+      {/* Portfolio Preview Modal */}
+      <PortfolioPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        source="recent"
+        summary={portfolioSummary}
+        portfolioDetails={portfolioDetails}
+        onConfirm={() => {
+          setShowPreviewModal(false);
+          handleSubmit();
+        }}
+      />
     </ErrorBoundary>
   );
 };

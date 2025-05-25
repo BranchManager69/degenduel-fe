@@ -49,7 +49,7 @@ export interface AIBaseOptions {
 
 export interface ChatOptions extends AIBaseOptions {
   conversationId?: string; // For client-side caching
-  context?: 'default' | 'trading' | 'terminal'; // DegenDuel specific context for backend prompt engineering
+  context?: 'default' | 'trading' | 'terminal' | 'ui_terminal'; // DegenDuel specific context for backend prompt engineering
 
   // Standard OpenAI Chat Completion parameters (subset for frontend control)
   model?: string; // e.g., 'gpt-4', 'gpt-3.5-turbo' - backend might override
@@ -67,6 +67,15 @@ export interface ChatOptions extends AIBaseOptions {
   // Streaming options (handled by client logic)
   streaming?: boolean; // If true, use streaming endpoint
   onChunk?: (chunk: string) => void; // Callback for streaming chunks
+  
+  // NEW: Dynamic UI generation options
+  structured_output?: boolean; // Enable UI action generation
+  ui_context?: {
+    page?: string; // Current page context
+    available_components?: string[]; // Components that can be generated
+    user_portfolio?: any; // User's portfolio data for context
+    current_view?: string; // Current view state
+  };
 }
 
 export interface ChatResponse {
@@ -78,6 +87,19 @@ export interface ChatResponse {
     function: { name: string; arguments: string; };
   }[];
   conversationId: string;
+  
+  // NEW: Dynamic UI actions
+  ui_actions?: Array<{
+    type: 'create_component' | 'update_component' | 'remove_component' | 'replace_component';
+    component: string;
+    data?: any;
+    placement?: 'above_terminal' | 'below_terminal' | 'sidebar_left' | 'sidebar_right' | 'fullscreen' | 'inline';
+    id: string;
+    animation?: 'fade_in' | 'slide_up' | 'slide_down' | 'scale_in' | 'none';
+    duration?: number;
+    title?: string;
+    closeable?: boolean;
+  }>;
 }
 
 // --- Profile Image Interfaces & Options ---
@@ -194,7 +216,7 @@ class AIService {
   //   @see https://platform.openai.com/docs/api-reference/responses
 
   /**
-   * Generate a streaming chat completion using the stream API
+   * Generate a streaming chat completion using the proper SSE API
    * 
    * @param messages Array of messages in the conversation
    * @param options Configuration options
@@ -203,31 +225,40 @@ class AIService {
   private async chatStreaming(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
     let responseController: AbortController | undefined;
     try {
-      // Get auth token for the request (still useful for logging/potential future use, but don't block on it)
+      // Get auth token for the request
       console.log('[AI Service Stream] About to attempt token retrieval. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
       const token = await authService.getToken();
       console.log('[AI Service Stream] Token retrieved:', token ? `Exists (len: ${token.length})` : 'NULL or Undefined');
 
       const streamUrl = `${this.API_AI_SVC_REST_URL}/stream`;
-      responseController = new AbortController(); // Create AbortController
+      responseController = new AbortController();
 
+      // Proper SSE request format matching the guide
       const response = await fetch(streamUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'text/event-stream', // Critical for SSE
           // Only include Auth header if token exists
           ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify({
           messages,
-          conversationId: options.conversationId,
-          context: options.context || 'terminal'
+          context: options.context || 'terminal',
+          loadout: 'default', // Add loadout parameter
+          stream: true, // Explicitly enable streaming
+          max_tokens: options.max_tokens || 400,
+          temperature: options.temperature || 0.6,
+          // Include conversation ID if available
+          ...(options.conversationId && { conversationId: options.conversationId }),
+          // NEW: Structured output options
+          ...(options.structured_output && { structured_output: true }),
+          ...(options.ui_context && { ui_context: options.ui_context })
         }),
-        signal: responseController.signal, // Pass signal to fetch
+        signal: responseController.signal,
       });
 
       if (!response.ok) {
-        // Throw error based on response, potentially parsing JSON error
         throw await this.handleErrorResponse(response);
       }
 
@@ -235,91 +266,123 @@ class AIService {
         throw new AIServiceError('Response body is missing in streaming response.', AIErrorType.SERVER);
       }
 
-      // Process the streaming response using SSE logic
+      // Process the streaming response using proper SSE parsing
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
       let responseConversationId = options.conversationId || '';
-      let leftover = ''; // Buffer for partial lines
+      let buffer = ''; // Buffer for partial lines
+      let functionCalls: any[] = [];
+      let uiActions: any[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          // Stream finished without an explicit isComplete=true event from the server
-          // This might be normal or indicate an unexpected closure.
-          console.debug('[AI Service Stream] SSE stream ended without isComplete=true event.');
+          console.debug('[AI Service Stream] SSE stream ended.');
           break;
         }
 
-        // Prepend leftover data from the previous chunk
-        const chunkText = leftover + decoder.decode(value, { stream: true });
-        const lines = chunkText.split(/\r?\n/); // Split into lines
-
-        // The last line might be incomplete, keep it for the next chunk
-        leftover = lines.pop() || '';
+        // Append new data to buffer
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Keep the last potentially incomplete line in the buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data:')) {
-            const jsonData = line.substring(5).trim(); // Remove "data:" prefix and trim whitespace
+          if (line.startsWith('data: ')) {
+            const jsonData = line.substring(6).trim();
             if (jsonData) {
               try {
-                const parsedData = JSON.parse(jsonData);
-
-                if (parsedData.error) {
-                  // Server sent an explicit error object
-                  console.error('[AI Service Stream] Received error from server:', parsedData.error);
-                  reader.cancel(); // Stop reading the stream
-                  throw new AIServiceError(parsedData.error, AIErrorType.SERVER); // Reject the promise
-                }
-
-                if (parsedData.conversationId) {
-                  responseConversationId = parsedData.conversationId;
-                }
-
-                if (parsedData.content) {
-                  fullContent += parsedData.content;
-                  if (options.onChunk) {
-                    options.onChunk(parsedData.content); // Pass only content string
-                  }
-                }
-
-                if (parsedData.isComplete === true) {
-                  console.debug('[AI Service Stream] SSE stream processing complete.');
-                  // Don't break here immediately, allow reader.read() to return { done: true }
-                  // reader.cancel(); // Optionally cancel reading explicitly
-                  // The loop will terminate naturally when done is true.
-                  // Resolve will happen outside the loop.
+                const eventData = JSON.parse(jsonData);
+                
+                // Handle different event types based on the guide
+                switch (eventData.type) {
+                  case 'chunk':
+                    if (eventData.delta) {
+                      fullContent += eventData.delta;
+                      if (options.onChunk) {
+                        options.onChunk(eventData.delta);
+                      }
+                    }
+                    break;
+                    
+                  case 'function_call':
+                    console.log('[AI Service Stream] Function call:', eventData.function);
+                    functionCalls.push({
+                      id: eventData.function.name + '_' + Date.now(),
+                      type: 'function',
+                      function: eventData.function
+                    });
+                    if (options.onChunk) {
+                      options.onChunk(`[Calling function: ${eventData.function.name}...]\n`);
+                    }
+                    break;
+                    
+                  case 'function_result':
+                    console.log('[AI Service Stream] Function result:', eventData.result);
+                    if (options.onChunk) {
+                      options.onChunk(`[Function result received]\n`);
+                    }
+                    break;
+                    
+                  case 'ui_action':
+                    console.log('[AI Service Stream] UI Action:', eventData.action);
+                    uiActions.push(eventData.action);
+                    if (options.onChunk) {
+                      options.onChunk(`[Generating ${eventData.action.component}...]\n`);
+                    }
+                    break;
+                    
+                  case 'done':
+                    console.debug('[AI Service Stream] Stream complete.');
+                    if (eventData.usage) {
+                      console.log('[AI Service Stream] Token usage:', eventData.usage);
+                    }
+                    // Stream is done, will exit loop naturally
+                    break;
+                    
+                  case 'error':
+                    console.error('[AI Service Stream] Received error:', eventData.error);
+                    reader.cancel();
+                    throw new AIServiceError(eventData.error, AIErrorType.SERVER);
+                    
+                  default:
+                    console.debug('[AI Service Stream] Unknown event type:', eventData.type, eventData);
                 }
 
               } catch (e) {
-                console.error('[AI Service Stream] Failed to parse SSE data JSON:', jsonData, e);
-                // Decide how to handle potentially malformed data from the server
-                // Option 1: Ignore the chunk
-                // Option 2: Treat as raw text (less likely for SSE)
-                // Option 3: Throw an error
-                // Current: Ignoring
+                console.error('[AI Service Stream] Failed to parse SSE event:', jsonData, e);
+                // Continue processing other events
               }
             }
-          } else if (line.trim()) {
-            // Handle non-empty lines that don't start with "data:" (e.g., comments, other event types)
-            console.debug(`[AI Service Stream] Received non-data SSE line: ${line}`);
           }
         }
       }
 
       // Update conversation cache only after successful completion
-      if (responseConversationId) {
+      if (responseConversationId || fullContent) {
         const updatedHistory = [
           ...messages,
-          { role: 'assistant' as const, content: fullContent }
+          { 
+            role: 'assistant' as const, 
+            content: fullContent,
+            ...(functionCalls.length > 0 && { tool_calls: functionCalls })
+          }
         ];
-        this.conversationCache.set(responseConversationId, updatedHistory);
+        
+        const cacheId = responseConversationId || this.generateConversationId();
+        this.conversationCache.set(cacheId, updatedHistory);
+        responseConversationId = cacheId;
       }
 
       return {
         content: fullContent,
+        tool_calls: functionCalls.length > 0 ? functionCalls : undefined,
+        ui_actions: uiActions.length > 0 ? uiActions : undefined,
         conversationId: responseConversationId
       };
+      
     } catch (error) {
       // Ensure the fetch request is aborted if an error occurs
       if (responseController && !responseController.signal.aborted) {
@@ -331,16 +394,24 @@ class AIService {
       }
 
       console.error('AI Streaming Error:', error);
-      // Check if it's an AbortError (e.g., from reader.cancel() or controller.abort())
+      
+      // Check if it's an AbortError
       if (error instanceof Error && error.name === 'AbortError') {
         throw new AIServiceError('Streaming request aborted.', AIErrorType.UNKNOWN);
       }
 
       throw new AIServiceError(
         'Failed to get streaming AI response.',
-        AIErrorType.NETWORK // Or map based on error type if possible
+        AIErrorType.NETWORK
       );
     }
+  }
+
+  /**
+   * Generate a conversation ID for caching
+   */
+  private generateConversationId(): string {
+    return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
 
   /**

@@ -1138,7 +1138,7 @@ export const ContestResults: React.FC = () => {
       <AnimatePresence>
         {activeTab !== 'chat' && (
           <motion.button
-            className="md:hidden fixed bottom-6 right-6 bg-brand-500 text-white rounded-full p-3 shadow-lg z-20 flex items-center justify-center"
+            className="md:hidden fixed bottom-16 right-6 bg-brand-500 text-white rounded-full p-3 shadow-lg z-20 flex items-center justify-center"
             onClick={() => {
               setActiveTab('chat');
               setUnreadMessages(0);

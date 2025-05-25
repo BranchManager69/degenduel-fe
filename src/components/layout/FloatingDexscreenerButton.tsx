@@ -22,10 +22,10 @@ export const FloatingDexscreenerButton: React.FC<FloatingDexscreenerButtonProps>
     if (onClick) {
       onClick();
     } else if (tokenAddress) {
-      console.log(`Dexscreener button clicked! Token: ${tokenAddress}, linking to solana/${tokenAddress}`);
+      console.log(`Token: ${tokenAddress}, linking to solana/${tokenAddress}`);
       window.open(`https://dexscreener.com/solana/${tokenAddress}`, '_blank'); // Updated URL format
     } else {
-      console.log('Dexscreener button clicked! (No token address provided, opening general site)');
+      console.log('(No token address provided, opening general site)');
       window.open('https://dexscreener.com/solana', '_blank'); // Fallback to general Dexscreener Solana page
     }
   };
