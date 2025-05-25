@@ -218,19 +218,7 @@ export const UnifiedWebSocketProvider: React.FC<{
   const handleMessage = (event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data);
-      authDebug('WebSocketContext', 'Raw message received:', message); // Log raw message
-      
-      // DEBUG: Log authentication-related messages specifically
-      if (message.type === 'ACKNOWLEDGMENT' || message.operation === 'authenticate') {
-        authDebug('WebSocketContext', 'AUTHENTICATION MESSAGE DETECTED:', {
-          messageType: message.type,
-          expectedType: DDExtendedMessageType.ACKNOWLEDGMENT,
-          typeMatch: message.type === DDExtendedMessageType.ACKNOWLEDGMENT,
-          operation: message.operation,
-          status: message.status,
-          fullMessage: message
-        });
-      }
+      authDebug('WebSocketContext', 'Raw message received:', message);
 
       // Handle proper pong responses from backend
       if ((message.type === 'RESPONSE' || message.type === 'SYSTEM') && message.action === 'pong') {
@@ -250,38 +238,7 @@ export const UnifiedWebSocketProvider: React.FC<{
           message.operation === 'authenticate' && 
           message.status === 'success') {
         setConnectionState(ConnectionState.AUTHENTICATED);
-        authDebug('WebSocketContext', 'WebSocket authentication successful via authenticate ACK');
-        
-        // Clear auth timeout since authentication succeeded
-        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
-          clearTimeout((wsRef.current as any).__authTimeoutId);
-          delete (wsRef.current as any).__authTimeoutId;
-        }
-        return;
-      }
-      
-      // FALLBACK: Handle authentication ACK with string literal check (in case of enum mismatch)
-      if (message.type === 'ACKNOWLEDGMENT' && 
-          message.operation === 'authenticate' && 
-          message.status === 'success') {
-        setConnectionState(ConnectionState.AUTHENTICATED);
-        authDebug('WebSocketContext', 'WebSocket authentication successful via FALLBACK string check');
-        
-        // Clear auth timeout since authentication succeeded
-        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
-          clearTimeout((wsRef.current as any).__authTimeoutId);
-          delete (wsRef.current as any).__authTimeoutId;
-        }
-        return;
-      }
-      
-      // ADDITIONAL FALLBACK: Check for authentication success by message content
-      if ((message.type === 'ACKNOWLEDGMENT' || message.type === DDExtendedMessageType.ACKNOWLEDGMENT) && 
-          message.message && message.message.includes('authenticated')) {
-        setConnectionState(ConnectionState.AUTHENTICATED);
-        authDebug('WebSocketContext', 'WebSocket authentication successful via message content check', {
-          messageContent: message.message
-        });
+        authDebug('WebSocketContext', 'WebSocket authentication successful');
         
         // Clear auth timeout since authentication succeeded
         if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
