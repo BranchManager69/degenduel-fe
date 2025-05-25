@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { IconType } from "react-icons";
 import { FaCoins, FaDiscord, FaTelegram, FaTwitter } from "react-icons/fa";
 
@@ -14,6 +14,7 @@ interface TokenGridProps {
   onTokenSelect: (contractAddress: string, weight: number) => void;
   marketCapFilter: string;
   viewMode?: 'card' | 'list';
+  searchQuery?: string;
 }
 
 // Helper function for dynamic price formatting
@@ -34,7 +35,21 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
   onTokenSelect,
   marketCapFilter,
   viewMode = 'card',
+  searchQuery = '',
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const filteredTokens = tokens.filter((token) => {
     if (!marketCapFilter) return true;
 

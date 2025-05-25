@@ -69,7 +69,7 @@ export const TokenSelection: React.FC = () => {
     error: tokensError,
     isConnected: isTokenDataConnected,
     refresh: refreshTokens
-  } = useStandardizedTokenData("all", "marketCap", { status: "active" });
+  } = useStandardizedTokenData(1000, "marketCap", { status: "active" });
   
   console.log("📊 PortfolioTokenSelectionPage: Token data state:", {
     tokenCount: tokens.length,
