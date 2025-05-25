@@ -35,17 +35,22 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
     return () => clearInterval(interval);
   }, [data]);
 
-  // If there's no data, show minimal loading state
+  // If there's no data, show enhanced loading state with skeleton
   if (!isConnected || !isAuthenticated || !data) {
     return (
-      <div className="text-xs flex items-center gap-1">
-        <span className="text-cyan-400 font-mono">RPC:</span>
+      <div className="text-xs flex items-center gap-1 sm:gap-1.5">
+        <span className="text-cyan-400 font-mono text-xs sm:text-sm">RPC:</span>
         {isLoading ? (
-          <span className="text-gray-400 animate-pulse">●●●</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-gray-600 animate-pulse" />
+            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 bg-gray-600 animate-pulse" />
+            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 bg-gray-600 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+            <div className="w-5 h-3 sm:w-6 sm:h-3.5 bg-gray-600 animate-pulse" />
+          </div>
         ) : error ? (
-          <span className="text-red-400">●●●</span>
+          <span className="text-red-400 text-xs">Connection failed</span>
         ) : (
-          <span className="text-gray-400">●●●</span>
+          <span className="text-gray-400 text-xs">Connecting...</span>
         )}
       </div>
     );
@@ -114,12 +119,12 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
   const currentDisplay = displays[rotationIndex];
 
   return (
-    <div className={`flex items-center gap-1 ${compactMode ? 'scale-90 transform-origin-left' : ''} sm:gap-1.5`}>
+    <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 ${compactMode ? 'scale-90 transform-origin-left' : ''}`}>
       <motion.span 
-        className="text-cyan-400 text-xs font-mono cursor-help"
+        className="text-cyan-400 text-xs sm:text-sm font-mono cursor-help"
         whileHover={{ scale: 1.05 }}
         onClick={() => refreshData()}
-        title="refresh"
+        title="Click to refresh RPC metrics"
       >
         RPC:
       </motion.span>
@@ -128,13 +133,13 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
       <motion.div
         className="relative flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        title="latency"
+        title={`Average RPC latency: ${currentDisplay.latency}ms`}
       >
         <div 
-          className="w-3 h-3 rounded-full flex items-center justify-center"
+          className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex items-center justify-center"
           style={{ backgroundColor: getLatencyColor(currentDisplay.latency) }}
         >
-          <span className="text-[8px] font-mono text-black font-bold leading-none">
+          <span className="text-[7px] sm:text-[8px] font-mono text-black font-bold leading-none">
             {currentDisplay.latency}
           </span>
         </div>
@@ -144,13 +149,13 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
       <motion.div
         className="relative flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        title="success"
+        title={`RPC success rate: ${currentDisplay.success}%`}
       >
         <div 
-          className="w-3 h-3 flex items-center justify-center"
+          className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center"
           style={{ backgroundColor: getSuccessColor(currentDisplay.success) }}
         >
-          <span className="text-[8px] font-mono text-black font-bold leading-none">
+          <span className="text-[7px] sm:text-[8px] font-mono text-black font-bold leading-none">
             {currentDisplay.success}
           </span>
         </div>
@@ -160,16 +165,16 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
       <motion.div
         className="relative flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        title="methods"
+        title={`Active RPC methods: ${currentDisplay.methods}/${methods.length}`}
       >
         <div 
-          className="w-3 h-3 flex items-center justify-center"
+          className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center"
           style={{ 
             backgroundColor: getMethodsColor(currentDisplay.methods, methods.length),
             clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
           }}
         >
-          <span className="text-[8px] font-mono text-black font-bold leading-none mt-1">
+          <span className="text-[7px] sm:text-[8px] font-mono text-black font-bold leading-none mt-1">
             {currentDisplay.methods}
           </span>
         </div>
@@ -179,13 +184,13 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
       <motion.div
         className="relative flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        title="tokens"
+        title={`Active tokens in database: ${activeTokens.toLocaleString()}`}
       >
         <div 
-          className="w-5 h-3 flex items-center justify-center"
+          className="w-5 h-3 sm:w-6 sm:h-3.5 flex items-center justify-center"
           style={{ backgroundColor: getTokensColor(activeTokens) }}
         >
-          <span className="text-[7px] font-mono text-black font-bold leading-none">
+          <span className="text-[6px] sm:text-[7px] font-mono text-black font-bold leading-none">
             {activeTokens >= 10000 ? `${Math.round(activeTokens/1000)}k` : activeTokens}
           </span>
         </div>
