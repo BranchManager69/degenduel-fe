@@ -1,5 +1,5 @@
 import React from "react";
-import { FaList, FaThLarge } from "react-icons/fa";
+import { FaList, FaThLarge, FaSearch } from "react-icons/fa";
 
 import { Button } from "../ui/Button";
 
@@ -8,6 +8,8 @@ interface TokenFiltersProps {
   onMarketCapFilterChange: (filter: string) => void;
   viewMode?: 'card' | 'list';
   onViewModeChange?: (mode: 'card' | 'list') => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 }
 
 export const TokenFilters: React.FC<TokenFiltersProps> = ({
@@ -15,6 +17,8 @@ export const TokenFilters: React.FC<TokenFiltersProps> = ({
   onMarketCapFilterChange,
   viewMode = 'card',
   onViewModeChange,
+  searchQuery = '',
+  onSearchChange,
 }) => {
   const filters = [
     { id: "high-cap", label: "High Cap ($50M+)" },
@@ -28,6 +32,22 @@ export const TokenFilters: React.FC<TokenFiltersProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Search Bar */}
+      {onSearchChange && (
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FaSearch className="h-3 w-3 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search tokens by name, symbol, or address..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="block w-full pl-9 pr-3 py-2 text-sm bg-dark-300/50 border border-dark-300/60 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-colors"
+          />
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-medium text-gray-400">Market Cap</h3>
         
