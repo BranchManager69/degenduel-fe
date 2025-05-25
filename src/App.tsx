@@ -139,6 +139,8 @@ const Contact = lazy(() => import('./pages/public/general/Contact').then(module 
 const FAQ = lazy(() => import('./pages/public/general/FAQ').then(module => ({ default: module.FAQ })));
 const HowItWorks = lazy(() => import('./pages/public/general/HowItWorks').then(module => ({ default: module.HowItWorks })));
 const LoginPage = lazy(() => import('./pages/public/general/LoginPage'));
+const TermsOfService = lazy(() => import('./pages/public/general/TermsOfService').then(module => ({ default: module.TermsOfService })));
+const PrivacyPolicy = lazy(() => import('./pages/public/general/PrivacyPolicy').then(module => ({ default: module.PrivacyPolicy })));
 const Maintenance = lazy(() => import('./pages/public/general/Maintenance').then(module => ({ default: module.Maintenance })));
 const NotFound = lazy(() => import('./pages/public/general/NotFound').then(module => ({ default: module.NotFound })));
 const PublicProfile = lazy(() => import('./pages/public/general/PublicProfile').then(module => ({ default: module.PublicProfile })));
@@ -372,6 +374,8 @@ const AppContent: React.FC = () => {
           <Route path="/faq" element={<Suspense fallback={<LoadingFallback />}><FAQ /></Suspense>} />
           <Route path="/how-it-works" element={<Suspense fallback={<LoadingFallback />}><HowItWorks /></Suspense>} />
           <Route path="/contact" element={<Suspense fallback={<LoadingFallback />}><Contact /></Suspense>} />
+          <Route path="/terms" element={<Suspense fallback={<LoadingFallback />}><TermsOfService /></Suspense>} />
+          <Route path="/privacy" element={<Suspense fallback={<LoadingFallback />}><PrivacyPolicy /></Suspense>} />
           <Route path="/blinks-demo" element={<Suspense fallback={<LoadingFallback />}><BlinksDemo /></Suspense>} />
           <Route path="/solana-demo" element={<Suspense fallback={<LoadingFallback />}><SolanaBlockchainDemo /></Suspense>} />
           
