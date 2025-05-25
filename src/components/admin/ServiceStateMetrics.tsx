@@ -1,13 +1,13 @@
 import {
-  CategoryScale,
-  Chart as ChartJS,
-  ChartOptions,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
+    CategoryScale,
+    Chart as ChartJS,
+    ChartOptions,
+    Legend,
+    LinearScale,
+    LineElement,
+    PointElement,
+    Title,
+    Tooltip,
 } from "chart.js";
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
@@ -52,7 +52,7 @@ export const ServiceStateMetrics: React.FC<ServiceStateMetricsProps> = ({
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/admin/service-metrics/service-states");
+      const response = await fetch("/api/admin/metrics/service-states");
       if (!response.ok) throw new Error("Failed to fetch service states");
 
       const data = await response.json();
