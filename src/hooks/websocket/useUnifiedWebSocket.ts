@@ -7,7 +7,7 @@
  * This hook depends on the WebSocketManager component being mounted in the application
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { ConnectionState, DDExtendedMessageType } from './types';
 
@@ -91,26 +91,33 @@ export function useUnifiedWebSocket<T = any>(
   onMessage: (message: T) => void,
   topics?: string[]
 ) {
-  // Effect for registration
+  // Use ref to store the latest onMessage callback to avoid re-registrations
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+
+  // Stable message handler that uses the ref
+  const stableMessageHandler = useCallback((message: any) => {
+    // If topics are provided, only forward messages with matching topics
+    if (topics && message.topic && !topics.includes(message.topic)) {
+      return; // Skip messages with non-matching topics
+    }
+    // Call onMessage with the data using the ref
+    onMessageRef.current(message as T);
+  }, [topics]); // Only depend on topics, not onMessage
+
+  // Effect for registration - FIXED: Removed onMessage from dependencies
   useEffect(() => {
     if (!instance) {
       console.error("WebSocketManager: Cannot register listener - WebSocketManager not initialized");
       return () => { };
     }
 
-    // Use the registerListener with topics filtering applied in the callback
-    const unregister = instance.registerListener(id, types, message => {
-      // If topics are provided, only forward messages with matching topics
-      if (topics && message.topic && !topics.includes(message.topic)) {
-        return; // Skip messages with non-matching topics
-      }
-      // Call onMessage with the data
-      onMessage(message as T);
-    });
+    // Use the registerListener with the stable message handler
+    const unregister = instance.registerListener(id, types, stableMessageHandler);
 
     // Clean up on unmount
     return unregister;
-  }, [id, types, topics, onMessage]);
+  }, [id, types, topics, stableMessageHandler]); // FIXED: Removed onMessage, added stableMessageHandler
 
   // We should always have an instance now with our default initialization
   // But just in case, add an extra safety check with much friendlier messaging
