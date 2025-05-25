@@ -160,7 +160,7 @@ export function useRPCBenchmark() {
         ws.unsubscribe(['admin']);
       }
     };
-  }, [ws.isConnected, ws.isAuthenticated, fetchLatestBenchmarkData, ws]);
+  }, [ws.isConnected, ws.isAuthenticated]); // Removed fetchLatestBenchmarkData dependency
 
   // Reset loading state after a timeout if we're still loading
   useEffect(() => {

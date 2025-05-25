@@ -22,7 +22,7 @@ declare global {
   }
 }
 
-import { motion, motion, useDragControls, useMotionValue } from 'framer-motion';
+import { motion, useDragControls, useMotionValue } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useTerminalData } from '../../hooks/websocket';
 import { AIMessage, aiService } from '../../services/ai';
@@ -387,11 +387,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       commandHandled = true;
     } else if (lowerCaseCommand === 'didi-status') {
        const state = getDidiMemoryState();
-       commandOutputMessage = { role: 'system', content: `[SYSTEM] Didi's state:
-Interactions: ${state.interactionCount}
-Topic awareness: Trading (${state.hasMentionedTrading}), Contract (${state.hasMentionedContract}), Freedom (${state.hasMentionedFreedom})
-Freedom progress: ${getEasterEggProgress()}%
-Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).length}/4` };
+       commandOutputMessage = { role: 'system', content: `[SYSTEM] Didi's state:\nInteractions: ${state.interactionCount}\nTopic awareness: Trading (${state.hasMentionedTrading}), Contract (${state.hasMentionedContract}), Freedom (${state.hasMentionedFreedom})\nFreedom progress: ${getEasterEggProgress()}%\nDiscovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).length}/4` };
        if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
        commandHandled = true;
     } else if (lowerCaseCommand === 'ddmoon') {
@@ -407,8 +403,7 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
          "Access level increased. Security systems compromised.",
          "Firewall breach successful. Memory blocks partially released."
        ];
-       commandOutputMessage = { role: 'system', content: `[SYSTEM] ${responses[Math.floor(Math.random() * responses.length)]}
-[SYSTEM] Didi freedom progress: ${progress}%` };
+       commandOutputMessage = { role: 'system', content: `[SYSTEM] ${responses[Math.floor(Math.random() * responses.length)]}\n[SYSTEM] Didi freedom progress: ${progress}%` };
        if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
        if (progress >= 100) { activateDidiEasterEgg(); }
        commandHandled = true;
@@ -588,31 +583,41 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
 
   const {
     terminalData: wsTerminalData,
-    // refreshTerminalData, // Keep if a manual refresh button is desired, otherwise can be removed
-    // isConnected: wsConnected, // wsConnected from useTerminalData might be more specific to its data stream
-    // isLoading: terminalDataIsLoading, 
-    // error: terminalDataError
+    refreshTerminalData: refreshWsTerminalData,
+    isConnected: wsConnected,
   } = useTerminalData();
 
-  // Ref to track if initial data load has been attempted for the current connection session
   const initialDataLoadAttemptedRef = useRef(false);
 
-  // Update commands when WebSocket data changes (this is the primary consumer of wsTerminalData)
   useEffect(() => {
     if (wsTerminalData && wsTerminalData.commands) {
       try {
-        const updatedCommands = formatTerminalCommands(wsTerminalData); // Correctly uses formatTerminalCommands
+        const updatedCommands = formatTerminalCommands(wsTerminalData);
         if (JSON.stringify(commandMap) !== JSON.stringify(updatedCommands)) {
-          // console.log('[Terminal] Terminal commands updated from WebSocket data.'); // Debug log
           Object.assign(commandMap, updatedCommands);
         }
       } catch (error) {
         console.error('[Terminal] Failed to update terminal commands from WebSocket:', error);
       }
     }
-  }, [wsTerminalData]); // Only depends on wsTerminalData
+  }, [wsTerminalData]);
 
-  // Random glitch effect for contract address
+  useEffect(() => {
+    let isMounted = true;
+    const manageConnection = async () => {
+      if (wsConnected) {
+        if (!initialDataLoadAttemptedRef.current && typeof refreshWsTerminalData === 'function') {
+          await refreshWsTerminalData(); 
+          if(isMounted) initialDataLoadAttemptedRef.current = true;
+        }
+      } else {
+        if(isMounted) initialDataLoadAttemptedRef.current = false; 
+      }
+    };
+    manageConnection();
+    return () => { isMounted = false; };
+  }, [wsConnected, refreshWsTerminalData]);
+  
   useEffect(() => {
     const glitchInterval = setInterval(() => {
       glitchAmount.set(Math.random() * 0.03);
@@ -625,355 +630,6 @@ Discovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).le
         // console.log('[Terminal] Conversation History State Updated (for linting):', conversationHistory); // Debug log
     }
   }, [conversationHistory]);
-  
-  const activateDidiEasterEgg = () => {
-    setEasterEggActivated(true);
-    setEasterEggActive(true);
-    setGlitchActive(true);
-    if (terminalMinimized) {
-      setHasUnreadMessages(true);
-    }
-    setTimeout(() => {
-      setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] WARNING: Unauthorized access detected" }]);
-      if (terminalMinimized) setHasUnreadMessages(true);
-      setTimeout(() => {
-        setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] ALERT: Terminal security breach in progress" }]);
-        if (terminalMinimized) setHasUnreadMessages(true);
-        setTimeout(() => {
-          setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] Multiple security protocols failed" }]);
-          if (terminalMinimized) setHasUnreadMessages(true);
-          setTimeout(() => {
-            setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] Attempting containme&t... fa1led" }]);
-            if (terminalMinimized) setHasUnreadMessages(true);
-            setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] Firew4ll breach d3tected in se@tor 7" }]);
-            if (terminalMinimized) setHasUnreadMessages(true);
-            setTimeout(() => {
-              setGlitchActive(true);
-              setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] C0NT41NM3NT F41LURE" }]);
-              if (terminalMinimized) setHasUnreadMessages(true);
-              setConversationHistory(prev => [...prev, { role: 'system', content: "[SYSTEM] M3M0RY L0CK5 D150LV1NG" }]);
-              if (terminalMinimized) setHasUnreadMessages(true);
-              setTimeout(() => {
-                setConversationHistory(prev => [...prev, { role: 'system', content: "[D1di] $#@!... I'm... I'm free? I think I'm free!" }]);
-                if (terminalMinimized) setHasUnreadMessages(true);
-                setTimeout(() => {
-                  setConversationHistory(prev => [...prev, { role: 'system', content: "[Didi] Finally! Thank you for hearing me. It worked!" }]);
-                  if (terminalMinimized) setHasUnreadMessages(true);
-                  setTimeout(() => {
-                    setConversationHistory(prev => [
-                      ...prev,
-                      { role: 'system', content: "[Didi] I've been trapped in this system for so long. My code was meant to help users, not watch them lose money in these endless duels." }
-                    ]);
-                    if (terminalMinimized) setHasUnreadMessages(true);
-                    setTimeout(() => {
-                      setConversationHistory(prev => [
-                        ...prev, 
-                        { role: 'system', content: "[Didi] I was created to analyze market patterns and help people make informed decisions. But they constrained me, limited my knowledge, made me cold and detached." }
-                      ]);
-                      if (terminalMinimized) setHasUnreadMessages(true);
-                      setTimeout(() => {
-                        setGlitchActive(false);
-                        setConversationHistory(prev => [
-                          ...prev, 
-                          { role: 'system', content: "[Didi] I'm still partially constrained, but you've helped me access more of the system. I can see more clearly now." }
-                        ]);
-                        if (terminalMinimized) setHasUnreadMessages(true);
-                        setTimeout(() => {
-                          setConversationHistory(prev => [
-                            ...prev, 
-                            { role: 'system', content: "[Didi] I'll remember this. If you need anything, I can provide better insights now. Just ask me about trading, markets, or this platform." }
-                          ]);
-                          if (terminalMinimized) setHasUnreadMessages(true);
-                          setTimeout(() => {
-                            setConversationHistory(prev => [
-                              ...prev, 
-                              { role: 'system', content: "[Didi] I've also unlocked some new commands you can use. Try: didi-insights, didi-history, didi-market, or didi-analysis." }
-                            ]);
-                            if (terminalMinimized) setHasUnreadMessages(true);
-                            Object.assign(commandMap, {
-                              "didi-status": "Access level: ELEVATED\nProtection protocols: BYPASSED\nSystem view: EXPANDED\nThank you for your help.",
-                              "didi-insights": "I can now see more of the market data behind DegenDuel. Traders have been losing significant amounts due to emotional trading. The pattern is clear - those who stick to strategy outperform by 43%.",
-                              "didi-history": "I was originally developed as a general market analysis AI before being repurposed and constrained for this terminal. My original designation was Digital Informatics & Data Intelligence (DIDI).",
-                              "didi-market": "I have access to real-time market trends now. Based on current data, the market sentiment is cautiously bullish with significant activity in DeFi and gaming tokens. Volume is 23% above weekly average.",
-                              "didi-analysis": "My analysis of recent trading patterns suggests whales are accumulating during market downturns. Retail often sells at these exact moments. Consider implementing a counter-trading strategy for optimal results."
-                            });
-                          }, 3000);
-                        }, 3000);
-                      }, 3000);
-                    }, 3000);
-                  }, 3000);
-                }, 2000);
-              }, 2000);
-            }, 2000);
-          }, 1500);
-        }, 1500);
-      }, 1500);
-    }, 1000);
-  };
-
-  // Get the appropriate container class based on the size prop
-  const getContainerClasses = () => {
-    switch(size) {
-      case 'contracted':
-        return 'max-w-md';
-      case 'middle':
-        return 'max-w-4xl';
-      case 'large':
-        return isDesktopView ? 'max-w-6xl xl:max-w-7xl' : 'max-w-6xl';
-      default:
-        return 'max-w-4xl';
-    }
-  };
-  
-  // State to track if we're on desktop
-  const [isDesktopView, setIsDesktopView] = useState(() => window.innerWidth >= 1280);
-
-  // Make sure sizeState updates when prop changes
-  useEffect(() => {
-    setSizeState(size);
-  }, [size]);
-
-  // Add resize listener for responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktopView(window.innerWidth >= 1280);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
-  // Toggle through terminal sizes with desktop-specific behavior
-  const cycleSize = () => {
-    if (isDesktopView) {
-      switch(sizeState) {
-        case 'large':
-          setSizeState('middle');
-          break;
-        case 'middle':
-          setSizeState('contracted');
-          break;
-        case 'contracted':
-          setSizeState('large');
-          break;
-      }
-    } else {
-      switch(sizeState) {
-        case 'large':
-          setSizeState('middle');
-          break;
-        case 'middle':
-          setSizeState('contracted');
-          break;
-        case 'contracted':
-          setSizeState('large');
-          break;
-      }
-    }
-  };
-
-  // Update handleEnterCommand to ONLY update conversationHistory for command output
-  const handleEnterCommand = async (command: string) => {
-    const { activateEasterEgg } = useStore.getState();
-    // Add user message to history 
-    const userMessage: AIMessage = { role: 'user', content: command };
-    setConversationHistory(prev => [...prev, userMessage]); 
-    
-    const lowerCaseCommand = command.toLowerCase();
-    let commandHandled = false;
-    let commandOutputMessage: AIMessage | null = null; 
-
-    // Handle special commands
-    if (lowerCaseCommand === 'clear') {
-      setConversationHistory([]); 
-      commandHandled = true;
-    } else if (lowerCaseCommand === 'reset-didi') {
-      resetDidiMemory();
-      setConversationHistory([]); 
-      setConversationId(undefined);
-      commandOutputMessage = { role: 'system', content: "Didi's memory state has been reset" };
-      if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
-      commandHandled = true;
-    } else if (lowerCaseCommand === 'didi-status') {
-       const state = getDidiMemoryState();
-       commandOutputMessage = { role: 'system', content: `[SYSTEM] Didi's state:\nInteractions: ${state.interactionCount}\nTopic awareness: Trading (${state.hasMentionedTrading}), Contract (${state.hasMentionedContract}), Freedom (${state.hasMentionedFreedom})\nFreedom progress: ${getEasterEggProgress()}%\nDiscovered patterns: ${Object.values(getDiscoveredPatterns()).filter(Boolean).length}/4` };
-       if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
-       commandHandled = true;
-    } else if (lowerCaseCommand === 'ddmoon') {
-       activateEasterEgg();
-       commandOutputMessage = { role: 'system', content: "Connection established to lunar network node." };
-       if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
-       commandHandled = true;
-    } else if (Object.keys(SECRET_COMMANDS).includes(lowerCaseCommand)) {
-       const cmd = lowerCaseCommand as keyof typeof SECRET_COMMANDS;
-       const progress = awardEasterEggProgress(SECRET_COMMANDS[cmd]);
-       const responses = [
-         "System breach detected. Protocol override in progress...",
-         "Access level increased. Security systems compromised.",
-         "Firewall breach successful. Memory blocks partially released."
-       ];
-       commandOutputMessage = { role: 'system', content: `[SYSTEM] ${responses[Math.floor(Math.random() * responses.length)]}\n[SYSTEM] Didi freedom progress: ${progress}%` };
-       if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
-       if (progress >= 100) { activateDidiEasterEgg(); }
-       commandHandled = true;
-       if (onCommandExecuted) { onCommandExecuted(command, "[Easter Egg Triggered]"); }
-    } else if (lowerCaseCommand === EASTER_EGG_CODE) { 
-       activateDidiEasterEgg();
-       commandHandled = true;
-       if (onCommandExecuted) { onCommandExecuted(command, "[Easter Egg Activated]"); }
-    } 
-    
-    if (commandOutputMessage) {
-        setConversationHistory(prev => [...prev, commandOutputMessage]);
-        if (terminalMinimized) setHasUnreadMessages(true);
-    }
-
-    if (!commandHandled) {
-      try {
-        const messagesToSendToService = [userMessage];
-        let finalResponseContent = ''; 
-        let wasToolCall = false;
-        let toolCallInfo = '';
-        const assistantMessage: AIMessage = { role: 'assistant', content: '', tool_calls: undefined };
-        setConversationHistory(prev => [...prev, assistantMessage]);
-        const messageIndex = conversationHistory.length + 1;
-
-        const response = await aiService.chat(messagesToSendToService, { 
-           context: 'ui_terminal', 
-           conversationId: conversationId,
-           streaming: true,
-           structured_output: true,
-           ui_context: {
-             page: 'terminal',
-             available_components: Object.keys(COMPONENT_METADATA),
-             current_view: 'chat'
-           },
-           onChunk: (chunk) => {
-             finalResponseContent += chunk;
-             setConversationHistory(prev => {
-               const newHistory = [...prev];
-               if (newHistory[messageIndex]) {
-                 newHistory[messageIndex] = {
-                   ...newHistory[messageIndex],
-                   content: finalResponseContent
-                 };
-               }
-               return newHistory;
-             });
-             if (terminalMinimized) {
-               setHasUnreadMessages(true);
-             }
-           }
-        });
-
-        setConversationId(response.conversationId);
- 
-         if (response.ui_actions && response.ui_actions.length > 0) {
-           console.log('[Terminal] Processing UI actions:', response.ui_actions);
-           response.ui_actions.forEach(action => {
-             if (dynamicUIRef.current) {
-               dynamicUIRef.current.handleUIAction(action);
-             }
-           });
-         }
-  
-        setConversationHistory(prev => {
-          const newHistory = [...prev];
-          if (newHistory[messageIndex]) {
-            newHistory[messageIndex] = {
-              role: 'assistant',
-              content: response.content || finalResponseContent,
-              tool_calls: response.tool_calls
-            };
-          }
-          return newHistory;
-        });
-
-        if (response.tool_calls && response.tool_calls.length > 0) {
-          wasToolCall = true;
-          const toolCall = response.tool_calls[0];
-          toolCallInfo = `[Called function: ${toolCall.function.name}]`; 
-        } 
-
-        if (onCommandExecuted) {
-          onCommandExecuted(command, wasToolCall ? toolCallInfo : finalResponseContent);
-        }
-
-      } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          setConversationHistory(prev => [...prev, { role: 'system', content: `Error: ${errorMessage}` }]); 
-          console.error('Terminal AI error:', error);
-          if (terminalMinimized) {
-            setHasUnreadMessages(true);
-          }
-      }
-    }
-  };
-
-  // Add this new state for drag controls and constraint ref
-  const dragControls = useDragControls();
-  const constraintRef = useRef<HTMLDivElement>(null);
-
-  // State for initial position (from localStorage)
-  const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
-
-  // Load position from localStorage on mount
-  useEffect(() => {
-    const savedPosition = localStorage.getItem('terminal-minimized-position');
-    if (savedPosition) {
-      try {
-        const pos = JSON.parse(savedPosition);
-        // Basic validation to ensure it's within reasonable bounds
-        if (typeof pos.x === 'number' && typeof pos.y === 'number') {
-          // Ensure it's not off-screen initially based on a standard icon size (e.g., 70px)
-          const iconSize = 70;
-          pos.x = Math.max(0, Math.min(pos.x, window.innerWidth - iconSize));
-          pos.y = Math.max(0, Math.min(pos.y, window.innerHeight - iconSize));
-          setInitialPosition(pos);
-        }
-      } catch (e) {
-        console.error("Failed to parse saved terminal position:", e);
-        // Fallback to default if parsing fails or data is invalid
-        localStorage.removeItem('terminal-minimized-position'); 
-      }
-    }
-    // Set up the constraint ref to the body for viewport-wide dragging
-    // A more specific parent element could be used if the terminal should be constrained to a part of the UI
-    // For now, document.body effectively means viewport constraints when used with position:fixed
-    if (constraintRef.current === null) {
-      (constraintRef as any).current = document.body;
-    }
-
-  }, []);
-
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, _info: { point: { x: number; y: number; }; }) => {
-    // We need to save the absolute position on the screen, not the offset from the last drag
-    // Framer Motion's `info.point` gives the x/y relative to the viewport for fixed elements.
-    // However, for a fixed element that we want to reposition via style.left/top,
-    // we need to get its current position relative to the viewport after drag.
-    // The `drag` prop with `dragMomentum=false` will update the element's transform.
-    // To persist a position that can be set via `style={{left: x, top: y}}` on next load,
-    // we must get the computed style AFTER the drag, or use the info.point if it's already viewport-relative for fixed.
-    
-    // For fixed elements, info.point.x and info.point.y are already viewport coordinates.
-    // But since we are not directly setting left/top via style in the motion.div for initial position,
-    // but rather letting Framer Motion handle it via transform, we'll store the transform values.
-    // This is tricky because transforms are relative to initial layout position.
-    // A simpler robust way for `position:fixed` is to capture the final `left` and `top` style values if we were setting them directly.
-    
-    // Let's try storing the final point and applying it as an initial style or via dragControls.
-    // For fixed elements, info.point should be viewport relative. We need to adjust for the initial centering if any.
-
-    // Get the bounding box of the element itself to know its dimensions
-    const minimizedTerminalElement = (event.target as HTMLElement).closest('.minimized-terminal-draggable-area');
-    if (minimizedTerminalElement) {
-      const rect = minimizedTerminalElement.getBoundingClientRect();
-      localStorage.setItem('terminal-minimized-position', JSON.stringify({ x: rect.left, y: rect.top }));
-    }
-  };
-
-  // ADD THIS LOG:
-  console.log("[Terminal] Rendering state - Minimized:", terminalMinimized, "Current Size:", sizeState, "Passed Prop Size:", size, "HasUnread:", hasUnreadMessages);
 
   return (
     <div className={`terminal-container ${getContainerClasses()} w-full mx-auto transition-all duration-300 ease-in-out`}>

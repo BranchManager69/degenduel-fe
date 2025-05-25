@@ -76,7 +76,7 @@ export function useDatabaseStats() {
         ws.unsubscribe(['system']);
       }
     };
-  }, [ws.isConnected, fetchDatabaseStats, ws]);
+  }, [ws.isConnected]); // Removed fetchDatabaseStats dependency
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -87,7 +87,7 @@ export function useDatabaseStats() {
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [data, fetchDatabaseStats]);
+  }, [data]); // Removed fetchDatabaseStats dependency
 
   return {
     data,
