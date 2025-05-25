@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import React, { memo, useEffect, useState } from 'react';
 import { useDatabaseStats } from '../../hooks/websocket/topic-hooks/useDatabaseStats';
 import { useRPCBenchmark } from '../../hooks/websocket/topic-hooks/useRPCBenchmark';
-import { useMigratedAuth } from '@/hooks/auth/useMigratedAuth';
 
 interface RPCBenchmarkFooterProps {
   compactMode?: boolean;
@@ -12,25 +11,14 @@ interface RPCBenchmarkFooterProps {
 
 const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMode = false }) => {
   const [rotationIndex, setRotationIndex] = useState(0);
-  const { isAuthenticated: userIsAuthenticated } = useMigratedAuth();
   
-  // Only use RPC benchmark hook if user is authenticated
-  const rpcBenchmarkResult = useRPCBenchmark();
   const {
     data,
     isLoading,
     error,
     isConnected,
-    isAuthenticated,
     refreshData
-  } = userIsAuthenticated ? rpcBenchmarkResult : {
-    data: null,
-    isLoading: false,
-    error: null,
-    isConnected: false,
-    isAuthenticated: false,
-    refreshData: () => {}
-  };
+  } = useRPCBenchmark();
 
   // Get database stats from public SYSTEM topic (no auth required!)
   const { data: dbStats } = useDatabaseStats();
@@ -46,40 +34,8 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
     return () => clearInterval(interval);
   }, [data]);
 
-  // If user is not authenticated, show simplified version with just database stats
-  if (!userIsAuthenticated) {
-    const activeTokens = dbStats?.active_tokens || 0;
-    const getTokensColor = (tokens: number) => {
-      if (tokens >= 1000) return '#22c55e'; // green
-      if (tokens >= 500) return '#eab308'; // yellow
-      return '#ef4444'; // red
-    };
-
-    return (
-      <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 ${compactMode ? 'scale-90 transform-origin-left' : ''}`}>
-        <span className="text-cyan-400 text-xs sm:text-sm font-mono">DB:</span>
-        
-        {/* Rectangle - Active Tokens */}
-        <motion.div
-          className="relative flex items-center justify-center"
-          whileHover={{ scale: 1.1 }}
-          title={`Active tokens in database: ${activeTokens.toLocaleString()}`}
-        >
-          <div 
-            className="w-5 h-3 sm:w-6 sm:h-3.5 flex items-center justify-center"
-            style={{ backgroundColor: getTokensColor(activeTokens) }}
-          >
-            <span className="text-[6px] sm:text-[7px] font-mono text-black font-bold leading-none">
-              {activeTokens >= 10000 ? `${Math.round(activeTokens/1000)}k` : activeTokens}
-            </span>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   // If there's no data, show enhanced loading state with skeleton
-  if (!isConnected || !isAuthenticated || !data) {
+  if (!isConnected || !data) {
     return (
       <div className="text-xs flex items-center gap-1 sm:gap-1.5">
         <span className="text-cyan-400 font-mono text-xs sm:text-sm">RPC:</span>
