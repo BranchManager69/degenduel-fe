@@ -775,16 +775,20 @@ Last Check: ${new Date().toLocaleTimeString()}
 
             {/* Center Content */}
             <div className="flex justify-center items-center absolute left-1/2 transform -translate-x-1/2">
-              {/* Branch attribution for non-authenticated users */}
+              {/* Branch emoji for non-authenticated users */}
               {!isAuthenticated && (
-                <a 
-                  href="https://branch.bet" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-xs text-gray-500 hover:text-brand-400 opacity-70 hover:opacity-100 transition-opacity"
-                >
-                  by Branch • <span className="text-[10px]">2025</span>
-                </a>
+                                  <a 
+                    href="https://branch.bet" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:scale-110 transition-transform duration-200 opacity-70 hover:opacity-100"
+                    title="by Branch"
+                  >
+                    {/* Simple branch SVG icon */}
+                    <svg className="h-5 w-5 text-gray-500 hover:text-brand-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2L8 6h3v4.5c0 1.38-1.12 2.5-2.5 2.5S6 11.88 6 10.5V8H4v2.5c0 2.48 2.02 4.5 4.5 4.5 1.33 0 2.52-.58 3.35-1.5.83.92 2.02 1.5 3.35 1.5 2.48 0 4.5-2.02 4.5-4.5V8h-2v2.5c0 1.38-1.12 2.5-2.5 2.5S13 11.88 13 10.5V6h3L12 2z"/>
+                    </svg>
+                  </a>
               )}
               
               {/* Easter Egg for authenticated users */}
