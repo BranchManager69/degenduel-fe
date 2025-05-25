@@ -41,11 +41,11 @@ export function useDatabaseStats() {
     if (message.type === 'ERROR') {
       console.error('[Database Stats] WebSocket error:', message);
 
-      // Handle authentication errors
+      // Handle errors (should be rare since this is public data)
       if (message.code === 4003 || message.error?.includes('Authentication required')) {
-        setError('Authentication required for database stats');
+        setError('Database stats temporarily unavailable');
       } else if (message.code === 4012 || message.error?.includes('Admin/superadmin role required')) {
-        setError('Admin privileges required for database stats');
+        setError('Database stats access issue (this should not happen for public data)');
       } else {
         setError(message.error || 'Database stats unavailable');
       }
@@ -74,6 +74,8 @@ export function useDatabaseStats() {
   // Request initial data when connected
   useEffect(() => {
     if (!ws.isConnected) return;
+
+    console.log('[Database Stats] Attempting to subscribe to system topic...');
 
     // Subscribe to SYSTEM topic (public)
     ws.subscribe(['system']);

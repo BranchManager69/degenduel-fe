@@ -1,7 +1,16 @@
+// src/hooks/websocket/legacy/useRPCBenchmarkWebSocket.ts
+
 /**
  * useRPCBenchmarkWebSocket Hook
  * 
- * Specialized hook for interacting with RPC benchmark data through the unified WebSocket
+ * @deprecated This hook is deprecated and will be removed in a future version. Use the useRPCBenchmark hook instead.
+ * 
+ * @description Specialized hook for interacting with RPC benchmark data through the unified WebSocket.
+ * 
+ * @author BranchManager69
+ * @version 1.0.0
+ * @created 2025-04-14
+ * @updated 2025-05-25
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -88,11 +97,11 @@ export function useRPCBenchmarkWebSocket() {
   // Message handler
   const handleMessage = useCallback((message: any) => {
     // Handle update notifications (triggers a fetch)
-    if (message.topic === 'admin' && message.data?.type === 'rpc-benchmark-update') {
+    if (message.topic === 'system' && message.data?.type === 'rpc-benchmark-update') {
       // Trigger a fetch for the latest data - use direct call instead of dependency
-      if (isConnected && isAuthenticated) {
+      if (isConnected) { // FIXED: Removed isAuthenticated check since this is now public
         setIsLoading(true);
-        request('admin', 'getRpcBenchmarks');
+        request('system', 'getRpcBenchmarks'); // FIXED: Changed from 'admin' to 'system'
       }
 
       // Check if benchmark is still running
@@ -111,15 +120,15 @@ export function useRPCBenchmarkWebSocket() {
       setError(null);
     }
 
-    // Handle errors - FIXED: Generic error handling now that backend authorization is fixed
+    // Handle errors - FIXED: Updated for public access
     if (message.type === 'ERROR') {
       console.error('[RPC Benchmark] WebSocket error:', message);
 
-      // Handle authentication errors
+      // Handle authentication errors (should be rare now that it's public)
       if (message.code === 4003 || message.error?.includes('Authentication required')) {
-        setError('Authentication required for RPC benchmark data');
+        setError('RPC benchmark data temporarily unavailable');
       } else if (message.code === 4012 || message.error?.includes('Admin/superadmin role required')) {
-        setError('Admin privileges required for RPC benchmarks');
+        setError('RPC benchmark access issue (this should not happen for public data)');
       } else {
         setError(message.error || 'Unknown WebSocket error');
       }
@@ -139,18 +148,18 @@ export function useRPCBenchmarkWebSocket() {
     uniqueId,
     [MessageType.DATA, MessageType.ACKNOWLEDGMENT, MessageType.ERROR],
     handleMessage,
-    ['admin']
+    ['system']
   );
 
   // Fetch latest benchmark data
   const fetchLatestBenchmarkData = useCallback(() => {
-    if (!isConnected || !isAuthenticated) return;
+    if (!isConnected) return; // FIXED: Removed isAuthenticated check since this is now public
 
     setIsLoading(true);
 
-    // FIXED: Use correct action name as specified by backend team
+    // FIXED: Use system topic since RPC benchmarks are now public
     try {
-      request('admin', 'getRpcBenchmarks');
+      request('system', 'getRpcBenchmarks'); // FIXED: Changed from 'admin' to 'system'
 
       // Handle async response if available
       Promise.resolve().then(() => {
@@ -162,30 +171,32 @@ export function useRPCBenchmarkWebSocket() {
       setError(error instanceof Error ? error.message : String(error));
       setIsLoading(false);
     }
-  }, [isConnected, isAuthenticated, request]);
+  }, [isConnected, request]); // FIXED: Removed isAuthenticated dependency
 
   // Trigger a new benchmark
   const triggerBenchmark = useCallback(() => {
-    if (!isConnected || !isAuthenticated) return false;
+    if (!isConnected) return false; // FIXED: Removed isAuthenticated check
 
     setIsBenchmarkRunning(true);
 
     try {
-      // FIXED: Use correct action name for triggering benchmarks
-      request('admin', 'triggerRpcBenchmark');
+      // FIXED: Use system topic for triggering benchmarks
+      request('system', 'triggerRpcBenchmark'); // FIXED: Changed from 'admin' to 'system'
       return true;
     } catch (error) {
       console.error('Error triggering benchmark:', error);
       setIsBenchmarkRunning(false);
       return false;
     }
-  }, [isConnected, isAuthenticated, request]);
+  }, [isConnected, request]); // FIXED: Removed isAuthenticated dependency
 
   // Set up subscription when connected
   useEffect(() => {
-    if (isConnected && isAuthenticated) {
-      // Subscribe to admin topics
-      subscribe(['admin']);
+    if (isConnected) { // FIXED: Removed isAuthenticated check since this is now public
+      console.log('[RPC Benchmark] Attempting to subscribe to system topic...');
+
+      // Subscribe to system topics (public)
+      subscribe(['system']); // FIXED: Changed from 'admin' to 'system'
 
       // Initial data fetch
       fetchLatestBenchmarkData();
@@ -193,10 +204,10 @@ export function useRPCBenchmarkWebSocket() {
 
     return () => {
       if (isConnected) {
-        unsubscribe(['admin']);
+        unsubscribe(['system']); // FIXED: Changed from 'admin' to 'system'
       }
     };
-  }, [isConnected, isAuthenticated, subscribe, unsubscribe]);
+  }, [isConnected, subscribe, unsubscribe]); // FIXED: Removed isAuthenticated dependency
 
   // Update error state
   useEffect(() => {
