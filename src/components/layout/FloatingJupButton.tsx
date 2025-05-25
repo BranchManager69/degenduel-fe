@@ -6,9 +6,9 @@
  * @description A floating button that opens a new tab to the Jupiter Aggregator website
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 3.0.0
  * @created 2025-05-11
- * @updated 2025-05-11
+ * @updated 2025-05-25
  */
 
 import { motion } from 'framer-motion';
@@ -29,7 +29,7 @@ export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ onClick, t
       window.open(`https://jup.ag/swap/SOL-${tokenAddress}`, '_blank');
     } else {
       console.log('Jupiter button clicked! (No token address provided, opening general site)');
-      window.open('https://jup.ag/', '_blank'); // Fallback to general Jupiter site
+      window.open('https://jup.ag/', '_blank');
     }
   };
 
@@ -39,59 +39,27 @@ export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ onClick, t
 
   return (
     <motion.div
-      key="floating-jup-button"
-      initial={{ opacity: 0, scale: 0.8, x: -50 }}
-      animate={{ opacity: 1, scale: 1, x: 0 }}
-      exit={{ opacity: 0, scale: 0.8, x: -50 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="fixed bottom-60 left-6 z-50 cursor-pointer group"
+      className="cursor-pointer group"
       onClick={handleClick}
-      title={buttonTitle} 
+      title={buttonTitle}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
-      {/* Jupiter Logo Container */}
       <motion.div
-        className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border border-green-500/50 rounded-full overflow-hidden relative shadow-lg group-hover:shadow-green-500/40 transition-all duration-300"
-        whileHover={{ scale: 1.1, boxShadow: '0 0 20px rgba(16, 185, 129, 0.7)' }} // Example: Tailwind green-500
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+        className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border border-emerald-500/50 rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
+        whileHover={{ 
+          borderColor: 'rgba(16, 185, 129, 0.8)',
+          boxShadow: '0 0 25px rgba(16, 185, 129, 0.6), 0 0 50px rgba(16, 185, 129, 0.3)'
+        }}
+        transition={{ duration: 0.3 }}
       >
-        {/* Subtle animated gradient border effect */}
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          animate={{
-            backgroundImage: [
-              'linear-gradient(45deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 50%, rgba(16,185,129,0.3) 100%)',
-              'linear-gradient(45deg, rgba(16,185,129,0.1) 0%, rgba(16,185,129,0.3) 50%, rgba(16,185,129,0.1) 100%)',
-              'linear-gradient(45deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 50%, rgba(16,185,129,0.3) 100%)',
-            ],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-          style={{ backgroundSize: '200% 200%' }}
-        />
-        
-        {/* Image */}
         <img
-          src="/assets/media/logos/jup.png" // Converted from WebP to PNG
+          src="/assets/media/logos/jup.png"
           alt="Jupiter Logo"
-          className="w-full h-full object-contain p-2 md:p-2.5 transition-transform duration-300 group-hover:scale-105" 
+          className="w-full h-full object-contain p-2 md:p-2.5 transition-transform duration-300 group-hover:scale-110" 
         />
       </motion.div>
-      
-      {/* Optional: Tooltip (could be a separate component or simple div) */}
-      {/* 
-      <motion.div
-        className="absolute bottom-full left-0 mb-2 px-3 py-1.5 bg-black/80 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap"
-        initial={{ y: 10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }} // This will be controlled by group-hover now
-        style={{ pointerEvents: 'none' }}
-      >
-        Jupiter Aggregator
-      </motion.div>
-      */}
     </motion.div>
   );
 };
