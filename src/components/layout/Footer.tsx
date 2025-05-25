@@ -360,15 +360,21 @@ export const Footer: React.FC = () => {
 
                 /* Enhanced footer for non-authenticated users */
                 <div className="flex items-center space-x-4 shrink-0">
-                  {/* Status link */}
+                  {/* Status link with icon */}
                   <a
                     href="https://status.degenduel.me/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
+                    className="text-gray-400 hover:text-brand-400"
+                    title="System Status"
                   >
-                    Status
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
                   </a>
+                  
+                  {/* Divider */}
+                  <div className="h-4 w-px bg-gray-700"></div>
                   
                   {/* Social links */}
                   <div className="flex items-center space-x-3">
@@ -407,7 +413,7 @@ export const Footer: React.FC = () => {
                       title="Join our Telegram"
                     >
                       <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2L2 22h20L12 2zm0 18-10-10 10-10 10 10-10 10z" />
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                       </svg>
                     </a>
                   </div>
