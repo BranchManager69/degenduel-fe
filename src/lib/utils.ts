@@ -40,6 +40,54 @@ export function formatMarketCap(marketCap: number): string {
   return `$${Math.floor(marketCap / 1_000)}K`;
 }
 
+// Helper: Format market cap in short format (2-3 digits with 1 decimal and K/M/B)
+export function formatMarketCapShort(marketCap: number | string): string {
+  const num = typeof marketCap === "string" ? parseFloat(marketCap) : marketCap;
+
+  if (isNaN(num) || num <= 0) {
+    return "$0";
+  }
+
+  if (num >= 1_000_000_000) {
+    // Billions: show 2-3 digits with 1 decimal
+    const billions = num / 1_000_000_000;
+    if (billions >= 100) {
+      return `$${billions.toFixed(0)}B`; // 100B+
+    } else if (billions >= 10) {
+      return `$${billions.toFixed(1)}B`; // 10.0B - 99.9B
+    } else {
+      return `$${billions.toFixed(1)}B`; // 1.0B - 9.9B
+    }
+  }
+
+  if (num >= 1_000_000) {
+    // Millions: show 2-3 digits with 1 decimal
+    const millions = num / 1_000_000;
+    if (millions >= 100) {
+      return `$${millions.toFixed(0)}M`; // 100M+
+    } else if (millions >= 10) {
+      return `$${millions.toFixed(1)}M`; // 10.0M - 99.9M
+    } else {
+      return `$${millions.toFixed(1)}M`; // 1.0M - 9.9M
+    }
+  }
+
+  if (num >= 1_000) {
+    // Thousands: show 2-3 digits with 1 decimal
+    const thousands = num / 1_000;
+    if (thousands >= 100) {
+      return `$${thousands.toFixed(0)}K`; // 100K+
+    } else if (thousands >= 10) {
+      return `$${thousands.toFixed(1)}K`; // 10.0K - 99.9K
+    } else {
+      return `$${thousands.toFixed(1)}K`; // 1.0K - 9.9K
+    }
+  }
+
+  // Less than 1K
+  return `$${num.toFixed(0)}`;
+}
+
 // Helper: Format address
 export function formatAddress(address: string): string {
   if (!address) return "";
