@@ -23,7 +23,7 @@ interface ContestDetailHeaderProps {
   isWalletConnected: boolean;
   onJoinContest: () => void;
   onCountdownComplete: () => void;
-  isContestLive: (contest: Contest) => boolean;
+  isContestCurrentlyUnderway: (contest: Contest) => boolean;
 }
 
 export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
@@ -32,7 +32,7 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
   isWalletConnected,
   onJoinContest,
   onCountdownComplete,
-  // isContestLive is not used directly because we calculate status internally
+  // isContestCurrentlyUnderway is not used directly because we calculate status internally
 }) => {
   // Determine the contest's current state
   const now = new Date();

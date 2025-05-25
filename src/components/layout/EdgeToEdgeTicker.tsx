@@ -1,9 +1,22 @@
 // src/components/layout/EdgeToEdgeTicker.tsx
 
+/**
+ * EdgeToEdgeTicker 
+ * 
+ * @description A full-width enhanced version of UnifiedTicker
+ *
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-02-14
+ * @updated 2025-05-25
+ */
+
 import { motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
 import { useScrollHeader } from '../../hooks/ui/useScrollHeader';
-import { isContestLive } from "../../lib/utils";
+import {
+  isContestJoinable,
+} from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import type { Contest } from '../../types';
 import { UnifiedTicker } from './UnifiedTicker';
@@ -42,7 +55,7 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
     : isCompactFromHook;
 
   // Local state for contests and loading
-  const [activeContests, setActiveContests] = useState<Contest[]>(initialContests || []);
+  const [joinableContests, setJoinableContests] = useState<Contest[]>(initialContests || []);
   const [loading, setLoading] = useState(initialLoading);
 
   // Fetch contests
@@ -52,8 +65,8 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
         const response = await ddApi.contests.getAll();
         const contests = Array.isArray(response) ? response : [];
         
-        // Only show live contests
-        setActiveContests(contests.filter(isContestLive) || []);
+        // Only show joinable contests
+        setJoinableContests(contests.filter(isContestJoinable) || []);
       } catch (err) {
         console.error("EdgeToEdgeTicker: Failed to load contests:", err);
       } finally {
@@ -164,7 +177,7 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
       >
         {/* Core UnifiedTicker component */}
         <UnifiedTicker 
-          contests={activeContests}
+          contests={joinableContests}
           loading={loading}
           isCompact={finalIsCompact}
           maxTokens={maxTokens}

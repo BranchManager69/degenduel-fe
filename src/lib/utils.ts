@@ -101,9 +101,24 @@ export function calculatePortfolioValue(holdings: any[], prices: any): number {
   }, 0);
 }
 
-// Helper: Is contest live?
-export function isContestLive(contest: { status: ContestStatus }): boolean {
+// Helper: Is contest currently underway? (active)
+export function isContestCurrentlyUnderway(contest: { status: ContestStatus }): boolean {
   return contest.status === "active";
+}
+
+// Helper: Is contest joinable? (pending)
+export function isContestJoinable(contest: { status: ContestStatus }): boolean {
+  return contest.status === "pending";
+}
+
+// Helper: Is contest cancelled? (cancelled)
+export function isContestCancelled(contest: { status: ContestStatus }): boolean {
+  return contest.status === "cancelled";
+}
+
+// Helper: Is contest completed? (completed and winner(s) resolved)
+export function isContestCompleted(contest: { status: ContestStatus }): boolean {
+  return contest.status === "completed";
 }
 
 // Helper: Get contest status

@@ -23,9 +23,9 @@ import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
-  formatCurrency,
-  isContestLive,
-  mapContestStatus,
+    formatCurrency,
+    isContestCurrentlyUnderway,
+    mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import type { Contest as BaseContest } from "../../../types/index";
@@ -254,7 +254,7 @@ export const ContestDetails: React.FC = () => {
   const handleCountdownComplete = () => {
     if (!contest) return;
 
-    if (isContestLive(contest)) {
+    if (isContestCurrentlyUnderway(contest)) {
       // Contest just ended
       setContest((prev: Contest | null) =>
         prev ? { ...prev, status: "completed" } : null,
