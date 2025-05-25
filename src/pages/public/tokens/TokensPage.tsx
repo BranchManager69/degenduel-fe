@@ -640,7 +640,7 @@ export const TokensPage: React.FC = () => {
         <div className="fixed bottom-24 left-8 w-24 h-24 pointer-events-none">
           <div className="absolute bottom-0 left-0 w-12 h-1 bg-brand-500/30"></div>
           <div className="absolute bottom-0 left-0 w-1 h-12 bg-brand-500/30"></div>
-          <div className="absolute bottom-6 left-6 w-6 h-6 border border-brand-500/20 transform rotate-45"></div>
+          <div className="absolute bottom-16 left-6 w-6 h-6 border border-brand-500/20 transform rotate-45"></div>
         </div>
       
         <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">

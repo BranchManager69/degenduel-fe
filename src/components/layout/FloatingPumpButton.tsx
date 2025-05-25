@@ -22,10 +22,10 @@ export const FloatingPumpButton: React.FC<FloatingPumpButtonProps> = ({ onClick,
     if (onClick) {
       onClick();
     } else if (tokenAddress) {
-      console.log(`Pump.fun button clicked! Token: ${tokenAddress}, linking to coin/${tokenAddress}`);
+      console.log(`Token: ${tokenAddress}, linking to coin/${tokenAddress}`);
       window.open(`https://pump.fun/coin/${tokenAddress}`, '_blank'); // Updated URL format
     } else {
-      console.log('Pump.fun button clicked! (No token address provided, opening general site)');
+      console.log('(No token address provided, opening general site)');
       window.open('https://pump.fun/', '_blank'); // Fallback to general Pump.fun site
     }
   };

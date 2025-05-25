@@ -1,54 +1,55 @@
-// src/components/layout/FloatingJupButton.tsx
+// src/components/layout/FloatingBelieveButton.tsx
 
 /**
- * Floating Jupiter Button Component
+ * Floating Believe Button Component
  * 
- * @description A floating button that opens a new tab to the Jupiter Aggregator website
+ * @description A floating button that opens a new tab to the Believe Aggregator website
  * 
  * @author BranchManager69
  * @version 2.1.0
- * @created 2025-05-11
- * @updated 2025-05-11
+ * @created 2025-05-25
+ * @updated 2025-05-25
  */
 
 import { motion } from 'framer-motion';
 import React from 'react';
 
-interface FloatingJupButtonProps {
+interface FloatingBelieveButtonProps {
   onClick?: () => void;
   tokenAddress?: string | null;
   tokenSymbol?: string | null; 
 }
 
-export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ onClick, tokenAddress, tokenSymbol }) => {
+export const FloatingBelieveButton: React.FC<FloatingBelieveButtonProps> = ({ onClick, tokenAddress, tokenSymbol }) => {
   const handleClick = () => {
     if (onClick) {
       onClick();
     } else if (tokenAddress) {
-      console.log(`Jupiter button clicked! Token: ${tokenAddress}, linking to swap SOL-${tokenAddress}`);
-      window.open(`https://jup.ag/swap/SOL-${tokenAddress}`, '_blank');
+      console.log(`Linking to DegenDuel's Believe page.`);
+      window.open(`https://believe.app/coin/${tokenAddress}`, '_blank');
     } else {
-      console.log('Jupiter button clicked! (No token address provided, opening general site)');
-      window.open('https://jup.ag/', '_blank'); // Fallback to general Jupiter site
+      console.log('(No token address provided, opening LaunchCoin\'s page on Believe)');
+      const launchCoinAddress = 'Ey59PH7Z4BFU4HjyKnyMdWt5GGN76KazTAwQihoUXRnk';
+      window.open(`https://believe.app/coin/${launchCoinAddress}`, '_blank'); // Fallback to LaunchCoin's page
     }
   };
 
   const buttonTitle = tokenAddress 
-    ? `View ${tokenSymbol || 'token'} (${tokenAddress.substring(0,4)}...${tokenAddress.substring(tokenAddress.length - 4)}) on Jupiter` 
-    : "Jupiter Aggregator";
+    ? `View ${tokenSymbol || 'token'} (${tokenAddress.substring(0,4)}...${tokenAddress.substring(tokenAddress.length - 4)}) on Believe` 
+    : "Believe Aggregator";
 
   return (
     <motion.div
-      key="floating-jup-button"
+      key="floating-believe-button"
       initial={{ opacity: 0, scale: 0.8, x: -50 }}
       animate={{ opacity: 1, scale: 1, x: 0 }}
       exit={{ opacity: 0, scale: 0.8, x: -50 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="fixed bottom-60 left-6 z-50 cursor-pointer group"
+      className="fixed bottom-6 left-6 z-50 cursor-pointer group"
       onClick={handleClick}
       title={buttonTitle} 
     >
-      {/* Jupiter Logo Container */}
+      {/* Believe Logo Container */}
       <motion.div
         className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border border-green-500/50 rounded-full overflow-hidden relative shadow-lg group-hover:shadow-green-500/40 transition-all duration-300"
         whileHover={{ scale: 1.1, boxShadow: '0 0 20px rgba(16, 185, 129, 0.7)' }} // Example: Tailwind green-500
@@ -75,8 +76,8 @@ export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ onClick, t
         
         {/* Image */}
         <img
-          src="/assets/media/logos/jup.png" // Converted from WebP to PNG
-          alt="Jupiter Logo"
+          src="/assets/media/logos/believe.png" // Converted from JPG to PNG
+          alt="Believe Logo"
           className="w-full h-full object-contain p-2 md:p-2.5 transition-transform duration-300 group-hover:scale-105" 
         />
       </motion.div>
@@ -89,11 +90,11 @@ export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ onClick, t
         animate={{ y: 0, opacity: 1 }} // This will be controlled by group-hover now
         style={{ pointerEvents: 'none' }}
       >
-        Jupiter Aggregator
+        Believe Aggregator
       </motion.div>
       */}
     </motion.div>
   );
 };
 
-export default FloatingJupButton; 
+export default FloatingBelieveButton; 

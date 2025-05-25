@@ -40,7 +40,7 @@ import { ddApi } from "../../../services/dd-api";
 // Date Utilities
 // Release Date Service
 import {
-    FALLBACK_RELEASE_DATE
+  FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
 // Import PaginatedResponse from types
 import { PaginatedResponse } from '../../../types';
@@ -50,10 +50,8 @@ import { useStore } from "../../../store/useStore"; // Ensure useStore is import
 // Config
 import { config } from "../../../config/config"; // Config
 
-// Floating Buttons
-import { FloatingDexscreenerButton } from '../../../components/layout/FloatingDexscreenerButton'; // Added import
-import { FloatingJupButton } from '../../../components/layout/FloatingJupButton'; // Added import
-import { FloatingPumpButton } from '../../../components/layout/FloatingPumpButton'; // Added import
+// Enhanced Floating Buttons
+import FloatingButtonStack from '../../../components/layout/FloatingButtonStack'; // Enhanced floating button stack
 
 // Contract Address
 const FALLBACK_CA_FOR_BUTTONS = config.CONTRACT_ADDRESS.REAL;
@@ -711,14 +709,12 @@ export const LandingPage: React.FC = () => {
         )}
       </div>
 
-      {/* Floating Action Buttons - Render conditionally */}
-      {(forceShowFabs || (websocketContractRevealed && websocketContractAddress)) && (
-        <>
-          <FloatingJupButton tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS} />
-          <FloatingPumpButton tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS} />
-          <FloatingDexscreenerButton tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS} />
-        </>
-      )}
+      {/* Enhanced Floating Action Buttons Stack */}
+      <FloatingButtonStack
+        tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS}
+        tokenSymbol={"DUEL"}
+        enabled={forceShowFabs || (websocketContractRevealed && websocketContractAddress)}
+      />
     </>
   );
 };

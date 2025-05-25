@@ -7,9 +7,9 @@
  * It removes the nested auth providers and replaces them with a single UnifiedAuthProvider.
  * 
  * @author BranchManager69
- * @version 2.0.1
+ * @version 2.0.2
  * @created 2025-05-05
- * @updated 2025-05-08
+ * @updated 2025-05-25
  */
 
 // React
@@ -23,7 +23,7 @@ import { SolanaConnectionProvider, useSolanaConnection } from './contexts/Solana
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
 import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
-// NEW: @solana/kit related imports
+// @solana/kit related imports
 import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use SolanaRpcApi from @solana/rpc
 import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explicit typing
 
