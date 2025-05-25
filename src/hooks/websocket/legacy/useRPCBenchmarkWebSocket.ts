@@ -111,13 +111,15 @@ export function useRPCBenchmarkWebSocket() {
       setError(null);
     }
 
-    // Handle errors - FIXED: Better authentication error handling
+    // Handle errors - FIXED: Generic error handling now that backend authorization is fixed
     if (message.type === 'ERROR') {
       console.error('[RPC Benchmark] WebSocket error:', message);
 
-      // Handle authentication errors specifically
+      // Handle authentication errors
       if (message.code === 4003 || message.error?.includes('Authentication required')) {
-        setError('Admin authentication required for RPC benchmark data');
+        setError('Authentication required for RPC benchmark data');
+      } else if (message.code === 4012 || message.error?.includes('Admin/superadmin role required')) {
+        setError('Admin privileges required for RPC benchmarks');
       } else {
         setError(message.error || 'Unknown WebSocket error');
       }

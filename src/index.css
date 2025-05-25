@@ -27,6 +27,15 @@ body {
   padding: 0;
 }
 
+/* FIXED: Better scroll lock implementation that doesn't interfere with sticky positioning */
+.scroll-lock {
+  overflow: hidden !important;
+}
+
+.scroll-lock-compensate {
+  padding-right: var(--scrollbar-width, 0px) !important;
+}
+
 @layer utilities {
   .animation-delay-100 {
     animation-delay: 100ms;

@@ -70,9 +70,16 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   // Cleanup scroll lock on component unmount
   useEffect(() => {
     return () => {
-      // Ensure scroll lock is removed if component unmounts while modal is open
+      // FIXED: Ensure scroll lock is removed using CSS classes if component unmounts while modal is open
       if (isExpanded) {
-        document.body.style.overflow = 'unset';
+        // Remove scroll lock classes
+        document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
+        document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
+        
+        // Clean up CSS custom property
+        document.documentElement.style.removeProperty('--scrollbar-width');
+        
+        // Remove event listeners
         document.removeEventListener('wheel', preventScroll);
         document.removeEventListener('touchmove', preventScroll);
       }
@@ -107,15 +114,34 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     const newExpandedState = !isExpanded;
     setIsExpanded(newExpandedState);
     
-    // Comprehensive scroll lock to prevent scroll bleed-through
+    // FIXED: Use CSS class-based scroll lock to match menu implementation
     if (newExpandedState) {
-      // Lock body scroll and prevent wheel events
-      document.body.style.overflow = 'hidden';
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // Set CSS custom property for scrollbar width compensation
+      if (scrollbarWidth > 0) {
+        document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+        document.body.classList.add('scroll-lock-compensate');
+        document.documentElement.classList.add('scroll-lock-compensate');
+      }
+      
+      // Apply scroll lock using CSS classes (consistent with menu)
+      document.body.classList.add('scroll-lock');
+      document.documentElement.classList.add('scroll-lock');
+      
+      // Add event listeners for additional scroll prevention
       document.addEventListener('wheel', preventScroll, { passive: false });
       document.addEventListener('touchmove', preventScroll, { passive: false });
     } else {
-      // Restore body scroll and remove event listeners
-      document.body.style.overflow = 'unset';
+      // Remove scroll lock classes
+      document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
+      document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
+      
+      // Clean up CSS custom property
+      document.documentElement.style.removeProperty('--scrollbar-width');
+      
+      // Remove event listeners
       document.removeEventListener('wheel', preventScroll);
       document.removeEventListener('touchmove', preventScroll);
     }
