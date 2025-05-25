@@ -24,7 +24,6 @@ export { default as QRCodeAuth } from './QRCodeAuth';
 export { default as ConnectWalletButton } from './ConnectWalletButton';
 export { default as ConsolidatedLoginButton } from './ConsolidatedLoginButton';
 export { default as LoginOptions } from './LoginOptions';
-export { default as LoginOptionsButton } from './LoginOptionsButton';
 export { default as WalletDebugger } from './WalletDebugger';
 
 // Export Twitter login components

@@ -237,7 +237,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
           if (isInWebView) {
             errorMsg = 'Biometric authentication may not work in this app. Try opening in Safari browser for best results.';
           } else {
-            errorMsg = 'Your device doesn\'t support biometric authentication';
+          errorMsg = 'Your device doesn\'t support biometric authentication';
           }
         } else if (error.name === 'SecurityError') {
           errorMsg = 'Security error occurred. Please ensure you\'re on a secure connection (HTTPS).';
@@ -427,17 +427,17 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
     
     if (mode === 'register') {
       if (isRegistered) {
-        return "Biometrics Registered";
+        return "Passkey Registered";
       } else if (buttonStyle === 'minimal') {
-        return "Register";
+        return "Register Passkey";
       } else {
         return "Register Passkey";
       }
     } else {
       if (buttonStyle === 'minimal') {
-        return "Sign in";
+        return "Sign in with Passkey";
       } else {
-        return "Passkey";
+        return "Use Passkey";
       }
     }
   };

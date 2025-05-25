@@ -1090,7 +1090,7 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
             </LazyLoad>
 
-            {/* Special Tools Section */}
+            {/* Special Tools Container */}
             <LazyLoad 
               placeholder={
                 <div className="mb-8">
@@ -1105,6 +1105,8 @@ export const SuperAdminDashboard: React.FC = () => {
               rootMargin="350px"
             >
               <div className="mb-8">
+                
+                {/* Special Tools Header */}
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent animate-gradientX">
                     Special Tools
@@ -1113,36 +1115,54 @@ export const SuperAdminDashboard: React.FC = () => {
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  
                   {/* Liquidity Simulator Card */}
                   <motion.div
                     className="bg-dark-200/75 backdrop-blur-lg border-2 border-green-500/40 hover:border-green-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-green-500/20"
                     whileHover={{ scale: 1.02, y: -4 }}
                   >
+
+                    {/* Link to Liquidity Simulator */}
                     <Link to="/admin/liq-sim" className="block h-full">
+
+                      {/* Header */}
                       <div className="flex items-center mb-3">
+                        
+                        {/* Icon */}
                         <div className="text-2xl text-green-300 mr-3 group-hover:scale-110 transition-transform duration-300">
                           💰
                         </div>
+                        
+                        {/* Title */}
                         <h3 className="text-lg font-bold text-green-300 font-display tracking-wide">
                           Liquidity Simulator
                         </h3>
+
                       </div>
                       
+                      {/* Divider */}
                       <div className="w-1/3 h-px bg-gradient-to-r from-green-500/70 to-transparent mb-3"></div>
                       
+                      {/* Description */}
                       <p className="text-gray-300 text-sm font-mono">
                         <span className="text-green-200">→</span> Simulate token liquidation strategies
                       </p>
                       
+                      {/* Corner accent - sharper edge */}
                       <div className="absolute -bottom-0 -right-0 w-8 h-8">
                         <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-green-500/70"></div>
                       </div>
+                    
                     </Link>
+
                   </motion.div>
                   
+                  {/* Special Tools Cards */}
                   {superadminSections
                     .filter(section => section.category === "Tools")
                     .map((section) => (
+
+                      // Create card for each section
                       <motion.div
                         key={section.id}
                         className={`
@@ -1159,9 +1179,13 @@ export const SuperAdminDashboard: React.FC = () => {
                         {/* Scanner line effect */}
                         <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
                         
-                        {/* Card content rendering */}
+                        {/* Card content rendering - Link */}
                         {section.link ? (
+                          
+                          // Link to section
                           <Link to={section.link} className="block h-full">
+                            
+                            {/* Header */}
                             <div className="flex items-center mb-3">
                               <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
                                 {section.icon}
@@ -1184,7 +1208,10 @@ export const SuperAdminDashboard: React.FC = () => {
                               <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                             </div>
                           </Link>
+
                         ) : (
+
+                          // Button for non-link sections
                           <button
                             onClick={() =>
                               setSelectedSection(
@@ -1194,6 +1221,7 @@ export const SuperAdminDashboard: React.FC = () => {
                             data-section-id={section.id}
                             className="block w-full text-left"
                           >
+                            {/* Card content rendering - Header */}
                             <div className="flex items-center mb-3">
                               <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
                                 {section.icon}
@@ -1220,7 +1248,9 @@ export const SuperAdminDashboard: React.FC = () => {
                             <div className="absolute -bottom-0 -right-0 w-8 h-8">
                               <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
                             </div>
+
                           </button>
+
                         )}
                         
                         {/* Expandable Content */}
@@ -1240,7 +1270,9 @@ export const SuperAdminDashboard: React.FC = () => {
                             </div>
                           </motion.div>
                         )}
+
                       </motion.div>
+
                     ))}
                 </div>
               </div>
@@ -1261,6 +1293,7 @@ export const SuperAdminDashboard: React.FC = () => {
               rootMargin="400px"
             >
               <div className="mb-8">
+                {/* Contest Management Header */}
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent animate-gradientX">
                     Contest Management
@@ -1268,6 +1301,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-amber-400 to-amber-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
                 </h2>
                 
+                {/* Contest Management Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {superadminSections
                     .filter(section => section.category === "Contest")
@@ -1372,14 +1406,19 @@ export const SuperAdminDashboard: React.FC = () => {
                         )}
                       </motion.div>
                     ))}
-                </div>
+                </div>    
               </div>
             </LazyLoad>
+
           </div>
 
-          {/* Admin Logs Panel - 25% width on desktop, full width on mobile */}
+          {/* Monitor Panels - 25% width on desktop, full width on mobile */}
           <div className="lg:col-span-1">
+            
+            {/* Monitor Panels Container (Admin Logs, Active WebSocket Connections) */}
             <div className="sticky top-6 space-y-6 max-h-screen overflow-hidden">
+              
+              {/* Admin Logs Monitoring Panel */}
               <LazyLoad
                 placeholder={
                   <div className="animate-pulse">
@@ -1393,9 +1432,11 @@ export const SuperAdminDashboard: React.FC = () => {
                 }
                 rootMargin="50px" // Smaller margin as this is typically visible at page load
               >
+                {/* Admin Logs */}
                 <AdminLogsPanel />
               </LazyLoad>
               
+              {/* WebSocket Connections Monitoring Panel */}
               <LazyLoad
                 placeholder={
                   <div className="animate-pulse">
@@ -1409,10 +1450,14 @@ export const SuperAdminDashboard: React.FC = () => {
                 }
                 rootMargin="100px"
               >
+                {/* WebSocket Connections */}
                 <WebSocketConnectionPanel />
               </LazyLoad>
+
             </div>
+
           </div>
+
         </div>
       </div>
       </div>
