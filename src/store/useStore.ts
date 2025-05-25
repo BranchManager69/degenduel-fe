@@ -100,6 +100,15 @@ interface StateData {
   contests: Contest[];
   tokens: Token[];
   maintenanceMode: boolean;
+  maintenanceState: {
+    isActive: boolean;
+    message: string;
+    estimatedDuration?: number;
+    startTime: string;
+    endTime?: string;
+    allowedUsers?: string[];
+    maintenanceType: 'scheduled' | 'emergency' | 'update';
+  } | null;
   serviceState: ServiceState | null;
   serviceAlerts: ServiceAlert[];
   // SkyDuel state
@@ -307,6 +316,8 @@ export interface State extends StateData {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   setMaintenanceMode: (enabled: boolean) => void;
+  setMaintenanceState: (state: StateData["maintenanceState"]) => void;
+  updateMaintenanceState: (updates: Partial<NonNullable<StateData["maintenanceState"]>>) => void;
   // SkyDuel actions
   setSkyDuelSelectedNode: (nodeId: string | undefined) => void;
   setServiceState: (
@@ -697,6 +708,7 @@ const initialState: StateData = {
   contests: [],
   tokens: [],
   maintenanceMode: false,
+  maintenanceState: null,
   serviceState: null,
   serviceAlerts: [],
   circuitBreaker: {
@@ -1111,6 +1123,13 @@ export const useStore = create<State>()(
           }
         }
       },
+      setMaintenanceState: (state) => set({ maintenanceState: state }),
+      updateMaintenanceState: (updates) =>
+        set((currentState) => ({
+          maintenanceState: currentState.maintenanceState
+            ? { ...currentState.maintenanceState, ...updates }
+            : null,
+        })),
       setServiceState: (status, metrics) =>
         set({
           serviceState: {
