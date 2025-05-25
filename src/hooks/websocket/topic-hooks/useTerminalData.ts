@@ -177,14 +177,14 @@ export function useTerminalData() {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [ws.isConnected, ws.subscribe, ws.request, circuitBreakerOpen]);
+  }, [ws.isConnected, circuitBreakerOpen]);
 
   // Cleanup subscription on unmount
   useEffect(() => {
     return () => {
       ws.unsubscribe([TopicType.TERMINAL]);
     };
-  }, [ws.unsubscribe]);
+  }, []);
 
   const refreshTerminalData = useCallback(() => {
     // Check circuit breaker - if open and timeout hasn't passed, don't retry
@@ -235,7 +235,7 @@ export function useTerminalData() {
     }, 10000);
 
     return () => clearTimeout(timeoutId);
-  }, [ws.isConnected, ws.request, circuitBreakerOpen]);
+  }, [ws.isConnected, circuitBreakerOpen]);
 
   return {
     terminalData,
