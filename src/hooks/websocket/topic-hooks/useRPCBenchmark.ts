@@ -1,11 +1,14 @@
+// src/hooks/websocket/topic-hooks/useRPCBenchmark.ts
+
 /**
  * useRPCBenchmark Hook
  * 
- * Standardized hook for the RPC benchmark system that provides real-time
- * benchmark data and controls for admin users.
+ * @description Standardized hook for the RPC benchmark system that provides real-time benchmark data and controls for admin users.
  * 
- * Based on the v69 Unified WebSocket System specification
- * Last updated: April 10, 2025
+ * @author BranchManager69
+ * @version 1.0.0
+ * @created 2025-05-25
+ * @updated 2025-05-25
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -65,10 +68,10 @@ export function useRPCBenchmark() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBenchmarkRunning, setIsBenchmarkRunning] = useState<boolean>(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  
+
   // Create a mutable ref to store the latest benchmark data
   const dataRef = useRef<RPCBenchmarkData | null>(null);
-  
+
   // Update both the state and ref when new data comes in
   const updateData = useCallback((newData: RPCBenchmarkData | null) => {
     setData(newData);
@@ -87,8 +90,8 @@ export function useRPCBenchmark() {
 
     try {
       const { topic, subtype, action, data } = message;
-      
-      if (topic === TopicType.ADMIN) {
+
+      if (topic === TopicType.SYSTEM) {
         if (subtype === 'rpc-benchmark') {
           if (action === 'update') {
             // Updated benchmark data
@@ -122,7 +125,7 @@ export function useRPCBenchmark() {
     'rpc-benchmark-hook',
     [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR, DDExtendedMessageType.ACKNOWLEDGMENT],
     handleMessage,
-    [TopicType.ADMIN, TopicType.SYSTEM]
+    [TopicType.SYSTEM]
   );
 
   // Fetch latest benchmark data when connected
@@ -130,9 +133,9 @@ export function useRPCBenchmark() {
     if (!ws.isConnected) {
       return false;
     }
-    
+
     setIsLoading(true);
-    return ws.request(TopicType.ADMIN, 'rpc-benchmarks/latest');
+    return ws.request(TopicType.SYSTEM, 'rpc-benchmarks/latest');
   }, [ws]);
 
   // Trigger a new benchmark run
@@ -140,27 +143,27 @@ export function useRPCBenchmark() {
     if (!ws.isConnected) {
       return false;
     }
-    
+
     setIsBenchmarkRunning(true);
-    return ws.request(TopicType.ADMIN, 'rpc-benchmarks/trigger');
+    return ws.request(TopicType.SYSTEM, 'rpc-benchmarks/trigger');
   }, [ws]);
 
   // Request initial data when connected
   useEffect(() => {
-    if (!ws.isConnected || !ws.isAuthenticated) return;
+    if (!ws.isConnected) return;
 
-    // Subscribe to admin topic
-    ws.subscribe(['admin']);
-    
+    // Subscribe to system topic (public)
+    ws.subscribe(['system']);
+
     // Fetch initial data
     fetchLatestBenchmarkData();
-    
+
     return () => {
       if (ws.isConnected) {
-        ws.unsubscribe(['admin']);
+        ws.unsubscribe(['system']);
       }
     };
-  }, [ws.isConnected, ws.isAuthenticated]); // Removed fetchLatestBenchmarkData dependency
+  }, [ws.isConnected]);
 
   // Reset loading state after a timeout if we're still loading
   useEffect(() => {
