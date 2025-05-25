@@ -72,6 +72,9 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
   const avgLatency = Math.round(totalLatency / methods.length / methods.length);
   const successRate = Math.round((totalSuccess / totalAttempts) * 100);
   
+  // Get active tokens from database stats (new from backend)
+  const activeTokens = data.database_stats?.active_tokens || 0;
+  
   // Color functions
   const getLatencyColor = (ms: number) => {
     if (ms <= 50) return '#22c55e'; // green
@@ -88,6 +91,12 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
   const getMethodsColor = (active: number, total: number) => {
     if (active === total) return '#22c55e'; // green
     if (active >= total * 0.8) return '#eab308'; // yellow
+    return '#ef4444'; // red
+  };
+  
+  const getTokensColor = (tokens: number) => {
+    if (tokens >= 1000) return '#22c55e'; // green
+    if (tokens >= 500) return '#eab308'; // yellow
     return '#ef4444'; // red
   };
 
@@ -158,6 +167,22 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
         >
           <span className="text-[8px] font-mono text-black font-bold leading-none mt-1">
             {currentDisplay.methods}
+          </span>
+        </div>
+      </motion.div>
+
+      {/* Rectangle - Active Tokens */}
+      <motion.div
+        className="relative flex items-center justify-center"
+        whileHover={{ scale: 1.1 }}
+        title="tokens"
+      >
+        <div 
+          className="w-5 h-3 flex items-center justify-center"
+          style={{ backgroundColor: getTokensColor(activeTokens) }}
+        >
+          <span className="text-[7px] font-mono text-black font-bold leading-none">
+            {activeTokens > 999 ? `${Math.round(activeTokens/1000)}k` : activeTokens}
           </span>
         </div>
       </motion.div>

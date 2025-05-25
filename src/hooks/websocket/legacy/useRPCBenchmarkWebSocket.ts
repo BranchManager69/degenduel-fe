@@ -39,6 +39,11 @@ export interface BenchmarkData {
   methods: Record<string, BenchmarkMethod>;
   overall_fastest_provider: string;
   performance_advantage: PerformanceAdvantage[];
+  database_stats?: {
+    active_tokens: number;
+    total_tokens: number;
+    active_percentage: string;
+  };
 }
 
 export interface BenchmarkMessage {
