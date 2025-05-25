@@ -103,11 +103,11 @@ export function useWallet(walletAddress?: string) {
         if (message.subtype === 'transaction' && message.data.transaction) {
           // Update transaction list
           const transaction = message.data.transaction;
-          
+
           setWalletState(prevState => {
             // Check if transaction already exists
             const existingIndex = prevState.transactions.findIndex(tx => tx.id === transaction.id);
-            
+
             if (existingIndex >= 0) {
               // Update existing transaction
               const updatedTransactions = [...prevState.transactions];
@@ -115,7 +115,7 @@ export function useWallet(walletAddress?: string) {
                 ...updatedTransactions[existingIndex],
                 ...transaction
               };
-              
+
               return {
                 ...prevState,
                 transactions: updatedTransactions
@@ -128,9 +128,9 @@ export function useWallet(walletAddress?: string) {
               };
             }
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('wallet_transaction_update', {
             socketType: TopicType.WALLET,
             message: `Updated wallet transaction ${transaction.id}`,
@@ -149,26 +149,31 @@ export function useWallet(walletAddress?: string) {
               ...messageSettings
             }
           }));
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('wallet_settings_update', {
             socketType: TopicType.WALLET,
             message: 'Updated wallet settings',
             timestamp: new Date().toISOString()
           });
         }
-        
+
         // Update wallet address if provided
-        if (message.data && message.data.wallet_address && !walletState.wallet_address) {
-          const walletAddress = message.data.wallet_address;
-          setWalletState(prevState => ({
-            ...prevState,
-            wallet_address: walletAddress
-          }));
+        if (message.data && message.data.wallet_address) {
+          setWalletState(prevState => {
+            // Only update if we don't already have a wallet address
+            if (!prevState.wallet_address) {
+              return {
+                ...prevState,
+                wallet_address: message.data!.wallet_address
+              };
+            }
+            return prevState;
+          });
         }
       }
-      
+
       // Handle wallet balance updates
       if (message.type === 'DATA' && message.topic === 'wallet-balance' && message.data) {
         const balanceData = message.data;
@@ -179,14 +184,14 @@ export function useWallet(walletAddress?: string) {
             sol_balance: balanceData.sol_balance || 0,
             tokens: balanceData.tokens || []
           };
-          
+
           setWalletState(prevState => ({
             ...prevState,
             balance: walletBalanceData
           }));
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('wallet_balance_update', {
             socketType: 'wallet-balance',
             message: 'Updated wallet balance',
@@ -195,11 +200,14 @@ export function useWallet(walletAddress?: string) {
           });
         }
       }
-      
+
       // Mark as not loading once we've processed any valid message
-      if (isLoading) {
-        setIsLoading(false);
-      }
+      setIsLoading(prevLoading => {
+        if (prevLoading) {
+          return false;
+        }
+        return prevLoading;
+      });
     } catch (err) {
       console.error('[Wallet WebSocket] Error processing message:', err);
       dispatchWebSocketEvent('error', {
@@ -208,7 +216,7 @@ export function useWallet(walletAddress?: string) {
         error: err instanceof Error ? err.message : String(err)
       });
     }
-  }, [isLoading, walletState.wallet_address]);
+  }, []);
 
   // Connect to the unified WebSocket system
   const ws = useWebSocket();
@@ -219,28 +227,28 @@ export function useWallet(walletAddress?: string) {
       const unregister = ws.registerListener('wallet-hook', [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR], handleMessage);
       return unregister;
     }
-  }, [ws, handleMessage]);
+  }, [ws.registerListener]);
 
   // Subscribe to wallet data when connected
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
-    
+
     if (ws.isConnected && !isSubscribedRef.current) {
       // Subscribe to wallet and wallet-balance topics
       ws.subscribe([TopicType.WALLET, 'wallet-balance']);
-      
+
       // Request initial wallet data
       const requestParams = walletAddress ? { walletAddress } : {};
       ws.request(TopicType.WALLET, 'GET_WALLET_DATA', requestParams);
       isSubscribedRef.current = true;
-      
+
       dispatchWebSocketEvent('wallet_subscribe', {
         socketType: TopicType.WALLET,
         message: 'Subscribing to wallet data',
         timestamp: new Date().toISOString(),
         walletAddress: walletAddress || 'user wallet'
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
       timeoutId = setTimeout(() => {
         console.warn('[Wallet WebSocket] Timed out waiting for data');
@@ -249,7 +257,7 @@ export function useWallet(walletAddress?: string) {
     } else if (!ws.isConnected) {
       isSubscribedRef.current = false;
     }
-    
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
@@ -275,11 +283,11 @@ export function useWallet(walletAddress?: string) {
       console.warn('[Wallet WebSocket] Cannot send transaction - WebSocket not connected');
       return Promise.reject(new Error('WebSocket not connected'));
     }
-    
+
     return new Promise<string>((resolve, reject) => {
       // The request method returns a boolean indicating if the message was sent
       const requestSent = ws.request(TopicType.WALLET, 'SEND_TRANSACTION', params);
-      
+
       if (requestSent) {
         // Success path - request was sent
         dispatchWebSocketEvent('wallet_send_transaction', {
@@ -287,11 +295,11 @@ export function useWallet(walletAddress?: string) {
           message: `Requested to send ${params.amount} ${params.token} to ${params.recipient}`,
           timestamp: new Date().toISOString()
         });
-        
+
         // For demo purposes, create a transaction ID
         // In a real app, this would come from the server in a response
         const mockTransactionId = `tx-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-        
+
         // Optimistically add transaction to state
         const newTransaction: WalletTransaction = {
           id: mockTransactionId,
@@ -302,12 +310,12 @@ export function useWallet(walletAddress?: string) {
           timestamp: new Date().toISOString(),
           to: params.recipient
         };
-        
+
         setWalletState(prevState => ({
           ...prevState,
           transactions: [newTransaction, ...prevState.transactions]
         }));
-        
+
         resolve(mockTransactionId);
       } else {
         // Error path - request failed to send
@@ -328,10 +336,10 @@ export function useWallet(walletAddress?: string) {
       console.warn('[Wallet WebSocket] Cannot update settings - WebSocket not connected');
       return Promise.reject(new Error('WebSocket not connected'));
     }
-    
+
     return new Promise<void>((resolve, reject) => {
       const requestSent = ws.request(TopicType.WALLET, 'UPDATE_SETTINGS', { settings });
-      
+
       if (requestSent) {
         // Optimistically update settings
         setWalletState(prevState => ({
@@ -341,13 +349,13 @@ export function useWallet(walletAddress?: string) {
             ...settings
           }
         }));
-        
+
         dispatchWebSocketEvent('wallet_settings_update_request', {
           socketType: TopicType.WALLET,
           message: 'Requested wallet settings update',
           timestamp: new Date().toISOString()
         });
-        
+
         resolve();
       } else {
         const errorMessage = 'Failed to send settings update request';
@@ -364,18 +372,18 @@ export function useWallet(walletAddress?: string) {
   // Force refresh wallet data
   const refreshWallet = useCallback(() => {
     setIsLoading(true);
-    
+
     if (ws.isConnected) {
       // Request fresh wallet data
       const requestParams = walletAddress ? { walletAddress } : {};
       ws.request(TopicType.WALLET, 'GET_WALLET_DATA', requestParams);
-      
+
       dispatchWebSocketEvent('wallet_refresh', {
         socketType: TopicType.WALLET,
         message: 'Refreshing wallet data',
         timestamp: new Date().toISOString()
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
       setTimeout(() => {
         if (isLoading) {
@@ -401,12 +409,12 @@ export function useWallet(walletAddress?: string) {
     sendTransaction,
     updateSettings,
     refreshWallet,
-    
+
     // Helper functions
     getTransaction: useCallback((id: string) => {
       return walletState.transactions.find(tx => tx.id === id) || null;
     }, [walletState.transactions]),
-    
+
     getTokenBalance: useCallback((symbol: string) => {
       if (!walletState.balance) return 0;
       const token = walletState.balance.tokens.find(t => t.symbol === symbol);

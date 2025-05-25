@@ -12,8 +12,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
+import { DDExtendedMessageType } from '../types';
 
 // Analytics interfaces based on backend API documentation
 export interface UserMetrics {
@@ -282,7 +282,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
       // Check if this is a valid analytics message
       if (message.type === 'DATA' && message.topic === 'admin' && message.data) {
         const data = message.data;
-        
+
         // Handle complete analytics update
         if (data.analytics) {
           // Update analytics data with new values
@@ -291,10 +291,10 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
             ...data.analytics as AnalyticsData,
             timestamp: message.timestamp || new Date().toISOString()
           }));
-          
+
           setIsLoading(false);
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('analytics_update', {
             socketType: TopicType.ADMIN,
             message: 'Full analytics data updated',
@@ -306,8 +306,8 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
         else if (data.section && data.sectionData) {
           setAnalyticsData(prevData => {
             const section = data.section as keyof AnalyticsData;
-            if (section === 'users' || section === 'contests' || section === 'tokens' || 
-                section === 'system' || section === 'revenue') {
+            if (section === 'users' || section === 'contests' || section === 'tokens' ||
+              section === 'system' || section === 'revenue') {
               return {
                 ...prevData,
                 [section]: {
@@ -319,10 +319,10 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
             }
             return prevData;
           });
-          
+
           setIsLoading(false);
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('analytics_section_update', {
             socketType: TopicType.ADMIN,
             message: `Analytics section ${data.section} updated`,
@@ -334,7 +334,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
           // Process metrics updates to the appropriate sections
           setAnalyticsData(prevData => {
             const newData = { ...prevData };
-            
+
             // The backend might send flattened metrics, so we need to map them
             // to the appropriate nested structure in our state
             if (data.metrics) {
@@ -351,15 +351,15 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
                     }
                   }
                 }
-                
+
                 // Handle deeper nested metrics
                 if (parts.length === 3) {
                   const [section, subsection, metric] = parts;
                   if (section in newData) {
                     const sectionKey = section as keyof AnalyticsData;
-                    if (typeof newData[sectionKey] === 'object' && 
-                        newData[sectionKey] !== null && 
-                        subsection in (newData[sectionKey] as any)) {
+                    if (typeof newData[sectionKey] === 'object' &&
+                      newData[sectionKey] !== null &&
+                      subsection in (newData[sectionKey] as any)) {
                       // @ts-ignore - This is safe because we check that the section and subsection exist
                       newData[sectionKey][subsection][metric] = value;
                     }
@@ -367,16 +367,16 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
                 }
               });
             }
-            
+
             return {
               ...newData,
               timestamp: message.timestamp || new Date().toISOString()
             };
           });
-          
+
           setIsLoading(false);
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('analytics_metrics_update', {
             socketType: TopicType.ADMIN,
             message: 'Analytics metrics updated',
@@ -387,7 +387,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
       }
     } catch (err) {
       console.error('[Analytics WebSocket] Error processing message:', err);
-      
+
       dispatchWebSocketEvent('error', {
         socketType: TopicType.ADMIN,
         message: 'Error processing analytics data',
@@ -405,27 +405,27 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
       const unregister = ws.registerListener('admin-analytics-hook', [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR], handleMessage);
       return unregister;
     }
-  }, [ws, handleMessage]);
+  }, [ws.registerListener]);
 
   // Subscribe to admin topic when connected
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
-    
+
     if (ws.isConnected && !isSubscribedRef.current) {
       // Subscribe to admin topic
       ws.subscribe([TopicType.ADMIN]);
-      
+
       // Request initial analytics data
       ws.request(TopicType.ADMIN, 'GET_ANALYTICS', { timeframe });
       isSubscribedRef.current = true;
-      
+
       dispatchWebSocketEvent('analytics_subscribe', {
         socketType: TopicType.ADMIN,
         message: 'Subscribing to admin analytics',
         timestamp: new Date().toISOString(),
         timeframe
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
       timeoutId = setTimeout(() => {
         console.warn('[Analytics WebSocket] Timed out waiting for data');
@@ -434,7 +434,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
     } else if (!ws.isConnected) {
       isSubscribedRef.current = false;
     }
-    
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
@@ -454,10 +454,10 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
   useEffect(() => {
     if (ws.isConnected && !isLoading && analyticsData.timeframe !== timeframe) {
       setIsLoading(true);
-      
+
       // Request analytics data for the new timeframe
       ws.request(TopicType.ADMIN, 'GET_ANALYTICS', { timeframe });
-      
+
       dispatchWebSocketEvent('analytics_timeframe_change', {
         socketType: TopicType.ADMIN,
         message: `Changing analytics timeframe to ${timeframe}`,
@@ -474,19 +474,19 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
       console.warn('[Analytics WebSocket] Cannot refresh - WebSocket not connected');
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     // Request fresh data
     ws.request(TopicType.ADMIN, 'GET_ANALYTICS', { timeframe });
-    
+
     dispatchWebSocketEvent('analytics_refresh', {
       socketType: TopicType.ADMIN,
       message: 'Refreshing admin analytics data',
       timestamp: new Date().toISOString(),
       timeframe
     });
-    
+
     // Set a timeout to reset loading state if we don't get data
     setTimeout(() => {
       if (isLoading) {
@@ -498,7 +498,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
   // Calculate growth percentages compared to previous periods
   const getGrowthRates = useCallback(() => {
     const { users, contests, revenue } = analyticsData;
-    
+
     return {
       users: {
         daily: users.newToday > 0 ? (users.newToday / (users.total - users.newToday)) * 100 : 0,
@@ -532,12 +532,12 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
     lastUpdate,
     refreshAnalytics,
     getGrowthRates,
-    
+
     // Helper functions
     getUserMetric: useCallback((metricPath: string): number => {
       const parts = metricPath.split('.');
       let result: any = analyticsData.users;
-      
+
       for (const part of parts) {
         if (result && typeof result === 'object' && part in result) {
           result = result[part];
@@ -545,14 +545,14 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
           return 0;
         }
       }
-      
+
       return typeof result === 'number' ? result : 0;
     }, [analyticsData.users]),
-    
+
     getSystemMetric: useCallback((metricPath: string): number => {
       const parts = metricPath.split('.');
       let result: any = analyticsData.system;
-      
+
       for (const part of parts) {
         if (result && typeof result === 'object' && part in result) {
           result = result[part];
@@ -560,7 +560,7 @@ export function useAnalytics(timeframe: 'realtime' | 'hourly' | 'daily' | 'weekl
           return 0;
         }
       }
-      
+
       return typeof result === 'number' ? result : 0;
     }, [analyticsData.system])
   };
