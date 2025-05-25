@@ -9,8 +9,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { DDExtendedMessageType, isMessageType, TopicType } from '../';
 import { useStore } from '../../../store/useStore';
-import { DDExtendedMessageType, TopicType } from '../';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
@@ -81,7 +81,6 @@ export function useCircuitBreaker() {
 
   // Process incoming messages
   const handleMessage = useCallback((message: CircuitBreakerMessage) => {
-    const { isMessageType } = require('../../websocket');
     if (!isMessageType(message.type, DDExtendedMessageType.DATA) || message.topic !== TopicType.CIRCUIT_BREAKER) {
       return;
     }
@@ -93,11 +92,11 @@ export function useCircuitBreaker() {
         if (action === 'update') {
           // Update the health status of a service
           const serviceUpdate = data as ServiceCircuitBreaker;
-          
+
           setState(prev => {
             const serviceIndex = prev.services.findIndex(s => s.name === serviceUpdate.name);
             const newServices = [...prev.services];
-            
+
             if (serviceIndex >= 0) {
               // Update existing service
               newServices[serviceIndex] = {
@@ -108,15 +107,15 @@ export function useCircuitBreaker() {
               // Add new service
               newServices.push(serviceUpdate);
             }
-            
+
             return {
               ...prev,
               services: newServices
             };
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('circuit_breaker_update', {
             socketType: 'circuit-breaker',
             message: `Health update for ${serviceUpdate.name}`,
@@ -128,13 +127,13 @@ export function useCircuitBreaker() {
         } else if (action === 'bulk_update') {
           // Update the entire service list
           const services = data.services as ServiceCircuitBreaker[];
-          
+
           setState({
             services: services
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('circuit_breaker_bulk_update', {
             socketType: 'circuit-breaker',
             message: `Bulk update for ${services.length} services`,
@@ -146,14 +145,14 @@ export function useCircuitBreaker() {
         if (action === 'trip') {
           // Circuit breaker tripped
           const { service, error, details } = data;
-          
+
           setState(prev => {
             const serviceIndex = prev.services.findIndex(s => s.name === service);
-            
+
             if (serviceIndex < 0) {
               return prev;
             }
-            
+
             const newServices = [...prev.services];
             newServices[serviceIndex] = {
               ...newServices[serviceIndex],
@@ -165,13 +164,13 @@ export function useCircuitBreaker() {
                 lastFailure: new Date().toISOString()
               }
             };
-            
+
             return {
               ...prev,
               services: newServices
             };
           });
-          
+
           // Add alert
           addCircuitAlert({
             type: "error",
@@ -179,9 +178,9 @@ export function useCircuitBreaker() {
             message: error || "Service protection activated",
             details: details
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('circuit_breaker_trip', {
             socketType: 'circuit-breaker',
             message: `Circuit breaker tripped for ${service}`,
@@ -192,14 +191,14 @@ export function useCircuitBreaker() {
         } else if (action === 'reset') {
           // Circuit breaker reset
           const { service, details } = data;
-          
+
           setState(prev => {
             const serviceIndex = prev.services.findIndex(s => s.name === service);
-            
+
             if (serviceIndex < 0) {
               return prev;
             }
-            
+
             const newServices = [...prev.services];
             newServices[serviceIndex] = {
               ...newServices[serviceIndex],
@@ -210,13 +209,13 @@ export function useCircuitBreaker() {
                 recoveryAttempts: 0
               }
             };
-            
+
             return {
               ...prev,
               services: newServices
             };
           });
-          
+
           // Add alert
           addCircuitAlert({
             type: "info",
@@ -224,9 +223,9 @@ export function useCircuitBreaker() {
             message: "Service protection deactivated",
             details: details
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('circuit_breaker_reset', {
             socketType: 'circuit-breaker',
             message: `Circuit breaker reset for ${service}`,
@@ -236,14 +235,14 @@ export function useCircuitBreaker() {
         } else if (action === 'half_open') {
           // Circuit breaker in half-open state
           const { service, details } = data;
-          
+
           setState(prev => {
             const serviceIndex = prev.services.findIndex(s => s.name === service);
-            
+
             if (serviceIndex < 0) {
               return prev;
             }
-            
+
             const newServices = [...prev.services];
             newServices[serviceIndex] = {
               ...newServices[serviceIndex],
@@ -254,13 +253,13 @@ export function useCircuitBreaker() {
                 recoveryAttempts: (newServices[serviceIndex].circuit.recoveryAttempts || 0) + 1
               }
             };
-            
+
             return {
               ...prev,
               services: newServices
             };
           });
-          
+
           // Add alert
           addCircuitAlert({
             type: "warning",
@@ -268,9 +267,9 @@ export function useCircuitBreaker() {
             message: "Service attempting recovery",
             details: details
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('circuit_breaker_half_open', {
             socketType: 'circuit-breaker',
             message: `Circuit breaker half-open for ${service}`,
@@ -282,28 +281,28 @@ export function useCircuitBreaker() {
         if (action === 'update') {
           // Update metrics for a service
           const { service, metrics } = data;
-          
+
           setState(prev => {
             const serviceIndex = prev.services.findIndex(s => s.name === service);
-            
+
             if (serviceIndex < 0) {
               return prev;
             }
-            
+
             const newServices = [...prev.services];
             newServices[serviceIndex] = {
               ...newServices[serviceIndex],
               metrics: metrics
             };
-            
+
             return {
               ...prev,
               services: newServices
             };
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('circuit_breaker_metrics', {
             socketType: 'circuit-breaker',
             message: `Metrics update for ${service}`,
@@ -331,7 +330,7 @@ export function useCircuitBreaker() {
 
   // Set up WebSocket connection
   const ws = useUnifiedWebSocket(
-    'circuit-breaker-hook', 
+    'circuit-breaker-hook',
     [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
     [TopicType.CIRCUIT_BREAKER, TopicType.SYSTEM]
@@ -363,7 +362,7 @@ export function useCircuitBreaker() {
     if (!ws.isConnected) {
       return false;
     }
-    
+
     return ws.request(TopicType.CIRCUIT_BREAKER, 'reset_breaker', { service: serviceName });
   }, [ws]);
 
@@ -372,8 +371,8 @@ export function useCircuitBreaker() {
     if (!ws.isConnected) {
       return false;
     }
-    
-    return ws.request(TopicType.CIRCUIT_BREAKER, 'update_config', { 
+
+    return ws.request(TopicType.CIRCUIT_BREAKER, 'update_config', {
       service: serviceName,
       config: config
     });
