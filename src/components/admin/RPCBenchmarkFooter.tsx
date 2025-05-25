@@ -1,7 +1,7 @@
 // src/components/admin/RPCBenchmarkFooter.tsx
 
 import { motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
 import { useDatabaseStats } from '../../hooks/websocket/topic-hooks/useDatabaseStats';
 
@@ -9,7 +9,7 @@ interface RPCBenchmarkFooterProps {
   compactMode?: boolean;
 }
 
-const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = false }) => {
+const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMode = false }) => {
   const [rotationIndex, setRotationIndex] = useState(0);
   
   const {
@@ -197,6 +197,8 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
       </motion.div>
     </div>
   );
-};
+});
+
+RPCBenchmarkFooter.displayName = 'RPCBenchmarkFooter';
 
 export default RPCBenchmarkFooter;
