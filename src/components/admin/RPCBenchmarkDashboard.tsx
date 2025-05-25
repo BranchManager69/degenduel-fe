@@ -1,7 +1,7 @@
 // src/components/admin/RPCBenchmarkDashboard.tsx
 
 import React, { useEffect } from 'react';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
+import { useRPCBenchmark } from '../../hooks/websocket/topic-hooks/useRPCBenchmark';
 
 interface RPCBenchmarkDashboardProps {
   isVisible?: boolean;
@@ -17,7 +17,7 @@ export const RPCBenchmarkDashboard: React.FC<RPCBenchmarkDashboardProps> = ({
     error, 
     isConnected,
     refreshData
-  } = useRPCBenchmarkWebSocket();
+  } = useRPCBenchmark();
 
   // Handle visibility changes
   useEffect(() => {

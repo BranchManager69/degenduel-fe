@@ -1,9 +1,9 @@
 // src/components/admin/RPCBenchmarkFooter.tsx
 
 import { motion } from 'framer-motion';
-import React, { useEffect, useState, memo } from 'react';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
+import React, { memo, useEffect, useState } from 'react';
 import { useDatabaseStats } from '../../hooks/websocket/topic-hooks/useDatabaseStats';
+import { useRPCBenchmark } from '../../hooks/websocket/topic-hooks/useRPCBenchmark';
 
 interface RPCBenchmarkFooterProps {
   compactMode?: boolean;
@@ -19,7 +19,7 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
     isConnected,
     isAuthenticated,
     refreshData
-  } = useRPCBenchmarkWebSocket();
+  } = useRPCBenchmark();
 
   // Get database stats from public SYSTEM topic (no auth required!)
   const { data: dbStats } = useDatabaseStats();

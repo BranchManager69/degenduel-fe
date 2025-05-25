@@ -22,12 +22,12 @@ export { ConnectionState, DDExtendedMessageType as MessageType, SOCKET_TYPES } f
 export { useUnifiedWebSocket };
 
 // Type Migration Support - Utility functions for message handling
-  import {
-    DDExtendedMessageType,
-    createMessage,
-    isMessageType,
-    isValidMessageType
-  } from './types';
+import {
+  DDExtendedMessageType,
+  createMessage,
+  isMessageType,
+  isValidMessageType
+} from './types';
 
 // Export utility functions for type-safe message handling
 export { createMessage, isMessageType, isValidMessageType };
@@ -56,25 +56,25 @@ import { SOCKET_TYPES } from './types';
 // This allows TopicType to be used both as a value (TopicType.SYSTEM) and as a type (param: TopicType)
 export const TopicType = {
   // Core system topics
-  SYSTEM: SOCKET_TYPES.SYSTEM, 
+  SYSTEM: SOCKET_TYPES.SYSTEM,
   MONITOR: SOCKET_TYPES.MONITOR,
   SERVER_STATUS: SOCKET_TYPES.SERVER_STATUS,
-  
+
   // Market data topics
   MARKET_DATA: SOCKET_TYPES.MARKET_DATA,
   TOKEN_DATA: SOCKET_TYPES.TOKEN_DATA,
-  
+
   // User data topics
   USER: 'user',
   PORTFOLIO: SOCKET_TYPES.PORTFOLIO,
   WALLET: SOCKET_TYPES.WALLET,
   NOTIFICATION: SOCKET_TYPES.NOTIFICATION,
   ACHIEVEMENT: SOCKET_TYPES.ACHIEVEMENT,
-  
+
   // Contest topics
   CONTEST: SOCKET_TYPES.CONTEST,
   CONTEST_CHAT: SOCKET_TYPES.CONTEST_CHAT,
-  
+
   // Admin topics
   ADMIN: 'admin',
   ANALYTICS: SOCKET_TYPES.ANALYTICS,
@@ -82,11 +82,11 @@ export const TopicType = {
   SERVICE: SOCKET_TYPES.SERVICE,
   SKYDUEL: SOCKET_TYPES.SKYDUEL,
   LIQUIDITY_SIM: 'liquidity-sim',
-  
+
   // Special topics
   LOGS: 'logs',
   TEST: SOCKET_TYPES.TEST,
-  
+
   // Terminal and platform data topics
   TERMINAL: 'terminal'
 };
@@ -124,22 +124,15 @@ export { useWallet };
 // with topic-based hooks that use the unified WebSocket system
 export const WEBSOCKET_SYSTEM_DEPRECATED = true;
 
-// Legacy hooks (still exported for backward compatibility)
-// These will gradually be replaced with standardized topic-based hooks
-// export * from './legacy/useAchievementWebSocket'; // DEPRECATED - REMOVE
-// export * from './legacy/useAnalyticsWebSocket'; // DEPRECATED - REMOVE
-// export * from './legacy/useContestChatWebSocket'; // DEPRECATED - REMOVE (also resolves ChatParticipant ambiguity)
-// export * from './legacy/useContestWebSocket'; // DEPRECATED - REMOVE
-
-// Keep other legacy exports if they are still valid and used, or remove them too if obsolete.
-// For now, only removing the ones that caused direct linter errors.
+// Legacy hooks (deprecated - use topic-hooks instead)
 export * from './legacy/useCircuitBreakerSocket';
+// export * from './legacy/useContestChatWebSocket'; // COMMENTED: Causes ChatParticipant type ambiguity with topic-hooks
 export * from './legacy/usePortfolioWebSocket';
-export * from './legacy/useRPCBenchmarkWebSocket';
 export * from './legacy/useServerStatusWebSocket';
 export * from './legacy/useServiceWebSocket';
 export * from './legacy/useSkyDuelWebSocket';
 export * from './legacy/useSystemSettingsWebSocket';
 export * from './legacy/useWalletWebSocket';
 export * from './legacy/useWebSocket';
+// export * from './legacy/useRPCBenchmarkWebSocket'; // REMOVED: All components migrated to useRPCBenchmark
 

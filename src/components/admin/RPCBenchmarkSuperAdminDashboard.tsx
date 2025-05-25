@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
+import { useRPCBenchmark } from '../../hooks/websocket/topic-hooks/useRPCBenchmark';
 import RPCBenchmarkDashboard from './RPCBenchmarkDashboard';
 
 export const RPCBenchmarkSuperAdminDashboard: React.FC = () => {
@@ -11,7 +11,7 @@ export const RPCBenchmarkSuperAdminDashboard: React.FC = () => {
     isAuthenticated, 
     isBenchmarkRunning, 
     triggerBenchmark 
-  } = useRPCBenchmarkWebSocket();
+  } = useRPCBenchmark();
   
   const [isTriggering, setIsTriggering] = useState(false);
 

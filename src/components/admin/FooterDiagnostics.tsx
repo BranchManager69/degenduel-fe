@@ -2,11 +2,11 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
+import { useRPCBenchmark } from '../../hooks/websocket/topic-hooks/useRPCBenchmark';
 import { isStorybook } from '../../utils/storybook';
 
 // Use a storybook mock if available
-const useRPCBenchmarkWebSocketHook = (typeof window !== 'undefined' && (window as any).useRPCBenchmarkWebSocket) || useRPCBenchmarkWebSocket;
+const useRPCBenchmarkHook = (typeof window !== 'undefined' && (window as any).useRPCBenchmark) || useRPCBenchmark;
 
 // Constants for performance thresholds
 const LATENCY_THRESHOLDS = {
@@ -34,7 +34,7 @@ const FooterDiagnostics: React.FC<FooterDiagnosticsProps> = ({ compactMode = fal
     isAuthenticated,
     refreshData,
     triggerBenchmark
-  } = useRPCBenchmarkWebSocketHook();
+  } = useRPCBenchmarkHook();
   
   // Click outside handler for expanded view
   useEffect(() => {
