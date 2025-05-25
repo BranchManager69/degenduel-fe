@@ -1,13 +1,13 @@
 // src/components/layout/Footer.tsx
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
-import { DDExtendedMessageType as MessageType } from '../../hooks/websocket/types';
+import { DDExtendedMessageType, DDExtendedMessageType as MessageType } from '../../hooks/websocket/types';
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
@@ -26,11 +26,78 @@ export const Footer: React.FC = () => {
   
   // FIXED: Move useStore call to component level to avoid hook violations
   const isEasterEggActive = useStore((state) => state.isEasterEggActive);
+  
+  // Get maintenance mode from store (safely)
+  const maintenanceMode = useStore((state) => state.maintenanceMode);
+  const setMaintenanceMode = useStore((state) => state.setMaintenanceMode);
+
+  // Grace period state for connection issues
+  const [disconnectTime, setDisconnectTime] = useState<number | null>(null);
+  const [isInGracePeriod, setIsInGracePeriod] = useState(false);
+
+  // Handle grace period for disconnections
+  useEffect(() => {
+    const GRACE_PERIOD_MS = 8000; // 8 seconds buffer
+
+    if (!unifiedWs.isConnected && unifiedWs.connectionState === ConnectionState.DISCONNECTED) {
+      // Just disconnected
+      if (disconnectTime === null) {
+        const now = Date.now();
+        setDisconnectTime(now);
+        setIsInGracePeriod(true);
+
+        // Set timeout to end grace period
+        const timeout = setTimeout(() => {
+          setIsInGracePeriod(false);
+        }, GRACE_PERIOD_MS);
+
+        return () => clearTimeout(timeout);
+      }
+    } else if (unifiedWs.isConnected) {
+      // Reconnected - clear grace period
+      setDisconnectTime(null);
+      setIsInGracePeriod(false);
+    }
+  }, [unifiedWs.isConnected, unifiedWs.connectionState, disconnectTime]);
+
+  // Listen for maintenance mode updates via WebSocket
+  useEffect(() => {
+    if (!unifiedWs.registerListener) return;
+
+    const unregisterListener = unifiedWs.registerListener(
+      'footer-maintenance-listener',
+      [DDExtendedMessageType.SYSTEM],
+      (message) => {
+        // Handle maintenance status updates
+        if (message.type === 'SYSTEM' && message.action === 'maintenance_status') {
+          const isMaintenanceActive = Boolean(message.data?.enabled || message.data?.mode);
+          console.log('[Footer] Maintenance mode update received:', {
+            enabled: isMaintenanceActive,
+            message: message.data?.message,
+            rawData: message.data
+          });
+          setMaintenanceMode(isMaintenanceActive);
+        }
+        // Also handle legacy format for backward compatibility
+        else if (message.type === 'maintenance_status') {
+          const isMaintenanceActive = Boolean(message.data?.mode);
+          console.log('[Footer] Legacy maintenance mode update received:', {
+            mode: isMaintenanceActive,
+            rawData: message.data
+          });
+          setMaintenanceMode(isMaintenanceActive);
+        }
+      }
+    );
+
+    return unregisterListener;
+  }, [unifiedWs.registerListener, setMaintenanceMode]);
 
   // Get styles based on server status and unified WebSocket connection
   const getStatusStyles = () => {
     let status: 'online' | 'maintenance' | 'offline' | 'error' = 'online';
     let message = 'Server is operating normally';
+    
     // Base styles depending on server status
     const baseStyles = {
       online: {
@@ -61,7 +128,7 @@ export const Footer: React.FC = () => {
         textColor: "text-red-400",
         animate: "",
       },
-      unknown: { // Fallback, though should be covered
+      unknown: {
         bgColor: "bg-gray-500/10",
         dotColor: "bg-gray-500",
         shadow: "shadow-[0_0_10px_rgba(128,128,128,0.5)]",
@@ -70,42 +137,67 @@ export const Footer: React.FC = () => {
       },
     };
 
-    /*
-    if (systemSettingsDataFromHook?.maintenanceMode) {
+    // Determine status based on WebSocket connection state with grace period
+    // Check maintenance mode first (highest priority)
+    if (maintenanceMode) {
       status = 'maintenance';
-      message = systemSettingsDataFromHook?.maintenanceMessage || "The platform is currently undergoing scheduled maintenance. Please check back shortly.";
+      message = 'System is currently under maintenance. Please check back shortly.';
     } else if (unifiedWs.isServerDown) {
       status = 'offline';
       message = unifiedWs.connectionError || 'Server unavailable. Connection closed.';
     } else if (unifiedWs.connectionState === ConnectionState.DISCONNECTED) {
-      status = 'offline';
-      message = unifiedWs.connectionError || 'Disconnected. Check your internet connection.';
+      // Apply grace period for disconnections
+      if (isInGracePeriod) {
+        status = 'error'; // Show as "CONNECTING" during grace period
+        message = 'Connecting...';
+      } else {
+        status = 'offline';
+        message = unifiedWs.connectionError || 'Disconnected. Check your internet connection.';
+      }
     } else if (unifiedWs.connectionState === ConnectionState.RECONNECTING) {
-      status = 'offline'; // Visually, reconnecting is an offline state variation
-      message = 'Attempting to reconnect...';
+      status = 'error'; // Show as "CONNECTING" instead of offline
+      message = 'Connecting...';
     } else if (unifiedWs.connectionState === ConnectionState.ERROR) {
       status = 'error';
       message = unifiedWs.connectionError || 'A connection error occurred.';
-    } else if (unifiedWs.connectionError && (unifiedWs.connectionState !== ConnectionState.CONNECTED && unifiedWs.connectionState !== ConnectionState.AUTHENTICATED)) {
-      // A connection error exists, but we are not in a fully connected state yet
+    } else if (unifiedWs.connectionError && !unifiedWs.isConnected) {
       status = 'error';
       message = unifiedWs.connectionError;
     } else if (unifiedWs.connectionState === ConnectionState.CONNECTING) {
-      status = 'online'; // Visually, this is a transient online state
+      status = 'error'; // Show as "CONNECTING"
       message = 'Connecting...';
     } else if (unifiedWs.connectionState === ConnectionState.AUTHENTICATING) {
-      status = 'online'; // Visually, this is a transient online state
-      message = 'Authenticating...';
+      status = 'error'; // Show as "CONNECTING" while authenticating
+      message = 'Connecting...';
+    } else if (unifiedWs.isConnected && unifiedWs.isAuthenticated) {
+      status = 'online';
+      message = 'Connected and authenticated';
+    } else if (unifiedWs.isConnected) {
+      status = 'error'; // Connected but not authenticated - show as "CONNECTING"
+      message = 'Connecting...';
+    } else {
+      // Apply grace period for general disconnection
+      if (isInGracePeriod) {
+        status = 'error';
+        message = 'Connecting...';
+      } else {
+        status = 'offline';
+        message = 'Not connected';
+      }
     }
-    // If none of the above, default to 'online' and 'Server is operating normally'
-    */
 
     const currentBaseStyle = baseStyles[status] || baseStyles.unknown;
-    const isWsActuallyConnected = unifiedWs.isConnected; // True if ConnectionState is CONNECTED or AUTHENTICATED
+    const isWsActuallyConnected = unifiedWs.isConnected;
+
+    // Override status text for grace period and connecting states
+    let displayText = status.toUpperCase();
+    if (status === 'error' && (message === 'Connecting...' || isInGracePeriod)) {
+      displayText = 'CONNECTING';
+    }
 
     return {
       ...currentBaseStyle,
-      statusText: status.toUpperCase(),
+      statusText: displayText,
       message: message,
       // wsIndicator related styles depend on actual WS connection, not just derived server status
       wsBorder: isWsActuallyConnected ? "border border-brand-500/30" : "",
@@ -199,8 +291,8 @@ export const Footer: React.FC = () => {
           </div>
         )}
         
-        {/* Error state background */}
-        {styles.statusText === 'ERROR' && (
+        {/* Error/Connecting state background */}
+        {(styles.statusText === 'ERROR' || styles.statusText === 'CONNECTING') && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
             {/* Soft orange gradient background */}
             <div className="absolute inset-0 bg-gradient-to-l from-orange-500/15 via-orange-500/5 to-transparent" />
@@ -294,10 +386,10 @@ export const Footer: React.FC = () => {
                       Support
                     </Link>
                     
-                    {/* RPC/Database Metrics (visible to all users) */}
-                    <div className="ml-2 pl-2 border-l border-gray-700">
-                      <RPCBenchmarkFooter compactMode={isCompact} />
-                    </div>
+                                      {/* RPC/Database Metrics (visible to all users) */}
+                  <div className="ml-2 pl-2 border-l border-gray-700 overflow-hidden">
+                    <RPCBenchmarkFooter compactMode={isCompact} />
+                  </div>
                   </div>
                   
                   {/* Social links with enhanced grouping */}
@@ -422,7 +514,7 @@ export const Footer: React.FC = () => {
                   </div>
                   
                   {/* RPC/Database Metrics (visible to all users) */}
-                  <div className="ml-2 pl-2 border-l border-gray-700">
+                  <div className="ml-2 pl-2 border-l border-gray-700 overflow-hidden">
                     <RPCBenchmarkFooter compactMode={isCompact} />
                   </div>
                 </div>
@@ -444,9 +536,6 @@ export const Footer: React.FC = () => {
                 )}
 
                 <div className="flex items-center justify-center gap-2 relative z-10 h-full">
-                  <div
-                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
-                  />
                   <span
                     className={`text-xs font-fira-code tracking-wider ${styles.textColor} ${styles.wsIndicator ? "text-shadow-sm font-semibold" : ""} cursor-pointer`}
                   >
@@ -456,12 +545,10 @@ export const Footer: React.FC = () => {
                         ⚡{styles.connectedSockets > 1 ? styles.connectedSockets : ''}
                       </span>
                     )}
-                    <span className="ml-1 inline-block group-hover:translate-y-0.5 transition-transform">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline-block opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </span>
                   </span>
+                  <div
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
+                  />
                 </div>
               </div>
 
