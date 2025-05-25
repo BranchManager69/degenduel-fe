@@ -119,7 +119,7 @@ export const UnifiedWebSocketProvider: React.FC<{
   const options = params?.options || {};
   
   // Set default options
-  const reconnectInterval = options.reconnectInterval || 1000;
+  const reconnectInterval = options.reconnectInterval || 30000;
   const maxReconnectAttempts = options.maxReconnectAttempts || 5;
   const heartbeatInterval = options.heartbeatInterval || 30000;
   const maxMissedHeartbeats = options.maxMissedHeartbeats || 3;
@@ -219,6 +219,18 @@ export const UnifiedWebSocketProvider: React.FC<{
     try {
       const message = JSON.parse(event.data);
       authDebug('WebSocketContext', 'Raw message received:', message); // Log raw message
+      
+      // DEBUG: Log authentication-related messages specifically
+      if (message.type === 'ACKNOWLEDGMENT' || message.operation === 'authenticate') {
+        authDebug('WebSocketContext', 'AUTHENTICATION MESSAGE DETECTED:', {
+          messageType: message.type,
+          expectedType: DDExtendedMessageType.ACKNOWLEDGMENT,
+          typeMatch: message.type === DDExtendedMessageType.ACKNOWLEDGMENT,
+          operation: message.operation,
+          status: message.status,
+          fullMessage: message
+        });
+      }
 
       // Handle proper pong responses from backend
       if ((message.type === 'RESPONSE' || message.type === 'SYSTEM') && message.action === 'pong') {
@@ -239,6 +251,37 @@ export const UnifiedWebSocketProvider: React.FC<{
           message.status === 'success') {
         setConnectionState(ConnectionState.AUTHENTICATED);
         authDebug('WebSocketContext', 'WebSocket authentication successful via authenticate ACK');
+        
+        // Clear auth timeout since authentication succeeded
+        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
+          clearTimeout((wsRef.current as any).__authTimeoutId);
+          delete (wsRef.current as any).__authTimeoutId;
+        }
+        return;
+      }
+      
+      // FALLBACK: Handle authentication ACK with string literal check (in case of enum mismatch)
+      if (message.type === 'ACKNOWLEDGMENT' && 
+          message.operation === 'authenticate' && 
+          message.status === 'success') {
+        setConnectionState(ConnectionState.AUTHENTICATED);
+        authDebug('WebSocketContext', 'WebSocket authentication successful via FALLBACK string check');
+        
+        // Clear auth timeout since authentication succeeded
+        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
+          clearTimeout((wsRef.current as any).__authTimeoutId);
+          delete (wsRef.current as any).__authTimeoutId;
+        }
+        return;
+      }
+      
+      // ADDITIONAL FALLBACK: Check for authentication success by message content
+      if ((message.type === 'ACKNOWLEDGMENT' || message.type === DDExtendedMessageType.ACKNOWLEDGMENT) && 
+          message.message && message.message.includes('authenticated')) {
+        setConnectionState(ConnectionState.AUTHENTICATED);
+        authDebug('WebSocketContext', 'WebSocket authentication successful via message content check', {
+          messageContent: message.message
+        });
         
         // Clear auth timeout since authentication succeeded
         if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
@@ -649,11 +692,11 @@ export const UnifiedWebSocketProvider: React.FC<{
     
     // Create the base message with topics preserved
     const createSubscribeMessage = (authToken?: string) => {
-      const message: any = {
-        type: 'SUBSCRIBE',
+    const message: any = {
+      type: 'SUBSCRIBE',
         topics: [...topics] // Clone the array to prevent mutation
-      };
-      
+    };
+    
       if (authToken) {
         message.authToken = authToken;
       }
@@ -691,7 +734,7 @@ export const UnifiedWebSocketProvider: React.FC<{
             success,
             topicsCount: message.topics.length
           });
-        });
+      });
       return true;
     }
     
