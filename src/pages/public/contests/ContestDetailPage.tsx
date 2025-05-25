@@ -23,9 +23,9 @@ import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
-    formatCurrency,
-    isContestLive,
-    mapContestStatus,
+  formatCurrency,
+  isContestLive,
+  mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import type { Contest as BaseContest } from "../../../types/index";

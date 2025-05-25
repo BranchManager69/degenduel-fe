@@ -25,19 +25,19 @@ import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
 import { Button } from "../ui/Button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
 } from "../ui/Card";
 import { Divider } from "../ui/Divider";
 import {
-  BiometricAuthButton,
-  ConnectWalletButton,
-  ConsolidatedLoginButton,
-  TwitterLoginButton,
+    BiometricAuthButton,
+    ConnectWalletButton,
+    ConsolidatedLoginButton,
+    TwitterLoginButton,
 } from "./index";
 
 // Login Options component
@@ -180,13 +180,29 @@ const LoginOptions = () => {
                       </Divider>
                     </div>
                     
-                    {/* Twitter Login */}
-                    <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
-                      <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
-                      <TwitterLoginButton 
-                        linkMode={false}
-                        className="w-full h-12" 
-                      />
+                    <div className="grid grid-cols-1 gap-3">
+                      {/* Twitter Login */}
+                      <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
+                        <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
+                        <TwitterLoginButton 
+                          linkMode={false}
+                          className="w-full h-12" 
+                        />
+                      </div>
+
+                      {/* Biometric/Passkey Login - only shown if available */}
+                      {isAvailable && (
+                        <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md">
+                          <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
+                          <BiometricAuthButton 
+                            mode="authenticate" // Always authenticate for unauthenticated users
+                            buttonStyle="default"
+                            className="w-full h-12 bg-transparent hover:bg-transparent"
+                            showAvailabilityIndicator={true}
+                            onError={(error) => console.error("Biometric auth error:", error)}
+                          />
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
