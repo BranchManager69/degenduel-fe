@@ -41,17 +41,17 @@ import './Terminal.css';
 
 // Import utility functions
 import {
-  getDidiMemoryState,
-  resetDidiMemory
+    getDidiMemoryState,
+    resetDidiMemory
 } from './utils/didiHelpers';
 
 // Didi loves Easter
 import {
-  awardEasterEggProgress,
-  EASTER_EGG_CODE,
-  getDiscoveredPatterns,
-  getEasterEggProgress,
-  SECRET_COMMANDS
+    awardEasterEggProgress,
+    EASTER_EGG_CODE,
+    getDiscoveredPatterns,
+    getEasterEggProgress,
+    SECRET_COMMANDS
 } from './utils/easterEggHandler';
 
 // Import types
@@ -616,7 +616,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     };
     manageConnection();
     return () => { isMounted = false; };
-  }, [wsConnected, refreshWsTerminalData]);
+  }, [wsConnected]);
   
   useEffect(() => {
     const glitchInterval = setInterval(() => {

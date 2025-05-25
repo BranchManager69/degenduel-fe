@@ -23,6 +23,9 @@ export const Footer: React.FC = () => {
 
   // State to manage modal visibility
   const [showStatusModal, setShowStatusModal] = useState(false);
+  
+  // FIXED: Move useStore call to component level to avoid hook violations
+  const isEasterEggActive = useStore((state) => state.isEasterEggActive);
 
   // Get styles based on server status and unified WebSocket connection
   const getStatusStyles = () => {
@@ -796,7 +799,7 @@ Last Check: ${new Date().toLocaleTimeString()}
                 <div 
                   className={`text-xs transition-opacity duration-1000 ${
                     // Read from Zustand store to check if Easter egg is active
-                    useStore((state) => state.isEasterEggActive) 
+                    isEasterEggActive 
                       ? 'opacity-100' 
                       : 'opacity-0 pointer-events-none'
                   }`}
