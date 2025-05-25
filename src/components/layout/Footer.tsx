@@ -297,20 +297,20 @@ export const Footer: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Social links */}
-                  <div className="flex items-center space-x-4 shrink-0">
+                  {/* Social links with enhanced grouping */}
+                  <div className="flex items-center space-x-4 shrink-0 px-2 py-1 rounded-md bg-gray-800/20 hover:bg-gray-800/40 transition-colors shadow-sm">
                     
                     {/* Twitter (https://x.com/DegenDuelMe) */}
                     <a
                       href="https://x.com/DegenDuelMe"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[0ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
                     >
                       {/* X logo */}
                       <span className="sr-only">X</span>
                       <svg
-                        className="h-5 w-5"
+                        className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -323,12 +323,12 @@ export const Footer: React.FC = () => {
                       href="https://discord.gg/dduel"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[50ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
                     >
                       {/* Discord logo */}
                       <span className="sr-only">Discord</span>
                       <svg
-                        className="h-5 w-5"
+                        className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -341,16 +341,16 @@ export const Footer: React.FC = () => {
                       href="https://t.me/DegenDuel"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[100ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
                     >
                       {/* Telegram logo */}
                       <span className="sr-only">Telegram</span>
                       <svg
-                        className="h-5 w-5"
+                        className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path d="M12 2L2 22h20L12 2zm0 18-10-10 10-10 10 10-10 10z" />
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                       </svg>
                     </a>
 
@@ -365,10 +365,10 @@ export const Footer: React.FC = () => {
                     href="https://status.degenduel.me/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-brand-400"
+                    className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
                     title="System Status"
                   >
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
                   </a>
@@ -376,17 +376,17 @@ export const Footer: React.FC = () => {
                   {/* Divider */}
                   <div className="h-4 w-px bg-gray-700"></div>
                   
-                  {/* Social links */}
-                  <div className="flex items-center space-x-3">
+                  {/* Social links with enhanced grouping */}
+                  <div className="flex items-center space-x-3 px-2 py-1 rounded-md bg-gray-800/20 hover:bg-gray-800/40 transition-colors shadow-sm">
                     {/* Twitter */}
                     <a
                       href="https://x.com/DegenDuelMe"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[0ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
                       title="Follow us on X"
                     >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                       </svg>
                     </a>
@@ -396,10 +396,10 @@ export const Footer: React.FC = () => {
                       href="https://discord.gg/dduel"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[50ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
                       title="Join our Discord"
                     >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
                       </svg>
                     </a>
@@ -409,10 +409,10 @@ export const Footer: React.FC = () => {
                       href="https://t.me/DegenDuel"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400"
+                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[100ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
                       title="Join our Telegram"
                     >
-                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                       </svg>
                     </a>
@@ -431,18 +431,18 @@ export const Footer: React.FC = () => {
             <div className="flex items-stretch h-full shrink-0 group ml-auto pr-0">
               <div
                 id="status-indicator"
-                className={`flex items-center gap-2 h-full px-4 transition-all duration-300 relative cursor-pointer hover:brightness-110 active:brightness-90`}
+                className={`flex items-center gap-2 h-full px-4 sm:px-6 transition-all duration-300 relative cursor-pointer hover:brightness-110 active:brightness-90 hover:scale-105 hover:shadow-lg rounded-md hover:bg-gray-800/20`}
                 onClick={() => setShowStatusModal(!showStatusModal)}
                 title="Click to view WebSocket details and test connection"
               >
                 {/* WebSocket-specific shine effect */}
                 {styles.wsIndicator && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-shine z-0" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent animate-shine z-0 rounded-md" />
                 )}
 
                 <div className="flex items-center justify-center gap-2 relative z-10 h-full">
                   <div
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate}`}
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
                   />
                   <span
                     className={`text-xs font-fira-code tracking-wider ${styles.textColor} ${styles.wsIndicator ? "text-shadow-sm font-semibold" : ""} cursor-pointer`}
@@ -781,11 +781,11 @@ Last Check: ${new Date().toLocaleTimeString()}
                     href="https://branch.bet" 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="hover:scale-110 transition-transform duration-200 opacity-70 hover:opacity-100"
+                    className="hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out opacity-70 hover:opacity-100 p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
                     title="by Branch"
                   >
                     {/* Simple branch SVG icon */}
-                    <svg className="h-5 w-5 text-gray-500 hover:text-brand-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 hover:text-brand-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 2L8 6h3v4.5c0 1.38-1.12 2.5-2.5 2.5S6 11.88 6 10.5V8H4v2.5c0 2.48 2.02 4.5 4.5 4.5 1.33 0 2.52-.58 3.35-1.5.83.92 2.02 1.5 3.35 1.5 2.48 0 4.5-2.02 4.5-4.5V8h-2v2.5c0 1.38-1.12 2.5-2.5 2.5S13 11.88 13 10.5V6h3L12 2z"/>
                     </svg>
                   </a>
