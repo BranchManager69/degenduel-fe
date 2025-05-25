@@ -41,9 +41,11 @@ export function useDatabaseStats() {
     if (message.type === 'ERROR') {
       console.error('[Database Stats] WebSocket error:', message);
 
-      // Handle authentication errors specifically
+      // Handle authentication errors
       if (message.code === 4003 || message.error?.includes('Authentication required')) {
         setError('Authentication required for database stats');
+      } else if (message.code === 4012 || message.error?.includes('Admin/superadmin role required')) {
+        setError('Admin privileges required for database stats');
       } else {
         setError(message.error || 'Database stats unavailable');
       }

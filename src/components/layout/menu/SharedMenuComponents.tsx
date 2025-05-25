@@ -154,40 +154,39 @@ export const MenuBackdrop: React.FC<{
   onClose: () => void;
   isMobile?: boolean;
 }> = ({ isOpen, onClose, isMobile = false }) => {
-  // Prevent body scrolling when menu is open (mobile only)
+  // Prevent body scrolling when menu is open - FIXED: Apply to both mobile and desktop
   useEffect(() => {
-    if (isOpen && isMobile) {
-      // Save current scroll position and body style
-      const scrollY = window.scrollY;
-      const originalStyle = {
-        overflow: document.body.style.overflow,
-        position: document.body.style.position,
-        top: document.body.style.top,
-        width: document.body.style.width,
-      };
+    if (isOpen) {
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       
-      // Disable scrolling
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
+      // Set CSS custom property for scrollbar width compensation
+      if (scrollbarWidth > 0) {
+        document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+        document.body.classList.add('scroll-lock-compensate');
+        document.documentElement.classList.add('scroll-lock-compensate');
+      }
+      
+      // Apply scroll lock using CSS classes (more reliable than direct style manipulation)
+      document.body.classList.add('scroll-lock');
+      document.documentElement.classList.add('scroll-lock');
       
       // Re-enable scrolling when the backdrop is removed
       return () => {
-        document.body.style.overflow = originalStyle.overflow;
-        document.body.style.position = originalStyle.position;
-        document.body.style.top = originalStyle.top;
-        document.body.style.width = originalStyle.width;
-        window.scrollTo(0, scrollY);
+        // Remove scroll lock classes
+        document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
+        document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
+        
+        // Clean up CSS custom property
+        document.documentElement.style.removeProperty('--scrollbar-width');
       };
     }
-  }, [isOpen, isMobile]);
+  }, [isOpen]); // FIXED: Removed isMobile dependency - apply to both mobile and desktop
 
   if (!isOpen) return null;
   
-  // For mobile menu, we start the backdrop below the header (top-16)
-  // For desktop menu, we cover the full screen
-  const topPosition = isMobile ? "top-16" : "top-0";
+  // FIXED: Mobile backdrop should cover full screen to prevent touch leaks
+  const topPosition = "top-0"; // Always cover full screen
   
   // Create touch event handlers to capture and stop propagation
   const handleTouchStart = (e: React.TouchEvent) => {
