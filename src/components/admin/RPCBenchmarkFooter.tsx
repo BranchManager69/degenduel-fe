@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
 import { useRPCBenchmarkWebSocket } from '../../hooks/websocket/legacy/useRPCBenchmarkWebSocket';
+import { useDatabaseStats } from '../../hooks/websocket/topic-hooks/useDatabaseStats';
 
 interface RPCBenchmarkFooterProps {
   compactMode?: boolean;
@@ -19,6 +20,9 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
     isAuthenticated,
     refreshData
   } = useRPCBenchmarkWebSocket();
+
+  // Get database stats from public SYSTEM topic (no auth required!)
+  const { data: dbStats } = useDatabaseStats();
 
   // Rotate display every 5 seconds
   useEffect(() => {
@@ -72,8 +76,8 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = ({ compactMode = f
   const avgLatency = Math.round(totalLatency / methods.length / methods.length);
   const successRate = Math.round((totalSuccess / totalAttempts) * 100);
   
-  // Get active tokens from database stats (new from backend)
-  const activeTokens = data.database_stats?.active_tokens || 0;
+  // Get active tokens from public SYSTEM topic (no auth required!)
+  const activeTokens = dbStats?.active_tokens || 0;
   
   // Color functions
   const getLatencyColor = (ms: number) => {
