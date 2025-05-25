@@ -25,6 +25,7 @@ export function useDatabaseStats() {
   const [data, setData] = useState<DatabaseStats | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Process incoming messages
   const handleMessage = useCallback((message: any) => {
@@ -39,6 +40,13 @@ export function useDatabaseStats() {
 
     if (message.type === 'ERROR') {
       console.error('[Database Stats] WebSocket error:', message);
+
+      // Handle authentication errors specifically
+      if (message.code === 4003 || message.error?.includes('Authentication required')) {
+        setError('Authentication required for database stats');
+      } else {
+        setError(message.error || 'Database stats unavailable');
+      }
       setIsLoading(false);
     }
   }, []);
@@ -76,24 +84,28 @@ export function useDatabaseStats() {
         ws.unsubscribe(['system']);
       }
     };
-  }, [ws.isConnected]); // Removed fetchDatabaseStats dependency
+  }, [ws.isConnected]); // FIXED: Removed fetchDatabaseStats from dependencies
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds - FIXED: Remove dependency on data to prevent infinite loops
   useEffect(() => {
-    if (!data) return;
+    if (!ws.isConnected) return;
 
     const interval = setInterval(() => {
-      fetchDatabaseStats();
+      // Direct request instead of calling fetchDatabaseStats to avoid circular dependency
+      if (ws.isConnected) {
+        setIsLoading(true);
+        ws.request(SOCKET_TYPES.SYSTEM, 'getDatabaseStats');
+      }
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [data]); // Removed fetchDatabaseStats dependency
+  }, [ws.isConnected]); // FIXED: Removed fetchDatabaseStats dependency
 
   return {
     data,
     isLoading,
     isConnected: ws.isConnected,
-    error: ws.error,
+    error: error || ws.error,
     lastUpdate,
     refreshData: fetchDatabaseStats
   };

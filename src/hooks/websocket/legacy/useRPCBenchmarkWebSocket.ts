@@ -89,8 +89,11 @@ export function useRPCBenchmarkWebSocket() {
   const handleMessage = useCallback((message: any) => {
     // Handle update notifications (triggers a fetch)
     if (message.topic === 'admin' && message.data?.type === 'rpc-benchmark-update') {
-      // Trigger a fetch for the latest data
-      fetchLatestBenchmarkData();
+      // Trigger a fetch for the latest data - use direct call instead of dependency
+      if (isConnected && isAuthenticated) {
+        setIsLoading(true);
+        request('admin', 'getRpcBenchmarks');
+      }
 
       // Check if benchmark is still running
       if (message.data.test_run_id) {
@@ -108,13 +111,19 @@ export function useRPCBenchmarkWebSocket() {
       setError(null);
     }
 
-    // Handle errors
+    // Handle errors - FIXED: Better authentication error handling
     if (message.type === 'ERROR') {
       console.error('[RPC Benchmark] WebSocket error:', message);
-      setError(message.error || 'Unknown WebSocket error');
+
+      // Handle authentication errors specifically
+      if (message.code === 4003 || message.error?.includes('Authentication required')) {
+        setError('Admin authentication required for RPC benchmark data');
+      } else {
+        setError(message.error || 'Unknown WebSocket error');
+      }
       setIsLoading(false);
     }
-  }, [updateData]);
+  }, [updateData]); // FIXED: Removed fetchLatestBenchmarkData dependency
 
   // Set up WebSocket connection
   const {
@@ -185,7 +194,7 @@ export function useRPCBenchmarkWebSocket() {
         unsubscribe(['admin']);
       }
     };
-  }, [isConnected, isAuthenticated, subscribe, unsubscribe, fetchLatestBenchmarkData]);
+  }, [isConnected, isAuthenticated, subscribe, unsubscribe]);
 
   // Update error state
   useEffect(() => {
