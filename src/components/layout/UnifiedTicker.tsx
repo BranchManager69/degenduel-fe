@@ -44,6 +44,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Loader2, RefreshCw, Settings, TrendingUp, WifiOff } from "lucide-react";
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../store/useStore";
 import type { Contest, Token } from "../../types";
@@ -71,6 +72,55 @@ export const UnifiedTicker: React.FC<Props> = ({
   systemError,
 }) => {
   const { maintenanceMode } = useStore();
+  const navigate = useNavigate();
+  
+  // Helper function to format market cap in short format
+  const formatMarketCapShort = (marketCap: number | string): string => {
+    const num = typeof marketCap === "string" ? parseFloat(marketCap) : marketCap;
+    
+    if (isNaN(num) || num <= 0) {
+      return "$0";
+    }
+    
+    if (num >= 1_000_000_000) {
+      // Billions: show 2-3 digits with 1 decimal
+      const billions = num / 1_000_000_000;
+      if (billions >= 100) {
+        return `$${billions.toFixed(0)}B`; // 100B+
+      } else if (billions >= 10) {
+        return `$${billions.toFixed(1)}B`; // 10.0B - 99.9B
+      } else {
+        return `$${billions.toFixed(1)}B`; // 1.0B - 9.9B
+      }
+    }
+    
+    if (num >= 1_000_000) {
+      // Millions: show 2-3 digits with 1 decimal
+      const millions = num / 1_000_000;
+      if (millions >= 100) {
+        return `$${millions.toFixed(0)}M`; // 100M+
+      } else if (millions >= 10) {
+        return `$${millions.toFixed(1)}M`; // 10.0M - 99.9M
+      } else {
+        return `$${millions.toFixed(1)}M`; // 1.0M - 9.9M
+      }
+    }
+    
+    if (num >= 1_000) {
+      // Thousands: show 2-3 digits with 1 decimal
+      const thousands = num / 1_000;
+      if (thousands >= 100) {
+        return `$${thousands.toFixed(0)}K`; // 100K+
+      } else if (thousands >= 10) {
+        return `$${thousands.toFixed(1)}K`; // 10.0K - 99.9K
+      } else {
+        return `$${thousands.toFixed(1)}K`; // 1.0K - 9.9K
+      }
+    }
+    
+    // Less than 1K
+    return `$${num.toFixed(0)}`;
+  };
   
   // ====================================
   // PROPER UNIFIED WEBSOCKET (FIXED!)
@@ -361,7 +411,13 @@ export const UnifiedTicker: React.FC<Props> = ({
   
   const sortedContests = useMemo(() => {
     if (!currentContests) return [];
-    return [...currentContests].sort(
+    
+    // Filter contests to show both ACTIVE and PENDING duels
+    const filteredContests = currentContests.filter(contest => 
+      contest.status === "active" || contest.status === "pending"
+    );
+    
+    return filteredContests.sort(
       (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
     );
   }, [currentContests]);
@@ -404,31 +460,31 @@ export const UnifiedTicker: React.FC<Props> = ({
               console.warn(`UnifiedTicker: Problematic token.contractAddress found! Address: '${token.contractAddress}', Symbol: ${token.symbol}, Index: ${index}`);
             }
             const tokenKey = token.contractAddress ? `token-${token.contractAddress}` : `token-sym-${token.symbol}-${significantChanges.indexOf(token)}`;
-            const change24hNum = parseFloat(token.change24h);
             const logoUrl = token.images?.imageUrl || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
 
-            const priceNum = parseFloat(token.price);
-            const hasRealPrice = priceNum > 0;
-            const displayPrice = hasRealPrice ? 
-              (priceNum < 0.01 ? priceNum.toFixed(6) : priceNum.toFixed(4)) : 
-              'N/A';
+            // Get market cap and format it in short format
+            const marketCapNum = parseFloat(token.marketCap);
+            const displayMarketCap = (isNaN(marketCapNum) || marketCapNum <= 0) ? "—" : formatMarketCapShort(marketCapNum);
+
+            // Handle click to navigate to token page
+            const handleTokenClick = () => {
+              if (token.contractAddress) {
+                navigate(`/tokens?address=${token.contractAddress}`);
+              }
+            };
 
             return (
               <div
                 key={tokenKey}
-                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-cyber-500/10 border border-cyber-500/20 cursor-pointer hover:bg-cyber-500/20 transition-colors"
+                onClick={handleTokenClick}
+                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-cyber-500/10 cursor-pointer hover:bg-cyber-500/20 transition-colors"
               >
                 <img src={logoUrl} alt={token.symbol} className="w-3.5 h-3.5 mr-1.5 rounded-full object-cover" />
                 <span className="text-xs font-medium text-cyber-300">
                   {token.symbol}
                 </span>
-                {hasRealPrice && (
-                  <span className="text-xs ml-1.5 text-gray-400">
-                    ${displayPrice}
-                  </span>
-                )}
-                <span className={`text-xs ml-1.5 ${change24hNum >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {change24hNum >= 0 ? '+' : ''}{change24hNum === 0 ? '0.00' : (change24hNum * 100).toFixed(2)}%
+                <span className="text-xs ml-1.5 text-gray-400">
+                  {displayMarketCap}
                 </span>
               </div>
             );
