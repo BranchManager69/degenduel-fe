@@ -462,7 +462,56 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                       </Menu.Item>
                     ))}
 
-                    {/* Rankings Section - REMOVED */}
+                    {/* MCP Section - Special Styling */}
+                    <MenuDivider />
+                    <Menu.Item>
+                      {({ active }) => (
+                        <Link
+                          to="/mcp"
+                          className={`
+                            relative group overflow-hidden transition-all duration-300 ease-out
+                            flex items-center gap-2 px-4 py-2 text-sm rounded-md
+                            bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-purple-600/20
+                            border border-purple-500/30 hover:border-purple-400/50
+                            text-purple-200 hover:text-white
+                            hover:shadow-[0_0_12px_rgba(168,85,247,0.4)]
+                            ${active ? 'from-purple-500/30 via-pink-400/30 to-purple-500/30 border-purple-400/60 text-white shadow-[0_0_8px_rgba(168,85,247,0.3)]' : ''}
+                          `}
+                          role="menuitem"
+                        >
+                          {/* Background shine effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                          
+                          {/* Scan line effect */}
+                          <div className="absolute inset-0 overflow-hidden">
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
+                          </div>
+                          
+                          <svg
+                            className={`
+                              relative w-4 h-4 transition-all duration-300
+                              ${active ? "text-purple-100" : "text-purple-200 group-hover:text-purple-100"}
+                              group-hover:scale-110
+                            `}
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                          </svg>
+                          <span className="relative flex-1 font-semibold tracking-wide group-hover:text-shadow-sm">MCP</span>
+                          
+                          {/* Subtle pulse indicator */}
+                          <div className="relative w-2 h-2 rounded-full bg-purple-400 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="absolute inset-0 rounded-full bg-purple-300 animate-ping opacity-40 group-hover:opacity-60" />
+                          </div>
+                        </Link>
+                      )}
+                    </Menu.Item>
 
                     <MenuDivider />
 

@@ -319,6 +319,63 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     {/* Add Wallet Details Section (shared component) */}
                     <WalletDetailsSection user={user} />
                     
+                    {/* Admin controls section moved to top for consistency with desktop */}
+                    {(isAdministrator || isSuperAdmin) && (
+                      <>
+                        <MenuDivider />
+                        <SectionHeader title="Admin Access" />
+                        
+                        {/* Side-by-side Admin and Super Admin buttons */}
+                        <div className="flex gap-1 px-3 py-1">
+                          {isAdministrator && (
+                            <Link
+                              to="/admin"
+                              className="relative group flex-1 text-center py-2 overflow-hidden transition-all duration-300
+                                bg-black/80 border border-red-600/50 hover:border-red-500
+                                text-red-500 hover:text-red-400
+                                text-xs font-mono uppercase tracking-[0.2em] font-bold
+                                hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              {/* Matrix-style background */}
+                              <div className="absolute inset-0 bg-gradient-to-b from-red-950/20 via-red-900/10 to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                              
+                              {/* Scan lines */}
+                              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(239,68,68,0.03)_50%,transparent_100%)] bg-[length:100%_4px] animate-pulse opacity-60" />
+                              
+                              {/* Terminal cursor effect */}
+                              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 w-1 h-3 bg-red-500 opacity-0 group-hover:opacity-100 animate-pulse" />
+                              
+                              <span className="relative">ADMIN</span>
+                            </Link>
+                          )}
+                          
+                          {isSuperAdmin && (
+                            <Link
+                              to="/superadmin"
+                              className="relative group flex-1 text-center py-2 overflow-hidden transition-all duration-300
+                                bg-black/80 border border-amber-600/50 hover:border-amber-500
+                                text-amber-500 hover:text-amber-400
+                                text-xs font-mono uppercase tracking-[0.2em] font-bold
+                                hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              {/* Matrix-style background */}
+                              <div className="absolute inset-0 bg-gradient-to-b from-amber-950/20 via-amber-900/10 to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                              
+                              {/* Scan lines */}
+                              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(245,158,11,0.03)_50%,transparent_100%)] bg-[length:100%_4px] animate-pulse opacity-60" />
+                              
+                              {/* Terminal cursor effect */}
+                              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 w-1 h-3 bg-amber-500 opacity-0 group-hover:opacity-100 animate-pulse" />
+                              
+                              <span className="relative">SUPERADMIN</span>
+                            </Link>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    
                     {/* User menu items */}
                     {profileItems.map((item) => (
                       <ProfileMenuItem 
@@ -333,54 +390,6 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       </ProfileMenuItem>
                     ))}
                     
-                    {/* Admin controls section if applicable */}
-                    {(isAdministrator || isSuperAdmin) && (
-                      <>
-                        <MenuDivider />
-                        <SectionHeader title="Admin Access" />
-                        
-                        {/* Side-by-side Admin and Super Admin buttons */}
-                        <div className="grid grid-cols-2 gap-1 px-3 py-1">
-                          {isAdministrator && (
-                            <Link
-                              to="/admin"
-                              className="flex items-center justify-center px-2 py-1.5 rounded-md transition-all duration-300
-                                bg-gradient-to-br from-red-600/90 to-red-800/90 border border-red-500/50 
-                                text-white text-xs font-semibold shadow-md hover:shadow-lg hover:from-red-500/90 hover:to-red-700/90
-                                focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-dark-200"
-                              onClick={() => setIsOpen(false)}
-                            >
-                              <span className="flex items-center">
-                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
-                                  <path d="M19 10H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"></path>
-                                  <path d="M12 13v5"></path>
-                                </svg>
-                                ADMIN
-                              </span>
-                            </Link>
-                          )}
-                          
-                          {isSuperAdmin && (
-                            <Link
-                              to="/superadmin"
-                              className="flex items-center justify-center px-2 py-1.5 rounded-md transition-all duration-300
-                                bg-gradient-to-br from-amber-500/90 to-amber-700/90 border border-amber-400/50
-                                text-white text-xs font-semibold shadow-md hover:shadow-lg hover:from-amber-400/90 hover:to-amber-600/90
-                                focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 focus:ring-offset-dark-200"
-                              onClick={() => setIsOpen(false)}
-                            >
-                              <span className="flex items-center">
-                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                </svg>
-                                SUPER
-                              </span>
-                            </Link>
-                          )}
-                        </div>
-                      </>
-                    )}
                     
                     {/* Add Biometric Authentication Option */}
                     <MenuDivider />
@@ -440,7 +449,48 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   </MenuItem>
                 ))}
 
-                {/* Rankings Section - REMOVED */}
+                {/* MCP Section - Special Styling for Mobile */}
+                <MenuDivider />
+                <motion.div variants={itemVariants}>
+                  <Link
+                    to="/mcp"
+                    className="relative group overflow-hidden transition-all duration-300 ease-out
+                      flex items-center gap-3 mx-3 px-3 py-2.5 text-sm rounded-md
+                      bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-purple-600/20
+                      border border-purple-500/30 hover:border-purple-400/50
+                      text-purple-200 hover:text-white
+                      hover:shadow-[0_0_12px_rgba(168,85,247,0.4)]"
+                    onClick={() => setIsOpen(false)}
+                    role="menuitem"
+                  >
+                    {/* Background shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                    
+                    {/* Scan line effect */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
+                    </div>
+                    
+                    <svg
+                      className="relative w-4 h-4 transition-all duration-300 text-purple-200 group-hover:text-purple-100 group-hover:scale-110"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    <span className="relative flex-1 font-semibold tracking-wide group-hover:text-shadow-sm">MCP</span>
+                    
+                    {/* Subtle pulse indicator */}
+                    <div className="relative w-2 h-2 rounded-full bg-purple-400 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute inset-0 rounded-full bg-purple-300 animate-ping opacity-40 group-hover:opacity-60" />
+                    </div>
+                  </Link>
+                </motion.div>
 
                 {/* Disconnect button (if logged in) */}
                 {user && (
