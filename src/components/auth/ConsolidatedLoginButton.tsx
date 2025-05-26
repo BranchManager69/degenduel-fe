@@ -26,6 +26,7 @@ import TwitterLoginButton from './TwitterLoginButton';
 interface ConsolidatedLoginButtonProps {
   className?: string;
   onLoginComplete?: () => void;
+  isCompact?: boolean;
 }
 
 /**
@@ -36,7 +37,8 @@ interface ConsolidatedLoginButtonProps {
  */
 const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
   className = '',
-  onLoginComplete
+  onLoginComplete,
+  isCompact = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { isAvailable, isRegistered, hasCheckedRegistration, checkRegistrationStatus } = useBiometricAuth();
@@ -97,30 +99,13 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
       {/* Main login button */}
       <Button
         onClick={toggleExpanded}
-        className="w-full py-3 text-base bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 text-white font-bold flex items-center justify-center"
+        className={`w-full ${isCompact ? 'py-2 text-sm' : 'py-3 text-base'} bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 text-white font-mono flex items-center justify-center transition-all duration-300`}
         variant="gradient"
       >
-        <svg
-          className="w-5 h-5 mr-2"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-          <polyline points="10 17 15 12 10 7" />
-          <line x1="15" y1="12" x2="3" y2="12" />
-        </svg>
-        {isExpanded 
-          ? (isAuthenticated ? "Account Options" : "Choose a method")
-          : (isAuthenticated ? (user?.nickname || "Account") : "Sign In")
-        }
+        {isAuthenticated ? (user?.nickname || "Account") : "Sign In"}
         {isExpanded ? (
           <svg
-            className="w-4 h-4 ml-2"
+            className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'} ml-2`}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
@@ -133,7 +118,7 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
           </svg>
         ) : (
           <svg
-            className="w-4 h-4 ml-2"
+            className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'} ml-2`}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"

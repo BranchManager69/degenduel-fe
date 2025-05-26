@@ -171,6 +171,7 @@ export const Header: React.FC = () => {
                       onLoginComplete={() => {
                         console.log("[Header] Login complete callback triggered from ConsolidatedLoginButton");
                       }}
+                      isCompact={isCompact}
                     />
                   </motion.div>
                 )}
