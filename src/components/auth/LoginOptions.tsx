@@ -131,7 +131,7 @@ const LoginOptions = () => {
                         <div className="w-full h-full z-10 relative flex items-center justify-center">
                           <TwitterLoginButton 
                         linkMode={true}
-                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
                       />
                         </div>
                     </div>
@@ -142,7 +142,7 @@ const LoginOptions = () => {
                         <div className="w-full h-full z-10 relative flex items-center justify-center">
                       <DiscordLoginButton 
                         linkMode={true}
-                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
                       />
                         </div>
                     </div>
@@ -199,6 +199,13 @@ const LoginOptions = () => {
                       />
                     </div>
                     
+                      {/* Login With subtitle */}
+                      <div className="text-center mb-3">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                          Login With
+                        </p>
+                      </div>
+
                       {/* Secondary: Social & Passkey Login Options (3 compact squares) */}
                       <div className="grid grid-cols-3 gap-2">
                         {/* Twitter Login - Icon Only */}
@@ -207,7 +214,7 @@ const LoginOptions = () => {
                           <div className="w-full h-full z-10 relative flex items-center justify-center">
                         <TwitterLoginButton 
                           linkMode={false}
-                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
                         />
                           </div>
                       </div>
@@ -218,7 +225,7 @@ const LoginOptions = () => {
                           <div className="w-full h-full z-10 relative flex items-center justify-center">
                         <DiscordLoginButton 
                           linkMode={false}
-                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
                         />
                           </div>
                       </div>
