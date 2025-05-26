@@ -15,21 +15,23 @@ import { motion } from 'framer-motion';
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 // Hooks and Types
-import { useWallet } from '../../../hooks/websocket/topic-hooks/useWallet';
 import { User } from '../../../types';
 
 // Define WhaleRoomButton component (encapsulated within CtaSection)
-const WhaleRoomButton = ({ walletAddress }: { walletAddress: string }) => {
-  const {
-    balance,
-    isLoading,
-  } = useWallet(walletAddress);
+const WhaleRoomButton = (
+  //{ walletAddress }: { walletAddress: string }
+) => {
+  //const {
+  //  balance,
+  //  isLoading,
+  //} = useWallet(walletAddress);
   
   // Whale criteria check: 
   //   1. SOL balance > 10 SOL, or
   //   2. Any token with USD value > $5,000, or
   //   3. Total portfolio value > $10,000 
-  const isWhale = React.useMemo(() => {
+  // TEMP: Commented out for preview
+  /* const isWhale = React.useMemo(() => {
     if (!balance || isLoading) return false;
     
     // Check SOL balance criteria (>10 SOL)
@@ -53,10 +55,10 @@ const WhaleRoomButton = ({ walletAddress }: { walletAddress: string }) => {
     
     // Check portfolio value criteria (>$10,000) 
     return portfolioValueWithSol > 10000;
-  }, [balance, isLoading]);
+  }, [balance, isLoading]); */
   
-  // If user meets whale criteria, show button to access the exclusive Whale Room
-  if (!isWhale) return null;
+  // TEMP: Show whale room for all users (for preview)
+  // if (!isWhale) return null;
   
   // If user does not meet whale criteria, do not show the button
   return (
@@ -250,21 +252,21 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
           </button>
         </RouterLink>
 
-        {/* FAQ button - now using same blue/cyan color scheme as GAMEPLAY */}
-        <RouterLink to="/faq" className="w-full sm:w-[48%]">
+        {/* MCP AI ASSISTANTS button */}
+        <RouterLink to="/mcp" className="w-full sm:w-[48%]">
           <button 
             className="w-full relative group overflow-hidden"
-            aria-label="View frequently asked questions"
+            aria-label="Connect AI assistants to your trading"
           >
-            <div className="relative clip-edges bg-gradient-to-r from-blue-500 to-cyan-600 p-[1px] transition-all duration-300 group-hover:from-blue-400 group-hover:to-cyan-500 shadow-md shadow-blue-900/20">
+            <div className="relative clip-edges bg-gradient-to-r from-purple-500 to-pink-600 p-[1px] transition-all duration-300 group-hover:from-purple-400 group-hover:to-pink-500 shadow-md shadow-purple-900/20">
               <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                 <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
-                  <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
-                    FAQ
+                  <span className="bg-gradient-to-r from-purple-300 to-pink-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-purple-200">
+                    MCP
                   </span>
                   <svg
-                    className="w-5 h-5 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                    className="w-5 h-5 text-purple-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
                     fill="none" 
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -283,10 +285,9 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
         </RouterLink>
       </div>
 
-      {/* Conditional WHALE ROOM button - only shown to users with significant token/SOL balances */}
-      {user && (
-        <WhaleRoomButton walletAddress={user.wallet_address} />
-      )}
+      {/* Conditional WHALE ROOM button - TEMP: showing for all users */}
+      <WhaleRoomButton />
+      {/*<WhaleRoomButton walletAddress={user?.wallet_address || "temp"} />*/}
 
     </motion.div>
   );
