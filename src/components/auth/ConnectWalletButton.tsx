@@ -278,7 +278,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
             {buttonText}
           </>
         ) : (
-          {buttonText}
+          buttonText
         )}
       </Button>
       {error && (

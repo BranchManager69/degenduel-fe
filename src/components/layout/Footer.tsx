@@ -95,17 +95,26 @@ export const Footer: React.FC = () => {
 
   // Get styles based on server status and unified WebSocket connection
   const getStatusStyles = () => {
-    let status: 'online' | 'maintenance' | 'offline' | 'error' = 'online';
+    let status: 'online' | 'gigaonline' | 'maintenance' | 'offline' | 'error' = 'online';
     let message = 'Server is operating normally';
     
     // Base styles depending on server status
     const baseStyles = {
       online: {
-        bgColor: "bg-green-500/10",
-        dotColor: "bg-green-500",
-        shadow: "shadow-[0_0_10px_rgba(34,197,94,0.5)]",
-        textColor: "text-green-400",
+        bgColor: "bg-purple-500/10",
+        dotColor: "bg-purple-500",
+        shadow: "shadow-[0_0_10px_rgba(147,51,234,0.5)]",
+        textColor: "text-purple-400",
         animate: "animate-pulse",
+        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5", // Standard dot for connected only
+      },
+      gigaonline: {
+        bgColor: "bg-emerald-500/15",
+        dotColor: "bg-emerald-400",
+        shadow: "shadow-[0_0_20px_rgba(16,185,129,1.0)]",
+        textColor: "text-emerald-300",
+        animate: "animate-pulse",
+        dotSize: "w-3.5 h-3.5 sm:w-4 sm:h-4", // Larger dot for authenticated
       },
       maintenance: {
         bgColor: "bg-yellow-500/10",
@@ -113,6 +122,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(234,179,8,0.5)]",
         textColor: "text-yellow-400",
         animate: "",
+        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
       },
       error: {
         bgColor: "bg-orange-500/10",
@@ -120,6 +130,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(249,115,22,0.5)]",
         textColor: "text-orange-400",
         animate: "",
+        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
       },
       offline: {
         bgColor: "bg-red-500/10",
@@ -127,6 +138,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(239,68,68,0.5)]",
         textColor: "text-red-400",
         animate: "",
+        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
       },
       unknown: {
         bgColor: "bg-gray-500/10",
@@ -134,6 +146,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(128,128,128,0.5)]",
         textColor: "text-gray-400",
         animate: "",
+        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
       },
     };
 
@@ -170,11 +183,11 @@ export const Footer: React.FC = () => {
       status = 'error'; // Show as "CONNECTING" while authenticating
       message = 'Connecting...';
     } else if (unifiedWs.isConnected && unifiedWs.isAuthenticated) {
-      status = 'online';
+      status = 'gigaonline'; // GIGA GREEN for connected + authenticated
       message = 'Connected and authenticated';
     } else if (unifiedWs.isConnected) {
-      status = 'error'; // Connected but not authenticated - show as "CONNECTING"
-      message = 'Connecting...';
+      status = 'online'; // GREEN for just connected (your requested change)
+      message = 'Connected to data service';
     } else {
       // Apply grace period for general disconnection
       if (isInGracePeriod) {
@@ -193,6 +206,10 @@ export const Footer: React.FC = () => {
     let displayText = status.toUpperCase();
     if (status === 'error' && (message === 'Connecting...' || isInGracePeriod)) {
       displayText = 'CONNECTING';
+    }
+    // Handle gigaonline status text
+    if (status === 'gigaonline') {
+      displayText = 'ONLINE';
     }
 
     return {
@@ -327,16 +344,34 @@ export const Footer: React.FC = () => {
         {/* Online state background */}
         {styles.statusText === 'ONLINE' && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
-            {/* Soft green gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-l from-green-500/15 via-green-500/5 to-transparent" />
-            
-            {/* Subtle glow on the right side */}
-            <div 
-              className="absolute right-0 top-0 bottom-0 w-32 animate-gradient-pulse"
-              style={{
-                background: 'radial-gradient(circle at right, rgba(34,197,94,0.2) 0%, transparent 70%)'
-              }}
-            />
+            {/* Enhanced background for authenticated (gigaonline) vs regular online */}
+            {status === 'gigaonline' ? (
+              <>
+                {/* Enhanced emerald gradient for authenticated */}
+                <div className="absolute inset-0 bg-gradient-to-l from-emerald-500/20 via-emerald-500/8 to-transparent" />
+                
+                {/* Brighter glow for authenticated */}
+                <div 
+                  className="absolute right-0 top-0 bottom-0 w-32 animate-gradient-pulse"
+                  style={{
+                    background: 'radial-gradient(circle at right, rgba(16,185,129,0.3) 0%, transparent 70%)'
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                {/* Standard purple gradient for connected only */}
+                <div className="absolute inset-0 bg-gradient-to-l from-purple-500/15 via-purple-500/5 to-transparent" />
+                
+                {/* Standard glow for connected only */}
+                <div 
+                  className="absolute right-0 top-0 bottom-0 w-32 animate-gradient-pulse"
+                  style={{
+                    background: 'radial-gradient(circle at right, rgba(147,51,234,0.2) 0%, transparent 70%)'
+                  }}
+                />
+              </>
+            )}
           </div>
         )}
         
@@ -539,15 +574,19 @@ export const Footer: React.FC = () => {
                     className={`text-xs font-fira-code tracking-wider ${styles.textColor} ${styles.wsIndicator ? "text-shadow-sm font-semibold" : ""} cursor-pointer`}
                   >
                     {styles.statusText}
-                    {styles.wsIndicator && (
-                      <span className="ml-1 text-cyan-400 text-opacity-90 text-[10px] align-middle font-bold">
-                        ⚡{styles.connectedSockets > 1 ? styles.connectedSockets : ''}
-                      </span>
-                    )}
                   </span>
-                  <div
-                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
-                  />
+                  <div className="relative">
+                    <div
+                      className={`${styles.dotSize || 'w-3 h-3 sm:w-3.5 sm:h-3.5'} rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
+                    />
+                    {styles.wsIndicator && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-cyan-400 text-[8px] sm:text-[9px] font-bold leading-none">
+                          ⚡
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -569,7 +608,8 @@ export const Footer: React.FC = () => {
                     className={`bg-gray-900 p-4 rounded-lg shadow-xl text-xs ${styles.textColor} border border-gray-700 w-full max-w-[400px] max-h-[90vh] overflow-auto relative`}
                     style={{
                       boxShadow: `0 10px 25px -5px ${
-                        styles.statusText === 'ONLINE' ? 'rgba(34,197,94,0.2)' :
+                        styles.statusText === 'ONLINE' && status === 'gigaonline' ? 'rgba(16,185,129,0.3)' :
+                        styles.statusText === 'ONLINE' ? 'rgba(147,51,234,0.2)' :
                         styles.statusText === 'MAINTENANCE' ? 'rgba(234,179,8,0.2)' :
                         styles.statusText === 'ERROR' ? 'rgba(249,115,22,0.2)' :
                         styles.statusText === 'OFFLINE' ? 'rgba(239,68,68,0.2)' : // Explicitly handle offline
@@ -592,7 +632,8 @@ export const Footer: React.FC = () => {
                     <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
                       <div className="font-bold text-sm">
                         Status: <span className={
-                          styles.statusText === 'ONLINE' ? 'text-green-400' : 
+                          styles.statusText === 'ONLINE' && status === 'gigaonline' ? 'text-emerald-300' :
+                          styles.statusText === 'ONLINE' ? 'text-purple-400' : 
                           styles.statusText === 'MAINTENANCE' ? 'text-yellow-400' : 
                           styles.statusText === 'ERROR' ? 'text-orange-400' : // Consistent error color
                           styles.statusText === 'OFFLINE' ? 'text-red-400' : // Consistent offline color

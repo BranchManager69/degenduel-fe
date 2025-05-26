@@ -70,21 +70,23 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   // Cleanup scroll lock on component unmount
   useEffect(() => {
     return () => {
-      // FIXED: Ensure scroll lock is removed using CSS classes if component unmounts while modal is open
-      if (isExpanded) {
-        // Remove scroll lock classes
-        document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
-        document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
-        
-        // Clean up CSS custom property
-        document.documentElement.style.removeProperty('--scrollbar-width');
-        
-        // Remove event listeners
-        document.removeEventListener('wheel', preventScroll);
-        document.removeEventListener('touchmove', preventScroll);
-      }
+      // FIXED: Always clean up scroll lock regardless of isExpanded state
+      // Remove scroll lock classes
+      document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
+      document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('position');
+      document.body.style.removeProperty('padding-right');
+      
+      // Clean up CSS custom property
+      document.documentElement.style.removeProperty('--scrollbar-width');
+      
+      // Remove event listeners
+      document.removeEventListener('wheel', preventScroll);
+      document.removeEventListener('touchmove', preventScroll);
+      document.removeEventListener('keydown', preventScroll);
     };
-  }, [isExpanded, preventScroll]);
+  }, []);  // Remove dependencies to ensure cleanup always happens
   
   // Determine the color scheme based on upcoming status
   const colorScheme = isUpcoming 
@@ -114,36 +116,40 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     const newExpandedState = !isExpanded;
     setIsExpanded(newExpandedState);
     
-    // FIXED: Use CSS class-based scroll lock to match menu implementation
+    // SIMPLIFIED: Use direct style-based scroll lock for better reliability
     if (newExpandedState) {
-      // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      // Store current scroll position
+      const scrollY = window.scrollY;
       
-      // Set CSS custom property for scrollbar width compensation
-      if (scrollbarWidth > 0) {
-        document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
-        document.body.classList.add('scroll-lock-compensate');
-        document.documentElement.classList.add('scroll-lock-compensate');
-      }
-      
-      // Apply scroll lock using CSS classes (consistent with menu)
-      document.body.classList.add('scroll-lock');
-      document.documentElement.classList.add('scroll-lock');
+      // Apply scroll lock using direct styles
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
       
       // Add event listeners for additional scroll prevention
       document.addEventListener('wheel', preventScroll, { passive: false });
       document.addEventListener('touchmove', preventScroll, { passive: false });
+      document.addEventListener('keydown', preventScroll, { passive: false });
     } else {
-      // Remove scroll lock classes
-      document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
-      document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
+      // Get stored scroll position
+      const scrollY = document.body.style.top;
       
-      // Clean up CSS custom property
-      document.documentElement.style.removeProperty('--scrollbar-width');
+      // Remove scroll lock styles
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('position');
+      document.body.style.removeProperty('top');
+      document.body.style.removeProperty('width');
+      
+      // Restore scroll position
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
       
       // Remove event listeners
       document.removeEventListener('wheel', preventScroll);
       document.removeEventListener('touchmove', preventScroll);
+      document.removeEventListener('keydown', preventScroll);
     }
     
     // Scroll expanded card into view if needed (only when closing)
@@ -172,11 +178,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           {/* Dramatic Feature Card - Complete redesign with visual impact */}
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full group-hover:border-purple-500/40 transition-all duration-300 shadow-lg group-hover:shadow-xl flex flex-col">
             
-            {/* Dynamic Feature Illustration/Banner (full width) */}
-            <div className="relative h-40 w-full overflow-hidden shrink-0">
+            {/* Dynamic Feature Illustration/Banner (square aspect ratio) */}
+            <div className="relative aspect-square w-full overflow-hidden shrink-0">
               
               {/* Gradient overlay for consistent branding & readability */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${colorScheme.primary} opacity-80 mix-blend-overlay z-10`}></div>
+              <div className={`absolute inset-0 bg-gradient-to-br from-gray-900/50 via-gray-900/30 to-gray-900/70 z-10`}></div>
               
               {/* Animated energy effect */}
               <motion.div 
@@ -200,7 +206,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   <img 
                     src={featureImage}
                     alt={title}
-                    className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    className={`w-full h-full object-contain transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
                   />
@@ -230,7 +236,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/60 to-transparent z-20"></div>
               
               {/* Bottom content reveal gradient */}
-              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent z-20"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent z-20"></div>
               
               {/* "COMING SOON" overlay for upcoming features */}
               {isUpcoming && (
@@ -344,20 +350,20 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           {/* Card expanded view */}
           {isExpanded && (
 
-            // Card expanded view container - FULL VIEWPORT MODAL
+            // Card expanded view container - BETTER MOBILE MODAL
             <motion.div
-              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 md:p-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleExpand}
             >
-              {/* Modal content - uses full viewport efficiently */}
+              {/* Modal content - better mobile sizing */}
               <motion.div 
-                className="h-full w-full flex flex-col bg-gray-900/95 border-0 md:m-8 md:h-[calc(100vh-4rem)] md:w-[calc(100vw-4rem)] md:rounded-xl md:border md:border-gray-800"
-                initial={{ scale: 0.95, opacity: 0 }}
+                className="w-full max-w-4xl max-h-[95vh] flex flex-col bg-gray-900/95 rounded-lg border border-gray-800 overflow-hidden"
+                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
+                exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -372,8 +378,8 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   </svg>
                 </button>
                 
-                {/* Header section with feature image and title - FIXED HEIGHT */}
-                <div className="relative h-48 md:h-64 w-full overflow-hidden shrink-0 md:rounded-t-xl">
+                {/* Header section with feature image and title - RESPONSIVE HEIGHT */}
+                <div className="relative h-32 md:h-48 w-full overflow-hidden shrink-0 rounded-t-lg">
                   {/* Feature image background */}
                   {featureImage && (
                     <>
@@ -386,15 +392,15 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                     </>
                   )}
                   
-                  {/* Title overlay */}
-                  <div className="absolute inset-0 flex items-end p-6 md:p-8">
-                    <div className="flex items-center gap-4 w-full">
+                  {/* Title overlay with better readability */}
+                  <div className="absolute inset-0 flex items-end p-4 md:p-6">
+                    <div className="flex items-center gap-3 w-full">
                       <motion.div 
-                        className={`flex items-center justify-center p-3 md:p-4 rounded-lg bg-${colorScheme.secondary}-900/60 text-${colorScheme.accent} backdrop-blur-sm`}
+                        className={`flex items-center justify-center p-2 md:p-3 rounded-lg bg-black/70 text-${colorScheme.accent} backdrop-blur-sm border border-${colorScheme.accent}/30`}
                         animate={{
                           boxShadow: [
                             `0 0 0 rgba(var(--${colorScheme.secondary}-rgb), 0)`,
-                            `0 0 20px rgba(var(--${colorScheme.secondary}-rgb), 0.6)`,
+                            `0 0 15px rgba(var(--${colorScheme.secondary}-rgb), 0.4)`,
                             `0 0 0 rgba(var(--${colorScheme.secondary}-rgb), 0)`
                           ],
                         }}
@@ -403,11 +409,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                         {icon}
                       </motion.div>
                       <div className="flex-1">
-                        <h2 className={`text-2xl md:text-4xl font-russo-one bg-gradient-to-r ${colorScheme.primary} bg-clip-text text-transparent mb-1 tracking-wider`}>
+                        <h2 className="text-lg md:text-2xl font-russo-one text-white mb-1 tracking-wider bg-black/60 backdrop-blur-sm px-3 py-1 rounded-md border border-white/20">
                           {title}
                         </h2>
                         {isUpcoming && (
-                          <span className="px-2 py-1 bg-blue-600/40 text-blue-200 text-xs font-bold uppercase tracking-wide rounded-sm font-sans backdrop-blur-sm">
+                          <span className="px-2 py-1 bg-blue-600/70 text-blue-100 text-xs font-bold uppercase tracking-wide rounded-sm font-sans backdrop-blur-sm border border-blue-400/30">
                             Coming Soon
                           </span>
                         )}
@@ -416,10 +422,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   </div>
                 </div>
                 
-                {/* Main content area - FLEXIBLE HEIGHT, NO SCROLL */}
-                <div className="flex-1 grid md:grid-cols-2 grid-cols-1 gap-6 p-6 md:p-8 min-h-0">
+                {/* Main content area - SCROLLABLE ON MOBILE */}
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-6 min-h-0 overflow-y-auto">
                   {/* Left column: Content */}
-                  <div className="space-y-6 overflow-y-auto md:overflow-visible">
+                  <div className="space-y-4">
                     <div>
                       <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">OVERVIEW</h3>
                       <p className="text-gray-200 leading-relaxed font-sans text-sm">
@@ -456,9 +462,9 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   </div>
                   
                   {/* Right column: Animation/Visual */}
-                  <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center">
+                  <div className="bg-gray-900/50 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center min-h-[200px] md:min-h-[300px]">
                     {animation && FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS ? (
-                      <div className="w-full h-full">
+                      <div className="w-full h-full p-4">
                         {animation}
                       </div>
                     ) : (
@@ -508,14 +514,14 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   </div>
                 </div>
                 
-                {/* Footer - FIXED HEIGHT */}
-                <div className="p-6 md:p-8 bg-gray-900/70 border-t border-gray-800 flex justify-between items-center shrink-0 md:rounded-b-xl">
-                  <div className="text-sm text-gray-400">
-                    <span className="text-gray-300 font-semibold">DegenDuel</span> • {isUpcoming ? 'Upcoming' : 'Core'} Platform Feature
+                {/* Footer - COMPACT */}
+                <div className="p-4 md:p-6 bg-gray-900/70 border-t border-gray-800 flex justify-between items-center shrink-0 rounded-b-lg">
+                  <div className="text-xs md:text-sm text-gray-400">
+                    <span className="text-gray-300 font-semibold">DegenDuel</span> • {isUpcoming ? 'Upcoming' : 'Core'} Feature
                   </div>
                   <button 
                     onClick={toggleExpand}
-                    className={`px-6 py-2 rounded-md bg-gradient-to-r ${colorScheme.primary} text-white text-sm font-medium hover:scale-105 transition-transform`}
+                    className={`px-4 py-2 rounded-md bg-gradient-to-r ${colorScheme.primary} text-white text-sm font-medium hover:scale-105 transition-transform`}
                   >
                     Close
                   </button>
