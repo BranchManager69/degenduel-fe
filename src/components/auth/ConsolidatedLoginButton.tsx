@@ -99,7 +99,7 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
       {/* Main login button */}
       <Button
         onClick={toggleExpanded}
-        className={`w-full ${isCompact ? 'py-2 text-sm' : 'py-3 text-base'} bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 text-white font-mono flex items-center justify-center transition-all duration-300`}
+        className={`${isCompact ? 'h-7 px-4 text-xs' : 'h-8 px-6 text-sm'} bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 text-white font-mono flex items-center justify-center transition-all duration-300 rounded-full border border-brand-400/30 hover:border-brand-400/50 shadow-md hover:shadow-lg`}
         variant="gradient"
       >
         {isAuthenticated ? (user?.nickname || "Account") : "Sign In"}
