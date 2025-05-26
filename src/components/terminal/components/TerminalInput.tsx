@@ -21,7 +21,39 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   onEnter,
   glitchActive = false,
 }) => {
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const inputRef = React.useRef<HTMLTextAreaElement>(null);
+  
+  // Auto-resize textarea
+  const adjustHeight = () => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const scrollHeight = inputRef.current.scrollHeight;
+      const lineHeight = 24; // Approximate line height
+      const maxLines = 4;
+      const maxHeight = lineHeight * maxLines;
+      
+      inputRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+    }
+  };
+  
+  React.useEffect(() => {
+    adjustHeight();
+  }, [userInput]);
+  
+  // Handle mobile keyboard viewport changes
+  React.useEffect(() => {
+    const handleResize = () => {
+      // On mobile, when keyboard appears, ensure input stays in view
+      if (inputRef.current && document.activeElement === inputRef.current) {
+        setTimeout(() => {
+          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="relative border-t border-mauve/30 bg-black/40">
@@ -123,18 +155,18 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                   repeatType: "loop"
                 }}
               >
-                ___________________________
+                ""
               </motion.div>
             </div>
           )}
           
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && userInput.trim()) {
+              if (e.key === 'Enter' && !e.shiftKey && userInput.trim()) {
+                e.preventDefault(); // Prevent newline
                 // Process user command
                 const command = userInput.trim();
                 setUserInput('');
@@ -142,11 +174,13 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                 // Call the onEnter callback
                 onEnter(command);
               }
+              // Allow Shift+Enter for new lines
             }}
-            className="w-full bg-transparent outline-none border-none text-white placeholder-mauve-dark/50 focus:ring-0"
+            className="w-full bg-transparent outline-none border-none text-white placeholder-mauve-dark/50 focus:ring-0 resize-none"
             placeholder="Type to chat with Didi..."
             autoComplete="off"
             spellCheck="false"
+            rows={1}
             // The key properties to prevent iOS zoom: font-size at least 16px and user-scalable=no
             style={{ 
               color: 'rgba(255, 255, 255, 0.95)', 
@@ -155,7 +189,11 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               backgroundColor: 'rgba(20, 20, 30, 0.3)',
               transition: 'all 0.3s ease',
               fontSize: '16px', // Critical for preventing iOS zoom
-              touchAction: 'manipulation' // Helps with touch handling
+              touchAction: 'manipulation', // Helps with touch handling
+              lineHeight: '24px',
+              minHeight: '24px',
+              maxHeight: '96px', // 4 lines max
+              overflowY: 'auto'
             }}
           />
         </div>

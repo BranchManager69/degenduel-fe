@@ -2,17 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
 
 import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketContext";
-import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { DDExtendedMessageType, DDExtendedMessageType as MessageType } from '../../hooks/websocket/types';
 import { useStore } from "../../store/useStore";
 import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
-  const { isAuthenticated } = useMigratedAuth();
   const unifiedWs = useWebSocket();
   
   // Get errors from hooks
@@ -21,11 +18,10 @@ export const Footer: React.FC = () => {
   // Use our scroll hook for footer
   const { isCompact } = useScrollFooter(50);
 
-  // State to manage modal visibility
+  // State to manage modal visibility and mode
   const [showStatusModal, setShowStatusModal] = useState(false);
-  
-  // FIXED: Move useStore call to component level to avoid hook violations
-  const isEasterEggActive = useStore((state) => state.isEasterEggActive);
+  const [modalMode, setModalMode] = useState<'basic' | 'passcode' | 'advanced'>('basic');
+  const [passcodeInput, setPasscodeInput] = useState('');
   
   // Get maintenance mode from store (safely)
   const maintenanceMode = useStore((state) => state.maintenanceMode);
@@ -34,6 +30,22 @@ export const Footer: React.FC = () => {
   // Grace period state for connection issues
   const [disconnectTime, setDisconnectTime] = useState<number | null>(null);
   const [isInGracePeriod, setIsInGracePeriod] = useState(false);
+
+  // Handle passcode entry
+  const handlePasscodeInput = (digit: string) => {
+    const newInput = passcodeInput + digit;
+    setPasscodeInput(newInput);
+    
+    if (newInput === '6969') {
+      setModalMode('advanced');
+      setPasscodeInput('');
+    } else if (newInput.length >= 4) {
+      // Wrong passcode, clear after brief delay
+      setTimeout(() => setPasscodeInput(''), 300);
+    }
+  };
+
+  const clearPasscode = () => setPasscodeInput('');
 
   // Handle grace period for disconnections
   useEffect(() => {
@@ -387,173 +399,84 @@ export const Footer: React.FC = () => {
             {/* Left side - Links with horizontal scroll if needed */}
             <div className="flex items-center gap-6 min-w-0 pl-4 flex-wrap">
               
-              {/* Check if user is authenticated (is therefore assumed to be a pre-launch beta user) [OR] if we're past launch date/initial reveal (is now fully public) */}
-              {(isAuthenticated || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
-                <>
-
-                  {/* Left side - Links with horizontal scroll if needed */}
-                  <div className="flex items-center space-x-4 shrink-0">
-                    <a
-                      href="https://status.degenduel.me/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
-                    >
-                      Status
-                    </a>
-                    <Link
-                      to="/platform"
-                      className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
-                    >
-                      Platform
-                    </Link>
-                    <Link
-                      to="/faq"
-                      className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
-                    >
-                      FAQ
-                    </Link>
-                    <Link
-                      to="/support"
-                      className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
-                    >
-                      Support
-                    </Link>
-                    
-                                      {/* RPC/Database Metrics (visible to all users) */}
-                  <div className="ml-2 pl-2 border-l border-gray-700 overflow-hidden">
-                    <RPCBenchmarkFooter compactMode={isCompact} />
-                  </div>
-                  </div>
-                  
-                  {/* Social links with enhanced grouping */}
-                  <div className="flex items-center space-x-4 shrink-0 px-2 py-1 rounded-md bg-gray-800/20 hover:bg-gray-800/40 transition-colors shadow-sm">
-                    
-                    {/* Twitter (https://x.com/DegenDuelMe) */}
-                    <a
-                      href="https://x.com/DegenDuelMe"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[0ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
-                    >
-                      {/* X logo */}
-                      <span className="sr-only">X</span>
-                      <svg
-                        className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                      </svg>
-                    </a>
-
-                    {/* Discord (https://discord.gg/dduel) */}
-                    <a
-                      href="https://discord.gg/dduel"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[50ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
-                    >
-                      {/* Discord logo */}
-                      <span className="sr-only">Discord</span>
-                      <svg
-                        className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
-                      </svg>
-                    </a>
-
-                    {/* Telegram (https://t.me/DegenDuel) */}
-                    <a
-                      href="https://t.me/DegenDuel"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[100ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
-                    >
-                      {/* Telegram logo */}
-                      <span className="sr-only">Telegram</span>
-                      <svg
-                        className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                      </svg>
-                    </a>
-
-                  </div>
-                </>
-              ) : (
-
-                /* Enhanced footer for non-authenticated users */
-                <div className="flex items-center space-x-4 shrink-0">
-                  {/* Status link with icon */}
+              {/* Unified footer for all users - clean symbols approach */}
+              <div className="flex items-center space-x-4 shrink-0">
+                {/* Status link with activity/pulse icon */}
+                <a
+                  href="https://status.degenduel.me/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
+                  title="System Status"
+                >
+                  <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </a>
+                
+                {/* Divider */}
+                <div className="h-4 w-px bg-gray-700"></div>
+                
+                {/* Social links with enhanced grouping */}
+                <div className="flex items-center space-x-3 px-2 py-1 rounded-md bg-gray-800/20 hover:bg-gray-800/40 transition-colors shadow-sm">
+                  {/* Twitter */}
                   <a
-                    href="https://status.degenduel.me/"
+                    href="https://x.com/DegenDuelMe"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
-                    title="System Status"
+                    className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[0ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
+                    title="Follow us on X"
                   >
                     <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                      <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                     </svg>
                   </a>
-                  
-                  {/* Divider */}
-                  <div className="h-4 w-px bg-gray-700"></div>
-                  
-                  {/* Social links with enhanced grouping */}
-                  <div className="flex items-center space-x-3 px-2 py-1 rounded-md bg-gray-800/20 hover:bg-gray-800/40 transition-colors shadow-sm">
-                    {/* Twitter */}
-                    <a
-                      href="https://x.com/DegenDuelMe"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[0ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
-                      title="Follow us on X"
-                    >
-                      <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                      </svg>
-                    </a>
 
-                    {/* Discord */}
-                    <a
-                      href="https://discord.gg/dduel"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[50ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
-                      title="Join our Discord"
-                    >
-                      <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
-                      </svg>
-                    </a>
+                  {/* Discord */}
+                  <a
+                    href="https://discord.gg/dduel"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[50ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
+                    title="Join our Discord"
+                  >
+                    <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
+                    </svg>
+                  </a>
 
-                    {/* Telegram */}
-                    <a
-                      href="https://t.me/DegenDuel"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[100ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
-                      title="Join our Telegram"
-                    >
-                      <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                      </svg>
-                    </a>
-                  </div>
-                  
-                  {/* RPC/Database Metrics (visible to all users) */}
-                  <div className="ml-2 pl-2 border-l border-gray-700 overflow-hidden">
-                    <RPCBenchmarkFooter compactMode={isCompact} />
-                  </div>
+                  {/* Telegram */}
+                  <a
+                    href="https://t.me/DegenDuel"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[100ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
+                    title="Join our Telegram"
+                  >
+                    <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                  </a>
+
+                  {/* GitHub */}
+                  <a
+                    href="https://github.com/BranchManager69/degenduel"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[150ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
+                    title="View on GitHub"
+                  >
+                    <svg className="h-4 w-4 sm:h-4 sm:w-4 md:h-4 md:w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                  </a>
                 </div>
-
-              )}
+                
+                {/* RPC/Database Metrics (visible to all users) */}
+                <div className="ml-2 pl-2 border-l border-gray-700 overflow-hidden">
+                  <RPCBenchmarkFooter compactMode={isCompact} />
+                </div>
+              </div>
             </div>
 
             {/* Right side - Enhanced Status Indicator */}
@@ -561,7 +484,11 @@ export const Footer: React.FC = () => {
               <div
                 id="status-indicator"
                 className={`flex items-center gap-2 h-full px-4 sm:px-6 transition-all duration-300 relative cursor-pointer hover:brightness-110 active:brightness-90 hover:scale-105 hover:shadow-lg rounded-md hover:bg-gray-800/20`}
-                onClick={() => setShowStatusModal(!showStatusModal)}
+                onClick={() => {
+                  setShowStatusModal(!showStatusModal);
+                  setModalMode('basic');
+                  setPasscodeInput('');
+                }}
                 title="Click to view WebSocket details and test connection"
               >
                 {/* WebSocket-specific shine effect */}
@@ -621,12 +548,90 @@ export const Footer: React.FC = () => {
                     {/* Close button - top right */}
                     <button 
                       className="absolute top-2 right-2 text-gray-400 hover:text-white p-1"
-                      onClick={() => setShowStatusModal(false)}
+                      onClick={() => {
+                        setShowStatusModal(false);
+                        setModalMode('basic');
+                        setPasscodeInput('');
+                      }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </button>
+
+                    {/* Modal Content Based on Mode */}
+                    {modalMode === 'basic' && (
+                      <div className="text-center">
+                        <div className="mb-4">
+                          <div className="flex items-center justify-center mb-2">
+                            <div className={`w-4 h-4 rounded-full mr-3 ${unifiedWs.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                            <span className="text-lg font-semibold">
+                              {styles.statusText}
+                            </span>
+                          </div>
+                          <p className="text-gray-400 text-sm">{styles.message}</p>
+                        </div>
+                        
+                        <div className="border-t border-gray-700 pt-4">
+                          <button 
+                            onClick={() => setModalMode('passcode')}
+                            className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                          >
+                            Advanced Options
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {modalMode === 'passcode' && (
+                      <div className="text-center">
+                        <div className="mb-6">
+                          <h3 className="text-lg font-semibold mb-2">Enter Passcode</h3>
+                          <div className="flex justify-center space-x-2 mb-4">
+                            {[0,1,2,3].map(i => (
+                              <div key={i} className={`w-3 h-3 rounded-full border-2 transition-colors ${
+                                i < passcodeInput.length ? 'bg-cyan-400 border-cyan-400' : 'border-gray-600'
+                              }`} />
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Numeric Keypad */}
+                        <div className="grid grid-cols-3 gap-3 max-w-[200px] mx-auto">
+                          {[1,2,3,4,5,6,7,8,9].map(num => (
+                            <button
+                              key={num}
+                              onClick={() => handlePasscodeInput(num.toString())}
+                              className="w-12 h-12 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-semibold transition-colors"
+                            >
+                              {num}
+                            </button>
+                          ))}
+                          <button
+                            onClick={clearPasscode}
+                            className="w-12 h-12 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs transition-colors"
+                          >
+                            Clear
+                          </button>
+                          <button
+                            onClick={() => handlePasscodeInput('0')}
+                            className="w-12 h-12 rounded-lg bg-gray-800 hover:bg-gray-700 text-white font-semibold transition-colors"
+                          >
+                            0
+                          </button>
+                          <button
+                            onClick={() => setModalMode('basic')}
+                            className="w-12 h-12 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs transition-colors"
+                          >
+                            Back
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {modalMode === 'advanced' && (
+                      <>
+                        {/* Existing Advanced Modal Content */}
 
                     {/* Header with status and copy button */}
                     <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
@@ -896,6 +901,8 @@ Last Check: ${new Date().toLocaleTimeString()}
                         Reset Connection
                       </button>
                     </div>
+                      </>
+                    )}
 
                   </div>
                 </div>
@@ -905,42 +912,17 @@ Last Check: ${new Date().toLocaleTimeString()}
 
             {/* Center Content */}
             <div className="flex justify-center items-center absolute left-1/2 transform -translate-x-1/2">
-              {/* Branch emoji for non-authenticated users */}
-              {!isAuthenticated && (
-                                  <a 
-                    href="https://branch.bet" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out opacity-70 hover:opacity-100 p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
-                    title="by Branch"
-                  >
-                    {/* Simple branch SVG icon */}
-                    <svg className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 hover:text-brand-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2L8 6h3v4.5c0 1.38-1.12 2.5-2.5 2.5S6 11.88 6 10.5V8H4v2.5c0 2.48 2.02 4.5 4.5 4.5 1.33 0 2.52-.58 3.35-1.5.83.92 2.02 1.5 3.35 1.5 2.48 0 4.5-2.02 4.5-4.5V8h-2v2.5c0 1.38-1.12 2.5-2.5 2.5S13 11.88 13 10.5V6h3L12 2z"/>
-                    </svg>
-                  </a>
-              )}
-              
-              {/* Easter Egg for authenticated users */}
-              {isAuthenticated && (
-                <div 
-                  className={`text-xs transition-opacity duration-1000 ${
-                    // Read from Zustand store to check if Easter egg is active
-                    isEasterEggActive 
-                      ? 'opacity-100' 
-                      : 'opacity-0 pointer-events-none'
-                  }`}
-                >
-                  {/* Hidden moon symbol that only appears when Easter egg is activated */}
-                  <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 via-blue-300 to-fuchsia-400 overflow-hidden">
-                    {/* Actual moon symbol */}
-                    <span className="relative z-10">◑</span>
-                    
-                    {/* Subtle glow effect */}
-                    <span className="absolute inset-0 bg-cyan-400/20 blur-sm rounded-full animate-pulse"></span>
-                  </span>
-                </div>
-              )}
+              {/* Branch attribution for all users */}
+              <a 
+                href="https://branch.bet" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out opacity-70 hover:opacity-100 p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
+                title="by Branch"
+              >
+                {/* Branch emoji */}
+                <span className="text-lg sm:text-xl text-gray-500 hover:text-brand-400 transition-colors">🌿</span>
+              </a>
             </div>
 
           </div>

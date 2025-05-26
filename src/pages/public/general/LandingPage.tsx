@@ -76,6 +76,9 @@ export const LandingPage: React.FC = () => {
   // Floating timer coordination
   const [mainTimerFloating, setMainTimerFloating] = useState(false);
   const [showMiniTimer, setShowMiniTimer] = useState(false);
+  
+  // Countdown completion state
+  const [isCountdownComplete, setIsCountdownComplete] = useState(false);
 
   // Handle scroll-based timer sequence
   const handleMainTimerMorphComplete = useCallback((scrolledDown: boolean) => {
@@ -218,6 +221,23 @@ export const LandingPage: React.FC = () => {
   }, [retryContestFetch]);
 
   const fallbackDateForTimers = useMemo(() => new Date(FALLBACK_RELEASE_DATE), []);
+
+  // Check if countdown is complete
+  useEffect(() => {
+    const checkCountdownComplete = () => {
+      const now = new Date();
+      const timerExpired = fallbackDateForTimers.getTime() <= now.getTime();
+      const hasRevealedAddress = !!(websocketContractAddress || websocketContractRevealed);
+      
+      // Countdown is complete if timer expired AND we have a revealed contract address
+      setIsCountdownComplete(timerExpired && hasRevealedAddress);
+    };
+
+    checkCountdownComplete();
+    const interval = setInterval(checkCountdownComplete, 1000);
+    
+    return () => clearInterval(interval);
+  }, [fallbackDateForTimers, websocketContractAddress, websocketContractRevealed]);
 
   // Define dummy variants to satisfy linter, replace with actual definitions
   const landingPageVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
@@ -731,6 +751,7 @@ export const LandingPage: React.FC = () => {
         tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS}
         tokenSymbol={"DUEL"}
         enabled={forceShowFabs || (websocketContractRevealed && websocketContractAddress)}
+        isCountdownComplete={isCountdownComplete}
       />
     </>
   );

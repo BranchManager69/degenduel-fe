@@ -291,6 +291,105 @@ const upcomingFeatures = [
     isUpcoming: true
   },
 
+  // 9 - DegenDuel MCP
+  {
+    title: "DegenDuel MCP",
+    description: "Model Context Protocol integration allowing AI agents to interact directly with DegenDuel's trading infrastructure and data.",
+    extendedDescription:
+      "The DegenDuel MCP (Model Context Protocol) provides a standardized interface for AI agents and large language models to access real-time trading data, execute trades, and participate in competitions programmatically.\n\nThis protocol enables seamless integration with Claude, GPT-4, and other AI systems, allowing for sophisticated automated trading strategies and real-time market analysis directly within AI conversation contexts.",
+    icon: (
+      <svg
+        className="w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
+    isUpcoming: true
+  },
+
+  // 10 - DegenDuel RPC
+  {
+    title: "DegenDuel RPC",
+    description: "High-performance RPC endpoint for developers building applications and bots that need direct access to DegenDuel's trading engine.",
+    extendedDescription:
+      "The DegenDuel RPC provides developers with low-latency access to our trading infrastructure through a comprehensive REST and WebSocket API. Build custom trading bots, portfolio management tools, and third-party integrations.\n\nFeatures include real-time market data streaming, portfolio management, contest participation, and advanced order management with institutional-grade reliability and sub-100ms response times.",
+    icon: (
+      <svg
+        className="w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M8 21L16 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 17V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M6 7H6.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 7H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6 10H6.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 10H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6 13H6.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 13H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    isUpcoming: true
+  },
+
+  // 11 - Discord Bot
+  {
+    title: "Discord Bot",
+    description: "Comprehensive Discord integration for contest notifications, leaderboards, and community features directly in your server.",
+    extendedDescription:
+      "The DegenDuel Discord Bot brings the full platform experience to your Discord server. Get real-time contest notifications, view live leaderboards, check portfolio performance, and receive automated prize announcements.\n\nSetup custom alerts for price movements, contest starts, and achievement unlocks. The bot also supports slash commands for quick portfolio checks and contest participation directly from Discord chat.",
+    icon: (
+      <svg
+        className="w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M8 12L16 12"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 8L16 8"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 16L13 16"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <rect
+          x="3"
+          y="4"
+          width="18"
+          height="16"
+          rx="2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle cx="18.5" cy="7.5" r="2.5" fill="currentColor" />
+      </svg>
+    ),
+    isUpcoming: true
+  },
+
 ];
 
 // Combine current and upcoming features for rendering

@@ -57,6 +57,9 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   
   // If no image is provided, try to use a default one
   const featureImage = imagePath || (title in DEGENDUEL_FEATURES_IMAGES ? DEGENDUEL_FEATURES_IMAGES[title as keyof typeof DEGENDUEL_FEATURES_IMAGES] : null);
@@ -70,16 +73,16 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   // Cleanup scroll lock on component unmount
   useEffect(() => {
     return () => {
-      // FIXED: Always clean up scroll lock regardless of isExpanded state
-      // Remove scroll lock classes
-      document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
-      document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
+      // FIXED: Always clean up scroll lock and restore scroll position
       document.body.style.removeProperty('overflow');
       document.body.style.removeProperty('position');
-      document.body.style.removeProperty('padding-right');
+      document.body.style.removeProperty('top');
+      document.body.style.removeProperty('width');
       
-      // Clean up CSS custom property
-      document.documentElement.style.removeProperty('--scrollbar-width');
+      // Restore scroll position if we had one stored
+      if (scrollPositionRef.current > 0) {
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'auto' });
+      }
       
       // Remove event listeners
       document.removeEventListener('wheel', preventScroll);
@@ -87,6 +90,46 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       document.removeEventListener('keydown', preventScroll);
     };
   }, []);  // Remove dependencies to ensure cleanup always happens
+  
+  // Escape key to close modal + Focus management
+  useEffect(() => {
+    if (!isExpanded) return;
+    
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        toggleExpand();
+      }
+    };
+    
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+        
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+    
+    // Focus close button when modal opens
+    setTimeout(() => closeButtonRef.current?.focus(), 100);
+    
+    document.addEventListener('keydown', handleEscapeKey);
+    document.addEventListener('keydown', handleTabKey);
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('keydown', handleTabKey);
+    };
+  }, [isExpanded]);
   
   // Determine the color scheme based on upcoming status
   const colorScheme = isUpcoming 
@@ -116,15 +159,15 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     const newExpandedState = !isExpanded;
     setIsExpanded(newExpandedState);
     
-    // SIMPLIFIED: Use direct style-based scroll lock for better reliability
+    // FIXED: Store scroll position in ref for reliable restoration
     if (newExpandedState) {
-      // Store current scroll position
-      const scrollY = window.scrollY;
+      // Store current scroll position in ref
+      scrollPositionRef.current = window.scrollY;
       
       // Apply scroll lock using direct styles
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
+      document.body.style.top = `-${scrollPositionRef.current}px`;
       document.body.style.width = '100%';
       
       // Add event listeners for additional scroll prevention
@@ -132,19 +175,14 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       document.addEventListener('touchmove', preventScroll, { passive: false });
       document.addEventListener('keydown', preventScroll, { passive: false });
     } else {
-      // Get stored scroll position
-      const scrollY = document.body.style.top;
-      
       // Remove scroll lock styles
       document.body.style.removeProperty('overflow');
       document.body.style.removeProperty('position');
       document.body.style.removeProperty('top');
       document.body.style.removeProperty('width');
       
-      // Restore scroll position
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
+      // Restore scroll position from ref with smooth behavior
+      window.scrollTo({ top: scrollPositionRef.current, behavior: 'auto' });
       
       // Remove event listeners
       document.removeEventListener('wheel', preventScroll);
@@ -170,6 +208,13 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         <motion.div 
           className={`relative z-10 h-full ${isExpanded ? 'pointer-events-none' : 'cursor-pointer group'}`}
           onClick={() => !isExpanded && toggleExpand()}
+          onMouseEnter={() => {
+            // Preload feature image on hover
+            if (featureImage && !imageLoaded) {
+              const img = new Image();
+              img.src = featureImage;
+            }
+          }}
           whileHover={!isExpanded ? { scale: 1.03, y: -5 } : {}}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           layout
@@ -360,6 +405,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             >
               {/* Modal content - better mobile sizing */}
               <motion.div 
+                ref={modalRef}
                 className="w-full max-w-4xl max-h-[95vh] flex flex-col bg-gray-900/95 rounded-lg border border-gray-800 overflow-hidden"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -369,8 +415,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               >
                 {/* Close button */}
                 <button 
-                  className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-gray-900/80 text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors"
+                  ref={closeButtonRef}
+                  className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-gray-900/80 text-gray-400 hover:text-white hover:bg-gray-700/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
                   onClick={toggleExpand}
+                  aria-label="Close modal (Escape key)"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>

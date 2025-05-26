@@ -2,13 +2,13 @@
 
 /**
  * @fileoverview
- * Smaller version of the DecryptionTimer component, now driven by API.
- *
+ * Mini synchronized version of DecryptionTimer - perfect mirror clone
+ * 
  * @description
- * Compact countdown timer that displays in a fixed position.
- *
- * @author Branch Manager
- * @updated 2025-05-12 - Integrated new API response structure
+ * Miniature countdown timer that mirrors the main timer exactly:
+ * - Same animations, same colors, same timing
+ * - Rectangular shape like main timer, just smaller
+ * - Perfect synchronicity for cohesive user experience
  */
 
 import axios from 'axios';
@@ -17,7 +17,65 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { API_URL } from '../../config/config';
 import { useLaunchEvent } from '../../hooks/websocket/topic-hooks/useLaunchEvent';
 
-// --- NEW INTERFACES (can be imported from a shared file if preferred) ---
+// Mini flipping digit component - synchronized with main timer
+const MiniFlippingDigit: React.FC<{
+  value: string;
+  prevValue: string;
+  textColor: string;
+  shadowColor: string;
+  urgencyLevel: number;
+}> = ({ value, prevValue, textColor, shadowColor, urgencyLevel }) => {
+  const [isFlipping, setIsFlipping] = useState(false);
+
+  useEffect(() => {
+    if (value !== prevValue) {
+      setIsFlipping(true);
+      const flipTimer = setTimeout(() => setIsFlipping(false), 600);
+      return () => clearTimeout(flipTimer);
+    }
+  }, [value, prevValue]);
+
+  return (
+    <motion.span
+      key={value}
+      className="text-sm font-mono font-black tracking-tight tabular-nums"
+      initial={isFlipping ? { rotateX: -90, opacity: 0 } : false}
+      animate={{
+        rotateX: 0,
+        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
+        textShadow: [
+          `0 0 3px ${shadowColor}`,
+          `0 0 ${urgencyLevel === 3 ? '12' : urgencyLevel === 2 ? '8' : '6'}px ${shadowColor}`,
+          `0 0 3px ${shadowColor}`
+        ]
+      }}
+      transition={{
+        rotateX: { duration: 0.6, ease: "easeOut" },
+        opacity: {
+          duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        },
+        textShadow: {
+          duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      }}
+      style={{
+        color: textColor,
+        textShadow: `0 0 8px ${shadowColor}`,
+        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace",
+        transformOrigin: 'center',
+        backfaceVisibility: 'hidden'
+      }}
+    >
+      {value}
+    </motion.span>
+  );
+};
+
+// Interfaces matching main timer
 interface TokenInfo {
   id: number;
   address: string;
@@ -57,13 +115,12 @@ interface CountdownApiResponse {
   token_config: TokenConfig | null;
   countdown: CountdownTime | null;
 }
-// --- END NEW INTERFACES ---
 
 interface MiniDecryptionTimerProps {
-  targetDate: Date; // Fallback if API fails or no end_time
+  targetDate: Date;
   onClick?: () => void;
-  isVisible?: boolean; // Controls visibility for main timer handoff
-  delayedEntrance?: boolean; // Enables delayed entrance animation
+  isVisible?: boolean;
+  delayedEntrance?: boolean;
 }
 
 export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ 
@@ -73,18 +130,18 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
   delayedEntrance = false 
 }) => {
   const [timeRemaining, setTimeRemaining] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [urgencyLevel, setUrgencyLevel] = useState(0); // 0: Normal, 1: Warning (Yellow), 2: Critical (Red), 3: Complete/Status
-  const [isEffectivelyComplete, setIsEffectivelyComplete] = useState(false);
+  const [prevTimeRemaining, setPrevTimeRemaining] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [urgencyLevel, setUrgencyLevel] = useState(0);
   const [apiData, setApiData] = useState<CountdownApiResponse | null>(null);
   const [effectiveTargetDate, setEffectiveTargetDate] = useState<Date | null>(null);
 
   const { contractAddress: revealedAddress } = useLaunchEvent();
 
-  const calculateMiniTimeRemaining = useCallback(() => {
+  // Same calculation logic as main timer for perfect sync
+  const calculateTimeRemaining = useCallback(() => {
     if (!effectiveTargetDate || isNaN(effectiveTargetDate.getTime())) {
       setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      setUrgencyLevel(4); // Indicates completion or issue
-      setIsEffectivelyComplete(true);
+      setUrgencyLevel(4);
       return;
     }
 
@@ -93,8 +150,7 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
 
     if (difference <= 0) {
       setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      setUrgencyLevel(4); // Countdown finished
-      setIsEffectivelyComplete(true);
+      setUrgencyLevel(4);
       return;
     }
 
@@ -103,21 +159,24 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-    setTimeRemaining({ days, hours, minutes, seconds });
-    setIsEffectivelyComplete(false);
+    setTimeRemaining(prev => {
+      setPrevTimeRemaining(prev);
+      return { days, hours, minutes, seconds };
+    });
 
     const totalSeconds = difference / 1000;
-    if (totalSeconds <= 3600) { // Less than 1 hour = Red (Critical)
+    if (totalSeconds <= 3600) {
       setUrgencyLevel(3); // Critical (Red)
-    } else if (totalSeconds <= 172800) { // Less than 2 days = Yellow (Warning)  
-      setUrgencyLevel(2); // Warning (Yellow)
-    } else if (totalSeconds <= 604800) { // Less than 7 days = Purple (New level)
-      setUrgencyLevel(1); // Purple (New)
+    } else if (totalSeconds <= 172800) {
+      setUrgencyLevel(2); // Warning (Yellow)  
+    } else if (totalSeconds <= 604800) {
+      setUrgencyLevel(1); // Purple
     } else {
       setUrgencyLevel(0); // Normal (Green)
     }
   }, [effectiveTargetDate]);
 
+  // Same API fetching as main timer
   useEffect(() => {
     const fetchCountdownData = async () => {
       try {
@@ -129,57 +188,21 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
           const apiDate = new Date(data.end_time);
           if (!isNaN(apiDate.getTime())) {
             setEffectiveTargetDate(apiDate);
-            // Use API's countdown for initial display if available
-            if (data.countdown) {
-                 setTimeRemaining({
-                    days: data.countdown.days,
-                    hours: data.countdown.hours,
-                    minutes: data.countdown.minutes,
-                    seconds: data.countdown.seconds,
-                });
-                // Determine initial completion state based on API countdown
-                const initialTotalSeconds = data.countdown.total_seconds;
-                setIsEffectivelyComplete(initialTotalSeconds <= 0);
-                // Set initial urgency based on API's total_seconds
-                if (initialTotalSeconds <= 0) {
-                    setUrgencyLevel(4);
-                } else if (initialTotalSeconds <= 3600) {
-                    setUrgencyLevel(3);
-                } else if (initialTotalSeconds <= 172800) {
-                    setUrgencyLevel(2);
-                } else if (initialTotalSeconds <= 604800) {
-                    setUrgencyLevel(1);
-                } else {
-                    setUrgencyLevel(0);
-                }
-            } else { // If no API countdown, calculate completion based on end_time vs now
-                const now = new Date();
-                setIsEffectivelyComplete(apiDate.getTime() - now.getTime() <= 0);
-            }
             return;
           }
         }
-        // Fallback if API end_time is missing or invalid
         if (propTargetDate instanceof Date && !isNaN(propTargetDate.getTime())) {
           setEffectiveTargetDate(propTargetDate);
-           // Calculate completion based on propTargetDate vs now
-          const now = new Date();
-          setIsEffectivelyComplete(propTargetDate.getTime() - now.getTime() <= 0);
         } else {
           setEffectiveTargetDate(null);
-          setIsEffectivelyComplete(true); // No valid date, treat as complete/error
           setUrgencyLevel(4);
         }
       } catch (error) {
         console.error('Failed to fetch countdown data for MiniTimer:', error);
-        // Fallback on API error
         if (propTargetDate instanceof Date && !isNaN(propTargetDate.getTime())) {
           setEffectiveTargetDate(propTargetDate);
-          const now = new Date();
-          setIsEffectivelyComplete(propTargetDate.getTime() - now.getTime() <= 0);
         } else {
           setEffectiveTargetDate(null);
-          setIsEffectivelyComplete(true);
           setUrgencyLevel(4);
         }
       }
@@ -191,142 +214,154 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
   }, [propTargetDate]);
 
   useEffect(() => {
-    if(effectiveTargetDate && !isEffectivelyComplete) { // Only run interval if there's a date and not already complete
-        calculateMiniTimeRemaining(); // Initial calculation for this specific effectiveTargetDate
-        const timer = setInterval(calculateMiniTimeRemaining, 1000);
-        return () => clearInterval(timer);
-    } else if (isEffectivelyComplete) {
-        // If complete, ensure time is zeroed out and urgency is set to 4
-        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        setUrgencyLevel(4);
-    } else if (!effectiveTargetDate) { // No valid date at all
-        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        setUrgencyLevel(4);
-        setIsEffectivelyComplete(true);
+    if (effectiveTargetDate) {
+      calculateTimeRemaining();
+      const timer = setInterval(calculateTimeRemaining, 1000);
+      return () => clearInterval(timer);
     }
-  }, [calculateMiniTimeRemaining, effectiveTargetDate, isEffectivelyComplete]);
+  }, [calculateTimeRemaining, effectiveTargetDate]);
 
   const tokenAddress = revealedAddress || apiData?.token_address || apiData?.token_info?.address || apiData?.token_config?.address || '';
-  const shouldShowCountdown = apiData ? apiData.enabled !== false : true; // Default to true if apiData is null (e.g. initial load before fetch)
+  const shouldShowCountdown = apiData ? apiData.enabled !== false : true;
+  const isComplete = urgencyLevel === 4 && timeRemaining.days === 0 && timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0;
 
-
-  const getBeaconContent = () => {
-    let digits = "";
-    let unit = "";
-    let statusText = "";
-    let beaconColorClass = "bg-black/60 border-green-500/70 text-[#33ff66]";
-    let digitFontClass = "font-digital-7";
-    let textFontClass = "font-fira-code";
-    let shadowClass = "shadow-lg shadow-green-900/30";
-
-    // Determine status based on isEffectivelyComplete and tokenAddress
-    if (isEffectivelyComplete) {
-      if (tokenAddress) {
-        statusText = apiData?.token_info?.symbol || "LIVE"; // Prefer symbol if short
-        if (statusText.length > 4 && statusText !== "LIVE") statusText = "LIVE"; // Fallback if symbol is too long, unless it's already LIVE
-        beaconColorClass = "bg-black/60 border-green-400 text-green-300";
-        shadowClass = "shadow-lg shadow-green-500/50";
-      } else {
-        statusText = "..."; // Verifying or awaiting address
-        beaconColorClass = "bg-black/60 border-blue-400/70 text-blue-300";
-        shadowClass = "shadow-lg shadow-blue-700/40";
-      }
-      digitFontClass = textFontClass; // No digits, status text uses text font
-    } else { // Countdown is active
-      // Countdown is active, determine colors by urgencyLevel (already set by calculateMiniTimeRemaining)
-      if (urgencyLevel === 1) { // Purple (< 7 days)
-        beaconColorClass = "bg-black/60 border-purple-400/70 text-[#a855f7]";
-        shadowClass = "shadow-lg shadow-purple-700/40";
-      } else if (urgencyLevel === 2) { // Yellow (< 2 days)
-        beaconColorClass = "bg-black/60 border-yellow-400/70 text-[#ffcc00]";
-        shadowClass = "shadow-lg shadow-yellow-700/40";
-      } else if (urgencyLevel === 3) { // Red (< 1 hour)
-        beaconColorClass = "bg-black/60 border-red-500/70 text-[#ff5050]";
-        shadowClass = "shadow-lg shadow-red-700/50";
-      }
-      // Default green for urgencyLevel 0 is already set
-
-      // Determine time display
-      if (timeRemaining.days > 0) {
-        digits = timeRemaining.days.toString().padStart(2, '0');
-        unit = "d";
-      } else if (timeRemaining.hours > 0) {
-        digits = timeRemaining.hours.toString().padStart(2, '0');
-        unit = "h";
-      } else if (timeRemaining.minutes > 0) {
-        digits = timeRemaining.minutes.toString().padStart(2, '0');
-        unit = "m";
-      } else {
-        digits = timeRemaining.seconds.toString().padStart(2, '0');
-        unit = "s";
-      }
+  // Same color logic as main timer
+  const getTextColor = () => {
+    if (isComplete) return tokenAddress ? "#33ff66" : "#60a5fa";
+    switch (urgencyLevel) {
+      case 3: return "#ff5050"; // Critical red
+      case 2: return "#ffcc00"; // Warning yellow  
+      case 1: return "#a855f7"; // Purple
+      default: return "#33ff66"; // Normal green
     }
-    return { digits, unit, statusText, beaconColorClass, digitFontClass, textFontClass, shadowClass };
   };
 
-  const { digits, unit, statusText, beaconColorClass, digitFontClass, textFontClass, shadowClass } = getBeaconContent();
-
-  
-  const verifyingAnimation = {
-    opacity: [0.5, 1, 0.5],
-    transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut"}
-  };
-
-  if (!shouldShowCountdown && apiData !== null) { // Only hide if apiData is fetched and explicitly says disabled
-    return null; 
-  }
-  
-  if (!apiData && !effectiveTargetDate) { // Still loading initial data and no fallback date yet
-    return null; // Or a very minimal loading indicator if preferred for fixed position element
-  }
-
-  if (!isVisible) {
-    return null;
-  }
-
-  const entranceAnimation = delayedEntrance ? {
-    initial: { opacity: 0, y: 20 },
-    animate: { 
-      opacity: 1, 
-      y: 0,
-      transition: { 
-        delay: 0.5, // Small delay after main timer disappears
-        duration: 0.3,
-        ease: "easeOut"
-      }
+  const getShadowColor = () => {
+    if (isComplete) return tokenAddress ? "rgba(51, 255, 102, 0.7)" : "rgba(96, 165, 250, 0.7)";
+    switch (urgencyLevel) {
+      case 3: return "rgba(255, 80, 80, 0.7)";
+      case 2: return "rgba(255, 204, 0, 0.7)";  
+      case 1: return "rgba(168, 85, 247, 0.7)";
+      default: return "rgba(51, 255, 102, 0.7)";
     }
-  } : {
-    initial: { opacity: 0 },
-    animate: { opacity: 1, transition: { duration: 0.3 } }
   };
+
+  const getBorderColor = () => {
+    if (isComplete) return tokenAddress ? "border-green-500/60" : "border-blue-400/60";
+    switch (urgencyLevel) {
+      case 3: return "border-red-500/60";
+      case 2: return "border-yellow-400/60";
+      case 1: return "border-purple-500/60"; 
+      default: return "border-green-500/60";
+    }
+  };
+
+  if (!shouldShowCountdown && apiData !== null) return null;
+  if (!apiData && !effectiveTargetDate) return null;
+  if (!isVisible) return null;
+
+  const textColor = getTextColor();
+  const shadowColor = getShadowColor();
+  const borderColor = getBorderColor();
 
   return (
     <motion.div
-      className={`fixed bottom-5 right-5 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center cursor-pointer z-50 ${beaconColorClass} ${shadowClass} ${textFontClass}`}
+      className={`fixed bottom-5 right-5 bg-black/30 border-2 ${borderColor} rounded-lg shadow-lg overflow-hidden cursor-pointer z-50`}
       onClick={onClick}
-      initial={entranceAnimation.initial}
-      animate={entranceAnimation.animate}
-      whileHover={{ scale: 1.1 }}
-      transition={entranceAnimation.animate.transition || { duration: 0.3 }}
+      initial={{ opacity: 0, y: delayedEntrance ? 20 : 0 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.05 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      style={{
+        boxShadow: `0 0 15px ${shadowColor}`,
+      }}
     >
-      {statusText ? (
-        statusText === "..." ? (
-           <motion.span className={`text-[1.5em] ${textFontClass}`} animate={verifyingAnimation}>...</motion.span>
+      <div className="px-3 py-2">
+        {isComplete ? (
+          <div className="text-center">
+            <div className="text-xs font-mono font-bold" style={{ color: textColor }}>
+              {tokenAddress ? "LIVE" : "..."}
+            </div>
+          </div>
         ) : (
-          <span className={`text-[0.8em] font-bold ${textFontClass}`}>{statusText}</span>
-        )
-      ) : (
-        <div className="flex flex-col items-center justify-center leading-none">
-          <span className={`text-[1.6em] ${digitFontClass}`}>
-            {digits}
-          </span>
-          {unit && (
-            <span className={`text-[0.65em] opacity-80 ${textFontClass}`}>
-              {unit}
-            </span>
-          )}
-        </div>
-      )}
+          <div className="flex items-center justify-center space-x-1">
+            {/* Days */}
+            <MiniFlippingDigit
+              value={timeRemaining.days.toString().padStart(2, '0')}
+              prevValue={prevTimeRemaining.days.toString().padStart(2, '0')}
+              textColor={textColor}
+              shadowColor={shadowColor}
+              urgencyLevel={urgencyLevel}
+            />
+            
+            {/* Colon */}
+            <motion.span 
+              className="text-sm font-mono font-black"
+              style={{ 
+                color: textColor, 
+                fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
+              }}
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+            >
+              :
+            </motion.span>
+
+            {/* Hours */}
+            <MiniFlippingDigit
+              value={timeRemaining.hours.toString().padStart(2, '0')}
+              prevValue={prevTimeRemaining.hours.toString().padStart(2, '0')}
+              textColor={textColor}
+              shadowColor={shadowColor}
+              urgencyLevel={urgencyLevel}
+            />
+
+            {/* Colon */}
+            <motion.span 
+              className="text-sm font-mono font-black"
+              style={{ 
+                color: textColor,
+                fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
+              }}
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            >
+              :
+            </motion.span>
+
+            {/* Minutes */}
+            <MiniFlippingDigit
+              value={timeRemaining.minutes.toString().padStart(2, '0')}
+              prevValue={prevTimeRemaining.minutes.toString().padStart(2, '0')}
+              textColor={textColor}
+              shadowColor={shadowColor}
+              urgencyLevel={urgencyLevel}
+            />
+
+            {/* Colon */}
+            <motion.span 
+              className="text-sm font-mono font-black"
+              style={{ 
+                color: textColor,
+                fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
+              }}
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+            >
+              :
+            </motion.span>
+
+            {/* Seconds */}
+            <MiniFlippingDigit
+              value={timeRemaining.seconds.toString().padStart(2, '0')}
+              prevValue={prevTimeRemaining.seconds.toString().padStart(2, '0')}
+              textColor={textColor}
+              shadowColor={shadowColor}
+              urgencyLevel={urgencyLevel}
+            />
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 };

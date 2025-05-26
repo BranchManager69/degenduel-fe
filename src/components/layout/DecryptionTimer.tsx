@@ -16,6 +16,238 @@ import { API_URL } from '../../config/config';
 import { useLaunchEvent } from '../../hooks/websocket/topic-hooks/useLaunchEvent';
 import { DecryptionTimerProps } from '../terminal/types';
 
+// Flipping digit component for airport departure board effect
+const FlippingDigit: React.FC<{
+  value: string;
+  prevValue: string;
+  textColor: string;
+  shadowColor: string;
+  urgencyLevel: number;
+  className: string;
+  fontFamily: string;
+}> = ({ value, prevValue, textColor, shadowColor, urgencyLevel, className, fontFamily }) => {
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [showBurnIn, setShowBurnIn] = useState(false);
+
+  useEffect(() => {
+    if (value !== prevValue) {
+      setIsFlipping(true);
+      setShowBurnIn(true);
+      
+      const flipTimer = setTimeout(() => setIsFlipping(false), 600);
+      const burnInTimer = setTimeout(() => setShowBurnIn(false), 1200);
+      
+      return () => {
+        clearTimeout(flipTimer);
+        clearTimeout(burnInTimer);
+      };
+    }
+  }, [value, prevValue]);
+
+  return (
+    <div className="relative">
+      {/* Burn-in ghost effect */}
+      {showBurnIn && prevValue !== value && (
+        <motion.span
+          className={`absolute inset-0 ${className}`}
+          style={{
+            color: textColor,
+            opacity: 0.3,
+            textShadow: `0 0 8px ${shadowColor}`,
+            fontFamily,
+            filter: 'blur(0.5px)'
+          }}
+          initial={{ opacity: 0.6 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+        >
+          {prevValue}
+        </motion.span>
+      )}
+      
+      {/* Main digit with flip animation */}
+      <motion.span
+        key={value}
+        className={className}
+        initial={isFlipping ? { rotateX: -90, opacity: 0 } : false}
+        animate={{
+          rotateX: 0,
+          opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
+          textShadow: [
+            `0 0 5px ${shadowColor}`,
+            `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
+            `0 0 5px ${shadowColor}`
+          ]
+        }}
+        transition={{
+          rotateX: { duration: 0.6, ease: "easeOut" },
+          opacity: {
+            duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          },
+          textShadow: {
+            duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }
+        }}
+        style={{
+          transformOrigin: 'center',
+          backfaceVisibility: 'hidden',
+          willChange: 'transform',
+          color: textColor,
+          textShadow: `0 0 15px ${shadowColor}`,
+          fontFamily
+        }}
+      >
+        {value}
+      </motion.span>
+    </div>
+  );
+};
+
+// Segmented dissolution reveal component for contract address
+const SegmentedReveal: React.FC<{
+  contractAddress: string;
+  isRevealing: boolean;
+  textColor: string;
+  shadowColor: string;
+}> = ({ contractAddress, isRevealing, textColor, shadowColor }) => {
+  const [revealStage, setRevealStage] = useState(0); // 0: dissolve, 1: scramble, 2: reassemble
+
+  useEffect(() => {
+    if (!isRevealing) return;
+    
+    const stageTimers = [
+      setTimeout(() => setRevealStage(1), 800),  // Start scramble
+      setTimeout(() => setRevealStage(2), 1600), // Start reassemble
+    ];
+    
+    return () => stageTimers.forEach(clearTimeout);
+  }, [isRevealing]);
+
+  // Generate random segments for scramble effect
+  const scrambleChars = ['8', '█', '▉', '▊', '▋', '▌', '▍', '▎', '▏', '■', '▪', '▫'];
+  
+  return (
+    <div className="relative">
+      {revealStage === 0 && (
+        // Dissolving countdown numbers into segments
+        <motion.div
+          className="absolute inset-0 flex justify-center items-center"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          {Array.from('00:00:00:00').map((char, i) => (
+            <motion.span
+              key={i}
+              className="text-4xl md:text-6xl lg:text-7xl font-mono font-black"
+              style={{ 
+                color: textColor,
+                fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace",
+                willChange: 'transform'
+              }}
+              animate={{
+                scale: [1, 1.2, 0.8, 0],
+                rotate: [0, -10, 10, -5],
+                opacity: [1, 0.8, 0.3, 0]
+              }}
+              transition={{
+                duration: 0.8,
+                delay: i * 0.05,
+                ease: "easeInOut"
+              }}
+            >
+              {char}
+            </motion.span>
+          ))}
+        </motion.div>
+      )}
+      
+      {revealStage === 1 && (
+        // Scrambling segments
+        <motion.div
+          className="absolute inset-0 flex justify-center items-center overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          {Array.from({ length: contractAddress.length }).map((_, i) => (
+            <motion.span
+              key={i}
+              className="text-lg md:text-xl font-mono font-black"
+              style={{ 
+                color: textColor,
+                textShadow: `0 0 10px ${shadowColor}`,
+                fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace",
+                willChange: 'transform'
+              }}
+              animate={{
+                opacity: [0, 1, 0.7, 1],
+                scale: [0.5, 1.1, 0.9, 1],
+                y: [20, -5, 5, 0]
+              }}
+              transition={{
+                duration: 0.8,
+                delay: i * 0.02,
+                ease: "easeOut"
+              }}
+            >
+              {scrambleChars[Math.floor(Math.random() * scrambleChars.length)]}
+            </motion.span>
+          ))}
+        </motion.div>
+      )}
+      
+      {revealStage === 2 && (
+        // Reassembling into contract address
+        <motion.div
+          className="flex justify-center items-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {contractAddress.split('').map((char, i) => (
+            <motion.span
+              key={i}
+              className="text-lg md:text-xl font-mono font-bold tracking-wider"
+              style={{ 
+                color: textColor,
+                textShadow: `0 0 15px ${shadowColor}`,
+                fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace",
+                willChange: 'transform'
+              }}
+              initial={{ 
+                opacity: 0,
+                scale: 0.3,
+                rotate: 180,
+                y: -30
+              }}
+              animate={{ 
+                opacity: 1,
+                scale: 1,
+                rotate: 0,
+                y: 0
+              }}
+              transition={{
+                duration: 0.6,
+                delay: i * 0.03,
+                ease: "easeOut",
+                type: "spring",
+                stiffness: 100
+              }}
+            >
+              {char}
+            </motion.span>
+          ))}
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
 // --- NEW INTERFACES ---
 interface TokenInfo {
   id: number;
@@ -60,7 +292,7 @@ interface CountdownApiResponse {
 
 interface FloatingTimerProps extends DecryptionTimerProps {
   enableFloating?: boolean;
-  onMorphComplete?: () => void;
+  onMorphComplete?: (scrolledDown: boolean) => void;
 }
 
 export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
@@ -80,8 +312,21 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
   const [showTransitionFlash, setShowTransitionFlash] = useState(false);
   const [hasShownComplete, setHasShownComplete] = useState(false);
+  const [isRevealing, setIsRevealing] = useState(false);
+  
+  // Dev-only testing state
+  const [devTestRevealing, setDevTestRevealing] = useState(false);
+  const isDev = import.meta.env.DEV || window.location.hostname.includes('dev.');
 
   const [timeRemaining, setTimeRemaining] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  // Track previous values for flip animations
+  const [prevTimeRemaining, setPrevTimeRemaining] = useState({
     days: 0,
     hours: 0,
     minutes: 0,
@@ -111,7 +356,10 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((difference % (1000 * 60)) / 1000);
     
-    setTimeRemaining({ days, hours, minutes, seconds });
+    setTimeRemaining(prev => {
+      setPrevTimeRemaining(prev);
+      return { days, hours, minutes, seconds };
+    });
     
     const totalSeconds = difference / 1000; // Use raw difference for urgency
     
@@ -222,16 +470,17 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                    timeRemaining.minutes === 0 && 
                    timeRemaining.seconds === 0;
 
-  // Trigger flash effect when countdown completes
+  const tokenAddress = revealedAddress || apiData?.token_address || apiData?.token_info?.address || apiData?.token_config?.address || '';
+  
+  // Trigger reveal animation when countdown completes
   useEffect(() => {
-    if (isComplete && !hasShownComplete) {
+    if (isComplete && !hasShownComplete && tokenAddress) {
+      setIsRevealing(true);
       setShowTransitionFlash(true);
       setHasShownComplete(true);
       setTimeout(() => setShowTransitionFlash(false), 1000);
     }
-  }, [isComplete, hasShownComplete]);
-  
-  const tokenAddress = revealedAddress || apiData?.token_address || apiData?.token_info?.address || apiData?.token_config?.address || '';
+  }, [isComplete, hasShownComplete, tokenAddress]);
   const shouldShowCountdown = apiData ? apiData.enabled !== false : true; // Default to true if apiData is null
 
   const displayTitle = apiData?.title || (isComplete ? (tokenAddress ? "CONTRACT REVEALED" : "VERIFYING CONTRACT...") : "$DUEL MINT");
@@ -249,6 +498,19 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
+      {/* Dev-only reveal test button */}
+      {isDev && !isComplete && (
+        <button
+          onClick={() => {
+            setDevTestRevealing(true);
+            setTimeout(() => setDevTestRevealing(false), 5000); // Reset after 5 seconds
+          }}
+          className="absolute top-2 right-2 z-10 bg-yellow-500/20 hover:bg-yellow-500/40 border border-yellow-500/50 text-yellow-400 text-xs px-2 py-1 rounded transition-colors"
+          title="Dev: Test reveal animation"
+        >
+          TEST
+        </button>
+      )}
       {!shouldShowCountdown && apiData ? (
         <div className="py-4 px-6">
           <div className="text-2xl font-fira-code text-[#33ff66] mb-2 flex items-center justify-center">
@@ -298,14 +560,23 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
             <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-green-400/80 -translate-x-1 translate-y-1"></div>
             <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-400/80 translate-x-1 translate-y-1"></div>
             
-            {/* Copyable contract address */}
+            {/* Copyable contract address with reveal animation */}
             <div 
               className="group flex items-center justify-center cursor-pointer hover:bg-green-500/10 rounded-md p-2 transition-all duration-200"
               onClick={() => handleCopyAddress(tokenAddress)}
             >
-              <div className="text-lg md:text-xl font-mono font-bold text-[#33ff66] tracking-wider text-center truncate max-w-full overflow-hidden whitespace-nowrap">
-                {tokenAddress}
-              </div>
+              {(isRevealing || devTestRevealing) ? (
+                <SegmentedReveal
+                  contractAddress={tokenAddress || 'Ey59PH7Z4BFU4HjyKnyMdWt5GGN76KazTAwQihoUXRnk'}
+                  isRevealing={isRevealing || devTestRevealing}
+                  textColor="#33ff66"
+                  shadowColor="rgba(51, 255, 102, 0.7)"
+                />
+              ) : (
+                <div className="text-lg md:text-xl font-mono font-bold text-[#33ff66] tracking-wider text-center truncate max-w-full overflow-hidden whitespace-nowrap">
+                  {tokenAddress}
+                </div>
+              )}
               
               {/* Copy icon */}
               <div className="ml-3 flex-shrink-0">
@@ -431,33 +702,19 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                 return (
                   <div className="flex items-center justify-center">
                     {/* Days */}
-                    <motion.span 
-                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
-                      style={{ 
-                        color: textColor, 
-                        textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
-                      }}
-                      animate={{ 
-                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
-                        textShadow: [
-                          `0 0 5px ${shadowColor}`,
-                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
-                          `0 0 5px ${shadowColor}`
-                        ]
-                      }}
-                      transition={{
-                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    >
-                      {timeRemaining.days.toString().padStart(2, '0')}
-                    </motion.span>
+                    <FlippingDigit
+                      value={timeRemaining.days.toString().padStart(2, '0')}
+                      prevValue={prevTimeRemaining.days.toString().padStart(2, '0')}
+                      textColor={textColor}
+                      shadowColor={shadowColor}
+                      urgencyLevel={urgencyLevel}
+                      className="text-4xl md:text-6xl lg:text-7xl font-mono font-black tracking-tighter tabular-nums"
+                      fontFamily="'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
+                    />
 
                     {/* Colon */}
                     <motion.span 
-                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
+                      className="text-4xl md:text-6xl lg:text-7xl font-mono font-black mx-1"
                       style={{ 
                         color: textColor, 
                         fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
@@ -475,34 +732,19 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                     </motion.span>
 
                     {/* Hours */}
-                    <motion.span 
-                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
-                      style={{ 
-                        color: textColor, 
-                        textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
-                      }}
-                      animate={{ 
-                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
-                        textShadow: [
-                          `0 0 5px ${shadowColor}`,
-                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
-                          `0 0 5px ${shadowColor}`
-                        ]
-                      }}
-                      transition={{
-                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.1
-                      }}
-                    >
-                      {timeRemaining.hours.toString().padStart(2, '0')}
-                    </motion.span>
+                    <FlippingDigit
+                      value={timeRemaining.hours.toString().padStart(2, '0')}
+                      prevValue={prevTimeRemaining.hours.toString().padStart(2, '0')}
+                      textColor={textColor}
+                      shadowColor={shadowColor}
+                      urgencyLevel={urgencyLevel}
+                      className="text-4xl md:text-6xl lg:text-7xl font-mono font-black tracking-tighter tabular-nums"
+                      fontFamily="'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
+                    />
 
                     {/* Colon */}
                     <motion.span 
-                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
+                      className="text-4xl md:text-6xl lg:text-7xl font-mono font-black mx-1"
                       style={{ 
                         color: textColor,
                         fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
@@ -521,34 +763,19 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                     </motion.span>
 
                     {/* Minutes */}
-                    <motion.span 
-                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
-                      style={{ 
-                        color: textColor, 
-                        textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
-                      }}
-                      animate={{ 
-                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
-                        textShadow: [
-                          `0 0 5px ${shadowColor}`,
-                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
-                          `0 0 5px ${shadowColor}`
-                        ]
-                      }}
-                      transition={{
-                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.2
-                      }}
-                    >
-                      {timeRemaining.minutes.toString().padStart(2, '0')}
-                    </motion.span>
+                    <FlippingDigit
+                      value={timeRemaining.minutes.toString().padStart(2, '0')}
+                      prevValue={prevTimeRemaining.minutes.toString().padStart(2, '0')}
+                      textColor={textColor}
+                      shadowColor={shadowColor}
+                      urgencyLevel={urgencyLevel}
+                      className="text-4xl md:text-6xl lg:text-7xl font-mono font-black tracking-tighter tabular-nums"
+                      fontFamily="'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
+                    />
 
                     {/* Colon */}
                     <motion.span 
-                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
+                      className="text-4xl md:text-6xl lg:text-7xl font-mono font-black mx-1"
                       style={{ 
                         color: textColor,
                         fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
@@ -566,30 +793,15 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                     </motion.span>
 
                     {/* Seconds */}
-                    <motion.span 
-                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
-                      style={{ 
-                        color: textColor, 
-                        textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
-                      }}
-                      animate={{ 
-                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
-                        textShadow: [
-                          `0 0 5px ${shadowColor}`,
-                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
-                          `0 0 5px ${shadowColor}`
-                        ]
-                      }}
-                      transition={{
-                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.3
-                      }}
-                    >
-                      {timeRemaining.seconds.toString().padStart(2, '0')}
-                    </motion.span>
+                    <FlippingDigit
+                      value={timeRemaining.seconds.toString().padStart(2, '0')}
+                      prevValue={prevTimeRemaining.seconds.toString().padStart(2, '0')}
+                      textColor={textColor}
+                      shadowColor={shadowColor}
+                      urgencyLevel={urgencyLevel}
+                      className="text-4xl md:text-6xl lg:text-7xl font-mono font-black tracking-tighter tabular-nums"
+                      fontFamily="'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
+                    />
                   </div>
                 );
               })()}

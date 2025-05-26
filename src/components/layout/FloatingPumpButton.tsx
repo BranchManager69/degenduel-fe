@@ -14,11 +14,25 @@ import React from 'react';
 interface FloatingPumpButtonProps {
   onClick?: () => void;
   tokenAddress?: string | null;
-  tokenSymbol?: string | null; 
+  tokenSymbol?: string | null;
+  isCountdownComplete?: boolean;
+  onPrematureClick?: () => void;
 }
 
-export const FloatingPumpButton: React.FC<FloatingPumpButtonProps> = ({ onClick, tokenAddress, tokenSymbol }) => {
+export const FloatingPumpButton: React.FC<FloatingPumpButtonProps> = ({ 
+  onClick, 
+  tokenAddress, 
+  tokenSymbol,
+  isCountdownComplete = false,
+  onPrematureClick 
+}) => {
   const handleClick = () => {
+    // If countdown isn't complete, trigger jiggle animation instead of navigation
+    if (!isCountdownComplete) {
+      onPrematureClick?.();
+      return;
+    }
+
     if (onClick) {
       onClick();
     } else if (tokenAddress) {

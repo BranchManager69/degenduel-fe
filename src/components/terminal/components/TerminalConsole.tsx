@@ -9,8 +9,9 @@
  */
 
 import { motion } from 'framer-motion';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { AIMessage } from '../../../services/ai';
+import { useStore } from '../../../store/useStore';
 import { TerminalConsoleProps } from '../types';
 
 /**
@@ -154,6 +155,20 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
   size
 }) => {
   const consoleOutputRef = useRef<HTMLDivElement>(null);
+  const { user } = useStore();
+  const [imageError, setImageError] = useState(false);
+  
+  // Get user profile image (same logic as MobileMenuButton)
+  const profileImageUrl = useMemo(() => {
+    if (!user || imageError || !user?.profile_image?.url) {
+      return "/assets/media/default/profile_pic.png";
+    }
+    return user.profile_image.thumbnail_url || user.profile_image.url;
+  }, [user, user?.profile_image, imageError]);
+  
+  const handleImageError = () => {
+    setImageError(true);
+  };
   
   // Track typing completion for auto-scrolling
   const handleTypingComplete = () => {
@@ -347,11 +362,11 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
 
             switch (message.role) {
               case 'user':
-                prefix = '$ ';
+                prefix = '';
                 textClassName = 'text-mauve';
                 break;
               case 'assistant':
-                prefix = '[Didi] ';
+                prefix = '';
                 textClassName = 'text-cyan-300';
                 // Check for tool calls
                 if (message.tool_calls && message.tool_calls.length > 0) {
@@ -367,8 +382,8 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 }
                 break;
               case 'system':
-                prefix = '[SYSTEM] ';
-                textClassName = 'text-gray-400 italic';
+                prefix = '';
+                textClassName = 'text-gray-400 italic text-center';
                 break;
               case 'tool': // Added case for tool results
                  prefix = '[TOOL_RESULT] ';
@@ -385,20 +400,45 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="pl-1 mb-1 whitespace-pre-wrap"
+                className={message.role === 'system' ? "mb-1 whitespace-pre-wrap text-center" : "pl-1 mb-1 whitespace-pre-wrap"}
               >
-                {/* Render prefix directly */}
-                {prefix}
+                {/* Render user profile picture or fallback, and Didi styled name */}
+                {message.role === 'user' ? (
+                  user ? (
+                    <div className="inline-block mr-2 align-top mt-0.5">
+                      <img
+                        src={profileImageUrl}
+                        alt="You"
+                        onError={handleImageError}
+                        className="w-4 h-4 rounded-full object-cover ring-1 ring-mauve/30"
+                        loading="eager"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-mauve mr-1">$ </span>
+                  )
+                ) : message.role === 'assistant' ? (
+                  <>
+                    <span className={`${content.startsWith('ERROR:') ? 'text-red-400' : 'bg-gradient-to-r from-purple-400 to-cyan-300 bg-clip-text text-transparent'} font-semibold`}>
+                      Didi
+                    </span>
+                    <span className="text-mauve-light/70 mx-1">•</span>
+                  </>
+                ) : (
+                  prefix
+                )}
                 {/* Use TypeWriter only for the last assistant message, otherwise render content directly */}
                 {useTypingEffect ? (
                   <TypeWriter 
-                    text={content}
+                    text={content.startsWith('ERROR:') ? content.substring(6) : content}
                     speed={15}
-                    className={textClassName}
+                    className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
                     onComplete={handleTypingComplete}
                   />
                 ) : (
-                  <span className={textClassName}>{content}</span>
+                  <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
+                    {content.startsWith('ERROR:') ? content.substring(6) : content}
+                  </span>
                 )}
               </motion.div>
             );

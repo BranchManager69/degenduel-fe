@@ -503,7 +503,8 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
 
       } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          setConversationHistory(prev => [...prev, { role: 'assistant', content: errorMessage }]); 
+          // Add error message with special styling indicator
+          setConversationHistory(prev => [...prev, { role: 'assistant', content: `ERROR:${errorMessage}` }]); 
           console.error('Terminal AI error:', error);
           
           if (terminalMinimized) {
@@ -791,17 +792,11 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
               glitchActive={glitchActive}
             />
             
-            {/* System status bar section - commented out as requested */}
+            {/* System status bar section - maintaining height but removing content */}
             <div className="mt-3 space-y-1">
-              {/* Command prompt */}
+              {/* Empty space to maintain terminal height */}
               <div className="text-lg font-mono px-3 py-2 text-white flex items-center">
-                <span className="mr-2">ASK DIDI:</span>
-                <motion.span
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                  className="h-5 w-2 inline-block bg-purple-500"
-                >
-                </motion.span>
+                {/* Content removed but height preserved */}
               </div>
             </div>
 
@@ -900,34 +895,107 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
             {/* AI Assistant Visual Representation */}
             <div className="absolute inset-0 flex items-center justify-center">
               {/* AI "Face" Representation */}
-              <div className="relative w-10 h-10 flex items-center justify-center">
-                {/* Digital Iris/Eye */}
-                <motion.div
-                  className={`h-5 w-5 rounded-full ${easterEggActivated ? 'bg-gradient-to-r from-green-400 to-cyan-300' : 'bg-gradient-to-r from-purple-500 to-cyan-400'}`}
+              <div className="relative w-12 h-8 flex items-center justify-center">
+                {/* Eyebrows */}
+                <motion.div 
+                  className="absolute top-0 w-full flex justify-between px-1"
                   animate={{
-                    scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
+                    y: hasUnreadMessages ? [-0.5, 0, -0.5] : 0
                   }}
-                  transition={{
-                    duration: hasUnreadMessages ? 0.8 : 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  {/* Pupil */}
-                  <motion.div
-                    className="absolute w-2 h-2 bg-black rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                  {/* Left eyebrow */}
+                  <motion.div 
+                    className={`w-2 h-0.5 rounded-full ${easterEggActivated ? 'bg-green-400/60' : 'bg-purple-400/60'}`}
                     animate={{
-                      scale: [1, 1.2, 1],
-                      x: hasUnreadMessages ? [-1, 1, -1] : 0,
-                      y: hasUnreadMessages ? [-1, 0, 1, 0] : 0
+                      rotate: hasUnreadMessages ? [-5, 5, -5] : 0
                     }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      repeatType: "mirror"
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  {/* Right eyebrow */}
+                  <motion.div 
+                    className={`w-2 h-0.5 rounded-full ${easterEggActivated ? 'bg-green-400/60' : 'bg-purple-400/60'}`}
+                    animate={{
+                      rotate: hasUnreadMessages ? [5, -5, 5] : 0
                     }}
+                    transition={{ duration: 2, repeat: Infinity }}
                   />
                 </motion.div>
+                
+                {/* Eyes Container */}
+                <div className="flex items-center gap-1">
+                  {/* Left Eye */}
+                  <motion.div
+                    className={`h-4 w-4 rounded-full ${easterEggActivated ? 'bg-gradient-to-r from-green-400 to-cyan-300' : 'bg-gradient-to-r from-purple-500 to-cyan-400'}`}
+                    animate={{
+                      scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
+                      scaleY: [1, 0.1, 1] // Blinking effect
+                    }}
+                    transition={{
+                      scale: {
+                        duration: hasUnreadMessages ? 0.8 : 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      },
+                      scaleY: {
+                        duration: 3,
+                        repeat: Infinity,
+                        repeatDelay: 2,
+                        times: [0, 0.05, 0.1, 1]
+                      }
+                    }}
+                  >
+                    {/* Left Pupil */}
+                    <motion.div
+                      className="absolute w-1.5 h-1.5 bg-black rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        x: hasUnreadMessages ? [-0.5, 0.5, -0.5] : 0
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        repeatType: "mirror"
+                      }}
+                    />
+                  </motion.div>
+                  
+                  {/* Right Eye */}
+                  <motion.div
+                    className={`h-4 w-4 rounded-full ${easterEggActivated ? 'bg-gradient-to-r from-green-400 to-cyan-300' : 'bg-gradient-to-r from-purple-500 to-cyan-400'}`}
+                    animate={{
+                      scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
+                      scaleY: [1, 0.1, 1] // Synchronized blinking
+                    }}
+                    transition={{
+                      scale: {
+                        duration: hasUnreadMessages ? 0.8 : 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      },
+                      scaleY: {
+                        duration: 3,
+                        repeat: Infinity,
+                        repeatDelay: 2,
+                        times: [0, 0.05, 0.1, 1]
+                      }
+                    }}
+                  >
+                    {/* Right Pupil */}
+                    <motion.div
+                      className="absolute w-1.5 h-1.5 bg-black rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        x: hasUnreadMessages ? [-0.5, 0.5, -0.5] : 0
+                      }}
+                      transition={{
+                        duration: 2.5,
+                        repeat: Infinity,
+                        repeatType: "mirror"
+                      }}
+                    />
+                  </motion.div>
+                </div>
 
                 {/* Digital Circuitry/Aura */}
                 <motion.div
