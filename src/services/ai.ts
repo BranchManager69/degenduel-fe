@@ -190,6 +190,9 @@ class AIService {
 
   // Cache for conversations to enable history tracking without repeated server calls
   private conversationCache = new Map<string, AIMessage[]>();
+  
+  // Track which conversations should use non-streaming due to empty responses
+  private useNonStreamingForSession = new Set<string>();
 
   constructor() {
     // Correctly set the base path for AI services
@@ -225,12 +228,10 @@ class AIService {
   private async chatStreaming(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
     let responseController: AbortController | undefined;
     try {
-      // Get auth token for the request
-      console.log('[AI Service Stream] About to attempt token retrieval. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
-      const token = await authService.getToken();
-      console.log('[AI Service Stream] Token retrieved:', token ? `Exists (len: ${token.length})` : 'NULL or Undefined');
+      // Using cookie-based authentication - no tokens needed
+      console.log('[AI Service Stream] Using cookie-based auth. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
 
-      const streamUrl = `${this.API_AI_SVC_REST_URL}/stream`;
+      const streamUrl = `${this.API_AI_SVC_REST_URL}/didi`;
       responseController = new AbortController();
 
       // Proper SSE request format matching the guide
@@ -239,9 +240,8 @@ class AIService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream', // Critical for SSE
-          // Only include Auth header if token exists
-          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
+        credentials: 'include', // ✅ Send session cookie for authentication
         body: JSON.stringify({
           messages,
           context: options.context || 'terminal',
@@ -376,6 +376,16 @@ class AIService {
         responseConversationId = cacheId;
       }
 
+      // Check if we got completely empty response and fallback to non-streaming
+      if (!fullContent.trim() && functionCalls.length === 0 && uiActions.length === 0) {
+        console.log('[AI Service Stream] Empty response detected, falling back to non-streaming endpoint');
+        // Mark this conversation to use non-streaming for the rest of the session
+        if (responseConversationId) {
+          this.useNonStreamingForSession.add(responseConversationId);
+        }
+        return this.chatRest(messages, { ...options, streaming: false });
+      }
+
       return {
         content: fullContent,
         tool_calls: functionCalls.length > 0 ? functionCalls : undefined,
@@ -428,7 +438,9 @@ class AIService {
       }
 
       // Determine if we should use streaming
-      const useStreaming = !!options.streaming;
+      // Skip streaming if this conversation has had empty responses before
+      const useStreaming = !!options.streaming && 
+        !(options.conversationId && this.useNonStreamingForSession.has(options.conversationId));
 
       // Build conversation history if we have a conversation ID
       let conversationHistory = [...messages];
@@ -476,21 +488,18 @@ class AIService {
    */
   private async chatRest(messages: AIMessage[], options: ChatOptions = {}): Promise<ChatResponse> {
     try {
-      // Get auth token for the request (still useful for logging/potential future use, but don't block on it)
-      console.log('[AI Service REST] About to attempt token retrieval. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
-      const token = await authService.getToken();
-      console.log('[AI Service REST] Token retrieved:', token ? `Exists (len: ${token.length})` : 'NULL or Undefined');
+      // Using cookie-based authentication - no tokens needed
+      console.log('[AI Service REST] Using cookie-based auth. Auth state:', authService.isAuthenticated(), 'User:', authService.getUser());
 
       // Create the DegenDuel AI Service API URL
-      const responseUrl = `${this.API_AI_SVC_REST_URL}/response`;
+      const responseUrl = `${this.API_AI_SVC_REST_URL}/didi`;
 
       const response = await fetch(responseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Only include Auth header if token exists
-          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
+        credentials: 'include', // ✅ Send session cookie for authentication
         body: JSON.stringify({
           messages,
           conversationId: options.conversationId,

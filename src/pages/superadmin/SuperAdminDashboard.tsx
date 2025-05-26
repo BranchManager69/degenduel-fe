@@ -389,7 +389,7 @@ export const SuperAdminDashboard: React.FC = () => {
     <ContestProvider>
       <div data-testid="superadmin-dashboard">
 
-      <div className="container mx-auto p-6 space-y-8 relative z-10">
+      <div className="container mx-auto p-6 space-y-6 relative z-10 pb-32">
         {/* Header with animated gradient */}
         <div className="flex items-center justify-between">
           <div className="relative group">
@@ -403,22 +403,6 @@ export const SuperAdminDashboard: React.FC = () => {
               AUTHORIZATION_LEVEL: SUPERADMIN_CLEARANCE
               <span className="inline-block ml-1 w-2 h-4 bg-cyber-500 opacity-80 animate-pulse"></span>
             </p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              to="/admin/contest-scheduler"
-              className="flex items-center gap-2 bg-yellow-500/30 px-4 py-2.5 rounded-xl hover:bg-yellow-500/40 transition-all border-2 border-yellow-500/40 shadow-lg hover:shadow-yellow-500/20 group relative"
-            >
-              <div className="text-yellow-300 text-xl group-hover:scale-110 transition-transform">
-                🔄
-              </div>
-              <span className="text-yellow-100 font-semibold group-hover:text-white transition-colors">
-                Contest Scheduler
-              </span>
-              <div className="ml-2 text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </div>
-            </Link>
           </div>
         </div>
 
@@ -705,7 +689,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {/* Advanced Management Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
@@ -714,9 +698,9 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="200px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-cyber-400 to-cyber-600 bg-clip-text text-transparent animate-gradientX">
                     Advanced Management
@@ -834,7 +818,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {/* Monitoring & Analysis Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3, 4].map(i => (
@@ -843,9 +827,9 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="250px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent animate-gradientX">
                     Monitoring & Analysis
@@ -963,7 +947,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {/* Wallet Management Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
@@ -972,9 +956,9 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="300px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent animate-gradientX">
                     Wallet Management
@@ -1093,7 +1077,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {/* Special Tools Container */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3, 4, 5, 6].map(i => (
@@ -1102,9 +1086,9 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="350px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 
                 {/* Special Tools Header */}
                 <h2 className="text-xl font-display mb-3 relative group">
@@ -1281,7 +1265,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {/* Contest Management Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2].map(i => (
@@ -1290,9 +1274,9 @@ export const SuperAdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="400px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 {/* Contest Management Header */}
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent animate-gradientX">

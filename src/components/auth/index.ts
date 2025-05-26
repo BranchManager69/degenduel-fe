@@ -26,7 +26,8 @@ export { default as ConsolidatedLoginButton } from './ConsolidatedLoginButton';
 export { default as LoginOptions } from './LoginOptions';
 export { default as WalletDebugger } from './WalletDebugger';
 
-// Export Twitter login components
+// Export social login components
+export { default as DiscordLoginButton } from './DiscordLoginButton';
 export { default as TwitterLoginButton } from './TwitterLoginButton';
 
 // Export mock components (for testing and development)

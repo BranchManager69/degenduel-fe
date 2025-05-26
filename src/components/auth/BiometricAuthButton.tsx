@@ -121,7 +121,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       if (!effectiveWalletAddress || !isAvailable) return;
       
       try {
-        const response = await fetch(`${API_URL}/auth/biometric/credentials?userId=${encodeURIComponent(effectiveWalletAddress)}`, {
+        const response = await fetch(`${API_URL}/auth/passkey/credentials?userId=${encodeURIComponent(effectiveWalletAddress)}`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
           setIsRegistered(!!data.hasCredential);
         }
       } catch (error) {
-        console.error("Error checking for biometric credentials:", error);
+        console.error("Error checking for passkey credentials:", error);
         setIsRegistered(false);
       }
     }
@@ -156,7 +156,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       isRegistered
   );
   
-  // Handle biometric registration
+  // Handle passkey registration (linking)
   const handleRegistration = async () => {
     if (!effectiveWalletAddress) {
       const error = 'Please enter a wallet address';
@@ -170,7 +170,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
     
     try {
       // 1. Get options from server
-      const optionsResponse = await fetch(`${API_URL}/auth/biometric/register-options`, {
+      const optionsResponse = await fetch(`${API_URL}/auth/passkey/link-options`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -183,22 +183,18 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       
       if (!optionsResponse.ok) {
         const errorData = await optionsResponse.json();
-        throw new Error(errorData.message || 'Failed to get registration options');
+        throw new Error(errorData.message || 'Failed to get passkey registration options');
       }
       
       const options = await optionsResponse.json();
       
-      authDebug('BiometricAuth', 'Registration options:', options);
+      authDebug('PasskeyAuth', 'Registration options:', options);
       
-      // 2. Start the WebAuthn registration process
-      // This will trigger the Face ID/Touch ID prompt
       const attestation = await startRegistration(options);
-      
-      // Get device information
       const deviceInfo = getDeviceInfo();
       
       // 3. Send the result back to your server for verification
-      const verifyResponse = await fetch(`${API_URL}/auth/biometric/register-verify`, {
+      const verifyResponse = await fetch(`${API_URL}/auth/passkey/link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -211,33 +207,31 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       
       if (!verifyResponse.ok) {
         const errorData = await verifyResponse.json();
-        throw new Error(errorData.message || 'Registration failed');
+        throw new Error(errorData.message || 'Passkey registration failed');
       }
       
       const verifyResult = await verifyResponse.json();
       
       if (verifyResult.success) {
-        authDebug('BiometricAuth', 'Registration successful:', verifyResult);
+        authDebug('PasskeyAuth', 'Registration successful:', verifyResult);
         setIsRegistered(true);
         onSuccess?.();
       } else {
-        throw new Error(verifyResult.error || 'Registration failed');
+        throw new Error(verifyResult.error || 'Passkey registration failed');
       }
     } catch (error) {
-      authDebug('BiometricAuth', 'Registration error:', error);
+      authDebug('PasskeyAuth', 'Registration error:', error);
       
       let errorMsg = '';
-      
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          errorMsg = 'You canceled the biometric registration';
+          errorMsg = 'You canceled passkey registration';
         } else if (error.name === 'NotSupportedError') {
-          // Check if we're in a webview and provide helpful guidance
           const isInWebView = /iPhone|iPad.*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent);
           if (isInWebView) {
-            errorMsg = 'Biometric authentication may not work in this app. Try opening in Safari browser for best results.';
+            errorMsg = 'Passkey authentication may not work in this app. Try opening in Safari browser for best results.';
           } else {
-          errorMsg = 'Your device doesn\'t support biometric authentication';
+            errorMsg = 'Your device doesn\'t support passkey authentication';
           }
         } else if (error.name === 'SecurityError') {
           errorMsg = 'Security error occurred. Please ensure you\'re on a secure connection (HTTPS).';
@@ -247,7 +241,6 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       } else {
         errorMsg = String(error);
       }
-      
       setErrorMessage(errorMsg);
       onError?.(errorMsg);
     } finally {
@@ -255,7 +248,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
     }
   };
   
-  // Handle biometric authentication
+  // Handle passkey authentication (login)
   const handleAuthentication = async () => {
     if (!effectiveWalletAddress) {
       const error = 'Please enter a wallet address';
@@ -269,7 +262,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
     
     try {
       // 1. Get options from server
-      const optionsResponse = await fetch(`${API_URL}/auth/biometric/auth-options`, {
+      const optionsResponse = await fetch(`${API_URL}/auth/passkey/login-options`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: effectiveWalletAddress })
@@ -277,24 +270,18 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       
       if (!optionsResponse.ok) {
         const errorData = await optionsResponse.json();
-        
         if (errorData.error === 'no_credentials') {
-          throw new Error('No biometric credentials found. Please register first.');
+          throw new Error('No passkey credentials found. Please register first.');
         }
-        
-        throw new Error(errorData.message || 'Failed to get authentication options');
+        throw new Error(errorData.message || 'Failed to get passkey authentication options');
       }
       
       const options = await optionsResponse.json();
-      
-      authDebug('BiometricAuth', 'Authentication options:', options);
-      
-      // 2. Start the WebAuthn authentication process
-      // This will trigger the Face ID/Touch ID prompt
+      authDebug('PasskeyAuth', 'Authentication options:', options);
       const assertion = await startAuthentication(options);
       
       // 3. Send the result back to your server for verification
-      const verifyResponse = await fetch(`${API_URL}/auth/biometric/auth-verify`, {
+      const verifyResponse = await fetch(`${API_URL}/auth/passkey/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -305,41 +292,33 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       
       if (!verifyResponse.ok) {
         const errorData = await verifyResponse.json();
-        throw new Error(errorData.message || 'Authentication failed');
+        throw new Error(errorData.message || 'Passkey authentication failed');
       }
       
       const authResult = await verifyResponse.json();
-      
       if (authResult.verified) {
-        // User authenticated successfully
-        authDebug('BiometricAuth', 'Authentication successful:', authResult);
-        
-        // Update the user in the store if needed
+        authDebug('PasskeyAuth', 'Authentication successful:', authResult);
         if (authResult.user) {
           useStore.getState().setUser(authResult.user);
         }
-        
         onSuccess?.();
       } else {
-        throw new Error(authResult.error || 'Authentication failed');
+        throw new Error(authResult.error || 'Passkey authentication failed');
       }
     } catch (error) {
-      authDebug('BiometricAuth', 'Authentication error:', error);
-      
+      authDebug('PasskeyAuth', 'Authentication error:', error);
       let errorMsg = '';
-      
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          errorMsg = 'You canceled the biometric authentication';
+          errorMsg = 'You canceled passkey authentication';
         } else if (error.name === 'InvalidStateError') {
-          errorMsg = 'No registered credential found. Try another device or method.';
+          errorMsg = 'No registered passkey found. Try another device or method.';
         } else {
           errorMsg = error.message;
         }
       } else {
         errorMsg = String(error);
       }
-      
       setErrorMessage(errorMsg);
       onError?.(errorMsg);
     } finally {
@@ -403,7 +382,11 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       fill="currentColor" 
       className={buttonStyle === 'icon-only' ? 'w-6 h-6' : 'w-5 h-5 mr-2'}
     >
-      <path d="M7 3C4.239 3 2 5.239 2 8V16C2 18.761 4.239 21 7 21H17C19.761 21 22 18.761 22 16V8C22 5.239 19.761 3 17 3H7ZM11.29 17.71C11.105 17.895 10.851 18 10.586 18C10.321 18 10.066 17.895 9.881 17.71C9.696 17.525 9.591 17.271 9.591 17.006C9.591 16.741 9.696 16.487 9.881 16.302L10.172 16.011C9.002 15.586 8.184 14.509 8.055 13.197C8.018 12.731 8 11.562 8 10C8 8.409 9.409 7 11 7H13C14.591 7 16 8.409 16 10C16 10.369 15.99 11.248 15.974 12L15.472 11.498C15.287 11.313 15.033 11.208 14.768 11.208C14.503 11.208 14.249 11.313 14.064 11.498C13.879 11.683 13.774 11.937 13.774 12.202C13.774 12.467 13.879 12.721 14.064 12.906L16.298 15.14C16.481 15.321 16.73 15.422 16.99 15.422C17.25 15.422 17.499 15.321 17.682 15.14L19.916 12.906C20.101 12.721 20.206 12.467 20.206 12.202C20.206 11.937 20.101 11.683 19.916 11.498C19.731 11.313 19.477 11.208 19.212 11.208C18.947 11.208 18.693 11.313 18.508 11.498L17.974 12.032C17.991 11.182 18 10.376 18 10C18 7.306 15.694 5 13 5H11C8.306 5 6 7.306 6 10C6 11.607 6.019 12.831 6.063 13.423C6.252 15.329 7.476 16.902 9.152 17.551L9.883 16.82C10.068 16.635 10.322 16.53 10.587 16.53C10.852 16.53 11.106 16.635 11.291 16.82C11.476 17.005 11.581 17.259 11.581 17.524C11.581 17.789 11.476 18.043 11.291 18.228L11.29 17.71V17.71Z" />
+      {/* Fingerprint icon */}
+      <path d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41-.24.13-.54.04-.68-.2-.13-.24-.04-.55.2-.68C7.82 2.52 9.86 2 12.01 2c2.13 0 3.99.47 6.03 1.52.25.13.34.43.21.67-.09.18-.26.28-.44.28zM3.5 9.72c-.1 0-.2-.03-.29-.09-.23-.16-.28-.47-.12-.7.99-1.4 2.25-2.5 3.75-3.27C9.98 4.04 14 4.03 17.15 5.65c1.5.77 2.76 1.86 3.75 3.25.16.22.11.54-.12.7-.23.16-.54.11-.7-.12-.9-1.26-2.04-2.25-3.39-2.94-2.87-1.47-6.54-1.47-9.4.01-1.36.7-2.5 1.7-3.4 2.96-.08.14-.23.21-.39.21z"/>
+      <path d="M9.75 21.79c-.13 0-.26-.05-.35-.15-.87-.87-1.34-1.43-2.01-2.64-.69-1.24-1.07-2.65-1.07-4.14v-.24c0-.14.06-.28.16-.38.1-.1.24-.15.38-.15.28 0 .5.22.5.5v.27c0 1.31.33 2.56.98 3.68.67 1.15 1.06 1.64 1.85 2.43.19.2.19.51 0 .71-.1.09-.22.15-.35.15z"/>
+      <path d="M16.92 19.94c-.19 0-.37-.09-.49-.26-.47-.66-.7-1.19-.70-1.85 0-.66.25-1.24.75-1.75.5-.5 1.09-.75 1.75-.75.66 0 1.24.25 1.75.75.5.5.75 1.09.75 1.75 0 .66-.25 1.24-.75 1.75-.5.5-1.09.75-1.75.75-.66 0-1.24-.25-1.75-.75-.12-.12-.12-.31 0-.43.12-.12.31-.12.43 0 .37.37.86.56 1.32.56.46 0 .95-.19 1.32-.56.37-.37.56-.86.56-1.32 0-.46-.19-.95-.56-1.32-.37-.37-.86-.56-1.32-.56-.46 0-.95.19-1.32.56-.37.37-.56.86-.56 1.32 0 .5.18.94.55 1.31.17.17.17.43 0 .6-.08.08-.19.13-.29.13z"/>
+      <path d="M14.91 22c-.04 0-.09-.01-.13-.02-1.59-.44-2.63-1.03-3.72-2.1-1.4-1.39-2.17-3.24-2.17-5.22 0-1.62 1.38-2.94 3.08-2.94 1.7 0 3.08 1.32 3.08 2.94 0 1.07.93 1.94 2.08 1.94s2.08-.87 2.08-1.94c0-3.77-3.25-6.83-7.25-6.83-2.84 0-5.44 1.58-6.61 4.03-.39.81-.59 1.76-.59 2.8 0 .78.07 2.01.67 3.61.1.26-.03.55-.29.64-.26.1-.55-.04-.64-.29-.49-1.31-.73-2.61-.73-3.96 0-1.2.23-2.29.68-3.24 1.33-2.79 4.28-4.6 7.51-4.6 4.55 0 8.25 3.51 8.25 7.83 0 1.62-1.38 2.94-3.08 2.94s-3.08-1.32-3.08-2.94c0-1.07-.93-1.94-2.08-1.94s-2.08.87-2.08 1.94c0 1.71.66 3.31 1.87 4.51.95.94 1.86 1.46 3.27 1.85.27.07.42.35.35.61-.05.23-.26.38-.48.38z"/>
     </svg>
   );
   
@@ -477,7 +460,7 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
       <div className="flex flex-col items-center">
         <div className="flex items-center justify-center px-4 py-2 rounded-lg bg-gray-200 text-gray-500">
           <BiometricIcon />
-          <span>Biometric auth not available</span>
+          <span>Passkey auth not available</span>
         </div>
         {authenticatorType === 'platform' && isPlatformAuthenticatorAvailable === false && (
           <div className="mt-2 text-xs text-gray-500 text-center">

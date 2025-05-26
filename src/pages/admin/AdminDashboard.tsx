@@ -257,6 +257,15 @@ export const AdminDashboard: React.FC = () => {
       color: "green",
       category: "Contest"
     },
+    {
+      id: "contest-scheduler",
+      title: "Contest Scheduler",
+      icon: "🔄",
+      description: "Schedule and manage automated contest creation",
+      link: "/admin/contest-scheduler",
+      color: "yellow",
+      category: "Contest"
+    },
     
     // Financial section
     {
@@ -345,6 +354,17 @@ export const AdminDashboard: React.FC = () => {
       link: "/achievement-test",
       color: "pink",
       category: "System-Testing"
+    },
+
+    // Wallet section
+    {
+      id: "vanity-wallets",
+      title: "Vanity Wallet Management",
+      icon: "✨",
+      description: "Create and manage vanity wallet addresses",
+      link: "/admin/vanity-wallets",
+      color: "indigo",
+      category: "Wallet"
     }
   ];
 
@@ -352,7 +372,7 @@ export const AdminDashboard: React.FC = () => {
     <ContestProvider>
       <div data-testid="admin-dashboard">
 
-      <div className="container mx-auto p-6 space-y-8 relative z-10">
+      <div className="container mx-auto p-6 space-y-6 relative z-10 pb-32">
         {/* Header with animated gradient */}
         <div className="flex items-center justify-between">
           <div className="relative group">
@@ -366,46 +386,6 @@ export const AdminDashboard: React.FC = () => {
               System management and monitoring interface
               <span className="inline-block ml-1 w-2 h-4 bg-brand-500 opacity-80 animate-pulse"></span>
             </p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              to="/admin/vanity-wallets"
-              className="flex items-center gap-2 bg-indigo-500/30 px-4 py-2.5 rounded-xl hover:bg-indigo-500/40 transition-all border-2 border-indigo-500/40 shadow-lg hover:shadow-indigo-500/20 group relative"
-            >
-              <div className="absolute -top-2 -left-2">
-                <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-indigo-500/30 text-indigo-100 font-mono">
-                  NEW
-                </div>
-              </div>
-              <div className="text-indigo-300 text-xl group-hover:scale-110 transition-transform">
-                ✨
-              </div>
-              <span className="text-indigo-100 font-semibold group-hover:text-white transition-colors">
-                Vanity Wallet Management
-              </span>
-              <div className="ml-2 text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </div>
-            </Link>
-            <Link
-              to="/admin/contest-scheduler"
-              className="flex items-center gap-2 bg-yellow-500/30 px-4 py-2.5 rounded-xl hover:bg-yellow-500/40 transition-all border-2 border-yellow-500/40 shadow-lg hover:shadow-yellow-500/20 group relative"
-            >
-              <div className="absolute -top-2 -left-2">
-                <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-yellow-500/30 text-yellow-100 font-mono">
-                  NEW
-                </div>
-              </div>
-              <div className="text-yellow-300 text-xl group-hover:scale-110 transition-transform">
-                🔄
-              </div>
-              <span className="text-yellow-100 font-semibold group-hover:text-white transition-colors">
-                Contest Scheduler
-              </span>
-              <div className="ml-2 text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                →
-              </div>
-            </Link>
           </div>
         </div>
 
@@ -533,16 +513,16 @@ export const AdminDashboard: React.FC = () => {
             <div className="bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/20 relative overflow-hidden">
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="font-cyber tracking-wider text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-cyber tracking-wider text-lg sm:text-xl lg:text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent whitespace-nowrap">
                       MAINTENANCE MODE
                     </h2>
-                    <p className="text-sm text-gray-400 font-mono mt-1">
+                    <p className="text-xs sm:text-sm text-gray-400 font-mono mt-1 truncate">
                       SYSTEM_MAINTENANCE_CONTROL_INTERFACE
                     </p>
                   </div>
                   <div
-                    className={`h-3 w-3 rounded-full ${
+                    className={`h-3 w-3 rounded-full flex-shrink-0 ml-4 ${
                       maintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
                     }`}
                   />
@@ -745,7 +725,7 @@ export const AdminDashboard: React.FC = () => {
             {/* User Management Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
@@ -754,9 +734,9 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="200px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent animate-gradientX">
                     User Management
@@ -882,7 +862,7 @@ export const AdminDashboard: React.FC = () => {
             {/* Contest Management Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
@@ -891,9 +871,9 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="200px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradientX">
                     Contest Management
@@ -1019,7 +999,7 @@ export const AdminDashboard: React.FC = () => {
             {/* Financial Operations Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
@@ -1028,9 +1008,9 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="200px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent animate-gradientX">
                     Financial Operations
@@ -1210,7 +1190,7 @@ export const AdminDashboard: React.FC = () => {
             {/* System Section */}
             <LazyLoad 
               placeholder={
-                <div className="mb-8">
+                <div className="mb-4">
                   <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
                   <div className="bg-dark-200/30 p-4 rounded-lg">
                     <div className="animate-pulse bg-dark-300/30 h-6 w-36 rounded mb-4"></div>
@@ -1222,9 +1202,9 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               }
-              rootMargin="250px"
+              rootMargin="100px"
             >
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
                   <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent animate-gradientX">
                     System
@@ -1479,6 +1459,133 @@ export const AdminDashboard: React.FC = () => {
                       ))}
                   </div>
                 </LazyLoad>
+              </div>
+            </LazyLoad>
+
+            {/* Wallet Management Section */}
+            <LazyLoad 
+              placeholder={
+                <div className="mb-4">
+                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-indigo-500/10"></div>
+                  </div>
+                </div>
+              }
+              rootMargin="100px"
+            >
+              <div className="mb-4">
+                <h2 className="text-xl font-display mb-3 relative group">
+                  <span className="bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent animate-gradientX">
+                    Wallet Management
+                  </span>
+                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-indigo-400 to-indigo-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {adminSections
+                    .filter(section => section.category === "Wallet")
+                    .map((section) => (
+                      <motion.div
+                        key={section.id}
+                        className={`
+                          bg-dark-200/75 backdrop-blur-lg border-2
+                          ${
+                            selectedSection === section.id
+                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
+                          }
+                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                        `}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                      >
+                        {/* Scanner line effect */}
+                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                        
+                        {/* Card content rendering */}
+                        {section.link ? (
+                          <Link to={section.link} className="block h-full">
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
+                            </div>
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              setSelectedSection(
+                                selectedSection === section.id ? null : section.id,
+                              )
+                            }
+                            data-section-id={section.id}
+                            className="block w-full text-left"
+                          >
+                            <div className="flex items-center mb-3">
+                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
+                                {section.icon}
+                              </div>
+                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                {section.title}
+                              </h3>
+                            </div>
+                            
+                            {/* Divider that matches the card's color theme */}
+                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
+                            
+                            {/* Enhanced description with better formatting */}
+                            <p className="text-gray-300 text-sm font-mono">
+                              <span className={`text-${section.color}-200`}>→</span> {section.description}
+                            </p>
+                            
+                            {/* Toggle indicator */}
+                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                              ↓
+                            </div>
+                            
+                            {/* Corner accent - sharper edge */}
+                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                            </div>
+                          </button>
+                        )}
+                        
+                        {/* Expandable Content */}
+                        {selectedSection === section.id && section.component && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
+                          >
+                            <div className="pt-4 border-t border-dark-300">
+                              <LazyLoad
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                              >
+                                {section.component}
+                              </LazyLoad>
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    ))}
+                </div>
               </div>
             </LazyLoad>
           </div>
