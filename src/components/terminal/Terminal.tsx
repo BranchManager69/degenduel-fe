@@ -117,6 +117,12 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const [sizeState, setSizeState] = useState<TerminalSize>(size);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
+  // New state for label visibility and drag handling
+  const [showLabel, setShowLabel] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [didDrag, setDidDrag] = useState(false);
+  const labelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Dynamic UI Manager ref
   const dynamicUIRef = useRef<DynamicUIManagerHandle>(null);
   
@@ -533,6 +539,33 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   // State for initial position (from localStorage)
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
 
+  // Function to start the label fade timer
+  const startLabelFadeTimer = () => {
+    // Clear existing timer
+    if (labelTimeoutRef.current) {
+      clearTimeout(labelTimeoutRef.current);
+    }
+    
+    // Set new timer for 10 seconds
+    labelTimeoutRef.current = setTimeout(() => {
+      setShowLabel(false);
+    }, 10000);
+  };
+
+  // Set up initial label fade timer when component mounts or becomes minimized
+  useEffect(() => {
+    if (terminalMinimized) {
+      startLabelFadeTimer();
+    }
+    
+    // Cleanup timer on unmount
+    return () => {
+      if (labelTimeoutRef.current) {
+        clearTimeout(labelTimeoutRef.current);
+      }
+    };
+  }, [terminalMinimized]);
+
   // Load position from localStorage on mount
   useEffect(() => {
     const savedPosition = localStorage.getItem('terminal-minimized-position');
@@ -799,12 +832,25 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       {terminalMinimized && (
         <motion.div
           key="terminal-minimized"
-          className="fixed z-50 cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area"
+          className="fixed z-[9999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area"
           drag
           dragControls={dragControls}
           dragConstraints={constraintRef}
           dragMomentum={false}
-          onDragEnd={handleDragEnd}
+          onDragStart={() => {
+            setIsDragging(true);
+            setDidDrag(true);
+            setShowLabel(false);
+          }}
+          onDragEnd={(event, info) => {
+            setIsDragging(false);
+            handleDragEnd(event, info);
+            // Reset label visibility with auto-fade timer
+            setShowLabel(true);
+            startLabelFadeTimer();
+            // Reset drag flag after a short delay to prevent immediate click
+            setTimeout(() => setDidDrag(false), 100);
+          }}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{
             opacity: 1,
@@ -821,8 +867,16 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
             transform: initialPosition.x === 0 && initialPosition.y === 0 ? 'translateX(-50%) translateY(2px)' : undefined,
           }}
           onClick={(_event) => {
-            setTerminalMinimized(false);
-            setHasUnreadMessages(false);
+            // Prevent opening if user just finished dragging
+            if (!didDrag) {
+              setTerminalMinimized(false);
+              setHasUnreadMessages(false);
+              // Clear label timer since terminal is opening
+              if (labelTimeoutRef.current) {
+                clearTimeout(labelTimeoutRef.current);
+                labelTimeoutRef.current = null;
+              }
+            }
           }}
           whileDrag={{ scale: 1.1, boxShadow: "0px 10px 30px rgba(0,0,0,0.3)" }}
         >
@@ -965,9 +1019,13 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
 
           {/* Hover tooltip - Enhanced for Character */}
           <motion.div
-            className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none"
+            className="absolute bottom-full right-0 mb-2 opacity-0 transition-all duration-200 pointer-events-none"
             initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            animate={{ 
+              y: 0, 
+              opacity: showLabel && !isDragging ? 1 : 0
+            }}
+            transition={{ duration: 0.3 }}
           >
             <div className="bg-black/80 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-lg border border-purple-500/20">
               <div className="flex items-center gap-2">

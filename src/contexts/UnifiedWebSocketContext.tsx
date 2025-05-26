@@ -311,33 +311,42 @@ export const UnifiedWebSocketProvider: React.FC<{
     let errorMessage = '';
     let localServerDown = false;
     
+    // Check if we're in production environment
+    const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
+    
     switch (event.code) {
       case 1000:
         // Normal closure
         errorMessage = 'Connection closed normally';
         break;
       case 1001:
-        errorMessage = 'Server is going away';
+        errorMessage = isProduction ? 'Server maintenance in progress' : 'Server is going away';
+        break;
+      case 1005:
+        // Empty status - common browser-side issue, not server error
+        errorMessage = isProduction ? 'Connection temporarily unavailable' : `Connection closed with code ${event.code}: ${event.reason || 'Unknown reason'}`;
         break;
       case 1006:
         // Abnormal closure - often indicates server unavailability or network issues
-        errorMessage = 'Can\'t connect to DegenDuel.';
+        errorMessage = isProduction ? 'Connection temporarily unavailable' : 'Can\'t connect to DegenDuel.';
         localServerDown = true;
         break;
       case 1011:
-        errorMessage = 'Server encountered an error';
+        errorMessage = isProduction ? 'Service temporarily unavailable' : 'Server encountered an error';
         localServerDown = true;
         break;
       case 1012:
-        errorMessage = 'Server is restarting';
+        errorMessage = isProduction ? 'Server maintenance in progress' : 'Server is restarting';
         localServerDown = true;
         break;
       case 1013:
-        errorMessage = 'Server is unavailable';
+        errorMessage = isProduction ? 'Service temporarily unavailable' : 'Server is unavailable';
         localServerDown = true;
         break;
       default:
-        errorMessage = `Connection closed with code ${event.code}: ${event.reason || 'Unknown reason'}`;
+        errorMessage = isProduction 
+          ? 'Connection issue - reconnecting...' 
+          : `Connection closed with code ${event.code}: ${event.reason || 'Unknown reason'}`;
     }
     
     // Update server down state

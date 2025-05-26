@@ -406,7 +406,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     <div className="px-3 py-2 bg-dark-300/40 border-b border-brand-500/20">
                       <div className="flex flex-col gap-2">
                         {/* Login Options Section */}
-                        <ConsolidatedLoginButton onLoginComplete={() => setIsOpen(false)} />
+                        <ConsolidatedLoginButton onLoginComplete={() => setIsOpen(false)} isCompact={isCompact} />
                         
                         <Link
                           to="/login"

@@ -19,48 +19,18 @@ import { User } from '../../../types';
 
 // Define WhaleRoomButton component (encapsulated within CtaSection)
 const WhaleRoomButton = (
-  //{ walletAddress }: { walletAddress: string }
+  { walletAddress }: { walletAddress: string }
 ) => {
-  //const {
-  //  balance,
-  //  isLoading,
-  //} = useWallet(walletAddress);
-  
-  // Whale criteria check: 
-  //   1. SOL balance > 10 SOL, or
-  //   2. Any token with USD value > $5,000, or
-  //   3. Total portfolio value > $10,000 
-  // TEMP: Commented out for preview
-  /* const isWhale = React.useMemo(() => {
-    if (!balance || isLoading) return false;
-    
-    // Check SOL balance criteria (>10 SOL)
-    if (balance.sol_balance > 10) return true;
-    
-    // Check for any high-value tokens (>$5,000)
-    const hasHighValueToken = balance.tokens.some(token => 
-      token.value_usd && token.value_usd > 5000
-    );
-    
-    if (hasHighValueToken) return true;
-    
-    // Calculate total portfolio value
-    const totalValue = balance.tokens.reduce((sum, token) => 
-      sum + (token.value_usd || 0), 
-      0
-    );
-    
-    // Add SOL value (approximating $150 per SOL)
-    const portfolioValueWithSol = totalValue + (balance.sol_balance * 150);
-    
-    // Check portfolio value criteria (>$10,000) 
-    return portfolioValueWithSol > 10000;
-  }, [balance, isLoading]); */
-  
-  // TEMP: Show whale room for all users (for preview)
-  // if (!isWhale) return null;
+  // For now, simple whale logic - only show for users with wallet addresses
+  // TODO: Add proper balance checking logic
+  const isWhale = React.useMemo(() => {
+    // Simple whale check: only show if user has a wallet connected
+    // This can be expanded later with actual balance/portfolio checks
+    return !!walletAddress;
+  }, [walletAddress]);
   
   // If user does not meet whale criteria, do not show the button
+  if (!isWhale) return null;
   return (
     <div className="w-full max-w-md">
       
@@ -285,9 +255,10 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
         </RouterLink>
       </div>
 
-      {/* Conditional WHALE ROOM button - TEMP: showing for all users */}
-      <WhaleRoomButton />
-      {/*<WhaleRoomButton walletAddress={user?.wallet_address || "temp"} />*/}
+      {/* Conditional WHALE ROOM button - only for authenticated users */}
+      {user?.wallet_address && (
+        <WhaleRoomButton walletAddress={user.wallet_address} />
+      )}
 
     </motion.div>
   );

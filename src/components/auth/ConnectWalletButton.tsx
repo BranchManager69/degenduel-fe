@@ -159,7 +159,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       <div className={`relative ${className}`}>
         <Button
           variant="gradient"
-          className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]} bg-transparent hover:bg-transparent border-transparent`}
+          className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]}`}
           onClick={() => {
             const installedWallets = wallets.filter(wallet => wallet.readyState === 'Installed');
             if (installedWallets.length === 1) {
@@ -180,9 +180,6 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
             </>
           ) : (
             <>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
               Connect Wallet
               {wallets.filter(wallet => wallet.readyState === 'Installed').length > 1 && (
                 <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,7 +265,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     <div className={`flex flex-col ${className}`}>
       <Button
         variant="gradient"
-        className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]} bg-transparent hover:bg-transparent border-transparent`}
+        className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]}`}
         onClick={buttonOnClick}
         disabled={isDisabled}
       >
@@ -281,12 +278,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
             {buttonText}
           </>
         ) : (
-          <>
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            {buttonText}
-          </>
+          buttonText
         )}
       </Button>
       {error && (

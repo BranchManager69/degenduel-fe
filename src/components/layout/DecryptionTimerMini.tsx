@@ -266,14 +266,6 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
 
   const { digits, unit, statusText, beaconColorClass, digitFontClass, textFontClass, shadowClass } = getBeaconContent();
 
-  const pulseAnimation = {
-    scale: urgencyLevel === 3 ? [1, 1.05, 1] : urgencyLevel === 2 ? [1, 1.03, 1] : (isEffectivelyComplete && !tokenAddress ? 1 : [1, 1.01, 1]), // No pulse for verifying state
-    transition: { 
-      duration: urgencyLevel === 3 ? 0.5 : urgencyLevel === 2 ? 1 : urgencyLevel === 1 ? 1.8 : (isEffectivelyComplete ? 4 : 2.5), // Faster pulse as urgency increases
-      repeat: Infinity, 
-      ease: "easeInOut" 
-    }
-  };
   
   const verifyingAnimation = {
     opacity: [0.5, 1, 0.5],
@@ -293,22 +285,19 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
   }
 
   const entranceAnimation = delayedEntrance ? {
-    initial: { opacity: 0, scale: 0, y: -100 },
+    initial: { opacity: 0, y: 20 },
     animate: { 
       opacity: 1, 
-      scale: 1, 
       y: 0,
       transition: { 
         delay: 0.5, // Small delay after main timer disappears
-        type: "spring", 
-        stiffness: 300, 
-        damping: 20,
-        duration: 0.8
+        duration: 0.3,
+        ease: "easeOut"
       }
     }
   } : {
-    initial: { opacity: 0, scale: 0.5 },
-    animate: { opacity: 1, scale: 1 }
+    initial: { opacity: 0 },
+    animate: { opacity: 1, transition: { duration: 0.3 } }
   };
 
   return (
@@ -316,9 +305,9 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
       className={`fixed bottom-5 right-5 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center cursor-pointer z-50 ${beaconColorClass} ${shadowClass} ${textFontClass}`}
       onClick={onClick}
       initial={entranceAnimation.initial}
-      animate={{ ...entranceAnimation.animate, ...pulseAnimation }}
+      animate={entranceAnimation.animate}
       whileHover={{ scale: 1.1 }}
-      transition={entranceAnimation.animate.transition || { type: "spring", stiffness: 300, damping: 20 }}
+      transition={entranceAnimation.animate.transition || { duration: 0.3 }}
     >
       {statusText ? (
         statusText === "..." ? (

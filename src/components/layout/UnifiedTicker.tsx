@@ -732,18 +732,30 @@ export const UnifiedTicker: React.FC<Props> = ({
     const isLoadingNoData = isOverallLoading && originalTickerItems.length === 0;
 
     if (showError) {
+      // Clean up error message for production
+      const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
+      const displayError = isProduction 
+        ? 'Service temporarily unavailable' 
+        : storeError;
+      
       return (
         <div className="flex items-center justify-center px-4 py-2 h-full w-full bg-red-500/10 text-red-300" ref={viewportRef}>
           <AlertTriangle className="w-4 h-4 mr-2 text-red-400" />
-          <span className="text-xs font-medium">{storeError}</span>
+          <span className="text-xs font-medium">{displayError}</span>
         </div>
       );
     }
     if (showSystemError) {
+      // Clean up system error message for production
+      const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
+      const displayError = isProduction 
+        ? 'System maintenance in progress' 
+        : systemError;
+        
       return (
         <div className="flex items-center justify-center px-4 py-2 h-full w-full bg-orange-500/10 text-orange-300" ref={viewportRef}>
           <Settings className="w-4 h-4 mr-2 text-orange-400" />
-          <span className="text-xs font-medium">{systemError}</span>
+          <span className="text-xs font-medium">{displayError}</span>
         </div>
       );
     }

@@ -26,6 +26,7 @@ import TwitterLoginButton from './TwitterLoginButton';
 interface ConsolidatedLoginButtonProps {
   className?: string;
   onLoginComplete?: () => void;
+  isCompact?: boolean;
 }
 
 /**
@@ -36,7 +37,8 @@ interface ConsolidatedLoginButtonProps {
  */
 const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
   className = '',
-  onLoginComplete
+  onLoginComplete,
+  isCompact = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { isAvailable, isRegistered, hasCheckedRegistration, checkRegistrationStatus } = useBiometricAuth();
@@ -97,54 +99,10 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
       {/* Main login button */}
       <Button
         onClick={toggleExpanded}
-        className="w-full py-3 text-base bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 text-white font-bold flex items-center justify-center"
+        className={`${isCompact ? 'h-7 px-4 text-xs' : 'h-8 px-6 text-sm'} bg-gradient-to-r from-brand-500 to-purple-600 hover:from-brand-400 hover:to-purple-500 text-white font-mono flex items-center justify-center transition-all duration-300 rounded-full border border-brand-400/30 hover:border-brand-400/50 shadow-md hover:shadow-lg`}
         variant="gradient"
       >
-        <svg
-          className="w-5 h-5 mr-2"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-          <polyline points="10 17 15 12 10 7" />
-          <line x1="15" y1="12" x2="3" y2="12" />
-        </svg>
-        {isExpanded 
-          ? (isAuthenticated ? "Account Options" : "Choose a method")
-          : (isAuthenticated ? (user?.nickname || "Account") : "Sign In")
-        }
-        {isExpanded ? (
-          <svg
-            className="w-4 h-4 ml-2"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="18 15 12 9 6 15" />
-          </svg>
-        ) : (
-          <svg
-            className="w-4 h-4 ml-2"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        )}
+        {isAuthenticated ? (user?.nickname || "Account") : "Sign In"}
       </Button>
 
       {/* Expandable login options */}
@@ -230,13 +188,10 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
                 // NOT AUTHENTICATED - Show login options
                 <>
                   {/* Primary: Wallet Connection (full width) */}
-              <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
-                <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
-                <ConnectWalletButton 
-                  className="w-full h-12 z-10 relative"
-                  onSuccess={handleLoginClick}
-                />
-              </div>
+              <ConnectWalletButton 
+                className="w-full h-12"
+                onSuccess={handleLoginClick}
+              />
               
                   {/* Secondary: Social & Passkey Login Options (3 compact squares) */}
                   <div className="grid grid-cols-3 gap-2">

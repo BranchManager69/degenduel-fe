@@ -73,9 +73,8 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
   
   const [effectiveTargetDate, setEffectiveTargetDate] = useState<Date | null>(null);
   
-  // Floating animation states
-  const [floatingPhase, setFloatingPhase] = useState<'static' | 'lifting' | 'morphing' | 'mini'>('static');
-  const [isFloating, setIsFloating] = useState(false);
+  // Simple fade out state
+  const [shouldFadeOut, setShouldFadeOut] = useState(false);
   
   // Copy and transition states
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
@@ -188,30 +187,19 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
     }
   }, [calculateTimeRemaining, effectiveTargetDate]);
 
-  // Floating animation sequence
+  // Simple fade out after 8 seconds if floating enabled
   useEffect(() => {
     if (!enableFloating) return;
 
-    const startFloatingSequence = () => {
-      // Phase 1: Lift off after 5 seconds
+    const fadeOutTimer = setTimeout(() => {
+      setShouldFadeOut(true);
+      // Let parent know mini timer can appear
       setTimeout(() => {
-        setFloatingPhase('lifting');
-        setIsFloating(true);
-      }, 5000);
-
-      // Phase 2: Start morphing after 6 seconds  
-      setTimeout(() => {
-        setFloatingPhase('morphing');
-      }, 6000);
-
-      // Phase 3: Complete morph to mini after 8 seconds
-      setTimeout(() => {
-        setFloatingPhase('mini');
         onMorphComplete?.();
-      }, 8000);
-    };
+      }, 500); // Small delay for fade out to complete
+    }, 8000);
 
-    startFloatingSequence();
+    return () => clearTimeout(fadeOutTimer);
   }, [enableFloating, onMorphComplete]);
 
   // Handle copy to clipboard
@@ -246,71 +234,17 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
   const displayTitle = apiData?.title || (isComplete ? (tokenAddress ? "CONTRACT REVEALED" : "VERIFYING CONTRACT...") : "$DUEL MINT");
   const displayMessage = apiData?.message || (isComplete && !tokenAddress ? "Awaiting secure transmission..." : "");
 
-  // Animation variants for floating phases
-  const floatingVariants = {
-    static: {
-      position: 'relative' as const,
-      zIndex: 1,
-      scale: 1,
-      x: 0,
-      y: 0,
-      width: 'auto',
-      height: 'auto'
-    },
-    lifting: {
-      position: 'fixed' as const,
-      zIndex: 9999,
-      scale: 1,
-      x: 0,
-      y: 0,
-      width: 'auto', 
-      height: 'auto'
-    },
-    morphing: {
-      position: 'fixed' as const,
-      zIndex: 9999,
-      scale: 0.3,
-      x: 'calc(100vw - 120px)',
-      y: 'calc(100vh - 120px)',
-      width: 80,
-      height: 80,
-      borderRadius: '50%'
-    },
-    mini: {
-      position: 'fixed' as const,
-      zIndex: 9999,
-      scale: 0.25,
-      x: 'calc(100vw - 100px)',
-      y: 'calc(100vh - 100px)', 
-      width: 64,
-      height: 64,
-      borderRadius: '50%'
-    }
-  };
-
-  // Don't render if morphing is complete (mini timer will take over)
-  if (floatingPhase === 'mini') {
+  // Simple fade out when shouldFadeOut is true
+  if (shouldFadeOut) {
     return null;
   }
 
   return (
     <motion.div
-      className={`bg-black/30 border-2 border-green-500/60 rounded-xl shadow-lg shadow-green-900/20 overflow-hidden ${
-        isFloating ? 'fixed' : 'relative'
-      }`}
-      variants={floatingVariants}
-      animate={floatingPhase}
-      layout={!isFloating}
-      transition={{
-        layout: { type: "spring", bounce: 0.2, duration: 0.8 },
-        position: { duration: 1 },
-        scale: { duration: 2, ease: "easeInOut" },
-        x: { duration: 2, ease: "easeInOut" },
-        y: { duration: 2, ease: "easeInOut" },
-        width: { duration: 2, ease: "easeInOut" },
-        height: { duration: 2, ease: "easeInOut" },
-        borderRadius: { duration: 2, ease: "easeInOut" }
-      }}
+      className="relative bg-black/30 border-2 border-green-500/60 rounded-xl shadow-lg shadow-green-900/20 overflow-hidden"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: shouldFadeOut ? 0 : 1 }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
     >
       {!shouldShowCountdown && apiData ? (
         <div className="py-4 px-6">
