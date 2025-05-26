@@ -159,7 +159,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
       <div className={`relative ${className}`}>
         <Button
           variant="gradient"
-          className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]} bg-transparent hover:bg-transparent border-transparent`}
+          className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]}`}
           onClick={() => {
             const installedWallets = wallets.filter(wallet => wallet.readyState === 'Installed');
             if (installedWallets.length === 1) {
@@ -268,7 +268,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     <div className={`flex flex-col ${className}`}>
       <Button
         variant="gradient"
-        className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]} bg-transparent hover:bg-transparent border-transparent`}
+        className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]}`}
         onClick={buttonOnClick}
         disabled={isDisabled}
       >
