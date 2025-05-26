@@ -14,13 +14,24 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 
-// Token Scheduler Event Types from Backend
-export interface TokenSchedulerBatchEvent {
-  type: 'batch_started' | 'batch_completed';
-  batchNumber?: number;
-  totalBatches?: number;
+// Token Scheduler Event Types from Backend (Updated to match actual backend format)
+export interface TokenSchedulerBatchStartedEvent {
+  type: 'batch_started';
+  batchNumber: number;
+  totalBatches: number;
   tokenCount: number;
-  tokens?: Array<{ id: string; address: string; symbol: string }>;
+  tokens: Array<{ id: string; address: string; symbol: string }>;
+  timestamp: string;
+}
+
+export interface TokenSchedulerBatchCompletedEvent {
+  type: 'batch_completed';
+  batchNumber: number;
+  totalBatches: number;
+  tokensProcessed: number;
+  successCount: number;
+  failureCount: number;
+  duration: number; // milliseconds
   timestamp: string;
 }
 
@@ -52,7 +63,8 @@ export interface TokenSchedulerQueueEvent {
 }
 
 export type TokenSchedulerEvent = 
-  | TokenSchedulerBatchEvent 
+  | TokenSchedulerBatchStartedEvent
+  | TokenSchedulerBatchCompletedEvent 
   | TokenSchedulerFailureEvent 
   | TokenSchedulerInactiveEvent 
   | TokenSchedulerQueueEvent;
@@ -161,33 +173,41 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
     // Process specific event types
     switch (event.type) {
       case 'batch_started':
+        // Update queue status
+        setQueueStatus(prev => ({
+          ...prev,
+          processing: true,
+          batchNumber: event.batchNumber,
+          totalBatches: event.totalBatches,
+          tokensRemaining: event.tokenCount
+        }));
+
+        // Update token statuses from batch
+        event.tokens.forEach(token => {
+          const existingToken = tokensMapRef.current.get(token.id);
+          const updatedToken: TokenStatus = {
+            id: token.id,
+            address: token.address,
+            symbol: token.symbol,
+            failures: existingToken?.failures || 0,
+            status: existingToken?.status || 'healthy',
+            lastUpdated: now,
+            queuedForInactive: existingToken?.queuedForInactive || false
+          };
+          tokensMapRef.current.set(token.id, updatedToken);
+        });
+        setTokens(Array.from(tokensMapRef.current.values()));
+        break;
+
       case 'batch_completed':
         // Update queue status
         setQueueStatus(prev => ({
           ...prev,
-          processing: event.type === 'batch_started',
-          batchNumber: event.batchNumber || prev.batchNumber,
-          totalBatches: event.totalBatches || prev.totalBatches,
-          tokensRemaining: event.type === 'batch_completed' ? 0 : prev.tokensRemaining
+          processing: false,
+          batchNumber: event.batchNumber,
+          totalBatches: event.totalBatches,
+          tokensRemaining: 0
         }));
-
-        // If batch started with token list, update token statuses
-        if (event.type === 'batch_started' && event.tokens) {
-          event.tokens.forEach(token => {
-            const existingToken = tokensMapRef.current.get(token.id);
-            const updatedToken: TokenStatus = {
-              id: token.id,
-              address: token.address,
-              symbol: token.symbol,
-              failures: existingToken?.failures || 0,
-              status: existingToken?.status || 'healthy',
-              lastUpdated: now,
-              queuedForInactive: existingToken?.queuedForInactive || false
-            };
-            tokensMapRef.current.set(token.id, updatedToken);
-          });
-          setTokens(Array.from(tokensMapRef.current.values()));
-        }
         break;
 
       case 'token_failed':
