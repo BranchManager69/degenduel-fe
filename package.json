@@ -37,6 +37,7 @@
     "prepare": "husky",
     "--------------- ADMIN TOOLS ---------------------": "",
     "new:page": "node scripts/generate-admin-page.js",
+    "token:eligibility": "bash scripts/token-eligibility.sh",
     "--------------- AI REVIEW COMMANDS --------------": "",
     "OLD-lint:ai": "claude -p 'you are a linter. please look at the changes vs. main and report what changes you see. report the filename and line number on one line, and a description of the issue on the second line. do not return any other text.'",
     "OLD-lint:ai:commit": "claude -p 'you are a linter. please look at the changes that are yet to be committed and report what changes you see. report the filename and line number on one line, and a description of the change on the second line. do not return any other text.'",

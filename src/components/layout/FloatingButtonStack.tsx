@@ -15,7 +15,7 @@ import React, { useState } from 'react';
 import { FloatingBelieveButton } from './FloatingBelieveButton';
 import { FloatingDexscreenerButton } from './FloatingDexscreenerButton';
 import { FloatingJupButton } from './FloatingJupButton';
-import { FloatingPumpButton } from './FloatingPumpButton';
+import { FloatingBirdeyeButton } from './FloatingPumpButton';
 
 interface FloatingButtonStackProps {
   tokenAddress?: string | null;
@@ -54,9 +54,9 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
       color: 'emerald'
     },
     { 
-      id: 'pump', 
-      component: FloatingPumpButton, 
-      color: 'blue'
+      id: 'birdeye', 
+      component: FloatingBirdeyeButton, 
+      color: 'orange'
     },
     { 
       id: 'dexscreener', 

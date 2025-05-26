@@ -15,6 +15,16 @@ import { AIMessage } from "../../services/ai"; // Import AIMessage
 // Size option for the Terminal component
 export type TerminalSize = 'contracted' | 'middle' | 'large';
 
+// Layout mode options for the Terminal component
+export type TerminalLayoutMode = 'bottom-fixed' | 'sidebar' | 'floating' | 'inline' | 'modal';
+
+// Position options for different layout modes
+export interface TerminalPosition {
+  side?: 'left' | 'right';
+  x?: number;
+  y?: number;
+}
+
 // For the Terminal component props
 export interface TerminalProps {
   config: {
@@ -28,6 +38,8 @@ export interface TerminalProps {
   };
   onCommandExecuted?: (command: string, response: string) => void;
   size?: TerminalSize; // Size prop for controlling terminal dimensions
+  layoutMode?: TerminalLayoutMode; // Layout mode for positioning
+  position?: TerminalPosition; // Additional positioning options
 }
 
 // Define a union type for console output items - can be string or JSX

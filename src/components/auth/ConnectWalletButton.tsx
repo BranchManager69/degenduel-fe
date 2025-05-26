@@ -37,14 +37,15 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   const [showWalletOptions, setShowWalletOptions] = useState(false);
   
   const auth = useMigratedAuth();
-  const { 
+  const {
     wallets,
     select,
-    publicKey, 
-    connected, 
+    connect,
+    publicKey,
+    connected,
     connecting,
     disconnect,
-    signMessage 
+    signMessage
   } = useWallet();
 
   const getChallengeNonce = async (walletAddress: string): Promise<string> => {
@@ -61,15 +62,16 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     setShowWalletOptions(false);
     setIsLoading(true);
     setError(null);
-    
+
     try {
       select(walletName);
+      await connect();
     } catch (err) {
       console.error('Error selecting wallet:', err);
       setError('Failed to select wallet');
       setIsLoading(false);
     }
-  }, [select]);
+  }, [select, connect]);
 
   const handleAuthenticate = useCallback(async () => {
     if (!connected || !publicKey || !signMessage) {

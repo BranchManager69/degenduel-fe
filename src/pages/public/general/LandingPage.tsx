@@ -41,8 +41,8 @@ import { ddApi } from "../../../services/dd-api";
 import {
     FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
-// Import PaginatedResponse from types
-import { PaginatedResponse } from '../../../types';
+// Import PaginatedResponse from types (used for API response typing)
+// import type { PaginatedResponse } from '../../../types';
 // Zustand store
 import { useStore } from "../../../store/useStore"; // Ensure useStore is imported
 
@@ -163,11 +163,17 @@ export const LandingPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await ddApi.contests.getAll(); 
-      const contestsData = (Array.isArray(response) ? response : (response as PaginatedResponse<Contest>)?.data) || [];
+      const contestsData = Array.isArray(response) ? response : ((response as any)?.contests || (response as any)?.data || []);
       
       if (isMounted.current) {
+        console.log("[LandingPage] Raw contests data:", contestsData);
+        console.log("[LandingPage] Contest statuses:", contestsData.map((c: Contest) => c.status));
+        
         const liveContests = contestsData.filter(isContestCurrentlyUnderway);
         const pendingContests = contestsData.filter((contest: Contest) => contest.status === "pending");
+        
+        console.log("[LandingPage] Live contests:", liveContests.length);
+        console.log("[LandingPage] Pending contests:", pendingContests.length);
         
         setActiveContests(liveContests);
         setOpenContests(pendingContests);
@@ -462,24 +468,6 @@ export const LandingPage: React.FC = () => {
                   variants={landingPageVariants}
                 >
 
-
-                {/* Countdown Timer Component - uses new state */}
-                <motion.div // Keep this motion.div if it was part of the structure, or simplify to a normal div
-                  ref={mainTimerContainerRef} 
-                  className="my-8 md:my-12 w-full max-w-3xl mx-auto"
-                  // Remove variants={childVariants} if this specific div doesn't need it
-                  // or ensure childVariants is correctly defined and used if it should animate
-                >
-
-                  {/* Decryption Timer */}
-                  <DecryptionTimer
-                    targetDate={fallbackDateForTimers}
-                    enableFloating={mainTimerFloating}
-                    onMorphComplete={handleMainTimerMorphComplete}
-                  />
-
-                </motion.div>
-
                 {/* Enhanced tagline with secondary line */}
                 <motion.div
                   className="mt-8 mb-6"
@@ -530,6 +518,23 @@ export const LandingPage: React.FC = () => {
                 <p className="text-sm sm:text-base text-gray-300/80 font-medium mt-2">
                   Win big. Trade like a degen. No liquidations.
                 </p>
+
+                </motion.div>
+
+                {/* Countdown Timer Component - uses new state */}
+                <motion.div // Keep this motion.div if it was part of the structure, or simplify to a normal div
+                  ref={mainTimerContainerRef} 
+                  className="my-8 md:my-12 w-full max-w-3xl mx-auto"
+                  // Remove variants={childVariants} if this specific div doesn't need it
+                  // or ensure childVariants is correctly defined and used if it should animate
+                >
+
+                  {/* Decryption Timer */}
+                  <DecryptionTimer
+                    targetDate={fallbackDateForTimers}
+                    enableFloating={mainTimerFloating}
+                    onMorphComplete={handleMainTimerMorphComplete}
+                  />
 
                 </motion.div>
 

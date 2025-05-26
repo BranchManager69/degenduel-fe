@@ -402,3 +402,159 @@
     );
   }
 }
+
+/* Ensure minimized terminal always stays on top and visible */
+.minimized-terminal-draggable-area {
+  /* Force the element to be visible and never hidden */
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  /* Prevent any transform issues that might cause disappearing */
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+  /* Ensure it stays on top of everything */
+  position: fixed !important;
+  /* Prevent any CSS transitions that might cause issues */
+  transition: transform 0.1s ease-out, scale 0.1s ease-out;
+  /* Ensure proper stacking context */
+  isolation: isolate;
+}
+
+/* Mobile keyboard handling for terminal container */
+.terminal-container {
+  /* Ensure the terminal adapts to viewport changes */
+  height: 100vh;
+  max-height: 100vh;
+  /* Use CSS environment variables for safe areas on mobile */
+  height: 100svh; /* Small viewport height - dynamic */
+  max-height: 100svh;
+  padding-bottom: env(keyboard-inset-height, 0px);
+}
+
+/* When keyboard is visible, adjust terminal height */
+@supports (height: 100svh) {
+  .terminal-container {
+    height: 100svh;
+    max-height: 100svh;
+  }
+}
+
+/* Layout Mode Styles */
+
+/* Bottom Fixed Layout (Default) */
+.terminal-layout-bottom-fixed {
+  /* Inherits existing terminal-container styles */
+}
+
+/* Sidebar Layout */
+.terminal-layout-sidebar {
+  position: fixed !important;
+  top: 80px; /* Below header */
+  bottom: 20px;
+  width: 400px;
+  height: auto !important;
+  max-height: calc(100vh - 100px) !important;
+  z-index: 99997; /* Below minimized terminal but above page content */
+  transition: transform 0.3s ease-out;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.terminal-layout-sidebar.sidebar-left {
+  left: 20px;
+  transform: translateX(0);
+}
+
+.terminal-layout-sidebar.sidebar-right {
+  right: 20px;
+  transform: translateX(0);
+}
+
+.terminal-layout-sidebar.sidebar-hidden {
+  transform: translateX(-100%);
+}
+
+.terminal-layout-sidebar.sidebar-right.sidebar-hidden {
+  transform: translateX(100%);
+}
+
+/* Floating Layout */
+.terminal-layout-floating {
+  position: fixed !important;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  max-width: 90vw;
+  height: 500px;
+  max-height: 80vh;
+  z-index: 99997;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* Inline Layout */
+.terminal-layout-inline {
+  position: relative !important;
+  width: 100%;
+  height: auto !important;
+  max-height: 600px;
+  margin: 20px 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Modal Layout */
+.terminal-layout-modal {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  z-index: 99998;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.95);
+}
+
+/* Mobile-specific styles for better keyboard handling */
+@media (max-width: 768px) {
+  .terminal-container {
+    /* Ensure proper touch handling */
+    touch-action: manipulation;
+    /* Better mobile scrolling */
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+  
+  /* Adjust terminal input area for mobile */
+  .terminal-input {
+    /* Prevent zoom on focus in iOS */
+    font-size: 16px !important;
+    /* Better touch target size */
+    min-height: 44px;
+    /* Smooth transitions when keyboard appears */
+    transition: all 0.3s ease-out;
+  }
+  
+  /* When keyboard is visible, make terminal more compact */
+  .terminal-container.keyboard-visible {
+    height: 50vh;
+    max-height: 50vh;
+  }
+
+  /* Mobile adjustments for layout modes */
+  .terminal-layout-sidebar {
+    width: 90vw;
+    left: 5vw !important;
+    right: 5vw !important;
+    transform: none !important;
+  }
+  
+  .terminal-layout-floating {
+    width: 95vw;
+    height: 70vh;
+  }
+}

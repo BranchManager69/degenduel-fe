@@ -404,8 +404,6 @@ export const Footer: React.FC = () => {
                 {/* Status link with activity/pulse icon */}
                 <a
                   href="https://status.degenduel.me/"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
                   title="System Status"
                 >
@@ -915,8 +913,6 @@ Last Check: ${new Date().toLocaleTimeString()}
               {/* Branch attribution for all users */}
               <a 
                 href="https://branch.bet" 
-                target="_blank" 
-                rel="noopener noreferrer" 
                 className="hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out opacity-70 hover:opacity-100 p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
                 title="by Branch"
               >

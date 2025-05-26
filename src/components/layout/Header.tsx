@@ -53,7 +53,7 @@ export const Header: React.FC = () => {
 
   // Log the user, isAuthenticated, and isAdmin when they change
   useEffect(() => {
-    console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdministrator);
+    //console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdministrator);
   }, [user, isAuthenticated, isAdministrator]);
 
   // Re-enable the effect for clearing storeError, but guarded
@@ -127,6 +127,28 @@ export const Header: React.FC = () => {
             {/* <IntroLogo /> */} {/* another option - full name */}
             {/* <Logo /> */} {/* another option - old logo image */}
           </Link>
+
+          {/* Navigation Menu */}
+          <nav className="hidden sm:flex items-center gap-6 ml-8">
+            <Link 
+              to="/contests" 
+              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            >
+              Contests
+            </Link>
+            <Link 
+              to="/tokens" 
+              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            >
+              Tokens
+            </Link>
+            <Link 
+              to="/mcp" 
+              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            >
+              MCP
+            </Link>
+          </nav>
 
           {/* Spacer */}
           <div className="flex-1"></div> 

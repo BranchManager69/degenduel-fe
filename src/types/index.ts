@@ -137,7 +137,7 @@ export interface TokensResponse {
   data: Token[];
 }
 
-// Token interface (matches DegenDuel market data API)
+// Enhanced Token interface (matches new DegenDuel WebSocket data)
 export interface Token {
   contractAddress: string;
   status: string;
@@ -152,6 +152,37 @@ export interface Token {
   };
   volume24h: string;
   change24h: string;
+  
+  // NEW: Enhanced metadata
+  description?: string;
+  tags?: string[];
+  totalSupply?: string;
+  priorityScore?: number;
+  firstSeenAt?: string | null;
+  pairCreatedAt?: string | null;
+  fdv?: string;
+  
+  // NEW: Multi-timeframe data
+  priceChanges?: {
+    "5m": string;
+    "1h": string;
+    "6h": string;
+    "24h": string;
+  };
+  volumes?: {
+    "5m": string;
+    "1h": string;
+    "6h": string;
+    "24h": string;
+  };
+  transactions?: {
+    "5m": { buys: number; sells: number };
+    "1h": { buys: number; sells: number };
+    "6h": { buys: number; sells: number };
+    "24h": { buys: number; sells: number };
+  };
+  
+  // Legacy fields for backward compatibility
   changesJson?: {
     m5: number;
     h1: number;

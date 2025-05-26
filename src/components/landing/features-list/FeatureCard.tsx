@@ -309,10 +309,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             </div>
             
             {/* Content section with bold typography */}
-            <div className="relative p-5 z-10 flex-grow">
+            <div className="relative px-3 py-3 z-10 flex-grow">
               
               {/* Feature title (prominent) */}
-              <h3 className={`text-2xl font-bold font-russo-one mb-3 text-white tracking-wider relative`}>
+              <h3 className={`text-lg md:text-xl font-bold font-russo-one mb-2 text-white tracking-wide relative leading-tight`}>
                 {title}
                 
                 {/* Animated underline effect */}
@@ -326,14 +326,14 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               </h3>
               
               {/* Feature description (good contrast & readability) */}
-              <p className="text-gray-300 leading-relaxed font-sans text-sm min-h-[4.5em]">
+              <p className="text-gray-300 leading-snug font-sans text-xs md:text-sm min-h-[3.5em]">
                 {description}
               </p>
 
             </div>
             
             {/* Modern footer with clear visual call to action */}
-            <div className="p-4 pb-5 flex items-center justify-between border-t border-gray-800/30 bg-gray-900/50 relative z-10 shrink-0">
+            <div className="px-3 py-3 flex items-center justify-between border-t border-gray-800/30 bg-gray-900/50 relative z-10 shrink-0">
               
               {/* Feature category indicator */}
               <div className={`flex items-center text-sm text-${isUpcoming ? 'blue' : 'purple'}-300 font-sans`}>

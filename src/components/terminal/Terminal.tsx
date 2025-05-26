@@ -82,7 +82,13 @@ import { TerminalProps, TerminalSize } from './types';
  * @returns The terminal component.
  */
 // Terminal component (This is MASSIVE)
-export const Terminal = ({ config, onCommandExecuted, size = 'large' }: TerminalProps) => {
+export const Terminal = ({ 
+  config, 
+  onCommandExecuted, 
+  size = 'large',
+  layoutMode = 'bottom-fixed',
+  position = { side: 'right' }
+}: TerminalProps) => {
   
   // We no longer need to set window.contractAddress as it's now fetched from the API
   //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
@@ -123,6 +129,9 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const [didDrag, setDidDrag] = useState(false);
   const labelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Mobile keyboard visibility state
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  
   // Dynamic UI Manager ref
   const dynamicUIRef = useRef<DynamicUIManagerHandle>(null);
   
@@ -159,7 +168,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   // Initialize with simple welcome message for AI chat
   useEffect(() => {
     setConversationHistory([
-      { role: 'assistant', content: "🤖 Didi AI ready! Ask me anything about trading, tokens, or DegenDuel. I can also create charts and widgets for you!", tool_calls: undefined },
+      { role: 'assistant', content: "🤖 Didi AI ready! Ask me anything about trading, tokens, or DegenDuel. Try asking me to 'create a portfolio chart' or 'show market data'!", tool_calls: undefined },
     ]);
     
     // Set up global UI handler
@@ -315,18 +324,40 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     }, 1000);
   };
 
-  // Get the appropriate container class based on the size prop
+  // Get the appropriate container class based on the size prop and layout mode
   const getContainerClasses = () => {
-    switch(size) {
-      case 'contracted':
-        return 'max-w-md'; // Keep mobile size: 448px
-      case 'middle':
-        return 'max-w-4xl'; // Keep mobile size: 896px
-      case 'large':
-        return isDesktopView ? 'max-w-6xl xl:max-w-7xl' : 'max-w-6xl'; // Desktop: wider (1280px), Mobile: 1152px
-      default:
-        return 'max-w-4xl';
+    // Layout mode classes
+    const layoutClass = `terminal-layout-${layoutMode}`;
+    
+    // Size classes (only apply to bottom-fixed and inline layouts)
+    let sizeClass = '';
+    if (layoutMode === 'bottom-fixed' || layoutMode === 'inline') {
+      switch(size) {
+        case 'contracted':
+          sizeClass = 'max-w-md'; // Keep mobile size: 448px
+          break;
+        case 'middle':
+          sizeClass = 'max-w-4xl'; // Keep mobile size: 896px
+          break;
+        case 'large':
+          sizeClass = isDesktopView ? 'max-w-6xl xl:max-w-7xl' : 'max-w-6xl'; // Desktop: wider (1280px), Mobile: 1152px
+          break;
+        default:
+          sizeClass = 'max-w-4xl';
+      }
     }
+    
+    // Position classes for sidebar layout
+    let positionClass = '';
+    if (layoutMode === 'sidebar') {
+      positionClass = `sidebar-${position.side || 'right'}`;
+      // Add hidden class when minimized for sidebar layout
+      if (terminalMinimized) {
+        positionClass += ' sidebar-hidden';
+      }
+    }
+    
+    return [layoutClass, sizeClass, positionClass].filter(Boolean).join(' ');
   };
   
   // State to track if we're on desktop
@@ -382,9 +413,8 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   // Update handleEnterCommand to ONLY update conversationHistory for command output
   const handleEnterCommand = async (command: string) => {
     const { activateEasterEgg } = useStore.getState();
-    // Add user message to history 
-    const userMessage: AIMessage = { role: 'user', content: command };
-    setConversationHistory(prev => [...prev, userMessage]); 
+    // Create user message (will be added to history by AI service)
+    const userMessage: AIMessage = { role: 'user', content: command }; 
     
     const lowerCaseCommand = command.toLowerCase();
     let commandHandled = false;
@@ -430,17 +460,20 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
        if (onCommandExecuted) { onCommandExecuted(command, "[Easter Egg Activated]"); }
     } 
     
-    // If a special command produced output, add it to history 
-    if (commandOutputMessage) {
-        setConversationHistory(prev => [...prev, commandOutputMessage]);
-        // No need to set unread here again if already set above, but good for safety if logic changes
-        if (terminalMinimized) setHasUnreadMessages(true);
+    // If a special command was handled, add user message and output to history 
+    if (commandHandled) {
+        setConversationHistory(prev => [...prev, userMessage]);
+        if (commandOutputMessage) {
+            setConversationHistory(prev => [...prev, commandOutputMessage]);
+            // No need to set unread here again if already set above, but good for safety if logic changes
+            if (terminalMinimized) setHasUnreadMessages(true);
+        }
     }
 
     // If no special command was handled, send to AI
     if (!commandHandled) {
       try {
-        const messagesToSendToService = [userMessage];
+        const messagesToSendToService = [...conversationHistory, userMessage];
         let finalResponseContent = ''; 
         let wasToolCall = false;
         let toolCallInfo = '';
@@ -448,24 +481,49 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
         // Create an empty assistant message that we'll update in real-time
         const assistantMessage: AIMessage = { role: 'assistant', content: '', tool_calls: undefined };
         
-        // Add the assistant message immediately so we can update it in real-time
-        setConversationHistory(prev => [...prev, assistantMessage]);
-        const messageIndex = conversationHistory.length + 1; // +1 because we just added user message
+        // Add both user and assistant messages to conversation history
+        setConversationHistory(prev => [...prev, userMessage, assistantMessage]);
+        const messageIndex = conversationHistory.length + 1; // Position of assistant message
 
-        const response = await aiService.chat(messagesToSendToService, { 
-          context: 'ui_terminal', 
+        const requestOptions = { 
+          context: 'ui_terminal' as const, 
           conversationId: conversationId,
-          streaming: false, // TEMPORARILY DISABLED: Backend streaming works in console tests but not in frontend yet
+          streaming: true, // Enable streaming to receive UI actions
           structured_output: true, // Enable dynamic UI generation
           ui_context: {
             page: 'terminal',
             available_components: Object.keys(COMPONENT_METADATA),
             current_view: 'chat'
           },
-          // onChunk callback removed since streaming is disabled
-        });
+          onChunk: (chunk: string) => {
+            console.log('[Terminal] Received streaming chunk:', chunk);
+            // Update the assistant message in real-time
+            setConversationHistory(prev => {
+              const newHistory = [...prev];
+              if (newHistory[messageIndex]) {
+                newHistory[messageIndex] = {
+                  ...newHistory[messageIndex],
+                  content: (newHistory[messageIndex].content || '') + chunk
+                };
+              }
+              return newHistory;
+            });
+          }
+        };
+        
+        console.log('[Terminal] Sending AI request with options:', requestOptions);
+        console.log('[Terminal] Available components:', Object.keys(COMPONENT_METADATA));
+        
+        const response = await aiService.chat(messagesToSendToService, requestOptions);
 
         setConversationId(response.conversationId);
+        
+        console.log('[Terminal] AI Response received:', {
+          content: response.content,
+          tool_calls: response.tool_calls,
+          ui_actions: response.ui_actions,
+          conversationId: response.conversationId
+        });
 
         // Handle UI actions if any
         if (response.ui_actions && response.ui_actions.length > 0) {
@@ -475,6 +533,8 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
               dynamicUIRef.current.handleUIAction(action);
             }
           });
+        } else {
+          console.log('[Terminal] No UI actions in response');
         }
 
         // Final update with complete response and any tool calls
@@ -556,10 +616,11 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
         const pos = JSON.parse(savedPosition);
         // Basic validation to ensure it's within reasonable bounds
         if (typeof pos.x === 'number' && typeof pos.y === 'number') {
-          // Ensure it's not off-screen initially based on a standard icon size (e.g., 70px)
+          // Allow dragging mostly off-screen, but keep a small portion visible
           const iconSize = 70;
-          pos.x = Math.max(0, Math.min(pos.x, window.innerWidth - iconSize));
-          pos.y = Math.max(0, Math.min(pos.y, window.innerHeight - iconSize));
+          const minVisible = 20; // Keep 20px visible
+          pos.x = Math.max(-iconSize + minVisible, Math.min(pos.x, window.innerWidth - minVisible));
+          pos.y = Math.max(-iconSize + minVisible, Math.min(pos.y, window.innerHeight - minVisible));
           setInitialPosition(pos);
         }
       } catch (e) {
@@ -656,14 +717,44 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
     }
   }, [conversationHistory]);
 
+  // Mobile keyboard detection for terminal
+  useEffect(() => {
+    let initialViewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    
+    const handleKeyboardVisibility = () => {
+      const currentHeight = window.visualViewport?.height ?? window.innerHeight;
+      const heightDifference = initialViewportHeight - currentHeight;
+      
+      // Keyboard is visible if viewport height is significantly reduced
+      const keyboardVisible = heightDifference > 150;
+      setIsKeyboardVisible(keyboardVisible);
+    };
+    
+    // Use Visual Viewport API if available
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', handleKeyboardVisibility);
+    }
+    
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleKeyboardVisibility);
+      } else {
+        window.removeEventListener('resize', handleKeyboardVisibility);
+      }
+    };
+  }, []);
+
   return (
-    <div className={`terminal-container ${getContainerClasses()} w-full mx-auto transition-all duration-300 ease-in-out`}>
+    <div className={`terminal-container ${getContainerClasses()} ${isKeyboardVisible ? 'keyboard-visible' : ''} w-full mx-auto transition-all duration-300 ease-in-out`}>
       
       {/* Dynamic UI Manager */}
       <DynamicUIManager ref={dynamicUIRef} className="mb-4" />
       
       {/* Terminal Container */}
-      {!terminalMinimized && (
+      {(!terminalMinimized || layoutMode !== 'bottom-fixed') && (
         <motion.div
           ref={terminalRef}
           key="terminal"
@@ -762,12 +853,19 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
                 </span>
               </button>
               
-              {/* Close button (just for looks, will minimize) */}
+              {/* Close button - behavior depends on layout mode */}
               <button
                 type="button" 
-                onClick={() => setTerminalMinimized(true)}
+                onClick={() => {
+                  if (layoutMode === 'bottom-fixed') {
+                    setTerminalMinimized(true);
+                  } else {
+                    // For other layouts, hide the terminal completely or minimize differently
+                    setTerminalMinimized(true);
+                  }
+                }}
                 className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors ml-1"
-                title="Close"
+                title={layoutMode === 'bottom-fixed' ? 'Minimize' : 'Hide'}
               >
                 <span className="text-black text-[10px] font-bold transform">×</span>
               </button>
@@ -805,13 +903,13 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
       )}
       
       {/* Terminal Minimized State - AI Girl (Didi) Trapped in Terminal */}
-      {terminalMinimized && (
+      {/* Only show the draggable minimized terminal for bottom-fixed layout */}
+      {terminalMinimized && layoutMode === 'bottom-fixed' && (
         <motion.div
           key="terminal-minimized"
-          className="fixed z-[9999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area"
+          className="fixed z-[99999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area"
           drag
           dragControls={dragControls}
-          dragConstraints={constraintRef}
           dragMomentum={false}
           onDragStart={() => {
             setIsDragging(true);

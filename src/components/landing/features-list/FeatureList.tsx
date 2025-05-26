@@ -33,9 +33,9 @@ const currentFeatures = [
   // 1 - Trading Contests
   {
     title: "Trading Contests",
-    description: "Compete in high-stakes trading contests with equal starting capital where your strategy and execution determine success.",
+    description: "Compete in high-stakes trading contests with equal starting capital. Your strategy and execution determine success.",
     extendedDescription:
-      "DegenDuel hosts Duels, regular trading contests where all participants begin with identical portfolios and capital. Success depends entirely on your trading decisions over the competition period.\n\nCompetitions run for various durations from quick 1-hour sprints to multi-day tournaments. Both public contests and private invite-only events are available, with customizable parameters for entry fees, prize structures, and tradable assets.",
+      "All participants start with identical portfolios and capital. Success depends entirely on your trading strategy and execution over the competition period.\n\nDurations range from 1-hour sprints to multi-day tournaments. Choose public contests or create private invite-only events with custom entry fees and prize structures.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -69,9 +69,9 @@ const currentFeatures = [
   // 2 - Degen Dividends
   {
     title: "Degen Dividends",
-    description: "Half of all DegenDuel profits are returned to token holders through the reflections system with daily Solana rewards.",
+    description: "Half of all platform profits go to token holders through daily Solana rewards sent automatically to your wallet.",
     extendedDescription: 
-      "DegenDuel's unique reflections system ensures that the community benefits directly from platform success. Token holders who meet the minimum criteria receive daily Solana rewards automatically sent to their connected wallets.\n\nThe system tracks platform revenue in real-time and allocates 50% to the community rewards pool, which is then distributed proportionally based on token holdings. No staking or lock-up periods required - simply hold your tokens in a compatible wallet.",
+      "Token holders receive daily Solana rewards automatically sent to their connected wallets. The system tracks platform revenue in real-time and distributes 50% to the community.\n\nRewards are distributed proportionally based on token holdings. No staking or lock-up periods required - simply hold your tokens in a compatible wallet.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -109,9 +109,9 @@ const currentFeatures = [
   // 3 - Real-Time On-Chain Data
   {
     title: "Real-Time On-Chain Data",
-    description: "Access live price feeds across tokens and competitions with minimal latency through our advanced WebSocket infrastructure.",
+    description: "Live price feeds across all tokens and competitions with millisecond latency through advanced WebSocket infrastructure.",
     extendedDescription: 
-      "Our proprietary websocket infrastructure delivers millisecond-level price updates across all supported tokens and competitions. View real-time candlestick charts, order flow, and market sentiment indicators as they happen.\n\nThe unified data stream handles tens of thousands of concurrent users while maintaining consistent low latency. Performance metrics are transparent and visible in our real-time system status dashboard.",
+      "Millisecond-level price updates across all supported tokens and competitions. View real-time candlestick charts, order flow, and market sentiment indicators as they happen.\n\nThe unified data stream handles thousands of concurrent users while maintaining consistent low latency. Performance metrics are visible in our real-time system status dashboard.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -142,9 +142,9 @@ const currentFeatures = [
   // 4 - Instant SOL Settlement
   {
     title: "Instant SOL Settlement",
-    description: "Winnings from Duels are automatically distributed to winners' wallets seconds after contest completion.",
+    description: "Contest winnings are automatically distributed to winners' wallets seconds after competition ends.",
     extendedDescription: 
-      "Our proprietary settlement engine calculates final standings and processes all prize distributions immediately after competition end. Winners receive their rewards directly to their connected wallets with no manual claims required.\n\nTransaction verification and validation are handled through a decentralized dual-signature system for maximum security, while still maintaining near-instantaneous settlement times regardless of competition size or complexity.",
+      "Final standings are calculated and prize distributions processed immediately after competition end. Winners receive rewards directly to their connected wallets with no manual claims required.\n\nTransaction verification uses a dual-signature system for maximum security while maintaining near-instantaneous settlement times regardless of competition size.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -168,9 +168,9 @@ const currentFeatures = [
   // 5 - 1v1 Duels
   {
     title: "1v1 Duels",
-    description: "Challenge others for degen supremacy. Initiate head-to-head battles with custom stakes and competition parameters.",
+    description: "Challenge anyone to head-to-head trading battles with custom stakes and competition parameters.",
     extendedDescription: 
-      "Wanna challenge the dude who swears he's a better trencher than you? Want to reply to the Twitter eggs in your mentions with a DegenDuel invite link? However you want to challenge others for degen supremacy, you can do it. Initiate head-to-head battles with custom stakes and competition parameters.",
+      "Challenge anyone to head-to-head trading battles. Set custom stakes and competition parameters for your private duels.\n\nPerfect for settling debates about who's the better trader. Send invite links directly to opponents and prove your skills in direct competition.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -194,9 +194,9 @@ const upcomingFeatures = [
   // 6 - Advanced Analytics
   {
     title: "Advanced Analytics",
-    description: "Live analytics powered by AI can help you improve your duel performances with comprehensive metrics and visualizations to refine your trading strategies over time.",
+    description: "AI-powered analytics help improve your trading performance with comprehensive metrics and visualizations.",
     extendedDescription:
-      "DegenDuel provides institutional-grade analytics for all users, regardless of portfolio size. Track your trading performance across competitions with detailed metrics including win rate, average ROI, drawdown statistics, and sentiment analysis.\n\nExport your historical data in multiple formats, create custom dashboards, and compare your performance against market benchmarks or other traders through our percentile ranking system.",
+      "Track your trading performance across competitions with detailed metrics including win rate, average ROI, drawdown statistics, and sentiment analysis.\n\nExport historical data in multiple formats, create custom dashboards, and compare your performance against market benchmarks or other traders through percentile rankings.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -226,9 +226,9 @@ const upcomingFeatures = [
   // 7 - Bring Your Own Agent
   {
     title: "Bring Your Own Agent",
-    description: "Deploy your own AI trading agents to compete in specialized contests against other traders' agents (ElizaOS, Virtuals).",
+    description: "Deploy custom AI trading agents to compete in specialized contests using ElizaOS, Virtuals, and other frameworks.",
     extendedDescription: 
-      "The upcoming AI Trading Agent platform will allow you to create, test, and deploy custom trading agents created from open-source frameworks (ElizaOS, Virtuals) in specialized competitions. Bring your own strategy for sophisticated trading logic.\n\nTest your agents in historical market simulations before deploying them in live competitions against other traders' algorithms.",
+      "Create, test, and deploy custom trading agents from open-source frameworks like ElizaOS and Virtuals in specialized competitions. Bring your own strategy for sophisticated trading logic.\n\nTest your agents in historical market simulations before deploying them in live competitions against other traders' algorithms.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -248,9 +248,9 @@ const upcomingFeatures = [
   // 8 - Degen Reputation System
   {
     title: "Degen Reputation",
-    description: "Build your Degen Rep through competitions, achievements, and community contribution for exclusive platform benefits.",
+    description: "Build your Degen Rep through competitions and achievements to unlock exclusive platform benefits.",
     extendedDescription: 
-      "DegenDuel's reputation system tracks your progress and accomplishments across the platform. Earn achievement badges, ranking points, and reputation scores through competition performance, referrals, and community contributions.\n\nHigher reputation levels unlock exclusive benefits including fee discounts, early access to new features, private competitions, and enhanced profit-sharing tiers through the reflections system.",
+      "Track your progress and accomplishments across the platform. Earn achievement badges, ranking points, and reputation scores through competition performance, referrals, and community contributions.\n\nHigher reputation levels unlock exclusive benefits including fee discounts, early access to new features, private competitions, and enhanced profit-sharing tiers.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -294,9 +294,9 @@ const upcomingFeatures = [
   // 9 - DegenDuel MCP
   {
     title: "DegenDuel MCP",
-    description: "Model Context Protocol integration allowing AI agents to interact directly with DegenDuel's trading infrastructure and data.",
+    description: "Connect Claude Desktop, Cursor, and Windsurf to DegenDuel for AI-powered trading insights and analysis.",
     extendedDescription:
-      "The DegenDuel MCP (Model Context Protocol) provides a standardized interface for AI agents and large language models to access real-time trading data, execute trades, and participate in competitions programmatically.\n\nThis protocol enables seamless integration with Claude, GPT-4, and other AI systems, allowing for sophisticated automated trading strategies and real-time market analysis directly within AI conversation contexts.",
+      "Connect Claude Desktop, Cursor, and Windsurf to DegenDuel for AI-powered trading insights. Get real-time market intelligence through your favorite AI assistants.\n\nQuick setup: Install the package, generate your secure token at /mcp-portal, add config to your AI client, and start asking for trading insights and portfolio analysis.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -314,15 +314,15 @@ const upcomingFeatures = [
         <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
       </svg>
     ),
-    isUpcoming: true
+    isUpcoming: false
   },
 
   // 10 - DegenDuel RPC
   {
     title: "DegenDuel RPC",
-    description: "High-performance RPC endpoint for developers building applications and bots that need direct access to DegenDuel's trading engine.",
+    description: "High-performance RPC endpoint for developers building trading bots and applications with direct API access.",
     extendedDescription:
-      "The DegenDuel RPC provides developers with low-latency access to our trading infrastructure through a comprehensive REST and WebSocket API. Build custom trading bots, portfolio management tools, and third-party integrations.\n\nFeatures include real-time market data streaming, portfolio management, contest participation, and advanced order management with institutional-grade reliability and sub-100ms response times.",
+      "Low-latency access to our trading infrastructure through comprehensive REST and WebSocket APIs. Build custom trading bots, portfolio management tools, and third-party integrations.\n\nFeatures include real-time market data streaming, portfolio management, contest participation, and advanced order management with sub-100ms response times.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -347,9 +347,9 @@ const upcomingFeatures = [
   // 11 - Discord Bot
   {
     title: "Discord Bot",
-    description: "Comprehensive Discord integration for contest notifications, leaderboards, and community features directly in your server.",
+    description: "Discord integration for contest notifications, leaderboards, and community features directly in your server.",
     extendedDescription:
-      "The DegenDuel Discord Bot brings the full platform experience to your Discord server. Get real-time contest notifications, view live leaderboards, check portfolio performance, and receive automated prize announcements.\n\nSetup custom alerts for price movements, contest starts, and achievement unlocks. The bot also supports slash commands for quick portfolio checks and contest participation directly from Discord chat.",
+      "Brings the full platform experience to your Discord server. Get real-time contest notifications, view live leaderboards, check portfolio performance, and receive automated prize announcements.\n\nSetup custom alerts for price movements, contest starts, and achievement unlocks. Supports slash commands for quick portfolio checks and contest participation directly from Discord.",
     icon: (
       <svg
         className="w-6 h-6"

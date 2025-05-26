@@ -1,17 +1,17 @@
 /**
- * Floating Pump.fun Button Component
+ * Floating Birdeye Button Component
  * 
- * @description A floating button that opens a new tab to Pump.fun for the given token.
+ * @description A floating button that opens a new tab to Birdeye for the given token.
  * 
  * @author BranchManager69
  * @version 2.0.0
- * @created 2025-05-12
+ * @created 2025-05-26
  */
 
 import { motion } from 'framer-motion';
 import React from 'react';
 
-interface FloatingPumpButtonProps {
+interface FloatingBirdeyeButtonProps {
   onClick?: () => void;
   tokenAddress?: string | null;
   tokenSymbol?: string | null;
@@ -19,7 +19,7 @@ interface FloatingPumpButtonProps {
   onPrematureClick?: () => void;
 }
 
-export const FloatingPumpButton: React.FC<FloatingPumpButtonProps> = ({ 
+export const FloatingBirdeyeButton: React.FC<FloatingBirdeyeButtonProps> = ({ 
   onClick, 
   tokenAddress, 
   tokenSymbol,
@@ -36,17 +36,17 @@ export const FloatingPumpButton: React.FC<FloatingPumpButtonProps> = ({
     if (onClick) {
       onClick();
     } else if (tokenAddress) {
-      console.log(`Token: ${tokenAddress}, linking to coin/${tokenAddress}`);
-      window.open(`https://pump.fun/coin/${tokenAddress}`, '_blank');
+      console.log(`Token: ${tokenAddress}, linking to token/${tokenAddress}`);
+      window.open(`https://birdeye.so/token=${tokenAddress}?chain=solana`, '_blank');
     } else {
       console.log('(No token address provided, opening general site)');
-      window.open('https://pump.fun/', '_blank');
+      window.open('https://birdeye.so/', '_blank');
     }
   };
 
   const buttonTitle = tokenAddress 
-    ? `View ${tokenSymbol || 'token'} (${tokenAddress.substring(0,4)}...${tokenAddress.substring(tokenAddress.length - 4)}) on Pump.fun` 
-    : "Pump.fun";
+    ? `View ${tokenSymbol || 'token'} (${tokenAddress.substring(0,4)}...${tokenAddress.substring(tokenAddress.length - 4)}) on Birdeye` 
+    : "Birdeye";
 
   return (
     <motion.div
@@ -58,16 +58,16 @@ export const FloatingPumpButton: React.FC<FloatingPumpButtonProps> = ({
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       <motion.div
-        className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border border-blue-500/50 rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
+        className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border border-orange-500/50 rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
         whileHover={{ 
-          borderColor: 'rgba(59, 130, 246, 0.8)',
-          boxShadow: '0 0 25px rgba(59, 130, 246, 0.6), 0 0 50px rgba(59, 130, 246, 0.3)'
+          borderColor: 'rgba(249, 115, 22, 0.8)',
+          boxShadow: '0 0 25px rgba(249, 115, 22, 0.6), 0 0 50px rgba(249, 115, 22, 0.3)'
         }}
         transition={{ duration: 0.3 }}
       >
         <img
-          src="/assets/media/logos/pump.png"
-          alt="Pump.fun Logo"
+          src="/assets/media/logos/birdeye.png"
+          alt="Birdeye Logo"
           className="w-full h-full object-contain p-2 md:p-2.5 transition-transform duration-300 group-hover:scale-110" 
         />
       </motion.div>
@@ -75,4 +75,4 @@ export const FloatingPumpButton: React.FC<FloatingPumpButtonProps> = ({
   );
 };
 
-export default FloatingPumpButton; 
+export default FloatingBirdeyeButton; 

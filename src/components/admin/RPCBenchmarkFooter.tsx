@@ -39,7 +39,7 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(() => {
             <div className="w-2 h-2 bg-gray-600 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
           </div>
         ) : (
-          <div className="w-2 h-2 rounded-full bg-red-500" />
+          <div className="w-2 h-2 rounded-full bg-purple-500" />
         )}
       </div>
     );

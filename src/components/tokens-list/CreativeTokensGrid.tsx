@@ -52,17 +52,41 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     parseFloat(b.change24h) - parseFloat(a.change24h)
   );
   
-  // Calculate "hotness" based on a combination of change, volume, and recency
+  // ENHANCED "hotness" calculation using new multi-timeframe data
   const calculateHotness = (token: Token) => {
-    // Normalized values between 0-1
-    const changeNormalized = parseFloat(token.change24h) / 100; // Assuming max 100% change
-    const volumeNormalized = Math.min(parseFloat(token.volume24h) / 10000000000, 1); // Cap at 10B volume
+    // Short-term momentum (5m, 1h) - 40% weight
+    const change5m = parseFloat(token.priceChanges?.["5m"] || "0");
+    const change1h = parseFloat(token.priceChanges?.["1h"] || "0");
+    const shortTermMomentum = (Math.abs(change5m) + Math.abs(change1h)) / 2;
     
-    // Formula: 60% weight on change, 40% on volume
-    return (changeNormalized * 0.6) + (volumeNormalized * 0.4);
+    // Volume activity across timeframes - 30% weight
+    const volume5m = parseFloat(token.volumes?.["5m"] || "0");
+    const volume1h = parseFloat(token.volumes?.["1h"] || "0");
+    const volume24h = parseFloat(token.volume24h || "0");
+    const avgVolume = (volume5m + volume1h + volume24h) / 3;
+    const volumeNormalized = Math.min(avgVolume / 10000000000, 1); // Cap at 10B
+    
+    // Transaction activity - 20% weight
+    const buys5m = token.transactions?.["5m"]?.buys || 0;
+    const sells5m = token.transactions?.["5m"]?.sells || 0;
+    const buys1h = token.transactions?.["1h"]?.buys || 0;
+    const sells1h = token.transactions?.["1h"]?.sells || 0;
+    const totalActivity = buys5m + sells5m + buys1h + sells1h;
+    const activityNormalized = Math.min(totalActivity / 1000, 1); // Cap at 1000 trades
+    
+    // Priority score from backend - 10% weight
+    const priorityNormalized = (token.priorityScore || 0) / 100;
+    
+    // Combined hotness formula
+    return (
+      (shortTermMomentum / 10) * 0.4 +  // Short-term price movement
+      volumeNormalized * 0.3 +           // Volume activity
+      activityNormalized * 0.2 +         // Transaction count
+      priorityNormalized * 0.1           // Backend priority
+    );
   };
   
-  // Hottest tokens by our custom algorithm
+  // Hottest tokens by enhanced algorithm
   const tokensByHotness = [...tokens].sort((a, b) => 
     calculateHotness(b) - calculateHotness(a)
   );
@@ -132,7 +156,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           <div className="flex items-center gap-1 flex-wrap">
             <span className="text-xs text-gray-400 truncate">${formatNumber(token.price)}</span>
             <div className="hidden xs:block h-3 w-px bg-dark-400"></div>
-            <span className="text-xs text-yellow-400 whitespace-nowrap">Heat: {hotnessScore.toFixed(0)}</span>
+            <span className="text-xs text-yellow-400 whitespace-nowrap">🔥 {hotnessScore.toFixed(0)}</span>
           </div>
         </div>
         
@@ -465,6 +489,42 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           </div>
         )}
         
+        {/* Hottest Tokens Section - Moved above All Tokens */}
+        {trendingTokens.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center mb-3 relative">
+              <div className="w-1.5 h-6 bg-yellow-500 mr-2 -skew-x-12"></div>
+              <h3 className="text-xl font-bold text-white relative">
+                Hottest Tokens
+                <span className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-yellow-500/70 to-transparent"></span>
+              </h3>
+              
+              {/* Visual line with active elements */}
+              <div className="ml-4 flex items-center flex-1">
+                <div className="h-px bg-gradient-to-r from-yellow-500/50 via-yellow-500/30 to-transparent flex-grow relative">
+                  <div className="absolute top-0 left-1/4 w-1 h-1 bg-yellow-500/80 rounded-full"></div>
+                  <div className="absolute top-0 left-2/3 w-1 h-1 bg-yellow-500/60 rounded-full"></div>
+                </div>
+                <div className="ml-2 h-4 px-2 flex items-center justify-center bg-yellow-500/10 border border-yellow-500/30 rounded-sm">
+                  <span className="text-xs text-yellow-400 uppercase tracking-wider animate-pulse">Popularity</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Improved grid layout for better mobile experience */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+              {trendingTokens.map((token, index) => (
+                <TrendingToken key={token.contractAddress} token={token} index={index} />
+              ))}
+            </div>
+            
+            {/* Mobile scroll indicator - only visible on smallest screens */}
+            <div className="flex justify-center items-center mt-2 xs:hidden">
+              <div className="w-20 h-1 bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent rounded-full"></div>
+            </div>
+          </div>
+        )}
+        
         {/* Tier 3: Standard grid for remaining tokens */}
         {restTokens.length > 0 && (
           <div>
@@ -485,8 +545,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
               </div>
             </div>
             
-            {/* Optimized grid layout for mobile - 2 columns on small screens, more on larger */}
-            <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xs:gap-3 sm:gap-4">
+            {/* Optimized grid layout for mobile - 3 columns on small screens for space efficiency */}
+            <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 xs:gap-2 sm:gap-3">
               {restTokens.map(token => {
                 const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
                 
@@ -531,39 +591,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           </div>
         )}
         
-        {/* Trending Section - Integrated into main layout */}
-        <div className="mt-10 mb-10">
-          <div className="flex items-center mb-3 relative">
-            <div className="w-1.5 h-6 bg-yellow-500 mr-2 -skew-x-12"></div>
-            <h3 className="text-xl font-bold text-white relative">
-              Hottest Tokens
-              <span className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-yellow-500/70 to-transparent"></span>
-            </h3>
-            
-            {/* Visual line with active elements */}
-            <div className="ml-4 flex items-center flex-1">
-              <div className="h-px bg-gradient-to-r from-yellow-500/50 via-yellow-500/30 to-transparent flex-grow relative">
-                <div className="absolute top-0 left-1/4 w-1 h-1 bg-yellow-500/80 rounded-full"></div>
-                <div className="absolute top-0 left-2/3 w-1 h-1 bg-yellow-500/60 rounded-full"></div>
-              </div>
-              <div className="ml-2 h-4 px-2 flex items-center justify-center bg-yellow-500/10 border border-yellow-500/30 rounded-sm">
-                <span className="text-xs text-yellow-400 uppercase tracking-wider animate-pulse">Popularity</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Improved grid layout for better mobile experience */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-            {trendingTokens.map((token, index) => (
-              <TrendingToken key={token.contractAddress} token={token} index={index} />
-            ))}
-          </div>
-          
-          {/* Mobile scroll indicator - only visible on smallest screens */}
-          <div className="flex justify-center items-center mt-2 xs:hidden">
-            <div className="w-20 h-1 bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent rounded-full"></div>
-          </div>
-        </div>
       </div>
     </div>
   );

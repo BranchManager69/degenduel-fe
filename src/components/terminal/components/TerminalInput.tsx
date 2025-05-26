@@ -40,19 +40,92 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
     adjustHeight();
   }, [userInput]);
   
-  // Handle mobile keyboard viewport changes
+  // Advanced mobile keyboard viewport handling
   React.useEffect(() => {
-    const handleResize = () => {
-      // On mobile, when keyboard appears, ensure input stays in view
-      if (inputRef.current && document.activeElement === inputRef.current) {
-        setTimeout(() => {
-          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
+    let initialViewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    let keyboardVisible = false;
+    
+    const handleViewportChange = () => {
+      const currentHeight = window.visualViewport?.height ?? window.innerHeight;
+      const heightDifference = initialViewportHeight - currentHeight;
+      
+      // Keyboard is visible if viewport height is significantly reduced
+      const newKeyboardVisible = heightDifference > 150;
+      
+      if (newKeyboardVisible !== keyboardVisible) {
+        keyboardVisible = newKeyboardVisible;
+        
+        if (keyboardVisible && inputRef.current && document.activeElement === inputRef.current) {
+          // Keyboard appeared - scroll input into view with extra padding
+          setTimeout(() => {
+            const inputElement = inputRef.current;
+            if (inputElement) {
+              const inputRect = inputElement.getBoundingClientRect();
+              const availableHeight = window.visualViewport?.height ?? window.innerHeight;
+              const keyboardHeight = window.innerHeight - availableHeight;
+              
+              // Calculate if input is hidden behind keyboard
+              if (inputRect.bottom > availableHeight - 20) {
+                // Scroll to position input above keyboard with padding
+                const scrollOffset = inputRect.bottom - availableHeight + keyboardHeight + 60;
+                window.scrollBy({
+                  top: scrollOffset,
+                  behavior: 'smooth'
+                });
+              }
+            }
+          }, 150); // Small delay to ensure keyboard is fully shown
+        }
       }
     };
     
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const handleResize = () => {
+      // Fallback for devices without Visual Viewport API
+      if (!window.visualViewport) {
+        handleViewportChange();
+      }
+    };
+    
+    const handleFocus = () => {
+      // When input gets focus, prepare for keyboard
+      setTimeout(() => {
+        if (inputRef.current && document.activeElement === inputRef.current) {
+          // Ensure input is in view
+          inputRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }, 300); // Delay to allow keyboard animation
+    };
+    
+    // Use Visual Viewport API if available (modern browsers)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      window.visualViewport.addEventListener('scroll', handleViewportChange);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', handleResize);
+    }
+    
+    // Listen to focus events
+    if (inputRef.current) {
+      inputRef.current.addEventListener('focus', handleFocus);
+    }
+    
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+        window.visualViewport.removeEventListener('scroll', handleViewportChange);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+      
+      if (inputRef.current) {
+        inputRef.current.removeEventListener('focus', handleFocus);
+      }
+    };
   }, []);
 
   return (
@@ -175,6 +248,21 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                 onEnter(command);
               }
               // Allow Shift+Enter for new lines
+            }}
+            onInput={() => {
+              // Ensure input stays visible while typing on mobile
+              if (inputRef.current && document.activeElement === inputRef.current) {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                  setTimeout(() => {
+                    inputRef.current?.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'nearest',
+                      inline: 'nearest'
+                    });
+                  }, 50);
+                }
+              }
             }}
             className="w-full bg-transparent outline-none border-none text-white placeholder-mauve-dark/50 focus:ring-0 resize-none"
             placeholder="Type to chat with Didi..."

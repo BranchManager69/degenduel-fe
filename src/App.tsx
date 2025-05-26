@@ -30,6 +30,11 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 // Wallet providers
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { 
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TrustWalletAdapter 
+} from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
 import { ToastListener, ToastProvider } from "./components/toast";
@@ -116,6 +121,7 @@ const WalletManagementPage = lazy(() => import('./pages/admin/WalletManagementPa
 const WebSocketHub = lazy(() => import('./pages/admin/WebSocketHub'));
 const TokenSyncTest = lazy(() => import('./pages/admin/TokenSyncTest'));
 
+
 // Authenticated routes lazy loaded
 const ReferralPage = lazy(() => import('./pages/authenticated/AffiliatePage').then(module => ({ default: module.ReferralPage })));
 const ContestCreditsPage = lazy(() => import('./pages/authenticated/ContestCreditsPage').then(module => ({ default: module.ContestCreditsPage })));
@@ -175,11 +181,12 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
   const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
   
   // Use empty wallet list to rely on Standard Wallet protocol for auto-detection
-  // Phantom and Solflare now support Standard Wallet, so no need for explicit adapters
+  // Configure wallet adapters
   const wallets: Adapter[] = useMemo(
     () => [
-      // Add other non-standard or specifically configured wallets you want to support here
-      // Phantom and Solflare will be auto-detected via Standard Wallet protocol
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new TrustWalletAdapter(),
     ],
     []
   );
@@ -479,24 +486,18 @@ const AppContent: React.FC = () => {
       </main>
       
       {/* Persistent Terminal Component - ALWAYS RENDERED NOW */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-[60] pointer-events-none"
-      >
-        <div className="pointer-events-auto"> 
-          <Terminal 
-              config={{
-                  RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
-                  CONTRACT_ADDRESS: config.CONTRACT_ADDRESS.REAL, 
-                  DISPLAY: {
-                      DATE_SHORT: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
-                      DATE_FULL: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL, 
-                      TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
-                  }
-              }}
-              size="contracted"
-          />
-        </div>
-      </div>
+      <Terminal 
+          config={{
+              RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
+              CONTRACT_ADDRESS: config.CONTRACT_ADDRESS.REAL, 
+              DISPLAY: {
+                  DATE_SHORT: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
+                  DATE_FULL: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL, 
+                  TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
+              }
+          }}
+          size="contracted"
+      />
 
       {/* Footer */}
       <Footer />

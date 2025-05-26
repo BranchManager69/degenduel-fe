@@ -253,7 +253,9 @@ class AIService {
           ...(options.conversationId && { conversationId: options.conversationId }),
           // NEW: Structured output options
           ...(options.structured_output && { structured_output: true }),
-          ...(options.ui_context && { ui_context: options.ui_context })
+          ...(options.ui_context && { ui_context: options.ui_context }),
+          // Add web search tool
+          tools: options.tools || [{ type: "web_search" }]
         }),
         signal: responseController.signal,
       });
@@ -404,8 +406,21 @@ class AIService {
 
       // Update conversation cache only after successful completion
       if (responseConversationId || fullContent) {
+        const cacheId = responseConversationId || this.generateConversationId();
+        
+        // Get existing history or start fresh
+        const existingHistory = this.conversationCache.get(cacheId) || [];
+        
+        // Add new user messages that aren't already in history
+        const newUserMessages = messages.filter(msg => 
+          msg.role === 'user' && 
+          !existingHistory.some(existing => existing.content === msg.content)
+        );
+        
+        // Build updated history with assistant response
         const updatedHistory = [
-          ...messages,
+          ...existingHistory,
+          ...newUserMessages,
           { 
             role: 'assistant' as const, 
             content: fullContent,
@@ -413,7 +428,6 @@ class AIService {
           }
         ];
         
-        const cacheId = responseConversationId || this.generateConversationId();
         this.conversationCache.set(cacheId, updatedHistory);
         responseConversationId = cacheId;
       }
@@ -497,13 +511,14 @@ class AIService {
       if (options.conversationId && this.conversationCache.has(options.conversationId)) {
         const cachedMessages = this.conversationCache.get(options.conversationId) || [];
 
-        // Only include the latest user message from the input
-        const latestUserMessage = messages[messages.length - 1];
-        if (latestUserMessage && latestUserMessage.role === 'user') {
-          conversationHistory = [...cachedMessages, latestUserMessage];
-        } else {
-          conversationHistory = cachedMessages;
-        }
+        // Get any new user messages that aren't already in the cache
+        const newUserMessages = messages.filter(msg => 
+          msg.role === 'user' && 
+          !cachedMessages.some(cached => cached.content === msg.content)
+        );
+        
+        // Combine cached history with any new messages
+        conversationHistory = [...cachedMessages, ...newUserMessages];
       }
 
       // Filter out system messages as they're handled by the backend
@@ -554,7 +569,9 @@ class AIService {
           messages,
           conversationId: options.conversationId,
           context: options.context || 'terminal',
-          stream: false // Explicitly disable streaming for REST endpoint
+          stream: false, // Explicitly disable streaming for REST endpoint
+          // Add web search tool
+          tools: options.tools || [{ type: "web_search" }]
         }),
       });
 
@@ -570,11 +587,22 @@ class AIService {
 
       // Update conversation cache
       if (data.conversationId) {
-        // Add the assistant response to the conversation history
+        // Get existing history or start fresh
+        const existingHistory = this.conversationCache.get(data.conversationId) || [];
+        
+        // Add new user messages that aren't already in history
+        const newUserMessages = messages.filter(msg => 
+          msg.role === 'user' && 
+          !existingHistory.some(existing => existing.content === msg.content)
+        );
+        
+        // Build updated history with assistant response
         const updatedHistory = [
-          ...messages,
+          ...existingHistory,
+          ...newUserMessages,
           { role: 'assistant' as const, content: data.content }
         ];
+        
         this.conversationCache.set(data.conversationId, updatedHistory);
       }
 

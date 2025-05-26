@@ -65,7 +65,7 @@ const DiscordLoginButton: React.FC<DiscordLoginButtonProps> = ({
         
         // Temporary implementation - construct Discord OAuth URL manually
         const baseUrl = window.location.origin;
-        const clientId = process.env.REACT_APP_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
+        const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
         const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/discord/callback`);
         const scope = encodeURIComponent('identify email');
         const state = encodeURIComponent(JSON.stringify({ linkMode: true, userId: user?.id }));
@@ -74,7 +74,7 @@ const DiscordLoginButton: React.FC<DiscordLoginButtonProps> = ({
       } else {
         // For login mode (no authenticated user)
         const baseUrl = window.location.origin;
-        const clientId = process.env.REACT_APP_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
+        const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
         const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/discord/callback`);
         const scope = encodeURIComponent('identify email');
         

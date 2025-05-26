@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "../toast/ToastContext";
 import { mcp } from "../../services/api/mcp";
 import { TokenDisplay } from "./TokenDisplay";
@@ -85,53 +86,147 @@ export const MCPTokenManagement: React.FC = () => {
 
   if (initialLoading) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-          AI Assistant Access
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-        </h2>
-        <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-          <div className="animate-pulse text-gray-400">Loading...</div>
+      <div className="space-y-6">
+        <motion.h2 
+          className="text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          🤖 AI Assistant Access
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl animate-pulse"></div>
+        </motion.h2>
+        <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.div 
+            className="flex items-center justify-center space-x-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <motion.div
+              className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            />
+            <span className="text-slate-300 text-lg">Loading your AI connection...</span>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-        AI Assistant Access
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-      </h2>
+    <motion.div 
+      className="space-y-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <motion.h2 
+        className="text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        🤖 AI Assistant Access
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl animate-pulse"></div>
+      </motion.h2>
 
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-        <p className="text-gray-300 mb-4">
-          Generate secure tokens to connect AI assistants like Claude Desktop and Cursor to your DegenDuel account.
-          This allows AI assistants to access your trading data, analyze performance, and provide market insights.
-        </p>
+      <motion.div 
+        className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <motion.p 
+          className="text-slate-300 mb-6 text-lg leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Generate secure tokens to connect AI assistants like{" "}
+          <span className="text-cyan-400 font-semibold">Claude Desktop</span> and{" "}
+          <span className="text-purple-400 font-semibold">Cursor</span> to your DegenDuel account.
+          Unlock AI-powered trading insights, performance analysis, and market intelligence.
+        </motion.p>
 
-        {token ? (
-          <TokenDisplay
-            token={token}
-            onRegenerate={regenerateToken}
-            onRevoke={revokeToken}
-            loading={loading}
-          />
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-400 mb-4">You don't have an MCP token yet.</p>
-            <button
-              onClick={generateToken}
-              disabled={loading}
-              className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white px-6 py-3 rounded-md font-medium"
+        <AnimatePresence mode="wait">
+          {token ? (
+            <motion.div
+              key="token-display"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
             >
-              {loading ? "Generating..." : "Generate MCP Token"}
-            </button>
-          </div>
-        )}
-      </div>
+              <TokenDisplay
+                token={token}
+                onRegenerate={regenerateToken}
+                onRevoke={revokeToken}
+                loading={loading}
+              />
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="generate-token"
+              className="text-center py-12"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div
+                className="text-6xl mb-6"
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                🎯
+              </motion.div>
+              <p className="text-slate-400 mb-8 text-lg">Ready to unlock AI-powered trading insights?</p>
+              <motion.button
+                onClick={generateToken}
+                disabled={loading}
+                className="relative px-10 py-4 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white font-bold text-lg rounded-2xl overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative flex items-center space-x-3">
+                  {loading ? (
+                    <>
+                      <motion.div
+                        className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      <span>Generating Magic...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⚡</span>
+                      <span>Generate MCP Token</span>
+                    </>
+                  )}
+                </div>
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
-      <SetupInstructions token={token || undefined} />
-    </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <SetupInstructions token={token || undefined} />
+      </motion.div>
+    </motion.div>
   );
 };

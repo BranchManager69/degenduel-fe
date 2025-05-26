@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "../toast/ToastContext";
 
 interface SetupStep {
@@ -16,11 +17,18 @@ interface SetupStep {
 export const MCPUserGuide: React.FC = () => {
   const [activeSetup, setActiveSetup] = useState<string>("claude");
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
+  const [copiedItems, setCopiedItems] = useState<{ [key: string]: boolean }>({});
   const { addToast } = useToast();
 
-  const copyToClipboard = async (text: string, label: string) => {
+  const copyToClipboard = async (text: string, label: string, itemKey?: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      if (itemKey) {
+        setCopiedItems(prev => ({ ...prev, [itemKey]: true }));
+        setTimeout(() => {
+          setCopiedItems(prev => ({ ...prev, [itemKey]: false }));
+        }, 2000);
+      }
       addToast("success", `${label} copied to clipboard!`);
     } catch (error) {
       addToast("error", "Failed to copy to clipboard");
@@ -180,143 +188,444 @@ export const MCPUserGuide: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="space-y-12">
       {/* Hero Section */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text">
-          DegenDuel MCP Portal
-        </h1>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-          Supercharge your DegenDuel trading with AI assistants like Claude, Cursor, and Windsurf
-        </p>
-      </div>
+      <motion.div 
+        className="text-center space-y-6"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <motion.h1 
+          className="text-5xl md:text-6xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", bounce: 0.4 }}
+        >
+          Setup Guide
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-2xl animate-pulse"></div>
+        </motion.h1>
+        <motion.p 
+          className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Connect your AI assistant to DegenDuel in minutes. Get live market data, portfolio insights, and trading intelligence.
+        </motion.p>
+      </motion.div>
 
       {/* Benefits Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <motion.div 
+        className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
         {[
-          { icon: "🧠", title: "Smart Trading Analysis", desc: "Get AI insights on your contest performance and strategies" },
-          { icon: "📡", title: "Real-Time Market Intel", desc: "Ask about any token's price, volume, market cap, and trends" },
-          { icon: "🎯", title: "Portfolio Optimization", desc: "Analyze your holdings and get personalized trading suggestions" },
-          { icon: "🔍", title: "Token Discovery", desc: "Find trending tokens, new launches, and hidden gems" },
-          { icon: "🏆", title: "Contest Strategy", desc: "Get AI help planning your next contest moves" },
-          { icon: "🔒", title: "Secure & Private", desc: "Your data stays safe with revokable, encrypted tokens" }
+          { icon: "🧠", title: "Smart Trading Analysis", desc: "Get AI insights on your contest performance and strategies", color: "cyan" },
+          { icon: "📡", title: "Real-Time Market Intel", desc: "Ask about any token's price, volume, market cap, and trends", color: "purple" },
+          { icon: "🎯", title: "Portfolio Optimization", desc: "Analyze your holdings and get personalized trading suggestions", color: "pink" },
+          { icon: "🔍", title: "Token Discovery", desc: "Find trending tokens, new launches, and hidden gems", color: "green" },
+          { icon: "🏆", title: "Contest Strategy", desc: "Get AI help planning your next contest moves", color: "yellow" },
+          { icon: "🔒", title: "Secure & Private", desc: "Your data stays safe with revokable, encrypted tokens", color: "red" }
         ].map((benefit, index) => (
-          <div key={index} className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-            <div className="text-3xl mb-3">{benefit.icon}</div>
-            <h3 className="font-semibold text-lg mb-2">{benefit.title}</h3>
-            <p className="text-gray-400 text-sm">{benefit.desc}</p>
-          </div>
+          <motion.div 
+            key={index} 
+            className="relative group cursor-pointer"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 + index * 0.1 }}
+            whileHover={{ scale: 1.05, y: -5 }}
+          >
+            <div className={`absolute -inset-1 bg-gradient-to-r ${
+              benefit.color === 'cyan' ? 'from-cyan-500 to-cyan-600' :
+              benefit.color === 'purple' ? 'from-purple-500 to-purple-600' :
+              benefit.color === 'pink' ? 'from-pink-500 to-pink-600' :
+              benefit.color === 'green' ? 'from-green-500 to-green-600' :
+              benefit.color === 'yellow' ? 'from-yellow-500 to-yellow-600' :
+              'from-red-500 to-red-600'
+            } rounded-2xl blur opacity-0 group-hover:opacity-25 transition duration-1000`}></div>
+            <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-6 h-full">
+              <motion.div 
+                className="text-4xl mb-4"
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+              >
+                {benefit.icon}
+              </motion.div>
+              <h3 className="font-bold text-xl mb-3 text-slate-100">{benefit.title}</h3>
+              <p className="text-slate-400 leading-relaxed">{benefit.desc}</p>
+            </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Installation */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-        <h2 className="text-2xl font-bold mb-4">Installation</h2>
-        <p className="text-gray-300 mb-4">First, install the DegenDuel MCP server globally (one-time setup):</p>
-        <div className="relative">
-          <pre className="bg-dark-300/50 rounded-md p-4 border border-gray-600 text-sm text-gray-300 overflow-x-auto">
-            npm install -g degenduel-mcp-server
-          </pre>
-          <button
-            onClick={() => copyToClipboard("npm install -g degenduel-mcp-server", "Installation command")}
-            className="absolute top-2 right-2 bg-brand-500 hover:bg-brand-600 text-white px-2 py-1 rounded text-xs"
+      <motion.div 
+        className="relative group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-green-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.div
+            className="flex items-center gap-3 mb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
           >
-            Copy
-          </button>
+            <span className="text-3xl">📦</span>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 text-transparent bg-clip-text">
+              Installation
+            </h2>
+          </motion.div>
+          <motion.p 
+            className="text-slate-300 mb-6 text-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            First, install the DegenDuel MCP server globally (one-time setup):
+          </motion.p>
+          <motion.div 
+            className="relative group"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.9 }}
+          >
+            <div className="bg-slate-900/80 rounded-xl p-6 border border-slate-600/50 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-cyan-500/5"></div>
+              <pre className="text-lg text-slate-200 font-mono relative z-10">
+                npm install -g degenduel-mcp-server
+              </pre>
+              <motion.button
+                onClick={() => copyToClipboard("npm install -g degenduel-mcp-server", "Installation command", "install-cmd")}
+                className="absolute top-3 right-3 px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white rounded-lg font-medium hover:from-green-600 hover:to-cyan-600 transition-all duration-200 flex items-center gap-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <AnimatePresence mode="wait">
+                  {copiedItems["install-cmd"] ? (
+                    <motion.span
+                      key="copied"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                    >
+                      ✅ Copied!
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="copy"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                    >
+                      📋 Copy
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
+          </motion.div>
+          <motion.p 
+            className="text-slate-400 mt-4 flex items-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.0 }}
+          >
+            <span>✨</span>
+            This only needs to be done once on your computer.
+          </motion.p>
         </div>
-        <p className="text-gray-400 text-sm mt-3">This only needs to be done once on your computer.</p>
-      </div>
+      </motion.div>
 
       {/* How It Works */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-        <h2 className="text-2xl font-bold mb-4">How It Works</h2>
-        <div className="grid md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">1</div>
-            <h3 className="font-semibold mb-2">Install MCP Server</h3>
-            <p className="text-gray-400 text-sm">One-time npm install (above)</p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">2</div>
-            <h3 className="font-semibold mb-2">Generate Token</h3>
-            <p className="text-gray-400 text-sm">Create a secure token above (takes 5 seconds)</p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">3</div>
-            <h3 className="font-semibold mb-2">Configure AI</h3>
-            <p className="text-gray-400 text-sm">Add it to your AI assistant using our configs</p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">4</div>
-            <h3 className="font-semibold mb-2">Start Trading</h3>
-            <p className="text-gray-400 text-sm">Ask questions like "What tokens are trending?"</p>
+      <motion.div 
+        className="relative group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.div
+            className="flex items-center gap-3 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            <span className="text-3xl">⚡</span>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+              How It Works
+            </h2>
+          </motion.div>
+          <div className="grid md:grid-cols-4 gap-8">
+            {[
+              { number: 1, title: "Install MCP Server", desc: "One-time npm install (above)", icon: "📦", color: "cyan" },
+              { number: 2, title: "Generate Token", desc: "Create a secure token above (takes 5 seconds)", icon: "🔑", color: "purple" },
+              { number: 3, title: "Configure AI", desc: "Add it to your AI assistant using our configs", icon: "⚙️", color: "pink" },
+              { number: 4, title: "Start Trading", desc: "Ask questions like \"What tokens are trending?\"", icon: "🚀", color: "green" }
+            ].map((step, index) => (
+              <motion.div 
+                key={index}
+                className="text-center relative"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 + index * 0.1 }}
+              >
+                <motion.div 
+                  className={`w-16 h-16 bg-gradient-to-r ${
+                    step.color === 'cyan' ? 'from-cyan-500 to-cyan-600' :
+                    step.color === 'purple' ? 'from-purple-500 to-purple-600' :
+                    step.color === 'pink' ? 'from-pink-500 to-pink-600' :
+                    'from-green-500 to-green-600'
+                  } rounded-full flex items-center justify-center text-2xl font-black mx-auto mb-4 text-white shadow-lg`}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  animate={{ 
+                    boxShadow: [
+                      "0 0 0 0 rgba(99, 102, 241, 0)",
+                      "0 0 0 10px rgba(99, 102, 241, 0.1)",
+                      "0 0 0 20px rgba(99, 102, 241, 0)"
+                    ]
+                  }}
+                  transition={{ 
+                    boxShadow: { duration: 2, repeat: Infinity, delay: index * 0.3 },
+                    scale: { type: "spring" },
+                    rotate: { type: "spring" }
+                  }}
+                >
+                  {step.number}
+                </motion.div>
+                <motion.div
+                  className="text-2xl mb-3"
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{ 
+                    duration: 3,
+                    repeat: Infinity,
+                    delay: index * 0.5
+                  }}
+                >
+                  {step.icon}
+                </motion.div>
+                <h3 className="font-bold text-lg mb-3 text-slate-100">{step.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Setup Instructions */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-        <h2 className="text-2xl font-bold mb-6">Setup Instructions</h2>
-        
-        {/* AI Assistant Tabs */}
-        <div className="flex border-b border-gray-600 mb-6">
-          {Object.entries(setupSteps).map(([key, setup]) => (
-            <button
-              key={key}
-              onClick={() => setActiveSetup(key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 flex items-center gap-2 ${
-                activeSetup === key
-                  ? "border-brand-400 text-brand-400"
-                  : "border-transparent text-gray-400 hover:text-gray-300"
-              }`}
-            >
-              <span>{setup.icon}</span>
-              {setup.title}
-            </button>
-          ))}
-        </div>
-
-        {/* Active Setup Steps */}
-        <div className="space-y-6">
-          {setupSteps[activeSetup].steps.map((step, index) => (
-            <div key={index} className="flex gap-4">
-              <div className="w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                {index + 1}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-2">{step.step}</h3>
-                <p className="text-gray-300 mb-3">{step.description}</p>
-                
-                {step.note && (
-                  <div className="bg-blue-900/20 border border-blue-500/20 rounded-md p-3 mb-3">
-                    <pre className="text-sm text-blue-200 whitespace-pre-wrap">{step.note}</pre>
-                  </div>
-                )}
-                
-                {step.code && (
-                  <div className="relative">
-                    <pre className="bg-dark-300/50 rounded-md p-4 border border-gray-600 text-sm text-gray-300 overflow-x-auto">
-                      {step.code}
-                    </pre>
-                    <button
-                      onClick={() => copyToClipboard(step.code!, "Configuration")}
-                      className="absolute top-2 right-2 bg-brand-500 hover:bg-brand-600 text-white px-2 py-1 rounded text-xs"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+      <motion.div 
+        className="relative group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.div
+            className="flex items-center gap-3 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+          >
+            <span className="text-3xl">🛠️</span>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 text-transparent bg-clip-text">
+              Setup Instructions
+            </h2>
+          </motion.div>
           
-          {/* Test Prompt */}
-          <div className="bg-green-900/20 border border-green-500/20 rounded-md p-4">
-            <h4 className="font-semibold text-green-300 mb-2">Test It Out:</h4>
-            <p className="text-green-200 italic">"{setupSteps[activeSetup].testPrompt}"</p>
-          </div>
+          {/* AI Assistant Tabs */}
+          <motion.div 
+            className="flex flex-wrap border-b border-slate-600/50 mb-8"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0 }}
+          >
+            {Object.entries(setupSteps).map(([key, setup], index) => (
+              <motion.button
+                key={key}
+                onClick={() => setActiveSetup(key)}
+                className={`px-6 py-4 text-lg font-bold border-b-4 flex items-center gap-3 transition-all duration-200 ${
+                  activeSetup === key
+                    ? "border-cyan-400 text-cyan-400 bg-cyan-400/10"
+                    : "border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/30"
+                }`}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 + index * 0.1 }}
+              >
+                <motion.span 
+                  className="text-2xl"
+                  animate={activeSetup === key ? { rotate: [0, 10, -10, 0] } : {}}
+                  transition={{ duration: 1, repeat: activeSetup === key ? Infinity : 0 }}
+                >
+                  {setup.icon}
+                </motion.span>
+                {setup.title}
+              </motion.button>
+            ))}
+          </motion.div>
+
+          {/* Active Setup Steps */}
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeSetup}
+              className="space-y-8"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {setupSteps[activeSetup].steps.map((step, index) => (
+                <motion.div 
+                  key={index} 
+                  className="flex gap-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <motion.div 
+                    className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-lg font-black flex-shrink-0 mt-2 text-white shadow-lg"
+                    whileHover={{ scale: 1.1, rotate: 10 }}
+                    animate={{ 
+                      boxShadow: [
+                        "0 0 0 0 rgba(6, 182, 212, 0)",
+                        "0 0 0 10px rgba(6, 182, 212, 0.1)",
+                        "0 0 0 20px rgba(6, 182, 212, 0)"
+                      ]
+                    }}
+                    transition={{ 
+                      boxShadow: { duration: 2, repeat: Infinity, delay: index * 0.2 }
+                    }}
+                  >
+                    {index + 1}
+                  </motion.div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-xl mb-3 text-slate-100">{step.step}</h3>
+                    <p className="text-slate-300 mb-4 text-lg leading-relaxed">{step.description}</p>
+                    
+                    {step.note && (
+                      <motion.div 
+                        className="bg-blue-900/30 border border-blue-500/30 rounded-xl p-6 mb-4 relative overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
+                        <div className="relative">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xl">📍</span>
+                            <span className="font-semibold text-blue-300">File Locations</span>
+                          </div>
+                          <pre className="text-blue-200 whitespace-pre-wrap text-sm leading-relaxed font-mono">{step.note}</pre>
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {step.code && (
+                      <motion.div 
+                        className="relative group"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <div className="bg-slate-900/80 rounded-xl p-6 border border-slate-600/50 relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-pink-500/5"></div>
+                          <pre className="text-slate-200 overflow-x-auto text-sm font-mono leading-relaxed relative z-10">
+                            {step.code}
+                          </pre>
+                          <motion.button
+                            onClick={() => copyToClipboard(step.code!, "Configuration", `step-${activeSetup}-${index}`)}
+                            className="absolute top-3 right-3 px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-purple-600 transition-all duration-200 flex items-center gap-2"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <AnimatePresence mode="wait">
+                              {copiedItems[`step-${activeSetup}-${index}`] ? (
+                                <motion.span
+                                  key="copied"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  exit={{ scale: 0 }}
+                                >
+                                  ✅ Copied!
+                                </motion.span>
+                              ) : (
+                                <motion.span
+                                  key="copy"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  exit={{ scale: 0 }}
+                                >
+                                  📋 Copy
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+              
+              {/* Test Prompt */}
+              <motion.div 
+                className="bg-gradient-to-r from-green-900/30 to-cyan-900/30 border border-green-500/30 rounded-xl p-6 relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-cyan-500/5"></div>
+                <div className="relative">
+                  <motion.div
+                    className="flex items-center gap-3 mb-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <motion.span 
+                      className="text-2xl"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      🧪
+                    </motion.span>
+                    <h4 className="font-bold text-xl text-green-300">Test It Out:</h4>
+                  </motion.div>
+                  <motion.p 
+                    className="text-green-200 text-lg italic leading-relaxed cursor-pointer hover:text-green-100 transition-colors"
+                    onClick={() => copyToClipboard(setupSteps[activeSetup].testPrompt, "Test prompt", `test-${activeSetup}`)}
+                    whileHover={{ scale: 1.02 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    "{setupSteps[activeSetup].testPrompt}"
+                  </motion.p>
+                  <motion.p
+                    className="text-green-400 text-sm mt-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    💡 Click to copy this test prompt
+                  </motion.p>
+                </div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
       {/* Example Prompts */}
       <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">

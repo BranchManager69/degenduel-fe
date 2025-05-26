@@ -266,7 +266,7 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({
 
   return (
     <motion.div
-      className={`fixed bottom-5 right-5 bg-black/30 border-2 ${borderColor} rounded-lg shadow-lg overflow-hidden cursor-pointer z-50`}
+      className={`fixed bottom-20 right-5 bg-black/30 border-2 ${borderColor} rounded-lg shadow-lg overflow-hidden cursor-pointer z-50`}
       onClick={onClick}
       initial={{ opacity: 0, y: delayedEntrance ? 20 : 0 }}
       animate={{ opacity: 1, y: 0 }}

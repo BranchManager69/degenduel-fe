@@ -46,6 +46,7 @@ import { AlertTriangle, Loader2, RefreshCw, Settings, TrendingUp, WifiOff } from
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
+import { getContestImageUrl } from "../../lib/imageUtils";
 import { useStore } from "../../store/useStore";
 import type { Contest, Token } from "../../types";
 
@@ -67,13 +68,32 @@ export const UnifiedTicker: React.FC<Props> = ({
   contests: initialContests = [],
   loading: contestsLoadingProp = true,
   isCompact = false,
-  maxTokens = 8,
+  maxTokens = 20,
   storeError,
   systemError,
 }) => {
   const { maintenanceMode } = useStore();
   const navigate = useNavigate();
   
+  // Helper function to format time until contest starts
+  const formatTimeUntilStart = (startTime: string): string => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const diffMs = start.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return "LIVE";
+    
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays >= 1) return `${diffDays}d`;
+    if (diffHours >= 1) return `${diffHours}h`;
+    if (diffMinutes >= 1) return `${diffMinutes}m`;
+    return `${diffSeconds}s`;
+  };
+
   // Helper function to format market cap in short format
   const formatMarketCapShort = (marketCap: number | string): string => {
     const num = typeof marketCap === "string" ? parseFloat(marketCap) : marketCap;
@@ -130,13 +150,14 @@ export const UnifiedTicker: React.FC<Props> = ({
     isLoading: tokensAreLoading,
     refresh: refreshTokenData,
     isConnected: isDataConnected,
+    lastUpdate: tokenDataLastUpdate,
   } = useStandardizedTokenData("all");
   
   // ====================================
   // REST OF TICKER LOGIC
   // ====================================
   const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
-  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("contests");
+  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("tokens");
   const [viewportWidth, setViewportWidth] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -348,7 +369,7 @@ export const UnifiedTicker: React.FC<Props> = ({
       console.log(`UnifiedTicker: Processing ${standardizedTokens.length} raw tokens`);
     }
     
-    // First, filter out completely empty/invalid tokens
+    // HARD MINIMUM REQUIREMENTS - IMMEDIATE DISQUALIFIERS
     const validTokens = (standardizedTokens as Token[]).filter(
       (token: Token): token is Token => {
         // Must have a symbol and name (no empty strings)
@@ -359,10 +380,32 @@ export const UnifiedTicker: React.FC<Props> = ({
         const hasValidData = token.change24h !== undefined && 
                             token.price !== undefined;
         
-        const isValid = hasValidSymbol && hasValidName && hasValidData;
+        // HARD MINIMUM: $10,000 minimum liquidity - IMMEDIATE DISQUALIFIER
+        const liquidityUSD = Number(token.liquidity?.usd || 0);
+        const hasMinLiquidity = liquidityUSD >= 10000;
+        
+        // HARD MINIMUM: $50,000 minimum volume - IMMEDIATE DISQUALIFIER  
+        const volume = Number(token.volume24h) || 0;
+        const hasMinVolume = volume >= 50000;
+        
+        // HARD MINIMUM: $50,000 minimum market cap - IMMEDIATE DISQUALIFIER
+        const marketCap = Number(token.marketCap) || 0;
+        const hasMinMarketCap = marketCap >= 50000;
+        
+        // HARD MINIMUM: Must be active (allowed in portfolios/contests) - IMMEDIATE DISQUALIFIER
+        const isActiveForPortfolios = token.status === "active";
+        
+        // HARD MINIMUM: Price data must be fresh (within 5 minutes) - IMMEDIATE DISQUALIFIER
+        const now = new Date();
+        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
+        const hasFreshData = tokenDataLastUpdate ? tokenDataLastUpdate >= fiveMinutesAgo : false;
+        
+        const isValid = hasValidSymbol && hasValidName && hasValidData && 
+                       hasMinLiquidity && hasMinVolume && hasMinMarketCap && 
+                       isActiveForPortfolios && hasFreshData;
         
         if (TICKER_DEBUG_MODE && !isValid) {
-          console.log(`UnifiedTicker: Filtered out token - Symbol: "${token.symbol}", Name: "${token.name}", hasValidSymbol: ${hasValidSymbol}, hasValidName: ${hasValidName}, hasValidData: ${hasValidData}`);
+          console.log(`UnifiedTicker: DISQUALIFIED token - Symbol: "${token.symbol}", Name: "${token.name}", Liquidity: $${liquidityUSD}, Volume: $${volume}, MarketCap: $${marketCap}, isActive: ${isActiveForPortfolios}, hasFreshData: ${hasFreshData}, lastUpdate: ${tokenDataLastUpdate?.toISOString()}`);
         }
         
         return isValid;
@@ -373,41 +416,36 @@ export const UnifiedTicker: React.FC<Props> = ({
       console.log(`UnifiedTicker: ${validTokens.length} valid tokens after filtering`);
     }
     
-    // If we have valid tokens with actual movement, show those
-    const tokensWithMovement = validTokens.filter(token => 
-      Math.abs(parseFloat(token.change24h)) > 0.05 || 
-      (parseFloat(token.volume24h) || 0) > 10000
-    );
+    // Apply DegenDuel HOT TOKENS algorithm (same as hot tokens component)
+    const getHotScore = (token: Token) => {
+      const change = Number(token.change24h) || 0;
+      const volume = Number(token.volume24h) || 0;
+      const marketCap = Number(token.marketCap) || 0;
+      const absChange = Math.abs(change);
+      // Higher score for tokens with high volatility, decent volume, and reasonable market cap
+      return (absChange * 10) + (Math.log10(Math.max(volume, 1)) * 2) + (Math.log10(Math.max(marketCap, 1)) * 0.5);
+    };
     
-    // If no tokens with movement, fall back to showing any valid tokens
-    const tokensToShow = tokensWithMovement.length > 0 ? tokensWithMovement : validTokens;
+    const hotTokens = validTokens
+      .sort((a: Token, b: Token) => getHotScore(b) - getHotScore(a))
+      .slice(0, maxTokens);
     
     if (TICKER_DEBUG_MODE) {
-      console.log(`UnifiedTicker: Using ${tokensWithMovement.length > 0 ? 'tokens with movement' : 'all valid tokens'} - ${tokensToShow.length} tokens`);
-      if (tokensToShow.length > 0) {
-        console.log(`UnifiedTicker: Top tokens:`, tokensToShow.slice(0, 3).map(t => ({
+      console.log(`UnifiedTicker: Using DegenDuel HOT algorithm - ${hotTokens.length} trending tokens`);
+      if (hotTokens.length > 0) {
+        console.log(`UnifiedTicker: Top trending tokens:`, hotTokens.slice(0, 3).map(t => ({
           symbol: t.symbol,
           name: t.name,
-          price: t.price,
+          hotScore: getHotScore(t).toFixed(2),
           change24h: t.change24h,
-          volume24h: t.volume24h
+          volume24h: t.volume24h,
+          hasImage: Boolean(t.images?.imageUrl)
         })));
       }
     }
     
-    return tokensToShow
-      .sort((a: Token, b: Token) => {
-        // Sort by volume first, then by absolute change
-        const volumeA = parseFloat(a.volume24h) || 0;
-        const volumeB = parseFloat(b.volume24h) || 0;
-        if (volumeB !== volumeA) return volumeB - volumeA;
-        
-        const changeA = Math.abs(parseFloat(a.change24h) || 0);
-        const changeB = Math.abs(parseFloat(b.change24h) || 0);
-        return changeB - changeA;
-      })
-      .slice(0, maxTokens);
-  }, [standardizedTokens, maxTokens]);
+    return hotTokens;
+  }, [standardizedTokens, maxTokens, tokenDataLastUpdate]);
   
   const sortedContests = useMemo(() => {
     if (!currentContests) return [];
@@ -436,17 +474,41 @@ export const UnifiedTicker: React.FC<Props> = ({
               console.warn(`UnifiedTicker: Problematic contest.id found! ID: '${contest.id}', Name: ${contest.name}, Index: ${index}`);
             }
             const contestKey = contest.id ? `contest-${contest.id}` : `contest-idx-${index}`;
+            
+            // Handle click to navigate to contest detail page
+            const handleContestClick = () => {
+              if (contest.id) {
+                navigate(`/contests/${contest.id}`);
+              }
+            };
+
+            // Get contest image URL or use fallback icon
+            const contestImageUrl = getContestImageUrl(contest.image_url);
+
             return (
               <div
                 key={contestKey}
-                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-brand-500/10 border border-brand-500/20 cursor-pointer hover:bg-brand-500/20 transition-colors whitespace-nowrap"
+                onClick={handleContestClick}
+                className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-brand-500/10 cursor-pointer hover:bg-brand-500/20 transition-colors whitespace-nowrap"
               >
-                <TrendingUp className="w-3 h-3 mr-1.5 text-brand-400 flex-shrink-0" />
+                {contestImageUrl ? (
+                  <img 
+                    src={contestImageUrl} 
+                    alt={contest.name} 
+                    className="w-3.5 h-3.5 mr-1.5 rounded-full object-cover flex-shrink-0" 
+                    onError={(e) => {
+                      // Fallback to icon if image fails to load
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <TrendingUp className={`w-3 h-3 mr-1.5 text-brand-400 flex-shrink-0 ${contestImageUrl ? 'hidden' : ''}`} />
                 <span className="text-xs font-medium text-brand-300 truncate max-w-[120px]">
                   {contest.name}
                 </span>
                 <span className="text-xs text-gray-400 ml-1.5 flex-shrink-0">
-                  | {new Date(contest.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  | {formatTimeUntilStart(contest.start_time)}
                 </span>
               </div>
             );
@@ -492,7 +554,13 @@ export const UnifiedTicker: React.FC<Props> = ({
         : [];
     
     if (activeTab === "all") {
-        items = contestItems.concat(tokenItems);
+        // Intersperse contests and tokens for better variety
+        const maxLength = Math.max(contestItems.length, tokenItems.length);
+        items = [];
+        for (let i = 0; i < maxLength; i++) {
+          if (i < contestItems.length) items.push(contestItems[i]);
+          if (i < tokenItems.length) items.push(tokenItems[i]);
+        }
     } else if (activeTab === "contests") {
         items = contestItems;
     } else {
@@ -735,7 +803,7 @@ export const UnifiedTicker: React.FC<Props> = ({
       // Clean up error message for production
       const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
       const displayError = isProduction 
-        ? 'Service temporarily unavailable' 
+        ? 'DegenDuel servers are down.' 
         : storeError;
       
       return (
@@ -781,7 +849,11 @@ export const UnifiedTicker: React.FC<Props> = ({
       <div
         ref={viewportRef}
         className={`h-full w-full overflow-hidden ${actualContentWidthRef.current > viewportWidth ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
-        style={{ paddingLeft: `${tabsWidth}px` }}
+        style={{ 
+          paddingLeft: `${tabsWidth}px`,
+          maskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 10}px, black ${tabsWidth}px, black 100%)`,
+          WebkitMaskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 10}px, black ${tabsWidth}px, black 100%)`
+        }}
         onMouseDown={actualContentWidthRef.current > viewportWidth ? onMouseDown : undefined}
         onMouseMove={actualContentWidthRef.current > viewportWidth ? onMouseMove : undefined}
         onMouseUp={actualContentWidthRef.current > viewportWidth ? onMouseUpOrLeave : undefined}
