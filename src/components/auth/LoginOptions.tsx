@@ -29,9 +29,8 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
-    CardTitle,
+    CardTitle
 } from "../ui/Card";
 import { Divider } from "../ui/Divider";
 import {
@@ -81,7 +80,7 @@ const LoginOptions = () => {
   };
   
   return (
-    <Card className="w-full max-w-md mx-auto relative border border-brand-500/30 shadow-xl bg-dark-200/70 backdrop-blur-lg">
+    <Card className="w-full max-w-md mx-auto relative border border-brand-500/30 shadow-xl bg-dark-200/25 backdrop-blur-lg">
       {/* Decorative elements */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(127,0,255,0.15),transparent_70%)]"></div>
       <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5"></div>
@@ -130,37 +129,37 @@ const LoginOptions = () => {
                         <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
                         <div className="w-full h-full z-10 relative flex items-center justify-center">
                           <TwitterLoginButton 
-                        linkMode={true}
-                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
-                      />
+                            linkMode={true}
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden"
+                          />
                         </div>
-                    </div>
-                    
+                      </div>
+                      
                       {/* Link Discord Account - Icon Only */}
                       <div className="relative p-0.5 bg-gradient-to-r from-[#5865F2]/40 to-[#5865F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
-                      <div className="absolute inset-0 bg-[#5865F2]/10 group-hover:bg-[#5865F2]/20 transition-colors duration-300"></div>
+                        <div className="absolute inset-0 bg-[#5865F2]/10 group-hover:bg-[#5865F2]/20 transition-colors duration-300"></div>
                         <div className="w-full h-full z-10 relative flex items-center justify-center">
-                      <DiscordLoginButton 
-                        linkMode={true}
-                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
-                      />
+                          <DiscordLoginButton 
+                            linkMode={true}
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden"
+                          />
                         </div>
-                    </div>
-                    
+                      </div>
+                      
                       {/* Register/Use Passkey - Icon Only */}
-                    {showBiometricOption && (
+                      {showBiometricOption && (
                         <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
-                        <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
+                          <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
                           <div className="w-full h-full z-10 relative flex items-center justify-center">
-                        <BiometricAuthButton 
-                          mode={isRegistered ? "authenticate" : "register"}
+                            <BiometricAuthButton 
+                              mode={isRegistered ? "authenticate" : "register"}
                               buttonStyle="icon-only"
                               className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
                               onError={(error) => console.error("Passkey auth error:", error)}
-                        />
+                            />
                           </div>
-                      </div>
-                    )}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="relative mt-6">
@@ -212,38 +211,38 @@ const LoginOptions = () => {
                         <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
                           <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                           <div className="w-full h-full z-10 relative flex items-center justify-center">
-                        <TwitterLoginButton 
-                          linkMode={false}
-                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
-                        />
+                            <TwitterLoginButton 
+                              linkMode={false}
+                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden"
+                            />
                           </div>
-                      </div>
+                        </div>
 
                         {/* Discord Login - Icon Only */}
                         <div className="relative p-0.5 bg-gradient-to-r from-[#5865F2]/40 to-[#5865F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
                           <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                           <div className="w-full h-full z-10 relative flex items-center justify-center">
-                        <DiscordLoginButton 
-                          linkMode={false}
-                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center text-white"
-                        />
+                            <DiscordLoginButton 
+                              linkMode={false}
+                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden"
+                            />
                           </div>
-                      </div>
+                        </div>
 
                         {/* Passkey Login - Icon Only (if available) */}
-                      {isAvailable && (
+                        {isAvailable && (
                           <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
                             <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                             <div className="w-full h-full z-10 relative flex items-center justify-center">
-                          <BiometricAuthButton 
+                              <BiometricAuthButton 
                                 mode="authenticate"
                                 buttonStyle="icon-only"
                                 className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
                                 onError={(error) => console.error("Passkey auth error:", error)}
-                          />
+                              />
                             </div>
-                        </div>
-                      )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </>
@@ -257,16 +256,6 @@ const LoginOptions = () => {
               </div>
             </div>
       </CardContent>
-
-      <CardFooter className="flex justify-center text-sm text-gray-400 relative pt-2 pb-4 border-t border-brand-500/10">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500/20 to-transparent"></div>
-        <p className="max-w-xs text-center">
-          {isAuthenticated 
-            ? "Manage your login methods and account settings." 
-            : "Don't have an account? Connect your wallet to create one instantly."
-          }
-        </p>
-      </CardFooter>
     </Card>
   );
 };

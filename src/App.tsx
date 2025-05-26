@@ -114,6 +114,7 @@ const SystemReports = lazy(() => import('./pages/admin/SystemReports').then(modu
 const VanityWalletManagementPage = lazy(() => import('./pages/admin/VanityWalletManagementPage'));
 const WalletManagementPage = lazy(() => import('./pages/admin/WalletManagementPage'));
 const WebSocketHub = lazy(() => import('./pages/admin/WebSocketHub'));
+const TokenSyncTest = lazy(() => import('./pages/admin/TokenSyncTest'));
 
 // Authenticated routes lazy loaded
 const ReferralPage = lazy(() => import('./pages/authenticated/AffiliatePage').then(module => ({ default: module.ReferralPage })));
@@ -456,6 +457,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/ai-testing" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading AI Testing..." />}><AiTesting /></Suspense></AdminRoute>} />
           <Route path="/admin/wallet-monitoring" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Wallet Monitoring..." />}><WalletMonitoring /></Suspense></AdminRoute>} />
           <Route path="/admin/liq-sim" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Liquidity Simulator..." />}><LiquiditySimulatorPage /></Suspense></AdminRoute>} />
+          <Route path="/admin/token-sync-test" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Token Sync Test..." />}><TokenSyncTest /></Suspense></AdminRoute>} />
           <Route path="/websocket-test" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
           <Route path="/websocket-dashboard" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
           <Route path="/amm-sim" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback />}><AmmSim /></Suspense></SuperAdminRoute>} />

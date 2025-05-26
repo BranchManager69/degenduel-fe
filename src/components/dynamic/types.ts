@@ -25,7 +25,8 @@ export type ComponentType =
   | 'contest_leaderboard'
   | 'live_activity_feed'
   | 'user_comparison'
-  | 'token_analysis';
+  | 'token_analysis'
+  | 'token_tracking_monitor';
 
 // Enhanced placement system supporting all backend placements
 export type ComponentPlacement = 

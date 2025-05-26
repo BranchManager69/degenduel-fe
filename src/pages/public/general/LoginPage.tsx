@@ -46,24 +46,21 @@ const LoginPage: React.FC = () => {
   // If already logged in, redirect to original destination
   React.useEffect(() => {
     if (user) {
-      // Check localStorage first (for social auth redirects that lose React state)
       const storedPath = localStorage.getItem("auth_redirect_path");
       const redirectTo = storedPath || from;
-      
       authDebug('LoginPage', 'User authenticated, redirecting', { 
         redirectTo,
         fromState: from,
         fromStorage: storedPath,
         user: user.nickname || user.wallet_address
       });
-      
-      // Clear stored path
       localStorage.removeItem("auth_redirect_path");
-      
-      // Redirect to original destination or home
       navigate(redirectTo, { replace: true });
     }
   }, [user, navigate, from]);
+
+  // Wallet Debugger state - hidden by default
+  const [showWalletDebugger, setShowWalletDebugger] = useState(false);
 
   return (
     <div className="min-h-[calc(100vh-12rem)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -114,45 +111,27 @@ const LoginPage: React.FC = () => {
         >
           <LoginOptions />
         </motion.div>
-
-        {/* Note below login panel */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.7 }}
-          className="space-y-2"
-        >
-          <p className="text-center text-sm text-gray-400">
-            New to DegenDuel? Simply connect your wallet to create an account!
-          </p>
-          <div className="flex justify-center space-x-3 text-xs text-gray-500">
-            <a 
-              href="/biometric-auth-demo" 
-              className="text-brand-400 hover:text-brand-300 transition-colors"
-            >
-              Try our biometric authentication demo →
-            </a>
-            <button 
-              onClick={() => setShowDebugger(!showDebugger)}
-              className="text-purple-400 hover:text-purple-300 transition-colors"
-            >
-              {showDebugger ? "Hide" : "Show"} wallet debugger
-            </button>
-          </div>
-        </motion.div>
       </motion.div>
       
-      {/* Wallet Debugger Panel */}
-      {showDebugger && (
+      {/* Wallet Debugger Section - hidden by default, toggled by a text link below it */}
+      {showWalletDebugger && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full z-10 mt-8"
+          className="w-full max-w-md z-10 mt-8" // Ensure it has max-w-md like LoginOptions for alignment
         >
           <WalletDebugger />
         </motion.div>
       )}
+      <div className="z-10 mt-4 text-center w-full max-w-md">
+        <button 
+          onClick={() => setShowWalletDebugger(!showWalletDebugger)}
+          className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+        >
+          {showWalletDebugger ? "Hide" : "Show"} Wallet Debugger
+        </button>
+      </div>
     </div>
   );
 };

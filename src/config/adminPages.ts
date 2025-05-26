@@ -37,5 +37,14 @@ export const adminPages: AdminPageDefinition[] = [
     color: "brand",
     category: "Contest",
     isNew: true,
-    
+  },
+  {
+    id: "daddiosTest",
+    title: "DADDIOS Test",
+    description: "Test the new DADDIOS (Advanced Token Tracking Monitor) component",
+    icon: "🔧",
+    path: "/admin/token-sync-test",
+    color: "brand",
+    category: "Development",
+    isNew: true,
   },];

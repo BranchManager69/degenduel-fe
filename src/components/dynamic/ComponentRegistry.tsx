@@ -30,6 +30,7 @@ const ContestLeaderboard = lazy(() => import('./components/ContestLeaderboard'))
 const LiveActivityFeed = lazy(() => import('./components/LiveActivityFeed'));
 const UserComparison = lazy(() => import('./components/UserComparison'));
 const TokenAnalysis = lazy(() => import('./components/TokenAnalysis'));
+const TokenTrackingMonitor = lazy(() => import('./components/TokenTrackingMonitor'));
 
 // Component registry mapping
 const COMPONENT_REGISTRY: Record<ComponentType, React.LazyExoticComponent<React.ComponentType<DynamicComponentProps>>> = {
@@ -48,6 +49,7 @@ const COMPONENT_REGISTRY: Record<ComponentType, React.LazyExoticComponent<React.
   live_activity_feed: LiveActivityFeed,
   user_comparison: UserComparison,
   token_analysis: TokenAnalysis,
+  token_tracking_monitor: TokenTrackingMonitor,
 };
 
 // Component metadata for AI to understand what each component does
@@ -57,6 +59,7 @@ export const COMPONENT_METADATA: Record<ComponentType, {
   use_cases: string[];
   required_data: string[];
   example_prompts: string[];
+  alias?: string;
 }> = {
   portfolio_chart: {
     name: "Portfolio Chart",
@@ -162,6 +165,14 @@ export const COMPONENT_METADATA: Record<ComponentType, {
     use_cases: ["investment research", "token evaluation", "market analysis"],
     required_data: ["token metrics", "technical indicators", "fundamental data"],
     example_prompts: ["analyze token", "token research", "deep dive analysis"]
+  },
+  token_tracking_monitor: {
+    name: "Advanced Token Tracking and Market Monitoring System",
+    alias: "DADDIOS",
+    description: "Real-time token data aggregation and market intelligence monitoring",
+    use_cases: ["token tracking", "market monitoring", "data aggregation", "performance analysis"],
+    required_data: ["token_data", "market_events", "aggregator_status"],
+    example_prompts: ["show token tracking system", "monitor token data", "open DADDIOS", "show DADDIOS dashboard", "token monitoring status"]
   }
 };
 

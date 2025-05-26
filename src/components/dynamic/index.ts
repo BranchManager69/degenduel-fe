@@ -25,3 +25,4 @@ export { default as AlertPanel } from './components/AlertPanel';
 export { default as PerformanceMetrics } from './components/PerformanceMetrics';
 export { default as LiquidityPools } from './components/LiquidityPools';
 export { default as TransactionHistory } from './components/TransactionHistory';
+export { default as TokenTrackingMonitor } from './components/TokenTrackingMonitor';
