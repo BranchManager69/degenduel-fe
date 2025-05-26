@@ -230,13 +230,10 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
                 // NOT AUTHENTICATED - Show login options
                 <>
                   {/* Primary: Wallet Connection (full width) */}
-              <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
-                <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
-                <ConnectWalletButton 
-                  className="w-full h-12 z-10 relative"
-                  onSuccess={handleLoginClick}
-                />
-              </div>
+              <ConnectWalletButton 
+                className="w-full h-12"
+                onSuccess={handleLoginClick}
+              />
               
                   {/* Secondary: Social & Passkey Login Options (3 compact squares) */}
                   <div className="grid grid-cols-3 gap-2">
