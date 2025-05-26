@@ -590,7 +590,7 @@ class AIService {
 
       console.error('AI REST API Error:', error);
       throw new AIServiceError(
-        'Failed to get AI response from Didi endpoint.',
+        "I'm busy right now.",
         AIErrorType.NETWORK
       );
     }

@@ -427,16 +427,16 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   {/* Left column: Content */}
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">OVERVIEW</h3>
-                      <p className="text-gray-200 leading-relaxed font-sans text-sm">
+                      <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider text-center">OVERVIEW</h3>
+                      <p className="text-gray-300 leading-relaxed font-sans text-xs text-left">
                         {description}
                       </p>
                     </div>
                     
                     {extendedDescription && (
                       <div>
-                        <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">DETAILS</h3>
-                        <div className="text-gray-200 leading-relaxed space-y-3 font-sans text-sm">
+                        <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider text-center">DETAILS</h3>
+                        <div className="text-gray-300 leading-relaxed space-y-2 font-sans text-xs text-left">
                           {extendedDescription.split('\n').map((paragraph, idx) => (
                             <p key={idx}>
                               {paragraph}
@@ -447,11 +447,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                     )}
                     
                     <div>
-                      <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider">KEY BENEFITS</h3>
-                      <ul className="space-y-2 font-sans text-sm">
+                      <h3 className="text-lg font-bold text-white/90 mb-3 font-russo-one tracking-wider text-center">KEY BENEFITS</h3>
+                      <ul className="space-y-2 font-sans text-xs text-left">
                         {description.split('. ').filter(Boolean).slice(0, 3).map((point, idx) => (
                           <li key={idx} className="flex gap-2 items-start">
-                            <span className={`inline-block h-4 w-4 flex-shrink-0 rounded-full bg-gradient-to-br ${colorScheme.primary} mt-1`}></span>
+                            <span className={`inline-block h-3 w-3 flex-shrink-0 rounded-full bg-gradient-to-br ${colorScheme.primary} mt-1`}></span>
                             <span className="text-gray-300">
                               {point}.
                             </span>
@@ -504,7 +504,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                             </div>
                           </motion.div>
                         )}
-                        <p className="mt-6 text-gray-400 text-sm">
+                        <p className="mt-4 text-gray-400 text-xs text-center">
                           {animation && !FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS 
                             ? "Animations disabled" 
                             : "Interactive demo coming soon"}

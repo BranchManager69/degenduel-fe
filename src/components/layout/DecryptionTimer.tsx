@@ -73,8 +73,8 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
   
   const [effectiveTargetDate, setEffectiveTargetDate] = useState<Date | null>(null);
   
-  // Simple fade out state
-  const [shouldFadeOut, setShouldFadeOut] = useState(false);
+  // Scroll-based visibility state
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
   
   // Copy and transition states
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
@@ -187,20 +187,23 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
     }
   }, [calculateTimeRemaining, effectiveTargetDate]);
 
-  // Simple fade out after 8 seconds if floating enabled
+  // Scroll-based auto hide/show
   useEffect(() => {
     if (!enableFloating) return;
 
-    const fadeOutTimer = setTimeout(() => {
-      setShouldFadeOut(true);
-      // Let parent know mini timer can appear
-      setTimeout(() => {
-        onMorphComplete?.();
-      }, 500); // Small delay for fade out to complete
-    }, 8000);
+    const handleScroll = () => {
+      const scrollThreshold = window.innerHeight * 0.7; // 70% of viewport height
+      const scrolled = window.scrollY > scrollThreshold;
+      
+      if (scrolled !== isScrolledDown) {
+        setIsScrolledDown(scrolled);
+        onMorphComplete?.(scrolled); // Pass scroll state to parent
+      }
+    };
 
-    return () => clearTimeout(fadeOutTimer);
-  }, [enableFloating, onMorphComplete]);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [enableFloating, isScrolledDown, onMorphComplete]);
 
   // Handle copy to clipboard
   const handleCopyAddress = useCallback(async (address: string) => {
@@ -234,8 +237,8 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
   const displayTitle = apiData?.title || (isComplete ? (tokenAddress ? "CONTRACT REVEALED" : "VERIFYING CONTRACT...") : "$DUEL MINT");
   const displayMessage = apiData?.message || (isComplete && !tokenAddress ? "Awaiting secure transmission..." : "");
 
-  // Simple fade out when shouldFadeOut is true
-  if (shouldFadeOut) {
+  // Hide main timer when scrolled down (mini timer will show)
+  if (enableFloating && isScrolledDown) {
     return null;
   }
 
@@ -243,8 +246,8 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
     <motion.div
       className="relative bg-black/30 border-2 border-green-500/60 rounded-xl shadow-lg shadow-green-900/20 overflow-hidden"
       initial={{ opacity: 1 }}
-      animate={{ opacity: shouldFadeOut ? 0 : 1 }}
-      transition={{ duration: 0.5, ease: "easeInOut" }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       {!shouldShowCountdown && apiData ? (
         <div className="py-4 px-6">
@@ -433,7 +436,7 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                       style={{ 
                         color: textColor, 
                         textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
                       }}
                       animate={{ 
                         opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
@@ -457,7 +460,7 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                       className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
                       style={{ 
                         color: textColor, 
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
                       }}
                       animate={{ 
                         opacity: [1, 0.3, 1]
@@ -477,7 +480,7 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                       style={{ 
                         color: textColor, 
                         textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
                       }}
                       animate={{ 
                         opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
@@ -502,7 +505,7 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                       className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
                       style={{ 
                         color: textColor,
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
                       }}
                       animate={{ 
                         opacity: [1, 0.3, 1]
@@ -523,7 +526,7 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                       style={{ 
                         color: textColor, 
                         textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
                       }}
                       animate={{ 
                         opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
@@ -548,7 +551,7 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                       className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
                       style={{ 
                         color: textColor,
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
                       }}
                       animate={{ 
                         opacity: [1, 0.3, 1]
@@ -568,7 +571,7 @@ export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
                       style={{ 
                         color: textColor, 
                         textShadow: `0 0 15px ${shadowColor}`,
-                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                        fontFamily: "'Digital-7', 'DSEG7 Classic', 'Roboto Mono', monospace"
                       }}
                       animate={{ 
                         opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),

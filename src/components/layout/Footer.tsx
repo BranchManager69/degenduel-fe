@@ -106,7 +106,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(147,51,234,0.5)]",
         textColor: "text-purple-400",
         animate: "animate-pulse",
-        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5", // Standard dot for connected only
+        dotSize: "w-4 h-4 sm:w-5 sm:h-5", // Larger dot for connected only
       },
       gigaonline: {
         bgColor: "bg-emerald-500/15",
@@ -114,7 +114,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_20px_rgba(16,185,129,1.0)]",
         textColor: "text-emerald-300",
         animate: "animate-pulse",
-        dotSize: "w-3.5 h-3.5 sm:w-4 sm:h-4", // Larger dot for authenticated
+        dotSize: "w-5 h-5 sm:w-6 sm:h-6", // Even larger dot for authenticated
       },
       maintenance: {
         bgColor: "bg-yellow-500/10",
@@ -122,7 +122,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(234,179,8,0.5)]",
         textColor: "text-yellow-400",
         animate: "",
-        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
+        dotSize: "w-4 h-4 sm:w-5 sm:h-5",
       },
       error: {
         bgColor: "bg-orange-500/10",
@@ -130,7 +130,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(249,115,22,0.5)]",
         textColor: "text-orange-400",
         animate: "",
-        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
+        dotSize: "w-4 h-4 sm:w-5 sm:h-5",
       },
       offline: {
         bgColor: "bg-red-500/10",
@@ -138,7 +138,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(239,68,68,0.5)]",
         textColor: "text-red-400",
         animate: "",
-        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
+        dotSize: "w-4 h-4 sm:w-5 sm:h-5",
       },
       unknown: {
         bgColor: "bg-gray-500/10",
@@ -146,7 +146,7 @@ export const Footer: React.FC = () => {
         shadow: "shadow-[0_0_10px_rgba(128,128,128,0.5)]",
         textColor: "text-gray-400",
         animate: "",
-        dotSize: "w-3 h-3 sm:w-3.5 sm:h-3.5",
+        dotSize: "w-4 h-4 sm:w-5 sm:h-5",
       },
     };
 
@@ -577,11 +577,11 @@ export const Footer: React.FC = () => {
                   </span>
                   <div className="relative">
                     <div
-                      className={`${styles.dotSize || 'w-3 h-3 sm:w-3.5 sm:h-3.5'} rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
+                      className={`${styles.dotSize || 'w-4 h-4 sm:w-5 sm:h-5'} rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
                     />
                     {styles.wsIndicator && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-cyan-400 text-[8px] sm:text-[9px] font-bold leading-none">
+                        <span className="text-cyan-400 text-[12px] sm:text-[14px] font-bold leading-none">
                           ⚡
                         </span>
                       </div>

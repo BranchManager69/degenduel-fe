@@ -503,7 +503,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
 
       } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          setConversationHistory(prev => [...prev, { role: 'system', content: `Error: ${errorMessage}` }]); 
+          setConversationHistory(prev => [...prev, { role: 'assistant', content: errorMessage }]); 
           console.error('Terminal AI error:', error);
           
           if (terminalMinimized) {

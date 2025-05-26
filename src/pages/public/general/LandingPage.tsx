@@ -77,10 +77,9 @@ export const LandingPage: React.FC = () => {
   const [mainTimerFloating, setMainTimerFloating] = useState(false);
   const [showMiniTimer, setShowMiniTimer] = useState(false);
 
-  // Handle floating timer sequence
-  const handleMainTimerMorphComplete = useCallback(() => {
-    setMainTimerFloating(false); // Hide main timer
-    setShowMiniTimer(true); // Show mini timer with delayed entrance
+  // Handle scroll-based timer sequence
+  const handleMainTimerMorphComplete = useCallback((scrolledDown: boolean) => {
+    setShowMiniTimer(scrolledDown); // Show mini timer when scrolled down, hide when scrolled up
   }, []);
   
   // const { trackEvent } = useAnalytics(); // If 'trackEvent' error persists, we may need to review useAnalytics hook
@@ -714,14 +713,14 @@ export const LandingPage: React.FC = () => {
 
         </section>
 
-        {/* Mini Timer - Appears when floating sequence is complete */}
+        {/* Mini Timer - Appears when scrolled down */}
         {showMiniTimer && (
           <MiniDecryptionTimer
             targetDate={fallbackDateForTimers}
             isVisible={showMiniTimer}
-            delayedEntrance={true}
+            delayedEntrance={false}
             onClick={() => {
-              mainTimerContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
         )}
