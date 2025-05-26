@@ -160,7 +160,14 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
         <Button
           variant="gradient"
           className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]} bg-transparent hover:bg-transparent border-transparent`}
-          onClick={() => setShowWalletOptions(!showWalletOptions)}
+          onClick={() => {
+            const installedWallets = wallets.filter(wallet => wallet.readyState === 'Installed');
+            if (installedWallets.length === 1) {
+              handleWalletSelect(installedWallets[0].adapter.name);
+            } else {
+              setShowWalletOptions(!showWalletOptions);
+            }
+          }}
           disabled={isLoading || connecting}
         >
           {(isLoading || connecting) ? (
@@ -177,9 +184,11 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
               </svg>
               Connect Wallet
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
+              {wallets.filter(wallet => wallet.readyState === 'Installed').length > 1 && (
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
             </>
           )}
         </Button>

@@ -91,7 +91,7 @@ export const ContestTimer: React.FC<ContestTimerProps> = ({
             strokeWidth="4"
             fill="transparent"
             strokeDasharray={36 * 2 * Math.PI}
-            strokeDashoffset={36 * 2 * Math.PI * (1 - timeLeft.hours / 24)}
+            strokeDashoffset={36 * 2 * Math.PI * (1 - (timeLeft.hours % 24) / 24)}
             className="text-brand-500 transition-all duration-1000 ease-in-out"
           />
         </svg>
