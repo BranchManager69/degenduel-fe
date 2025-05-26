@@ -455,33 +455,14 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
         const response = await aiService.chat(messagesToSendToService, { 
           context: 'ui_terminal', 
           conversationId: conversationId,
-          streaming: true,
+          streaming: false, // TEMPORARILY DISABLED: Backend streaming works in console tests but not in frontend yet
           structured_output: true, // Enable dynamic UI generation
           ui_context: {
             page: 'terminal',
             available_components: Object.keys(COMPONENT_METADATA),
             current_view: 'chat'
           },
-          onChunk: (chunk) => {
-            finalResponseContent += chunk;
-            
-            // Update the assistant message in real-time as chunks arrive
-            setConversationHistory(prev => {
-              const newHistory = [...prev];
-              if (newHistory[messageIndex]) {
-                newHistory[messageIndex] = {
-                  ...newHistory[messageIndex],
-                  content: finalResponseContent
-                };
-              }
-              return newHistory;
-            });
-            
-            // Mark as having unread messages if terminal is minimized
-            if (terminalMinimized) {
-              setHasUnreadMessages(true);
-            }
-          }
+          // onChunk callback removed since streaming is disabled
         });
 
         setConversationId(response.conversationId);

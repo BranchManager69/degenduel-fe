@@ -274,35 +274,66 @@ class AIService {
       let buffer = ''; // Buffer for partial lines
       let functionCalls: any[] = [];
       let uiActions: any[] = [];
+      let chunkCount = 0;
+      
+      console.log('[AI Service Stream] Starting SSE stream processing');
 
       while (true) {
         const { done, value } = await reader.read();
+        chunkCount++;
+        
         if (done) {
-          console.debug('[AI Service Stream] SSE stream ended.');
+          console.log('[AI Service Stream] SSE stream ended.', {
+            totalChunks: chunkCount,
+            finalBufferLength: buffer.length,
+            finalBuffer: buffer.length > 0 ? buffer : 'empty'
+          });
           break;
         }
 
+        // Decode the chunk
+        const rawChunk = decoder.decode(value, { stream: true });
+        console.log(`[AI Service Stream] Chunk ${chunkCount}:`, {
+          rawLength: rawChunk.length,
+          rawPreview: rawChunk.substring(0, 100) + (rawChunk.length > 100 ? '...' : ''),
+          bufferBefore: buffer.length
+        });
+
         // Append new data to buffer
-        buffer += decoder.decode(value, { stream: true });
+        buffer += rawChunk;
         const lines = buffer.split('\n');
+        
+        console.log(`[AI Service Stream] Split into ${lines.length} lines, buffer after: ${buffer.length}`);
         
         // Keep the last potentially incomplete line in the buffer
         buffer = lines.pop() || '';
+        
+        console.log(`[AI Service Stream] Processing ${lines.length} complete lines, keeping buffer: "${buffer}"`);
 
         for (const line of lines) {
+          console.log(`[AI Service Stream] Processing line: "${line}"`);
+          
           if (line.startsWith('data: ')) {
             const jsonData = line.substring(6).trim();
+            console.log(`[AI Service Stream] Extracted JSON data: "${jsonData}"`);
+            
             if (jsonData) {
               try {
                 const eventData = JSON.parse(jsonData);
+                console.log(`[AI Service Stream] Parsed event:`, eventData);
                 
                 // Handle different event types based on the guide
                 switch (eventData.type) {
                   case 'chunk':
+                    console.log(`[AI Service Stream] Processing chunk delta: "${eventData.delta}"`);
                     if (eventData.delta) {
                       fullContent += eventData.delta;
+                      console.log(`[AI Service Stream] Full content now: ${fullContent.length} chars`);
                       if (options.onChunk) {
+                        console.log(`[AI Service Stream] Calling onChunk with: "${eventData.delta}"`);
                         options.onChunk(eventData.delta);
+                      } else {
+                        console.log(`[AI Service Stream] No onChunk callback provided`);
                       }
                     }
                     break;
@@ -352,10 +383,21 @@ class AIService {
                 }
 
               } catch (e) {
-                console.error('[AI Service Stream] Failed to parse SSE event:', jsonData, e);
+                console.error('[AI Service Stream] JSON Parse Error:', {
+                  error: e,
+                  jsonData: jsonData,
+                  jsonDataLength: jsonData.length,
+                  jsonDataPreview: jsonData.substring(0, 200),
+                  line: line,
+                  chunkNumber: chunkCount
+                });
                 // Continue processing other events
               }
+            } else {
+              console.log(`[AI Service Stream] Empty JSON data for line: "${line}"`);
             }
+          } else if (line.trim()) {
+            console.log(`[AI Service Stream] Non-data line: "${line}"`);
           }
         }
       }
@@ -377,6 +419,14 @@ class AIService {
       }
 
       // Check if we got completely empty response and fallback to non-streaming
+      console.log('[AI Service Stream] Final results:', {
+        fullContentLength: fullContent.length,
+        fullContentPreview: fullContent.substring(0, 100),
+        functionCallsCount: functionCalls.length,
+        uiActionsCount: uiActions.length,
+        conversationId: responseConversationId
+      });
+      
       if (!fullContent.trim() && functionCalls.length === 0 && uiActions.length === 0) {
         console.log('[AI Service Stream] Empty response detected, falling back to non-streaming endpoint');
         // Mark this conversation to use non-streaming for the rest of the session
@@ -503,7 +553,8 @@ class AIService {
         body: JSON.stringify({
           messages,
           conversationId: options.conversationId,
-          context: options.context || 'terminal'
+          context: options.context || 'terminal',
+          stream: false // Explicitly disable streaming for REST endpoint
         }),
       });
 
@@ -539,7 +590,7 @@ class AIService {
 
       console.error('AI REST API Error:', error);
       throw new AIServiceError(
-        'Failed to get AI response via REST API.',
+        'Failed to get AI response from Didi endpoint.',
         AIErrorType.NETWORK
       );
     }
