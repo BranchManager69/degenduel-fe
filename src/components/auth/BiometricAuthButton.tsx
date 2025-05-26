@@ -481,21 +481,6 @@ const BiometricAuthButton: React.FC<BiometricAuthButtonProps> = ({
   // Render the normal button
   return (
     <div className="flex flex-col items-center">
-      {/* Debug information - only shown when authDebug is available */}
-      {typeof authDebug === 'function' && (
-        <div className="mb-2 text-xs text-gray-400 text-center max-w-xs">
-          <div>WebAuthn: {isAvailable ? '✅' : '❌'}</div>
-          <div>Platform Auth: {isPlatformAuthenticatorAvailable === null ? '❓' : isPlatformAuthenticatorAvailable ? '✅' : '❌'}</div>
-          <div>Registered: {isRegistered ? '✅' : '❌'}</div>
-          <div>Enabled: {isEnabled ? '✅' : '❌'}</div>
-          {forcePlatformAuth && <div className="text-yellow-400">🔓 Force Platform Auth: ON</div>}
-          {/iPhone|iPad/i.test(navigator.userAgent) && (
-            <div className="text-orange-400">
-              📱 iOS Device - WebView: {/iPhone|iPad.*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent) ? 'Yes' : 'No'}
-            </div>
-          )}
-        </div>
-      )}
       
       {/* Button for registering or authenticating with biometrics */}
       <button
